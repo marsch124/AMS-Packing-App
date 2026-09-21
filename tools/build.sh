@@ -17,7 +17,7 @@ find . -path ./.git -prune -o -print0 | xargs -0 xattr -c 2>/dev/null || true
 xcodebuild \
   -project AMSPacking.xcodeproj \
   -scheme AMSPacking \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -destination 'platform=iOS Simulator,name=iPhone 18 Pro,OS=27.0' \
   -derivedDataPath "$DD" \
   "${1:-build}"
 

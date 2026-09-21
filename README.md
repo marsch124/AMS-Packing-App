@@ -1,7 +1,8 @@
-# AMS Packing — the native app (iPhone + Mac)
+# AMS Packing App — iPhone and Mac, in sync
 
-A SwiftUI rebuild of the AMS Packing List web app, one target for iPhone and Mac
-like AMS Coffee. The web app stays live at https://marsch124.github.io/AMS-Packing/
+A SwiftUI rebuild of the AMS Packing List web app: **one app for the iPhone and
+the Mac that keeps the two in sync** — in Martin's words, "that sync function is
+very important". One target for both devices, like AMS Coffee. The web app stays live at https://marsch124.github.io/AMS-Packing/
 — with its tests still gating every release — until this one has been through a
 real trip. Do not retire it early.
 
@@ -21,9 +22,13 @@ real trip. Do not retire it early.
 2. **A parity checker** — the Swift model and `js/model.js` over his *real* data,
    compared answer by answer, until it ends "differences: none". This is how AMS
    Workout Sync iOS was proved: 0 differences on his real plans.
-3. **Import** — from the web app's backup JSON, the only data bridge. The three
-   things an importer gets wrong are in `porting-to-xcode.md` §2.
-4. **The screens**, last.
+3. **A store that syncs between the Mac and the iPhone** — iCloud is the natural
+   route. It must sync from the first commit that stores anything; see
+   `porting-to-xcode.md` §5.
+4. **Import** — from the web app's backup JSON, the only data bridge, done ONCE on
+   ONE device and carried to the other by sync. The three things an importer gets
+   wrong are in `porting-to-xcode.md` §2.
+5. **The screens**, last.
 
 ## His real data never enters this repository
 
