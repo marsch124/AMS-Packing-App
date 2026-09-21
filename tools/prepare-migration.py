@@ -26,6 +26,16 @@ Two rules, both his decisions of 2026-09-21:
    file in private/ — trip names are his data, so they are not written here.
    Trip lines are self-contained: a trip keeps every line and tick even when the
    template it was built from is the one left behind.
+
+3. Point every trip at the copies that were KEPT. A trip built from a frozen
+   duplicate names that duplicate in `activities`, and each of its lines names the
+   duplicate's template and item. With the duplicate gone those would point at
+   nothing: "regenerate" would then append a second line for everything (172 of
+   them on one real trip) and a trip review would teach the templates nothing.
+   Found by the parity checker, 2026-09-21. So: a left-behind template's id
+   becomes its kept twin's, and each line's item id becomes the twin's item of
+   the same name and bag (then the same name alone, if there is exactly one).
+   A line with no twin keeps its old item id and is counted out loud.
 """
 import json, sys, os, datetime, collections
 
@@ -46,6 +56,44 @@ def trip_lines(t, events):
 
 def history(t):
     return sum(1 for i in t.get('items') or [] if (i.get('stats') or {}).get('packed') or (i.get('stats') or {}).get('lastReviewed'))
+
+def norm(v):
+    return ' '.join(str(v or '').strip().lower().split())
+
+def repoint(trips, kept, left):
+    """Rule 3. Returns (activities moved, lines moved, lines with no twin)."""
+    twin_of = {}                                   # left template id -> kept template
+    for t in left:
+        k = next((x for x in kept if x.get('name') == t.get('name')), None)
+        if k: twin_of[t['id']] = k
+    item_twin = {}                                 # left item id -> kept item id
+    for lid, k in twin_of.items():
+        t = next(x for x in left if x['id'] == lid)
+        by_both, by_name = {}, collections.defaultdict(list)
+        for i in k.get('items') or []:
+            by_both.setdefault((norm(i.get('name')), i.get('container')), i['id'])
+            by_name[norm(i.get('name'))].append(i['id'])
+        for i in t.get('items') or []:
+            hit = by_both.get((norm(i.get('name')), i.get('container')))
+            if not hit and len(by_name[norm(i.get('name'))]) == 1:
+                hit = by_name[norm(i.get('name'))][0]
+            if hit: item_twin[i['id']] = hit
+    acts = lines = orphans = 0
+    for e in trips:
+        moved = []
+        for a in e.get('activities') or []:
+            b = twin_of[a]['id'] if a in twin_of else a
+            acts += b != a
+            if b not in moved: moved.append(b)     # both copies ticked -> once
+        e['activities'] = moved
+        for x in e.get('entries') or []:
+            if x.get('sourceListId') in twin_of:
+                x['sourceListId'] = twin_of[x['sourceListId']]['id']
+                if x.get('sourceItemId') in item_twin:
+                    x['sourceItemId'] = item_twin[x['sourceItemId']]; lines += 1
+                else:
+                    orphans += 1
+    return acts, lines, orphans
 
 def main():
     if len(sys.argv) < 2: sys.exit(__doc__)
@@ -77,6 +125,8 @@ def main():
     trips = [e for e in d['events'] if e.get('name') not in skip]
     dropped_trips = [e for e in d['events'] if e.get('name') in skip]
 
+    acts, lines, orphans = repoint(trips, kept, left)
+
     out = dict(d)
     out['lists'] = kept
     out['events'] = trips
@@ -85,6 +135,7 @@ def main():
         'preparedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
         'templatesKept': len(kept), 'templatesLeftBehind': len(left),
         'tripsKept': len(trips), 'tripsLeftBehind': len(dropped_trips),
+        'activitiesRepointed': acts, 'linesRepointed': lines, 'linesWithNoTwin': orphans,
     }
     os.makedirs('private', exist_ok=True)
     dest = f"private/migration-{(d.get('exportedAt') or '')[:10] or 'undated'}.json"
@@ -98,6 +149,11 @@ def main():
         print(f"   '{t.get('name')}': kept the original made {datetime.datetime.fromtimestamp(born(k)/1000):%Y-%m-%d %H:%M} "
               f"({len(k.get('items') or [])} items), left the copy made {datetime.datetime.fromtimestamp(born(t)/1000):%Y-%m-%d %H:%M} ({len(t.get('items') or [])} items)")
     print(f"trips       kept {len(trips)}   left behind {len(dropped_trips)}")
+    print(f"re-pointed  {acts} template choices and {lines} trip lines now name the kept copies"
+          + (f"   ⚠️  {orphans} lines have no twin in the kept copy (they keep their old item id)" if orphans else ""))
+    ids = {t['id'] for t in kept}
+    dangling = sum(1 for e in trips for a in e.get('activities') or [] if a not in ids)
+    if dangling: print(f"            {dangling} template choices name a template that exists in NO copy (deleted long ago) — left as they are")
     print(f"wrote       {dest}")
 
 if __name__ == '__main__':
