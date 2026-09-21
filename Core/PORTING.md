@@ -80,6 +80,43 @@ above it. Test files mirror the source files (`PhasesTests.swift`…). Run with
 A test that cannot be ported as written (it tests a JS-only quirk) is listed at
 the bottom of its file with the reason — never silently dropped.
 
+## Conventions the foundation slice set (follow them in every later slice)
+
+- **Every model type conforms to `JSONModel`**: `init(json: JSONValue)` (the `coerceX`
+  rules; never fails — a non-object reads as `{}`) and `var json: JSONValue` (the web
+  app's own keys). `Codable` comes free from those two: never write a `CodingKeys`
+  enum or a throwing `init(from:)`.
+- **Every `coerceX` has two forms**: `coerceItem(_ it: Item) -> Item` (the VALUE rules,
+  for something built in memory) and `coerceItem(json: JSONValue?) -> Item?` (type
+  rules, then the value rules; nil when it is not an object, where JS hands the junk
+  back). Write the value rules ONCE, in the typed form; `Item(json:)` ends by calling it.
+- **Every `newX` has three forms**: `newItem(name: "Tent", weight: 300)` — the same
+  parameter list as `Item.init`, then coerced; this is how a JS
+  `newItem({ name: 'Tent', weight: 300 })` reads in a test — plus `newItem(_ item: Item)`
+  and `newItem(json: ["name": "Tent", "photos": ["a", nil, 42]])` for a partial with junk
+  in it. `Item(…)` alone has `newItem`'s defaults but does NOT coerce.
+- **Optional vs default.** A field `coerceX` always fills is a plain type with a default.
+  A field JS leaves `undefined`, and whose absence MEANS something, is Optional (nil =
+  undefined = null): `used`, `sourceListId`, `sourceItemId`, `itemId`, `memId`,
+  `ovContainer`, `tplContainer`, `defContainer`, `ovPhase`, `defPhase`. Markers JS only
+  tests for truthiness are plain Bools: `checked`, `custom`, `skipped`, `keep`, `edited`,
+  `link`. All of these are left OUT of the JSON when false / nil.
+- **Underscore keys lose the underscore in Swift**: `_edited` → `edited`, `_memId` →
+  `memId`, `_itemId` → `itemId`, `_link` → `link`, `_ovContainer` → `ovContainer`…
+- **Unknown keys** land in `extra: [String: JSONValue]` and are written back. `owner`
+  and `realmId` never are (`RESERVED_SYNC_KEYS`).
+- **Where JS walks field NAMES** (`INTRINSIC_FIELDS`, `slimEntry`'s `Object.entries`),
+  go through `item.json` / `Item(json:)` — those lists hold JSON keys.
+- A JS **NaN** that would be stored is `nil` (`WeatherDay.tmax`, `WeatherSnapshot.lat`):
+  NaN breaks `Equatable` and cannot be written as JSON.
+- Sorting: `xs.stableSorted(compare: { a, b in jsOr(jsSign(a.n - b.n), jsLocaleCompare(a.id, b.id)) })`.
+  `{ sensitivity: 'base' }` is `jsLocaleCompare(a, b, sensitivity: .base)`.
+- Inside a type with its own `id` / `phase` property, the free functions of the same
+  name are `PackingEnv.makeId()` and `PackingCore.phase(_:)`.
+- Tests: `PackingEnv.freeze()` gives a fixed clock and ids "id-1", "id-2"…. In `tearDown`
+  call `PackingEnv.reset()`, and `setPhases(DEFAULT_PHASES)` /
+  `setItemConditions(DEFAULT_ITEM_CONDITIONS)` when a test touched them.
+
 ## Constraints
 
 Swift tools 5.9, Swift 5 language mode, Foundation only, no dependencies. It must

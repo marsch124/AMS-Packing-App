@@ -4,4 +4,7 @@
 # attributes that folder collects, and the test bundle has to be signed.
 set -e
 cd "$(dirname "$0")/../Core"
-swift test --scratch-path "${TMPDIR:-/tmp}/AMSPacking-core" "$@"
+# One build folder per checkout, so two copies of the repo (git worktrees) can be
+# tested at the same time without fighting over it.
+SCRATCH="${TMPDIR:-/tmp}/AMSPacking-core-$(pwd | shasum | cut -c1-8)"
+swift test --scratch-path "$SCRATCH" "$@"
