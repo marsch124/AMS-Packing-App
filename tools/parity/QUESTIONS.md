@@ -1,4 +1,8 @@
-# The parity questions — contract version 1
+# The parity questions — contract version 2
+
+**Needs the web app's model v186 or later** (`shareSafeOwner`, `SYNC_RESERVED_KEYS`);
+the JS side refuses to run on an older one. What changed since version 1 is listed
+in §19.
 
 Two programs answer the same questions about the same backup file:
 
@@ -87,7 +91,7 @@ numbers exactly as `JSON.stringify` writes them —
 The model keeps whatever extra keys an object arrives with; a typed Swift struct
 cannot. So every entity is written with a **fixed key set**. Keys outside the set
 are dropped on both sides (JS lists them in `_info.unknownKeys`; on the owner's
-backup, after §4.1, there are none).
+backup, apart from the sync layer's two reserved keys — §4.1 — there are none).
 
 ### 3.1 ITEM — catalogue item, resolved template item, trip entry, thing
 
@@ -99,11 +103,13 @@ backup, after §4.1, there are none).
 | `used` | written only when it is a boolean |
 | `_ovContainer _tplContainer _defContainer _ovPhase _defPhase _itemId _memId` | written only when it is a string |
 
-`sub` elements are names. A string is written as it is. **An object with
-integer-like keys `"0","1",…` is written as those values joined in numeric order**
-— see Q1 in §17 for why. Anything else: canonical value.
+`sub` is an array of names — strings — and each element is written **exactly as
+the model left it** (canonical value; nothing is put back together by the
+contract). Wherever the model is required to produce plain names, a non-string
+element is therefore a difference. See §17.
 
-`owner` and `realmId` are never written (§4.1).
+`owner` and `realmId` (`SYNC_RESERVED_KEYS`) are not part of any shape and are
+never written (§4.1).
 
 ### 3.2 LIST
 `id name emoji color sections group role transport defaultContainer builtin createdAt updatedAt items`
@@ -127,7 +133,8 @@ the string rule; `weather` = `null` or `{place, lat, lon, fetchedAt, daily:[{dat
 
 ### 3.5 SLIM ENTRY — an entry as a trip bundle carries it
 Only the ITEM-shape keys that are **present** in the slimmed object, as canonical
-values (`sub` by the 3.1 rule). Nothing is defaulted in.
+values. Nothing is defaulted in. (So `sub` is present only when it holds at least
+one non-empty name, and `ownedBy` only when `shareSafeOwner` lets it through.)
 
 ### 3.6 Identifying tuples
 Inside grouping and sorting results an entry is written as one string, not as an
@@ -144,14 +151,18 @@ Each part by the string rule (absent → empty). `refs(xs)` = the entries' `entr
 `B` is the parsed backup: `{ app, version: 2, exportedAt, lists, events, actions, kits, phases, things, photos, prefs }`.
 A missing array is `[]`; a missing `prefs` is `{}`. `photos` is not used.
 
-**4.1 Strip the sync layer's bookkeeping.** Delete `realmId` from every list,
-item, event, entry, action, kit and thing. Delete `owner` from every list, event,
-action and kit, and from every item / entry / thing **whose `ownedBy` is a
-string**. (An item with no string `ownedBy` keeps `owner` until it has been
-coerced, so `coerceItem`'s legacy rule — adopt a non-e-mail `owner` — still runs;
-`owner` is deleted right after.) This matches `Core/PORTING.md`: on decode
-`owner`/`realmId` are ignored except for that one rule. After Setup no object
-carries `owner`. See Q2 in §17.
+**4.1 Nothing is stripped.** The backup goes to the model exactly as the file
+holds it. On synced data every list, item, event, entry and action carries the
+sync addon's two reserved properties, `owner` and `realmId`, both holding the
+account's e-mail address (JS counts them in `_info.reservedKeysSeen`). They are
+**not data**: no shape writes them, and `Core/PORTING.md` has the Swift types ignore
+them on decode. The one place `owner` is read is `coerceItem`'s legacy rule — when
+`ownedBy` is **not a string at all**, a non-e-mail `owner` is adopted into `ownedBy`
+(`calc.coerceHostile` proves it). Keeping the two keys, and any address, out of
+everything that leaves the device is the model's job since v186, and
+`event.tripBundle.leaks`, `list.share.addressInside`, `calc.tripBundleOutgoing` and
+`calc.tripBundleIncoming` check that it does. (Contract 1 deleted the two keys
+here, to step around two web-app bugs that v186 fixed.)
 
 **4.2 Phases first**, as `applyBackup` does: `incoming = B.phases.map((p, i) => coercePhase(p, i))` keeping those
 with an `id` and a `label`; then `setPhases(incoming)` (an empty list installs the factory seven).
@@ -169,7 +180,7 @@ array, else `setItemConditions([])` (the factory four).
 **4.5 Coerce everything once**
 `LISTS = B.lists.map(coerceList)`, `EVENTS = B.events.map(coerceEvent)`,
 `ACTIONS = B.actions.map(coerceAction)`, `KITS = B.kits.map(coerceKit)`,
-`THINGS = B.things.map(coerceItem)` — order as in the file; then drop `owner` from every item and entry.
+`THINGS = B.things.map(coerceItem)` — order as in the file.
 **Below, every mention of `LISTS`, `EVENTS`, `ACTIONS`, `KITS`, `THINGS`, `PEOPLE`
 means a fresh deep copy (D5).** `L` is one list, `E` one event, `i` its index.
 
@@ -217,11 +228,11 @@ where `S = addDays("2026-01-01", i % 7) + "T00:00:00.000Z"`. (Fewer than 12 dist
 
 ## 7. Coercion — whole objects
 
-Input is the **raw** (4.1-stripped) object from the backup, not the coerced one.
+Input is the **raw** object from the backup, not the coerced one.
 
 | Key | Entity | Answer |
 |---|---|---|
-| `coerce.list` | list id | `coerceList(raw)` → LIST, items' `owner` dropped. A section that arrived without an id is written `S<its index in the coerced sections>`. |
+| `coerce.list` | list id | `coerceList(raw)` → LIST. A section that arrived without an id is written `S<its index in the coerced sections>`. |
 | `coerce.event` | event id | `coerceEvent(raw)` → EVENT |
 | `coerce.action` | action id | `coerceAction(raw)` → ACTION. If the raw action had no string `createdAt`: `createdAt` = `"<now>"`, and `updatedAt` = `"<now>"` too if that was also missing. |
 | `coerce.kit` | kit id | `coerceKit(raw)` → KIT |
@@ -236,7 +247,8 @@ Input is the **raw** (4.1-stripped) object from the backup, not the coerced one.
 | `list.groupItemsBySection` | `groupItemsBySection(L.items, L.sections)` → `[{ section: {id, name} or null, items: [itemRef] }]` |
 | `list.photos` | `{ hasInline: hasInlinePhotos(L.items), refs: Σ photoRefs(it).count, inline: Σ inlinePhotos(it).count }` |
 | `list.share.encoded` | `encodeListShare(L)` → **the string itself**. An empty list throws (D7). |
-| `list.share.decoded` | `decodeListShare("https://example.invalid/app/#/l/" + code)` → `{ name, emoji, color, group, role, transport, defaultContainer, sections: [names], items: [...] }`; each item = `{ name, swedish, qty, category, phase, container, note, chargeType, section, kit, storage, packer, itemType, weight, seasons, contexts, transports, catering, weather, sub, shortList, charging, liquid, restricted, perNight, consumable }` — the decoded legacy `owner` key is dropped. Absent when encoding threw. |
+| `list.share.decoded` | `decodeListShare("https://example.invalid/app/#/l/" + code)` → `{ name, emoji, color, group, role, transport, defaultContainer, sections: [names], items: [...] }`; each item = `{ name, swedish, qty, category, phase, container, note, chargeType, section, kit, storage, packer, ownedBy, itemType, weight, seasons, contexts, transports, catering, weather, sub, shortList, charging, liquid, restricted, perNight, consumable }`, as returned — `ownedBy` is `shareSafeOwner(u)`; there is no `owner` key. Absent when encoding threw. |
+| `list.share.addressInside` | whether the JSON text inside the code, `unpackShare(code)`, contains an e-mail address anywhere: a match for `/[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+/`. `false` on any data whose `ownedBy` values are names. Absent when encoding threw. |
 | `list.share.imported` | `listFromShare(decodeListShare(code))` → LIST with: list `id` = `"<id>"`; `createdAt`, `updatedAt` = `"<now>"`; each section id = `S<index>`; each item `id` = `"<id>"`; each item `section` mapped to the same `S<index>` (blank stays blank). Absent when encoding threw. |
 
 **The share string is compared byte for byte.** It is `packShare(JSON text)`, and
@@ -244,8 +256,9 @@ the JSON text's key order is fixed by the code, so it is reproducible — but on
 with a hand-written, ordered JSON writer using the §2 string/number rules:
 
 - top level, in this order, each only when the model sets it: `k v n x i c g r tp d s`
-- each item in `x`: `n f w q c p b o y e k s a u t g se cx tr ca we sb` (`u` never
-  appears after 4.1)
+- each item in `x`: `n f w q c p b o y e k s a u t g se cx tr ca we sb`.
+  **`u` = `shareSafeOwner(it.ownedBy)`**, written only when that is not blank —
+  never the reserved `owner`.
 
 `packShare` picks the `z.`-prefixed LZW form when its **string length** is shorter
 than the plain base64url form, else the plain form.
@@ -302,7 +315,8 @@ than the plain base64url form, else the plain form.
 | Key | Answer |
 |---|---|
 | `event.totalListRows` | `totalListRows(E, LISTS)` as returned |
-| `event.tripBundle` | `buildTripBundle(E, NOW)` → `{ app, kind, version, exportedAt, event: EVENT shape whose entries are SLIM ENTRY shapes }` |
+| `event.tripBundle` | `buildTripBundle(E, NOW)` → `{ app, kind, version, exportedAt, event: EVENT shape whose entries are SLIM ENTRY shapes }`. In a slim entry `sub` is the non-empty sub-item **names** (absent when there are none) and `ownedBy` is `shareSafeOwner(ownedBy)` (absent when blank). |
+| `event.tripBundle.leaks` | on the bundle itself, `b = buildTripBundle(E, NOW)`, before any shape is applied: `{ reservedOnBundle: those of SYNC_RESERVED_KEYS that are keys of b, reservedOnEvent: … of b.event, entriesWithReserved: how many of b.event.entries have either key, addressInside: whether JSON text of b matches the §8 address pattern }`. `E` still carries both keys on the event and on its entries (§4.1), so this is the model's stripping, on real data. Swift: inspect the bundle as it would be written to a file or a link. Required on the owner's data: `[]`, `[]`, `0`, `false`. |
 | `event.tripBundle.parsed` | `parseTripBundle(JSON text of buildTripBundle(E, NOW))` → EVENT with `id` = `"<id>"`, `createdAt`/`updatedAt` = `"<now>"`, every entry `id` = `"<id>"` |
 | `event.tripLink` | `encodeTripLink(E, NOW)` → `{ fits: false, roundTrip: null }` when it returns null; else `{ fits: true, prefix: first 4 characters, roundTrip: decodeTripLink(link without its first 4 characters) in the same form as tripBundle.parsed }`. **The link string itself is not compared** — see N1 in §16. |
 | `event.packedCanonical` | with `text = CJ(this document's own answer to event.tripBundle)`: `{ packed: packShare(text), textLength: text's UTF-16 length, roundTrip: unpackShare(packed + ".") == text }`. **`packed` is compared byte for byte** — this is the LZW + base64url test on a whole real trip. |
@@ -315,13 +329,13 @@ than the plain base64url form, else the plain form.
 
 `base = coerceEvent({ id: "probe", name: "Probe", mode: "trip", activities: ids of every list in LISTS with a blank role (in order), transport: "Car", season: "Summer", contexts: [], weatherOn: [], catering: "mixed", entries: [] })`.
 
-`probe.buildTotalEntries[<name>]` = `buildTotalEntries(base with one patch, LISTS)` → `[buildRef]`, for:
+`probe.buildTotalEntries`, entity `<name>` = `buildTotalEntries(base with one patch, LISTS)` → `[buildRef]`, for:
 `baseline`; `season=<s>` for each of SEASONS; `transport=<t>` for each of TRANSPORTS;
 `catering=<id>` for each of CATERING; `contexts=<c>` (`contexts: [c]`) for each of
 CONTEXTS; `contexts=Indoor+Race`; `mode=quick`; `weatherOn=all`
 (`WEATHER_CONDITION_IDS`); `activities=reversed`.
 
-`probe.weatherGear[baseline]` = `weatherGear(base, LISTS)` as returned.
+`probe.weatherGear`, entity `baseline` = `weatherGear(base, LISTS)` as returned.
 
 ## 11. The whole library
 
@@ -447,6 +461,7 @@ each action's `text`, `itemName`; kit names; thing names; PLACES_IN and OWNERS_I
 | `strings.newPhase` | each of: list names, PHASES labels, `"!!!"`, `"Ärlig Test 2"` | `newPhase(label, copy of PHASE_IDS, { leadDays: 3 })` → PHASE. When the trimmed, lower-cased label holds no `a–z` or `0–9`, the id is clock-made and is written `"<time-id>"`. |
 | `strings.newCondition` | the same labels | `newCondition(label, copy of ITEM_CONDITION_IDS)`, same `"<time-id>"` rule |
 | `strings.email` | `anna.berg@example.com` · `m.s@example.org` · `x@y.z` · `first_last+tag@example.com` · `"  spaced.name@example.com "` · `UPPER.case@example.com` · `élan.vital@example.com` · `-lead@example.com` · `noatsign` · `two@@example.com` · `a b@example.com` · `""` · PEOPLE_NAMES | `{ looksLikeEmail, ownerName: ownerNameFromEmail }` |
+| `strings.shareSafeOwner` | the `strings.email` addresses, PEOPLE_NAMES, every `ownedBy` of every item and entry, and: `Anna Berg` · `Anna <anna.berg@example.com>` · `"  Two   Spaces  "` · `name@host` · `mailto:someone@example.com` · `at @ sign alone` · `A very long owner name that runs well past forty characters` · thirty-eight `x` then `" late@example.com"` | `[shareSafeOwner(v), shareSafeOwner(v, 10)]` |
 | `strings.personColor` | PEOPLE_NAMES, `Zed Guest`, `amy guest`, `Åsa`, `""`, and every `packer` and `ownedBy` of every item and entry | `{ roster: personColor(name, PEOPLE), hashed: personColor(name, []) }` |
 | `strings.qty` | `""` `2` `0` `-1` `2.5` `abc` `" 3 "` `1e2` `0x10` `Infinity` `3 pairs` `١٢` (Arabic-Indic one-two), and every `qty` of every item and entry | `[effectiveQty({qty}, 0), effectiveQty({qty, perNight: true}, 0), effectiveQty({qty, perNight: true}, 5)]` |
 | `ids.phase` | `""`, `no-such-phase`, DEFAULT_PHASES ids, PHASE_IDS, every `phase` of every item and entry, every action's `whenPhase` | `{ known: phase(id) != null, label, emoji, color, leadDays, order, fallback: phaseOrFallback(id) as PHASE }` |
@@ -459,9 +474,11 @@ each action's `text`, `itemName`; kit names; thing names; PLACES_IN and OWNERS_I
 
 | Key | Entity | Answer |
 |---|---|---|
-| `calc.constants` | `*` | every exported constant by name, except `PHASES PHASE_IDS ITEM_CONDITIONS ITEM_CONDITION_IDS` (those are §6). The 60 names: `ACTION_PRIORITIES ACTION_PRIORITY_IDS ACTIVITY_ORDER AUDITABLE_KINDS AUDIT_LABELS AUDIT_STRAY_TOLERANCE BACKUP_DUE_DAYS BACKUP_URGENT_DAYS CATEGORIES CATEGORY_DEFAULT CATERING CHARGE_TYPES CHARGE_TYPE_IDS CONDITION_TONES CONTAINERS CONTAINER_LIMITS_KG CONTAINER_LIST_NAME CONTAINER_ROLE CONTEXTS CONTEXTUAL_FIELDS CURRENCIES DEFAULT_FIELDS DEFAULT_ITEM_CONDITIONS DEFAULT_PEOPLE DEFAULT_PHASES DEFAULT_STORAGE_LOCATIONS EXPIRY_SOON_DAYS GRAB_SHARE_ITEMS_MAX GRAB_SHARE_ITEM_MAX GRAB_SHARE_KIND GRAB_SHARE_NAME_MAX GROUPS GROUP_IDS INTRINSIC_FIELDS KIT_DEFAULT_EMOJI LAUNDRY_CAP_NIGHTS LIST_SHARE_ITEMS_MAX LIST_SHARE_KIND LIST_SHARE_NAME_MAX MAINTENANCE_INTERVALS MAINTENANCE_SOON_DAYS MAINTENANCE_UPCOMING_DAYS MAX_PHOTOS PERSON_COLORS PHASE_DEFAULT_EMOJI RETIRE_REASONS RETIRE_REASON_IDS REVIEW_WINDOW_DAYS SEASONS SHARED_KINDS SHARE_ZIP_PREFIX TEMPLATE_COLORS TEMPLATE_DEFAULT_EMOJI TRANSPORTS TRIP_KIND TRIP_LINK_MAX WEATHER_CONDITIONS WEATHER_CONDITION_IDS WEATHER_SUGGESTIONS WEATHER_THRESHOLDS` |
+| `calc.constants` | `*` | every exported constant by name, except `PHASES PHASE_IDS ITEM_CONDITIONS ITEM_CONDITION_IDS` (those are §6). The 61 names: `ACTION_PRIORITIES ACTION_PRIORITY_IDS ACTIVITY_ORDER AUDITABLE_KINDS AUDIT_LABELS AUDIT_STRAY_TOLERANCE BACKUP_DUE_DAYS BACKUP_URGENT_DAYS CATEGORIES CATEGORY_DEFAULT CATERING CHARGE_TYPES CHARGE_TYPE_IDS CONDITION_TONES CONTAINERS CONTAINER_LIMITS_KG CONTAINER_LIST_NAME CONTAINER_ROLE CONTEXTS CONTEXTUAL_FIELDS CURRENCIES DEFAULT_FIELDS DEFAULT_ITEM_CONDITIONS DEFAULT_PEOPLE DEFAULT_PHASES DEFAULT_STORAGE_LOCATIONS EXPIRY_SOON_DAYS GRAB_SHARE_ITEMS_MAX GRAB_SHARE_ITEM_MAX GRAB_SHARE_KIND GRAB_SHARE_NAME_MAX GROUPS GROUP_IDS INTRINSIC_FIELDS KIT_DEFAULT_EMOJI LAUNDRY_CAP_NIGHTS LIST_SHARE_ITEMS_MAX LIST_SHARE_KIND LIST_SHARE_NAME_MAX MAINTENANCE_INTERVALS MAINTENANCE_SOON_DAYS MAINTENANCE_UPCOMING_DAYS MAX_PHOTOS PERSON_COLORS PHASE_DEFAULT_EMOJI RETIRE_REASONS RETIRE_REASON_IDS REVIEW_WINDOW_DAYS SEASONS SHARED_KINDS SHARE_ZIP_PREFIX SYNC_RESERVED_KEYS TEMPLATE_COLORS TEMPLATE_DEFAULT_EMOJI TRANSPORTS TRIP_KIND TRIP_LINK_MAX WEATHER_CONDITIONS WEATHER_CONDITION_IDS WEATHER_SUGGESTIONS WEATHER_THRESHOLDS` |
 | `calc.constructors` | `*` | one object, minted ids `"<id>"`, minted stamps `"<now>"`: `newItem` = `newItem()` · `newItemNamed` = `newItem({ name: "Test socks", qty: "2", weight: 40, phase: "door", perNight: true })` · `newList` = `newList({ name: "Test list", sections: [{id: "", name: " Tools "}, {id: "", name: ""}, {id: "keep-me", name: "Kept"}, {id: "keep-me", name: "Twin"}] })` (the id `keep-me` is written as it is) · `newEvent` = `newEvent({ name: "Test trip", nights: 3, mode: "quick", weatherOn: ["rain", "fog"] })` · `newAction` = `newAction({ text: "Test", priority: "urgent", whenDate: "2026-1-1" })` · `newKit` = `newKit({ name: "Test kit", itemIds: ["a", "b", "a", ""] })` · `newPerson` = `newPerson({ name: "  Test  ", color: "blue" })` · `newMembership` = `newMembership()` · `newSection` = `{ id: "<id>", name: newSection("  Tools ").name }` |
 | `calc.coerceHostile` | case | **decode the JSON text below**, coerce, write the shape |
+| `calc.tripBundleIncoming` | case | `parseTripBundle(the JSON text below)` → EVENT in the `event.tripBundle.parsed` form (`id` = `"<id>"`, stamps = `"<now>"`, entry ids = `"<id>"`) |
+| `calc.tripBundleOutgoing` | `*` | `b = buildTripBundle(coerceEvent(the JSON text below), NOW)` → `{ bundle: b in the event.tripBundle form, leaks: as event.tripBundle.leaks }` |
 | `calc.countdownLabel` | `*` | `{ "<d>": countdownLabel(d) }` for `null -10 -3 -2 -1 0 1 2 3 10` (key `"null"`) |
 | `calc.qtyNights` | `*` | `{ "<n>/<laundry>": qtyNights({ nights: n, laundry }) }`, n = 0…10, laundry `false`, `true` |
 | `calc.backupShrinks` | `*` | `{ "<p>><n>": backupShrinks({items: p}, {items: n}) }` for `0>0 0>5 10>0 10>4 10>5 10>6 3>1` |
@@ -495,6 +512,25 @@ each action's `text`, `itemName`; kit names; thing names; PLACES_IN and OWNERS_I
 | `condition` | `coerceCondition` → CONDITION | `{"id":" c ","label":" L ","tone":"loud","replace":1}` |
 | `person` | `coercePerson` → PERSON, `id` = `"<id>"` | `{"name":"  P ","color":"#GGG"}` |
 
+**`calc.tripBundleIncoming` inputs** — a bundle as an app from before v186 made it:
+both reserved keys at every level, an address as the owner, sub-items taken apart.
+
+| Case | JSON text |
+|---|---|
+| `oldBundle` | `{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}` |
+| `notATrip` | `{"app":"ams-packing-list","kind":"grab","event":{"name":"x"}}` — throws (D7) |
+| `noEvent` | `{"kind":"trip"}` — throws (D7) |
+
+Expected of `oldBundle`, entry by entry — `ownedBy`, `sub`: Tent `""`, `["Pegs","Guy lines","Mallet"]` ·
+Stove `"Legacy Name"` (a legacy `owner` that is a name is adopted; one that is an address is not), `[]` ·
+Lamp `""`, `[]` · Mug `"Anna Berg"`, `[]`. Every entry unchecked with no `used`; the event `active`, never reviewed.
+
+**`calc.tripBundleOutgoing` input:**
+`{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Anna Berg","sub":[],"itemType":"reminder"}]}`
+Expected slim entries: Rope = `{ category, name, phase, sub: ["Sling","Carabiner"], weight: 120 }` — no `ownedBy`;
+Helmet = `{ category, itemType: "reminder", name, ownedBy: "Anna Berg", phase }`. (`phase` is
+`defaultPhaseId()` of the §4 phases.) `leaks` = `[]`, `[]`, `0`, `false`.
+
 A few answers worth knowing in advance, because each is a JS rule a typed decoder
 gets wrong by default: `weight: "12"` → `0` (a string is not a number) but
 `geo.lat: "12.5"` → `12.5` (`Number()` parses it) and `weather.lon: null` → `0`;
@@ -526,21 +562,26 @@ the §4 lists back afterwards.
 | N6 | Keys outside the shapes | §3. |
 | N7 | `photos` in the backup, and everything in `db.js` / `app.js` | Not the model. |
 
-## 17. Web-app quirks the contract steps around
+## 17. What the contract requires for `sub`, `ownedBy`, `u` and the reserved keys
 
-Found while building this. Each is a real behaviour of the web app on the owner's
-data; the contract is written so the Swift side is **not** asked to reproduce it.
+Contract 1 stepped around two web-app bugs (a trip bundle took string sub-items
+apart into character maps; a shared template carried the sync account's address
+in `u`). Model v186 fixed both, the workarounds are gone, and the port is now
+held to the fixed behaviour:
 
-- **Q1 — a trip bundle mangles sub-items.** `slimEntry` maps `sub` through itself,
-  and a sub-item is a string, so `"Spare laces"` becomes `{"0":"S","1":"p",…}`;
-  `parseTripBundle` then adds `id` and `checked` to that object. The 3.1 `sub` rule
-  writes such an object back as its string. A Swift port keeps `sub` as `[String]`
-  and matches.
-- **Q2 — a shared template carries the sync account's e-mail.** `encodeListShare`
-  reads the legacy `it.owner` (key `u`), and on synced data `owner` is the address
-  the sync layer stamped on every row. §4.1 strips `owner` first, so `u` never
-  appears and the share strings are comparable. (Worth fixing in the web app: it
-  should read `ownedBy`.)
+| What | Required |
+|---|---|
+| `sub`, everywhere | An array of strings, written as the model left it. The contract reassembles nothing. |
+| `sub` going OUT in a trip bundle (`slimEntry`) | each element through `subName` (a string as it stands; an object with a string `name` → that; an object with `"0","1",…` string values → those joined, stopping at the first missing index; anything else → `""`), blanks dropped; the key is absent when nothing is left. [`event.tripBundle`, `calc.tripBundleOutgoing`] |
+| `sub` coming IN (`parseTripBundle` → `incomingEntry`) | the same `subName` + drop-blanks, only when the entry has a `sub` key at all; a `sub` that is not an array → `[]`. [`calc.tripBundleIncoming`] |
+| `ownedBy` going OUT in a trip bundle | `shareSafeOwner(ownedBy)`; absent when blank. [`event.tripBundle`, `calc.tripBundleOutgoing`] |
+| `ownedBy` coming IN | `shareSafeOwner(who)`, where `who` = the entry's `ownedBy` if that is a string, else its legacy `owner`. Always set, so it is `""` rather than missing. |
+| `u` in a template code | written from `shareSafeOwner(it.ownedBy)`, only when not blank, in its fixed place in the key order (§8); read back into `ownedBy` through `shareSafeOwner` again. The reserved `owner` is never read. [`list.share.encoded`, `list.share.decoded`, `list.share.imported`] |
+| `shareSafeOwner(v, max = 40)` | `String(v ?? "")`, every whitespace run (JS `\s` — H5) → one space, trimmed; then **blank if an address is anywhere inside** (`/[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+/`, tested BEFORE cutting); else the first `max` UTF-16 units — not trimmed again after the cut. [`strings.shareSafeOwner`] |
+| `SYNC_RESERVED_KEYS` = `owner`, `realmId` | Never in any shape. Going out: dropped from the bundle's event and from every entry. Coming in: dropped from the event and from every entry before coercion. [`event.tripBundle.leaks`, `calc.tripBundleOutgoing`, `calc.tripBundleIncoming`, `calc.constants`] |
+
+One web-app quirk remains that the port must copy to match:
+
 - **Q3 — `referencedListValues` reads `action.phase`**, a field actions do not
   have (theirs is `whenPhase`). So actions contribute nothing to the phases audit.
   To match, the port must also read nothing there.
@@ -598,3 +639,25 @@ a mistake will show.
   [`list.share.encoded`, `settings.grabShare`]
 - **H14 Number → string** in `coerceMembership` (`qty: 3` → `"3"`), by JS's number
   formatting. [`calc.coerceHostile.membership`]
+- **H15 `shareSafeOwner`** cuts by UTF-16 units AFTER testing for an address, and
+  does not trim again: `"at @ sign alone"` cut to 10 is `"at @ sign "`, with its
+  trailing space. [`strings.shareSafeOwner`]
+
+## 19. Contract history
+
+**Version 2** (model v186). Every other key is unchanged in name, definition and —
+on the owner's backup — in answer.
+
+| Key | Change |
+|---|---|
+| Setup §4.1 | `owner` / `realmId` are no longer deleted from the backup before the model sees it. No answer depends on it: no shape carries them. |
+| ITEM and SLIM ENTRY shapes (§3.1, §3.5) | `sub` is written as it is; the rule that put a taken-apart name back together is gone. |
+| `list.share.encoded` | the code now carries `u` = `shareSafeOwner(it.ownedBy)`. |
+| `list.share.decoded` | items have `ownedBy`; the dropped legacy `owner` key no longer exists. |
+| `list.share.imported` | definition unchanged; items now arrive with their `ownedBy`. |
+| `event.tripBundle`, `event.tripBundle.parsed`, `event.tripLink`, `event.packedCanonical` | definition unchanged but for the `sub` shape rule; `ownedBy` in a bundle goes through `shareSafeOwner`. |
+| `calc.constants` | 61 names: `SYNC_RESERVED_KEYS` added. |
+| NEW `list.share.addressInside` | §8 |
+| NEW `event.tripBundle.leaks` | §9 |
+| NEW `strings.shareSafeOwner` | §13 |
+| NEW `calc.tripBundleIncoming`, `calc.tripBundleOutgoing` | §14 |

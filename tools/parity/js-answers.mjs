@@ -83,6 +83,9 @@ const NOW = `${TODAY}T12:00:00.000Z`;
 const modelPath = path.resolve(opts.model || path.join(HERE, '..', '..', '..', 'AMS Packing', 'js', 'model.js'));
 if (!fs.existsSync(modelPath)) { console.error(`model not found: ${modelPath}`); process.exit(2); }
 const M = await import(pathToFileURL(modelPath).href);
+if (typeof M.shareSafeOwner !== 'function' || !Array.isArray(M.SYNC_RESERVED_KEYS)) {
+  console.error('This contract (version 2) needs the web app model v186 or later: shareSafeOwner / SYNC_RESERVED_KEYS are missing.'); process.exit(2);
+}
 const B = JSON.parse(fs.readFileSync(path.resolve(opts.backup), 'utf8'));
 if (!B || typeof B !== 'object' || !(Array.isArray(B.lists) || Array.isArray(B.events))) {
   console.error('That file does not look like an AMS Packing backup.'); process.exit(2);
@@ -145,21 +148,12 @@ const ITEM_OPT_BOOL = ['used'];
 const ITEM_OPT_STR = ['_ovContainer', '_tplContainer', '_defContainer', '_ovPhase', '_defPhase', '_itemId', '_memId'];
 const ITEM_KEYS = new Set([...ITEM_NORMALISED, ...ITEM_STRINGS, ...ITEM_BOOLS, ...ITEM_OPT_BOOL, ...ITEM_OPT_STR]);
 
-// A sub-item is a NAME. The web app's trip bundle mangles a string sub-item into a
-// character map ({"0":"a","1":"b"}); the contract writes it back as the string, so
-// the Swift side is not asked to reproduce that. See QUESTIONS.md §3.1 and §9.
-function subShape(s) {
-  if (typeof s === 'string') return s;
-  if (s && typeof s === 'object' && !Array.isArray(s)) {
-    const idx = Object.keys(s).filter((k) => /^(0|[1-9]\d*)$/.test(k)).sort((a, b) => Number(a) - Number(b));
-    if (idx.length) return idx.map((k) => String(s[k])).join('');
-  }
-  return canon(s);
-}
+// A sub-item is a NAME — a string — and is written as it stands. (Contract 1 put a
+// taken-apart name back together here; since model v186 the model does that itself.)
 function shapeItem(it, map = {}) {
   if (!it || typeof it !== 'object') return canon(it);
   const o = {};
-  for (const k of ITEM_NORMALISED) o[k] = k === 'sub' ? asArr(it.sub).map(subShape) : it[k];
+  for (const k of ITEM_NORMALISED) o[k] = it[k];
   for (const k of ITEM_STRINGS) o[k] = str(it[k]);
   for (const k of ITEM_BOOLS) o[k] = !!it[k];
   for (const k of ITEM_OPT_BOOL) if (typeof it[k] === 'boolean') o[k] = it[k];
@@ -174,7 +168,7 @@ function shapeSlimEntry(o) {   // an entry as a trip bundle carries it: only the
   const out = {};
   for (const k of Object.keys(o || {})) {
     if (!ITEM_KEYS.has(k)) continue;
-    out[k] = k === 'sub' ? asArr(o.sub).map(subShape) : o[k];
+    out[k] = o[k];
   }
   return out;
 }
@@ -229,16 +223,13 @@ const refs = (arr) => asArr(arr).map(entryRef);
 const prefs = (B.prefs && typeof B.prefs === 'object') ? B.prefs : {};
 const RAW = { lists: clone(asArr(B.lists)), events: clone(asArr(B.events)), actions: clone(asArr(B.actions)), kits: clone(asArr(B.kits)), things: clone(asArr(B.things)), phases: clone(asArr(B.phases)) };
 
-// 6.1 The sync layer's bookkeeping is not data. `realmId` goes everywhere; `owner`
-// goes everywhere EXCEPT on an item-shaped record with no string `ownedBy`, where
-// coerceItem's legacy rule still has to see it (it is deleted after coercion).
-const strip = (o, keepOwner = false) => { if (o && typeof o === 'object') { delete o.realmId; if (!keepOwner) delete o.owner; } };
-const stripItem = (it) => strip(it, !!it && typeof it === 'object' && typeof it.ownedBy !== 'string');
-for (const l of RAW.lists) { strip(l); for (const it of asArr(l && l.items)) stripItem(it); }
-for (const e of RAW.events) { strip(e); for (const it of asArr(e && e.entries)) stripItem(it); }
-for (const a of RAW.actions) strip(a);
-for (const k of RAW.kits) strip(k);
-for (const t of RAW.things) stripItem(t);
+// 6.1 NOTHING IS STRIPPED. The backup goes to the model exactly as the file holds it,
+// the sync addon's `owner` / `realmId` included — keeping those two out of anything
+// that leaves the device is the MODEL's job since v186, and the questions check it.
+// No shape carries them, so they are never written down.
+const RESERVED = new Set(M.SYNC_RESERVED_KEYS);
+const ADDRESS_INSIDE = /[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+/;
+let reservedKeysSeen = 0;
 
 // Keys in the data that no shape carries — reported in _info, never compared.
 const unknownKeys = { list: new Set(), item: new Set(), event: new Set(), entry: new Set(), action: new Set(), kit: new Set(), phase: new Set() };
@@ -247,7 +238,7 @@ const EVENT_KEYS = new Set(['id', 'name', 'mode', 'activities', 'transport', 'se
 const ACTION_KEYS = new Set(['id', 'text', 'kind', 'itemId', 'itemName', 'priority', 'whenPhase', 'whenDate', 'done', 'doneAt', 'createdAt', 'updatedAt']);
 const KIT_KEYS = new Set(['id', 'name', 'emoji', 'note', 'itemIds', 'createdAt', 'updatedAt']);
 const PHASE_KEYS = new Set(['id', 'label', 'hint', 'emoji', 'color', 'task', 'leadDays', 'order']);
-const note = (bucket, o, known) => { for (const k of Object.keys(o || {})) if (!known.has(k)) unknownKeys[bucket].add(k); };
+const note = (bucket, o, known) => { for (const k of Object.keys(o || {})) { if (RESERVED.has(k)) reservedKeysSeen += 1; else if (!known.has(k)) unknownKeys[bucket].add(k); } };
 for (const l of RAW.lists) { note('list', l, LIST_KEYS); for (const it of asArr(l && l.items)) note('item', it, ITEM_KEYS); }
 for (const e of RAW.events) { note('event', e, EVENT_KEYS); for (const it of asArr(e && e.entries)) note('entry', it, ITEM_KEYS); }
 for (const a of RAW.actions) note('action', a, ACTION_KEYS);
@@ -271,12 +262,11 @@ const PEOPLE_NAMES = PEOPLE.map((p) => p.name);
 
 // 6.4 Coerce everything once. These are the inputs of every later question, and
 // every question works on its OWN deep copy (the model mutates what it is given).
-const dropOwner = (it) => { if (it && typeof it === 'object') delete it.owner; return it; };
-const LISTS = clone(RAW.lists).map((l) => { const c = M.coerceList(l); asArr(c && c.items).forEach(dropOwner); return c; });
-const EVENTS = clone(RAW.events).map((e) => { const c = M.coerceEvent(e); asArr(c && c.entries).forEach(dropOwner); return c; });
+const LISTS = clone(RAW.lists).map((l) => M.coerceList(l));
+const EVENTS = clone(RAW.events).map((e) => M.coerceEvent(e));
 const ACTIONS = clone(RAW.actions).map((a) => M.coerceAction(a));
 const KITS = clone(RAW.kits).map((k) => M.coerceKit(k));
-const THINGS = clone(RAW.things).map((t) => dropOwner(M.coerceItem(t))).filter((t) => t && typeof t === 'object');
+const THINGS = clone(RAW.things).map((t) => M.coerceItem(t)).filter((t) => t && typeof t === 'object');
 
 // 6.5 The synthetic overlays (§5) — real data as the base, deterministic changes on
 // top, so questions the real data leaves empty still have something to answer.
@@ -362,7 +352,6 @@ RAW.lists.forEach((raw, i) => ask('coerce.list', str(raw && raw.id) || `#${i}`, 
   const c = M.coerceList(l);
   const minted = new Map();
   c.sections.forEach((s, j) => { if (!known.has(s.id)) minted.set(s.id, `S${j}`); });
-  asArr(c.items).forEach(dropOwner);
   return shapeList(c, { sectionId: (x) => minted.get(x) || x });
 }));
 RAW.events.forEach((raw, i) => ask('coerce.event', str(raw && raw.id) || `#${i}`, () => shapeEvent(M.coerceEvent(clone(raw)))));
@@ -372,7 +361,7 @@ RAW.actions.forEach((raw, i) => ask('coerce.action', str(raw && raw.id) || `#${i
   return o;
 }));
 RAW.kits.forEach((raw, i) => ask('coerce.kit', str(raw && raw.id) || `#${i}`, () => shapeKit(M.coerceKit(clone(raw)))));
-RAW.things.forEach((raw, i) => ask('coerce.thing', str(raw && raw.id) || `#${i}`, () => shapeItem(dropOwner(M.coerceItem(clone(raw))))));
+RAW.things.forEach((raw, i) => ask('coerce.thing', str(raw && raw.id) || `#${i}`, () => shapeItem(M.coerceItem(clone(raw)))));
 
 // === §8 Per list =============================================================
 const listKey = (l, i) => str(l.id) || `#${i}`;
@@ -400,10 +389,9 @@ LISTS.forEach((L0, i) => {
   ask('list.share.encoded', k, () => { code = M.encodeListShare(clone(L0)); return code; });
   if (typeof code === 'string') {
     ask('list.share.decoded', k, () => {
-      const d = M.decodeListShare(`https://example.invalid/app/#/l/${code}`);
-      for (const it of d.items) delete it.owner;   // legacy key, always '' once §4.1 has run
-      return d;
+      return M.decodeListShare(`https://example.invalid/app/#/l/${code}`);
     });
+    ask('list.share.addressInside', k, () => ADDRESS_INSIDE.test(M.unpackShare(code)));
     ask('list.share.imported', k, () => {
       const made = M.listFromShare(M.decodeListShare(code));
       const secIds = new Map(made.sections.map((s, j) => [s.id, `S${j}`]));
@@ -428,6 +416,13 @@ const ENTRY_GROUPS = () => [
 ];
 const eventKey = (e, i) => str(e.id) || `#${i}`;
 const bundleShape = (b) => ({ app: b.app, kind: b.kind, version: b.version, exportedAt: b.exportedAt, event: shapeEvent(b.event, {}, shapeSlimEntry) });
+// What a bundle must never carry: the sync addon's two keys, and an address anywhere.
+const leaksOf = (b) => ({
+  reservedOnBundle: M.SYNC_RESERVED_KEYS.filter((key) => key in b),
+  reservedOnEvent: M.SYNC_RESERVED_KEYS.filter((key) => key in b.event),
+  entriesWithReserved: asArr(b.event.entries).filter((e) => M.SYNC_RESERVED_KEYS.some((key) => key in e)).length,
+  addressInside: ADDRESS_INSIDE.test(JSON.stringify(b)),
+});
 const importedEventShape = (ev) => shapeEvent(ev, { eventId: true, stamps: true, entry: { id: () => ID } });
 
 EVENTS.forEach((E0, i) => {
@@ -536,6 +531,7 @@ EVENTS.forEach((E0, i) => {
   ask('event.totalListRows', k, () => M.totalListRows(ev(), lists()));
   let bundleCanon = null;
   ask('event.tripBundle', k, () => { bundleCanon = canon(bundleShape(M.buildTripBundle(ev(), NOW))); return bundleCanon; });
+  ask('event.tripBundle.leaks', k, () => leaksOf(M.buildTripBundle(ev(), NOW)));
   ask('event.tripBundle.parsed', k, () => importedEventShape(M.parseTripBundle(JSON.stringify(M.buildTripBundle(ev(), NOW)))));
   ask('event.tripLink', k, () => {
     const link = M.encodeTripLink(ev(), NOW);
@@ -901,6 +897,10 @@ POOL.forEach((s, i) => ask('strings.compare', s, () => {
   }
   const EMAILS = ['anna.berg@example.com', 'm.s@example.org', 'x@y.z', 'first_last+tag@example.com', '  spaced.name@example.com ', 'UPPER.case@example.com', 'élan.vital@example.com', '-lead@example.com', 'noatsign', 'two@@example.com', 'a b@example.com', ''];
   for (const e of [...EMAILS, ...PEOPLE_NAMES]) ask('strings.email', e, () => ({ looksLikeEmail: M.looksLikeEmail(e), ownerName: M.ownerNameFromEmail(e) }));
+  const OWNER_CASES = ['Anna Berg', 'Anna <anna.berg@example.com>', '  Two   Spaces  ', 'name@host', 'mailto:someone@example.com', 'at @ sign alone',
+    'A very long owner name that runs well past forty characters', `${'x'.repeat(38)} late@example.com`];
+  const owners = distinct([...EMAILS, ...OWNER_CASES, ...PEOPLE_NAMES, ...LISTS.flatMap((l) => l.items.map((it) => it.ownedBy)), ...EVENTS.flatMap((e) => e.entries.map((it) => it.ownedBy))].filter((v) => typeof v === 'string')).sort(cmpCodeUnit);
+  for (const v of owners) ask('strings.shareSafeOwner', v, () => [M.shareSafeOwner(v), M.shareSafeOwner(v, 10)]);
   const names = distinct([...PEOPLE_NAMES, 'Zed Guest', 'amy guest', 'Åsa', '', ...LISTS.flatMap((l) => l.items.flatMap((it) => [it.packer, it.ownedBy])), ...EVENTS.flatMap((e) => e.entries.flatMap((it) => [it.packer, it.ownedBy]))].filter((v) => typeof v === 'string')).sort(cmpCodeUnit);
   for (const n of names) ask('strings.personColor', n, () => ({ roster: M.personColor(n, clone(PEOPLE)), hashed: M.personColor(n, []) }));
   const qtys = distinct(['', '2', '0', '-1', '2.5', 'abc', ' 3 ', '1e2', '0x10', 'Infinity', '3 pairs', '١٢', ...LISTS.flatMap((l) => l.items.map((it) => str(it.qty))), ...EVENTS.flatMap((e) => e.entries.map((it) => str(it.qty)))]).sort(cmpCodeUnit);
@@ -962,9 +962,9 @@ ask('calc.constructors', ALL, () => {
     eventNoWeather: '{"id":"e2","nights":-1,"weather":{"daily":[]},"geo":{"lat":"12.5","lon":"-7","place":"Testville"}}',
     list: '{"id":"l","name":"Hostile list","group":"XX","role":"special","transport":"Boat","emoji":"  \ud83d\udce6\ud83d\udce6\ud83d\udce6  ","color":"red","defaultContainer":4,"sections":[{"id":"s1","name":" A "},{"id":"s1","name":"B"},{"id":"s2","name":"  "}],"items":[{"name":"Inside"}]}',
   };
-  ask('calc.coerceHostile', 'item', () => shapeItem(dropOwner(M.coerceItem(JSON.parse(HOSTILE.item)))));
-  ask('calc.coerceHostile', 'itemLegacyPhoto', () => shapeItem(dropOwner(M.coerceItem(JSON.parse(HOSTILE.itemLegacyPhoto)))));
-  ask('calc.coerceHostile', 'itemOwnedByWins', () => shapeItem(dropOwner(M.coerceItem(JSON.parse(HOSTILE.itemOwnedByWins)))));
+  ask('calc.coerceHostile', 'item', () => shapeItem(M.coerceItem(JSON.parse(HOSTILE.item))));
+  ask('calc.coerceHostile', 'itemLegacyPhoto', () => shapeItem(M.coerceItem(JSON.parse(HOSTILE.itemLegacyPhoto))));
+  ask('calc.coerceHostile', 'itemOwnedByWins', () => shapeItem(M.coerceItem(JSON.parse(HOSTILE.itemOwnedByWins))));
   ask('calc.coerceHostile', 'membership', () => shapeMembership(M.coerceMembership(JSON.parse(HOSTILE.membership))));
   ask('calc.coerceHostile', 'action', () => shapeAction(M.coerceAction(JSON.parse(HOSTILE.action))));
   ask('calc.coerceHostile', 'kit', () => shapeKit(M.coerceKit(JSON.parse(HOSTILE.kit))));
@@ -979,6 +979,19 @@ ask('calc.constructors', ALL, () => {
   ask('calc.coerceHostile', 'phaseLeadHalf', () => shapePhase(M.coercePhase(JSON.parse('{"id":"h","label":"Half","leadDays":-0.5,"color":"#ABCDEF12"}'), 13)));
   ask('calc.coerceHostile', 'condition', () => shapeCondition(M.coerceCondition(JSON.parse('{"id":" c ","label":" L ","tone":"loud","replace":1}'))));
   ask('calc.coerceHostile', 'person', () => shapePerson(M.coercePerson(JSON.parse('{"name":"  P ","color":"#GGG"}')), true));
+}
+{
+  const INCOMING = {
+    oldBundle: '{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}',
+    notATrip: '{"app":"ams-packing-list","kind":"grab","event":{"name":"x"}}',
+    noEvent: '{"kind":"trip"}',
+  };
+  for (const [name, json] of Object.entries(INCOMING)) ask('calc.tripBundleIncoming', name, () => importedEventShape(M.parseTripBundle(json)));
+  const OUTGOING = '{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Anna Berg","sub":[],"itemType":"reminder"}]}';
+  ask('calc.tripBundleOutgoing', ALL, () => {
+    const b = M.buildTripBundle(M.coerceEvent(JSON.parse(OUTGOING)), NOW);
+    return { bundle: bundleShape(b), leaks: leaksOf(b) };
+  });
 }
 ask('calc.countdownLabel', ALL, () => { const o = {}; for (const d of [null, -10, -3, -2, -1, 0, 1, 2, 3, 10]) o[String(d)] = M.countdownLabel(d); return o; });
 ask('calc.qtyNights', ALL, () => { const o = {}; for (let n = 0; n <= 10; n++) for (const laundry of [false, true]) o[`${n}/${laundry}`] = M.qtyNights({ nights: n, laundry }); return o; });
@@ -1069,7 +1082,7 @@ for (const q of questionKeys) answerCount += Object.keys(answers[q]).length;
 let errors = 0;
 for (const q of questionKeys) for (const v of Object.values(answers[q])) if (v && typeof v === 'object' && '$error' in v) errors += 1;
 const info = {
-  generator: 'js', contract: 1, today: TODAY, now: NOW,
+  generator: 'js', contract: 2, today: TODAY, now: NOW,
   locale: new Intl.Collator().resolvedOptions().locale,
   node: process.version, icu: process.versions.icu, unicode: process.versions.unicode,
   model: path.relative(HERE, modelPath),
@@ -1079,6 +1092,7 @@ const info = {
     actions: ACTIONS.length, kits: KITS.length, things: THINGS.length, phases: RAW.phases.length, strings: POOL.length,
   },
   questions: questionKeys.length, answers: answerCount, errors,
+  reservedKeysSeen,
   unknownKeys: Object.fromEntries(Object.entries(unknownKeys).map(([k, s]) => [k, [...s].sort(cmpCodeUnit)])),
 };
 process.stdout.write(`${CJ({ _info: info, answers })}\n`);
