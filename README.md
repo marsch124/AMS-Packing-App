@@ -35,11 +35,23 @@ real trip. Do not retire it early.
 This repository is **public**. His backups — item names, storage places, people —
 go in `private/`, which git ignores. The parity checker reads them from there.
 
+## Where it stands
+
+- ✅ The app exists: one target for the iPhone and the Mac (`project.yml`, XcodeGen),
+  the six sections of the web app as a tab bar with the web app's own hand-drawn
+  marks, light and dark.
+- ✅ CI on every push: the model's tests, the UI tests on an iPhone simulator, the
+  UI tests on the Mac.
+- 🔨 `Core/` — the model being ported from `js/model.js`. The rules of the port are
+  in [`Core/PORTING.md`](Core/PORTING.md).
+- 🔨 `tools/parity/` — the parity checker.
+
 ## Building
 
-`tools/build.sh`. Anything under `~/Documents` collects extended attributes that
-`codesign` refuses ("detritus not allowed"); the script clears them (never inside
-`.git`) and keeps derived data outside `~/Documents`.
+`tools/build.sh [build|test] [iphone|mac]` and `tools/test-core.sh` (the model's
+tests alone, a few seconds). Anything under `~/Documents` collects extended
+attributes that `codesign` refuses ("detritus not allowed"); the scripts clear them
+(never inside `.git`) and keep every build folder outside `~/Documents`.
 
 ## Tests
 
