@@ -187,31 +187,3 @@ public func backupState(lastBackupAt: String = "", changedAt: String = "", first
     return BackupState(level: level, days: days, never: never, unsaved: true)
 }
 
-// TEMP-DUP(owner: care) — BEGIN. `daysBetween` belongs to the care slice (model.js
-// ~2583). Delete this block at merge.
-//
-// `Date.parse(`${ymd}T00:00:00Z`)` on both sides, then `Math.round((b - a) / 86400000)`;
-// null when either is not a date. As V8 reads it: exactly YYYY-MM-DD, month 01–12,
-// day 01–31 — and a day the month does not have ROLLS OVER (02-30 is 2 March).
-fileprivate func daysBetween(_ fromYMD: String, _ toYMD: String) -> Int? {
-    func dayNumber(_ s: String) -> Int? {
-        guard isYMD(s) else { return nil }
-        let u = Array(s.utf8).map { Int($0) - 0x30 }
-        let y = u[0] * 1000 + u[1] * 100 + u[2] * 10 + u[3]
-        let m = u[5] * 10 + u[6]
-        let d = u[8] * 10 + u[9]
-        guard (1...12).contains(m), (1...31).contains(d) else { return nil }
-        // Days from the civil date y-m-01 (Howard Hinnant), plus the day — so an
-        // overflowing day rolls into the next month exactly as `Date.UTC` does.
-        let yy = m <= 2 ? y - 1 : y
-        let era = (yy >= 0 ? yy : yy - 399) / 400
-        let yoe = yy - era * 400
-        let mp = (m + 9) % 12
-        let doy = (153 * mp + 2) / 5
-        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
-        return era * 146_097 + doe - 719_468 + (d - 1)
-    }
-    guard let a = dayNumber(fromYMD), let b = dayNumber(toYMD) else { return nil }
-    return b - a
-}
-// TEMP-DUP(owner: care) — END.

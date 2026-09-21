@@ -356,27 +356,3 @@ public func weatherSuggestions(_ event: TripEvent, _ lists: [PackList] = []) -> 
     }
     return WeatherSuggestions(conditions: d.conditions, items: items, summary: weatherSummary(d))
 }
-
-// MARK: - TEMP-DUP stand-ins (deleted at merge)
-
-// TEMP-DUP(owner: trip) — `dimOk`: an empty constraint array means "applies to any value".
-fileprivate func dimOk(_ itemVals: [String], _ eventVal: String) -> Bool {
-    if itemVals.isEmpty { return true }            // no constraint -> always applies
-    if eventVal.isEmpty { return true }
-    return itemVals.contains(eventVal)
-}
-// TEMP-DUP(owner: trip) — `contextsOk`
-fileprivate func contextsOk(_ itemContexts: [String], _ eventContexts: [String]) -> Bool {
-    if itemContexts.isEmpty { return true }
-    if eventContexts.isEmpty { return true }       // event didn't pin a context -> keep
-    return itemContexts.contains { eventContexts.contains($0) }
-}
-// TEMP-DUP(owner: trip) — `contextApplies`: the event's Context only narrows items of a WET list.
-fileprivate func contextApplies(_ list: PackList?) -> Bool { list?.group == "WET" }
-// TEMP-DUP(owner: trip) — `itemMatchesEvent`
-fileprivate func itemMatchesEvent(_ item: Item, _ event: TripEvent, _ list: PackList?) -> Bool {
-    dimOk(item.seasons, event.season)
-        && dimOk(item.transports, event.transport)
-        && dimOk(item.catering, event.catering)
-        && (contextApplies(list) ? contextsOk(item.contexts, event.contexts) : true)
-}

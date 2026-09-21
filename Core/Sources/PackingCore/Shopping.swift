@@ -118,36 +118,3 @@ public func shoppingSuggestions(_ items: [Item], _ actions: [ActionItem], _ toda
 public func openShoppingCount(_ actions: [ActionItem]) -> Int {
     actions.filter { $0.kind == "shopping" && !$0.done }.count
 }
-
-// MARK: - TEMP-DUP stand-in (deleted at merge)
-
-// TEMP-DUP(owner: trip) — `daysUntil` belongs to the trip slice (model.js ~1928).
-// Whole days from `todayISO` to `startDate` (negative = in the past); nil where the
-// JS gives null (no date, or one `Date.parse` cannot read).
-//   const a = Date.parse(`${startDate.slice(0, 10)}T00:00:00Z`) … Math.round((a - b) / 86400000)
-// Both ends are UTC midnights, so the division is already whole.
-fileprivate func daysUntil(_ startDate: String?, _ todayISO: String? = nil) -> Int? {
-    guard let s = startDate, !s.isEmpty else { return nil }
-    let today = todayYMD(todayISO)
-    guard let a = tempDupUTCDayNumber(jsSlice(s, 0, 10)), let b = tempDupUTCDayNumber(today) else { return nil }
-    return a - b
-}
-
-// TEMP-DUP(owner: trip) — the day count `Date.parse("YYYY-MM-DDT00:00:00Z")` stands for.
-// V8 takes month 01–12 and day 01–31 and lets a day past the month's end roll over
-// (02-30 reads as 2 March); anything else is NaN.
-fileprivate func tempDupUTCDayNumber(_ ymd: String) -> Int? {
-    guard isYMD(ymd) else { return nil }
-    let u = Array(ymd.utf8).map { Int($0) - 0x30 }
-    let year = u[0] * 1000 + u[1] * 100 + u[2] * 10 + u[3]
-    let m = u[5] * 10 + u[6]
-    let d = u[8] * 10 + u[9]
-    guard (1...12).contains(m), (1...31).contains(d) else { return nil }
-    // Days from the civil date (Howard Hinnant's algorithm) — no Calendar, no time zone.
-    let y = m <= 2 ? year - 1 : year
-    let era = (y >= 0 ? y : y - 399) / 400
-    let yoe = y - era * 400
-    let doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
-    return era * 146_097 + doe - 719_468
-}

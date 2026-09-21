@@ -144,32 +144,3 @@ public func mostVisited(_ places: [PlacePin]) -> PlacePin? {
     guard let b = best, b.events.count >= 2 else { return nil }
     return b
 }
-
-// MARK: - TEMP-DUP stand-ins (deleted at merge)
-
-// TEMP-DUP(owner: trip) — `daysUntil`: whole days from `todayISO` to the trip's start
-// date (negative = in the past); nil = no date, or one that cannot be read.
-fileprivate func daysUntil(_ startDate: String, _ todayISO: String? = nil) -> Int? {
-    if startDate.isEmpty { return nil }
-    guard let a = JSDay.number(jsSlice(startDate, 0, 10)), let b = JSDay.number(todayYMD(todayISO)) else { return nil }
-    return a - b
-}
-
-// TEMP-DUP(owner: trip) — `sortEventsForList`: nearest upcoming trip first, then
-// undated drafts (most recently created first), then past trips (most recent first).
-fileprivate func sortEventsForList(_ events: [TripEvent], _ todayISO: String? = nil) -> [TripEvent] {
-    // One "today" for the whole sort (JS asks the clock per comparison; same day either way).
-    let today = todayYMD(todayISO)
-    func rank(_ e: TripEvent) -> Int {
-        guard let d = daysUntil(e.startDate, today) else { return 1 }   // undated drafts sit between upcoming and past
-        return d >= 0 ? 0 : 2                                            // 0 = today/upcoming, 2 = past
-    }
-    return events.stableSorted(compare: { a, b in
-        let ra = rank(a), rb = rank(b)
-        if ra != rb { return ra - rb }
-        let da = daysUntil(a.startDate, today) ?? 0, db = daysUntil(b.startDate, today) ?? 0
-        if ra == 0 { return da - db }   // soonest first
-        if ra == 2 { return db - da }   // most recent past first
-        return jsLocaleCompare(b.createdAt, a.createdAt)   // undated: newest draft first
-    })
-}
