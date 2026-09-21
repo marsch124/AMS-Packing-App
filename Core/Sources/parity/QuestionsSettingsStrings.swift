@@ -120,7 +120,10 @@ extension Parity {
             }
         }
 
-        let SHORT = sortedByCodeUnit(distinct(FIXED_STRINGS + LISTS.map { $0.name } + LISTS.flatMap { $0.sections.map { $0.name } }))
+        var allShort: [String] = FIXED_STRINGS
+        allShort += LISTS.map { $0.name }
+        for l in LISTS { allShort += l.sections.map { $0.name } }
+        let SHORT = sortedByCodeUnit(distinct(allShort))
         for s in SHORT {
             ask("strings.share", s) {
                 let b64 = toBase64Url(s), packed = packShare(s)
@@ -128,7 +131,10 @@ extension Parity {
                             "unpacked": .bool(try unpackShare(packed) == s)])
             }
         }
-        for label in distinct(LISTS.map { $0.name } + PHASES.map { $0.label } + ["!!!", "Ärlig Test 2"]) {
+        var allLabels: [String] = LISTS.map { $0.name }
+        allLabels += PHASES.map { $0.label }
+        allLabels += ["!!!", "Ärlig Test 2"]
+        for label in distinct(allLabels) {
             // a name with no a–z / 0–9 in it earns a clock-made id: written down as a marker
             let noSlug = !jsTrim(label).lowercased().unicodeScalars.contains { ($0.value >= 0x61 && $0.value <= 0x7A) || ($0.value >= 0x30 && $0.value <= 0x39) }
             ask("strings.newPhase", label) {
@@ -151,17 +157,27 @@ extension Parity {
         let OWNER_CASES = ["Anna Berg", "Anna <anna.berg@example.com>", "  Two   Spaces  ", "name@host", "mailto:someone@example.com",
                            "at @ sign alone", "A very long owner name that runs well past forty characters",
                            "\(String(repeating: "x", count: 38)) late@example.com"]
-        let owners = sortedByCodeUnit(distinct(EMAILS + OWNER_CASES + PEOPLE_NAMES + LISTS.flatMap { $0.items.map { $0.ownedBy } }
-                                               + EVENTS.flatMap { $0.entries.map { $0.ownedBy } }))
+        var allOwners: [String] = EMAILS
+        allOwners += OWNER_CASES
+        allOwners += PEOPLE_NAMES
+        for l in LISTS { allOwners += l.items.map { $0.ownedBy } }
+        for e in EVENTS { allOwners += e.entries.map { $0.ownedBy } }
+        let owners = sortedByCodeUnit(distinct(allOwners))
         for v in owners { ask("strings.shareSafeOwner", v) { jstrings([shareSafeOwner(v), shareSafeOwner(v, max: 10)]) } }
-        let names = sortedByCodeUnit(distinct(PEOPLE_NAMES + ["Zed Guest", "amy guest", "Åsa", ""]
-                                              + LISTS.flatMap { $0.items.flatMap { [$0.packer, $0.ownedBy] } }
-                                              + EVENTS.flatMap { $0.entries.flatMap { [$0.packer, $0.ownedBy] } }))
+        var allNames: [String] = PEOPLE_NAMES
+        allNames += ["Zed Guest", "amy guest", "Åsa", ""]
+        for l in LISTS { for i in l.items { allNames += [i.packer, i.ownedBy] } }
+        for e in EVENTS { for i in e.entries { allNames += [i.packer, i.ownedBy] } }
+        let names = sortedByCodeUnit(distinct(allNames))
         for n in names {
             ask("strings.personColor", n) { obj(["roster": .string(personColor(n, self.PEOPLE)), "hashed": .string(personColor(n, []))]) }
         }
-        let qtys = sortedByCodeUnit(distinct(["", "2", "0", "-1", "2.5", "abc", " 3 ", "1e2", "0x10", "Infinity", "3 pairs", "١٢"]
-                                             + LISTS.flatMap { $0.items.map { $0.qty } } + EVENTS.flatMap { $0.entries.map { $0.qty } }))
+        // Built up step by step: one long `+` chain of arrays is more than the older
+        // compiler on GitHub's runner can type-check in reasonable time.
+        var allQtys: [String] = ["", "2", "0", "-1", "2.5", "abc", " 3 ", "1e2", "0x10", "Infinity", "3 pairs", "١٢"]
+        for l in LISTS { allQtys += l.items.map { $0.qty } }
+        for e in EVENTS { allQtys += e.entries.map { $0.qty } }
+        let qtys = sortedByCodeUnit(distinct(allQtys))
         for q in qtys {
             ask("strings.qty", q) {
                 [.number(effectiveQty(Item(qty: q), 0)), .number(effectiveQty(Item(qty: q, perNight: true), 0)),
@@ -171,9 +187,13 @@ extension Parity {
     }
 
     func askIds() {
-        let phaseIds = sortedByCodeUnit(distinct(["", "no-such-phase"] + DEFAULT_PHASES.map { $0.id } + PHASE_IDS
-                                                 + LISTS.flatMap { $0.items.map { $0.phase } } + EVENTS.flatMap { $0.entries.map { $0.phase } }
-                                                 + ACTIONS.map { $0.whenPhase }))
+        var allPhaseIds: [String] = ["", "no-such-phase"]
+        allPhaseIds += DEFAULT_PHASES.map { $0.id }
+        allPhaseIds += PHASE_IDS
+        for l in LISTS { allPhaseIds += l.items.map { $0.phase } }
+        for e in EVENTS { allPhaseIds += e.entries.map { $0.phase } }
+        allPhaseIds += ACTIONS.map { $0.whenPhase }
+        let phaseIds = sortedByCodeUnit(distinct(allPhaseIds))
         for p in phaseIds {
             ask("ids.phase", p) {
                 obj(["known": .bool(phase(p) != nil), "label": .string(phaseLabel(p)), "emoji": .string(phaseEmoji(p)),
@@ -181,15 +201,21 @@ extension Parity {
                      "fallback": shapePhase(phaseOrFallback(p))])
             }
         }
-        let condIds = sortedByCodeUnit(distinct(["", "mystery"] + DEFAULT_ITEM_CONDITIONS.map { $0.id } + ITEM_CONDITION_IDS
-                                                + LISTS.flatMap { $0.items.map { $0.condition } }))
+        var allCondIds: [String] = ["", "mystery"]
+        allCondIds += DEFAULT_ITEM_CONDITIONS.map { $0.id }
+        allCondIds += ITEM_CONDITION_IDS
+        for l in LISTS { allCondIds += l.items.map { $0.condition } }
+        let condIds = sortedByCodeUnit(distinct(allCondIds))
         for c in condIds {
             ask("ids.condition", c) {
                 obj(["known": .bool(itemCondition(c) != nil), "label": .string(itemConditionLabel(c)), "tone": .string(conditionTone(c)),
                      "replaces": .bool(conditionReplaces(c))])
             }
         }
-        let chargeIds = sortedByCodeUnit(distinct(["bogus"] + CHARGE_TYPE_IDS + LISTS.flatMap { $0.items.map { $0.chargeType } }))
+        var allChargeIds: [String] = ["bogus"]
+        allChargeIds += CHARGE_TYPE_IDS
+        for l in LISTS { allChargeIds += l.items.map { $0.chargeType } }
+        let chargeIds = sortedByCodeUnit(distinct(allChargeIds))
         for c in chargeIds {
             ask("ids.chargeType", c) {
                 obj(["id": .string(chargeType(c).id), "label": .string(chargeTypeLabel(c)), "short": .string(chargeTypeShort(c))])

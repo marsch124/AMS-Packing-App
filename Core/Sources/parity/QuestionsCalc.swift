@@ -132,7 +132,8 @@ extension Parity {
 
     private func askDates() {
         var all = [TODAY, "2024-02-29", "2026-12-31", "2026-01-01", "2026-03-29", "2026-10-25", "", "not-a-date", "2026-13-01"]
-        all += EVENTS.flatMap { [$0.startDate, $0.endDate] } + ACTIONS.map { $0.whenDate }
+        for e in EVENTS { all += [e.startDate, e.endDate] }
+        all += ACTIONS.map { $0.whenDate }
         for l in LISTS {
             for it in l.items {
                 all += [it.acquired, it.expiry, it.warranty]
@@ -150,7 +151,9 @@ extension Parity {
                 ])
             }
         }
-        let seeds = distinct([monthKey(TODAY), "2024-02", "2026-12", "2027-01"] + EVENTS.flatMap { [monthKey($0.startDate), monthKey($0.endDate)] })
+        var allSeeds: [String] = [monthKey(TODAY), "2024-02", "2026-12", "2027-01"]
+        for e in EVENTS { allSeeds += [monthKey(e.startDate), monthKey(e.endDate)] }
+        let seeds = distinct(allSeeds)
             .filter { !$0.isEmpty }
         let months = sortedByCodeUnit(distinct(seeds.flatMap { [shiftMonth($0, -1), $0, shiftMonth($0, 1)] }))
         for m in months {
