@@ -8,10 +8,16 @@
 
 /* Begin PBXBuildFile section */
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
+		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
 		5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */; };
 		65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534AF493408BF588BA9222FF /* AMSPackingApp.swift */; };
 		6A4E3AE89B7E1FF756858C13 /* PackingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 70431786B7003CDABC1162E4 /* PackingCore */; };
 		7489E41014894218A0EC730E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */; };
+		A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */; };
+		B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */; };
+		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
+		C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */; };
+		D5D12FDA2CC5B6443B769608 /* PackingLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 00FE6A96F5083A4802B251C6 /* PackingLibrary */; };
 		E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B838F35360E8BDAF890124 /* Theme.swift */; };
 		E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA49BA1121FBB7576FC62E32 /* RootView.swift */; };
 		EB766063382A7E2DADC60C89 /* Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78A30067C884BCEB042959A /* Sections.swift */; };
@@ -28,15 +34,20 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatesScreen.swift; sourceTree = "<group>"; };
 		1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingUITests.swift; sourceTree = "<group>"; };
+		47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLibrary.swift; sourceTree = "<group>"; };
 		4E38CAC9C9C8FFA96DF061FC /* AMSPackingUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AMSPackingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
 		A644B6F78A0C7B86EF26025E /* AMSPacking.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPacking.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A78A30067C884BCEB042959A /* Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sections.swift; sourceTree = "<group>"; };
+		A841D9340C8D1312A6814431 /* CloudStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudStore.swift; sourceTree = "<group>"; };
 		AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
 		BA49BA1121FBB7576FC62E32 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		C9BF0565DC8465EAD313C1A4 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
+		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
+		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -46,6 +57,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6A4E3AE89B7E1FF756858C13 /* PackingCore in Frameworks */,
+				D5D12FDA2CC5B6443B769608 /* PackingLibrary in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,6 +89,16 @@
 			path = UITests;
 			sourceTree = "<group>";
 		};
+		521FDCA33F67871678AF4426 /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				A841D9340C8D1312A6814431 /* CloudStore.swift */,
+				E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */,
+				47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */,
+			);
+			path = Store;
+			sourceTree = "<group>";
+		};
 		837A3C08EFD803BC99D4013C /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -94,6 +116,8 @@
 				A78A30067C884BCEB042959A /* Sections.swift */,
 				AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */,
 				E8B838F35360E8BDAF890124 /* Theme.swift */,
+				F78D4AAA642932CAA25AC022 /* Screens */,
+				521FDCA33F67871678AF4426 /* Store */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -116,6 +140,15 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		F78D4AAA642932CAA25AC022 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
+				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -134,6 +167,7 @@
 			name = AMSPacking;
 			packageProductDependencies = (
 				70431786B7003CDABC1162E4 /* PackingCore */,
+				00FE6A96F5083A4802B251C6 /* PackingLibrary */,
 			);
 			productName = AMSPacking;
 			productReference = A644B6F78A0C7B86EF26025E /* AMSPacking.app */;
@@ -225,9 +259,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */,
+				B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */,
+				4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */,
+				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,
 				E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */,
 				5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */,
+				C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */,
 				EB766063382A7E2DADC60C89 /* Sections.swift in Sources */,
+				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
 				E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -299,6 +338,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PACKING_USES_ICLOUD = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.schabbauer.AMSPacking;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -344,7 +384,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = D24ENP83QQ;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -365,7 +405,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
+				MARKETING_VERSION = 0.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -391,6 +431,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PACKING_USES_ICLOUD = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.schabbauer.AMSPacking;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -436,7 +477,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = D24ENP83QQ;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -451,7 +492,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
+				MARKETING_VERSION = 0.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -502,6 +543,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		00FE6A96F5083A4802B251C6 /* PackingLibrary */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PackingLibrary;
+		};
 		70431786B7003CDABC1162E4 /* PackingCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PackingCore;

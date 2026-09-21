@@ -12,8 +12,8 @@ settings:
     DEVELOPMENT_TEAM: D24ENP83QQ
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "0.2"
+    CURRENT_PROJECT_VERSION: "2"
 packages:
   # The model — everything the app knows about packing, with no screen in it.
   PackingCore:
@@ -27,6 +27,9 @@ targets:
       - path: App/Resources
     dependencies:
       - package: PackingCore
+        product: PackingCore
+      - package: PackingCore
+        product: PackingLibrary
     entitlements:
       path: App/Config/AMSPacking.entitlements
       properties:
@@ -38,6 +41,12 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.schabbauer.AMSPacking
+        # A plain build keeps the library on this device only. iCloud is switched on
+        # by building with PACKING_USES_ICLOUD=YES and the iCloud entitlements file
+        # (tools/build.sh … icloud, and the TestFlight workflow): an ad-hoc signed
+        # Mac app carrying iCloud entitlements is refused at launch, and GitHub's
+        # runners have no provisioning profile.
+        PACKING_USES_ICLOUD: "NO"
         # iPhone only on iOS — portrait by design, like the web app on the
         # phone. The Mac app is a separate destination and unaffected.
         TARGETED_DEVICE_FAMILY: "1"
@@ -56,6 +65,8 @@ targets:
         CFBundleIconName: AppIcon
         LSApplicationCategoryType: public.app-category.travel
         ITSAppUsesNonExemptEncryption: false
+        # YES only in builds that carry the iCloud entitlements (see settings below).
+        PackingUsesICloud: $(PACKING_USES_ICLOUD)
         UILaunchScreen:
           UIColorName: ""
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]

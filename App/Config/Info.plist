@@ -26,6 +26,8 @@
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.travel</string>
+	<key>PackingUsesICloud</key>
+	<string>$(PACKING_USES_ICLOUD)</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

@@ -1,5 +1,6 @@
 import SwiftUI
 import PackingCore
+import PackingLibrary
 
 /// The frame of the app: one screen at a time, and the tab bar under it.
 struct RootView: View {
@@ -16,11 +17,33 @@ struct RootView: View {
     }
 }
 
-/// A placeholder for each section until its real screen is built.
+/// One section's screen. The ones not built yet show their mark and their name.
 private struct SectionScreen: View {
     let section: AppSection
+    @EnvironmentObject var model: LibraryModel
 
     var body: some View {
+        Group {
+            switch (model.state, section) {
+            case (.failed(let why), _):
+                Text(why).font(.system(size: 17, weight: .semibold)).foregroundStyle(Color(hex: 0xdc3d43))
+                    .multilineTextAlignment(.center).padding(24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("library-problem")
+            case (.empty, .home): FirstRunView()
+            case (.ready, .home): LibrarySummary()
+            case (.ready, .templates): TemplatesScreen()
+            default: placeholder
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // A named container must say it CONTAINS its children, or it swallows
+        // their identifiers and the tests cannot find anything inside it.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("screen-\(section.rawValue)")
+    }
+
+    private var placeholder: some View {
         VStack(spacing: 18) {
             Spacer()
             SectionMark(section: section, size: 96, weight: 1.6)
@@ -29,18 +52,9 @@ private struct SectionScreen: View {
                 .font(.system(size: 34, weight: .heavy))
                 .foregroundStyle(Theme.ink)
                 .accessibilityIdentifier("screen-title")
-            if section == .home {
-                Text("The new app, being built.")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Theme.muted)
-            }
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        // A named container must say it CONTAINS its children, or it swallows
-        // their identifiers and the tests cannot find anything inside it.
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("screen-\(section.rawValue)")
     }
 }
 

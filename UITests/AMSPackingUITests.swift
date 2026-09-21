@@ -11,22 +11,57 @@ final class AMSPackingUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    private func launch() -> XCUIApplication {
+    /// `-uiTesting` = an invented library held in memory: no iCloud, no files, the
+    /// same on the simulator, the Mac and GitHub. `-uiTestingEmpty` = nothing at all.
+    private func launch(_ mode: String = "-uiTesting") -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments += ["-uiTesting"]
+        app.launchArguments += [mode]
         app.launch()
+        #if os(macOS)
+        // Launched by the test runner, the Mac app sometimes comes to the front with
+        // NO window (seen 2026-09-21: frontmost, menu bar only; launched normally it
+        // always opens one). File ▸ New Window is what he would do too.
+        if !app.windows.firstMatch.waitForExistence(timeout: 5) {
+            app.typeKey("n", modifierFlags: .command)
+            _ = app.windows.firstMatch.waitForExistence(timeout: 5)
+        }
+        #endif
         return app
     }
 
-    /// A named screen. The same SwiftUI container is a Group to the Mac and an
-    /// Other to the iPhone (found by dumping the tree, not by guessing) — and a
-    /// typed query is the only fast one: `descendants(matching: .any)` hangs.
-    private func screen(_ app: XCUIApplication, _ name: String) -> XCUIElement {
-        #if os(macOS)
-        return app.groups["screen-\(name)"]
-        #else
-        return app.otherElements["screen-\(name)"]
-        #endif
+    /// A named screen or container. The SAME SwiftUI container is a Group to the Mac,
+    /// an Other to the iPhone — and when its content is a scroll view, the iPhone puts
+    /// the name on the ScrollView instead (all three found by dumping the tree, not by
+    /// guessing). Typed queries only: `descendants(matching: .any)` hangs the suite.
+    private func find(_ app: XCUIApplication, _ id: String) -> XCUIElement? {
+        for query in [app.otherElements, app.groups, app.scrollViews] {
+            let e = query[id]
+            if e.exists { return e }
+        }
+        return nil
+    }
+
+    private func appears(_ app: XCUIApplication, _ id: String, timeout: TimeInterval = 10) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if find(app, id) != nil { return true }
+            usleep(200_000)
+        } while Date() < deadline
+        return false
+    }
+
+    private func disappears(_ app: XCUIApplication, _ id: String, timeout: TimeInterval = 10) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if find(app, id) == nil { return true }
+            usleep(200_000)
+        } while Date() < deadline
+        return false
+    }
+
+    private func words(_ e: XCUIElement) -> String {
+        // The Mac reports a text's words as its value, the iPhone as its label.
+        e.label.isEmpty ? (e.value as? String ?? "") : e.label
     }
 
     /// Keeps a picture of the screen when asked to (tools/shots.sh sets
@@ -53,7 +88,7 @@ final class AMSPackingUITests: XCTestCase {
     /// The app starts, shows Home, and names its version.
     func testStartsOnHomeAndNamesItsVersion() {
         let app = launch()
-        XCTAssertTrue(screen(app, "home").waitForExistence(timeout: 20))
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
 
         let version = app.staticTexts["app-version"]
         XCTAssertTrue(version.waitForExistence(timeout: 5))
@@ -67,18 +102,45 @@ final class AMSPackingUITests: XCTestCase {
     /// Every tab opens its own screen — and leaves the previous one.
     func testEveryTabOpensItsScreen() {
         let app = launch()
-        XCTAssertTrue(screen(app, "home").waitForExistence(timeout: 20))
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
 
         for name in ["events", "templates", "care", "actions", "settings", "home"] {
             let tab = app.buttons["tab-\(name)"]
             XCTAssertTrue(tab.waitForExistence(timeout: 5), "no tab-\(name)")
             tab.tap()
-            XCTAssertTrue(screen(app, name).waitForExistence(timeout: 5),
+            XCTAssertTrue(appears(app, "screen-\(name)", timeout: 5),
                           "tab-\(name) did not open screen-\(name)")
             if name != "home" {
-                XCTAssertFalse(screen(app, "home").exists,
+                XCTAssertNil(find(app, "screen-home"),
                                "Home is still showing behind screen-\(name)")
             }
         }
+    }
+    /// The Templates tab lists the templates, and one opens to show its things.
+    func testATemplateOpensAndCloses() {
+        let app = launch()
+        app.buttons["tab-templates"].tap()
+        XCTAssertTrue(appears(app, "screen-templates"))
+
+        let first = app.buttons["template-row-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "no template is listed")
+        XCTAssertTrue(app.buttons["template-row-2"].exists, "the sample library has three templates")
+        first.tap()
+
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the template did not open")
+        shot(app, "template")
+        app.buttons["template-detail-done"].tap()
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "the template did not close")
+    }
+
+    /// An empty device never decides by itself and never plants starter lists:
+    /// it shows the two doors, and nothing else.
+    func testAnEmptyDeviceShowsTheTwoDoors() {
+        let app = launch("-uiTestingEmpty")
+        XCTAssertTrue(app.buttons["first-run-import"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.staticTexts["count-templates"].exists, "an empty device must not look like a library")
+        app.buttons["tab-templates"].tap()
+        XCTAssertTrue(appears(app, "screen-templates", timeout: 5))
+        XCTAssertFalse(app.buttons["template-row-0"].exists, "nothing may be seeded into an empty library")
     }
 }

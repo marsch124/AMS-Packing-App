@@ -18,6 +18,27 @@ jobs:
       - name: Model tests
         run: cd Core && swift test
 
+  parity:
+    # The Swift model and the web app's model answer the same 200-odd questions
+    # about an INVENTED backup; every answer must be identical. (On his real data
+    # the same check runs on his Mac — that file never leaves it.) The web app's
+    # model is taken from its own repository, so a change THERE that the Swift
+    # model has not followed turns this red.
+    name: Parity with the web app's model
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: marsch124/AMS-Packing
+          path: web-app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Both models, answer by answer
+        run: PARITY_MODEL="$PWD/web-app/js/model.js" tools/parity/run.sh --invented
+
   iphone:
     name: UI tests — iPhone
     runs-on: macos-15

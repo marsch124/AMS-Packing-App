@@ -2,9 +2,12 @@ import SwiftUI
 
 @main
 struct AMSPackingApp: App {
+    @StateObject private var model = LibraryModel.forThisLaunch()
+
     var body: some Scene {
         WindowGroup {
             RootView()
+                .environmentObject(model)
                 #if os(macOS)
                 .frame(minWidth: 480, idealWidth: 760, minHeight: 600, idealHeight: 900)
                 #endif
