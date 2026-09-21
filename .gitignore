@@ -1,0 +1,12 @@
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+Core/.build/
+
+# His real packing data — backups the parity checker reads. This repository is
+# PUBLIC: item names, storage places and people must never be committed.
+private/
+*backup*.json
