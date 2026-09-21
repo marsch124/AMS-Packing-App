@@ -27,14 +27,15 @@ them and exits with the comparison's status.
 tools/parity/run.sh --invented
 ```
 
-does the same over `tools/parity/fixtures/invented-backup.json` — a backup in which
+does the same over the **invented backup** — a backup in which
 everything is made up and as awkward as a backup can get (kits, things, presets,
 a customised phase list with ties, an item shared by three lists, legacy `owner`
 fields, names cut inside an emoji, 405 items in one list, dates that are not dates).
 It needs nothing private — its answers go to the build folder — so it is the run for
 CI, and the one that finds port bugs the owner's tidy data cannot: it must end
-`differences: none` too. The file is written by `fixtures/make-invented-backup.mjs`
-(deterministic; its header lists the shapes it deliberately leaves out, and why), and
+`differences: none` too. The file is written afresh on every run by
+`fixtures/make-invented-backup.mjs` (deterministic; not committed — `*backup*.json` is
+git-ignored here; its header lists the shapes it deliberately leaves out, and why), and
 `fixtures/check-invented.mjs` proves mechanically that it shares no string and no
 word with the real backup. By hand:
 

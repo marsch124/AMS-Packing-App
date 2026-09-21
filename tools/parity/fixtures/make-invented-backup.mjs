@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-// make-invented-backup.mjs — writes invented-backup.json: a backup file in which
-// EVERYTHING IS INVENTED, shaped to be as awkward as a backup can get.
-//
-//   node tools/parity/fixtures/make-invented-backup.mjs > tools/parity/fixtures/invented-backup.json
-//   tools/parity/run.sh tools/parity/fixtures/invented-backup.json
+// make-invented-backup.mjs — writes (to stdout) a backup file in which EVERYTHING IS
+// INVENTED, shaped to be as awkward as a backup can get. Deterministic: the same bytes
+// every time. `tools/parity/run.sh --invented` runs it and puts both models through it.
+// (Its output is not committed: `*backup*.json` is git-ignored in this repository.)
 //
 // The owner's real backup is tidy: no kits, no things, no presets, one grab list, every
 // field of the right type. This one is what the parity questions never otherwise see —

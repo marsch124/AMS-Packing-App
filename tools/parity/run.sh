@@ -2,7 +2,7 @@
 # The parity checker, both halves and the comparison, in one go.
 #
 #   tools/parity/run.sh [backup.json] [--today YYYY-MM-DD] [diff options: --max N --only <prefix> --quiet]
-#   tools/parity/run.sh --invented [...]      the same, over tools/parity/fixtures/invented-backup.json
+#   tools/parity/run.sh --invented [...]      the same, over the INVENTED backup (fixtures/make-invented-backup.mjs)
 #
 # Builds the Swift half (the `parity` tool of the Core package), runs the JavaScript
 # half (the web app's own model) and the Swift half over the same backup file —
@@ -10,8 +10,9 @@
 # private/answers-js.json and private/answers-swift.json, compares them, and exits
 # with the comparison's status: 0 when it ends "differences: none".
 #
-# --invented needs nothing private: the backup is made up (and awkward on purpose), and
-# its two answers documents go to the build folder, not to private/. That is the run for
+# --invented needs nothing private: the backup is made up (and awkward on purpose). It is
+# written afresh by its generator on every run — `*backup*.json` is git-ignored here, to
+# keep real backups out — and it and its two answers documents go to the build folder. That is the run for
 # CI — it needs the web app's model beside this checkout (../AMS Packing/js/model.js) or
 # named in PARITY_MODEL.
 #
@@ -38,10 +39,11 @@ while [ $# -gt 0 ]; do
     *) BACKUP="$1"; shift ;;
   esac
 done
-if [ "$INVENTED" = 1 ]; then BACKUP="$ROOT/tools/parity/fixtures/invented-backup.json"; fi
 BACKUP="${BACKUP:-$ROOT/private/migration-2026-09-21.json}"
-if [ ! -f "$BACKUP" ]; then echo "No backup file at $BACKUP" >&2; exit 2; fi
-BACKUP="$(cd "$(dirname "$BACKUP")" && pwd)/$(basename "$BACKUP")"
+if [ "$INVENTED" = 0 ]; then
+  if [ ! -f "$BACKUP" ]; then echo "No backup file at $BACKUP" >&2; exit 2; fi
+  BACKUP="$(cd "$(dirname "$BACKUP")" && pwd)/$(basename "$BACKUP")"
+fi
 
 # One build folder per checkout — the same one tools/test-core.sh uses.
 cd "$ROOT/Core"
@@ -52,6 +54,10 @@ BIN="$(swift build --scratch-path "$SCRATCH" --product parity -c release --show-
 cd "$ROOT"
 if [ "$INVENTED" = 1 ]; then OUT="$SCRATCH/parity-invented"; else OUT="$ROOT/private"; fi
 mkdir -p "$OUT"
+if [ "$INVENTED" = 1 ]; then
+  BACKUP="$OUT/invented.json"
+  node tools/parity/fixtures/make-invented-backup.mjs > "$BACKUP"
+fi
 node tools/parity/js-answers.mjs "$BACKUP" --today "$TODAY" > "$OUT/answers-js.json"
 "$BIN" "$BACKUP" --today "$TODAY" > "$OUT/answers-swift.json"
 node tools/parity/diff-answers.mjs "$OUT/answers-js.json" "$OUT/answers-swift.json" ${DIFF_ARGS[@]+"${DIFF_ARGS[@]}"}

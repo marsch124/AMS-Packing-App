@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-invented.mjs — proves mechanically that invented-backup.json holds nothing real.
+// check-invented.mjs — proves mechanically that the invented backup holds nothing real.
 //
 //   node tools/parity/fixtures/check-invented.mjs [private/<backup>.json] [--show]
 //
@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -19,7 +20,7 @@ const show = args.includes('--show');
 const realPath = args.find((a) => !a.startsWith('--')) || path.join(HERE, '..', '..', '..', 'private', 'migration-2026-09-21.json');
 const modelPath = process.env.PARITY_MODEL || path.join(HERE, '..', '..', '..', '..', 'AMS Packing', 'js', 'model.js');
 const real = JSON.parse(fs.readFileSync(realPath, 'utf8'));
-const inv = JSON.parse(fs.readFileSync(path.join(HERE, 'invented-backup.json'), 'utf8'));
+const inv = JSON.parse(execFileSync(process.execPath, [path.join(HERE, 'make-invented-backup.mjs')], { encoding: 'utf8', maxBuffer: 1 << 28 }));
 const M = await import(pathToFileURL(path.resolve(modelPath)).href);
 
 const norm = (s) => s.trim().toLowerCase();
