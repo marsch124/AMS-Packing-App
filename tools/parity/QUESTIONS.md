@@ -1,25 +1,36 @@
-# The parity questions — contract version 2
+# The parity questions — contract version 3
 
 **Needs the web app's model v186 or later** (`shareSafeOwner`, `SYNC_RESERVED_KEYS`);
-the JS side refuses to run on an older one. What changed since version 1 is listed
-in §19.
+the JS side refuses to run on an older one. What changed from version to version is
+listed in §19.
 
 Two programs answer the same questions about the same backup file:
 
 - **JavaScript** — `tools/parity/js-answers.mjs`, which loads the web app's own
   `../AMS Packing/js/model.js` (read-only) and is the reference implementation of
   this document.
-- **Swift** — a program built on `Core/` (`PackingCore`), written from THIS
-  document alone.
+- **Swift** — `Core/Sources/parity` (the `parity` tool of the `PackingCore` package),
+  written from THIS document and laid out like the JS half, one function per question
+  group, so the two can be read side by side. It uses PackingCore's public API only.
 
 Each writes one JSON document of answers. `tools/parity/diff-answers.mjs a.json b.json`
 compares them and ends `differences: none` or `differences: N`.
 
 ```
+tools/parity/run.sh [private/<backup>.json] [--today 2026-09-21] [--max N] [--only <prefix>] [--quiet]
+```
+
+builds the Swift half, runs both, writes the two documents into `private/`, compares
+them and exits with the comparison's status. By hand:
+
+```
 node tools/parity/js-answers.mjs private/<backup>.json [--today 2026-09-21] > private/answers-js.json
-<swift program>                   private/<backup>.json  --today 2026-09-21  > private/answers-swift.json
+<scratch>/release/parity          private/<backup>.json  --today 2026-09-21  > private/answers-swift.json
 node tools/parity/diff-answers.mjs private/answers-js.json private/answers-swift.json
 ```
+
+(Never a bare `swift build` inside `Core/`: codesign refuses a build folder under
+`~/Documents`. `run.sh` passes the same `--scratch-path` as `tools/test-core.sh`.)
 
 **Privacy.** The backup is real data and this repository is public. Answers
 documents, and the diff tool's output (its paths contain item names), stay in
@@ -46,7 +57,7 @@ fix it, and bump `contract`.
 ## 2. The document and canonical JSON
 
 ```json
-{ "_info": { "generator": "swift", "contract": 1, "today": "2026-09-21", "...": "..." },
+{ "_info": { "generator": "swift", "contract": 3, "today": "2026-09-21", "...": "..." },
   "answers": { "<question key>": { "<entity key>": <answer> } } }
 ```
 
@@ -65,7 +76,7 @@ Canonical values (what `canon` does in the JS):
 | `undefined`, a function | inside an object: the key is dropped. Inside an array: `null`. As a whole answer: `null`. |
 | `NaN`, `±Infinity` | `null` (what `JSON.stringify` does) |
 | `-0` | `0` |
-| other numbers | as they are. The diff tool compares parsed numbers with a tolerance of 1e-9 (relative above 1), so `1` and `1.0` are equal. |
+| other numbers | as they are. The diff tool compares parsed numbers: two WHOLE numbers must be equal (counts, the FNV hashes of `calc.lzw` — a relative tolerance would wave through a 32-bit hash that is off by 4); anything else within 1e-9 (relative above 1). `1` and `1.0` are equal. |
 | `Set` | array sorted by **UTF-16 code-unit order** (JS `<` on strings; in Swift compare `utf16` views, not `String <`) |
 | `Map` | object; keys are the map's keys as strings; insertion order is **not** compared |
 | `Uint8Array` | array of numbers |
@@ -303,7 +314,7 @@ than the plain base64url form, else the plain form.
 | Key | Answer |
 |---|---|
 | `event.qtyNights` | `qtyNights(E)` |
-| `event.effectiveQty` | `{ entryId: [effectiveQty(e, n), effectiveQty(e, 0), effectiveQty(e, 7)] }` |
+| `event.effectiveQty` | `{ entryId: [effectiveQty(e, n), effectiveQty(e, 0), effectiveQty(e, 7)] }` (`#<index>` for an entry with a blank id) |
 | `event.bagLoads.n7`, `event.packingFlags.n7` | `bagLoads(E.entries, 7)` (default limits), `packingFlags(E.entries, 7)` |
 | `event.dates` | `{ daysUntil: d = daysUntil(start, TODAY), countdown: countdownLabel(d), nightsBetween(start, end), tripEndDate(E), endFromNights(start, E.nights), monthKeyStart, monthKeyEnd, orderRange(start, end), orderRangeReversed: orderRange(end, start) }` |
 | `event.tripNudge.sweep` | on `SE(E)` (a blank `startDate` becomes TODAY): for `d` in `40 30 8 7 2 1 0 -1` → `{ "<d>": tripNudge(event, addDays(startDate, -d)) }` |
@@ -376,7 +387,7 @@ written `I<n>`, membership `n` of `CAT.memberships` is `M<n>`, and every `itemId
 | `library.duplicateGroups` | `*` | `duplicateGroups(ROWS(LISTS))` → `[{ key, exact, rows: [row id] }]` |
 | `library.duplicateIds` | `*` | `duplicateIds(ROWS(LISTS))` (a Set) |
 | `library.sortRowsBy.<field>.<dir>` | `*` | `sortRowsBy(ROWS(LISTS), r => r.item.<field>, …)` → row ids. `name` (text, `tie: null`); `manufacturer`, `storage` (text, `tie: byName` on the ROW's `name`); `weight`, `price` (`num: true`, `tie: byName`). |
-| `library.groupRowsBy.<field>` | `*` | **on `ROWS(SL)`** → `[{ key, label, rows: [row id] }]`. `category` (`order: CATEGORIES`), `storage` (`order: PLACES_IN`), `ownedBy` (no options), `condition` (`keyOf = itemConditionLabel(r.item.condition)`, `order` = the labels of ITEM_CONDITIONS). |
+| `library.groupRowsBy.<field>` | `*` | **on `ROWS(SL)`** → `[{ key, label, rows: [row id] }]`. `category` (`order: CATEGORIES`), `storage` (`order: PLACES_IN`, each entry as `String()` reads it — `groupRowsBy` does that itself), `ownedBy` (no options), `condition` (`keyOf = itemConditionLabel(r.item.condition)`, `order` = the labels of ITEM_CONDITIONS). |
 
 ### Care, shopping, actions — each asked twice: `<key>` with `(LISTS, ACTIONS)`, `<key>.synth` with `(SL, SA)`
 | Key | Answer |
@@ -474,7 +485,7 @@ each action's `text`, `itemName`; kit names; thing names; PLACES_IN and OWNERS_I
 
 | Key | Entity | Answer |
 |---|---|---|
-| `calc.constants` | `*` | every exported constant by name, except `PHASES PHASE_IDS ITEM_CONDITIONS ITEM_CONDITION_IDS` (those are §6). The 61 names: `ACTION_PRIORITIES ACTION_PRIORITY_IDS ACTIVITY_ORDER AUDITABLE_KINDS AUDIT_LABELS AUDIT_STRAY_TOLERANCE BACKUP_DUE_DAYS BACKUP_URGENT_DAYS CATEGORIES CATEGORY_DEFAULT CATERING CHARGE_TYPES CHARGE_TYPE_IDS CONDITION_TONES CONTAINERS CONTAINER_LIMITS_KG CONTAINER_LIST_NAME CONTAINER_ROLE CONTEXTS CONTEXTUAL_FIELDS CURRENCIES DEFAULT_FIELDS DEFAULT_ITEM_CONDITIONS DEFAULT_PEOPLE DEFAULT_PHASES DEFAULT_STORAGE_LOCATIONS EXPIRY_SOON_DAYS GRAB_SHARE_ITEMS_MAX GRAB_SHARE_ITEM_MAX GRAB_SHARE_KIND GRAB_SHARE_NAME_MAX GROUPS GROUP_IDS INTRINSIC_FIELDS KIT_DEFAULT_EMOJI LAUNDRY_CAP_NIGHTS LIST_SHARE_ITEMS_MAX LIST_SHARE_KIND LIST_SHARE_NAME_MAX MAINTENANCE_INTERVALS MAINTENANCE_SOON_DAYS MAINTENANCE_UPCOMING_DAYS MAX_PHOTOS PERSON_COLORS PHASE_DEFAULT_EMOJI RETIRE_REASONS RETIRE_REASON_IDS REVIEW_WINDOW_DAYS SEASONS SHARED_KINDS SHARE_ZIP_PREFIX SYNC_RESERVED_KEYS TEMPLATE_COLORS TEMPLATE_DEFAULT_EMOJI TRANSPORTS TRIP_KIND TRIP_LINK_MAX WEATHER_CONDITIONS WEATHER_CONDITION_IDS WEATHER_SUGGESTIONS WEATHER_THRESHOLDS` |
+| `calc.constants` | `*` | every exported constant by name, except `PHASES PHASE_IDS ITEM_CONDITIONS ITEM_CONDITION_IDS` (those are §6), each written **as the JS module holds it** — which a typed port has to know: `DEFAULT_PEOPLE` entries are `{ name, color }` (no `id`); `DEFAULT_PHASES` entries have no `order`; `DEFAULT_FIELDS` is the object `{ container: "_defContainer", phase: "_defPhase" }`; a `WEATHER_SUGGESTIONS` entry is `{ name, category }` plus `liquid: true` only where it is; `ACTIVITY_ORDER`, `AUDIT_LABELS`, `CONTAINER_LIMITS_KG`, `WEATHER_THRESHOLDS` are objects. The 61 names: `ACTION_PRIORITIES ACTION_PRIORITY_IDS ACTIVITY_ORDER AUDITABLE_KINDS AUDIT_LABELS AUDIT_STRAY_TOLERANCE BACKUP_DUE_DAYS BACKUP_URGENT_DAYS CATEGORIES CATEGORY_DEFAULT CATERING CHARGE_TYPES CHARGE_TYPE_IDS CONDITION_TONES CONTAINERS CONTAINER_LIMITS_KG CONTAINER_LIST_NAME CONTAINER_ROLE CONTEXTS CONTEXTUAL_FIELDS CURRENCIES DEFAULT_FIELDS DEFAULT_ITEM_CONDITIONS DEFAULT_PEOPLE DEFAULT_PHASES DEFAULT_STORAGE_LOCATIONS EXPIRY_SOON_DAYS GRAB_SHARE_ITEMS_MAX GRAB_SHARE_ITEM_MAX GRAB_SHARE_KIND GRAB_SHARE_NAME_MAX GROUPS GROUP_IDS INTRINSIC_FIELDS KIT_DEFAULT_EMOJI LAUNDRY_CAP_NIGHTS LIST_SHARE_ITEMS_MAX LIST_SHARE_KIND LIST_SHARE_NAME_MAX MAINTENANCE_INTERVALS MAINTENANCE_SOON_DAYS MAINTENANCE_UPCOMING_DAYS MAX_PHOTOS PERSON_COLORS PHASE_DEFAULT_EMOJI RETIRE_REASONS RETIRE_REASON_IDS REVIEW_WINDOW_DAYS SEASONS SHARED_KINDS SHARE_ZIP_PREFIX SYNC_RESERVED_KEYS TEMPLATE_COLORS TEMPLATE_DEFAULT_EMOJI TRANSPORTS TRIP_KIND TRIP_LINK_MAX WEATHER_CONDITIONS WEATHER_CONDITION_IDS WEATHER_SUGGESTIONS WEATHER_THRESHOLDS` |
 | `calc.constructors` | `*` | one object, minted ids `"<id>"`, minted stamps `"<now>"`: `newItem` = `newItem()` · `newItemNamed` = `newItem({ name: "Test socks", qty: "2", weight: 40, phase: "door", perNight: true })` · `newList` = `newList({ name: "Test list", sections: [{id: "", name: " Tools "}, {id: "", name: ""}, {id: "keep-me", name: "Kept"}, {id: "keep-me", name: "Twin"}] })` (the id `keep-me` is written as it is) · `newEvent` = `newEvent({ name: "Test trip", nights: 3, mode: "quick", weatherOn: ["rain", "fog"] })` · `newAction` = `newAction({ text: "Test", priority: "urgent", whenDate: "2026-1-1" })` · `newKit` = `newKit({ name: "Test kit", itemIds: ["a", "b", "a", ""] })` · `newPerson` = `newPerson({ name: "  Test  ", color: "blue" })` · `newMembership` = `newMembership()` · `newSection` = `{ id: "<id>", name: newSection("  Tools ").name }` |
 | `calc.coerceHostile` | case | **decode the JSON text below**, coerce, write the shape |
 | `calc.tripBundleIncoming` | case | `parseTripBundle(the JSON text below)` → EVENT in the `event.tripBundle.parsed` form (`id` = `"<id>"`, stamps = `"<now>"`, entry ids = `"<id>"`) |
@@ -498,6 +509,7 @@ each action's `text`, `itemName`; kit names; thing names; PLACES_IN and OWNERS_I
 | `itemLegacyPhoto` | `coerceItem` → ITEM | `{"id":"y","name":"Legacy photo","photo":"ref-legacy","owner":"someone@example.com","maintenance":{"notes":"","link":"","intervalDays":0},"phase":"   "}` |
 | `itemOwnedByWins` | `coerceItem` → ITEM | `{"id":"z","name":"Owned","ownedBy":"","owner":"Legacy Owner"}` |
 | `membership` | `coerceMembership` → MEMBERSHIP | `{"id":"m","itemId":"i","templateId":"t","seasons":"x","weather":["cold","mist"],"container":5,"phase":"  door ","itemType":"task","qty":3,"note":null,"order":"2"}` |
+| `membershipQtySmall` · `membershipQtyTiny` · `membershipQtyHuge` | `coerceMembership` → MEMBERSHIP | `{"id":"m2","itemId":"i","templateId":"t","qty":<n>}` with `<n>` = `0.00001` · `1.5e-7` · `1e21`. Expected `qty`: `"0.00001"` · `"1.5e-7"` · `"1e+21"` — H14. |
 | `action` | `coerceAction` → ACTION | `{"id":"a","text":5,"kind":"buy","priority":"urgent","whenPhase":"  week  ","whenDate":"2026-9-1","done":"yes","createdAt":"2026-01-01T00:00:00.000Z"}` |
 | `kit` | `coerceKit` → KIT | `{"id":"k","name":7,"emoji":"  ","itemIds":["a","a",3,"","b"]}` |
 | `event` | `coerceEvent` → EVENT | `{"id":"e","mode":"fast","activities":"x","nights":2.7,"laundry":"","status":"finished","weather":{"daily":[{"date":"2026-09-01","code":"61","tmax":"20.5","tmin":null,"precipProb":"x"},{"code":1}],"lat":"58.5","lon":null,"place":3},"weatherOn":["snow","sleet"],"geo":{"lat":"95","lon":0},"entries":[{"name":"In a hostile event"}]}` |
@@ -518,6 +530,7 @@ both reserved keys at every level, an address as the owner, sub-items taken apar
 | Case | JSON text |
 |---|---|
 | `oldBundle` | `{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}` |
+| `oldBundleEmoji` | `{"app":"ams-packing-list","kind":"trip","version":1,"event":{"name":"Emoji trip","entries":[{"name":"Kit","sub":[{"0":"H","1":"i","2":" ","3":"\ud83d","4":"\ude00","5":"!"}]}]}}` — the two `\u…` are ESCAPES in the JSON text: each is half of an emoji, a lone surrogate, which `JSON.parse` accepts and Foundation's parser refuses (H16). Expected `sub`: `["Hi 😀!"]`. |
 | `notATrip` | `{"app":"ams-packing-list","kind":"grab","event":{"name":"x"}}` — throws (D7) |
 | `noEvent` | `{"kind":"trip"}` — throws (D7) |
 
@@ -558,7 +571,7 @@ the §4 lists back afterwards.
 | N2 | `id()` | Random by design. Everything that mints one is covered with markers (D3). |
 | N3 | Minted timestamps | D4. |
 | N4 | `conditionsToRows`, `namesToRows`, `presetsToRows`, `grabToRows` | Reached through `sharedRowsFrom` (§12), which is what the app calls; not asked a second time directly. |
-| N5 | `Date.parse` of an impossible day (`2026-02-30`) | V8 (Node) rolls it into March; JavaScriptCore (Safari, where the app really runs) says invalid. There is no single JS truth to match, so it is not asked. Swift should reject it. |
+| N5 | `Date.parse` of an impossible day (`2026-02-30`), and of the short forms `2026` / `2026-07` | V8 (Node) rolls the day into March and reads the short forms as the 1st; JavaScriptCore (Safari, where the app really runs) says invalid. There is no single JS truth to match, so it is not asked. The port follows **V8** — the engine this reference and the model's own tests run on — through its ONE date parser (`JSDay` in `JSSemantics.swift`), so care dates and trip dates can never disagree with each other; `isYMD` keeps such text out of stored dates either way. |
 | N6 | Keys outside the shapes | §3. |
 | N7 | `photos` in the backup, and everything in `db.js` / `app.js` | Not the model. |
 
@@ -601,6 +614,24 @@ a mistake will show.
   `strings.compare`, `calc.setPhases`] — On the owner's backup, switching the JS
   side between `en-US` and `sv-SE` changed **no model answer at all**, only the
   collation probe; so real-data risk is low, and the probe is the strict test.
+  **What the Swift side can and cannot match.** Foundation offers no ICU collator,
+  only `String.compare(_:options:range:locale:)` (`[]` for the plain call,
+  `[.caseInsensitive, .diacriticInsensitive]` for `sensitivity: "base"`). Measured
+  against Node (ICU 78, `en-US`): every one of the 795 664 ordered pairs of the
+  owner's 892 strings agrees, at both strengths, and so do ~29 000 pairs of invented
+  English / Swedish / German names, punctuation, digits and emoji. It differs only
+  on characters a keyboard does not produce: (a) a character against its
+  *compatibility variant* — full-width `ａ` vs `a`, U+00A0 / U+2009 / U+202F vs a
+  space, U+2011 vs `-`, `²` vs `2`, `ℬ` vs `B` — where ICU orders the two at the
+  tertiary level (the plain one first) and Foundation calls it a tie (and, in a
+  longer string, may then let a later case difference decide the other way);
+  (b) at `base` strength, an emoji skin-tone modifier, U+200C/U+200D and the
+  combining Latin letters U+0363–U+036F, which ICU gives a primary weight and
+  Foundation ignores as if they were accents; (c) U+FE0F after a symbol (`☀️` vs
+  `☀`), which ICU ignores completely and Foundation does not. `.forcedOrdering`
+  makes it worse, not better; an exact match needs the UCA tertiary weights, i.e.
+  ICU's data. Because every sort is stable and these are ties between names that
+  read the same, the visible effect is the order of two near-identical names.
 - **H2 Stable sort.** `Array.prototype.sort` is stable and the model leans on it
   (ties keep input order). [`sortRowsBy.*`, `pruneSuggestions`, `bagLoads`]
 - **H3 Insertion order.** `Map` and `Set` remember it and "first seen wins a tie"
@@ -638,12 +669,34 @@ a mistake will show.
 - **H13 Ordered JSON text** for the list and grab share codes — §8.
   [`list.share.encoded`, `settings.grabShare`]
 - **H14 Number → string** in `coerceMembership` (`qty: 3` → `"3"`), by JS's number
-  formatting. [`calc.coerceHostile.membership`]
+  formatting — the §2 number rules: `0.00001` is `"0.00001"` (C and Swift say
+  `1e-05`), `1.5e-7` is `"1.5e-7"`, `1e21` is `"1e+21"`, and a whole number above
+  2^53 is its shortest digits followed by zeros. One writer must serve `String(n)`,
+  `CJ` and the share codes. [`calc.coerceHostile.membership`, `…membershipQty*`]
 - **H15 `shareSafeOwner`** cuts by UTF-16 units AFTER testing for an address, and
   does not trim again: `"at @ sign alone"` cut to 10 is `"at @ sign "`, with its
   trailing space. [`strings.shareSafeOwner`]
 
+- **H16 Half an emoji in JSON text.** A lone surrogate escape (`\ud83d` with no
+  partner) is legal to `JSON.parse` and an error to Foundation's parser. It reaches
+  the app in a name cut by `slice`, and in the sub-items an app from before v186
+  took apart one UTF-16 unit at a time. `JSONValue.parse` reads it; a Swift String
+  cannot hold the half, so outside `subName` (which joins two halves back into the
+  emoji) it is dropped — which is why no question's ANSWER may contain one.
+  [`calc.tripBundleIncoming.oldBundleEmoji`]
+
 ## 19. Contract history
+
+**Version 3** (the Swift half exists). No key was renamed or redefined, and on the
+owner's backup no version-2 answer changed.
+
+| Key | Change |
+|---|---|
+| `calc.coerceHostile` | NEW cases `membershipQtySmall`, `membershipQtyTiny`, `membershipQtyHuge` — a numeric `qty` as JS writes numbers. The port's first number writer gave `1e-05`; nothing in the owner's data showed it. |
+| `calc.tripBundleIncoming` | NEW case `oldBundleEmoji` — H16. |
+| the diff tool | two whole numbers must be EQUAL (§2). |
+| §16 N5, §18 H1 | what the port does about an impossible day, and exactly where Foundation's collation parts from ICU's. |
+
 
 **Version 2** (model v186). Every other key is unchanged in name, definition and —
 on the owner's backup — in answer.

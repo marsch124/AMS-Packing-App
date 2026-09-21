@@ -8,8 +8,8 @@
 //     differences: none        (exit 0)
 // or  differences: N           (exit 1)
 //
-// It compares PARSED values, so key order and whitespace never matter; numbers are
-// equal within 1e-9 (relative for big ones). `_info` is not compared, except that
+// It compares PARSED values, so key order and whitespace never matter; whole numbers
+// must be equal, other numbers equal within 1e-9 (relative for big ones). `_info` is not compared, except that
 // the two documents must have been made for the same `today`.
 //
 // 🚨 The paths it prints contain real item names. Read them; do not paste them into
@@ -59,6 +59,9 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const kind = (v) => (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v);
 function sameNumber(x, y) {
   if (x === y) return true;
+  // Two whole numbers are equal or they are not — counts, ids, the FNV hashes of
+  // calc.lzw. (A RELATIVE tolerance would wave through a 32-bit hash that is off by 4.)
+  if (Number.isInteger(x) && Number.isInteger(y)) return false;
   return Math.abs(x - y) <= EPS * Math.max(1, Math.abs(x), Math.abs(y));
 }
 // A short, safe picture of a value: never stringifies a big subtree.

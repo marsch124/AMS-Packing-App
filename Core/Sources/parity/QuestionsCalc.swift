@@ -88,6 +88,12 @@ extension Parity {
         ask(key, "itemLegacyPhoto") { shapeItem(coerceItem(json: try parse(itemLegacyPhoto))?.json) }
         ask(key, "itemOwnedByWins") { shapeItem(coerceItem(json: try parse(itemOwnedByWins))?.json) }
         ask(key, "membership") { coerceMembership(json: try parse(membership)).map { shapeMembership($0) } }
+        // a NUMERIC qty becomes text by JS's own number formatting (H14): never "1e-05"
+        for (name, qty) in [("membershipQtySmall", "0.00001"), ("membershipQtyTiny", "1.5e-7"), ("membershipQtyHuge", "1e21")] {
+            ask(key, name) {
+                coerceMembership(json: try parse(#"{"id":"m2","itemId":"i","templateId":"t","qty":\#(qty)}"#)).map { shapeMembership($0) }
+            }
+        }
         ask(key, "action") { shapeAction(coerceAction(json: try parse(action))?.json) }
         ask(key, "kit") { shapeKit(coerceKit(json: try parse(kit))?.json) }
         ask(key, "event") { shapeEvent(coerceEvent(json: try parse(event))?.json) }
@@ -110,6 +116,9 @@ extension Parity {
     private func askTripBundles() {
         let incoming: [(String, String)] = [
             ("oldBundle", #"{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}"#),
+            // the same, with an emoji in the name that was taken apart: its two halves arrive as
+            // lone surrogate ESCAPES in the JSON text, which `JSON.parse` accepts
+            ("oldBundleEmoji", #"{"app":"ams-packing-list","kind":"trip","version":1,"event":{"name":"Emoji trip","entries":[{"name":"Kit","sub":[{"0":"H","1":"i","2":" ","3":"\ud83d","4":"\ude00","5":"!"}]}]}}"#),
             ("notATrip", #"{"app":"ams-packing-list","kind":"grab","event":{"name":"x"}}"#),
             ("noEvent", #"{"kind":"trip"}"#),
         ]

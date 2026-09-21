@@ -84,7 +84,7 @@ const modelPath = path.resolve(opts.model || path.join(HERE, '..', '..', '..', '
 if (!fs.existsSync(modelPath)) { console.error(`model not found: ${modelPath}`); process.exit(2); }
 const M = await import(pathToFileURL(modelPath).href);
 if (typeof M.shareSafeOwner !== 'function' || !Array.isArray(M.SYNC_RESERVED_KEYS)) {
-  console.error('This contract (version 2) needs the web app model v186 or later: shareSafeOwner / SYNC_RESERVED_KEYS are missing.'); process.exit(2);
+  console.error('This contract (version 3) needs the web app model v186 or later: shareSafeOwner / SYNC_RESERVED_KEYS are missing.'); process.exit(2);
 }
 const B = JSON.parse(fs.readFileSync(path.resolve(opts.backup), 'utf8'));
 if (!B || typeof B !== 'object' || !(Array.isArray(B.lists) || Array.isArray(B.events))) {
@@ -966,6 +966,10 @@ ask('calc.constructors', ALL, () => {
   ask('calc.coerceHostile', 'itemLegacyPhoto', () => shapeItem(M.coerceItem(JSON.parse(HOSTILE.itemLegacyPhoto))));
   ask('calc.coerceHostile', 'itemOwnedByWins', () => shapeItem(M.coerceItem(JSON.parse(HOSTILE.itemOwnedByWins))));
   ask('calc.coerceHostile', 'membership', () => shapeMembership(M.coerceMembership(JSON.parse(HOSTILE.membership))));
+  // a NUMERIC qty becomes text by JS's own number formatting (H14): never "1e-05", never "1e+21" lost
+  for (const [name, qty] of [['membershipQtySmall', '0.00001'], ['membershipQtyTiny', '1.5e-7'], ['membershipQtyHuge', '1e21']]) {
+    ask('calc.coerceHostile', name, () => shapeMembership(M.coerceMembership(JSON.parse(`{"id":"m2","itemId":"i","templateId":"t","qty":${qty}}`))));
+  }
   ask('calc.coerceHostile', 'action', () => shapeAction(M.coerceAction(JSON.parse(HOSTILE.action))));
   ask('calc.coerceHostile', 'kit', () => shapeKit(M.coerceKit(JSON.parse(HOSTILE.kit))));
   ask('calc.coerceHostile', 'event', () => shapeEvent(M.coerceEvent(JSON.parse(HOSTILE.event))));
@@ -983,6 +987,9 @@ ask('calc.constructors', ALL, () => {
 {
   const INCOMING = {
     oldBundle: '{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}',
+    // the same, with an emoji in the name that was taken apart: its two halves arrive as lone
+    // surrogate ESCAPES in the JSON text (doubled backslashes here, so JSON.parse sees them)
+    oldBundleEmoji: '{"app":"ams-packing-list","kind":"trip","version":1,"event":{"name":"Emoji trip","entries":[{"name":"Kit","sub":[{"0":"H","1":"i","2":" ","3":"\\ud83d","4":"\\ude00","5":"!"}]}]}}',
     notATrip: '{"app":"ams-packing-list","kind":"grab","event":{"name":"x"}}',
     noEvent: '{"kind":"trip"}',
   };
@@ -1082,7 +1089,7 @@ for (const q of questionKeys) answerCount += Object.keys(answers[q]).length;
 let errors = 0;
 for (const q of questionKeys) for (const v of Object.values(answers[q])) if (v && typeof v === 'object' && '$error' in v) errors += 1;
 const info = {
-  generator: 'js', contract: 2, today: TODAY, now: NOW,
+  generator: 'js', contract: 3, today: TODAY, now: NOW,
   locale: new Intl.Collator().resolvedOptions().locale,
   node: process.version, icu: process.versions.icu, unicode: process.versions.unicode,
   model: path.relative(HERE, modelPath),

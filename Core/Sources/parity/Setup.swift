@@ -44,7 +44,7 @@ final class Parity {
         "list": [], "item": [], "event": [], "entry": [], "action": [], "kit": [], "phase": [],
     ]
 
-    init(backupPath: String, today: String) throws {
+    init(backupPath: String, today: String, locale: String = "en-US") throws {
         let now = "\(today)T12:00:00.000Z"
         TODAY = today
         NOW = now
@@ -52,7 +52,7 @@ final class Parity {
         // A frozen clock (D2) and ids that are never compared (D3) but must be unique.
         PackingEnv.freeze(at: now, idPrefix: "minted-")
         // A settled collation (D6).
-        PackingEnv.collationLocale = Locale(identifier: "en_US")
+        PackingEnv.collationLocale = Locale(identifier: locale.replacingOccurrences(of: "-", with: "_"))
 
         guard let data = FileManager.default.contents(atPath: backupPath) else {
             throw ParityFailure("cannot read \(backupPath)")
@@ -198,7 +198,7 @@ final class Parity {
         var unknown: [String: J] = [:]
         for (k, s) in unknownKeys { unknown[k] = jset(Array(s)) }
         let info: J = obj([
-            "generator": "swift", "contract": 2, "today": .string(TODAY), "now": .string(NOW),
+            "generator": "swift", "contract": 3, "today": .string(TODAY), "now": .string(NOW),
             "locale": .string(PackingEnv.collationLocale.identifier.replacingOccurrences(of: "_", with: "-")),
             "counts": obj([
                 "lists": jint(LISTS.count), "items": jint(LISTS.reduce(0) { $0 + $1.items.count }),
