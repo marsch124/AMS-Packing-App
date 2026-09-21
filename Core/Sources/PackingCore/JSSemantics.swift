@@ -371,8 +371,11 @@ public enum JSCollatorSensitivity: Sendable {
 /// still part on characters a keyboard does not produce:
 ///  • a character against its COMPATIBILITY VARIANT (full-width `ａ`/`a`, no-break or
 ///    thin space / space, U+2011 / `-`, `²`/`2`, `ℬ`/`B`): ICU orders them at the
-///    tertiary level, the plain one first; Foundation calls it a tie — and in a longer
-///    string may then let a later case difference decide the other way;
+///    tertiary level, the plain one first; Foundation calls it a tie. The case a person
+///    can actually produce — a pasted no-break space — is put right by
+///    `jsTertiaryTieBreak` below (ASCII against its variant). What is left: variant
+///    against variant, and a longer string in which Foundation lets a LATER case
+///    difference decide before the earlier width difference;
 ///  • at `.base`: an emoji skin-tone modifier, U+200C / U+200D and the combining Latin
 ///    letters U+0363–036F have a primary weight in ICU; Foundation ignores them like accents;
 ///  • U+FE0F after a symbol (`☀️` vs `☀`): ICU ignores it completely, Foundation does not.
@@ -386,8 +389,37 @@ public func jsLocaleCompare(_ a: String, _ b: String, sensitivity: JSCollatorSen
     switch r {
     case .orderedAscending: return -1
     case .orderedDescending: return 1
-    case .orderedSame: return 0
+    case .orderedSame: return sensitivity == .variant ? jsTertiaryTieBreak(a, b) : 0
     }
+}
+
+/// Foundation called two DIFFERENT strings a tie. ICU does too when they differ only in
+/// what it ignores (a soft hyphen, a zero-width space) — but NOT when a plain ASCII
+/// character stands against its compatibility variant: a space against a no-break or thin
+/// space, `-` against U+2011, `a` against full-width `ａ`, `2` against `²`. There ICU
+/// orders the two at the tertiary level, the plain one first, and so does this. It is
+/// deliberately no wider than that: measured against Node over ~47 000 pairs it removes
+/// six deviations in ten and adds none (variant against variant stays a tie).
+private func jsTertiaryTieBreak(_ a: String, _ b: String) -> Int {
+    func ignorable(_ u: Unicode.Scalar) -> Bool {
+        if u.properties.generalCategory == .format { return true }
+        switch u.value {
+        case 0xFE00...0xFE0F, 0xE0100...0xE01EF, 0x034F: return true   // variation selectors, the grapheme joiner
+        default: return false
+        }
+    }
+    func isCompatibilityVariant(_ u: Unicode.Scalar) -> Bool {
+        let t = String(u)
+        return t.decomposedStringWithCompatibilityMapping != t.decomposedStringWithCanonicalMapping
+    }
+    let x = Array(a.decomposedStringWithCanonicalMapping.unicodeScalars.filter { !ignorable($0) })
+    let y = Array(b.decomposedStringWithCanonicalMapping.unicodeScalars.filter { !ignorable($0) })
+    var i = 0
+    while i < x.count, i < y.count, x[i] == y[i] { i += 1 }
+    guard i < x.count, i < y.count else { return 0 }
+    if x[i].isASCII, isCompatibilityVariant(y[i]) { return -1 }
+    if y[i].isASCII, isCompatibilityVariant(x[i]) { return 1 }
+    return 0
 }
 
 // MARK: - Small regex stand-ins

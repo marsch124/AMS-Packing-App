@@ -30,18 +30,18 @@ public struct GrabShare: Equatable, Hashable, Sendable {
     }
 }
 
-func cleanGrabUnits(_ v: String, _ max: Int) -> [UInt16] { cleanShareUnits(v, max) }
-func cleanGrabName(_ v: String, _ max: Int) -> String { cleanShareText(v, max) }
+func cleanGrabUnits(_ v: String, _ max: Int, parked: Bool = false) -> [UInt16] { cleanShareUnits(v, max, parked: parked) }
+func cleanGrabName(_ v: String, _ max: Int, parked: Bool = false) -> String { cleanShareText(v, max, parked: parked) }
 
 /// Trimmed, blanks and repeats (whatever their case) dropped, capped in length and
 /// in number. Anything that is not a string is stepped over. Kept as UTF-16 units so
 /// the encoded text matches the web app's even when the cut lands inside an emoji.
-func cleanGrabItems(_ arr: [JSONValue]) -> [[UInt16]] {
+func cleanGrabItems(_ arr: [JSONValue], parked: Bool = false) -> [[UInt16]] {
     var out: [[UInt16]] = []
     var seen = Set<String>()
     for raw in arr {
         guard let s = raw.stringValue else { continue }
-        let name = cleanGrabUnits(s, GRAB_SHARE_ITEM_MAX)
+        let name = cleanGrabUnits(s, GRAB_SHARE_ITEM_MAX, parked: parked)
         let key = shareStringDroppingLoneSurrogates(name).lowercased()
         if name.isEmpty || seen.contains(key) { continue }
         seen.insert(key)
@@ -87,14 +87,16 @@ public func decodeGrabShare(_ text: String?) throws -> GrabShare {
     var payload = jsTrim(text ?? "")
     if let m = sharePayload(in: payload, marker: "#/g/") { payload = m }
     let obj: JSONValue
-    do { obj = try JSONValue.parse(try unpackShare(payload)) } catch { throw notAGrabList }
+    // Half an emoji stays in the parsed text until each name has been trimmed and cut
+    // the way JS does it — see `cleanShareUnits`.
+    do { obj = try JSONValue.parse(try unpackShare(payload), keepParked: true) } catch { throw notAGrabList }
     guard obj.objectValue != nil || obj.arrayValue != nil, obj["k"]?.stringValue == GRAB_SHARE_KIND else { throw notAGrabList }
-    let items = cleanGrabItems(asArray(obj["x"])).map { shareText(cleaned: $0) }
+    let items = cleanGrabItems(asArray(obj["x"]), parked: true).map { shareText(cleaned: $0) }
     if items.isEmpty { throw ShareError("The shared list is empty.") }
     return GrabShare(
-        name: cleanGrabName(jsStringNullish(obj["n"]), GRAB_SHARE_NAME_MAX),
-        icon: jsStringOr(obj["i"]),
-        tone: jsStringOr(obj["c"]),
+        name: cleanGrabName(jsStringNullish(obj["n"]), GRAB_SHARE_NAME_MAX, parked: true),
+        icon: jsStringOr(obj["i"].map { jsonDropParked($0) }),
+        tone: jsStringOr(obj["c"].map { jsonDropParked($0) }),
         items: items
     )
 }

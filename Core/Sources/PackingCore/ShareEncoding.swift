@@ -537,17 +537,34 @@ func shareSafeOwnerUnits(_ v: String?, max: Int = 40) -> [UInt16] {
 
 /// `String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max)` as UTF-16 units — a cut
 /// through the middle of an emoji keeps the half JS keeps (the ENCODED text must match).
-func cleanShareUnits(_ v: String, _ max: Int) -> [UInt16] {
-    Array(jsTrim(jsCollapseWhitespace(v)).utf16.prefix(Swift.max(0, max)))
+///
+/// `parked`: `v` came out of `JSONValue.parse(_, keepParked: true)`, so half an emoji
+/// is still IN it (as its stand-in) and takes part in the trim and the cut exactly as
+/// it does in JS — a name that arrives as "brim " + half an emoji keeps its space,
+/// because in JS that space is not at the end. (Parity checker, invented backup.)
+func cleanShareUnits(_ v: String, _ max: Int, parked: Bool = false) -> [UInt16] {
+    guard parked else { return Array(jsTrim(jsCollapseWhitespace(v)).utf16.prefix(Swift.max(0, max))) }
+    var out: [UInt16] = []
+    var inRun = false
+    for u in jsonUnparkedUnits(v) {
+        // every JS whitespace character is one unit; half an emoji is never one
+        if let s = Unicode.Scalar(UInt32(u)), jsIsWhitespace(s) {
+            if !inRun { out.append(0x20); inRun = true }
+        } else {
+            out.append(u); inRun = false
+        }
+    }
+    if out.first == 0x20 { out.removeFirst() }
+    if out.last == 0x20 { out.removeLast() }
+    return Array(out.prefix(Swift.max(0, max)))
 }
 
 /// The same as a Swift String, for what is handed back to the app: half an emoji is
-/// dropped (the `jsSlice` rule), and the space that stood before it goes with it.
-func cleanShareText(_ v: String, _ max: Int) -> String { shareText(cleaned: cleanShareUnits(v, max)) }
-func shareText(cleaned u: [UInt16]) -> String {
-    guard shareHasLoneSurrogate(u) else { return String(decoding: u, as: UTF16.self) }
-    return jsTrim(shareStringDroppingLoneSurrogates(u))
+/// dropped (the `jsSlice` rule) — and nothing else: no second trim, JS does none.
+func cleanShareText(_ v: String, _ max: Int, parked: Bool = false) -> String {
+    shareText(cleaned: cleanShareUnits(v, max, parked: parked))
 }
+func shareText(cleaned u: [UInt16]) -> String { shareStringDroppingLoneSurrogates(u) }
 
 /// `text.match(/#\/g\/([A-Za-z0-9_.-]+)/)` — the code after the first `marker` that is
 /// followed by at least one code character. nil when there is none.

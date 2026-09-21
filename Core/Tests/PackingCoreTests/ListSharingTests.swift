@@ -295,6 +295,21 @@ final class ListSharingTests: XCTestCase {
         XCTAssertEqual([LIST_SHARE_KIND], ["tpl"])
         XCTAssertEqual([LIST_SHARE_NAME_MAX, LIST_SHARE_ITEMS_MAX], [60, 400])
     }
+    // Parity checker, invented backup: a template name cut at 60 units INSIDE an emoji that
+    // follows a space. JS decodes it to "…brim " + half an emoji; the half cannot live in a
+    // Swift String and is dropped, but the space stays — it was never at the end in JS.
+    func testANameCutInsideAnEmojiAfterASpaceKeepsThatSpace() throws {
+        let name = "A long template name that fills its field to the brim".padding(toLength: 58, withPad: "x", startingAt: 0) + " 😀 and on"
+        let list = newList(name: name, items: [newItem(name: "Peg  \u{00A0} one", note: String(repeating: "n", count: 198) + " 😀!")])
+        let back = try decodeListShare(try encodeListShare(list))
+        XCTAssertEqual(back.name, String(name.prefix(59)))            // 58 characters and the space
+        XCTAssertEqual(jsLength(back.name), 59)
+        XCTAssertEqual(back.items.first?.name, "Peg one")             // whitespace runs still collapse
+        XCTAssertEqual(back.items.first?.note, String(repeating: "n", count: 198) + " ")
+        // What is left of the limit: `listFromShare` cleans the name again, as JS does — but in
+        // JS the half is still there to shield the space; here it is gone, so the space goes too.
+        XCTAssertEqual(listFromShare(back).name, String(name.prefix(58)))
+    }
 }
 
 // Every JS test of this section is ported above. Changes of DATA only: the packer's

@@ -89,8 +89,10 @@ final class GrabSharingTests: XCTestCase {
         XCTAssertEqual(try decodeGrabShare("Try this: https://example.invalid/#/g/\(ShareRef.grab2)."),
                        GrabShare(name: "Löprunda 🏃", items: ["Vattenflaska", "Mössa & handskar"]))
         XCTAssertEqual(try decodeGrabShare(ShareRef.grabMany).items.count, 40)
-        // Half an emoji cannot live in a Swift String: it is dropped, and the space before it with it.
-        XCTAssertEqual(try decodeGrabShare(ShareRef.grab3), GrabShare(name: "Morning swim", items: ["Towel", "Path a/b \"quoted\""]))
+        // Half an emoji cannot live in a Swift String: it is dropped — and NOTHING ELSE. In JS the
+        // name is "Morning swim " + the half, so its space is not trailing and `trim()` leaves it.
+        // (Parity checker, invented backup: this once trimmed a second time, after the drop.)
+        XCTAssertEqual(try decodeGrabShare(ShareRef.grab3), GrabShare(name: "Morning swim ", items: ["Towel", "Path a/b \"quoted\""]))
     }
 
     func testJunkInsideACode() throws {

@@ -21,11 +21,12 @@ private let LIST_SHARE_FLAGS: [(key: String, bit: Int32)] = [
 ]
 
 /// `asArray(arr).filter(string).map(clean).filter(Boolean)`
-func cleanShareList(_ arr: [JSONValue], _ max: Int = 40) -> [String] {
-    cleanShareListUnits(arr, max).map { shareText(cleaned: $0) }.filter { !$0.isEmpty }
+func cleanShareList(_ arr: [JSONValue], _ max: Int = 40, parked: Bool = false) -> [String] {
+    // `.filter(Boolean)` is asked of the JS string — half an emoji on its own is not blank
+    cleanShareListUnits(arr, max, parked: parked).map { shareText(cleaned: $0) }
 }
-private func cleanShareListUnits(_ arr: [JSONValue], _ max: Int = 40) -> [[UInt16]] {
-    arr.compactMap { $0.stringValue }.map { cleanShareUnits($0, max) }.filter { !$0.isEmpty }
+private func cleanShareListUnits(_ arr: [JSONValue], _ max: Int = 40, parked: Bool = false) -> [[UInt16]] {
+    arr.compactMap { $0.stringValue }.map { cleanShareUnits($0, max, parked: parked) }.filter { !$0.isEmpty }
 }
 
 // MARK: - What a decoded share holds
@@ -212,11 +213,16 @@ private func jsToInt32(_ d: Double) -> Int32 {
 public func decodeListShare(_ text: String?) throws -> SharedList {
     var payload = jsTrim(text ?? "")
     if let m = sharePayload(in: payload, marker: "#/l/") { payload = m }
+    // Half an emoji (a name cut at its length limit) stays IN the parsed text until each
+    // field has been trimmed and cut the way JS does it — see `cleanShareUnits`.
     let obj: JSONValue
-    do { obj = try JSONValue.parse(try unpackShare(payload)) } catch { throw notATemplate }
+    do { obj = try JSONValue.parse(try unpackShare(payload), keepParked: true) } catch { throw notATemplate }
     guard obj.objectValue != nil || obj.arrayValue != nil, obj["k"]?.stringValue == LIST_SHARE_KIND else { throw notATemplate }
 
-    func clean(_ v: JSONValue?, _ max: Int) -> String { cleanShareText(jsStringNullish(v), max) }
+    func clean(_ v: JSONValue?, _ max: Int) -> String { cleanShareText(jsStringNullish(v), max, parked: true) }
+    func cleanShareList(_ arr: [JSONValue], _ max: Int = 40) -> [String] { PackingCore.cleanShareList(arr, max, parked: true) }
+    func jsStringOr(_ v: JSONValue?) -> String { PackingCore.jsStringOr(v.map { jsonDropParked($0) }) }
+    func jsStringNullish(_ v: JSONValue?) -> String { PackingCore.jsStringNullish(v) }
     let items: [SharedListItem] = asArray(obj["x"]).compactMap { (o: JSONValue) -> SharedListItem? in
         guard o.objectValue != nil else { return nil }
         let name = clean(o["n"], GRAB_SHARE_ITEM_MAX)
@@ -241,7 +247,7 @@ public func decodeListShare(_ text: String?) throws -> SharedList {
             kit: clean(o["k"], 40),
             storage: clean(o["s"], 60),
             packer: clean(o["a"], 40),
-            ownedBy: shareSafeOwner(jsStringNullish(o["u"])),   // a code made before v186 may hold an address here — it stops at the door
+            ownedBy: shareSafeOwner(jsStringNullish(o["u"].map { jsonDropParked($0) })),   // a code made before v186 may hold an address here — it stops at the door
             itemType: o["t"] == .number(1) ? "reminder" : "item",
             weight: weight,
             seasons: cleanShareList(asArray(o["se"])), contexts: cleanShareList(asArray(o["cx"])),

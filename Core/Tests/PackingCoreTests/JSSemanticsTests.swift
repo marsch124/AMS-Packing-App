@@ -116,6 +116,27 @@ final class JSSemanticsTests: XCTestCase {
         }
     }
 
+    // Caught by the parity checker on the invented backup: an owner typed once with a space
+    // and once with a pasted NO-BREAK space. ICU orders the two (the plain one first);
+    // Foundation called it a tie. Every row is what Node (en-US) answers.
+    func testJsLocaleCompareOrdersAPlainCharacterBeforeItsCompatibilityVariant() {
+        let rows: [(String, String, Int)] = [
+            ("Blake B", "Blake\u{00A0}B", -1),       // space · no-break space
+            ("a b", "a\u{2009}b", -1),               // space · thin space
+            ("co-op", "co\u{2011}op", -1),           // hyphen · non-breaking hyphen
+            ("abc", "\u{FF41}\u{FF42}\u{FF43}", -1), // full-width letters
+            ("m2", "m\u{00B2}", -1),                 // superscript two
+            ("12", "\u{0661}\u{0662}", 0),           // another script's digits: a tie in ICU too
+            ("softhyphen", "soft\u{00AD}hyphen", 0), // ICU ignores a soft hyphen completely
+            ("Blake\u{00A0}B", "Blake C", -1),       // and a real difference still decides first
+        ]
+        for (a, b, want) in rows {
+            XCTAssertEqual(jsLocaleCompare(a, b), want, "\(a) vs \(b)")
+            XCTAssertEqual(jsLocaleCompare(b, a), -want, "\(b) vs \(a)")
+        }
+        XCTAssertEqual(["Blake\u{00A0}B", "Blake B"].stableSorted(compare: { jsLocaleCompare($0, $1) }), ["Blake B", "Blake\u{00A0}B"])
+    }
+
     func testJsStringLessComparesUTF16Units() {
         XCTAssertTrue(jsStringLess("0-2026-01-01", "1-03"))
         XCTAssertTrue(jsStringLess("1-03", "9"))
