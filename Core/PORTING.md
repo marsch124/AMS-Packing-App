@@ -69,6 +69,9 @@ behaviour as the default. Functions that take `todayISO` in JS take it in Swift 
   Where Foundation still parts from ICU (compatibility variants such as a no-break
   space, emoji modifiers) is written down at the helper — read it before "fixing" it.
 - `normName` = trim, lowercase, collapse whitespace runs to one space.
+- 🪤 Swift's `String ==` (and `Set` / `Dictionary` keys) is Unicode CANONICAL equivalence;
+  JS `===` / `Map` / `Set` compare code units. `é` precomposed and `e` + U+0301 are two
+  names to the web app and one here. Known, not fixed (QUESTIONS.md H17).
 - Truthiness: `''`, `0`, `null`, `undefined`, `NaN` are false. `Number.isFinite`.
 - `Math.round` rounds .5 **up** (towards +∞), unlike Swift's `.rounded()`.
 - Dates are `YYYY-MM-DD` strings compared as strings; day arithmetic is in UTC.
@@ -132,7 +135,9 @@ the bottom of its file with the reason — never silently dropped.
 
 `tools/parity/run.sh` puts the contract's questions (`tools/parity/QUESTIONS.md`) to
 the web app's model and to this package over a real backup, and compares every
-answer; it must end `differences: none`. The Swift half is the `parity` executable
+answer; it must end `differences: none` — and so must `tools/parity/run.sh --invented`,
+the same questions over an invented, deliberately awkward backup (no private data: the
+run for CI). The Swift half is the `parity` executable
 target of this package (`Sources/parity`), which may use the PUBLIC API only — if it
 needs something that is not public, that is a finding about the port. A difference is
 a port bug until proved otherwise: fix `PackingCore`, and add a regression test with

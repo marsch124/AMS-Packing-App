@@ -21,7 +21,22 @@ tools/parity/run.sh [private/<backup>.json] [--today 2026-09-21] [--max N] [--on
 ```
 
 builds the Swift half, runs both, writes the two documents into `private/`, compares
-them and exits with the comparison's status. By hand:
+them and exits with the comparison's status.
+
+```
+tools/parity/run.sh --invented
+```
+
+does the same over `tools/parity/fixtures/invented-backup.json` — a backup in which
+everything is made up and as awkward as a backup can get (kits, things, presets,
+a customised phase list with ties, an item shared by three lists, legacy `owner`
+fields, names cut inside an emoji, 405 items in one list, dates that are not dates).
+It needs nothing private — its answers go to the build folder — so it is the run for
+CI, and the one that finds port bugs the owner's tidy data cannot: it must end
+`differences: none` too. The file is written by `fixtures/make-invented-backup.mjs`
+(deterministic; its header lists the shapes it deliberately leaves out, and why), and
+`fixtures/check-invented.mjs` proves mechanically that it shares no string and no
+word with the real backup. By hand:
 
 ```
 node tools/parity/js-answers.mjs private/<backup>.json [--today 2026-09-21] > private/answers-js.json
@@ -76,6 +91,7 @@ Canonical values (what `canon` does in the JS):
 | `undefined`, a function | inside an object: the key is dropped. Inside an array: `null`. As a whole answer: `null`. |
 | `NaN`, `±Infinity` | `null` (what `JSON.stringify` does) |
 | `-0` | `0` |
+| a string holding half an emoji (a lone surrogate — H4, H16) | the string with the half **dropped**: a Swift String cannot hold one. The share codes that carry the half are still compared byte for byte (`list.share.encoded`, `settings.grabShare`). |
 | other numbers | as they are. The diff tool compares parsed numbers: two WHOLE numbers must be equal (counts, the FNV hashes of `calc.lzw` — a relative tolerance would wave through a 32-bit hash that is off by 4); anything else within 1e-9 (relative above 1). `1` and `1.0` are equal. |
 | `Set` | array sorted by **UTF-16 code-unit order** (JS `<` on strings; in Swift compare `utf16` views, not `String <`) |
 | `Map` | object; keys are the map's keys as strings; insertion order is **not** compared |
@@ -623,8 +639,12 @@ a mistake will show.
   on characters a keyboard does not produce: (a) a character against its
   *compatibility variant* — full-width `ａ` vs `a`, U+00A0 / U+2009 / U+202F vs a
   space, U+2011 vs `-`, `²` vs `2`, `ℬ` vs `B` — where ICU orders the two at the
-  tertiary level (the plain one first) and Foundation calls it a tie (and, in a
-  longer string, may then let a later case difference decide the other way);
+  tertiary level (the plain one first) and Foundation calls it a tie. The case a
+  person can produce — a pasted no-break space; the invented backup has an owner
+  spelt both ways — is put right in `jsLocaleCompare` (on a tie, plain ASCII before
+  its compatibility variant: six deviations in ten gone, none added, measured).
+  Left: variant against variant, and a longer string in which Foundation lets a
+  later case difference decide before the earlier width difference;
   (b) at `base` strength, an emoji skin-tone modifier, U+200C/U+200D and the
   combining Latin letters U+0363–U+036F, which ICU gives a primary weight and
   Foundation ignores as if they were accents; (c) U+FE0F after a symbol (`☀️` vs
@@ -685,6 +705,23 @@ a mistake will show.
   emoji) it is dropped — which is why no question's ANSWER may contain one.
   [`calc.tripBundleIncoming.oldBundleEmoji`]
 
+- **H17 Equal strings.** JS `===`, `Map` and `Set` compare UTF-16 code units. Swift's
+  `String ==`, `Set<String>` and `Dictionary` keys compare by Unicode CANONICAL
+  EQUIVALENCE: `é` as one code point and as `e` + U+0301 are two names to JS and one
+  to Swift. So where the model keys things by `normName` (`buildCatalog`,
+  `buildTotalEntries`' de-duplication, the duplicate finder, the shared rows' ids),
+  two such spellings are two things in JS and merge in Swift — and the Swift
+  tool's own POOL loses one of them. Nothing in the owner's data does this (text
+  typed on Apple keyboards is precomposed; a name pasted from a file name may not be),
+  and no question asks it: the invented backup leaves such a pair out on purpose.
+  **Not fixed** — a faithful fix means keying by code units (`[UInt16]`) throughout.
+- **H18 What is left of half an emoji.** `decodeListShare` / `decodeGrabShare` keep the
+  half in the parsed text until JS's own trim and cut are done, then drop it (§2) — so a
+  name that arrives as `"brim "` + half keeps its space, as in JS. `listFromShare`
+  cleans the decoded name AGAIN; in JS the half is still there to shield that space, in
+  a typed `SharedList` it is gone, so there the space goes. One character, one corner;
+  the invented backup's long name therefore has no space in front of the emoji.
+
 ## 19. Contract history
 
 **Version 3** (the Swift half exists). No key was renamed or redefined, and on the
@@ -695,6 +732,8 @@ owner's backup no version-2 answer changed.
 | `calc.coerceHostile` | NEW cases `membershipQtySmall`, `membershipQtyTiny`, `membershipQtyHuge` — a numeric `qty` as JS writes numbers. The port's first number writer gave `1e-05`; nothing in the owner's data showed it. |
 | `calc.tripBundleIncoming` | NEW case `oldBundleEmoji` — H16. |
 | the diff tool | two whole numbers must be EQUAL (§2). |
+| §2 canonical values | half an emoji (a lone surrogate) is dropped from every written string — H16, H18. |
+| NEW `run.sh --invented` | the same 209 questions (211 with `coerce.kit` and `coerce.thing`, which the owner's backup leaves empty) over an invented, deliberately awkward backup. |
 | §16 N5, §18 H1 | what the port does about an impossible day, and exactly where Foundation's collation parts from ICU's. |
 
 

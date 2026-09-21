@@ -103,12 +103,19 @@ const distinct = (arr) => [...new Set(arr)];
 const ID = '<id>';
 const NOWMARK = '<now>';
 
+// Half an emoji — a lone surrogate, what `slice(0, n)` leaves when the cut lands inside
+// one — is a value a JS string holds and a Swift String cannot. It is DROPPED from
+// every written answer (§2). Where the half really matters it is still compared: the
+// share codes that carry it are compared byte for byte.
+const dropLoneSurrogates = (s) => s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+
 // Canonical value: see QUESTIONS.md §2.
 function canon(v) {
   if (v === undefined || typeof v === 'function' || typeof v === 'symbol') return undefined;
   if (v === null) return null;
   if (typeof v === 'number') return Number.isFinite(v) ? (Object.is(v, -0) ? 0 : v) : null;
-  if (typeof v === 'string' || typeof v === 'boolean') return v;
+  if (typeof v === 'string') return v.isWellFormed() ? v : dropLoneSurrogates(v);
+  if (typeof v === 'boolean') return v;
   if (typeof v === 'bigint') return Number(v);
   if (v instanceof Set) return [...v].map(canon).sort(cmpCodeUnit);
   if (v instanceof Map) { const o = Object.create(null); for (const [k, x] of v) { const c = canon(x); if (c !== undefined) o[String(k)] = c; } return o; }
