@@ -225,12 +225,12 @@ final class ShareEncodingTests: XCTestCase {
 
     func testHalfAnEmojiFromJSIsReadNotRefused() throws {
         // `JSON.parse` takes a lone `\ud83d`; Foundation does not. A whole pair is left alone.
-        let v = try shareParseJSON("{\"n\":\"Swim \\ud83c\",\"whole\":\"\\ud83d\\ude00\",\"slash\":\"a\\\\ud83d\"}")
+        let v = try JSONValue.parse("{\"n\":\"Swim \\ud83c\",\"whole\":\"\\ud83d\\ude00\",\"slash\":\"a\\\\ud83d\"}")
         XCTAssertEqual(v["n"]?.stringValue, "Swim ", "the half is dropped — the jsSlice rule")
         XCTAssertEqual(v["whole"]?.stringValue, "😀")
         XCTAssertEqual(v["slash"]?.stringValue, "a\\ud83d", "an escaped backslash is not an escape")
         // Numbers stay numbers and booleans stay booleans (decodeListShare tests `t === 1`).
-        let w = try shareParseJSON("{\"t\":1,\"b\":true}")
+        let w = try JSONValue.parse("{\"t\":1,\"b\":true}")
         XCTAssertEqual(w["t"], .number(1))
         XCTAssertEqual(w["b"], .bool(true))
     }

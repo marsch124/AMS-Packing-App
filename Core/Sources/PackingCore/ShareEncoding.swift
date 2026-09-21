@@ -253,129 +253,13 @@ func shareStringDroppingLoneSurrogates(_ units: [UInt16]) -> String {
     return String(decoding: kept, as: UTF16.self)
 }
 
-/// A number exactly as `JSON.stringify` writes it (= `Number.prototype.toString`):
-/// a whole number has no decimal point, anything else is the shortest text that
-/// reads back as the same double, and the exponent form starts at 1e21 and below
-/// 1e-6, written `1e+21` / `1e-7`. NaN and ±Infinity are `null`; -0 is `0`.
-func shareNumberText(_ n: Double) -> String {
-    guard n.isFinite else { return "null" }
-    if n == 0 { return "0" }
-    // Swift's description is also the SHORTEST round-trip digits — only its layout
-    // differs ("1e-05", "620.0", "1.5e-07"), so take the digits and lay them out again.
-    let desc = n.magnitude.description
-    var mantissa = Substring(desc)
-    var exp = 0
-    if let e = desc.firstIndex(where: { $0 == "e" || $0 == "E" }) {
-        mantissa = desc[desc.startIndex..<e]
-        exp = Int(desc[desc.index(after: e)...]) ?? 0
-    }
-    let parts = mantissa.split(separator: ".", omittingEmptySubsequences: false)
-    let intPart = String(parts.first ?? "")
-    let fracPart = parts.count > 1 ? String(parts[1]) : ""
-    var digits = Array(intPart + fracPart)
-    var point = intPart.count + exp          // value = 0.DIGITS × 10^point
-    while digits.count > 1, digits.first == "0" { digits.removeFirst(); point -= 1 }
-    while digits.count > 1, digits.last == "0" { digits.removeLast() }
-    let k = digits.count
-    let sign = n < 0 ? "-" : ""
-    let d = String(digits)
-    if k <= point && point <= 21 { return sign + d + String(repeating: "0", count: point - k) }
-    if 0 < point && point <= 21 { return sign + String(digits[0..<point]) + "." + String(digits[point...]) }
-    if -6 < point && point <= 0 { return sign + "0." + String(repeating: "0", count: -point) + d }
-    let e = point - 1
-    let tail = (e < 0 ? "e-" : "e+") + String(abs(e))
-    if k == 1 { return sign + d + tail }
-    return sign + String(digits[0]) + "." + String(digits[1...]) + tail
-}
+/// A number exactly as `JSON.stringify` writes it: `jsNumberToString` (the package's
+/// one number writer, in JSSemantics.swift) — except that NaN and ±Infinity, which
+/// JSON cannot hold, are `null`.
+func shareNumberText(_ n: Double) -> String { n.isFinite ? jsNumberToString(n) : "null" }
 
-// MARK: - Reading JSON that JS wrote
-
-// Half an emoji, written `\ud83d`, is legal to `JSON.parse` and an error to
-// Foundation. It arrives two ways: a name cut through the middle of an emoji by
-// `slice`, and — far more often — the sub-items of a trip shared by a web app from
-// before v186, which spelled them out one UTF-16 unit at a time (see `subName`).
-// Each lone half is parked on a private-use code point on the way in, so the text
-// parses; `subName` puts the two halves of a sub-item's emoji back together, and
-// everywhere else the half is dropped.
-private let shareLoneBase: UInt32 = 0xF0000   // U+F0000…U+F07FF stand for U+D800…U+DFFF
-
-func shareParkLoneSurrogates(_ text: String) -> String {
-    guard text.contains("\\ud") || text.contains("\\uD") else { return text }
-    let u = Array(text.utf16)
-    var out: [UInt16] = []
-    out.reserveCapacity(u.count)
-    func escape(at i: Int) -> UInt32? {       // the value of a `\uXXXX` starting at i
-        guard i + 5 < u.count, u[i] == 0x5C, u[i + 1] == 0x75 else { return nil }
-        var v: UInt32 = 0
-        for j in (i + 2)...(i + 5) {
-            guard let s = Unicode.Scalar(UInt32(u[j])), let h = Character(s).hexDigitValue, u[j] < 0x80 else { return nil }
-            v = v * 16 + UInt32(h)
-        }
-        return v
-    }
-    func park(_ v: UInt32) {
-        if let s = Unicode.Scalar(shareLoneBase + (v - 0xD800)) { out.append(contentsOf: Array(String(s).utf16)) }
-    }
-    var i = 0
-    while i < u.count {
-        guard u[i] == 0x5C else { out.append(u[i]); i += 1; continue }
-        if let v = escape(at: i) {
-            if (0xD800...0xDBFF).contains(v) {
-                if let w = escape(at: i + 6), (0xDC00...0xDFFF).contains(w) {
-                    out.append(contentsOf: u[i..<(i + 12)]); i += 12          // a whole pair: leave it
-                } else { park(v); i += 6 }
-            } else if (0xDC00...0xDFFF).contains(v) {
-                park(v); i += 6
-            } else {
-                out.append(contentsOf: u[i..<(i + 6)]); i += 6
-            }
-        } else {
-            // Any other escape (`\\`, `\"`, `\n`…): copy both units, so an escaped
-            // backslash is never mistaken for the start of the next escape.
-            out.append(u[i]); i += 1
-            if i < u.count { out.append(u[i]); i += 1 }
-        }
-    }
-    return String(decoding: out, as: UTF16.self)
-}
-
-/// The UTF-16 units of a parsed string, parked halves turned back into surrogates.
-func shareUnparkedUnits(_ s: String) -> [UInt16] {
-    var out: [UInt16] = []
-    for sc in s.unicodeScalars {
-        if sc.value >= shareLoneBase && sc.value <= shareLoneBase + 0x7FF {
-            out.append(UInt16(0xD800 + (sc.value - shareLoneBase)))
-        } else {
-            out.append(contentsOf: Array(String(sc).utf16))
-        }
-    }
-    return out
-}
-
-private func shareHasParked(_ s: String) -> Bool {
-    s.unicodeScalars.contains { $0.value >= shareLoneBase && $0.value <= shareLoneBase + 0x7FF }
-}
-
-/// Every parked half dropped, all the way down.
-func shareDropParked(_ v: JSONValue) -> JSONValue {
-    switch v {
-    case .string(let s):
-        return shareHasParked(s) ? .string(shareStringDroppingLoneSurrogates(shareUnparkedUnits(s))) : v
-    case .array(let a): return .array(a.map { shareDropParked($0) })
-    case .object(let o):
-        var out: [String: JSONValue] = [:]
-        for (k, x) in o { out[k] = shareDropParked(x) }
-        return .object(out)
-    default: return v
-    }
-}
-
-/// `JSON.parse(text)`. With `keepParked`, lone halves stay parked for the caller.
-func shareParseJSON(_ text: String, keepParked: Bool = false) throws -> JSONValue {
-    let parked = shareParkLoneSurrogates(text)
-    let v = try JSONValue.parse(parked)
-    return (keepParked || parked == text) ? v : shareDropParked(v)
-}
+// (Reading JSON that JS wrote — half an emoji written `\ud83d` — is `JSONValue.parse`'s
+// job: see "Reading JSON that JS wrote" in JSONValue.swift.)
 
 // MARK: - base64 as btoa / atob do it
 

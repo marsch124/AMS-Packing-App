@@ -18,99 +18,20 @@
 
 import Foundation
 
-// MARK: - Civil-date arithmetic (no Calendar, no time zone)
+// MARK: - Reading a day
+// `JSDay` (JSSemantics.swift) is the ONE date parser of the package: `Date.parse` as
+// Node/V8 reads it — `2026-02-30` rolls over to 2 March, and the shorter ISO forms
+// `YYYY` and `YYYY-MM` are dates too. Care's `addDays` / `daysBetween` read through
+// the same one, so the two halves of the app can never disagree about a day.
 
 private let MS_PER_DAY: Double = 86_400_000
 
-/// Floor division and its remainder (JS `Math.floor(a / b)`), for negative values too.
-private func floorDiv(_ a: Int, _ b: Int) -> Int { (a >= 0 ? a : a - (b - 1)) / b }
-
-/// Days since 1970-01-01 of a proleptic-Gregorian date (Howard Hinnant's algorithm).
-private func daysFromCivil(_ year: Int, _ month: Int, _ day: Int) -> Int {
-    let y = month <= 2 ? year - 1 : year
-    let era = floorDiv(y, 400)
-    let yoe = y - era * 400
-    let mp = month > 2 ? month - 3 : month + 9
-    let doy = (153 * mp + 2) / 5 + day - 1
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
-    return era * 146_097 + doe - 719_468
-}
-
-/// The date of a day count — the inverse of `daysFromCivil`.
-private func civilFromDays(_ days: Int) -> (year: Int, month: Int, day: Int) {
-    let z = days + 719_468
-    let era = floorDiv(z, 146_097)
-    let doe = z - era * 146_097
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
-    let mp = (5 * doy + 2) / 153
-    let d = doy - (153 * mp + 2) / 5 + 1
-    let m = mp < 10 ? mp + 3 : mp - 9
-    return (yoe + era * 400 + (m <= 2 ? 1 : 0), m, d)
-}
-
-private func pad(_ n: Int, _ width: Int) -> String {
-    let s = String(n)
-    return s.count >= width ? s : String(repeating: "0", count: width - s.count) + s
-}
-
-/// `new Date(ms).toISOString().slice(0, 10)` for a whole day count. A year outside
-/// 0000–9999 is written the way JS writes it (`+010000-01-01`), and then cut at 10.
-private func isoDay(_ days: Int) -> String {
-    let c = civilFromDays(days)
-    let year = (0...9999).contains(c.year) ? pad(c.year, 4) : (c.year < 0 ? "-" : "+") + pad(abs(c.year), 6)
-    return jsSlice("\(year)-\(pad(c.month, 2))-\(pad(c.day, 2))", 0, 10)
-}
-
 /// `Date.parse(`${prefix}T00:00:00Z`)` as a DAY COUNT since 1970-01-01, or nil for NaN.
 /// `prefix` is what `.slice(0, 10)` left of the date.
-///
-/// What the JS engine accepts in front of `T00:00:00Z` (checked against Node):
-///   • `YYYY-MM-DD`, and also the shorter ISO forms `YYYY-MM` and `YYYY` (the 1st);
-///   • a signed six-digit year (`+002026-08`), but not `-000000`;
-///   • month 01–12, day 01–31 — 🪤 the day is NOT checked against the month, so
-///     `2026-02-30` is a real date to JS: it rolls over to 2 March.
-///   Anything else — `2026-8-3`, `2026/08/03`, `not a date`, non-ASCII digits — is NaN.
-private func jsParseUTCDay(_ prefix: String) -> Int? {
-    let u = Array(prefix.utf8)
-    var i = 0
-    func digits(_ n: Int) -> Int? {
-        guard i + n <= u.count else { return nil }
-        var v = 0
-        for k in 0..<n {
-            let c = u[i + k]
-            guard c >= 0x30 && c <= 0x39 else { return nil }
-            v = v * 10 + Int(c - 0x30)
-        }
-        i += n
-        return v
-    }
-    var year: Int
-    if let sign = u.first, sign == 0x2B || sign == 0x2D {
-        i = 1
-        guard let y = digits(6) else { return nil }
-        if sign == 0x2D && y == 0 { return nil }
-        year = sign == 0x2D ? -y : y
-    } else {
-        guard let y = digits(4) else { return nil }
-        year = y
-    }
-    var month = 1, day = 1
-    if i < u.count {
-        guard u[i] == 0x2D else { return nil }
-        i += 1
-        guard let m = digits(2), (1...12).contains(m) else { return nil }
-        month = m
-        if i < u.count {
-            guard u[i] == 0x2D else { return nil }
-            i += 1
-            guard let d = digits(2), (1...31).contains(d) else { return nil }
-            day = d
-        }
-    }
-    guard i == u.count else { return nil }
-    return daysFromCivil(year, month, 1) + day - 1
-}
+private func jsParseUTCDay(_ prefix: String) -> Int? { JSDay.number(prefix) }
+
+/// `new Date(ms).toISOString().slice(0, 10)` for a whole day count.
+private func isoDay(_ days: Int) -> String { JSDay.ymd(days) }
 
 /// `/^(\d{4})-(\d{2})$/` — ASCII digits only; the month is NOT range-checked.
 private func parseMonthKey(_ key: String?) -> (year: Int, month: Int)? {
@@ -223,8 +144,8 @@ public func monthGrid(_ key: String?, _ weekStart: Int = 1) -> MonthGrid {
     // no cell of such a grid is then "in" the month, exactly as in JS.
     let fullYear = (0...99).contains(year) ? 1900 + year : year
     let months = fullYear * 12 + month
-    let civilYear = floorDiv(months, 12)
-    let first = daysFromCivil(civilYear, months - civilYear * 12 + 1, 1)
+    let civilYear = JSDay.floorDiv(months, 12)
+    let first = JSDay.daysFromCivil(civilYear, months - civilYear * 12 + 1, 1)
     let ws = weekStart == 0 ? 0 : 1
     // How many days of the previous month to show before the 1st.
     let weekday = ((first + 4) % 7 + 7) % 7                     // getUTCDay(): 1 Jan 1970 was a Thursday
@@ -232,7 +153,7 @@ public func monthGrid(_ key: String?, _ weekStart: Int = 1) -> MonthGrid {
     var days: [MonthGridDay] = []
     for i in 0..<42 {
         let d = first + i - lead
-        days.append(MonthGridDay(iso: isoDay(d), inMonth: civilFromDays(d).month - 1 == month))
+        days.append(MonthGridDay(iso: isoDay(d), inMonth: JSDay.civilFromDays(d).month - 1 == month))
     }
     return MonthGrid(key: key ?? "", year: year, month: month, days: days)
 }

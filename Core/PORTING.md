@@ -64,12 +64,23 @@ behaviour as the default. Functions that take `todayISO` in JS take it in Swift 
 - `Array.prototype.sort` is **stable**. Swift's `sort` does not promise it. Always
   sort through the package's `stableSorted(by:)` helper.
 - `a.localeCompare(b)` is ICU collation in the runtime's locale — NOT `<`. Use the
-  package's single `jsLocaleCompare(_:_:)` helper everywhere so it can be tuned
-  once when the parity checker runs over his Swedish names (å ä ö).
+  package's single `jsLocaleCompare(_:_:)` helper everywhere. The parity checker has
+  run over his Swedish names (å ä ö): every pair of his real strings orders as in JS.
+  Where Foundation still parts from ICU (compatibility variants such as a no-break
+  space, emoji modifiers) is written down at the helper — read it before "fixing" it.
 - `normName` = trim, lowercase, collapse whitespace runs to one space.
 - Truthiness: `''`, `0`, `null`, `undefined`, `NaN` are false. `Number.isFinite`.
 - `Math.round` rounds .5 **up** (towards +∞), unlike Swift's `.rounded()`.
 - Dates are `YYYY-MM-DD` strings compared as strings; day arithmetic is in UTC.
+  **ONE date parser**: `JSDay` in `JSSemantics.swift` — `Date.parse` as V8 reads it
+  (`2026-02-30` rolls over to 2 March; `YYYY` and `YYYY-MM` are dates). Never write
+  a second one: care and the trip dates once had a copy each.
+- **ONE number writer**: `jsNumberToString` — `String(n)`, `JSON.stringify` and the
+  share codes all go through it (`0.00001`, never `1e-05`; `1e+21`; no `.0`).
+  `x.toFixed(1)` is `jsToFixed1`, beside it.
+- `JSON.parse` accepts half an emoji written as a lone `\ud83d` escape; Foundation's
+  parser throws. Always parse through `JSONValue.parse`, which reads it (and drops the
+  half: a Swift String cannot hold one).
 
 ## Tests
 
@@ -116,6 +127,16 @@ the bottom of its file with the reason — never silently dropped.
 - Tests: `PackingEnv.freeze()` gives a fixed clock and ids "id-1", "id-2"…. In `tearDown`
   call `PackingEnv.reset()`, and `setPhases(DEFAULT_PHASES)` /
   `setItemConditions(DEFAULT_ITEM_CONDITIONS)` when a test touched them.
+
+## The parity checker
+
+`tools/parity/run.sh` puts the contract's questions (`tools/parity/QUESTIONS.md`) to
+the web app's model and to this package over a real backup, and compares every
+answer; it must end `differences: none`. The Swift half is the `parity` executable
+target of this package (`Sources/parity`), which may use the PUBLIC API only — if it
+needs something that is not public, that is a finding about the port. A difference is
+a port bug until proved otherwise: fix `PackingCore`, and add a regression test with
+INVENTED data that fails without the fix. The JS model is right by definition.
 
 ## Constraints
 

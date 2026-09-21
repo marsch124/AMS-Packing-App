@@ -74,18 +74,18 @@ private let TRIP_EVENT_ORDER = ShareKeyOrder(
 // string as it stands, and one of those objects put back together, so a link
 // sent before the fix still opens properly.
 // (An old bundle spells an emoji as two lone halves; they arrive parked — see
-// `shareParkLoneSurrogates` — and are joined back into the emoji here.)
+// `jsonParkLoneSurrogates` — and are joined back into the emoji here.)
 func subName(_ s: JSONValue?) -> String {
     func joined(_ part: (Int) -> JSONValue?) -> String {
         var units: [UInt16] = []
         var i = 0
-        while let piece = part(i)?.stringValue { units.append(contentsOf: shareUnparkedUnits(piece)); i += 1 }
+        while let piece = part(i)?.stringValue { units.append(contentsOf: jsonUnparkedUnits(piece)); i += 1 }
         return shareStringDroppingLoneSurrogates(units)
     }
     switch s {
-    case .string(let str)?: return shareStringDroppingLoneSurrogates(shareUnparkedUnits(str))
+    case .string(let str)?: return shareStringDroppingLoneSurrogates(jsonUnparkedUnits(str))
     case .object(let o)?:
-        if let name = o["name"]?.stringValue { return shareStringDroppingLoneSurrogates(shareUnparkedUnits(name)) }
+        if let name = o["name"]?.stringValue { return shareStringDroppingLoneSurrogates(jsonUnparkedUnits(name)) }
         return joined { o[String($0)] }
     case .array(let a)?: return joined { a.indices.contains($0) ? a[$0] : nil }
     default: return ""
@@ -199,7 +199,7 @@ func incomingEntry(_ e: JSONValue) -> JSONValue {
 /// engine's own SyntaxError there, with the engine's own words).
 public func parseTripBundle(_ data: String) throws -> TripEvent {
     let obj: JSONValue
-    do { obj = try shareParseJSON(data, keepParked: true) } catch { throw notATrip }
+    do { obj = try JSONValue.parse(data, keepParked: true) } catch { throw notATrip }
     return try parseTripBundle(json: obj)
 }
 
@@ -214,7 +214,7 @@ public func parseTripBundle(json obj: JSONValue?) throws -> TripEvent {
     guard entries.allSatisfy({ $0.objectValue != nil }) else { throw notATrip }
     o["entries"] = .array(entries)
     for k in SYNC_RESERVED_KEYS { o[k] = nil }
-    var ev = TripEvent(json: shareDropParked(.object(o)))
+    var ev = TripEvent(json: jsonDropParked(.object(o)))
     ev.id = id()
     ev.status = "active"
     ev.reviewedAt = ""

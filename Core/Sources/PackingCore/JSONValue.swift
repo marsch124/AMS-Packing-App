@@ -199,11 +199,27 @@ extension JSONValue: Codable {
         }
     }
 
-    /// Parse JSON text or bytes. Throws on invalid JSON only.
-    public static func parse(_ data: Data) throws -> JSONValue {
-        try JSONDecoder().decode(JSONValue.self, from: data)
+    /// `JSON.parse` — JSON text or bytes. Throws on invalid JSON only.
+    ///
+    /// It reads what `JSON.parse` reads, INCLUDING half an emoji written as a lone
+    /// `\ud83d` escape, which Foundation's parser refuses. A Swift String cannot hold
+    /// the half, so it is dropped from the value (see "Reading JSON that JS wrote" below).
+    public static func parse(_ data: Data) throws -> JSONValue { try parse(data, keepParked: false) }
+    public static func parse(_ text: String) throws -> JSONValue { try parse(Data(text.utf8), keepParked: false) }
+
+    /// With `keepParked`, each lone half stays in the value as its private-use stand-in
+    /// (`jsonUnparkedUnits` turns a string back into UTF-16 units) — for the one caller
+    /// that can put two halves back together: `subName`, reading an old trip bundle.
+    static func parse(_ text: String, keepParked: Bool) throws -> JSONValue {
+        try parse(Data(text.utf8), keepParked: keepParked)
     }
-    public static func parse(_ text: String) throws -> JSONValue { try parse(Data(text.utf8)) }
+    static func parse(_ data: Data, keepParked: Bool) throws -> JSONValue {
+        guard jsonMayHoldSurrogateEscape(data) else { return try JSONDecoder().decode(JSONValue.self, from: data) }
+        let text = String(decoding: data, as: UTF8.self)
+        let parked = jsonParkLoneSurrogates(text)
+        let v = try JSONDecoder().decode(JSONValue.self, from: Data(parked.utf8))
+        return (keepParked || parked == text) ? v : jsonDropParked(v)
+    }
 
     /// JSON text. Keys are sorted so the same value always gives the same text.
     public func text(pretty: Bool = false) -> String {
@@ -221,6 +237,100 @@ struct JSONKey: CodingKey {
     init(_ s: String) { stringValue = s }
     init?(stringValue: String) { self.stringValue = stringValue }
     init?(intValue: Int) { return nil }
+}
+
+// MARK: - Reading JSON that JS wrote
+
+/// Is there a `\ud…` / `\uD…` escape anywhere? (Only then can the text hold a lone
+/// surrogate; a whole backup file is scanned once, as bytes, and parsed as it is.)
+private func jsonMayHoldSurrogateEscape(_ data: Data) -> Bool {
+    var prev2: UInt8 = 0, prev1: UInt8 = 0
+    for b in data {
+        if prev2 == 0x5C, prev1 == 0x75, b == 0x64 || b == 0x44 { return true }
+        prev2 = prev1; prev1 = b
+    }
+    return false
+}
+
+// Half an emoji, written `\ud83d`, is legal to `JSON.parse` and an error to
+// Foundation. It arrives two ways: a name cut through the middle of an emoji by
+// `slice`, and — far more often — the sub-items of a trip shared by a web app from
+// before v186, which spelled them out one UTF-16 unit at a time (see `subName`).
+// Each lone half is parked on a private-use code point on the way in, so the text
+// parses; `subName` (TripSharing.swift) puts the two halves of a sub-item's emoji back
+// together, and everywhere else the half is dropped — the rule `jsSlice` set: a Swift
+// String cannot hold half a character.
+private let jsonLoneBase: UInt32 = 0xF0000   // U+F0000…U+F07FF stand for U+D800…U+DFFF
+
+func jsonParkLoneSurrogates(_ text: String) -> String {
+    guard text.contains("\\ud") || text.contains("\\uD") else { return text }
+    let u = Array(text.utf16)
+    var out: [UInt16] = []
+    out.reserveCapacity(u.count)
+    func escape(at i: Int) -> UInt32? {       // the value of a `\uXXXX` starting at i
+        guard i + 5 < u.count, u[i] == 0x5C, u[i + 1] == 0x75 else { return nil }
+        var v: UInt32 = 0
+        for j in (i + 2)...(i + 5) {
+            guard let s = Unicode.Scalar(UInt32(u[j])), let h = Character(s).hexDigitValue, u[j] < 0x80 else { return nil }
+            v = v * 16 + UInt32(h)
+        }
+        return v
+    }
+    func park(_ v: UInt32) {
+        if let s = Unicode.Scalar(jsonLoneBase + (v - 0xD800)) { out.append(contentsOf: Array(String(s).utf16)) }
+    }
+    var i = 0
+    while i < u.count {
+        guard u[i] == 0x5C else { out.append(u[i]); i += 1; continue }
+        if let v = escape(at: i) {
+            if (0xD800...0xDBFF).contains(v) {
+                if let w = escape(at: i + 6), (0xDC00...0xDFFF).contains(w) {
+                    out.append(contentsOf: u[i..<(i + 12)]); i += 12          // a whole pair: leave it
+                } else { park(v); i += 6 }
+            } else if (0xDC00...0xDFFF).contains(v) {
+                park(v); i += 6
+            } else {
+                out.append(contentsOf: u[i..<(i + 6)]); i += 6
+            }
+        } else {
+            // Any other escape (`\\`, `\"`, `\n`…): copy both units, so an escaped
+            // backslash is never mistaken for the start of the next escape.
+            out.append(u[i]); i += 1
+            if i < u.count { out.append(u[i]); i += 1 }
+        }
+    }
+    return String(decoding: out, as: UTF16.self)
+}
+
+/// The UTF-16 units of a parsed string, parked halves turned back into surrogates.
+func jsonUnparkedUnits(_ s: String) -> [UInt16] {
+    var out: [UInt16] = []
+    for sc in s.unicodeScalars {
+        if sc.value >= jsonLoneBase && sc.value <= jsonLoneBase + 0x7FF {
+            out.append(UInt16(0xD800 + (sc.value - jsonLoneBase)))
+        } else {
+            out.append(contentsOf: Array(String(sc).utf16))
+        }
+    }
+    return out
+}
+
+private func jsonHasParked(_ s: String) -> Bool {
+    s.unicodeScalars.contains { $0.value >= jsonLoneBase && $0.value <= jsonLoneBase + 0x7FF }
+}
+
+/// Every parked half dropped, all the way down.
+func jsonDropParked(_ v: JSONValue) -> JSONValue {
+    switch v {
+    case .string(let s):
+        return jsonHasParked(s) ? .string(shareStringDroppingLoneSurrogates(jsonUnparkedUnits(s))) : v
+    case .array(let a): return .array(a.map { jsonDropParked($0) })
+    case .object(let o):
+        var out: [String: JSONValue] = [:]
+        for (k, x) in o { out[k] = jsonDropParked(x) }
+        return .object(out)
+    default: return v
+    }
 }
 
 // MARK: - The bridge every model type uses

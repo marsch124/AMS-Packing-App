@@ -213,7 +213,7 @@ public func decodeListShare(_ text: String?) throws -> SharedList {
     var payload = jsTrim(text ?? "")
     if let m = sharePayload(in: payload, marker: "#/l/") { payload = m }
     let obj: JSONValue
-    do { obj = try shareParseJSON(try unpackShare(payload)) } catch { throw notATemplate }
+    do { obj = try JSONValue.parse(try unpackShare(payload)) } catch { throw notATemplate }
     guard obj.objectValue != nil || obj.arrayValue != nil, obj["k"]?.stringValue == LIST_SHARE_KIND else { throw notATemplate }
 
     func clean(_ v: JSONValue?, _ max: Int) -> String { cleanShareText(jsStringNullish(v), max) }

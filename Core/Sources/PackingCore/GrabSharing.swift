@@ -87,7 +87,7 @@ public func decodeGrabShare(_ text: String?) throws -> GrabShare {
     var payload = jsTrim(text ?? "")
     if let m = sharePayload(in: payload, marker: "#/g/") { payload = m }
     let obj: JSONValue
-    do { obj = try shareParseJSON(try unpackShare(payload)) } catch { throw notAGrabList }
+    do { obj = try JSONValue.parse(try unpackShare(payload)) } catch { throw notAGrabList }
     guard obj.objectValue != nil || obj.arrayValue != nil, obj["k"]?.stringValue == GRAB_SHARE_KIND else { throw notAGrabList }
     let items = cleanGrabItems(asArray(obj["x"])).map { shareText(cleaned: $0) }
     if items.isEmpty { throw ShareError("The shared list is empty.") }

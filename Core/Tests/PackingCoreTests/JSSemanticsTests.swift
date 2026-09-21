@@ -137,6 +137,108 @@ final class JSSemanticsTests: XCTestCase {
         XCTAssertEqual(jsNumberToString(-0.0), "0")
     }
 
+    // Found by the parity checker's review of the foundation: the first writer laid small
+    // numbers out the C way ("1e-05"), where JS writes "0.00001". ONE writer now serves
+    // `String(n)`, `JSON.stringify` and the share codes; every line is what Node answers.
+    func testJsNumberToStringIsNumberPrototypeToString() {
+        XCTAssertEqual(jsNumberToString(0.00001), "0.00001")          // was "1e-05"
+        XCTAssertEqual(jsNumberToString(0.000001), "0.000001")        // the last plain decimal
+        XCTAssertEqual(jsNumberToString(1e-7), "1e-7")                // below 1e-6: exponent, no padding
+        XCTAssertEqual(jsNumberToString(1.5e-7), "1.5e-7")            // was "1.5e-07"
+        XCTAssertEqual(jsNumberToString(-1e-7), "-1e-7")
+        XCTAssertEqual(jsNumberToString(0.000123), "0.000123")
+        XCTAssertEqual(jsNumberToString(5e-324), "5e-324")
+        XCTAssertEqual(jsNumberToString(100), "100")
+        XCTAssertEqual(jsNumberToString(-2.5), "-2.5")
+        XCTAssertEqual(jsNumberToString(4.35), "4.35")
+        XCTAssertEqual(jsNumberToString(123456.789), "123456.789")
+        XCTAssertEqual(jsNumberToString(0.1 + 0.2), "0.30000000000000004")
+        XCTAssertEqual(jsNumberToString(1e20), "100000000000000000000")
+        XCTAssertEqual(jsNumberToString(1.2345678901234568e20), "123456789012345680000")
+        XCTAssertEqual(jsNumberToString(1.2345678901234567e19), "12345678901234567000")   // shortest digits, then zeros
+        XCTAssertEqual(jsNumberToString(1e21), "1e+21")               // from 1e21: exponent, with its plus sign
+        XCTAssertEqual(jsNumberToString(1.5e300), "1.5e+300")
+        XCTAssertEqual(jsNumberToString(1.7976931348623157e308), "1.7976931348623157e+308")
+        XCTAssertEqual(jsNumberToString(.nan), "NaN")
+        XCTAssertEqual(jsNumberToString(-.infinity), "-Infinity")
+        // …and the same digits wherever a number becomes text:
+        XCTAssertEqual(JSONValue.number(0.00001).jsString, "0.00001")                         // String(v)
+        XCTAssertEqual(OrderedJSON(sorted: ["n": 0.00001, "big": 1e21]).text(), #"{"big":1e+21,"n":0.00001}"#)   // JSON.stringify
+        XCTAssertEqual(OrderedJSON.number(.infinity).text(), "null")                          // JSON has no Infinity
+    }
+
+    // THE ONE date parser (`JSDay`): `Date.parse(`${s}T00:00:00Z`)` as Node/V8 reads it.
+    // Care and the trip dates used to carry a copy each; both read through this one now.
+    func testJSDayReadsADayTheWayV8Does() {
+        XCTAssertEqual(JSDay.number("1970-01-01"), 0)
+        XCTAssertEqual(JSDay.number("1969-12-31"), -1)
+        XCTAssertEqual(JSDay.number("2024-02-29"), 19782)
+        XCTAssertEqual(JSDay.number("0000-01-01"), -719528)
+        // A day the month does not have ROLLS OVER (V8; Safari says NaN — contract N5).
+        XCTAssertEqual(JSDay.number("2026-02-30"), JSDay.number("2026-03-02"))
+        XCTAssertEqual(JSDay.number("2026-04-31"), 20574)
+        XCTAssertEqual(JSDay.number("2025-02-29"), 20148)
+        // The shorter ISO forms are dates too: the 1st.
+        XCTAssertEqual(JSDay.number("2026"), 20454)
+        XCTAssertEqual(JSDay.number("2026-07"), 20635)
+        // A signed six-digit year — but never minus zero; and the ends of JS time.
+        XCTAssertEqual(JSDay.number("+002026-07-30"), 20664)
+        XCTAssertEqual(JSDay.number("-000001-01-01"), -719893)
+        XCTAssertNil(JSDay.number("-000000-01-01"))
+        XCTAssertEqual(JSDay.number("+275760-09-13"), 100_000_000)
+        XCTAssertNil(JSDay.number("+275760-09-14"))
+        // Everything else is NaN.
+        for junk in ["", "2026-7-3", "2026-13-01", "2026-00-10", "2026-07-32", "2026-07-00", "2026-07-30 ",
+                     "2026-07-30T10:00", "२०२६-०७-३०", "not-a-date"] {
+            XCTAssertNil(JSDay.number(junk), junk)
+        }
+        XCTAssertEqual(JSDay.ymd(20514), "2026-03-02")
+        XCTAssertEqual(JSDay.ymd(-1), "1969-12-31")
+        XCTAssertEqual(JSDay.weekday(0), 4)                           // 1970-01-01 was a Thursday
+        XCTAssertEqual(jsISOString(Date(timeIntervalSince1970: -86_400)), "1969-12-31T00:00:00.000Z")
+    }
+
+    // One parser means care and the trip dates cannot disagree about a day — on the
+    // impossible day, the short forms and the ends of time alike.
+    func testCareAndTripDatesReadTheSameDay() {
+        XCTAssertEqual(addDays("2026-02-30", 0), "2026-03-02")
+        XCTAssertEqual(daysBetween("2026-02-30", "2026-03-02"), 0)
+        XCTAssertEqual(daysUntil("2026-02-30", "2026-03-02"), 0)
+        XCTAssertEqual(nightsBetween("2026-02-28", "2026-02-30"), 2)
+        XCTAssertEqual(endFromNights("2026-02-30", 1), "2026-03-03")
+        XCTAssertEqual(monthKey("2026-02-30"), "2026-02")             // the text's own month, as in JS
+        XCTAssertEqual(addDays("2026", 1), "2026-01-02")
+        XCTAssertEqual(daysUntil("2026-07", "2026-06-30"), 1)
+        // The trip functions cut the text at ten characters FIRST, so a six-digit year is
+        // read as its short form `+275760-09` (the 1st) — the same in JS.
+        XCTAssertEqual(daysUntil("+275760-09-14", "2026-01-01"), 99_979_534)
+        XCTAssertEqual(nightsBetween("2026-01-01", "+275760-09-14"), 99_979_534)
+        XCTAssertEqual(endFromNights("+275760-09-14", 1), "+275760-09")
+        XCTAssertEqual(endFromNights("+275760-09-01", 40), "")        // past the end of JS time (JS throws a RangeError)
+    }
+
+    // `JSON.parse` accepts half an emoji written as a lone surrogate escape; Foundation's
+    // parser throws on it. `JSONValue.parse` reads it and drops the half, as `jsSlice` does.
+    // (The escapes are put together here so that no tool can "tidy" them into characters.)
+    func testJSONValueParseReadsALoneSurrogateEscape() throws {
+        let bs = "\\"
+        let lead = bs + "ud83c", trail = bs + "udf0a", smileLead = bs + "ud83d", smileTrail = bs + "ude00"
+        let text = "{\"n\":\"Swim \(lead)\",\"w\":\"\(smileLead)\(smileTrail)\",\"s\":\"a\(bs)\(bs)ud83d\","
+            + "\"t\":\"\(trail)x\(lead)\",\"k\":[1,true]}"
+        let v = try JSONValue.parse(text)
+        XCTAssertEqual(v["n"], "Swim ")                               // the half is dropped
+        XCTAssertEqual(v["w"], "😀")                                  // a whole pair is untouched
+        XCTAssertEqual(v["s"], .string("a" + bs + "ud83d"))           // an escaped backslash is not an escape
+        XCTAssertEqual(v["t"], "x")
+        XCTAssertEqual(v["k"], [1, true])
+        XCTAssertEqual(try JSONValue.parse(Data("[\"\(bs)uD83D\"]".utf8)), [""])       // bytes too, capital hex too
+        XCTAssertThrowsError(try JSONValue.parse("{\"n\":\"Swim \(lead)\""))           // still throws on invalid JSON
+        // A model type decoded from such text does not throw either.
+        let item = coerceItem(json: try JSONValue.parse("{\"id\":\"i\",\"name\":\"Towel \(lead)\",\"sub\":[\"Peg \(trail)\"]}"))
+        XCTAssertEqual(item?.name, "Towel ")
+        XCTAssertEqual(item?.sub, ["Peg "])
+    }
+
     func testHexColorAndSlug() {
         XCTAssertTrue(isHexColor("#3b82f6"))
         XCTAssertTrue(isHexColor("#FFF"))

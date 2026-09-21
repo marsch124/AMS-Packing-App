@@ -14,8 +14,11 @@ public enum PackingEnv {
     public static var makeId: () -> String = { PackingEnv.defaultMakeId() }
 
     /// The locale `jsLocaleCompare` sorts in. JS uses the runtime's own; "en" is the
-    /// plain ICU order Node and an English-language Safari both give. To be tuned
-    /// ONCE, here, when the parity checker has run over his Swedish names.
+    /// plain ICU order Node and an English-language Safari both give.
+    /// The parity checker HAS now run over his Swedish names (å ä ö): every pair of his
+    /// 892 strings orders exactly as Node's `en-US` does, at both strengths ("en" and
+    /// "en_US" are the same root collation). Where Foundation and ICU still part — only
+    /// on characters no keyboard types — is listed at `jsLocaleCompare`.
     public static var collationLocale = Locale(identifier: "en")
 
     /// Put everything back (call from a test's `tearDown`).

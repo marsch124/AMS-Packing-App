@@ -21,6 +21,18 @@ final class MembershipsTests: XCTestCase {
     }
 
     // JS: 'INTRINSIC_FIELDS carries ownedBy and no longer the reserved owner'
+    // Parity review: `String(m.qty)` for a numeric qty is JS's number text — a small
+    // fraction is "0.00001", never the C layout "1e-05" the first number writer gave.
+    func testANumericQtyBecomesTextTheWayJSWritesNumbers() throws {
+        func qty(_ n: JSONValue) -> String? { coerceMembership(json: ["id": "m", "itemId": "i", "templateId": "t", "qty": n])?.qty }
+        XCTAssertEqual(qty(3), "3")
+        XCTAssertEqual(qty(0.5), "0.5")
+        XCTAssertEqual(qty(0.00001), "0.00001")
+        XCTAssertEqual(qty(1.5e-7), "1.5e-7")
+        XCTAssertEqual(qty(1e21), "1e+21")
+        XCTAssertEqual(qty(0), "")                                    // `m.qty ? String(m.qty) : ''`
+    }
+
     func testIntrinsicFieldsCarriesOwnedByAndNoLongerTheReservedOwner() {
         XCTAssertTrue(INTRINSIC_FIELDS.contains("ownedBy"))
         XCTAssertFalse(INTRINSIC_FIELDS.contains("owner"))

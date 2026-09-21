@@ -36,23 +36,6 @@ public func eventsNeedingCoords(_ events: [TripEvent]) -> [TripEvent] {
 
 // MARK: - Pins
 
-/// `x.toFixed(1)`. JS rounds the number's EXACT value, and on an exact tie takes the
-/// larger digit (59.25 → "59.3"); C's "%.1f" takes the even one ("59.2"). With one
-/// decimal an exact tie can only be an odd multiple of 0.25, so that case is done
-/// by hand and everything else can go through "%.1f". -0 is "0.0"; -0.04 is "-0.0".
-func jsToFixed1(_ x: Double) -> String {
-    if x.isNaN { return "NaN" }
-    let a = abs(x)
-    if a >= 1e21 { return jsNumberToString(x) }
-    let sign = x < 0 ? "-" : ""
-    let q = a * 4   // exact: a power of two
-    if q < 9e15, q == q.rounded(.down), q.truncatingRemainder(dividingBy: 2) == 1 {
-        let n = Int64((a * 10).rounded(.down)) + 1   // a·10 ends in .5 — take the larger neighbour
-        return "\(sign)\(n / 10).\(n % 10)"
-    }
-    return sign + String(format: "%.1f", a)
-}
-
 /// The pin key that merges repeat visits: a normalised place label when we have
 /// one (so "Stockholm, SE" visited thrice is one pin), else coordinates rounded
 /// to ~0.1° (~11 km) so two forecasts of the same spot still coincide.
