@@ -1,0 +1,112 @@
+name: Tests
+
+# Every push runs the suite — the model's own tests, then the UI tests on the
+# iPhone AND on the Mac, because he uses this app on both. A red run means the
+# build is not fit to install.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core:
+    name: The model (Core package)
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Model tests
+        run: cd Core && swift test
+
+  iphone:
+    name: UI tests — iPhone
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show what we are building with
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available | grep -E "iPhone" | head
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the project
+        run: xcodegen generate
+
+      - name: Pick a simulator the runner actually has
+        run: |
+          # Naming one device breaks when GitHub rotates the runner image. Take
+          # the highest numbered iPhone, so it is both present and predictable.
+          LINE=$(xcrun simctl list devices available \
+            | grep -E "^ +iPhone [0-9]" | sort -V | tail -1)
+          if [ -z "$LINE" ]; then
+            LINE=$(xcrun simctl list devices available | grep -E "^ +iPhone" | tail -1)
+          fi
+          UDID=$(echo "$LINE" | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
+          if [ -z "$UDID" ]; then
+            echo "::error::no iPhone simulator on this runner"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "SIM_UDID=$UDID" >> $GITHUB_ENV
+          echo "Using simulator:$(echo "$LINE" | sed -E 's/ *\(.*//')"
+
+      - name: UI tests on the iPhone simulator
+        run: |
+          xcodebuild test \
+            -project AMSPacking.xcodeproj \
+            -scheme AMSPacking \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -derivedDataPath build \
+            -resultBundlePath TestResults-iPhone.xcresult \
+            -collect-test-diagnostics never \
+            -test-timeouts-enabled YES \
+            -maximum-test-execution-time-allowance 300 \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
+
+      - name: Keep the results when it goes red
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults-iPhone
+          path: TestResults-iPhone.xcresult
+
+  mac:
+    name: UI tests — Mac
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate the project
+        run: xcodegen generate
+      - name: UI tests on the Mac
+        run: |
+          # Signed "to run locally" (-): a Mac app cannot be driven unsigned,
+          # and the runner has no developer certificate.
+          xcodebuild test \
+            -project AMSPacking.xcodeproj \
+            -scheme AMSPacking \
+            -destination "platform=macOS" \
+            -derivedDataPath build \
+            -resultBundlePath TestResults-Mac.xcresult \
+            -collect-test-diagnostics never \
+            -test-timeouts-enabled YES \
+            -maximum-test-execution-time-allowance 300 \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
+
+      - name: Keep the results when it goes red
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults-Mac
+          path: TestResults-Mac.xcresult

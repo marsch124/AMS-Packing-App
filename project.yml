@@ -1,0 +1,83 @@
+# XcodeGen spec — run `xcodegen generate`, then open AMSPacking.xcodeproj.
+# One target for the iPhone and the Mac, like AMS Coffee.
+name: AMSPacking
+options:
+  bundleIdPrefix: com.schabbauer
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: D24ENP83QQ
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  # The model — everything the app knows about packing, with no screen in it.
+  PackingCore:
+    path: Core
+targets:
+  AMSPacking:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: App/Sources
+      - path: App/Resources
+    dependencies:
+      - package: PackingCore
+    entitlements:
+      path: App/Config/AMSPacking.entitlements
+      properties:
+        # The Mac app is sandboxed (TestFlight and the App Store demand it).
+        # "user-selected" is what lets a Save window and an Open window hand
+        # the app a backup file anywhere he chooses.
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.schabbauer.AMSPacking
+        # iPhone only on iOS — portrait by design, like the web app on the
+        # phone. The Mac app is a separate destination and unaffected.
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_FILE: App/Config/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO
+    info:
+      path: App/Config/Info.plist
+      properties:
+        CFBundleDisplayName: Packing
+        CFBundleName: AMS Packing
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleIconName: AppIcon
+        LSApplicationCategoryType: public.app-category.travel
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: ""
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+  AMSPackingUITests:
+    type: bundle.ui-testing
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: UITests
+    dependencies:
+      - target: AMSPacking
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.schabbauer.AMSPackingUITests
+        TEST_TARGET_NAME: AMSPacking
+schemes:
+  AMSPacking:
+    build:
+      targets:
+        AMSPacking: all
+    test:
+      targets:
+        - AMSPackingUITests
+        # The model's own tests live in the Core package and run with the app's.
+        - package: PackingCore/PackingCoreTests
