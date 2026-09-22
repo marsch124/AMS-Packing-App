@@ -16,7 +16,9 @@ struct RestoreSheet: View {
     private var rows: [(table: PackingLibrary.Table, file: Int, device: Int)] {
         let d = Dictionary(uniqueKeysWithValues: device.counts.map { ($0.table, $0.count) })
         return file.counts.map { (table: $0.table, file: $0.count, device: d[$0.table] ?? 0) }
-            .filter { $0.file > 0 || $0.device > 0 }
+            // `meta` is the library's own bookkeeping, not his things: it says
+            // nothing to him and would only make the comparison look wrong.
+            .filter { $0.table != .meta && ($0.file > 0 || $0.device > 0) }
     }
 
     /// The one question worth asking out loud: does this file hold less than the
@@ -74,9 +76,13 @@ struct RestoreSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
 
                     if !fewer.isEmpty {
-                        Text("This file holds less than this device does: "
-                             + fewer.map { "\(SettingsScreen.label($0.table).lowercased()) \($0.file) against \($0.device)" }
-                                    .joined(separator: ", ") + ".")
+                        // The three biggest losses, not all of them: a wall of red
+                        // says less than one line he actually reads.
+                        Text("This file holds less than this device does — "
+                             + fewer.sorted { ($0.device - $0.file) > ($1.device - $1.file) }.prefix(3)
+                                    .map { "\(SettingsScreen.label($0.table).lowercased()) \($0.file) against \($0.device)" }
+                                    .joined(separator: ", ")
+                             + (fewer.count > 3 ? ", and more." : "."))
                             .font(.system(size: 16, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("restore-fewer")
                     }
