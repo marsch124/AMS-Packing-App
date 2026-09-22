@@ -61,9 +61,10 @@ final class ImporterTests: XCTestCase {
         XCTAssertEqual(report.fragile, report.fragileAfter)
         XCTAssertEqual(report.fragile["reviewed"], 2, "the headlamp's history, counted once per row it sits on")
 
-        // …and this is the loss being guarded against, shown on the same file:
+        // The web app's own rebuild lost the packer until v188; the importer never
+        // went through it and still does not. Since v188 both agree:
         let rebuilt = buildCatalog(file.lists)
-        XCTAssertEqual(rebuilt.items.first { $0.name == "Headlamp" }?.packer, "", "buildCatalog drops the packer — never import through it")
+        XCTAssertEqual(rebuilt.items.first { $0.name == "Headlamp" }?.packer, "Anna")
     }
 
     func testATripsLinesStillPointAtTheirThings() {

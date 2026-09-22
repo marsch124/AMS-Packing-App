@@ -647,24 +647,6 @@ final class CatalogueTests: XCTestCase {
         XCTAssertNil(fresh.itemId)
     }
 
-    // 🪤 What a rebuild through buildCatalog does NOT carry — reproduced from the JS on
-    // purpose (see the report): these fields are lost by a replace-restore in the web app.
-    func testBuildCatalogDropsWhatTheJSDrops() throws {
-        let it = newItem(name: "Gel", consumable: true, kit: "Race kit", packer: "Anna",
-                         stats: ItemStats(packed: 3, used: 2), retired: true, retiredReason: "sold", keep: true,
-                         extra: ["futureField": 5])
-        let c = buildCatalog([newList(name: "Run", items: [it])])
-        let r = try XCTUnwrap(resolveTemplateItems(c.templates[0], c.items, c.memberships).first)
-        XCTAssertEqual(r.consumable, false)
-        XCTAssertEqual(r.packer, "")
-        XCTAssertEqual(r.retired, false)
-        XCTAssertEqual(r.retiredReason, "")
-        XCTAssertEqual(r.keep, false)
-        XCTAssertEqual(r.kit, "")
-        XCTAssertEqual(r.stats, ItemStats())
-        XCTAssertEqual(r.extra, [:])
-    }
-
     func testBuildCatalogMergeRulesAndIdOrder() {
         PackingEnv.freeze()
         let a = newList(id: "a", name: "A", items: [
@@ -682,29 +664,91 @@ final class CatalogueTests: XCTestCase {
         XCTAssertEqual(c.items[0].weight, 120)                                   // first known value
         XCTAssertEqual(c.items[0].liquid, true)                                  // true if any copy has it
         XCTAssertEqual(c.items[0].sub, ["lid", "straw"])                         // the longest list
-        // Ids in the JS order: every item, then the memberships list by list.
-        XCTAssertEqual(c.items.map { $0.id }, ["id-1", "id-2"])
-        XCTAssertEqual(c.memberships.map { $0.id }, ["id-3", "id-4", "id-5", "id-6"])
+        // v188: a thing keeps its identity — the most common id among its copies
+        // (a 1-1-1 tie: the first seen). Only the memberships are minted, list by list.
+        XCTAssertEqual(c.items.map { $0.id }, ["x1", "x2"])
+        XCTAssertEqual(c.memberships.map { $0.id }, ["id-1", "id-2", "id-3", "id-4"])
         XCTAssertEqual(c.memberships.map { $0.order }, [0, 1, 0, 1])
         XCTAssertEqual(c.memberships.map { $0.container }, ["Day pack", "", "", ""])
         XCTAssertEqual(c.memberships.map { $0.templateId }, ["a", "a", "b", "b"])
     }
-}
+    // MARK: - web app v188: a rebuild keeps every detail of a thing
 
-// --- JS tests of this section that could not be ported as written -------------
-//
-// • The five tests built on `seedLists()` (js/seed.js) — 'buildCatalog: counts match
-//   the analysis…', '…resolving a template reproduces each copy's container / phase /
-//   conditions', '…a trip built from resolved templates matches one built from the
-//   originals', '…per-template container override (Socks default vs Travel/RV)',
-//   '…itemType override preserves the Bike "after" reminders' — run here over
-//   `miniSeedLists()` (CatalogueTestSupport.swift), an INVENTED fixture with the same
-//   properties. The real seed is the owner's own lists and is not in this package.
-//   When a seed is ported, point these at it.
-// • 'buildCatalog: a trip built from resolved templates matches one built from the
-//   originals' also needs `buildTotalEntries` (the trip section). Ported REDUCED: it
-//   compares, list by list, everything a trip is built from (name, container, phase,
-//   itemType and every condition) between the originals and the resolved templates.
-//   Restore the `buildTotalEntries` comparison once the trip section is merged.
-// • `link[f] === undefined` (two link tests) cannot be said of a typed Item: the port
-//   asserts `link.link` and that every intrinsic field holds a BLANK item's value.
+    /// JS: 'buildCatalog: every intrinsic field survives a rebuild (the restore path), and so does the id'
+    func testEveryIntrinsicFieldSurvivesARebuildAndSoDoesTheId() {
+        var it = newItem(name: "Headlamp", swedish: "Pannlampa", category: "Electronics", charging: true, chargeType: "usb-c",
+                         shortList: true, sub: ["Spare strap"], weight: 90, liquid: true, restricted: true, perNight: true,
+                         consumable: true, packer: "Anna", storage: "Hall closet", photos: ["ph-1"], thumb: "t",
+                         maintenance: Maintenance(notes: "Check the seal", link: "", intervalDays: 90, lastDone: "2026-06-01", log: []),
+                         color: "Red", size: "M", manufacturer: "Petzl", model: "Actik", ownedBy: "Anna", acquired: "2025-01-02",
+                         price: 49, currency: "EUR", purchaseLink: "https://example.invalid/x", expiry: "2027-01-01",
+                         condition: "good", retired: true, retiredReason: "sold", serial: "SN1", qtyOwned: 2, warranty: "2027-06-01",
+                         capacityL: 1.5, maxKg: 0.5)
+        it.stats = ItemStats(packed: 3, used: 2, unused: 1, skipped: 0, lastReviewed: "2026-08-01")
+        it.keep = true
+        var list = newList(name: "Camp"); list.items = [it]
+        let cat = buildCatalog([list])
+        let got = cat.items.first { $0.name == "Headlamp" }!
+        for f in INTRINSIC_FIELDS {
+            XCTAssertEqual(got.json[f], it.json[f], "the catalogue item lost \"\(f)\"")
+        }
+        XCTAssertEqual(got.id, it.id, "a thing keeps its identity through a rebuild")
+        let back = resolveTemplate(cat.templates[0], cat.items, cat.memberships).items[0]
+        for f in INTRINSIC_FIELDS {
+            XCTAssertEqual(back.json[f], it.json[f], "the resolved item lost \"\(f)\"")
+        }
+    }
+
+    /// JS: 'buildCatalog: one thing on two templates keeps its kit per template, its packer, and the richest review history — not a sum'
+    func testOneThingOnTwoTemplatesKeepsItsKitPerTemplateItsPackerAndTheRichestHistory() {
+        var shared = newItem(name: "Power bank", consumable: true, packer: "Anna")
+        shared.stats = ItemStats(packed: 4, used: 4, unused: 0, skipped: 0)
+        var stale = newItem(id: shared.id, name: "Power bank", kit: "Charging kit")
+        stale.stats = ItemStats(packed: 1, used: 1, unused: 0, skipped: 0)
+        var a = newList(name: "Camp"); a.items = [shared]
+        var b = newList(name: "Travel"); b.items = [stale]
+        let cat = buildCatalog([a, b])
+        XCTAssertEqual(cat.items.count, 1, "one thing, two templates")
+        XCTAssertEqual(cat.items[0].id, shared.id)
+        XCTAssertEqual(cat.items[0].packer, "Anna")
+        XCTAssertTrue(cat.items[0].consumable)
+        XCTAssertEqual(cat.items[0].stats.packed, 4, "the copy with the most history speaks — 4, not 4 + 1")
+        XCTAssertEqual(cat.items[0].stats.used, 4)
+        let inCamp = resolveTemplate(cat.templates[0], cat.items, cat.memberships).items[0]
+        let inTravel = resolveTemplate(cat.templates[1], cat.items, cat.memberships).items[0]
+        XCTAssertEqual(inCamp.kit, "", "no kit on the Camp template")
+        XCTAssertEqual(inTravel.kit, "Charging kit", "the kit is a per-template answer, and it survives")
+        XCTAssertEqual(cat.memberships.first { $0.templateId == b.id }?.kit, "Charging kit")
+        XCTAssertEqual(inTravel.packer, "Anna", "the packer is the thing's own, so it is there on both")
+    }
+
+    /// JS: '"Keep" on Refine is written to the catalogue item, so the suggestion stays away'
+    func testKeepOnRefineReachesTheCatalogueItem() {
+        var cat = newItem(name: "Tow rope")
+        cat.stats = ItemStats(packed: 3, used: 0, unused: 3, skipped: 0)
+        var list = newList(name: "RV")
+        func resolved() -> Item { resolveMembership(cat, newMembership(itemId: cat.id, templateId: list.id)) }
+        list.items = [resolved()]
+        XCTAssertEqual(pruneSuggestions([list]).count, 1, "packed three times, never used: a suggestion")
+        var row = resolved()
+        row.keep = true
+        cat = applyIntrinsic(cat, row)
+        XCTAssertTrue(cat.keep, "keep reaches the shared item")
+        list.items = [resolved()]
+        XCTAssertEqual(pruneSuggestions([list]).count, 0, "and Refine stops suggesting the drop, even after a reload")
+    }
+
+    /// JS: 'buildCatalog: two names claiming one id stay two records, and a copy with no id is given one'
+    func testTwoNamesClaimingOneIdStayTwoRecords() {
+        let a = newItem(id: "same-id", name: "Gloves")
+        let b = newItem(id: "same-id", name: "Hat")
+        let legacy = Item(json: ["name": "Scarf"])          // a v1 copy: no id at all
+        var list = newList(name: "Winter"); list.items = [a, b, legacy]
+        let items = buildCatalog([list]).items
+        XCTAssertEqual(items.count, 3)
+        XCTAssertEqual(items[0].id, "same-id", "the first keeps it")
+        XCTAssertNotEqual(items[1].id, "same-id", "the second is given its own")
+        XCTAssertFalse(items[2].id.isEmpty, "no id in the file — one is minted")
+        XCTAssertEqual(Set(items.map(\.id)).count, 3)
+    }
+}

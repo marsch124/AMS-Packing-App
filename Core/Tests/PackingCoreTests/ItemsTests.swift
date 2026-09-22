@@ -238,7 +238,8 @@ final class ItemsTests: XCTestCase {
         XCTAssertEqual(o["qtyOwned"], 2)
         // A plain catalogue item writes none of the entry / resolve keys.
         let plain = newItem(name: "Socks").json
-        for k in ["keep", "sourceListId", "sourceItemId", "custom", "checked", "skipped", "used", "_edited",
+        XCTAssertEqual(plain["keep"], false, "v188: keep is intrinsic and always written")
+        for k in ["sourceListId", "sourceItemId", "custom", "checked", "skipped", "used", "_edited",
                   "_itemId", "_memId", "_link", "_ovContainer", "_tplContainer", "_defContainer", "_ovPhase", "_defPhase"] {
             XCTAssertNil(plain[k], k)
         }

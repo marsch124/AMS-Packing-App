@@ -531,7 +531,7 @@ public struct Item: JSONModel, Hashable, Sendable {
         o["qtyOwned"] = .number(Double(qtyOwned)); o["warranty"] = .string(warranty)
         o["capacityL"] = .number(capacityL); o["maxKg"] = .number(maxKg)
         // Everything below is left out unless it says something.
-        if keep { o["keep"] = true }
+        o["keep"] = .bool(keep)   // v188: intrinsic, and coerceItem always sets it — so always written
         if let v = sourceListId { o["sourceListId"] = .string(v) }
         if let v = sourceItemId { o["sourceItemId"] = .string(v) }
         if custom { o["custom"] = true }

@@ -182,7 +182,7 @@ public let INTRINSIC_FIELDS: [String] = [
     "perNight", "consumable", "shortList", "weight", "storage", "packer", "sub",
     "photos", "thumb", "maintenance", "stats",
     "color", "size", "manufacturer", "model", "ownedBy", "acquired", "price", "currency",
-    "purchaseLink", "expiry", "condition", "retired", "retiredReason", "serial",
+    "purchaseLink", "expiry", "condition", "retired", "retiredReason", "keep", "serial",
     "qtyOwned", "warranty", "capacityL", "maxKg",
 ]
 

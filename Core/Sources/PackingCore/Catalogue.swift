@@ -358,7 +358,13 @@ fileprivate func _firstNonEmpty(_ values: [String]) -> String { values.first(whe
 /// (a replace-restore, a snapshot restore) comes back without them. Reproduced on
 /// purpose — the parity checker compares answers — and reported to be decided once.
 func buildCatalogItem(_ copies: [Item]) -> Item {
-    // Swedish alias: prefer the most common wording, breaking ties toward the longest.
+    // v188 (web app): EVERY intrinsic field is merged, by a rule per field, and the
+    // thing keeps its identity — before that the rebuild (every replace-restore)
+    // silently dropped packer, consumable, "not in use", review history and more.
+    func anyTrue(_ f: (Item) -> Bool) -> Bool { copies.contains(where: f) }
+    func firstPositive(_ f: (Item) -> Double) -> Double { copies.map(f).first(where: { $0 > 0 }) ?? 0 }
+    func firstNonEmpty(_ f: (Item) -> String) -> String { _firstNonEmpty(copies.map(f)) }
+    // The most common Swedish wording, ties toward the longest.
     let swedishes = copies.map { jsTrim($0.swedish) }.filter { !$0.isEmpty }
     var swedish = ""
     var bestN = -1
@@ -366,52 +372,63 @@ func buildCatalogItem(_ copies: [Item]) -> Item {
         swedish = v; bestN = n
     }
     let longestSub = copies.map { $0.sub }.stableSorted(compare: { a, b in jsSign(Double(b.count - a.count)) }).first ?? []
-    return newItem(
+    // The copy with the most history speaks — not a sum: the copies are ONE thing
+    // resolved several times, not several things.
+    var stats = ItemStats()
+    var richest = -1
+    for c in copies {
+        let n = c.stats.packed + c.stats.used + c.stats.unused + c.stats.skipped
+        if n > richest { stats = c.stats; richest = n }
+    }
+    let sharedId = _mostCommon(copies.map { $0.id }, "")
+    var cat = newItem(
+        id: sharedId.isEmpty ? PackingEnv.makeId() : sharedId,
         name: _mostCommon(copies.map { $0.name }, copies.first?.name ?? ""),
         swedish: swedish,
         category: _mostCommon(copies.map { $0.category }, CATEGORY_DEFAULT),
         container: _mostCommon(copies.map { $0.container }, "Carry-on / hand luggage"),   // the DEFAULT
         phase: _mostCommon(copies.map { $0.phase }, defaultPhaseId()),   // the DEFAULT (any id, known here or not)
         itemType: _mostCommon(copies.map { $0.itemType }, "item"),
-        charging: copies.contains { $0.charging },
-        chargeType: _firstNonEmpty(copies.map { $0.chargeType }),
-        shortList: copies.contains { $0.shortList },
+        charging: anyTrue { $0.charging },
+        chargeType: firstNonEmpty { $0.chargeType },
+        shortList: anyTrue { $0.shortList },
         // Conditions (incl. weather), note and qty are contextual → they live on the
         // membership, so the catalog item keeps them empty.
         seasons: [], contexts: [], transports: [], catering: [], weather: [],
         sub: longestSub,
         note: "",
-        weight: copies.map { $0.weight }.first(where: { $0 > 0 }) ?? 0,
-        liquid: copies.contains { $0.liquid },
-        restricted: copies.contains { $0.restricted },
-        perNight: copies.contains { $0.perNight },
-        storage: _firstNonEmpty(copies.map { $0.storage }),
-        // Photos and the care record are INTRINSIC — they describe the physical object,
-        // so they must survive being rebuilt from a backup. They were missing here,
-        // which meant a replace-import (and every snapshot restore, which uses the same
-        // path) silently dropped every picture and every maintenance schedule. Same
-        // "first copy that has one wins" rule as the metadata.
+        weight: firstPositive { $0.weight },
+        liquid: anyTrue { $0.liquid },
+        restricted: anyTrue { $0.restricted },
+        perNight: anyTrue { $0.perNight },
+        consumable: anyTrue { $0.consumable },
+        packer: firstNonEmpty { $0.packer },
+        storage: firstNonEmpty { $0.storage },
         photos: copies.map { $0.photos }.first(where: { !$0.isEmpty }) ?? [],
-        thumb: _firstNonEmpty(copies.map { $0.thumb }),
+        thumb: firstNonEmpty { $0.thumb },
         maintenance: copies.compactMap { $0.maintenance }.first,
-        // Descriptive / ownership metadata: first known value wins (intrinsic to the item).
-        color: _firstNonEmpty(copies.map { $0.color }),
-        size: _firstNonEmpty(copies.map { $0.size }),
-        manufacturer: _firstNonEmpty(copies.map { $0.manufacturer }),
-        model: _firstNonEmpty(copies.map { $0.model }),
-        ownedBy: _firstNonEmpty(copies.map { $0.ownedBy }),
-        acquired: _firstNonEmpty(copies.map { $0.acquired }),
-        price: copies.map { $0.price }.first(where: { $0 > 0 }) ?? 0,
-        currency: _firstNonEmpty(copies.map { $0.currency }),
-        purchaseLink: _firstNonEmpty(copies.map { $0.purchaseLink }),
-        expiry: _firstNonEmpty(copies.map { $0.expiry }),
-        condition: _firstNonEmpty(copies.map { $0.condition }),
-        serial: _firstNonEmpty(copies.map { $0.serial }),
-        qtyOwned: copies.map { $0.qtyOwned }.first(where: { $0 > 0 }) ?? 0,
-        warranty: _firstNonEmpty(copies.map { $0.warranty }),
-        capacityL: copies.map { $0.capacityL }.first(where: { $0 > 0 }) ?? 0,
-        maxKg: copies.map { $0.maxKg }.first(where: { $0 > 0 }) ?? 0
+        color: firstNonEmpty { $0.color },
+        size: firstNonEmpty { $0.size },
+        manufacturer: firstNonEmpty { $0.manufacturer },
+        model: firstNonEmpty { $0.model },
+        ownedBy: firstNonEmpty { $0.ownedBy },
+        acquired: firstNonEmpty { $0.acquired },
+        price: firstPositive { $0.price },
+        currency: firstNonEmpty { $0.currency },
+        purchaseLink: firstNonEmpty { $0.purchaseLink },
+        expiry: firstNonEmpty { $0.expiry },
+        condition: firstNonEmpty { $0.condition },
+        retired: anyTrue { $0.retired },
+        retiredReason: firstNonEmpty { $0.retiredReason },
+        serial: firstNonEmpty { $0.serial },
+        qtyOwned: Int(firstPositive { Double($0.qtyOwned) }),
+        warranty: firstNonEmpty { $0.warranty },
+        capacityL: firstPositive { $0.capacityL },
+        maxKg: firstPositive { $0.maxKg }
     )
+    cat.stats = stats
+    cat.keep = anyTrue { $0.keep }
+    return cat
 }
 
 /// Is a per-list exception needed to make this row show `effective`?
@@ -441,6 +458,7 @@ func membershipFromCopy(_ catItem: Item, _ templateId: String, _ copy: Item, _ t
         weather: copy.weather,
         container: containerOverrideFor(copy.container, tplDefault, catItem.container),
         section: copy.section,
+        kit: copy.kit,   // per-template kit name — dropped here until v188, so a restore emptied every kit
         phase: copy.phase != catItem.phase ? copy.phase : "",
         itemType: copy.itemType != catItem.itemType ? copy.itemType : "",
         qty: copy.qty,
@@ -482,8 +500,11 @@ public func buildCatalog(_ lists: [PackList]) -> Catalog {
     }
     var items: [Item] = []
     var byName: [String: Item] = [:]   // normName -> catalog item
+    var taken = Set<String>()          // ids already given out — two names must never share one
     for (k, copies) in groups.entries {
-        let cat = buildCatalogItem(copies)
+        var cat = buildCatalogItem(copies)
+        if taken.contains(cat.id) { cat.id = PackingEnv.makeId() }
+        taken.insert(cat.id)
         items.append(cat)
         byName[k] = cat
     }

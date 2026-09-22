@@ -55,10 +55,11 @@ which is how the web app works too.
 3. **The import happens once, on one device**, and writes a `meta` record saying
    so (when, from which file, how many of each thing). A device that sees that
    record refuses a second import unless told "replace everything", loudly.
-4. **The import does not go through `buildCatalog`.** The web app's rebuild drops
-   consumable, packer, review history, "not in use" and kit membership (found by
-   the port, 2026-09-21). The importer carries every intrinsic field and the
-   membership's kit, and counts them before and after.
+4. **The import does not go through `buildCatalog`.** The web app's rebuild
+   dropped consumable, packer, review history, "not in use" and kit membership
+   (found by the port, 2026-09-21; fixed in the web app's v188 the next day). The
+   importer takes each template apart the way a save does, carries every
+   intrinsic field and the membership's kit, and counts them before and after.
 5. **Same key, two records → one survives, by rule.** CloudKit cannot enforce a
    unique key, and two devices can create `phases/prep` independently. On load,
    records are grouped by (table, key); the newest `updatedAt` wins, the rest are
