@@ -42,9 +42,18 @@ go in `private/`, which git ignores. The parity checker reads them from there.
   marks, light and dark.
 - ✅ CI on every push: the model's tests, the UI tests on an iPhone simulator, the
   UI tests on the Mac.
-- 🔨 `Core/` — the model being ported from `js/model.js`. The rules of the port are
-  in [`Core/PORTING.md`](Core/PORTING.md).
-- 🔨 `tools/parity/` — the parity checker.
+- ✅ `Core/PackingCore` — the whole of `js/model.js` in Swift (the rules of the
+  port: [`Core/PORTING.md`](Core/PORTING.md)), held to the web app by
+  `tools/parity/` — both models answer 200-odd questions about a backup and every
+  answer must be identical; on his real data: differences: none. A change to the
+  web app's model turns the CI job red until the Swift model follows.
+- ✅ `Core/PackingLibrary` — the library in memory, the records it is stored and
+  synced as, the one-time import (self-checking), backups. [`docs/store.md`](docs/store.md).
+- ✅ iCloud sync, proved end to end on his Mac (1,438 records up, wiped, all back).
+- 🔨 Screens: Templates (read-only), Events, Packing Mode (tick, "not this time"),
+  Home (build a trip), Settings (backup, device check). Care, Actions and editing
+  are next.
+- 🔜 TestFlight: [`TESTFLIGHT.md`](TESTFLIGHT.md) — two browser steps remain.
 
 ## Building
 

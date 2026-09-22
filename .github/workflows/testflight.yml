@@ -1,0 +1,207 @@
+name: TestFlight
+
+# Builds AMS Packing for the iPhone AND the Mac and sends both to TestFlight,
+# so a new version reaches his devices without touching the Mac. Started by
+# hand from the Actions tab.
+#
+# Needs four repository secrets, made once in App Store Connect:
+#   ASC_KEY_ID     the key's ID, ten characters
+#   ASC_ISSUER_ID  the issuer ID shown above the key list
+#   ASC_KEY_P8     the whole contents of the AuthKey_XXXXXXXXXX.p8 file
+#   ASC_TEAM_ID    the ten-character Team ID from App Store Connect > Membership
+#
+# 🚨 The key must have the ADMIN role. An App Manager key uploads fine but
+# cannot do the cloud signing below, and fails with "Cloud signing permission
+# error". (Learned on AMS PARA, and once more on AMS Coffee.)
+#
+# The app record for com.schabbauer.AMSPacking must exist in App Store Connect
+# with BOTH platforms (iOS and macOS) before the first run — that is a browser
+# step for the account owner; an API key cannot create it.
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: What is new in this build
+        required: false
+        default: ""
+
+jobs:
+  # A red suite must never reach a device.
+  tests:
+    name: The suite has to pass first
+    uses: ./.github/workflows/tests.yml
+
+  upload:
+    name: Build and send to TestFlight
+    needs: tests
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode on the runner
+        run: |
+          # Apple refuses uploads built with an older SDK, so always take the
+          # highest Xcode the image has.
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $newest"
+          sudo xcode-select -s "$newest"
+          xcodebuild -version
+
+      - name: Check the secrets are there
+        env:
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+          TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+        run: |
+          missing=""
+          [ -z "$KEY_ID" ] && missing="$missing ASC_KEY_ID"
+          [ -z "$ISSUER" ] && missing="$missing ASC_ISSUER_ID"
+          [ -z "$KEY" ] && missing="$missing ASC_KEY_P8"
+          [ -z "$TEAM_ID" ] && missing="$missing ASC_TEAM_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing — add them under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the project
+        run: xcodegen generate
+
+      - name: Number this build
+        run: |
+          # The version in project.yml is the single source; the run number keeps
+          # every upload unique within it (Apple refuses a repeated build number).
+          APP_VERSION=$(sed -n 's/^ *MARKETING_VERSION: *"\([^"]*\)".*/\1/p' project.yml | head -1)
+          [ -n "$APP_VERSION" ] || { echo "::error::no MARKETING_VERSION in project.yml"; exit 1; }
+          BUILD="${{ github.run_number }}"
+          echo "App version: $APP_VERSION, build $BUILD"
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "BUILD=$BUILD" >> $GITHUB_ENV
+
+      - name: Entitlements for a build that ships
+        run: |
+          # The iCloud entitlements, but for Production: the store, the push
+          # environment. (A development build's sandbox exception for the
+          # CloudKit daemon stays in until a shipped build proves it is not
+          # needed — see docs/store.md.)
+          sed -e 's|<string>Development</string>|<string>Production</string>|' \
+              -e 's|<string>development</string>|<string>production</string>|' \
+              App/Config/AMSPacking-iCloud.entitlements > App/Config/AMSPacking-Ship.entitlements
+          grep -c "Production" App/Config/AMSPacking-Ship.entitlements
+
+      - name: Write the App Store Connect key
+        env:
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p "$HOME/private_keys"
+          # A browser textarea can normalise newlines to CRLF on submit; strip
+          # them, and drop blank lines.
+          printf '%s\n' "$KEY" | tr -d '\r' | awk 'NF' > "$HOME/private_keys/AuthKey_$KEY_ID.p8"
+          chmod 600 "$HOME/private_keys/AuthKey_$KEY_ID.p8"
+          F="$HOME/private_keys/AuthKey_$KEY_ID.p8"
+          head -1 "$F" | grep -q "BEGIN PRIVATE KEY" || { echo "::error::ASC_KEY_P8 does not start with -----BEGIN PRIVATE KEY-----"; exit 1; }
+          tail -1 "$F" | grep -q "END PRIVATE KEY" || { echo "::error::ASC_KEY_P8 does not end with -----END PRIVATE KEY-----"; exit 1; }
+          openssl pkey -in "$F" -noout || { echo "::error::ASC_KEY_P8 is not a valid private key"; exit 1; }
+
+      - name: Archive for the iPhone and for the Mac
+        env:
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+        run: |
+          set -o pipefail
+          mkdir -p build
+          for platform in iOS macOS; do
+            echo "=== $platform"
+            # -allowProvisioningUpdates lets Apple register the bundle identifier
+            # and its iCloud container on the first run.
+            xcodebuild archive \
+              -project AMSPacking.xcodeproj \
+              -scheme AMSPacking \
+              -destination "generic/platform=$platform" \
+              -archivePath "$PWD/build/AMSPacking-$platform.xcarchive" \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$HOME/private_keys/AuthKey_$KEY_ID.p8" \
+              -authenticationKeyID "$KEY_ID" \
+              -authenticationKeyIssuerID "$ISSUER" \
+              DEVELOPMENT_TEAM="$TEAM_ID" \
+              CODE_SIGN_STYLE=Automatic \
+              CODE_SIGN_ENTITLEMENTS=App/Config/AMSPacking-Ship.entitlements \
+              PACKING_USES_ICLOUD=YES \
+              MARKETING_VERSION="$APP_VERSION" \
+              CURRENT_PROJECT_VERSION="$BUILD" \
+              2>&1 | tee "build/archive-$platform.log" | grep -E "error:|\*\* ARCHIVE" || true
+            grep -q "\*\* ARCHIVE SUCCEEDED \*\*" "build/archive-$platform.log"
+          done
+
+      - name: Send both to TestFlight
+        env:
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+        run: |
+          set -o pipefail
+          cat > build/ExportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" build/ExportOptions.plist
+          for platform in iOS macOS; do
+            echo "=== $platform"
+            xcodebuild -exportArchive \
+              -archivePath "$PWD/build/AMSPacking-$platform.xcarchive" \
+              -exportPath "$PWD/build/export-$platform" \
+              -exportOptionsPlist build/ExportOptions.plist \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$HOME/private_keys/AuthKey_$KEY_ID.p8" \
+              -authenticationKeyID "$KEY_ID" \
+              -authenticationKeyIssuerID "$ISSUER" \
+              2>&1 | tee "build/export-$platform.log" | grep -E "error:|Upload|EXPORT" || true
+            grep -q "\*\* EXPORT SUCCEEDED \*\*" "build/export-$platform.log"
+          done
+
+      - name: Release them to the tester group
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          # An upload alone reaches no device: the build has to be released to
+          # a group, and an internal group does not take new builds by itself.
+          ASC_KEY_PATH="$HOME/private_keys/AuthKey_$ASC_KEY_ID.p8" \
+          BUILD_VERSION="$BUILD" \
+          APP_BUNDLE_ID=com.schabbauer.AMSPacking \
+          TESTER_GROUP=Martin \
+          python3 tools/release-to-testers.py
+
+      - name: Say what happened
+        if: success()
+        run: |
+          echo "### Sent to TestFlight — iPhone and Mac" >> $GITHUB_STEP_SUMMARY
+          echo "AMS Packing $APP_VERSION, build $BUILD." >> $GITHUB_STEP_SUMMARY
+          echo "Apple processes it for a few minutes, then it appears in TestFlight on both devices." >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ github.event.inputs.notes }}" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "What is new: ${{ github.event.inputs.notes }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Keep the logs when something fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-logs
+          path: build/*.log
+          if-no-files-found: ignore
