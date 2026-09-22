@@ -141,7 +141,7 @@ final class AMSPackingUITests: XCTestCase {
 
         XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the template did not open")
         shot(app, "template")
-        app.buttons["template-detail-done"].tap()
+        tap(app, id: "template-detail-done")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "the template did not close")
     }
 
@@ -176,7 +176,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") }, "the tick did not count: '\(words(progress))'")
         shot(app, "trip")
 
-        app.buttons["trip-done"].tap()
+        tap(app, id: "trip-done")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
         row.tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -249,6 +249,24 @@ final class AMSPackingUITests: XCTestCase {
     private func tapVisible(_ app: XCUIApplication, _ e: XCUIElement) {
         bringIntoView(app, e)
         e.tap()
+    }
+
+    /// A screen's container exists the moment it is created; its controls can be a
+    /// beat behind on a slow machine. So: wait for the control, then tap it.
+    private func tap(_ app: XCUIApplication, id: String, timeout: TimeInterval = 10) {
+        // A FRESH query every time: waiting on one held query has been seen not to
+        // find a control that appears a moment later (Settings, 2026-09-22).
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            let e = app.buttons[id]
+            if e.exists { tapVisible(app, e); return }
+            usleep(200_000)
+        } while Date() < deadline
+        print("TAP-REPORT nothing called \(id) after \(timeout)s")
+        print("TAP-REPORT tree:\n" + String(app.debugDescription.prefix(12000)))
+        let picture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        picture.name = "no-\(id)"; picture.lifetime = .keepAlways; add(picture)
+        XCTFail("no \(id) to tap — see TAP-REPORT in the log")
     }
 
     /// Replace what a field holds. Select-all on the Mac; on the phone the old text
@@ -343,7 +361,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(progress.waitForExistence(timeout: 5))
         let shown = words(progress)
         XCTAssertTrue(shown.hasPrefix("0/") && !shown.hasPrefix("0/0"), "the trip has no lines: '\(shown)'")
-        app.buttons["trip-done"].tap()
+        tap(app, id: "trip-done")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
         tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
@@ -373,7 +391,7 @@ final class AMSPackingUITests: XCTestCase {
 
         app.buttons["grab-reset"].tap()
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of") && !self.words(count).contains("skipped") }, "Start over did not clear: '\(words(count))'")
-        app.buttons["grab-done"].tap()
+        tap(app, id: "grab-done")
         XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
     }
     /// A thing typed while packing joins the trip — and the count.
@@ -438,7 +456,7 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["template-add"].tap()
         XCTAssertTrue(waitUntil { app.buttons["template-item-4"].exists }, "the new thing is not on the list")
 
-        app.buttons["template-detail-done"].tap()
+        tap(app, id: "template-detail-done")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
         app.buttons["template-row-1"].tap()
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
@@ -481,7 +499,7 @@ final class AMSPackingUITests: XCTestCase {
         line.tap()
         XCTAssertTrue(waitUntil { self.isOn(line) }, "the line was not marked didn't use")
         type("Tripod", into: app.textFields["review-miss-input"])
-        app.buttons["review-miss-add"].tap()
+        tap(app, id: "review-miss-add")
         XCTAssertTrue(waitUntil { self.find(app, "review-missed-0") != nil }, "the missed thing is not listed")
         tapVisible(app, app.buttons["review-save"])
         XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
@@ -489,7 +507,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["trip-review"].exists, "a trip is reviewed once")
 
         // The missed thing went onto the first list of the trip: the base list (4 things → 5).
-        app.buttons["trip-done"].tap()
+        tap(app, id: "trip-done")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
         tab(app, "templates")
         app.buttons["template-row-0"].tap()
@@ -503,7 +521,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         tab(app, "care")
         XCTAssertTrue(appears(app, "screen-care"))
-        app.buttons["care-things"].tap()
+        tap(app, id: "care-things")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
         let count = app.staticTexts["things-count"]
         XCTAssertTrue(waitUntil { self.words(count) == "10 things" }, "the sample library holds 10 things: '\(words(count))'")
@@ -520,7 +538,7 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         replace("Sit pad", in: app.textFields["thing-name"])
-        tapVisible(app, app.buttons["thing-save"])
+        tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).hasPrefix("Sit pad") || app.buttons["thing-row-0"].label.contains("Sit pad") },
                       "the rename did not stick: '\(app.buttons["thing-row-0"].label)'")
@@ -546,7 +564,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["grab-item-0"].label.contains("Swim shorts"), "the rename did not stick: '\(app.buttons["grab-item-0"].label)'")
         XCTAssertTrue(app.buttons["grab-item-6"].label.contains("Nose clip"), "the added thing is not last")
 
-        app.buttons["grab-done"].tap()
+        tap(app, id: "grab-done")
         XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
         app.buttons["grab-0"].tap()
         XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
@@ -558,7 +576,7 @@ final class AMSPackingUITests: XCTestCase {
     func testAThingsOwnDetailsAndItsListsAreChanged() {
         let app = launch()
         tab(app, "care")
-        app.buttons["care-things"].tap()
+        tap(app, id: "care-things")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
         type("Headlamp", into: app.textFields["things-search"])
         let row = app.buttons["thing-row-0"]
@@ -574,7 +592,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(swim.exists, "no list to put it on")
         XCTAssertFalse(swim.isSelected)
         select(app, swim)
-        tapVisible(app, app.buttons["thing-save"])
+        tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].label.contains("Swim") },
                       "the list it was put on is not shown: '\(app.buttons["thing-row-0"].label)'")
@@ -609,14 +627,54 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["template-item-0"].label.contains("Carry-on"), "this list now has its own bag")
 
         // The thing itself still says what it always said.
-        app.buttons["template-detail-done"].tap()
+        tap(app, id: "template-detail-done")
         tab(app, "care")
-        app.buttons["care-things"].tap()
+        tap(app, id: "care-things")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
         type("Headlamp", into: app.textFields["things-search"])
         XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].exists })
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-bag-1"]) }, "the thing's own bag was changed by a list's exception")
+    }
+    /// His own lists: a storage place is added, is offered to a thing, and cannot
+    /// be removed while something uses it.
+    func testHisOwnListsAreAddedAndProtectedWhileInUse() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+
+        type("Garage shelf", into: app.textFields["list-places-add-name"])
+        app.buttons["list-places-add"].tap()
+        XCTAssertTrue(waitUntil { self.find(app, "list-places-row-12") != nil }, "the place was not added to the list")
+
+        // It is offered where a thing says where it is kept… by being on the account's list.
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Headlamp", into: app.textFields["things-search"])
+        XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].exists })
+        app.buttons["thing-row-0"].tap()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        replace("Garage shelf", in: app.textFields["thing-storage"])
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        // The sheet covers the tab bar: close it, or the next tap lands on the sheet.
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // Now it is in use, and the list refuses to drop it.
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        let remove = app.buttons["list-places-remove-12"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 5))
+        tapVisible(app, remove)
+        XCTAssertTrue(app.staticTexts["lists-problem"].waitForExistence(timeout: 5), "a place in use was dropped without a word")
+        XCTAssertTrue(waitUntil { self.find(app, "list-places-row-12") != nil }, "…and it must still be there")
     }
 }

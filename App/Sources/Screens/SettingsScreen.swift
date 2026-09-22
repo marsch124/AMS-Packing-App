@@ -10,6 +10,7 @@ struct SettingsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var exporting = false
     @State private var status = ""
+    @State private var lists = false
 
     var body: some View {
         KeyboardAwayScroll {
@@ -30,6 +31,26 @@ struct SettingsScreen: View {
                 Text(status.isEmpty ? "The same file the web app writes, so either app can read it." : status)
                     .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("backup-status")
+
+                Button { lists = true } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Your lists").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+                            Text("Storage places, owners, packers, conditions, \"When\" steps")
+                                .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                        }
+                        Spacer()
+                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
+                    }
+                    .padding(.horizontal, 14).frame(minHeight: 60)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .padding(.top, 14)
+                .accessibilityIdentifier("settings-lists")
 
                 Text("This device holds").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
                 VStack(spacing: 0) {
@@ -56,6 +77,7 @@ struct SettingsScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
+        .sheet(isPresented: $lists) { ListsScreen().environmentObject(model) }
         .fileExporter(isPresented: $exporting, document: BackupDocument(data: model.library.backupData()),
                       contentType: .json, defaultFilename: Library.backupFileName(on: Today.local)) { result in
             switch result {

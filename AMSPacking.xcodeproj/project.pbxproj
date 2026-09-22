@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */; };
+		0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 258F81799F958E5C5EF112C5 /* ListsScreen.swift */; };
 		0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35352F3BD8D2A7EE166961C9 /* Today.swift */; };
 		1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9B041225333263C7547689 /* ThingsScreen.swift */; };
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
@@ -48,6 +49,7 @@
 		1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1E01A9E0DEC947610C0F642D /* GrabScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabScreen.swift; sourceTree = "<group>"; };
 		1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingUITests.swift; sourceTree = "<group>"; };
+		258F81799F958E5C5EF112C5 /* ListsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsScreen.swift; sourceTree = "<group>"; };
 		35352F3BD8D2A7EE166961C9 /* Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Today.swift; sourceTree = "<group>"; };
 		3A74DCE749078F203A8E87BF /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
@@ -170,6 +172,7 @@
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
 				403A4735005582B356D67F55 /* HomeScreen.swift */,
+				258F81799F958E5C5EF112C5 /* ListsScreen.swift */,
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
@@ -297,6 +300,7 @@
 				23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */,
 				6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */,
 				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,
+				0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */,
 				09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */,
 				E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */,
 				5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */,
