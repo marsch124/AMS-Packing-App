@@ -143,4 +143,38 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-templates", timeout: 5))
         XCTAssertFalse(app.buttons["template-row-0"].exists, "nothing may be seeded into an empty library")
     }
+    /// A tick counts, and it is still there after leaving the trip and coming back.
+    func testATickCountsAndStays() {
+        let app = launch()
+        app.buttons["tab-events"].tap()
+        XCTAssertTrue(appears(app, "screen-events"))
+        let row = app.buttons["trip-row-0"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no trip is listed")
+        row.tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip did not open")
+
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let before = words(progress)
+        XCTAssertTrue(before.hasPrefix("0/"), "a fresh trip starts unticked: '\(before)'")
+
+        let line = app.buttons["trip-line-0"]
+        XCTAssertTrue(line.waitForExistence(timeout: 5))
+        line.tap()
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") }, "the tick did not count: '\(words(progress))'")
+        shot(app, "trip")
+
+        app.buttons["trip-done"].tap()
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        row.tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]).hasPrefix("1/") },
+                      "the tick was lost on the way out and back: '\(words(app.staticTexts["trip-progress"]))'")
+    }
+
+    private func waitUntil(timeout: TimeInterval = 5, _ ok: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat { if ok() { return true }; usleep(200_000) } while Date() < deadline
+        return ok()
+    }
 }

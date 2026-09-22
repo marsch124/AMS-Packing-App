@@ -33,6 +33,7 @@ private struct SectionScreen: View {
             case (.empty, .home): FirstRunView()
             case (.ready, .home): LibrarySummary()
             case (.ready, .templates): TemplatesScreen()
+            case (.ready, .events): EventsScreen()
             default: placeholder
             }
         }

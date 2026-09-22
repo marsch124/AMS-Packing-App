@@ -15,6 +15,11 @@ enum SampleLibrary {
         lib.saveTemplate(list("Common base", role: "base", ["Passport", "Phone charger", "Toothbrush", "Headlamp"]))
         lib.saveTemplate(list("Hiking", group: "GA", ["Hiking boots", "Rain jacket", "Headlamp", "Map"]))
         lib.saveTemplate(list("Swim", group: "WET", ["Goggles", "Swim cap", "Towel"]))
+        // One trip, built from Hiking (and the base list, as a trip is).
+        var trip = newEvent(name: "Weekend in the hills", startDate: "2026-10-03", endDate: "2026-10-05")
+        trip.activities = lib.templates.filter { $0.name == "Hiking" }.map { $0.id }
+        trip.entries = buildTotalEntries(trip, lib.resolvedTemplates())
+        lib.trips = [trip]
         return lib
     }
 }
