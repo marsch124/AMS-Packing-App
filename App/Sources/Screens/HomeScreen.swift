@@ -22,7 +22,7 @@ struct HomeScreen: View {
         let choices = model.library.activityChoices()
         let flat = choices.flatMap(\.lists)
         let anyWorkout = flat.contains { $0.group == "WET" && activities.contains($0.id) }
-        ScrollView {
+        KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Grab and go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
                 GrabButtons(lists: model.library.grabLists()) { grab = $0 }

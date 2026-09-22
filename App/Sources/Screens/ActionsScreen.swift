@@ -13,7 +13,7 @@ struct ActionsScreen: View {
         let todos = model.library.sortedActions(kind: "todo")
         let open = todos.filter { !$0.done }.count
         VStack(spacing: 0) {
-            ScrollView {
+            KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     Text(todos.isEmpty ? "Nothing to do." : (open == 0 ? "All done." : "\(open) to do"))
                         .font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)

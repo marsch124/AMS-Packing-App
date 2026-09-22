@@ -12,7 +12,7 @@ struct SettingsScreen: View {
     @State private var status = ""
 
     var body: some View {
-        ScrollView {
+        KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Backup").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
                 Button {

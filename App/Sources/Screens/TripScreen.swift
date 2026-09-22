@@ -37,7 +37,7 @@ struct TripScreen: View {
             .padding(16)
             Pills(title: "", options: TripScreen.views, selected: [view], id: "trip-view", tint: AppSection.events.color) { view = $0 }
                 .padding(.horizontal, 16)
-            ScrollView {
+            KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     // The web app's nesting: When → by bag inside; Where / Category → by When inside.
                     ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { _, group in

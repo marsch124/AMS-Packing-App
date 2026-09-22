@@ -118,9 +118,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
 
         for name in ["events", "templates", "care", "actions", "settings", "home"] {
-            let tab = app.buttons["tab-\(name)"]
-            XCTAssertTrue(tab.waitForExistence(timeout: 5), "no tab-\(name)")
-            tab.tap()
+            XCTAssertTrue(app.buttons["tab-\(name)"].waitForExistence(timeout: 5), "no tab-\(name)")
+            tab(app, name)
             XCTAssertTrue(appears(app, "screen-\(name)", timeout: 5),
                           "tab-\(name) did not open screen-\(name)")
             if name != "home" {
@@ -132,7 +131,7 @@ final class AMSPackingUITests: XCTestCase {
     /// The Templates tab lists the templates, and one opens to show its things.
     func testATemplateOpensAndCloses() {
         let app = launch()
-        app.buttons["tab-templates"].tap()
+        tab(app, "templates")
         XCTAssertTrue(appears(app, "screen-templates"))
 
         let first = app.buttons["template-row-0"]
@@ -152,14 +151,14 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch("-uiTestingEmpty")
         XCTAssertTrue(app.buttons["first-run-import"].waitForExistence(timeout: 20))
         XCTAssertFalse(app.staticTexts["count-templates"].exists, "an empty device must not look like a library")
-        app.buttons["tab-templates"].tap()
+        tab(app, "templates")
         XCTAssertTrue(appears(app, "screen-templates", timeout: 5))
         XCTAssertFalse(app.buttons["template-row-0"].exists, "nothing may be seeded into an empty library")
     }
     /// A tick counts, and it is still there after leaving the trip and coming back.
     func testATickCountsAndStays() {
         let app = launch()
-        app.buttons["tab-events"].tap()
+        tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
         let row = app.buttons["trip-row-0"]
         XCTAssertTrue(row.waitForExistence(timeout: 5), "no trip is listed")
@@ -198,21 +197,53 @@ final class AMSPackingUITests: XCTestCase {
         XCTFail("could not type into \(field)")
     }
 
-    /// Scroll until a control is actually on screen. GitHub's Mac runner has a
-    /// shorter window than this Mac, and a click on a control below the fold
-    /// "succeeds" and does nothing ("trip-activity-0 did not take the tap").
+    /// Is the middle of this control inside the visible part of the screen? NOT
+    /// `isHittable`: on GitHub's Mac runner (a 674-point window) a pill whose middle
+    /// lay below the window's bottom edge reported hittable=true, and the click went
+    /// nowhere — found by the TAP-REPORT, 2026-09-22.
+    private func onScreen(_ app: XCUIApplication, _ e: XCUIElement) -> Bool {
+        guard e.exists, e.isHittable else { return false }
+        let mid = CGPoint(x: e.frame.midX, y: e.frame.midY)
+        let window = app.windows.firstMatch
+        if window.exists && !window.frame.contains(mid) { return false }
+        let scroll = app.scrollViews.firstMatch
+        if scroll.exists && scroll.frame.contains(CGPoint(x: mid.x, y: scroll.frame.midY))
+            && !scroll.frame.contains(mid) { return false }   // inside a list, but scrolled out of it
+        return true
+    }
+
+    /// Scroll until a control is actually on screen.
     private func bringIntoView(_ app: XCUIApplication, _ e: XCUIElement) {
-        for _ in 0..<8 {
-            if e.exists && e.isHittable { return }
+        guard e.exists else { return }
+        var down = true
+        for _ in 0..<10 {
+            if onScreen(app, e) { return }
+            let before = e.frame.midY
+            let scroll = app.scrollViews.firstMatch
             #if os(macOS)
-            let scroll = app.scrollViews.firstMatch
-            if scroll.exists { scroll.scroll(byDeltaX: 0, deltaY: -250) } else { return }
+            guard scroll.exists else { return }
+            scroll.scroll(byDeltaX: 0, deltaY: down ? -200 : 200)
             #else
-            let scroll = app.scrollViews.firstMatch
-            if scroll.exists { scroll.swipeUp() } else { app.swipeUp() }
+            if scroll.exists { down ? scroll.swipeUp() : scroll.swipeDown() } else { down ? app.swipeUp() : app.swipeDown() }
             #endif
             usleep(300_000)
+            // A control below the screen should move UP as the list goes down; if it
+            // did not, this is the wrong way round.
+            if e.exists && e.frame.midY >= before { down.toggle() }
         }
+    }
+
+    /// The tab bar sits under the keyboard on the phone. Put the keyboard away
+    /// (drag the list, as a person would), then tap the tab.
+    private func tab(_ app: XCUIApplication, _ name: String) {
+        #if os(iOS)
+        if app.keyboards.count > 0 {
+            let scroll = app.scrollViews.firstMatch
+            if scroll.exists { scroll.swipeDown() } else { app.swipeDown() }
+            _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
+        }
+        #endif
+        app.buttons["tab-\(name)"].tap()
     }
 
     private func tapVisible(_ app: XCUIApplication, _ e: XCUIElement) {
@@ -260,7 +291,7 @@ final class AMSPackingUITests: XCTestCase {
     /// a Save window on the Mac, the Files picker on the iPhone.
     func testSettingsOffersABackup() {
         let app = launch()
-        app.buttons["tab-settings"].tap()
+        tab(app, "settings")
         XCTAssertTrue(appears(app, "screen-settings"))
         XCTAssertTrue(app.staticTexts["device-count-items"].waitForExistence(timeout: 5), "the device check is missing")
         let save = app.buttons["backup-save"]
@@ -293,7 +324,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(shown.hasPrefix("0/") && !shown.hasPrefix("0/0"), "the trip has no lines: '\(shown)'")
         app.buttons["trip-done"].tap()
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
-        app.buttons["tab-events"].tap()
+        tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
         XCTAssertTrue(app.buttons["trip-row-1"].waitForExistence(timeout: 5), "the new trip is not listed beside the sample one")
     }
@@ -327,7 +358,7 @@ final class AMSPackingUITests: XCTestCase {
     /// A thing typed while packing joins the trip — and the count.
     func testAThingTypedWhilePackingJoinsTheTrip() {
         let app = launch()
-        app.buttons["tab-events"].tap()
+        tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -351,7 +382,7 @@ final class AMSPackingUITests: XCTestCase {
     /// A to-do is added, counted, ticked — and stays ticked.
     func testAToDoIsAddedAndTicked() {
         let app = launch()
-        app.buttons["tab-actions"].tap()
+        tab(app, "actions")
         XCTAssertTrue(appears(app, "screen-actions"))
         let field = app.textFields["action-add-text"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a to-do")
@@ -366,14 +397,14 @@ final class AMSPackingUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(waitUntil { self.isOn(row) }, "the tick did not take")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]).hasPrefix("All done") }, "'\(words(app.staticTexts["actions-count"]))'")
-        app.buttons["tab-home"].tap()
-        app.buttons["tab-actions"].tap()
+        tab(app, "home")
+        tab(app, "actions")
         XCTAssertTrue(waitUntil(timeout: 10) { self.isOn(app.buttons["action-0"]) }, "the tick was lost on the way out and back")
     }
     /// A thing added to a template is there — and still there after closing and reopening.
     func testAThingAddedToATemplateStays() {
         let app = launch()
-        app.buttons["tab-templates"].tap()
+        tab(app, "templates")
         XCTAssertTrue(appears(app, "screen-templates"))
         app.buttons["template-row-1"].tap()                // the second sample template (4 things)
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
@@ -391,5 +422,22 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["template-row-1"].tap()
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists }, "the thing was lost on the way out and back")
+    }
+    /// Care shows what is overdue; "Done today" moves it on — and it stays done.
+    func testCareShowsWhatIsOverdueAndDoneTodayMovesItOn() {
+        let app = launch()
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        let summary = app.staticTexts["care-summary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 5), "no care summary")
+        XCTAssertTrue(waitUntil { self.words(summary).hasPrefix("1 overdue") }, "the sample's boots are overdue: '\(words(summary))'")
+        let done = app.buttons["care-row-0-done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "no Done today on the overdue row")
+        done.tap()
+        XCTAssertTrue(waitUntil { self.words(summary) == "All up to date" }, "Done today did not move it on: '\(words(summary))'")
+        tab(app, "home")
+        tab(app, "care")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["care-summary"]) == "All up to date" },
+                      "the service was lost on the way out and back: '\(words(app.staticTexts["care-summary"]))'")
     }
 }

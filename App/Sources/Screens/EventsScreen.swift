@@ -9,7 +9,7 @@ struct EventsScreen: View {
 
     var body: some View {
         let trips = sortEventsForList(model.library.trips, Today.local)
-        ScrollView {
+        KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
                 if trips.isEmpty {
                     Text("No trips yet.")

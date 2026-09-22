@@ -34,3 +34,13 @@ enum Theme {
     static let muted = Color(light: 0x5f7078, dark: 0x94a6ac)
     static let line  = Color(light: 0xe2e8ea, dark: 0x26343a)
 }
+
+/// A ScrollView that puts the keyboard away when it is dragged — on the phone
+/// the keyboard covers the tab bar, and dragging the list is how a person gets
+/// it out of the way.
+struct KeyboardAwayScroll<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        ScrollView { content() }.scrollDismissesKeyboard(.immediately)
+    }
+}

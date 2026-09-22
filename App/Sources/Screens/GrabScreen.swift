@@ -136,7 +136,7 @@ struct GrabScreen: View {
                     .accessibilityIdentifier("grab-done")
             }
             .padding(16)
-            ScrollView {
+            KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 6) {
                     if complete {
                         Text("All there — go!")

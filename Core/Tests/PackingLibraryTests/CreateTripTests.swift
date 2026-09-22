@@ -123,3 +123,26 @@ final class TemplateEditingTests: XCTestCase {
         XCTAssertFalse(lib.removeFromTemplate(templateId: hiking.id, memId: "no-such"))
     }
 }
+
+final class CareTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
+
+    func testAThingOnTwoTemplatesIsOneCareRowAndDoneTodayMovesItOn() {
+        var lib = LibraryTests.sample()
+        let n = lib.items.firstIndex { $0.name == "Headlamp" }!
+        lib.items[n].maintenance = Maintenance(notes: "Clean the contacts", intervalDays: 30, lastDone: "2026-01-01")
+        let rows = lib.careRows(today: "2026-09-22")
+        XCTAssertEqual(rows.count, 1, "the headlamp sits on two templates but is ONE care row")
+        XCTAssertEqual(rows[0].status.state, "overdue")
+        XCTAssertEqual(rows[0].item.itemId, lib.items[n].id, "the row knows which thing to log")
+
+        XCTAssertTrue(lib.logCare(itemId: lib.items[n].id, on: "2026-09-22"))
+        let after = lib.careRows(today: "2026-09-22")
+        XCTAssertEqual(after[0].status.state, "ok")
+        XCTAssertEqual(after[0].status.nextDue, "2026-10-22")
+        XCTAssertEqual(lib.items[n].maintenance?.log.map(\.date), ["2026-09-22"])
+        XCTAssertEqual(lib.records().filter { $0.table == .items && $0.key == lib.items[n].id }.count, 1)
+        XCTAssertFalse(lib.logCare(itemId: "no-such", on: "2026-09-22"))
+    }
+}

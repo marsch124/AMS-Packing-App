@@ -284,3 +284,23 @@ extension Library {
         return true
     }
 }
+
+// MARK: - Care
+
+extension Library {
+    /// Everything with a care schedule or care notes, most urgent first — the
+    /// model's own list over the resolved templates (one row per thing, however
+    /// many templates it sits on).
+    public func careRows(today: String) -> [MaintenanceRow] {
+        maintenanceList(resolvedTemplates(), today)
+    }
+
+    /// "Done today": log a service on the THING (care is intrinsic — it describes
+    /// the physical object), which moves its next due date on.
+    @discardableResult
+    public mutating func logCare(itemId: String, on day: String, note: String = "") -> Bool {
+        guard let n = items.firstIndex(where: { $0.id == itemId }) else { return false }
+        logMaintenance(&items[n], day, note)
+        return true
+    }
+}

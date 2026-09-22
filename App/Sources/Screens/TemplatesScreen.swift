@@ -24,7 +24,7 @@ struct TemplatesScreen: View {
     var body: some View {
         let shelves = TemplatesScreen.shelves(model.library.resolvedTemplates())
         let flat = shelves.flatMap(\.lists)
-        ScrollView {
+        KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
                 ForEach(shelves) { shelf in
                     Text(shelf.title)
@@ -112,7 +112,7 @@ struct TemplateDetail: View {
                     .accessibilityIdentifier("template-detail-done")
             }
             .padding(16)
-            ScrollView {
+            KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
                         Text(group.phase.label)

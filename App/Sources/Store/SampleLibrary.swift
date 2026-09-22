@@ -14,6 +14,14 @@ enum SampleLibrary {
         }
         lib.saveTemplate(list("Common base", role: "base", ["Passport", "Phone charger", "Toothbrush", "Headlamp"]))
         lib.saveTemplate(list("Hiking", group: "GA", ["Hiking boots", "Rain jacket", "Headlamp", "Map"]))
+        // Care: the boots are overdue for waxing (long past, whatever today is);
+        // the rain jacket has care notes but no schedule.
+        if let n = lib.items.firstIndex(where: { $0.name == "Hiking boots" }) {
+            lib.items[n].maintenance = Maintenance(notes: "Clean and wax", intervalDays: 90, lastDone: "2025-01-01")
+        }
+        if let n = lib.items.firstIndex(where: { $0.name == "Rain jacket" }) {
+            lib.items[n].maintenance = Maintenance(notes: "Wash with tech wash, no softener")
+        }
         lib.saveTemplate(list("Swim", group: "WET", ["Goggles", "Swim cap", "Towel"]))
         // One trip, built from Hiking (and the base list, as a trip is).
         var trip = newEvent(name: "Weekend in the hills", startDate: "2026-10-03", endDate: "2026-10-05")
