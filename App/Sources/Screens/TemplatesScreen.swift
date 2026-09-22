@@ -41,7 +41,7 @@ struct TemplatesScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
-        .sheet(item: $open) { list in TemplateDetail(list: list) }
+        .sheet(item: $open) { list in TemplateDetail(listId: list.id).environmentObject(model) }
     }
 }
 
@@ -87,13 +87,18 @@ struct Cover: View {
     }
 }
 
-/// One template, read-only for now: its things in the order he packs them.
+/// One template: its things under his "When" headings; a thing can be added
+/// at the foot and taken off with ✕ (the thing itself survives).
 struct TemplateDetail: View {
-    let list: PackList
+    let listId: String
+    @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
+    @State private var newName = ""
 
     var body: some View {
+        let list = model.library.resolvedTemplate(id: listId) ?? newList()
         let groups = entriesByPhase(list.items).filter { !$0.entries.isEmpty }
+        let index: [String: Int] = Dictionary(list.items.enumerated().map { ($1.memId ?? "\($0)", $0) }, uniquingKeysWith: { a, _ in a })
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Cover(list: list, size: 36)
@@ -115,12 +120,28 @@ struct TemplateDetail: View {
                             .foregroundStyle(Color(hexString: group.phase.color))
                             .padding(.top, 12)
                         ForEach(group.entries, id: \.memId) { item in
-                            HStack {
-                                Text(item.name).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                                Spacer(minLength: 8)
-                                Text(item.container).font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(1)
+                            let n = index[item.memId ?? ""] ?? 0
+                            HStack(spacing: 4) {
+                                HStack {
+                                    Text(item.name).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                                    Spacer(minLength: 8)
+                                    Text(item.container).font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(1)
+                                }
+                                .padding(.vertical, 6)
+                                .accessibilityElement(children: .combine)
+                                .accessibilityIdentifier("template-item-\(n)")
+                                Button {
+                                    if let mid = item.memId { model.change { _ = $0.removeFromTemplate(templateId: listId, memId: mid) } }
+                                } label: {
+                                    SVGPath.path("M6 6L18 18M18 6L6 18")
+                                        .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+                                        .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
+                                        .frame(width: 40, height: 36).contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("template-item-\(n)-remove")
+                                .accessibilityLabel("Take \(item.name) off this list")
                             }
-                            .padding(.vertical, 6)
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                         }
                     }
@@ -128,6 +149,26 @@ struct TemplateDetail: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
+            HStack(spacing: 8) {
+                TextField("Add a thing to this list", text: $newName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .onSubmit { add() }
+                    .accessibilityIdentifier("template-add-name")
+                Button { add() } label: {
+                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 16).frame(minHeight: 44)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.templates.color))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .disabled(jsTrim(newName).isEmpty)
+                .accessibilityIdentifier("template-add")
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
         .accessibilityElement(children: .contain)
@@ -135,6 +176,13 @@ struct TemplateDetail: View {
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 600)
         #endif
+    }
+
+    private func add() {
+        let name = newName
+        guard !jsTrim(name).isEmpty else { return }
+        model.change { _ = $0.addToTemplate(templateId: listId, name: name) }
+        newName = ""
     }
 }
 

@@ -342,4 +342,26 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["tab-actions"].tap()
         XCTAssertTrue(waitUntil { app.buttons["action-0"].isSelected }, "the tick was lost on the way out and back")
     }
+    /// A thing added to a template is there — and still there after closing and reopening.
+    func testAThingAddedToATemplateStays() {
+        let app = launch()
+        app.buttons["tab-templates"].tap()
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                // the second sample template (4 things)
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.otherElements["template-item-3"].waitForExistence(timeout: 5) || app.staticTexts["template-item-3"].exists, "expected 4 things")
+        XCTAssertFalse(app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists)
+
+        let field = app.textFields["template-add-name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
+        type("Gaiters", into: field)
+        app.buttons["template-add"].tap()
+        XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists }, "the new thing is not on the list")
+
+        app.buttons["template-detail-done"].tap()
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        app.buttons["template-row-1"].tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists }, "the thing was lost on the way out and back")
+    }
 }

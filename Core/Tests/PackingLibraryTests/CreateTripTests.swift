@@ -88,3 +88,38 @@ final class ActionsTests: XCTestCase {
         XCTAssertEqual(lib.records().filter { $0.table == .actions }.count, 1, "one record per to-do")
     }
 }
+
+final class TemplateEditingTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
+
+    func testAddingANewNameMakesANewThingAndAKnownNamePutsTheSameThingOn() {
+        var lib = LibraryTests.sample()
+        let hiking = lib.templates.first { $0.name == "Hiking" }!
+        let things = lib.items.count
+        XCTAssertNotNil(lib.addToTemplate(templateId: hiking.id, name: " Gaiters "))
+        XCTAssertEqual(lib.items.count, things + 1, "a new name is a new thing")
+        XCTAssertEqual(lib.resolvedTemplate(id: hiking.id)!.items.last?.name, "Gaiters")
+        // The headlamp already exists (it is on Night run too): the same thing goes on.
+        let run = lib.templates.first { $0.name == "Night run" }!
+        var r = lib.resolvedTemplate(id: run.id)!
+        r.items.removeAll { $0.name == "Headlamp" }; lib.saveTemplate(r)
+        let lampId = lib.items.first { $0.name == "Headlamp" }!.id
+        XCTAssertNotNil(lib.addToTemplate(templateId: run.id, name: "headlamp"))
+        XCTAssertEqual(lib.items.count, things + 1, "no second headlamp")
+        XCTAssertEqual(lib.resolvedTemplate(id: run.id)!.items.last?.itemId, lampId)
+        XCTAssertEqual(lib.resolvedTemplate(id: run.id)!.items.last?.packer, "Anna", "and it brings what it knows about itself")
+        XCTAssertNil(lib.addToTemplate(templateId: hiking.id, name: "  "))
+    }
+
+    func testRemovingARowKeepsTheThing() {
+        var lib = LibraryTests.sample()
+        let hiking = lib.templates.first { $0.name == "Hiking" }!
+        let row = lib.resolvedTemplate(id: hiking.id)!.items.first { $0.name == "Headlamp" }!
+        XCTAssertTrue(lib.removeFromTemplate(templateId: hiking.id, memId: row.memId!))
+        XCTAssertFalse(lib.resolvedTemplate(id: hiking.id)!.items.contains { $0.name == "Headlamp" })
+        XCTAssertTrue(lib.items.contains { $0.name == "Headlamp" }, "the thing survives")
+        XCTAssertTrue(lib.resolvedTemplate(id: lib.templates.first { $0.name == "Night run" }!.id)!.items.contains { $0.name == "Headlamp" })
+        XCTAssertFalse(lib.removeFromTemplate(templateId: hiking.id, memId: "no-such"))
+    }
+}

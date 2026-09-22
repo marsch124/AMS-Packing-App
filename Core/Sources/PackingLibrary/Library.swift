@@ -252,3 +252,35 @@ extension Library {
         actions.filter { $0.kind == kind }.stableSorted(compare: { a, b in compareActions(a, b) })
     }
 }
+
+// MARK: - Editing a template
+
+extension Library {
+    /// Add a thing to a template. A thing of that name already in the library is
+    /// PUT ON the template (one thing, one more place it sits) — a new name makes a
+    /// new thing. Returns the resolved row as it now appears on the template.
+    @discardableResult
+    public mutating func addToTemplate(templateId: String, name: String, container: String = "", phase: String = "") -> Item? {
+        let clean = jsTrim(name)
+        guard !clean.isEmpty, var list = resolvedTemplate(id: templateId) else { return nil }
+        var row = newItem(name: clean, container: container.isEmpty ? "Carry-on / hand luggage" : container,
+                          phase: phase.isEmpty ? defaultPhaseId() : phase)
+        if let existing = items.first(where: { normName($0.name) == normName(clean) }) {
+            row = resolveItemAlone(existing)   // the thing's own defaults come along
+            row.memId = nil
+        }
+        list.items.append(row)
+        saveTemplate(list)
+        return resolvedTemplate(id: templateId)?.items.last
+    }
+
+    /// Take a row off a template. The thing itself survives (web app v176): on
+    /// its other templates, or as a thing on no list.
+    @discardableResult
+    public mutating func removeFromTemplate(templateId: String, memId: String) -> Bool {
+        guard var list = resolvedTemplate(id: templateId), list.items.contains(where: { $0.memId == memId }) else { return false }
+        list.items.removeAll { $0.memId == memId }
+        saveTemplate(list)
+        return true
+    }
+}
