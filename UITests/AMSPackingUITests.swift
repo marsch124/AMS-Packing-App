@@ -520,7 +520,7 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         replace("Sit pad", in: app.textFields["thing-name"])
-        app.buttons["thing-save"].tap()
+        tapVisible(app, app.buttons["thing-save"])
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).hasPrefix("Sit pad") || app.buttons["thing-row-0"].label.contains("Sit pad") },
                       "the rename did not stick: '\(app.buttons["thing-row-0"].label)'")
@@ -552,5 +552,36 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
         XCTAssertTrue(waitUntil { app.buttons["grab-item-0"].exists && app.buttons["grab-item-0"].label.contains("Swim shorts") },
                       "the edit was lost on the way out and back")
+    }
+    /// What a thing knows is changed once and reaches every list it is on — and
+    /// a list it is put on holds it.
+    func testAThingsOwnDetailsAndItsListsAreChanged() {
+        let app = launch()
+        tab(app, "care")
+        app.buttons["care-things"].tap()
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Headlamp", into: app.textFields["things-search"])
+        let row = app.buttons["thing-row-0"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains("Headlamp"), "the search did not narrow: '\(row.label)'")
+        XCTAssertFalse(row.label.contains("Swim"), "it is not on the Swim list yet: '\(row.label)'")
+        row.tap()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+
+        select(app, app.buttons["thing-category-7"])        // Electronics
+        let swim = app.buttons["thing-lists-2"]             // Common base, Hiking, Swim — A–Z
+        bringIntoView(app, swim)
+        XCTAssertTrue(swim.exists, "no list to put it on")
+        XCTAssertFalse(swim.isSelected)
+        select(app, swim)
+        tapVisible(app, app.buttons["thing-save"])
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].label.contains("Swim") },
+                      "the list it was put on is not shown: '\(app.buttons["thing-row-0"].label)'")
+
+        app.buttons["thing-row-0"].tap()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-category-7"]) }, "the kind of thing was not kept")
+        XCTAssertTrue(isOn(app.buttons["thing-lists-2"]), "the list was not kept")
     }
 }

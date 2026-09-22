@@ -429,3 +429,36 @@ extension Library {
         return true
     }
 }
+
+// MARK: - Changing a thing
+
+extension Library {
+    /// Change what the THING itself knows — its category, its own bag and "When",
+    /// who owns it, its condition, its weight. Every list it is on follows, because
+    /// there is one thing. (A list's own exception lives on the membership.)
+    @discardableResult
+    public mutating func updateThing(id: String, _ apply: (inout Item) -> Void) -> Bool {
+        guard let n = items.firstIndex(where: { $0.id == id }) else { return false }
+        var it = items[n]
+        apply(&it)
+        items[n] = coerceItem(it)
+        return true
+    }
+
+    /// Put a thing on a list, or take it off. Taking it off removes the membership
+    /// only — the thing itself stays (web app v176).
+    @discardableResult
+    public mutating func setOnTemplate(itemId: String, templateId: String, on: Bool) -> Bool {
+        guard items.contains(where: { $0.id == itemId }), templates.contains(where: { $0.id == templateId }) else { return false }
+        let here = memberships.filter { $0.templateId == templateId }
+        if on {
+            guard !here.contains(where: { $0.itemId == itemId }) else { return true }
+            var m = newMembership(itemId: itemId, templateId: templateId)
+            m.order = (here.map(\.order).max() ?? -1) + 1
+            memberships.append(m)
+        } else {
+            memberships.removeAll { $0.templateId == templateId && $0.itemId == itemId }
+        }
+        return true
+    }
+}

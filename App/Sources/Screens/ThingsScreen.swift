@@ -118,18 +118,24 @@ struct ThingsScreen: View {
     private struct Editing: Identifiable { let id: String }
 }
 
-/// One thing: its name (changed once, shown on every list it is on) and where
-/// it is kept at home.
+/// One thing: what IT knows — its name, where it is kept, what kind of thing it
+/// is, its own bag and "When", whose it is, its condition, its weight — and which
+/// lists it is on. A change here reaches every list; a list's own exception for
+/// the bag stays that list's.
 struct ThingEditor: View {
     let itemId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
-    @State private var name = ""
-    @State private var storage = ""
+    @State private var draft = Item()
+    @State private var onLists: Set<String> = []
     @State private var problem = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let templates = model.library.templates.filter { $0.role != CONTAINER_ROLE }
+            .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
+        let owners = ([""] + namesFromRows(model.library.shared, "owners") + model.library.items.map(\.ownedBy))
+            .filter { !$0.isEmpty }
+        VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -141,28 +147,56 @@ struct ThingEditor: View {
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("thing-save")
             }
-            Text("Name").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
-            field($name, "Name", "thing-name")
-            Text("Kept at home").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
-            field($storage, "e.g. Hall closet", "thing-storage")
-            if !problem.isEmpty {
-                Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
-                    .accessibilityIdentifier("thing-problem")
+            .padding(16)
+            KeyboardAwayScroll {
+                VStack(alignment: .leading, spacing: 14) {
+                    label("Name")
+                    field($draft.name, "Name", "thing-name")
+                    label("Kept at home")
+                    field($draft.storage, "e.g. Hall closet", "thing-storage")
+                    Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
+                          id: "thing-category", tint: AppSection.care.color) { draft.category = $0 }
+                    Pills(title: "Usually packed in", options: containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
+                          selected: [draft.container], id: "thing-bag", tint: AppSection.care.color) { draft.container = $0 }
+                    Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
+                          id: "thing-when", tint: AppSection.care.color) { draft.phase = $0 }
+                    if !owners.isEmpty {
+                        Pills(title: "Whose it is", options: [("", "Nobody's in particular")] + owners.map { ($0, $0) },
+                              selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color) { draft.ownedBy = $0 }
+                    }
+                    Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
+                          selected: [draft.condition], id: "thing-condition", tint: AppSection.care.color) { draft.condition = $0 }
+                    label("Weight, in grams (0 = not known)")
+                    field(Binding(get: { draft.weight == 0 ? "" : String(Int(draft.weight)) },
+                                  set: { draft.weight = Double(jsTrim($0)) ?? 0 }), "0", "thing-weight")
+                    Pills(title: "On these lists", options: templates.map { ($0.id, $0.name) }, selected: onLists,
+                          id: "thing-lists", tint: AppSection.templates.color) { id in
+                        if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
+                    }
+                    if !problem.isEmpty {
+                        Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                            .accessibilityIdentifier("thing-problem")
+                    }
+                    Text("A change here reaches every list it is on. Past trips keep what they were packed with.")
+                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                }
+                .padding(.horizontal, 16).padding(.bottom, 24)
             }
-            Text("A change here reaches every list it is on. Past trips keep the name they were packed with.")
-                .font(.system(size: 14)).foregroundStyle(Theme.muted)
-            Spacer()
         }
-        .padding(16)
         .background(Theme.bg.ignoresSafeArea())
         .onAppear {
-            if let it = model.library.items.first(where: { $0.id == itemId }) { name = it.name; storage = it.storage }
+            if let it = model.library.items.first(where: { $0.id == itemId }) { draft = it }
+            onLists = Set(model.library.memberships.filter { $0.itemId == itemId }.map(\.templateId))
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-detail")
         #if os(macOS)
-        .frame(minWidth: 460, minHeight: 360)
+        .frame(minWidth: 520, minHeight: 600)
         #endif
+    }
+
+    private func label(_ text: String) -> some View {
+        Text(text).font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
     }
 
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {
@@ -177,12 +211,27 @@ struct ThingEditor: View {
 
     private func save() {
         guard let it = model.library.items.first(where: { $0.id == itemId }) else { dismiss(); return }
-        if jsTrim(name) != it.name {
+        if jsTrim(draft.name) != it.name {
             var ok = false
-            model.change { ok = $0.renameThing(id: itemId, to: name) }
-            if !ok { problem = jsTrim(name).isEmpty ? "A thing needs a name." : "You already have a thing called that."; return }
+            model.change { ok = $0.renameThing(id: itemId, to: draft.name) }
+            if !ok { problem = jsTrim(draft.name).isEmpty ? "A thing needs a name." : "You already have a thing called that."; return }
         }
-        if jsTrim(storage) != it.storage { model.change { _ = $0.setStorage(id: itemId, place: storage) } }
+        let d = draft
+        let lists = onLists
+        model.change { lib in
+            _ = lib.updateThing(id: itemId) { thing in
+                thing.storage = jsTrim(d.storage)
+                thing.category = d.category
+                thing.container = d.container
+                thing.phase = d.phase
+                thing.ownedBy = d.ownedBy
+                thing.condition = d.condition
+                thing.weight = d.weight
+            }
+            for t in lib.templates where t.role != CONTAINER_ROLE {
+                _ = lib.setOnTemplate(itemId: itemId, templateId: t.id, on: lists.contains(t.id))
+            }
+        }
         dismiss()
     }
 }

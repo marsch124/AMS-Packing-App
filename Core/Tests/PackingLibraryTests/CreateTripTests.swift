@@ -208,3 +208,42 @@ final class ThingsTests: XCTestCase {
         XCTAssertEqual(lib.items.first { $0.id == lamp.id }?.storage, "Hall closet")
     }
 }
+
+final class ThingEditingTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
+
+    func testWhatTheThingKnowsReachesEveryListItIsOn() {
+        var lib = LibraryTests.sample()
+        let lamp = lib.items.first { $0.name == "Headlamp" }!
+        XCTAssertTrue(lib.updateThing(id: lamp.id) { it in
+            it.category = "Electronics"; it.ownedBy = "Anna"; it.condition = "worn"; it.weight = 95; it.phase = "morning"
+        })
+        for t in lib.resolvedTemplates() where t.name == "Hiking" || t.name == "Night run" {
+            let row = t.items.first { $0.name == "Headlamp" }!
+            XCTAssertEqual(row.category, "Electronics", "\(t.name)")
+            XCTAssertEqual(row.ownedBy, "Anna")
+            XCTAssertEqual(row.condition, "worn")
+            XCTAssertEqual(row.weight, 95)
+            XCTAssertEqual(row.phase, "morning", "the thing's own When, where no list overrides it")
+        }
+        // The Night run list keeps its own exception for the bag.
+        XCTAssertEqual(lib.resolvedTemplates().first { $0.name == "Night run" }?.items.first?.container, "Duffel bag")
+        XCTAssertFalse(lib.updateThing(id: "no-such") { _ in })
+    }
+
+    func testAThingIsPutOnAListAndTakenOff() {
+        var lib = LibraryTests.sample()
+        let swim = lib.templates.first { $0.name == "Swim" } ?? { var l = newList(name: "Swim"); l.items = [newItem(name: "Goggles")]; lib.saveTemplate(l); return lib.templates.first { $0.name == "Swim" }! }()
+        let lamp = lib.items.first { $0.name == "Headlamp" }!
+        XCTAssertTrue(lib.setOnTemplate(itemId: lamp.id, templateId: swim.id, on: true))
+        XCTAssertTrue(lib.resolvedTemplate(id: swim.id)!.items.contains { $0.name == "Headlamp" })
+        XCTAssertEqual(lib.memberships.filter { $0.itemId == lamp.id }.count, 3)
+        XCTAssertTrue(lib.setOnTemplate(itemId: lamp.id, templateId: swim.id, on: true), "asking twice changes nothing")
+        XCTAssertEqual(lib.memberships.filter { $0.itemId == lamp.id }.count, 3)
+        XCTAssertTrue(lib.setOnTemplate(itemId: lamp.id, templateId: swim.id, on: false))
+        XCTAssertFalse(lib.resolvedTemplate(id: swim.id)!.items.contains { $0.name == "Headlamp" })
+        XCTAssertTrue(lib.items.contains { $0.id == lamp.id }, "the thing survives")
+        XCTAssertFalse(lib.setOnTemplate(itemId: lamp.id, templateId: "no-such", on: true))
+    }
+}
