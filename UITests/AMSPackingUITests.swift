@@ -66,9 +66,16 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     private func words(_ e: XCUIElement) -> String {
+        // Reading an element that is not there (yet) is a HARD failure in XCTest,
+        // not an empty answer — and on GitHub's slow runners a screen can still be
+        // building when the first read comes. So: not there = no words yet.
+        guard e.exists else { return "" }
         // The Mac reports a text's words as its value, the iPhone as its label.
-        e.label.isEmpty ? (e.value as? String ?? "") : e.label
+        return e.label.isEmpty ? (e.value as? String ?? "") : e.label
     }
+
+    /// Selected — and there to ask. Same reason as `words`.
+    private func isOn(_ e: XCUIElement) -> Bool { e.exists && e.isSelected }
 
     /// Keeps a picture of the screen when asked to (tools/shots.sh sets
     /// TEST_RUNNER_SHOTS_DIR) — how a build is LOOKED at on both devices, in
@@ -213,13 +220,34 @@ final class AMSPackingUITests: XCTestCase {
         e.tap()
     }
 
-    /// Tap a pill until it reports itself selected.
+    /// Tap a pill until it reports itself selected. If it never does, say what
+    /// the machine actually sees — GitHub's Mac runner has refused this tap in
+    /// every run while this Mac takes it every time, and three guesses at the
+    /// cause were wrong. Facts first.
     private func select(_ app: XCUIApplication, _ button: XCUIElement) {
         for _ in 0..<3 {
             tapVisible(app, button)
-            if waitUntil(timeout: 2, { button.isSelected }) { return }
+            if waitUntil(timeout: 2, { self.isOn(button) }) { return }
         }
-        XCTFail("\(button) did not take the tap")
+        report(app, button, "did not take the tap")
+    }
+
+    private func report(_ app: XCUIApplication, _ e: XCUIElement, _ what: String) {
+        var lines = ["TAP-REPORT \(e.identifier.isEmpty ? "\(e)" : e.identifier) \(what)"]
+        lines.append("  element: exists=\(e.exists)" + (e.exists ? " hittable=\(e.isHittable) enabled=\(e.isEnabled) selected=\(e.isSelected) frame=\(e.frame) label='\(e.label)'" : ""))
+        let create = app.buttons["trip-create"]
+        if create.exists { lines.append("  trip-create: enabled=\(create.isEnabled) frame=\(create.frame)") }
+        for (n, w) in app.windows.allElementsBoundByIndex.prefix(3).enumerated() { lines.append("  window \(n): frame=\(w.frame)") }
+        let scroll = app.scrollViews.firstMatch
+        if scroll.exists { lines.append("  scroll: frame=\(scroll.frame)") }
+        print(lines.joined(separator: "\n"))
+        let tree = app.debugDescription
+        print("TAP-REPORT tree (first 8000 chars):\n" + String(tree.prefix(8000)))
+        let picture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        picture.name = "tap-report"
+        picture.lifetime = .keepAlways
+        add(picture)
+        XCTFail("\(e.identifier) \(what) — see TAP-REPORT in the log")
     }
 
     private func waitUntil(timeout: TimeInterval = 5, _ ok: () -> Bool) -> Bool {
@@ -336,11 +364,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 5), "the to-do is not listed")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]).hasPrefix("1 ") }, "not counted: '\(words(app.staticTexts["actions-count"]))'")
         row.tap()
-        XCTAssertTrue(waitUntil { row.isSelected }, "the tick did not take")
+        XCTAssertTrue(waitUntil { self.isOn(row) }, "the tick did not take")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]).hasPrefix("All done") }, "'\(words(app.staticTexts["actions-count"]))'")
         app.buttons["tab-home"].tap()
         app.buttons["tab-actions"].tap()
-        XCTAssertTrue(waitUntil { app.buttons["action-0"].isSelected }, "the tick was lost on the way out and back")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.isOn(app.buttons["action-0"]) }, "the tick was lost on the way out and back")
     }
     /// A thing added to a template is there — and still there after closing and reopening.
     func testAThingAddedToATemplateStays() {
