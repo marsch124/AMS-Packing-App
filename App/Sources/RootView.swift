@@ -34,6 +34,7 @@ private struct SectionScreen: View {
             case (.ready, .home): HomeScreen()
             case (.ready, .templates): TemplatesScreen()
             case (.ready, .events): EventsScreen()
+            case (.ready, .actions): ActionsScreen()
             case (.ready, .settings), (.empty, .settings): SettingsScreen()
             default: placeholder
             }

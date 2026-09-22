@@ -191,10 +191,32 @@ final class AMSPackingUITests: XCTestCase {
         XCTFail("could not type into \(field)")
     }
 
+    /// Scroll until a control is actually on screen. GitHub's Mac runner has a
+    /// shorter window than this Mac, and a click on a control below the fold
+    /// "succeeds" and does nothing ("trip-activity-0 did not take the tap").
+    private func bringIntoView(_ app: XCUIApplication, _ e: XCUIElement) {
+        for _ in 0..<8 {
+            if e.exists && e.isHittable { return }
+            #if os(macOS)
+            let scroll = app.scrollViews.firstMatch
+            if scroll.exists { scroll.scroll(byDeltaX: 0, deltaY: -250) } else { return }
+            #else
+            let scroll = app.scrollViews.firstMatch
+            if scroll.exists { scroll.swipeUp() } else { app.swipeUp() }
+            #endif
+            usleep(300_000)
+        }
+    }
+
+    private func tapVisible(_ app: XCUIApplication, _ e: XCUIElement) {
+        bringIntoView(app, e)
+        e.tap()
+    }
+
     /// Tap a pill until it reports itself selected.
-    private func select(_ button: XCUIElement) {
+    private func select(_ app: XCUIApplication, _ button: XCUIElement) {
         for _ in 0..<3 {
-            button.tap()
+            tapVisible(app, button)
             if waitUntil(timeout: 2, { button.isSelected }) { return }
         }
         XCTFail("\(button) did not take the tap")
@@ -233,9 +255,9 @@ final class AMSPackingUITests: XCTestCase {
         let create = app.buttons["trip-create"]
         XCTAssertTrue(create.exists)
         XCTAssertFalse(create.isEnabled, "nothing to pack for yet — Create must wait")
-        select(app.buttons["trip-activity-0"])
+        select(app, app.buttons["trip-activity-0"])
         XCTAssertTrue(waitUntil { create.isEnabled }, "Create stayed off after a name and an activity")
-        create.tap()
+        tapVisible(app, create)
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
         let progress = app.staticTexts["trip-progress"]
         XCTAssertTrue(progress.waitForExistence(timeout: 5))
@@ -297,5 +319,27 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress).hasSuffix("/\(total + 1)") }, "the line did not count: '\(words(progress))'")
         XCTAssertTrue(app.buttons["trip-line-\(total)"].waitForExistence(timeout: 5), "the new line is not on the list")
         if let v = field.value as? String { XCTAssertFalse(v.contains("Tripod"), "the field should be empty again") }
+    }
+    /// A to-do is added, counted, ticked — and stays ticked.
+    func testAToDoIsAddedAndTicked() {
+        let app = launch()
+        app.buttons["tab-actions"].tap()
+        XCTAssertTrue(appears(app, "screen-actions"))
+        let field = app.textFields["action-add-text"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a to-do")
+        let add = app.buttons["action-add"]
+        XCTAssertFalse(add.isEnabled, "Add must wait for a text")
+        type("Book the ferry", into: field)
+        XCTAssertTrue(waitUntil { add.isEnabled })
+        add.tap()
+        let row = app.buttons["action-0"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "the to-do is not listed")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]).hasPrefix("1 ") }, "not counted: '\(words(app.staticTexts["actions-count"]))'")
+        row.tap()
+        XCTAssertTrue(waitUntil { row.isSelected }, "the tick did not take")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]).hasPrefix("All done") }, "'\(words(app.staticTexts["actions-count"]))'")
+        app.buttons["tab-home"].tap()
+        app.buttons["tab-actions"].tap()
+        XCTAssertTrue(waitUntil { app.buttons["action-0"].isSelected }, "the tick was lost on the way out and back")
     }
 }

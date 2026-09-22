@@ -68,3 +68,23 @@ final class CustomLineTests: XCTestCase {
         XCTAssertNil(lib.addCustomLine(tripId: "no-such-trip", name: "Tripod"))
     }
 }
+
+final class ActionsTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset() }
+
+    func testToDosAreAddedTickedAndOrderedTheWebAppsWay() {
+        var lib = Library()
+        let a = lib.addAction(text: " Book the ferry ")!
+        let b = lib.addAction(text: "Charge the lamp", priority: "high")!
+        XCTAssertEqual(a.text, "Book the ferry")
+        XCTAssertEqual(lib.sortedActions().map(\.id), [b.id, a.id], "high before normal")
+        XCTAssertTrue(lib.setActionDone(true, id: b.id))
+        XCTAssertEqual(lib.sortedActions().map(\.id), [a.id, b.id], "open before done")
+        XCTAssertFalse(lib.actions.first { $0.id == b.id }!.doneAt.isEmpty)
+        XCTAssertNil(lib.addAction(text: "  "))
+        lib.deleteAction(id: a.id)
+        XCTAssertEqual(lib.actions.count, 1)
+        XCTAssertEqual(lib.records().filter { $0.table == .actions }.count, 1, "one record per to-do")
+    }
+}

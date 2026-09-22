@@ -220,3 +220,35 @@ extension Library {
         return line
     }
 }
+
+// MARK: - To-dos
+
+extension Library {
+    /// A to-do, loose or tied to a thing. Lives in its own table, as in the web app.
+    @discardableResult
+    public mutating func addAction(text: String, kind: String = "todo", itemId: String = "", itemName: String = "",
+                                   priority: String = "normal", whenPhase: String = "") -> ActionItem? {
+        let clean = jsTrim(text)
+        guard !clean.isEmpty else { return nil }
+        let a = newAction(text: clean, kind: kind, itemId: itemId, itemName: itemName, priority: priority, whenPhase: whenPhase)
+        actions.append(a)
+        return a
+    }
+
+    /// Ticking is permanent on the action — it does not reset per trip.
+    @discardableResult
+    public mutating func setActionDone(_ done: Bool, id: String) -> Bool {
+        guard let n = actions.firstIndex(where: { $0.id == id }) else { return false }
+        actions[n].done = done
+        actions[n].doneAt = done ? nowISO() : ""
+        actions[n].updatedAt = nowISO()
+        return true
+    }
+
+    public mutating func deleteAction(id: String) { actions.removeAll { $0.id == id } }
+
+    /// The central list: open before done, high before normal, sooner before later.
+    public func sortedActions(kind: String = "todo") -> [ActionItem] {
+        actions.filter { $0.kind == kind }.stableSorted(compare: { a, b in compareActions(a, b) })
+    }
+}
