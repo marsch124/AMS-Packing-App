@@ -9,6 +9,9 @@ struct TripScreen: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
+    /// When / Where / Category — remembered on this device, as the web app does.
+    @AppStorage("ams.view") private var view = "when"
+    static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Where"), ("category", "Category")]
 
     var body: some View {
         let trip = model.library.trips.first { $0.id == tripId } ?? newEvent()
@@ -31,13 +34,16 @@ struct TripScreen: View {
                     .accessibilityIdentifier("trip-done")
             }
             .padding(16)
+            Pills(title: "", options: TripScreen.views, selected: [view], id: "trip-view", tint: AppSection.events.color) { view = $0 }
+                .padding(.horizontal, 16)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(entriesByPhase(trip.entries).enumerated()), id: \.offset) { _, group in
+                    // The web app's nesting: When → by bag inside; Where / Category → by When inside.
+                    ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { _, group in
                         if !group.entries.isEmpty {
-                            Text(group.phase.label)
+                            Text(group.label)
                                 .font(.system(size: 15, weight: .heavy))
-                                .foregroundStyle(Color(hexString: group.phase.color))
+                                .foregroundStyle(view == "when" ? Color(hexString: phaseColor(group.entries[0].phase)) : AppSection.events.color)
                                 .padding(.top, 12)
                             ForEach(group.entries, id: \.id) { line in
                                 let n = index[line.id] ?? 0
@@ -46,7 +52,7 @@ struct TripScreen: View {
                                     Button {
                                         if !aside { model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) } }
                                     } label: {
-                                        PackLine(line: line, nights: trip.nights, tint: Color(hexString: group.phase.color))
+                                        PackLine(line: line, nights: trip.nights, tint: Color(hexString: phaseColor(line.phase)), showBag: view != "container")
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("trip-line-\(n)")
@@ -86,6 +92,7 @@ struct PackLine: View {
     let line: Item
     let nights: Int
     let tint: Color
+    var showBag = true
 
     var body: some View {
         let aside = isSetAside(line)
@@ -110,9 +117,11 @@ struct PackLine: View {
                 Text("×\(qty.rounded() == qty ? String(Int(qty)) : String(qty))")
                     .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
             }
-            Text(line.container)
-                .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
-                .frame(maxWidth: 150, alignment: .trailing)
+            if showBag {
+                Text(line.container)
+                    .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                    .frame(maxWidth: 150, alignment: .trailing)
+            }
         }
         .padding(.vertical, 9)
         .contentShape(Rectangle())

@@ -220,4 +220,31 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-events"))
         XCTAssertTrue(app.buttons["trip-row-1"].waitForExistence(timeout: 5), "the new trip is not listed beside the sample one")
     }
+    /// A grab list counts what is in hand, refuses "Ready to go" while something
+    /// is missing, lets a thing be skipped, and Start over clears it all.
+    func testAGrabListCountsRefusesAndClears() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let button = app.buttons["grab-0"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "no grab buttons on Home")
+        button.tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(count.waitForExistence(timeout: 5))
+        XCTAssertTrue(words(count).hasPrefix("0 of"), "a fresh list starts empty: '\(words(count))'")
+
+        app.buttons["grab-item-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of") }, "the tick did not count: '\(words(count))'")
+        app.buttons["grab-skip-1"].tap()
+        XCTAssertTrue(waitUntil { self.words(count).contains("skipped") }, "the skip did not count: '\(words(count))'")
+
+        app.buttons["grab-ready"].tap()
+        XCTAssertTrue(app.staticTexts["grab-message"].waitForExistence(timeout: 5), "Ready to go must refuse while things are missing")
+        XCTAssertNotNil(find(app, "grab-detail"), "…and stay open")
+
+        app.buttons["grab-reset"].tap()
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of") && !self.words(count).contains("skipped") }, "Start over did not clear: '\(words(count))'")
+        app.buttons["grab-done"].tap()
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+    }
 }

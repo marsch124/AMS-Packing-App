@@ -16,6 +16,7 @@ struct HomeScreen: View {
     @State private var contexts: Set<String> = []
     @State private var quick = false
     @State private var opened: String?
+    @State private var grab: GrabDefinition?
 
     var body: some View {
         let choices = model.library.activityChoices()
@@ -23,7 +24,10 @@ struct HomeScreen: View {
         let anyWorkout = flat.contains { $0.group == "WET" && activities.contains($0.id) }
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("New trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
+                Text("Grab and go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
+                GrabButtons(lists: model.library.grabLists()) { grab = $0 }
+
+                Text("New trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
@@ -94,7 +98,12 @@ struct HomeScreen: View {
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id })) { o in
             TripScreen(tripId: o.id).environmentObject(model)
         }
+        .sheet(item: Binding(get: { grab.map { GrabOpened(list: $0) } }, set: { grab = $0?.list })) { g in
+            GrabScreen(list: g.list)
+        }
     }
+
+    private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
 
     private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty }
 
