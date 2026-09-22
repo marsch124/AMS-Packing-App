@@ -31,7 +31,7 @@ private struct SectionScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("library-problem")
             case (.empty, .home): FirstRunView()
-            case (.ready, .home): LibrarySummary()
+            case (.ready, .home): HomeScreen()
             case (.ready, .templates): TemplatesScreen()
             case (.ready, .events): EventsScreen()
             case (.ready, .settings), (.empty, .settings): SettingsScreen()

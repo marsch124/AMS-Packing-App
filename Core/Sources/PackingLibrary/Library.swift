@@ -171,3 +171,33 @@ public struct Library: Equatable, Sendable {
         return true
     }
 }
+
+// MARK: - Making a trip
+
+extension Library {
+    /// Build a trip's packing list from the templates it names and add it to the
+    /// library. The trip's length in nights comes from its dates, as in the web app.
+    /// Returns the trip as stored (with its lines).
+    @discardableResult
+    public mutating func createTrip(_ draft: TripEvent) -> TripEvent {
+        var trip = coerceEvent(draft)
+        if trip.id.isEmpty { trip.id = PackingEnv.makeId() }
+        trip.nights = nightsBetween(trip.startDate, trip.endDate) ?? 0
+        trip.entries = buildTotalEntries(trip, resolvedTemplates())
+        trip.generatedAt = nowISO()
+        trip.createdAt = nowISO()
+        trip.updatedAt = trip.createdAt
+        trips.append(trip)
+        return trip
+    }
+
+    /// The templates a trip can be built from: the tickable activities, in his
+    /// order (Swim / Bike / Run…), grouped by his activity groups.
+    public func activityChoices() -> [(group: ActivityGroup, lists: [PackList])] {
+        let all = resolvedTemplates().filter { $0.role.isEmpty }
+        return GROUPS.compactMap { g in
+            let mine = orderActivities(g.id, all.filter { $0.group == g.id })
+            return mine.isEmpty ? nil : (g, mine)
+        }
+    }
+}

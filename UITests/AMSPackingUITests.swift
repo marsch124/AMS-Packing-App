@@ -195,4 +195,29 @@ final class AMSPackingUITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
         #endif
     }
+    /// Home builds a trip: a name, one activity, Create — and it opens with lines.
+    func testHomeBuildsATrip() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let field = app.textFields["trip-name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no name field")
+        field.tap()
+        field.typeText("Test trip")
+        let create = app.buttons["trip-create"]
+        XCTAssertTrue(create.exists)
+        XCTAssertFalse(create.isEnabled, "nothing to pack for yet — Create must wait")
+        app.buttons["trip-activity-0"].tap()
+        XCTAssertTrue(waitUntil { create.isEnabled })
+        create.tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let shown = words(progress)
+        XCTAssertTrue(shown.hasPrefix("0/") && !shown.hasPrefix("0/0"), "the trip has no lines: '\(shown)'")
+        app.buttons["trip-done"].tap()
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        app.buttons["tab-events"].tap()
+        XCTAssertTrue(appears(app, "screen-events"))
+        XCTAssertTrue(app.buttons["trip-row-1"].waitForExistence(timeout: 5), "the new trip is not listed beside the sample one")
+    }
 }
