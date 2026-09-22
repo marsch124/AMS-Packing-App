@@ -67,6 +67,8 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         # YES only in builds that carry the iCloud entitlements (see settings below).
         PackingUsesICloud: $(PACKING_USES_ICLOUD)
+        # A change on the other device arrives as a silent push (iPhone).
+        UIBackgroundModes: [remote-notification]
         UILaunchScreen:
           UIColorName: ""
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]

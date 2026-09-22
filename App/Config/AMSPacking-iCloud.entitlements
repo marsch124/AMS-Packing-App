@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The entitlements of a build that SYNCS. Hand-written, not generated: the
+	     generated file (AMSPacking.entitlements) deliberately carries no iCloud,
+	     because an ad-hoc signed Mac app with iCloud entitlements is refused at
+	     launch, and that is how CI builds. tools/build.sh … icloud and the
+	     TestFlight workflow build with this file and PACKING_USES_ICLOUD=YES. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- A sandboxed Mac app may not talk to iCloud without this. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.schabbauer.AMSPacking</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<!-- Which CloudKit environment a DEVELOPMENT-signed build talks to. Xcode's own
+	     build puts this in; a command-line build with a hand-written entitlements
+	     file does not, and without it the sandbox denied the app the CloudKit
+	     daemon ("deny mach-lookup com.apple.cloudd", 2026-09-22). -->
+	<key>com.apple.developer.icloud-container-environment</key>
+	<string>Development</string>
+	<!-- 🚨 Without this the sandbox denies the app the CloudKit daemon and nothing
+	     syncs — "deny mach-lookup com.apple.cloudd" in the kernel's sandbox log,
+	     while CloudKit itself only says "Error connecting to CloudKit daemon".
+	     Found 2026-09-22 after every other explanation (profile, device
+	     registration, launch path, container environment) was checked and
+	     cleared. macOS 26's application.sb grants nothing for cloudd. Verified:
+	     with this line a sandboxed development build pushed 1,438 records and a
+	     wiped device pulled them all back in 10 s. -->
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>com.apple.cloudd</string>
+	</array>
+	<!-- How a change made on the other device arrives: a silent push. -->
+	<key>com.apple.developer.aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

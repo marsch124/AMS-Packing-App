@@ -92,6 +92,28 @@ CI (no iCloud account there); it is proved on his two devices through TestFlight
 with a Settings screen that shows what this device holds, table by table, so two
 devices can be compared by eye — the web app's "this device has everything" check.
 
+## Proved on his Mac, 2026-09-22
+
+A development build signed for this Mac pushed his whole library (1,438 records)
+to the CloudKit **Development** environment; the local store was then deleted
+and the app, started with nothing, pulled every record back within 10 seconds —
+table for table the same counts. `tools/build.sh build mac icloud` is that build.
+
+What it took, each one found in a log rather than guessed:
+- `Sandbox: AMSPacking deny(1) file-read-data …` — a sandboxed app cannot read a
+  file outside its container, so the debug `-importFile` path must point INSIDE
+  `~/Library/Containers/com.schabbauer.AMSPacking/Data/` (copy the file there).
+- `Sandbox: AMSPacking deny(1) mach-lookup com.apple.cloudd` — the app sandbox
+  did not let the app talk to the CloudKit daemon at all; CloudKit reported it
+  as "Error connecting to CloudKit daemon". Nothing in the entitlements, the
+  profile, the Mac's registration or the launch path changed it. The fix is the
+  temporary sandbox exception for `com.apple.cloudd` in the iCloud entitlements.
+  (Shipped sandboxed CloudKit apps on this Mac carry no such line — so a
+  Production-signed build may not need it. Check on the first TestFlight build;
+  if it does, it stays.)
+- The Development environment is a TEST copy. The real import happens once more,
+  into Production, on the first TestFlight build — after the schema is deployed.
+
 ## What it needs from the project
 
 - Capabilities: iCloud → CloudKit, container `iCloud.com.schabbauer.AMSPacking`;
