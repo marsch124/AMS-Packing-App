@@ -108,9 +108,10 @@ What it took, each one found in a log rather than guessed:
   as "Error connecting to CloudKit daemon". Nothing in the entitlements, the
   profile, the Mac's registration or the launch path changed it. The fix is the
   temporary sandbox exception for `com.apple.cloudd` in the iCloud entitlements.
-  (Shipped sandboxed CloudKit apps on this Mac carry no such line — so a
-  Production-signed build may not need it. Check on the first TestFlight build;
-  if it does, it stays.)
+  (Of the shipped sandboxed CloudKit apps on this Mac, Fantastical carries the
+  very same exception for `com.apple.cloudd`; Drafts does not. So it may or may
+  not be needed in a Production-signed build — check on the first TestFlight
+  build; if it is, it stays, and it has passed App Review for others.)
 - The Development environment is a TEST copy. The real import happens once more,
   into Production, on the first TestFlight build — after the schema is deployed.
 
