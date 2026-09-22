@@ -50,10 +50,14 @@ go in `private/`, which git ignores. The parity checker reads them from there.
 - ✅ `Core/PackingLibrary` — the library in memory, the records it is stored and
   synced as, the one-time import (self-checking), backups. [`docs/store.md`](docs/store.md).
 - ✅ iCloud sync, proved end to end on his Mac (1,438 records up, wiped, all back).
-- 🔨 Screens: Templates (read-only), Events, Packing Mode (tick, "not this time"),
-  Home (build a trip), Settings (backup, device check). Care, Actions and editing
-  are next.
-- 🔜 TestFlight: [`TESTFLIGHT.md`](TESTFLIGHT.md) — two browser steps remain.
+- ✅ TestFlight: both the iPhone and the Mac build go to his group from the
+  Actions tab ([`TESTFLIGHT.md`](TESTFLIGHT.md)).
+- 🔨 Screens: Home (build a trip), Events and Packing Mode (tick, "not this
+  time", the review at the end), Templates with their sections and a row's own
+  answers, Your things (every thing, on a list or not, and everything about
+  one), Care, Actions, the grab lists, and Settings — backup, restore, your own
+  lists (places, owners, packers, conditions, "When"), what this device holds.
+  Still to come: photos, kits, the shopping list, weather and sharing.
 
 ## Building
 

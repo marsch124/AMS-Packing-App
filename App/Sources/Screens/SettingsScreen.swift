@@ -11,6 +11,11 @@ struct SettingsScreen: View {
     @State private var exporting = false
     @State private var status = ""
     @State private var lists = false
+    @State private var picking = false
+    @State private var pending: PendingRestore?
+
+    /// A file that has been read and checked, waiting for him to say yes.
+    struct PendingRestore: Identifiable { let id = UUID(); let library: Library }
 
     var body: some View {
         KeyboardAwayScroll {
@@ -31,6 +36,22 @@ struct SettingsScreen: View {
                 Text(status.isEmpty ? "The same file the web app writes, so either app can read it." : status)
                     .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("backup-status")
+
+                Button {
+                    status = ""
+                    // Apple's file window cannot be driven by a test, so under the
+                    // UI tests the button reads an invented file instead.
+                    if AMSPackingApp.testing { offer(SampleLibrary.fileToRestore()) } else { picking = true }
+                } label: {
+                    Text("Restore from a file…")
+                        .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("backup-restore")
 
                 Button { lists = true } label: {
                     HStack {
@@ -78,12 +99,44 @@ struct SettingsScreen: View {
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
         .sheet(isPresented: $lists) { ListsScreen().environmentObject(model) }
+        .sheet(item: $pending) { waiting in
+            RestoreSheet(file: waiting.library, device: model.library) { yes in
+                pending = nil
+                guard yes else { status = "Nothing was replaced."; return }
+                do {
+                    try model.restore(waiting.library)
+                    status = "Restored from the file. A copy of what was here is kept on this device."
+                } catch {
+                    status = error.localizedDescription
+                }
+            }
+        }
+        .fileImporter(isPresented: $picking, allowedContentTypes: [.json]) { result in
+            switch result {
+            case .success(let url):
+                let allowed = url.startAccessingSecurityScopedResource()
+                defer { if allowed { url.stopAccessingSecurityScopedResource() } }
+                if let data = try? Data(contentsOf: url) { offer(data) } else { status = "That file could not be read." }
+            case .failure: status = "Nothing chosen."
+            }
+        }
         .fileExporter(isPresented: $exporting, document: BackupDocument(data: model.library.backupData()),
                       contentType: .json, defaultFilename: Library.backupFileName(on: Today.local)) { result in
             switch result {
             case .success(let url): status = "Saved: \(url.lastPathComponent)"
             case .failure: status = "Not saved."
             }
+        }
+    }
+
+    /// Read the file and check it BEFORE he is offered the button. A file that is
+    /// not a backup, or that does not come back the same, never gets that far.
+    private func offer(_ data: Data) {
+        do {
+            let (library, _) = try model.inspectBackup(data)
+            pending = PendingRestore(library: library)
+        } catch {
+            status = error.localizedDescription
         }
     }
 

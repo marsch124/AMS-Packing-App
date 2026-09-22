@@ -101,6 +101,24 @@ final class LibraryModel: ObservableObject {
         lastImport = report
         return report
     }
+
+    /// Read a backup file and change NOTHING: what it holds, so a restore can be
+    /// looked at before it replaces the lot. A file that does not come back the
+    /// same is refused here, before he is ever offered the button.
+    func inspectBackup(_ data: Data) throws -> (library: Library, report: Importer.Report) {
+        guard let json = try? JSONValue.parse(data), BackupFile.looksLikeBackup(json) else { throw ImportError.notABackup }
+        let (imported, report) = Importer.library(from: BackupFile(json: json))
+        guard report.isFaithful else { throw ImportError.notFaithful(report.mismatches.count) }
+        return (imported, report)
+    }
+
+    /// Replace everything on this device with what the file held. What was here is
+    /// written to a rescue copy FIRST — the write that destroys comes last.
+    func restore(_ imported: Library) throws {
+        try RescueCopies.write(library)
+        commit(imported)
+        reload()
+    }
 }
 
 extension LibraryModel {

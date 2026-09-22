@@ -19,6 +19,7 @@
 		6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 403A4735005582B356D67F55 /* HomeScreen.swift */; };
 		6A4E3AE89B7E1FF756858C13 /* PackingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 70431786B7003CDABC1162E4 /* PackingCore */; };
 		7489E41014894218A0EC730E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */; };
+		8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34879BF77676913C07B69267 /* RestoreSheet.swift */; };
 		8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CEDA06EFED05D4A1612077 /* EventsScreen.swift */; };
 		A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */; };
 		AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */; };
@@ -28,6 +29,7 @@
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
 		BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5604CA6875D255BD93251 /* CareScreen.swift */; };
 		C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */; };
+		D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */; };
 		D5D12FDA2CC5B6443B769608 /* PackingLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 00FE6A96F5083A4802B251C6 /* PackingLibrary */; };
 		E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B838F35360E8BDAF890124 /* Theme.swift */; };
 		E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA49BA1121FBB7576FC62E32 /* RootView.swift */; };
@@ -50,6 +52,7 @@
 		1E01A9E0DEC947610C0F642D /* GrabScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabScreen.swift; sourceTree = "<group>"; };
 		1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingUITests.swift; sourceTree = "<group>"; };
 		258F81799F958E5C5EF112C5 /* ListsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsScreen.swift; sourceTree = "<group>"; };
+		34879BF77676913C07B69267 /* RestoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestoreSheet.swift; sourceTree = "<group>"; };
 		35352F3BD8D2A7EE166961C9 /* Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Today.swift; sourceTree = "<group>"; };
 		3A74DCE749078F203A8E87BF /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
@@ -71,6 +74,7 @@
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		ED9B041225333263C7547689 /* ThingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsScreen.swift; sourceTree = "<group>"; };
+		F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescueCopies.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,6 +120,7 @@
 			children = (
 				A841D9340C8D1312A6814431 /* CloudStore.swift */,
 				E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */,
+				F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */,
 				47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */,
 				35352F3BD8D2A7EE166961C9 /* Today.swift */,
 			);
@@ -173,6 +178,7 @@
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
 				403A4735005582B356D67F55 /* HomeScreen.swift */,
 				258F81799F958E5C5EF112C5 /* ListsScreen.swift */,
+				34879BF77676913C07B69267 /* RestoreSheet.swift */,
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
@@ -301,6 +307,8 @@
 				6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */,
 				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,
 				0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */,
+				D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */,
+				8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */,
 				09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */,
 				E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */,
 				5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */,

@@ -36,4 +36,16 @@ enum SampleLibrary {
         lib.trips = [trip]
         return lib
     }
+
+    /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
+    /// the restore button reads this instead of opening Apple's file window (which
+    /// no test can drive): 2 things where the device holds 10, so a restore that
+    /// only ADDS would be caught.
+    static func fileToRestore() -> Data {
+        var lib = Library()
+        var day = newList(name: "Day out", role: "base")
+        day.items = [newItem(name: "Water bottle"), newItem(name: "Sun hat")]
+        lib.saveTemplate(day)
+        return lib.backupData(exportedAt: "2026-09-22T09:00:00.000Z")
+    }
 }

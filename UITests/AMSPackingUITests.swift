@@ -639,6 +639,38 @@ final class AMSPackingUITests: XCTestCase {
     }
     /// His own lists: a storage place is added, is offered to a thing, and cannot
     /// be removed while something uses it.
+    /// A restore REPLACES: the sheet shows what the file holds beside what the
+    /// device holds, warns when the file holds less, and only then offers the red
+    /// button. (Apple's own file window cannot be driven by a test, so under
+    /// `-uiTesting` the button reads an invented file of 2 things.)
+    func testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let things = app.staticTexts["device-count-items"]
+        XCTAssertTrue(things.waitForExistence(timeout: 5))
+        XCTAssertEqual(words(things), "10", "the sample library is not what it was")
+
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5), "the restore was not shown first")
+        XCTAssertEqual(words(app.staticTexts["restore-file-items"]), "2", "what the file holds")
+        XCTAssertEqual(words(app.staticTexts["restore-now-items"]), "10", "what the device holds")
+        XCTAssertTrue(app.staticTexts["restore-fewer"].exists, "a file holding less said nothing")
+
+        // Backing out changes nothing.
+        tap(app, id: "restore-cancel")
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+        XCTAssertEqual(words(things), "10", "cancelling replaced something")
+
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        tap(app, id: "restore-confirm")
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(things) == "2" }, "the device still holds \(words(things)) things")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["device-count-trips"]) == "0" },
+                      "a trip from before the restore survived")
+    }
+
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
         let app = launch()
         tab(app, "settings")
