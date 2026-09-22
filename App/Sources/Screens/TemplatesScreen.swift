@@ -94,11 +94,23 @@ struct TemplateDetail: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
+    @State private var editingRow: String?
 
     var body: some View {
         let list = model.library.resolvedTemplate(id: listId) ?? newList()
-        let groups = entriesByPhase(list.items).filter { !$0.entries.isEmpty }
-        let index: [String: Int] = Dictionary(list.items.enumerated().map { ($1.memId ?? "\($0)", $0) }, uniquingKeysWith: { a, _ in a })
+        // His lists are built in SECTIONS (511 of his 538 rows sit in one), so that
+        // is how a list reads here. A list with no sections falls back to "When".
+        let sectioned = list.items.contains { !$0.section.isEmpty }
+        let groups: [(title: String, colour: Color?, items: [Item])] = sectioned
+            ? groupItemsBySection(list.items, list.sections)
+                .filter { !$0.items.isEmpty }
+                .map { (($0.section?.name ?? "Everything else"), nil, $0.items) }
+            : entriesByPhase(list.items)
+                .filter { !$0.entries.isEmpty }
+                .map { ($0.phase.label, Color(hexString: $0.phase.color), $0.entries) }
+        // Numbered as they are READ, top to bottom — what you see first is the first.
+        let index: [String: Int] = Dictionary(groups.flatMap(\.items).enumerated().map { ($1.memId ?? "\($0)", $0) },
+                                              uniquingKeysWith: { a, _ in a })
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Cover(list: list, size: 36)
@@ -115,20 +127,29 @@ struct TemplateDetail: View {
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
-                        Text(group.phase.label)
+                        Text(group.title)
                             .font(.system(size: 15, weight: .heavy))
-                            .foregroundStyle(Color(hexString: group.phase.color))
+                            .foregroundStyle(group.colour ?? AppSection.templates.color)
                             .padding(.top, 12)
-                        ForEach(group.entries, id: \.memId) { item in
+                        ForEach(group.items, id: \.memId) { item in
                             let n = index[item.memId ?? ""] ?? 0
                             HStack(spacing: 4) {
-                                HStack {
-                                    Text(item.name).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                                    Spacer(minLength: 8)
-                                    Text(item.container).font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(1)
+                                Button { editingRow = item.memId } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(item.name).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                                            if !item.qty.isEmpty || !item.note.isEmpty {
+                                                Text([item.qty.isEmpty ? "" : "×\(item.qty)", item.note]
+                                                        .filter { !$0.isEmpty }.joined(separator: " · "))
+                                                    .font(.system(size: 13)).foregroundStyle(Theme.muted).lineLimit(1)
+                                            }
+                                        }
+                                        Spacer(minLength: 8)
+                                        Text(item.container).font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(1)
+                                    }
+                                    .padding(.vertical, 6).contentShape(Rectangle())
                                 }
-                                .padding(.vertical, 6)
-                                .accessibilityElement(children: .combine)
+                                .buttonStyle(.plain)
                                 .accessibilityIdentifier("template-item-\(n)")
                                 Button {
                                     if let mid = item.memId { model.change { _ = $0.removeFromTemplate(templateId: listId, memId: mid) } }
@@ -171,6 +192,9 @@ struct TemplateDetail: View {
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
+        .sheet(item: Binding(get: { editingRow.map { Editing(id: $0) } }, set: { editingRow = $0?.id })) { e in
+            RowEditor(templateId: listId, memId: e.id).environmentObject(model)
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("template-detail")
         #if os(macOS)
@@ -183,6 +207,120 @@ struct TemplateDetail: View {
         guard !jsTrim(name).isEmpty else { return }
         model.change { _ = $0.addToTemplate(templateId: listId, name: name) }
         newName = ""
+    }
+
+    private struct Editing: Identifiable { let id: String }
+}
+
+/// One row of a list: what THIS list says about the thing — its bag and "When"
+/// here, how many, a note, which section it sits in. Blank means "the same as
+/// the thing itself", so a change to the thing still reaches this list.
+struct RowEditor: View {
+    let templateId: String
+    let memId: String
+    @EnvironmentObject var model: LibraryModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var bag = ""
+    @State private var when = ""
+    @State private var qty = ""
+    @State private var note = ""
+    @State private var section = ""
+    @State private var newSectionName = ""
+
+    var body: some View {
+        let found = model.library.row(templateId: templateId, memId: memId)
+        let thing = found?.thing ?? Item()
+        let list = model.library.templates.first { $0.id == templateId } ?? newList()
+        VStack(spacing: 0) {
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("row-cancel")
+                Spacer()
+                Button("Save") { save() }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.templates.color)
+                    .accessibilityIdentifier("row-save")
+            }
+            .padding(16)
+            KeyboardAwayScroll {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(thing.name).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("On \(list.name)").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                    Pills(title: "Bag on this list", options: [("", "Same as the thing (\(thing.container))")]
+                            + containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
+                          selected: [bag], id: "row-bag", tint: AppSection.templates.color) { bag = $0 }
+                    Pills(title: "When, on this list", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
+                            + PHASES.map { ($0.id, $0.label) },
+                          selected: [when], id: "row-when", tint: AppSection.templates.color) { when = $0 }
+                    if !list.sections.isEmpty {
+                        Pills(title: "Section of this list", options: [("", "No section")] + list.sections.map { ($0.id, $0.name) },
+                              selected: [section], id: "row-section", tint: AppSection.templates.color) { section = $0 }
+                    }
+                    Text("A new section").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    HStack(spacing: 8) {
+                        field($newSectionName, "e.g. Lights", "row-section-new")
+                        Button { addSection() } label: {
+                            Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                                .padding(.horizontal, 16).frame(minHeight: 44)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newSectionName).isEmpty ? Theme.line : AppSection.templates.color))
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .disabled(jsTrim(newSectionName).isEmpty)
+                        .accessibilityIdentifier("row-section-add")
+                    }
+                    Text("How many").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    field($qty, "e.g. 2, or 2 pairs", "row-qty")
+                    Text("Note").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    field($note, "e.g. with the red filter", "row-note")
+                    Text("Blank means the same as the thing itself, so a change to the thing still reaches this list.")
+                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                }
+                .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .onAppear {
+            guard let f = model.library.row(templateId: templateId, memId: memId) else { return }
+            bag = f.membership.container; when = f.membership.phase
+            qty = f.membership.qty; note = f.membership.note; section = f.membership.section
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("row-detail")
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 600)
+        #endif
+    }
+
+    private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {
+        TextField(prompt, text: text)
+            .textFieldStyle(.plain)
+            .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).frame(minHeight: 44)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            .accessibilityIdentifier(id)
+    }
+
+    private func addSection() {
+        let name = newSectionName
+        guard !jsTrim(name).isEmpty else { return }
+        var made: TemplateSection?
+        model.change { made = $0.addSection(templateId: templateId, name: name) }
+        if let made = made { section = made.id }
+        newSectionName = ""
+    }
+
+    private func save() {
+        let (b, w, q, n, s) = (bag, when, qty, note, section)
+        model.change {
+            _ = $0.updateMembership(memId: memId) { m in
+                m.container = b; m.phase = w; m.qty = jsTrim(q); m.note = jsTrim(n); m.section = s
+            }
+        }
+        dismiss()
     }
 }
 

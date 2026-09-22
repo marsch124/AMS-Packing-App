@@ -462,3 +462,37 @@ extension Library {
         return true
     }
 }
+
+// MARK: - A row of a template (the membership: this list's own answers)
+
+extension Library {
+    /// The row as it sits on THIS list, and the thing behind it.
+    public func row(templateId: String, memId: String) -> (row: Item, thing: Item, membership: Membership)? {
+        guard let m = memberships.first(where: { $0.id == memId && $0.templateId == templateId }),
+              let thing = items.first(where: { $0.id == m.itemId }),
+              let row = resolvedTemplate(id: templateId)?.items.first(where: { $0.memId == memId }) else { return nil }
+        return (row, thing, m)
+    }
+
+    /// Change what THIS list says about the thing: its bag and "When" here (blank =
+    /// follow the thing), how many, a note, which section of the list it sits in.
+    @discardableResult
+    public mutating func updateMembership(memId: String, _ apply: (inout Membership) -> Void) -> Bool {
+        guard let n = memberships.firstIndex(where: { $0.id == memId }) else { return false }
+        var m = memberships[n]
+        apply(&m)
+        memberships[n] = coerceMembership(m)
+        return true
+    }
+
+    /// A named section of a template ("Lights", "Rig"), added if it is new.
+    @discardableResult
+    public mutating func addSection(templateId: String, name: String) -> TemplateSection? {
+        let clean = jsTrim(name)
+        guard !clean.isEmpty, let t = templates.firstIndex(where: { $0.id == templateId }) else { return nil }
+        if let there = templates[t].sections.first(where: { normName($0.name) == normName(clean) }) { return there }
+        let s = newSection(clean)
+        templates[t].sections.append(s)
+        return s
+    }
+}

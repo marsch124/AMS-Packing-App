@@ -247,3 +247,54 @@ final class ThingEditingTests: XCTestCase {
         XCTAssertFalse(lib.setOnTemplate(itemId: lamp.id, templateId: "no-such", on: true))
     }
 }
+
+final class RowEditingTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
+
+    func testThisListsOwnAnswersStayThisListsOwn() {
+        var lib = LibraryTests.sample()
+        let hiking = lib.templates.first { $0.name == "Hiking" }!
+        let run = lib.templates.first { $0.name == "Night run" }!
+        let memId = lib.resolvedTemplate(id: hiking.id)!.items.first { $0.name == "Headlamp" }!.memId!
+        let section = lib.addSection(templateId: hiking.id, name: " Lights ")!
+        XCTAssertEqual(section.name, "Lights")
+        XCTAssertEqual(lib.addSection(templateId: hiking.id, name: "lights")?.id, section.id, "the same section, not a second one")
+
+        XCTAssertTrue(lib.updateMembership(memId: memId) { m in
+            m.container = "Hiking backpack"; m.phase = "morning"; m.qty = "2"; m.note = "with the red filter"; m.section = section.id
+        })
+        let here = lib.resolvedTemplate(id: hiking.id)!.items.first { $0.name == "Headlamp" }!
+        XCTAssertEqual(here.container, "Hiking backpack")
+        XCTAssertEqual(here.phase, "morning")
+        XCTAssertEqual(here.qty, "2")
+        XCTAssertEqual(here.note, "with the red filter")
+        XCTAssertEqual(here.section, section.id)
+        // The thing itself, and the other list, are untouched.
+        XCTAssertEqual(lib.items.first { $0.name == "Headlamp" }?.container, "Day pack")
+        let there = lib.resolvedTemplate(id: run.id)!.items.first { $0.name == "Headlamp" }!
+        XCTAssertEqual(there.container, "Duffel bag")
+        XCTAssertEqual(there.phase, "week")
+        XCTAssertEqual(there.qty, "")
+
+        // Blank again = follow the thing.
+        XCTAssertTrue(lib.updateMembership(memId: memId) { $0.container = ""; $0.phase = "" })
+        let back = lib.resolvedTemplate(id: hiking.id)!.items.first { $0.name == "Headlamp" }!
+        XCTAssertEqual(back.container, "Day pack")
+        XCTAssertEqual(back.phase, "week")
+        XCTAssertFalse(lib.updateMembership(memId: "no-such") { _ in })
+    }
+
+    func testTheRowsOfATemplateGroupIntoItsSections() {
+        var lib = LibraryTests.sample()
+        let hiking = lib.templates.first { $0.name == "Hiking" }!
+        let lights = lib.addSection(templateId: hiking.id, name: "Lights")!
+        let memId = lib.resolvedTemplate(id: hiking.id)!.items.first { $0.name == "Headlamp" }!.memId!
+        lib.updateMembership(memId: memId) { $0.section = lights.id }
+        let list = lib.resolvedTemplate(id: hiking.id)!
+        let groups = groupItemsBySection(list.items, list.sections)
+        XCTAssertEqual(groups.first?.section?.name, "Lights")
+        XCTAssertEqual(groups.first?.items.map(\.name), ["Headlamp"])
+        XCTAssertNil(groups.last?.section, "the rest sit in no section")
+    }
+}

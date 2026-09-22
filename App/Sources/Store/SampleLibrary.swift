@@ -23,6 +23,12 @@ enum SampleLibrary {
             lib.items[n].maintenance = Maintenance(notes: "Wash with tech wash, no softener")
         }
         lib.saveTemplate(list("Swim", group: "WET", ["Goggles", "Swim cap", "Towel"]))
+        // His lists are built in sections, so the sample has one too.
+        if let hiking = lib.templates.first(where: { $0.name == "Hiking" }),
+           let lights = lib.addSection(templateId: hiking.id, name: "Lights"),
+           let row = lib.resolvedTemplate(id: hiking.id)?.items.first(where: { $0.name == "Headlamp" })?.memId {
+            lib.updateMembership(memId: row) { $0.section = lights.id }
+        }
         // One trip, built from Hiking (and the base list, as a trip is).
         var trip = newEvent(name: "Weekend in the hills", startDate: "2026-10-03", endDate: "2026-10-05")
         trip.activities = lib.templates.filter { $0.name == "Hiking" }.map { $0.id }

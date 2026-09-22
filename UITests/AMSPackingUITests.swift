@@ -429,20 +429,20 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-templates"))
         app.buttons["template-row-1"].tap()                // the second sample template (4 things)
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        XCTAssertTrue(app.otherElements["template-item-3"].waitForExistence(timeout: 5) || app.staticTexts["template-item-3"].exists, "expected 4 things")
-        XCTAssertFalse(app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists)
+        XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5), "expected 4 things")
+        XCTAssertFalse(app.buttons["template-item-4"].exists)
 
         let field = app.textFields["template-add-name"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
         type("Gaiters", into: field)
         app.buttons["template-add"].tap()
-        XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists }, "the new thing is not on the list")
+        XCTAssertTrue(waitUntil { app.buttons["template-item-4"].exists }, "the new thing is not on the list")
 
         app.buttons["template-detail-done"].tap()
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
         app.buttons["template-row-1"].tap()
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists }, "the thing was lost on the way out and back")
+        XCTAssertTrue(waitUntil { app.buttons["template-item-4"].exists }, "the thing was lost on the way out and back")
     }
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.
     func testCareShowsWhatIsOverdueAndDoneTodayMovesItOn() {
@@ -494,7 +494,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "templates")
         app.buttons["template-row-0"].tap()
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists },
+        XCTAssertTrue(waitUntil { app.buttons["template-item-4"].exists },
                       "the missed thing is not on the list for next time")
     }
     /// Your things: everything he owns is listed; a new thing is on no list; a
@@ -583,5 +583,40 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-category-7"]) }, "the kind of thing was not kept")
         XCTAssertTrue(isOn(app.buttons["thing-lists-2"]), "the list was not kept")
+    }
+    /// A list reads in ITS sections, and a row can be given this list's own bag,
+    /// note and section without touching the thing or the other lists.
+    func testARowOfAListHasItsOwnAnswers() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                       // Hiking, which has a section
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["Lights"].waitForExistence(timeout: 5), "the list does not read in its sections")
+
+        let row = app.buttons["template-item-0"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains("Headlamp"), "expected the sectioned thing first: '\(row.label)'")
+        XCTAssertTrue(row.label.contains("Carry-on"), "it follows the thing's own bag: '\(row.label)'")
+        row.tap()
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        select(app, app.buttons["row-bag-4"])                     // this list's own bag
+        type("with the red filter", into: app.textFields["row-note"])
+        tapVisible(app, app.buttons["row-save"])
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["template-item-0"].label.contains("red filter") },
+                      "the note is not on the row: '\(app.buttons["template-item-0"].label)'")
+        XCTAssertFalse(app.buttons["template-item-0"].label.contains("Carry-on"), "this list now has its own bag")
+
+        // The thing itself still says what it always said.
+        app.buttons["template-detail-done"].tap()
+        tab(app, "care")
+        app.buttons["care-things"].tap()
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Headlamp", into: app.textFields["things-search"])
+        XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].exists })
+        app.buttons["thing-row-0"].tap()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-bag-1"]) }, "the thing's own bag was changed by a list's exception")
     }
 }
