@@ -8,6 +8,7 @@ import PackingLibrary
 struct CareScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var open: Set<String> = []
+    @State private var things = false
 
     var body: some View {
         let today = Today.local
@@ -18,10 +19,27 @@ struct CareScreen: View {
         let soon = rows.filter { $0.status.state == "soon" }.count
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 6) {
+                // Everything he owns, on a list or not — the web app's "Your things".
+                Button { things = true } label: {
+                    HStack {
+                        Text("Your things").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+                        Text("\(model.library.items.count)").font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        Spacer()
+                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
+                    }
+                    .padding(.horizontal, 14).frame(minHeight: 52)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .padding(.top, 14)
+                .accessibilityIdentifier("care-things")
                 Text(CareScreen.summary(rows: rows.count, overdue: overdue, soon: soon))
                     .font(.system(size: 17, weight: .heavy))
                     .foregroundStyle(overdue > 0 ? AppSection.actions.color : (soon > 0 ? AppSection.care.color : AppSection.events.color))
-                    .padding(.top, 14)
+                    .padding(.top, 10)
                     .accessibilityIdentifier("care-summary")
                 ForEach(sections, id: \.key) { section in
                     let shown = !section.fold || open.contains(section.key)
@@ -55,6 +73,7 @@ struct CareScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
+        .sheet(isPresented: $things) { ThingsScreen().environmentObject(model) }
     }
 
     static func summary(rows: Int, overdue: Int, soon: Int) -> String {

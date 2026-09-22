@@ -251,6 +251,27 @@ final class AMSPackingUITests: XCTestCase {
         e.tap()
     }
 
+    /// Replace what a field holds. Select-all on the Mac; on the phone the old text
+    /// is deleted from the cursor. Checked by reading it back.
+    private func replace(_ text: String, in field: XCUIElement) {
+        for _ in 0..<3 {
+            #if os(macOS)
+            field.tap()
+            field.typeKey("a", modifierFlags: .command)
+            field.typeText(text)
+            #else
+            // The middle of the field, not its edge: the edge is padding and takes no
+            // focus. With a short name the cursor lands after it.
+            field.tap()
+            let old = (field.value as? String) ?? ""
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count + 2))
+            field.typeText(text)
+            #endif
+            if (field.value as? String) == text { return }
+        }
+        XCTFail("could not replace the text of \(field): '\(field.value ?? "")'")
+    }
+
     /// Tap a pill until it reports itself selected. If it never does, say what
     /// the machine actually sees — GitHub's Mac runner has refused this tap in
     /// every run while this Mac takes it every time, and three guesses at the
@@ -475,5 +496,33 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists },
                       "the missed thing is not on the list for next time")
+    }
+    /// Your things: everything he owns is listed; a new thing is on no list; a
+    /// rename sticks.
+    func testYourThingsListsAddsAndRenames() {
+        let app = launch()
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        app.buttons["care-things"].tap()
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let count = app.staticTexts["things-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "10 things" }, "the sample library holds 10 things: '\(words(count))'")
+        XCTAssertFalse(app.buttons["things-nolist"].exists, "nothing is on no list yet")
+
+        type("Sit mat", into: app.textFields["thing-new-name"])
+        app.buttons["thing-new"].tap()
+        XCTAssertTrue(waitUntil { self.words(count) == "11 things" }, "the new thing is not counted: '\(words(count))'")
+        let noList = app.buttons["things-nolist"]
+        XCTAssertTrue(noList.waitForExistence(timeout: 5), "the new thing is on no list, and says so")
+        noList.tap()
+        XCTAssertTrue(waitUntil { self.words(count) == "1 thing" }, "the filter did not narrow: '\(words(count))'")
+
+        app.buttons["thing-row-0"].tap()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        replace("Sit pad", in: app.textFields["thing-name"])
+        app.buttons["thing-save"].tap()
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).hasPrefix("Sit pad") || app.buttons["thing-row-0"].label.contains("Sit pad") },
+                      "the rename did not stick: '\(app.buttons["thing-row-0"].label)'")
     }
 }

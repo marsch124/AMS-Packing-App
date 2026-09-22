@@ -380,3 +380,52 @@ extension Library {
         return true
     }
 }
+
+// MARK: - Your things
+
+extension Library {
+    /// Every thing he owns, whether or not it is on a list — A–Z as the web app
+    /// sorts it — with the names of the templates it sits on ([] = on no list).
+    public func thingRows() -> [(item: Item, templates: [String])] {
+        var names: [String: [String]] = [:]
+        for t in templates {
+            for m in memberships where m.templateId == t.id {
+                if !(names[m.itemId] ?? []).contains(t.name) { names[m.itemId, default: []].append(t.name) }
+            }
+        }
+        return items
+            .map { (item: $0, templates: names[$0.id] ?? []) }
+            .stableSorted(compare: { a, b in jsLocaleCompare(a.item.name, b.item.name, sensitivity: .base) })
+    }
+
+    /// A new thing, on no list yet. Refused for a blank name or one he already has.
+    @discardableResult
+    public mutating func addThing(name: String) -> Item? {
+        let clean = jsTrim(name)
+        guard !clean.isEmpty, !items.contains(where: { normName($0.name) == normName(clean) }) else { return nil }
+        var cat = catalogItemFromResolved(newItem(name: clean))
+        cat.id = PackingEnv.makeId()
+        items.append(cat)
+        return cat
+    }
+
+    /// Rename a thing — once, and every list it is on shows the new name (it is ONE
+    /// thing). Past trips keep the name they were packed with: a trip line is a copy.
+    /// Refused for a blank name or one another thing already has.
+    @discardableResult
+    public mutating func renameThing(id: String, to name: String) -> Bool {
+        let clean = jsTrim(name)
+        guard !clean.isEmpty, let n = items.firstIndex(where: { $0.id == id }),
+              !items.contains(where: { $0.id != id && normName($0.name) == normName(clean) }) else { return false }
+        items[n].name = clean
+        return true
+    }
+
+    /// Where the thing is kept at home ("Garage shelf"). "" = not said.
+    @discardableResult
+    public mutating func setStorage(id: String, place: String) -> Bool {
+        guard let n = items.firstIndex(where: { $0.id == id }) else { return false }
+        items[n].storage = jsTrim(place)
+        return true
+    }
+}

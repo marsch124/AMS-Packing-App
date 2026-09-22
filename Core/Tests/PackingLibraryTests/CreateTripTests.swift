@@ -180,3 +180,31 @@ final class ReviewTests: XCTestCase {
         XCTAssertFalse(lib.saveReview(tripId: "no-such", unused: [], missed: [], when: "x"))
     }
 }
+
+final class ThingsTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
+
+    func testYourThingsListsEverythingAndARenameReachesEveryList() {
+        var lib = LibraryTests.sample()
+        let rows = lib.thingRows()
+        XCTAssertEqual(rows.map(\.item.name), ["Headlamp", "Spare batteries"], "A–Z, one row per thing")
+        XCTAssertEqual(Set(rows[0].templates), ["Hiking", "Night run"])
+
+        let mat = lib.addThing(name: " Sit mat ")
+        XCTAssertEqual(mat?.name, "Sit mat")
+        XCTAssertEqual(lib.thingRows().first { $0.item.name == "Sit mat" }?.templates, [], "on no list")
+        XCTAssertNil(lib.addThing(name: "sit MAT"), "no second thing of the same name")
+
+        let lamp = lib.items.first { $0.name == "Headlamp" }!
+        XCTAssertTrue(lib.renameThing(id: lamp.id, to: "Head torch"))
+        for t in lib.resolvedTemplates() where t.name == "Hiking" || t.name == "Night run" {
+            XCTAssertTrue(t.items.contains { $0.name == "Head torch" }, "\(t.name) shows the new name")
+        }
+        XCTAssertTrue(lib.trips[0].entries.contains { $0.name == "Headlamp" }, "a past trip keeps what it was packed as")
+        XCTAssertFalse(lib.renameThing(id: lamp.id, to: "Sit mat"), "a name another thing has is refused")
+        XCTAssertFalse(lib.renameThing(id: lamp.id, to: "  "))
+        XCTAssertTrue(lib.setStorage(id: lamp.id, place: " Hall closet "))
+        XCTAssertEqual(lib.items.first { $0.id == lamp.id }?.storage, "Hall closet")
+    }
+}

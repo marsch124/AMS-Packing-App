@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */; };
 		0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35352F3BD8D2A7EE166961C9 /* Today.swift */; };
+		1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9B041225333263C7547689 /* ThingsScreen.swift */; };
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
 		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
@@ -67,6 +68,7 @@
 		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		ED9B041225333263C7547689 /* ThingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -171,6 +173,7 @@
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
+				ED9B041225333263C7547689 /* ThingsScreen.swift */,
 				878AF15AECFDDAD02F227DDD /* TripScreen.swift */,
 			);
 			path = Screens;
@@ -302,6 +305,7 @@
 				B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */,
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
 				E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */,
+				1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */,
 				0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */,
 				B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */,
 			);
