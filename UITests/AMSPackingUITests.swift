@@ -17,6 +17,12 @@ final class AMSPackingUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += [mode]
         app.launch()
+        // GitHub's runners are slow and shared: a launch can time out there while
+        // the same launch is instant here. One more try before giving up.
+        if app.state != .runningForeground && !app.wait(for: .runningForeground, timeout: 30) {
+            app.launch()
+            _ = app.wait(for: .runningForeground, timeout: 60)
+        }
         #if os(macOS)
         // Launched by the test runner, the Mac app sometimes comes to the front with
         // NO window (seen 2026-09-21: frontmost, menu bar only; launched normally it
@@ -172,6 +178,28 @@ final class AMSPackingUITests: XCTestCase {
                       "the tick was lost on the way out and back: '\(words(app.staticTexts["trip-progress"]))'")
     }
 
+    /// Type into a field and make sure it landed — on a slow Mac runner the first
+    /// click has been seen to focus the window and nothing else.
+    private func type(_ text: String, into field: XCUIElement) {
+        for _ in 0..<3 {
+            field.tap()
+            field.typeText(text)
+            if let v = field.value as? String, v.contains(text) { return }
+            field.tap()
+            if let v = field.value as? String, !v.isEmpty { field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: v.count)) }
+        }
+        XCTFail("could not type into \(field)")
+    }
+
+    /// Tap a pill until it reports itself selected.
+    private func select(_ button: XCUIElement) {
+        for _ in 0..<3 {
+            button.tap()
+            if waitUntil(timeout: 2, { button.isSelected }) { return }
+        }
+        XCTFail("\(button) did not take the tap")
+    }
+
     private func waitUntil(timeout: TimeInterval = 5, _ ok: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         repeat { if ok() { return true }; usleep(200_000) } while Date() < deadline
@@ -201,13 +229,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         let field = app.textFields["trip-name"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no name field")
-        field.tap()
-        field.typeText("Test trip")
+        type("Test trip", into: field)
         let create = app.buttons["trip-create"]
         XCTAssertTrue(create.exists)
         XCTAssertFalse(create.isEnabled, "nothing to pack for yet — Create must wait")
-        app.buttons["trip-activity-0"].tap()
-        XCTAssertTrue(waitUntil { create.isEnabled })
+        select(app.buttons["trip-activity-0"])
+        XCTAssertTrue(waitUntil { create.isEnabled }, "Create stayed off after a name and an activity")
         create.tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
         let progress = app.staticTexts["trip-progress"]
