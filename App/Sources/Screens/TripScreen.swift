@@ -41,14 +41,28 @@ struct TripScreen: View {
                                 .padding(.top, 12)
                             ForEach(group.entries, id: \.id) { line in
                                 let n = index[line.id] ?? 0
-                                Button {
-                                    model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) }
-                                } label: {
-                                    PackLine(line: line, nights: trip.nights, tint: Color(hexString: group.phase.color))
+                                let aside = isSetAside(line)
+                                HStack(spacing: 4) {
+                                    Button {
+                                        if !aside { model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) } }
+                                    } label: {
+                                        PackLine(line: line, nights: trip.nights, tint: Color(hexString: group.phase.color))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("trip-line-\(n)")
+                                    .accessibilityAddTraits(line.checked ? .isSelected : [])
+                                    // ⊘ "not this time" — one tap, his call, no confirmation; ↻ takes it back.
+                                    Button {
+                                        model.change { _ = $0.setAside(!aside, tripId: tripId, entryId: line.id) }
+                                    } label: {
+                                        AsideMark(back: aside)
+                                            .frame(width: 40, height: 40)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("trip-line-\(n)-aside")
+                                    .accessibilityLabel(aside ? "Take it this time" : "Not this time")
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("trip-line-\(n)")
-                                .accessibilityAddTraits(line.checked ? .isSelected : [])
                             }
                         }
                     }
@@ -103,6 +117,21 @@ struct PackLine: View {
         .padding(.vertical, 9)
         .contentShape(Rectangle())
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+    }
+}
+
+/// ⊘ (a circle with a slash) to set a line aside, ↻ (an arrow round) to take it
+/// back — drawn, like every mark in this app.
+struct AsideMark: View {
+    let back: Bool
+    var body: some View {
+        let d = back
+            ? "M17.5 9.5A6 6 0 1 0 18 13.5M18 8v3.5h-3.5"
+            : "M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 1 0 0-15M7 17L17 7"
+        SVGPath.path(d)
+            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+            .frame(width: 24, height: 24)
+            .foregroundStyle(Theme.muted)
     }
 }
 

@@ -177,4 +177,22 @@ final class AMSPackingUITests: XCTestCase {
         repeat { if ok() { return true }; usleep(200_000) } while Date() < deadline
         return ok()
     }
+
+    /// Settings offers a backup, and pressing it opens the place to save it —
+    /// a Save window on the Mac, the Files picker on the iPhone.
+    func testSettingsOffersABackup() {
+        let app = launch()
+        app.buttons["tab-settings"].tap()
+        XCTAssertTrue(appears(app, "screen-settings"))
+        XCTAssertTrue(app.staticTexts["device-count-items"].waitForExistence(timeout: 5), "the device check is missing")
+        let save = app.buttons["backup-save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5), "no way to save a backup")
+        save.tap()
+        let status = app.staticTexts["backup-status"]
+        XCTAssertTrue(waitUntil { self.words(status).hasPrefix("Choosing") }, "the save was not started: '\(words(status))'")
+        #if os(macOS)
+        XCTAssertTrue(waitUntil(timeout: 10) { app.sheets.count > 0 || app.dialogs.count > 0 }, "no Save window opened")
+        app.typeKey(.escape, modifierFlags: [])
+        #endif
+    }
 }
