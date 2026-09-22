@@ -201,3 +201,22 @@ extension Library {
         }
     }
 }
+
+// MARK: - While packing
+
+extension Library {
+    /// Add a thing to THIS trip only, typed on the spot ("Also the tripod"). A
+    /// custom line: no template behind it, so a regenerate always keeps it.
+    @discardableResult
+    public mutating func addCustomLine(tripId: String, name: String, container: String = "", phase: String = "") -> Item? {
+        let clean = jsTrim(name)
+        guard !clean.isEmpty, let t = trips.firstIndex(where: { $0.id == tripId }) else { return nil }
+        var line = newItem(name: clean, container: container.isEmpty ? "Carry-on / hand luggage" : container,
+                           phase: phase.isEmpty ? defaultPhaseId() : phase)
+        line.custom = true
+        line.checked = false
+        trips[t].entries.append(line)
+        trips[t].updatedAt = nowISO()
+        return line
+    }
+}

@@ -11,6 +11,7 @@ struct TripScreen: View {
     @Environment(\.dismiss) private var dismiss
     /// When / Where / Category — remembered on this device, as the web app does.
     @AppStorage("ams.view") private var view = "when"
+    @State private var newName = ""
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Where"), ("category", "Category")]
 
     var body: some View {
@@ -76,6 +77,28 @@ struct TripScreen: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
+            // "Also the tripod" — a thing for THIS trip only, typed on the spot.
+            HStack(spacing: 8) {
+                TextField("Add a thing to this trip", text: $newName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .onSubmit { add() }
+                    .accessibilityIdentifier("trip-add-name")
+                Button { add() } label: {
+                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 16).frame(minHeight: 44)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.events.color))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .disabled(jsTrim(newName).isEmpty)
+                .accessibilityIdentifier("trip-add")
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .background(Theme.bg)
         }
         .background(Theme.bg.ignoresSafeArea())
         .accessibilityElement(children: .contain)
@@ -83,6 +106,13 @@ struct TripScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
         #endif
+    }
+
+    private func add() {
+        let name = newName
+        guard !jsTrim(name).isEmpty else { return }
+        model.change { _ = $0.addCustomLine(tripId: tripId, name: name) }
+        newName = ""
     }
 }
 

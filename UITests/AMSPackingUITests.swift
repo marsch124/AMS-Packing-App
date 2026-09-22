@@ -274,4 +274,28 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["grab-done"].tap()
         XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
     }
+    /// A thing typed while packing joins the trip — and the count.
+    func testAThingTypedWhilePackingJoinsTheTrip() {
+        let app = launch()
+        app.buttons["tab-events"].tap()
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let before = words(progress)                                  // "0/7"
+        let total = Int(before.split(separator: "/").last?.prefix { $0.isNumber } ?? "") ?? -1
+        XCTAssertGreaterThan(total, 0, "could not read the total from '\(before)'")
+
+        let field = app.textFields["trip-add-name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
+        let add = app.buttons["trip-add"]
+        XCTAssertFalse(add.isEnabled, "Add must wait for a name")
+        type("Tripod", into: field)
+        XCTAssertTrue(waitUntil { add.isEnabled })
+        add.tap()
+        XCTAssertTrue(waitUntil { self.words(progress).hasSuffix("/\(total + 1)") }, "the line did not count: '\(words(progress))'")
+        XCTAssertTrue(app.buttons["trip-line-\(total)"].waitForExistence(timeout: 5), "the new line is not on the list")
+        if let v = field.value as? String { XCTAssertFalse(v.contains("Tripod"), "the field should be empty again") }
+    }
 }

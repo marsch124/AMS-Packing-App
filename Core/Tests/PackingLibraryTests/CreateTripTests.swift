@@ -49,3 +49,22 @@ final class CreateTripTests: XCTestCase {
         XCTAssertEqual(choices.last?.lists.map(\.name), ["Swim", "Bike"], "race order, not the alphabet")
     }
 }
+
+final class CustomLineTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
+
+    func testATypedThingJoinsTheTripAndSurvivesARegenerate() {
+        var lib = LibraryTests.sample()
+        let trip = lib.trips[0]
+        let before = trip.entries.count
+        let line = lib.addCustomLine(tripId: trip.id, name: "  Tripod ")
+        XCTAssertEqual(line?.name, "Tripod")
+        XCTAssertEqual(lib.trips[0].entries.count, before + 1)
+        XCTAssertTrue(lib.trips[0].entries.last!.custom)
+        XCTAssertEqual(progress(lib.trips[0].entries).total, before + 1)
+        XCTAssertTrue(lib.regenerated(lib.trips[0]).contains { $0.name == "Tripod" }, "a custom line is never dropped")
+        XCTAssertNil(lib.addCustomLine(tripId: trip.id, name: "   "), "nothing is added for a blank name")
+        XCTAssertNil(lib.addCustomLine(tripId: "no-such-trip", name: "Tripod"))
+    }
+}
