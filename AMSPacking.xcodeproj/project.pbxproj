@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */; };
 		0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35352F3BD8D2A7EE166961C9 /* Today.swift */; };
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
@@ -54,6 +55,7 @@
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
 		56F5604CA6875D255BD93251 /* CareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareScreen.swift; sourceTree = "<group>"; };
 		77CEDA06EFED05D4A1612077 /* EventsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsScreen.swift; sourceTree = "<group>"; };
+		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
 		9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsScreen.swift; sourceTree = "<group>"; };
 		A644B6F78A0C7B86EF26025E /* AMSPacking.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPacking.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -166,6 +168,7 @@
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
 				403A4735005582B356D67F55 /* HomeScreen.swift */,
+				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
 				878AF15AECFDDAD02F227DDD /* TripScreen.swift */,
@@ -291,6 +294,7 @@
 				23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */,
 				6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */,
 				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,
+				09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */,
 				E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */,
 				5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */,
 				C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */,

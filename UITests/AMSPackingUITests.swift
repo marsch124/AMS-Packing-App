@@ -440,4 +440,40 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["care-summary"]) == "All up to date" },
                       "the service was lost on the way out and back: '\(words(app.staticTexts["care-summary"]))'")
     }
+
+    /// After a trip: mark what went unused, add what was missed, save — the trip
+    /// says it is reviewed, and the missed thing is on a list for next time.
+    func testATripReviewIsSavedAndTheMissedThingIsFiled() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        app.buttons["trip-line-0"].tap()                        // one thing went in the bag
+        let review = app.buttons["trip-review"]
+        XCTAssertTrue(review.waitForExistence(timeout: 5), "no Review on an unreviewed trip")
+        review.tap()
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        let line = app.buttons["review-line-0"]
+        XCTAssertTrue(line.waitForExistence(timeout: 5), "the packed line is not asked about")
+        XCTAssertFalse(app.buttons["review-line-1"].exists, "only what went in the bag is asked about")
+        line.tap()
+        XCTAssertTrue(waitUntil { self.isOn(line) }, "the line was not marked didn't use")
+        type("Tripod", into: app.textFields["review-miss-input"])
+        app.buttons["review-miss-add"].tap()
+        XCTAssertTrue(waitUntil { self.find(app, "review-missed-0") != nil }, "the missed thing is not listed")
+        tapVisible(app, app.buttons["review-save"])
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["trip-reviewed"].waitForExistence(timeout: 5), "the trip does not say it is reviewed")
+        XCTAssertFalse(app.buttons["trip-review"].exists, "a trip is reviewed once")
+
+        // The missed thing went onto the first list of the trip: the base list (4 things → 5).
+        app.buttons["trip-done"].tap()
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tab(app, "templates")
+        app.buttons["template-row-0"].tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.otherElements["template-item-4"].exists || app.staticTexts["template-item-4"].exists },
+                      "the missed thing is not on the list for next time")
+    }
 }

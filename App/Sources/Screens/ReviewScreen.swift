@@ -1,0 +1,136 @@
+import SwiftUI
+import PackingCore
+import PackingLibrary
+
+/// After a trip. Tap anything you didn't use; add what you wished you'd had —
+/// it goes onto one of the trip's lists, so next time it comes along. Saving
+/// teaches every thing its history (used / not used / never packed).
+struct ReviewScreen: View {
+    let tripId: String
+    @EnvironmentObject var model: LibraryModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var unused: Set<String> = []
+    @State private var missed: [Library.Missed] = []
+    @State private var missName = ""
+    @State private var missWhere = ""
+
+    var body: some View {
+        let lines = model.library.reviewLines(tripId: tripId)
+        let lists = model.library.tripTemplates(tripId: tripId)
+        let target = missWhere.isEmpty ? (lists.first?.id ?? "") : missWhere
+        VStack(spacing: 0) {
+            HStack {
+                Text("Trip review").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("review-cancel")
+            }
+            .padding(16)
+            KeyboardAwayScroll {
+                LazyVStack(alignment: .leading, spacing: 6) {
+                    Text("Anything you wished you'd had?").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    HStack(spacing: 8) {
+                        TextField("e.g. Power bank", text: $missName)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 12).frame(minHeight: 44)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                            .onSubmit { addMissed(target) }
+                            .accessibilityIdentifier("review-miss-input")
+                        Button { addMissed(target) } label: {
+                            Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                                .padding(.horizontal, 16).frame(minHeight: 44)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(missName).isEmpty ? Theme.line : AppSection.events.color))
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .disabled(jsTrim(missName).isEmpty)
+                        .accessibilityIdentifier("review-miss-add")
+                    }
+                    if !lists.isEmpty {
+                        Pills(title: "Goes onto", options: lists.map { ($0.id, $0.name) } + [("", "No list")],
+                              selected: [target], id: "review-miss-where", tint: AppSection.templates.color) { missWhere = $0 }
+                    }
+                    ForEach(Array(missed.enumerated()), id: \.offset) { n, m in
+                        HStack {
+                            Text(m.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                            Text(lists.first { $0.id == m.templateId }?.name ?? "no list")
+                                .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                            Spacer()
+                            Button { missed.remove(at: n) } label: {
+                                SVGPath.path("M6 6L18 18M18 6L6 18").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+                                    .frame(width: 20, height: 20).foregroundStyle(Theme.muted)
+                                    .frame(width: 36, height: 36).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("review-missed-\(n)-remove")
+                        }
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("review-missed-\(n)")
+                    }
+
+                    Text(unused.isEmpty ? "Tap anything you didn't use." : "\(unused.count) marked \u{201C}didn't use\u{201D}")
+                        .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .padding(.top, 18)
+                        .accessibilityIdentifier("review-summary")
+                    ForEach(Array(lines.packed.enumerated()), id: \.element.id) { n, line in
+                        let off = unused.contains(line.id)
+                        Button {
+                            if off { unused.remove(line.id) } else { unused.insert(line.id) }
+                        } label: {
+                            HStack {
+                                Text(line.name).font(.system(size: 17, weight: .medium))
+                                    .foregroundStyle(off ? Theme.muted : Theme.ink)
+                                    .strikethrough(off, pattern: .solid, color: Theme.muted)
+                                Spacer(minLength: 8)
+                                Text(off ? "Didn't use" : "Used").font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(off ? AppSection.actions.color : AppSection.events.color)
+                            }
+                            .padding(.vertical, 10).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                        .accessibilityIdentifier("review-line-\(n)")
+                        .accessibilityAddTraits(off ? .isSelected : [])
+                    }
+                    if !lines.neverPacked.isEmpty {
+                        Text("Never went in the bag: \(lines.neverPacked.count)")
+                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .padding(.top, 14)
+                        Text(lines.neverPacked.map(\.name).joined(separator: " · "))
+                            .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+            Button {
+                model.change { _ = $0.saveReview(tripId: tripId, unused: unused, missed: missed, when: nowISO()) }
+                dismiss()
+            } label: {
+                Text("Save review").font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .accessibilityIdentifier("review-save")
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("review-detail")
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 600)
+        #endif
+    }
+
+    private func addMissed(_ target: String) {
+        let name = jsTrim(missName)
+        guard !name.isEmpty, !missed.contains(where: { normName($0.name) == normName(name) }) else { missName = ""; return }
+        missed.append(Library.Missed(name: name, templateId: target))
+        missName = ""
+    }
+}

@@ -304,3 +304,79 @@ extension Library {
         return true
     }
 }
+
+// MARK: - After a trip: the review
+
+extension Library {
+    /// A thing he wished he'd had, and where it should go. `templateId` "" = no list:
+    /// it becomes a thing of its own ("Your things").
+    public struct Missed: Equatable, Sendable {
+        public var name: String
+        public var templateId: String
+        public init(name: String, templateId: String) { self.name = name; self.templateId = templateId }
+    }
+
+    /// The lines a review asks about: everything packable that is not a reminder.
+    /// When anything was ticked, the unticked ones never went in the bag — they are
+    /// shown apart and counted as "skipped", never as "unused" (web app v162).
+    public func reviewLines(tripId: String) -> (packed: [Item], neverPacked: [Item]) {
+        guard let trip = trips.first(where: { $0.id == tripId }) else { return ([], []) }
+        let items = trip.entries.filter { $0.itemType != "reminder" }
+        let anyTicked = items.contains { $0.checked }
+        guard anyTicked else { return (items, []) }
+        return (items.filter { $0.checked }, items.filter { !$0.checked })
+    }
+
+    /// The templates a trip was built from, in the order its lines name them.
+    public func tripTemplates(tripId: String) -> [PackList] {
+        guard let trip = trips.first(where: { $0.id == tripId }) else { return [] }
+        var seen = Set<String>(), out: [PackList] = []
+        for e in trip.entries {
+            guard let lid = e.sourceListId, !lid.isEmpty, seen.insert(lid).inserted,
+                  let t = templates.first(where: { $0.id == lid }) else { continue }
+            out.append(t)
+        }
+        return out
+    }
+
+    /// Save a review, as the web app does: the missed things go onto their lists
+    /// first (so the next trip brings them), every line is marked used or not, the
+    /// model folds that into each thing's history (`applyReview`), and the trip is done.
+    @discardableResult
+    public mutating func saveReview(tripId: String, unused: Set<String>, missed: [Missed], when: String) -> Bool {
+        guard let t = trips.firstIndex(where: { $0.id == tripId }) else { return false }
+        for m in missed {
+            let name = jsTrim(m.name)
+            guard !name.isEmpty else { continue }
+            if m.templateId.isEmpty {
+                if items.contains(where: { normName($0.name) == normName(name) }) { continue }
+                var cat = catalogItemFromResolved(newItem(name: name))
+                cat.id = PackingEnv.makeId()
+                items.append(cat)
+            } else if let list = resolvedTemplate(id: m.templateId),
+                      !list.items.contains(where: { normName($0.name) == normName(name) }) {
+                addToTemplate(templateId: m.templateId, name: name)
+            }
+        }
+        for n in trips[t].entries.indices where trips[t].entries[n].itemType != "reminder" {
+            trips[t].entries[n].used = !unused.contains(trips[t].entries[n].id)
+        }
+        // The model folds the review into the rows of the templates. The new history
+        // is then written straight onto each THING — not through saveTemplate: a thing
+        // that sits on one template twice (a different "When" each time) has only its
+        // FIRST row updated by applyReview, and saving the template would let the stale
+        // twin overwrite it. (The web app's saveList does exactly that — found by this
+        // port's test, 2026-09-22.) The updated row is the one stamped with `when`.
+        var lists = resolvedTemplates()
+        for changed in applyReview(trips[t], &lists, when) {
+            for row in changed.items where row.stats.lastReviewed == when {
+                guard let iid = row.itemId, let n = items.firstIndex(where: { $0.id == iid }) else { continue }
+                items[n].stats = row.stats
+            }
+        }
+        trips[t].status = "done"
+        trips[t].reviewedAt = when
+        trips[t].updatedAt = when
+        return true
+    }
+}

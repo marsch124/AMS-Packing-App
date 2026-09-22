@@ -146,3 +146,37 @@ final class CareTests: XCTestCase {
         XCTAssertFalse(lib.logCare(itemId: "no-such", on: "2026-09-22"))
     }
 }
+
+final class ReviewTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
+
+    func testAReviewTeachesTheThingsAndFilesWhatWasMissed() {
+        var lib = LibraryTests.sample()
+        let trip = lib.trips[0]
+        let lamp = trip.entries.first { $0.name == "Headlamp" }!
+        let batteries = trip.entries.first { $0.name == "Spare batteries" }!
+        lib.setChecked(true, tripId: trip.id, entryId: lamp.id)
+        lib.setChecked(true, tripId: trip.id, entryId: batteries.id)
+        let lines = lib.reviewLines(tripId: trip.id)
+        XCTAssertEqual(Set(lines.packed.map(\.id)), [lamp.id, batteries.id], "only what went in the bag is asked about")
+        XCTAssertEqual(lines.neverPacked.count, trip.entries.count - 2)
+
+        let hiking = lib.templates.first { $0.name == "Hiking" }!
+        XCTAssertTrue(lib.saveReview(tripId: trip.id, unused: [batteries.id],
+                                     missed: [Library.Missed(name: "Tripod", templateId: hiking.id),
+                                              Library.Missed(name: "Sit mat", templateId: "")],
+                                     when: "2026-09-22T18:00:00.000Z"))
+        let stats = { (name: String) in lib.items.first { $0.name == name }!.stats }
+        XCTAssertEqual(stats("Headlamp").packed, 1)
+        XCTAssertEqual(stats("Headlamp").used, 1)
+        XCTAssertEqual(stats("Spare batteries").unused, 1,
+                       "packed, not used — and kept, although the thing sits on Hiking TWICE (the stale twin must not overwrite it)")
+        XCTAssertEqual(stats("Headlamp").lastReviewed, "2026-09-22T18:00:00.000Z")
+        XCTAssertTrue(lib.resolvedTemplate(id: hiking.id)!.items.contains { $0.name == "Tripod" }, "the missed thing comes next time")
+        XCTAssertTrue(lib.thingsOnNoList().contains { $0.name == "Sit mat" }, "a missed thing with no list is a thing of its own")
+        XCTAssertEqual(lib.trips[0].status, "done")
+        XCTAssertEqual(lib.trips[0].reviewedAt, "2026-09-22T18:00:00.000Z")
+        XCTAssertFalse(lib.saveReview(tripId: "no-such", unused: [], missed: [], when: "x"))
+    }
+}

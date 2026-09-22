@@ -12,6 +12,7 @@ struct TripScreen: View {
     /// When / Where / Category — remembered on this device, as the web app does.
     @AppStorage("ams.view") private var view = "when"
     @State private var newName = ""
+    @State private var reviewing = false
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Where"), ("category", "Category")]
 
     var body: some View {
@@ -29,6 +30,16 @@ struct TripScreen: View {
                         .accessibilityIdentifier("trip-progress")
                 }
                 Spacer()
+                // After the trip: what did I use, what did I miss. Once, then it says so.
+                if trip.status == "done" {
+                    Text("Reviewed").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("trip-reviewed")
+                } else if !trip.entries.isEmpty {
+                    Button("Review") { reviewing = true }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                        .accessibilityIdentifier("trip-review")
+                }
                 Button("Done") { dismiss() }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
@@ -101,6 +112,7 @@ struct TripScreen: View {
             .background(Theme.bg)
         }
         .background(Theme.bg.ignoresSafeArea())
+        .sheet(isPresented: $reviewing) { ReviewScreen(tripId: tripId).environmentObject(model) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("trip-detail")
         #if os(macOS)
