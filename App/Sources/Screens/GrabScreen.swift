@@ -113,13 +113,22 @@ struct GrabButtons: View {
 
 /// One grab list: tap each thing as you pick it up, ⊘ to leave one behind just
 /// this once; "Ready to go" refuses until everything not skipped is in hand.
+/// Edit: rename, move, remove and add things — saved for the account, so the
+/// other device has the same list.
 struct GrabScreen: View {
-    let list: GrabDefinition
+    let listId: String
+    @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var state = GrabState()
     @State private var message = ""
     @State private var flash = false
+    @State private var editing = false
+    @State private var draft: [String] = []
+    @State private var newThing = ""
 
+    private var list: GrabDefinition {
+        model.library.grabLists().first { $0.id == listId } ?? GRAB_FACTORY[0]
+    }
     private var tint: Color { GrabTone.color(list.tone) }
 
     var body: some View {
@@ -130,13 +139,19 @@ struct GrabScreen: View {
                 GrabDoodle(icon: list.icon, size: 36).foregroundStyle(tint)
                 Text(list.title).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer()
-                Button("Done") { dismiss() }
+                Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
-                    .accessibilityIdentifier("grab-done")
+                    .accessibilityIdentifier("grab-edit")
+                if !editing {
+                    Button("Done") { dismiss() }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
+                        .accessibilityIdentifier("grab-done")
+                }
             }
             .padding(16)
-            KeyboardAwayScroll {
+            if editing { editor } else { KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 6) {
                     if complete {
                         Text("All there — go!")
@@ -215,7 +230,7 @@ struct GrabScreen: View {
                         .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted).padding(.top, 8)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
-            }
+            } }
         }
         .background(Theme.bg.ignoresSafeArea())
         // The moment the last thing is ticked, the whole screen blinks the list's
@@ -228,6 +243,86 @@ struct GrabScreen: View {
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 600)
         #endif
+    }
+
+    // MARK: Editing
+
+    private var editor: some View {
+        VStack(spacing: 0) {
+            KeyboardAwayScroll {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Tap a name to change it · ▲▼ move · ✕ remove. Saved for both your devices.")
+                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    ForEach(draft.indices, id: \.self) { n in
+                        HStack(spacing: 2) {
+                            TextField("Name", text: Binding(get: { n < draft.count ? draft[n] : "" },
+                                                            set: { if n < draft.count { draft[n] = $0 } }))
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                                .padding(.horizontal, 10).frame(minHeight: 44)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+                                .accessibilityIdentifier("grab-rename-\(n)")
+                            mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { draft.swapAt(n, n - 1) }
+                            mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { draft.swapAt(n, n + 1) }
+                            mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: draft.count > 1, label: "Remove") { draft.remove(at: n) }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+            HStack(spacing: 8) {
+                TextField("Add a thing", text: $newThing)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .onSubmit { addToDraft() }
+                    .accessibilityIdentifier("grab-add-name")
+                Button { addToDraft() } label: {
+                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 16).frame(minHeight: 44)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newThing).isEmpty ? Theme.line : tint))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .disabled(jsTrim(newThing).isEmpty)
+                .accessibilityIdentifier("grab-add")
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+    }
+
+    private func mark(_ d: String, id: String, enabled: Bool, label: String, _ act: @escaping () -> Void) -> some View {
+        Button(action: act) {
+            SVGPath.path(d).stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                .frame(width: 22, height: 22).foregroundStyle(enabled ? Theme.ink : Theme.line)
+                .frame(width: 38, height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .disabled(!enabled)
+        .accessibilityIdentifier(id)
+        .accessibilityLabel(label)
+    }
+
+    private func startEditing() {
+        draft = list.items
+        newThing = ""
+        editing = true
+    }
+
+    private func addToDraft() {
+        let name = jsTrim(newThing)
+        guard !name.isEmpty else { return }
+        if !draft.contains(where: { normName($0) == normName(name) }) { draft.append(name) }
+        newThing = ""
+    }
+
+    private func saveEdits() {
+        let items = draft
+        model.change { _ = $0.saveGrabList(id: listId, items: items) }
+        editing = false
+        state = GrabStore.shared.state(listId, items: list.items)
     }
 
     private func change(_ body: (GrabState) -> GrabState) {

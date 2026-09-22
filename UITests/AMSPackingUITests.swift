@@ -525,4 +525,32 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).hasPrefix("Sit pad") || app.buttons["thing-row-0"].label.contains("Sit pad") },
                       "the rename did not stick: '\(app.buttons["thing-row-0"].label)'")
     }
+    /// A grab list is edited — renamed, one removed, one added — and stays so.
+    func testAGrabListIsEditedAndStaysEdited() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        let edit = app.buttons["grab-edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 5), "no way to edit the list")
+        edit.tap()
+        replace("Swim shorts", in: app.textFields["grab-rename-0"])
+        app.buttons["grab-remove-1"].tap()
+        type("Nose clip", into: app.textFields["grab-add-name"])
+        app.buttons["grab-add"].tap()
+        XCTAssertTrue(app.textFields["grab-rename-6"].waitForExistence(timeout: 5), "the added thing is not in the list")
+        edit.tap()                                                   // Save
+
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "0 of 7 in hand" }, "7 − 1 + 1 things: '\(words(count))'")
+        XCTAssertTrue(app.buttons["grab-item-0"].label.contains("Swim shorts"), "the rename did not stick: '\(app.buttons["grab-item-0"].label)'")
+        XCTAssertTrue(app.buttons["grab-item-6"].label.contains("Nose clip"), "the added thing is not last")
+
+        app.buttons["grab-done"].tap()
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["grab-item-0"].exists && app.buttons["grab-item-0"].label.contains("Swim shorts") },
+                      "the edit was lost on the way out and back")
+    }
 }

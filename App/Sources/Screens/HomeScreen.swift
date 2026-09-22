@@ -99,7 +99,7 @@ struct HomeScreen: View {
             TripScreen(tripId: o.id).environmentObject(model)
         }
         .sheet(item: Binding(get: { grab.map { GrabOpened(list: $0) } }, set: { grab = $0?.list })) { g in
-            GrabScreen(list: g.list)
+            GrabScreen(listId: g.list.id).environmentObject(model)
         }
     }
 

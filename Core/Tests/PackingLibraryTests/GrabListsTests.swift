@@ -50,3 +50,26 @@ final class GrabListsTests: XCTestCase {
         XCTAssertEqual(s.current(for: items, now: now.addingTimeInterval(7 * 3600)), GrabState(), "a previous workout's ticks are gone")
     }
 }
+
+final class GrabEditingTests: XCTestCase {
+    func testAnEditedListIsOneSharedRecordAndTheOthersStayFactory() {
+        var lib = Library()
+        XCTAssertTrue(lib.saveGrabList(id: "swim", items: ["Swim shorts", " Goggles ", "", "goggles", "Nose clip"]))
+        let lists = lib.grabLists()
+        XCTAssertEqual(lists[0].items, ["Swim shorts", "Goggles", "Nose clip"], "trimmed, blanks and repeats dropped")
+        XCTAssertEqual(lists[0].title, "Indoor swim")
+        XCTAssertEqual(Array(lists.dropFirst()), Array(GRAB_FACTORY.dropFirst()), "the other five stay factory")
+        XCTAssertEqual(lib.records().filter { $0.table == .shared }.map(\.key), ["grab:swim"], "one record, synced like any other")
+
+        XCTAssertTrue(lib.saveGrabList(id: "swim", items: ["Towel"]))
+        XCTAssertEqual(lib.records().filter { $0.table == .shared }.count, 1, "saving again replaces, never doubles")
+        XCTAssertEqual(lib.grabLists()[0].items, ["Towel"])
+        XCTAssertFalse(lib.saveGrabList(id: "swim", items: ["  "]), "a list with nothing on it is refused")
+        XCTAssertFalse(lib.saveGrabList(id: "no-such", items: ["Towel"]))
+
+        // His name for a list survives an edit of its things.
+        lib.shared = grabToRows([GrabList(json: ["id": "run-out", "items": ["Shoes"], "label": "Trail"])])
+        XCTAssertTrue(lib.saveGrabList(id: "run-out", items: ["Shoes", "Cap"]))
+        XCTAssertEqual(lib.grabLists()[5].label, "Trail")
+    }
+}

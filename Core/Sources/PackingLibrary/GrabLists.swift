@@ -95,3 +95,25 @@ public struct GrabState: Equatable, Codable, Sendable {
         return s
     }
 }
+
+extension Library {
+    /// Save an edited grab list for the account — ONE `grab` row, so it reaches the
+    /// other device like every other record (web app v163: the iPhone is where he
+    /// edits them). What he did not change (the list's name, doodle, colour) keeps
+    /// whatever it was. A list with nothing on it is refused: it would not be a list.
+    @discardableResult
+    public mutating func saveGrabList(id: String, items newItems: [String]) -> Bool {
+        guard let at = GRAB_FACTORY.firstIndex(where: { $0.id == id }) else { return false }
+        var seen = Set<String>()
+        let clean = newItems.map(jsTrim).filter { !$0.isEmpty && seen.insert(normName($0)).inserted }
+        guard !clean.isEmpty else { return false }
+        let before = grabFromRows(shared).first { $0.id == id }
+        var rows = grabToRows([GrabList(id: id, items: clean, label: before?.label ?? "",
+                                        icon: before?.icon ?? "", tone: before?.tone ?? "")])
+        guard !rows.isEmpty else { return false }
+        rows[0].order = Double(at)   // the Home-row order, as the web app keeps it
+        shared.removeAll { $0.kind == "grab" && $0.id == rows[0].id }
+        shared.append(rows[0])
+        return true
+    }
+}
