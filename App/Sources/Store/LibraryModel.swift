@@ -129,6 +129,7 @@ extension LibraryModel {
     ///  otherwise             → SwiftData on this device only (a plain debug build)
     static func forThisLaunch() -> LibraryModel {
         let args = ProcessInfo.processInfo.arguments
+        if AMSPackingApp.testing { RescueCopies.clearForTesting() }
         if args.contains("-uiTestingEmpty") { return LibraryModel(store: MemoryStore(), usesICloud: false) }
         if args.contains("-uiTesting") { return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false) }
         let cloud = (Bundle.main.object(forInfoDictionaryKey: "PackingUsesICloud") as? String) == "YES"

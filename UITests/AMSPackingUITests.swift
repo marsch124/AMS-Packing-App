@@ -671,6 +671,35 @@ final class AMSPackingUITests: XCTestCase {
                       "a trip from before the restore survived")
     }
 
+    /// The way back. A restore keeps a copy of what was on the device first, and
+    /// that copy is reachable HERE — a safety net he cannot reach is no net. (The
+    /// copies are cleared at launch under the tests, so the count is this run's.)
+    func testTheCopyKeptBeforeARestoreBringsEverythingBack() {
+        let app = launch()
+        tab(app, "settings")
+        let things = app.staticTexts["device-count-items"]
+        XCTAssertTrue(things.waitForExistence(timeout: 5))
+        XCTAssertEqual(words(things), "10")
+        XCTAssertFalse(app.staticTexts["rescue-heading"].exists, "a copy was kept before any restore")
+
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        tap(app, id: "restore-confirm")
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(things) == "2" }, "the restore did not happen")
+
+        XCTAssertTrue(app.staticTexts["rescue-heading"].waitForExistence(timeout: 5), "nothing was kept")
+        XCTAssertTrue(app.buttons["rescue-row-0"].exists, "the copy is not offered")
+        XCTAssertFalse(app.buttons["rescue-row-1"].exists, "more copies than restores")
+        tap(app, id: "rescue-row-0")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["restore-file-items"]), "10", "the copy does not hold what was here")
+        tap(app, id: "restore-confirm")
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(things) == "10" }, "the copy did not bring everything back")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["device-count-trips"]) == "1" }, "the trip did not come back")
+    }
+
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
         let app = launch()
         tab(app, "settings")

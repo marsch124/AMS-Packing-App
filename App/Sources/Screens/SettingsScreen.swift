@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @State private var lists = false
     @State private var picking = false
     @State private var pending: PendingRestore?
+    @State private var copies: [URL] = RescueCopies.all()
 
     /// A file that has been read and checked, waiting for him to say yes.
     struct PendingRestore: Identifiable { let id = UUID(); let library: Library }
@@ -52,6 +53,34 @@ struct SettingsScreen: View {
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("backup-restore")
+
+                // The copies the app wrote for itself before a restore. A way back
+                // that he cannot reach is no way back, so they are listed here.
+                if !copies.isEmpty {
+                    Text("Kept before a restore").font(.system(size: 15, weight: .heavy))
+                        .foregroundStyle(Theme.muted).padding(.top, 10)
+                        .accessibilityIdentifier("rescue-heading")
+                    VStack(spacing: 0) {
+                        ForEach(Array(copies.enumerated()), id: \.offset) { n, copy in
+                            Button { offer(RescueCopies.read(copy) ?? Data()) } label: {
+                                HStack {
+                                    Text(RescueCopies.when(copy))
+                                        .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                                    Spacer()
+                                    Text("Look at it").font(.system(size: 15, weight: .bold))
+                                        .foregroundStyle(AppSection.settings.color)
+                                }
+                                .padding(.horizontal, 14).frame(minHeight: 44)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("rescue-row-\(n)")
+                            .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                        }
+                    }
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                }
 
                 Button { lists = true } label: {
                     HStack {
@@ -105,6 +134,7 @@ struct SettingsScreen: View {
                 guard yes else { status = "Nothing was replaced."; return }
                 do {
                     try model.restore(waiting.library)
+                    copies = RescueCopies.all()
                     status = "Restored from the file. A copy of what was here is kept on this device."
                 } catch {
                     status = error.localizedDescription
