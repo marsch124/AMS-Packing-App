@@ -60,7 +60,10 @@ go in `private/`, which git ignores. The parity checker reads them from there.
   the copy it keeps first), your own lists (places, owners, packers, conditions,
   "When"), what this device holds.
   On a trip: the weather, in one line, with the gear it calls for that is not
-  packed yet — Open-Meteo, the same service the web app asks.
+  packed yet — Open-Meteo, the same service the web app asks. Everything packed
+  turns the trip green; a "When" section ticks whole in one press.
+  Grab lists: things taken only sometimes start skipped, and there can be more
+  lists than the six Home shows — the rest wait with everything on them.
   Still to come: photos, kits and sharing.
 
 ## Building
@@ -99,8 +102,20 @@ Traps met here, each of which cost a red CI run:
 - **Wait for a number, never snatch it.** A container appearing does not mean the
   count inside it has been drawn; on a slow runner the read comes back empty and
   the run is red for nothing. Every text assertion waits, and says what it read.
-- **A row with ONE piece of text folds into its button**, so its inner identifier
-  is not an element of its own: read such a row through the button.
+- **On the Mac a button folds ALL its children into its own words**, while the
+  iPhone keeps them as separate elements — two tests read a text inside a row,
+  passed here and failed there. Read such a row through `app.buttons[id]`. And a
+  button INSIDE a button never reaches the tree at all on either platform: put
+  the two side by side.
+- **Falsify a guard where it actually lives.** The "Home holds six" rule is
+  enforced in the screen, so breaking it in the model left the UI test green —
+  the test was right, the plant was in the wrong place. A plant that does not
+  turn its test red has told you something: find out what.
+- **Anything new must survive two round trips**, and a test must say so: the
+  store (the app writes the library as records and reads it back — PackingCore
+  keeps only the shared-row kinds the WEB APP knows and silently blanks the
+  rest) and the BACKUP (the bridge between devices and apps). Both caught a
+  silent loss today before he could.
 - **The Mac runner is local-only trouble.** "The test runner hung before
   establishing connection" means the machine is loaded, not that the code is
   wrong (it showed up at load average 123 with three simulators booted). Use
