@@ -55,9 +55,11 @@ go in `private/`, which git ignores. The parity checker reads them from there.
 - 🔨 Screens: Home (build a trip), Events and Packing Mode (tick, "not this
   time", the review at the end), Templates with their sections and a row's own
   answers, Your things (every thing, on a list or not, and everything about
-  one), Care, Actions, the grab lists, and Settings — backup, restore, your own
-  lists (places, owners, packers, conditions, "When"), what this device holds.
-  Still to come: photos, kits, the shopping list, weather and sharing.
+  one), Care, Actions (to-dos and the buy-list, which offers what is worn out or
+  run down and says why), the grab lists, and Settings — backup, restore (with
+  the copy it keeps first), your own lists (places, owners, packers, conditions,
+  "When"), what this device holds.
+  Still to come: photos, kits, weather and sharing.
 
 ## Building
 
