@@ -137,6 +137,10 @@ final class AMSPackingUITests: XCTestCase {
         let first = app.buttons["template-row-0"]
         XCTAssertTrue(first.waitForExistence(timeout: 5), "no template is listed")
         XCTAssertTrue(app.buttons["template-row-2"].exists, "the sample library has three templates")
+        // A shelf says his own code as well as the words, as the web app does.
+        XCTAssertEqual(words(app.staticTexts["templates-shelf-GA"]), "GA · GOAL ACTIVITY")
+        XCTAssertTrue(words(app.staticTexts["templates-summary"]).contains("lists"),
+                      "no summary under the heading: '\(words(app.staticTexts["templates-summary"]))'")
         first.tap()
 
         XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the template did not open")
@@ -1119,6 +1123,41 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertFalse(words(app.staticTexts["kit-tip-\(n)"]).contains("came home unused"),
                            "nothing has been reviewed and it said things came home unused")
         }
+    }
+
+    /// The table: every thing with its weight and its place, both filled in on the
+    /// spot, and two chips that go straight to what is missing.
+    func testTheTableFillsInWeightsAndPlaces() {
+        let app = launch()
+        tab(app, "care")
+        let kit = words(app.staticTexts["care-line"])
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        let count = app.staticTexts["table-count"]
+        XCTAssertTrue(count.waitForExistence(timeout: 5))
+        let all = words(count)
+        XCTAssertEqual(all, "10", "the sample library has ten things: '\(all)'")
+
+        // Only the ones with no weight.
+        tap(app, id: "table-filter-weight")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) != all }, "the filter changed nothing")
+        let missing = Int(words(count)) ?? 0
+        XCTAssertGreaterThan(missing, 0, "the sample has things with no weight")
+
+        // Fill one in, and it leaves the list of things with no weight.
+        type("5000", into: app.textFields["table-0-grams"])
+        app.textFields["table-0-grams"].typeText("\n")
+        XCTAssertTrue(waitUntil(timeout: 10) { (Int(self.words(count)) ?? missing) == missing - 1 },
+                      "the weight did not take: still \(words(count)) with none")
+
+        // …and it is on the thing itself, not just on screen.
+        tap(app, id: "table-filter-all")
+        XCTAssertTrue(waitUntil { self.words(count) == all })
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["care-line"]) != kit },
+                      "the kit's weight did not move: still '\(words(app.staticTexts["care-line"]))'")
+        XCTAssertTrue(words(app.staticTexts["care-line"]).contains("kg"), "the kit line lost its weight")
     }
 
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {

@@ -21,6 +21,12 @@ struct TemplatesScreen: View {
         return out
     }
 
+    /// "GA · GOAL ACTIVITY" — his code, then the words, as he wrote them.
+    static func shelfHeading(_ shelf: Shelf) -> String {
+        let code = GROUPS.first { $0.id == shelf.id }?.id ?? ""
+        return code.isEmpty ? shelf.title.uppercased() : "\(code) · \(shelf.title.uppercased())"
+    }
+
     /// "15 lists · 431 things · 4 trips packed from them"
     static func summary(_ lists: [PackList], _ library: Library) -> String {
         let things = library.items.count
@@ -38,7 +44,7 @@ struct TemplatesScreen: View {
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Your lists").font(.system(size: 28, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("Your lists").font(.system(size: 28, weight: .heavy)).foregroundStyle(AppSection.templates.color)
                         .accessibilityIdentifier("templates-heading")
                     Text(TemplatesScreen.summary(flat, model.library))
                         .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
@@ -46,14 +52,22 @@ struct TemplatesScreen: View {
                 }
                 .padding(.top, 14).padding(.bottom, 4)
                 ForEach(shelves) { shelf in
-                    Text(shelf.title)
-                        .font(.system(size: 15, weight: .heavy))
+                    // His own code beside the name, as the web app has it:
+                    // "GA · GOAL ACTIVITY".
+                    Text(TemplatesScreen.shelfHeading(shelf))
+                        .font(.system(size: 13, weight: .heavy))
                         .foregroundStyle(Theme.muted)
-                        .padding(.top, 14)
-                    ForEach(shelf.lists, id: \.id) { list in
-                        Button { open = list } label: { TemplateRow(list: list, use: use[list.id]) }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
+                        .kerning(0.6)
+                        .padding(.top, 16)
+                        .accessibilityIdentifier("templates-shelf-\(shelf.id)")
+                    // Two across: more of his lists at a glance, as the web app shows them.
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                              spacing: 8) {
+                        ForEach(shelf.lists, id: \.id) { list in
+                            Button { open = list } label: { TemplateCard(list: list, use: use[list.id]) }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
+                        }
                     }
                 }
             }
@@ -66,39 +80,39 @@ struct TemplatesScreen: View {
 
 extension PackList: Identifiable {}
 
-struct TemplateRow: View {
+/// A list as a card: its cover, its name, how many things, and when it was last
+/// taken — two across, the way the web app shows them.
+struct TemplateCard: View {
     let list: PackList
-    /// When it was last taken along, when it has been.
     var use: Library.TemplateUse?
 
     var body: some View {
-        HStack(spacing: 12) {
-            Cover(list: list, size: 40)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(list.name)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                Text(TemplateRow.lastTaken(use))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(use == nil ? Theme.line : Theme.muted)
-                    .lineLimit(1)
-                    .accessibilityIdentifier("template-used")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Cover(list: list, size: 34)
+                Spacer(minLength: 0)
+                Text("\(list.items.count)")
+                    .font(.system(size: 15, weight: .heavy).monospacedDigit())
+                    .foregroundStyle(Theme.muted)
             }
-            Spacer(minLength: 8)
-            Text("\(list.items.count)")
-                .font(.system(size: 16, weight: .bold).monospacedDigit())
-                .foregroundStyle(Theme.muted)
+            Text(list.name)
+                .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            Text(TemplateCard.lastTaken(use))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(use == nil ? Theme.line : Theme.muted)
+                .lineLimit(1)
+                .accessibilityIdentifier("template-used")
         }
-        .padding(.horizontal, 12)
-        .frame(minHeight: 62)
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .contentShape(Rectangle())
     }
 }
 
-extension TemplateRow {
+extension TemplateCard {
     /// "Last taken: Göteborg, 2 days ago" — or the plain truth that it has never
     /// been out.
     static func lastTaken(_ use: Library.TemplateUse?) -> String {

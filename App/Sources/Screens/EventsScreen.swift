@@ -21,7 +21,7 @@ struct EventsScreen: View {
             LazyVStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Trips").font(.system(size: 28, weight: .heavy)).foregroundStyle(Theme.ink)
+                        Text("Trips").font(.system(size: 28, weight: .heavy)).foregroundStyle(AppSection.events.color)
                             .accessibilityIdentifier("events-heading")
                         Text(EventsScreen.summary(cards))
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
