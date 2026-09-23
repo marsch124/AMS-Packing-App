@@ -59,7 +59,9 @@ go in `private/`, which git ignores. The parity checker reads them from there.
   run down and says why), the grab lists, and Settings — backup, restore (with
   the copy it keeps first), your own lists (places, owners, packers, conditions,
   "When"), what this device holds.
-  Still to come: photos, kits, weather and sharing.
+  On a trip: the weather, in one line, with the gear it calls for that is not
+  packed yet — Open-Meteo, the same service the web app asks.
+  Still to come: photos, kits and sharing.
 
 ## Building
 

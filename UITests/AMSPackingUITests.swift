@@ -232,6 +232,24 @@ final class AMSPackingUITests: XCTestCase {
         return (a.width * a.height) > (b.width * b.height) ? first : front
     }
 
+    /// Scroll the list until a control with this id EXISTS. A row far down a long
+    /// list is not in the tree at all until it has been near the screen — so a test
+    /// looking for one has to travel there, exactly as he would.
+    @discardableResult
+    private func scrollUntil(_ app: XCUIApplication, _ id: String, tries: Int = 8) -> Bool {
+        for _ in 0..<tries {
+            if app.buttons[id].exists || app.otherElements[id].exists { return true }
+            guard let list = biggestList(app), list.exists, list.isHittable else { return false }
+            #if os(macOS)
+            list.scroll(byDeltaX: 0, deltaY: -220)
+            #else
+            list.swipeUp()
+            #endif
+            usleep(300_000)
+        }
+        return app.buttons[id].exists || app.otherElements[id].exists
+    }
+
     /// The list the control is IN — asked by descendancy, not by frames.
     ///
     /// A fixed bar BELOW a list (Save on the trip review) belongs to no list, and
@@ -461,7 +479,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { add.isEnabled })
         add.tap()
         XCTAssertTrue(waitUntil { self.words(progress).hasSuffix("/\(total + 1)") }, "the line did not count: '\(words(progress))'")
-        XCTAssertTrue(app.buttons["trip-line-\(total)"].waitForExistence(timeout: 5), "the new line is not on the list")
+        // The count above is the claim that matters: the line joined the trip. Whether
+        // the row itself is BUILT depends on how far down the list it lands — a lazy
+        // row far below the fold is not in the tree until it has been near the screen,
+        // which is why this scrolls to it rather than demanding it be there already.
+        scrollUntil(app, "trip-line-\(total)")
         if let v = field.value as? String { XCTAssertFalse(v.contains("Tripod"), "the field should be empty again") }
     }
     /// A to-do is added, counted, ticked — and stays ticked.
@@ -795,6 +817,45 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["actions-count"].waitForExistence(timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "Nothing to do." },
                       "a buy-list line reached the to-dos: '\(words(app.staticTexts["actions-count"]))'")
+    }
+
+    /// The weather on a trip: ask for a place, get one line of what it will be like
+    /// and the gear that weather calls for which is not packed yet — and taking a
+    /// piece along puts it on the trip and stops it being asked for. (Under the
+    /// tests the forecast is invented: a fixed wet, cold few days, so the words on
+    /// screen can be checked exactly. The real one is Open-Meteo, as on the web.)
+    func testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let before = words(progress)
+
+        XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5), "nowhere to say where the trip is")
+        type("Testville", into: app.textFields["weather-place"])
+        hideKeyboard(app)
+        XCTAssertTrue(waitUntil { (app.textFields["weather-place"].value as? String ?? "").contains("Testville") },
+                      "the place did not stay in the field: '\(app.textFields["weather-place"].value as? String ?? "")'")
+        XCTAssertTrue(app.buttons["weather-look"].isEnabled, "the Weather button is dead with a place typed")
+        tap(app, id: "weather-look")
+
+        XCTAssertTrue(app.staticTexts["weather-line"].waitForExistence(timeout: 10),
+                      "no forecast came back — the app says '\(words(app.staticTexts["weather-trouble"]))'")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["weather-line"]).contains("Rain") },
+                      "three wet days and the line says '\(words(app.staticTexts["weather-line"]))'")
+        XCTAssertTrue(words(app.staticTexts["weather-line"]).contains("Cold")
+                      || words(app.staticTexts["weather-line"]).contains("cold"),
+                      "2–8°C is not warm: '\(words(app.staticTexts["weather-line"]))'")
+
+        XCTAssertTrue(app.buttons["weather-gear-0"].waitForExistence(timeout: 5), "wet and cold, and nothing suggested")
+        let asked = words(app.buttons["weather-gear-0"])
+        tap(app, id: "weather-gear-0")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(progress) != before },
+                      "the gear did not reach the trip (still \(before))")
+        XCTAssertFalse(words(app.buttons["weather-gear-0"]) == asked,
+                       "it is still being asked for although it is on the trip")
     }
 
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {

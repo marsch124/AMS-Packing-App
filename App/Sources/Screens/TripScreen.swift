@@ -49,6 +49,12 @@ struct TripScreen: View {
             Pills(title: "", options: TripScreen.views, selected: [view], id: "trip-view", tint: AppSection.events.color) { view = $0 }
                 .padding(.horizontal, 16)
             KeyboardAwayScroll {
+                // The card is deliberately OUTSIDE the lazy stack: a lazy row is
+                // thrown away and rebuilt as it scrolls off, which loses what he
+                // has typed into it (found by the test, 2026-09-23).
+                VStack(alignment: .leading, spacing: 4) {
+                WeatherCard(tripId: trip.id).environmentObject(model)
+                    .padding(.top, 10).padding(.horizontal, 16)
                 LazyVStack(alignment: .leading, spacing: 4) {
                     // The web app's nesting: When → by bag inside; Where / Category → by When inside.
                     ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { _, group in
@@ -86,6 +92,7 @@ struct TripScreen: View {
                     }
                 }
                 .padding(.horizontal, 16)
+                }
                 .padding(.bottom, 24)
             }
             // "Also the tripod" — a thing for THIS trip only, typed on the spot.

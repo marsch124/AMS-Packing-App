@@ -13,4 +13,18 @@ enum Today {
         f.dateFormat = "yyyy-MM-dd"
         return f.string(from: Date())
     }
+
+    private static var plain: DateFormatter {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }
+
+    /// A YYYY-MM-DD string as a date at midnight here, or nil if it is not one.
+    static func date(_ iso: String) -> Date? { plain.date(from: iso) }
+    /// The other way about.
+    static func iso(_ d: Date) -> String { plain.string(from: d) }
 }
