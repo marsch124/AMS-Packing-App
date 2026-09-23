@@ -22,6 +22,21 @@ enum SampleLibrary {
         if let n = lib.items.firstIndex(where: { $0.name == "Rain jacket" }) {
             lib.items[n].maintenance = Maintenance(notes: "Wash with tech wash, no softener")
         }
+        // Weights and places, because his own library has them on almost everything
+        // (514 of 431 things weigh something) — and the Care dashboard is built on
+        // exactly that.
+        let grams: [String: Double] = ["Hiking boots": 1250, "Rain jacket": 420, "Headlamp": 88,
+                                       "Map": 60, "Towel": 340, "Goggles": 45, "Swim cap": 20,
+                                       "Passport": 35, "Phone charger": 120, "Toothbrush": 18]
+        let places: [String: String] = ["Hiking boots": "Hall closet", "Rain jacket": "Hall closet",
+                                        "Headlamp": "Garage", "Map": "Garage", "Towel": "Bathroom cabinet",
+                                        "Goggles": "Bathroom cabinet", "Passport": "Chest of drawers",
+                                        "Phone charger": "Chest of drawers", "Toothbrush": "Bathroom cabinet"]
+        for n in lib.items.indices {
+            if let g = grams[lib.items[n].name] { lib.items[n].weight = g }
+            if let p = places[lib.items[n].name] { lib.items[n].storage = p }
+        }
+
         // Two things the buy-list should offer, for two different reasons.
         if let n = lib.items.firstIndex(where: { $0.name == "Map" }) { lib.items[n].condition = "retire" }
         if let n = lib.items.firstIndex(where: { $0.name == "Toothbrush" }) { lib.items[n].consumable = true }

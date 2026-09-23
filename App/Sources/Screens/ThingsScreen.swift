@@ -5,6 +5,8 @@ import PackingLibrary
 /// Your things: everything he owns, whether or not it is on a list yet. Tap one
 /// to change it — a change here reaches every list it is on.
 struct ThingsScreen: View {
+    /// Opened from a bar on the Care dashboard: start with this in the search.
+    var searching: String = ""
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
@@ -103,6 +105,7 @@ struct ThingsScreen: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("things-detail")
+        .onAppear { if query.isEmpty, !searching.isEmpty { query = searching } }
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 600)
         #endif

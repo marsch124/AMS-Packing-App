@@ -8,7 +8,12 @@ import PackingLibrary
 struct CareScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var open: Set<String> = []
-    @State private var things = false
+    /// Your things, and what it opens searched for when he taps a bar. Carried as
+    /// ONE value: a `sheet(isPresented:)` builds its content before a second piece
+    /// of state has changed, and the search arrived empty.
+    @State private var opening: ThingsRequest?
+
+    struct ThingsRequest: Identifiable { let id = UUID(); let search: String }
 
     var body: some View {
         let today = Today.local
@@ -17,10 +22,20 @@ struct CareScreen: View {
         let order = sections.flatMap(\.rows).map(\.item.id)
         let overdue = rows.filter { $0.status.state == "overdue" }.count
         let soon = rows.filter { $0.status.state == "soon" }.count
+        let stats = model.library.kitStats(today: today)
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Care").font(.system(size: 28, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("care-heading")
+                    Text(CareScreen.line(stats))
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("care-line")
+                }
+                .padding(.top, 14).padding(.bottom, 2)
+
                 // Everything he owns, on a list or not — the web app's "Your things".
-                Button { things = true } label: {
+                Button { opening = ThingsRequest(search: "") } label: {
                     HStack {
                         Text("Your things").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                         Text("\(model.library.items.count)").font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
@@ -36,6 +51,7 @@ struct CareScreen: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .padding(.top, 14)
                 .accessibilityIdentifier("care-things")
+
                 Text(CareScreen.summary(rows: rows.count, overdue: overdue, soon: soon))
                     .font(.system(size: 17, weight: .heavy))
                     .foregroundStyle(overdue > 0 ? AppSection.actions.color : (soon > 0 ? AppSection.care.color : AppSection.events.color))
@@ -70,10 +86,25 @@ struct CareScreen: View {
                         }
                     }
                 }
+
+                // What the kit adds up to, LAST: what needs doing comes first, and
+                // the dashboard is what he browses afterwards. (It also kept the
+                // things above it from being built at all on the Mac's shorter
+                // window — a lazy list only builds what is near the screen.)
+                KitDashboard(stats: stats) { search in opening = ThingsRequest(search: search) }
+                    .padding(.top, 18)
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .sheet(isPresented: $things) { ThingsScreen().environmentObject(model) }
+        .sheet(item: $opening) { ask in ThingsScreen(searching: ask.search).environmentObject(model) }
+    }
+
+    /// "431 things · 12.4 kg · 2 looked after" — the state of the kit in one line.
+    static func line(_ s: Library.KitStats) -> String {
+        var parts = ["\(s.things) thing\(s.things == 1 ? "" : "s")"]
+        if s.totalGrams > 0 { parts.append(KitDashboard.kilos(s.totalGrams)) }
+        parts.append("\(s.withCare) looked after")
+        return parts.joined(separator: " · ")
     }
 
     static func summary(rows: Int, overdue: Int, soon: Int) -> String {

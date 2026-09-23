@@ -1073,6 +1073,54 @@ final class AMSPackingUITests: XCTestCase {
         }, "Padel is not on Home")
     }
 
+    /// The Care tab says what the kit adds up to — and every word of it is true of
+    /// the library in front of it: the counts, the weights, and the tips, which
+    /// appear only when they apply.
+    func testCareSaysWhatTheKitAddsUpTo() {
+        let app = launch()
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        XCTAssertTrue(app.staticTexts["care-heading"].waitForExistence(timeout: 5), "Care has no heading")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).contains("things") },
+                      "no line saying what the kit is: '\(words(app.staticTexts["care-line"]))'")
+
+        // The four figures, and the weight among them.
+        XCTAssertTrue(app.otherElements["kit-things"].waitForExistence(timeout: 5)
+                      || app.staticTexts["kit-things"].exists, "no count of things")
+        // Not just present: it must say a WEIGHT. (A plant that stopped counting
+        // grams slipped past an existence check, 2026-09-23.)
+        XCTAssertTrue(waitUntil(timeout: 10) {
+            let said = self.words(app.otherElements["kit-weight"]) + self.words(app.staticTexts["kit-weight"])
+            return said.contains("kg") || said.contains(" g")
+        }, "the kit does not say what it weighs: '\(words(app.otherElements["kit-weight"]))'")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).contains("kg") },
+                      "the line under Care does not say what the kit weighs: '\(words(app.staticTexts["care-line"]))'")
+
+        // The heavy end is drawn from the things that have a weight…
+        XCTAssertTrue(app.buttons["kit-heavy-0"].waitForExistence(timeout: 5), "nothing in the heavy end")
+        let heaviest = words(app.buttons["kit-heavy-0"])
+        XCTAssertTrue(heaviest.contains("g"), "the heaviest thing does not say its weight: '\(heaviest)'")
+
+        // …and tapping it opens those things, already searched.
+        tap(app, id: "kit-heavy-0")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5), "the bar did not open the things behind it")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["things-count"]).hasPrefix("1 ") },
+                      "it opened everything instead of that one thing: '\(words(app.staticTexts["things-count"]))'")
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // A tip is only there when it is true. The sample library HAS an overdue
+        // thing (boots, waxed last in January), so that one leads…
+        XCTAssertTrue(app.staticTexts["kit-tips-heading"].waitForExistence(timeout: 5), "nothing worth knowing at all")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["kit-tip-0"]).contains("overdue") },
+                      "something is overdue and the tips do not lead with it: '\(words(app.staticTexts["kit-tip-0"]))'")
+        // …and nothing has been reviewed, so nothing may claim to have come home unused.
+        for n in 0..<4 {
+            XCTAssertFalse(words(app.staticTexts["kit-tip-\(n)"]).contains("came home unused"),
+                           "nothing has been reviewed and it said things came home unused")
+        }
+    }
+
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
         let app = launch()
         tab(app, "settings")
