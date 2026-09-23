@@ -40,6 +40,19 @@ extension Library {
         // rides beside the grab lists rather than inside them.
         var sometimesJSON: [String: JSONValue] = [:]
         for (listId, names) in sometimesByList() where !names.isEmpty { sometimesJSON[listId] = JSONValue(names) }
+        // His own grab lists and which six he keeps on Home — ours, kept in `meta`,
+        // and carried here so a restore brings them back.
+        var ours: [String: JSONValue] = [:]
+        let own = ownGrabLists()
+        if !own.isEmpty {
+            ours["own"] = .array(own.map { list in
+                ["id": .string(list.id), "label": .string(list.label), "title": .string(list.title),
+                 "tone": .string(list.tone), "icon": .string(list.icon), "items": JSONValue(list.items)]
+            })
+        }
+        let home = (meta[GRAB_HOME_META]?.arrayValue ?? []).compactMap { $0.stringValue }
+        if !home.isEmpty { ours["home"] = JSONValue(home) }
+
         let grab = grabFromRows(shared)
         if !grab.isEmpty {
             var items: [String: JSONValue] = [:], meta: [String: JSONValue] = [:]
@@ -49,10 +62,14 @@ extension Library {
             }
             var g: [String: JSONValue] = ["items": .object(items), "meta": .object(meta)]
             if !sometimesJSON.isEmpty { g["sometimes"] = .object(sometimesJSON) }
+            for (key, value) in ours { g[key] = value }
             prefs["grab"] = .object(g)
-        } else if !sometimesJSON.isEmpty {
-            // He has marked things on a list he has never otherwise edited.
-            prefs["grab"] = ["sometimes": .object(sometimesJSON)]
+        } else if !sometimesJSON.isEmpty || !ours.isEmpty {
+            // Lists of his own, or marks on a list he has never otherwise edited.
+            var g: [String: JSONValue] = [:]
+            if !sometimesJSON.isEmpty { g["sometimes"] = .object(sometimesJSON) }
+            for (key, value) in ours { g[key] = value }
+            prefs["grab"] = .object(g)
         }
         if !prefs.isEmpty { o["prefs"] = .object(prefs) }
         return BackupFile(json: .object(o))

@@ -1032,6 +1032,47 @@ final class AMSPackingUITests: XCTestCase {
                       "it could not be brought in for today")
     }
 
+    /// More grab lists than Home can hold: six slots in his order, the rest
+    /// waiting with everything on them, and he says which one steps back.
+    func testMoreGrabListsThanHomeHolds() {
+        let app = launch()
+        tab(app, "home")
+        tap(app, id: "grab-shelf")
+        XCTAssertTrue(appears(app, "shelf-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shelf-home-heading"]).contains("6 of 6") },
+                      "Home does not start with six: '\(words(app.staticTexts["shelf-home-heading"]))'")
+
+        // A new list waits rather than shoving one off Home.
+        type("Padel", into: app.textFields["shelf-new-name"])
+        hideKeyboard(app)
+        tap(app, id: "shelf-new")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["shelf-waiting-heading"]).contains("1") },
+                      "the new list did not go to the shelf")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shelf-home-heading"]).contains("6 of 6") },
+                      "it pushed something off Home by itself")
+
+        // Putting it on Home asks which of the six steps back.
+        tap(app, id: "shelf-waiting-0")
+        XCTAssertTrue(appears(app, "swap-detail", timeout: 5), "it did not ask what steps back")
+        let steppingBack = words(app.buttons["swap-0"])
+        tap(app, id: "swap-0")
+        XCTAssertTrue(disappears(app, "swap-detail", timeout: 5))
+
+        // Home still holds six, and the one that stepped back is waiting, whole.
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["shelf-home-heading"]).contains("6 of 6") })
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shelf-waiting-heading"]).contains("1") })
+        XCTAssertTrue(waitUntil { self.words(app.buttons["shelf-waiting-0"]).contains(String(steppingBack.prefix(4))) },
+                      "the list that stepped back is not the one he chose: '\(words(app.buttons["shelf-waiting-0"]))'")
+        XCTAssertFalse(words(app.buttons["shelf-waiting-0"]).contains("0 things"), "it lost its things on the way")
+
+        // …and Home shows his six, Padel among them.
+        tap(app, id: "shelf-done")
+        XCTAssertTrue(disappears(app, "shelf-detail", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 10) {
+            (0..<6).contains { self.words(app.buttons["grab-\($0)"]).contains("Padel") }
+        }, "Padel is not on Home")
+    }
+
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
         let app = launch()
         tab(app, "settings")

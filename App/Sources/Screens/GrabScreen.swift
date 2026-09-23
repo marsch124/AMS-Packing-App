@@ -23,6 +23,9 @@ enum GrabTone {
 struct GrabDoodle: View {
     let icon: String
     var size: Double = 40
+    /// A list of his own has no hand-drawn mark: it wears its INITIAL, the way he
+    /// chose template covers to work (2026-09-22). The app never adds stock art.
+    var initial: String = ""
 
     static let swim = "M35,16.6 C38.2,16.4 40.8,19 40.7,22.1 C40.6,25.3 38,27.8 34.8,27.7 C31.7,27.6 29.2,25 29.3,21.9 C29.4,18.9 31.9,16.7 35.5,16.9 M40,24 C45.5,18 51.5,15.5 56.5,17 C58.7,17.8 59.7,19.8 59.4,22 M29.5,24.5 C24,27 19,31 15.5,35.5 M6,42.5 C11,40 16,45 21,42.5 C26,40 31,45 36,42.5 C41,40 46,45 51,42.5 C54.5,40.8 58,43.5 60,42.8 M10,51.5 C15,49 20,54 25,51.5 C30,49 35,54 40,51.5 C45,49 50,54 55,51.5"
     static let bike = "M15,35.4 C20.6,35 25.3,39.6 25,45.2 C24.7,50.6 20.1,54.9 14.7,54.6 C9.4,54.3 5.2,49.7 5.5,44.4 C5.8,39.2 10.2,35.2 15.9,35.8 M49,35.2 C54.7,35 59.2,39.5 58.9,45 C58.6,50.5 54,54.8 48.6,54.4 C43.3,54 39.2,49.5 39.5,44.2 C39.8,39 44.3,35 49.8,35.7 M15,45 C18.5,38.5 22.5,32 27,27.5 M27,27.5 C29.5,33 31.5,38.5 33,43.5 M15,45 C21,44.6 27,44.2 33,43.8 M27.5,27.2 C33,26.2 38.5,25.8 43.6,26.2 M49,45 C47.5,38.6 46,32.3 44.3,26.3 M44.3,26.3 C43.5,23.2 41,21.6 38.4,22.3 M23.5,25.6 C26,24.8 28.6,24.8 30.8,25.5"
@@ -56,10 +59,16 @@ struct GrabDoodle: View {
 
     var body: some View {
         let k = size / 64
-        SVGPath.path(GrabDoodle.path(icon))
-            .applying(CGAffineTransform(scaleX: k, y: k))
-            .stroke(style: StrokeStyle(lineWidth: 4.5 * k, lineCap: .round, lineJoin: .round))
-            .frame(width: size, height: size)
+        if icon.isEmpty, !initial.isEmpty {
+            Text(initial.prefix(1).uppercased())
+                .font(.system(size: size * 0.5, weight: .heavy))
+                .frame(width: size, height: size)
+        } else {
+            SVGPath.path(GrabDoodle.path(icon))
+                .applying(CGAffineTransform(scaleX: k, y: k))
+                .stroke(style: StrokeStyle(lineWidth: 4.5 * k, lineCap: .round, lineJoin: .round))
+                .frame(width: size, height: size)
+        }
     }
 }
 
@@ -103,7 +112,7 @@ struct GrabButtons: View {
             ForEach(Array(lists.enumerated()), id: \.element.id) { n, d in
                 Button { open(d) } label: {
                     VStack(spacing: 4) {
-                        GrabDoodle(icon: d.icon, size: 44).foregroundStyle(GrabTone.color(d.tone))
+                        GrabDoodle(icon: d.icon, size: 44, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
                         Text(d.label).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, minHeight: 84)
@@ -137,7 +146,7 @@ struct GrabScreen: View {
     @State private var draftSometimes: Set<String> = []
 
     private var list: GrabDefinition {
-        model.library.grabLists().first { $0.id == listId } ?? GRAB_FACTORY[0]
+        model.library.allGrabLists().first { $0.id == listId } ?? GRAB_FACTORY[0]
     }
     private var tint: Color { GrabTone.color(list.tone) }
 
@@ -146,7 +155,7 @@ struct GrabScreen: View {
         let complete = state.isComplete(items)
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                GrabDoodle(icon: list.icon, size: 36).foregroundStyle(tint)
+                GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
                 Text(list.title).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer()
                 Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }

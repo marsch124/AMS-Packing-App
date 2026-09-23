@@ -17,6 +17,7 @@ struct HomeScreen: View {
     @State private var quick = false
     @State private var opened: String?
     @State private var grab: GrabDefinition?
+    @State private var shelf = false
 
     var body: some View {
         let choices = model.library.activityChoices()
@@ -24,8 +25,17 @@ struct HomeScreen: View {
         let anyWorkout = flat.contains { $0.group == "WET" && activities.contains($0.id) }
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Grab and go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
-                GrabButtons(lists: model.library.grabLists()) { grab = $0 }
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Grab and go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                    Spacer()
+                    Button("Your lists") { shelf = true }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.home.color)
+                        .accessibilityIdentifier("grab-shelf")
+                }
+                .padding(.top, 14)
+                // Home holds six — HIS six, in his order (GrabShelf.swift).
+                GrabButtons(lists: model.library.homeGrabLists()) { grab = $0 }
 
                 Text("New trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
                 VStack(alignment: .leading, spacing: 14) {
@@ -98,6 +108,7 @@ struct HomeScreen: View {
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id })) { o in
             TripScreen(tripId: o.id).environmentObject(model)
         }
+        .sheet(isPresented: $shelf) { GrabShelfScreen().environmentObject(model) }
         .sheet(item: Binding(get: { grab.map { GrabOpened(list: $0) } }, set: { grab = $0?.list })) { g in
             GrabScreen(listId: g.list.id).environmentObject(model)
         }

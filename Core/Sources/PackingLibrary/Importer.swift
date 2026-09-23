@@ -81,6 +81,10 @@ public enum Importer {
                 if !clean.isEmpty { marks[gid] = clean }
             }
             lib.setSometimesByList(marks)
+            // …and his own lists, with the six he keeps on Home.
+            if let own = grab["own"]?.arrayValue, !own.isEmpty { lib.meta[GRAB_OWN_META] = .array(own) }
+            let home = (grab["home"]?.arrayValue ?? []).compactMap { $0.stringValue }
+            if !home.isEmpty { lib.meta[GRAB_HOME_META] = JSONValue(home) }
         }
         if let conditions = backup.prefsConditions, !conditions.isEmpty { _ = setItemConditions(conditions) }
         report.sharedRows = lib.shared.count
