@@ -36,6 +36,10 @@ extension Library {
         if !presets.isEmpty {
             prefs["presets"] = .array(presets.map { ["name": .string($0.name), "createdAt": .string($0.createdAt), "config": $0.config] })
         }
+        // What he takes only sometimes, per list — ours, not the web app's, so it
+        // rides beside the grab lists rather than inside them.
+        var sometimesJSON: [String: JSONValue] = [:]
+        for (listId, names) in sometimesByList() where !names.isEmpty { sometimesJSON[listId] = JSONValue(names) }
         let grab = grabFromRows(shared)
         if !grab.isEmpty {
             var items: [String: JSONValue] = [:], meta: [String: JSONValue] = [:]
@@ -43,7 +47,12 @@ extension Library {
                 items[g.id] = JSONValue(g.items)
                 meta[g.id] = ["label": .string(g.label), "icon": .string(g.icon), "tone": .string(g.tone)]
             }
-            prefs["grab"] = ["items": .object(items), "meta": .object(meta)]
+            var g: [String: JSONValue] = ["items": .object(items), "meta": .object(meta)]
+            if !sometimesJSON.isEmpty { g["sometimes"] = .object(sometimesJSON) }
+            prefs["grab"] = .object(g)
+        } else if !sometimesJSON.isEmpty {
+            // He has marked things on a list he has never otherwise edited.
+            prefs["grab"] = ["sometimes": .object(sometimesJSON)]
         }
         if !prefs.isEmpty { o["prefs"] = .object(prefs) }
         return BackupFile(json: .object(o))

@@ -74,6 +74,13 @@ public enum Importer {
                  "label": looks[gid]?["label"] ?? "", "icon": looks[gid]?["icon"] ?? "", "tone": looks[gid]?["tone"] ?? ""]
             }
             lib.shared.append(contentsOf: grabToRows(json: .array(lists)))
+            // …and what he takes only sometimes, which rides beside them.
+            var marks: [String: [String]] = [:]
+            for (gid, names) in grab["sometimes"]?.objectValue ?? [:] {
+                let clean = (names.arrayValue ?? []).compactMap { $0.stringValue }
+                if !clean.isEmpty { marks[gid] = clean }
+            }
+            lib.setSometimesByList(marks)
         }
         if let conditions = backup.prefsConditions, !conditions.isEmpty { _ = setItemConditions(conditions) }
         report.sharedRows = lib.shared.count

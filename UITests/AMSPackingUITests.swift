@@ -998,6 +998,40 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["review-save"].exists, "the review cannot be finished after a fix")
     }
 
+    /// "Only sometimes": a thing he takes one time in ten starts skipped every
+    /// time, out of the count, and one tap brings it into today's list.
+    func testAThingTakenOnlySometimesStartsSkipped() {
+        let app = launch()
+        tab(app, "home")
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(count.waitForExistence(timeout: 5))
+        let before = words(count)
+        XCTAssertFalse(before.contains("only sometimes"))
+
+        // Mark the second thing as one he rarely takes.
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(app.buttons["grab-sometimes-1"].waitForExistence(timeout: 5), "no way to mark it")
+        tapVisible(app, app.buttons["grab-sometimes-1"])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["grab-sometimes-1"]) }, "the mark did not take")
+        tap(app, id: "grab-edit")                       // Save
+
+        // It is skipped now, and out of the count.
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count).contains("skipped") },
+                      "it is not skipped: '\(words(count))'")
+        XCTAssertNotEqual(words(count), before, "the count did not change")
+
+        // …and it says WHY, not just that it is skipped.
+        XCTAssertTrue(waitUntil { self.words(app.buttons["grab-item-1"]).contains("only sometimes") },
+                      "it does not say why it is out: '\(words(app.buttons["grab-item-1"]))'")
+
+        // One tap brings it into today's list.
+        tapVisible(app, app.buttons["grab-skip-1"])
+        XCTAssertTrue(waitUntil(timeout: 10) { !self.words(app.buttons["grab-item-1"]).contains("only sometimes") },
+                      "it could not be brought in for today")
+    }
+
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
         let app = launch()
         tab(app, "settings")

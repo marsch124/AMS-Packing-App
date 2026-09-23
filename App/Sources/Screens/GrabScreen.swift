@@ -78,6 +78,14 @@ final class GrabStore {
         } else { raw = memory[id] }
         return (raw ?? GrabState()).current(for: items)
     }
+    /// What this device holds for a list, RAW — the library decides what a new
+    /// session should look like (the "only sometimes" defaults).
+    func held(_ id: String) -> GrabState? {
+        if persistent, let data = UserDefaults.standard.data(forKey: "ams.grab.\(id)") {
+            return try? JSONDecoder().decode(GrabState.self, from: data)
+        }
+        return memory[id]
+    }
     func save(_ id: String, _ s: GrabState) {
         memory[id] = s
         if persistent, let data = try? JSONEncoder().encode(s) { UserDefaults.standard.set(data, forKey: "ams.grab.\(id)") }
@@ -125,6 +133,8 @@ struct GrabScreen: View {
     @State private var editing = false
     @State private var draft: [String] = []
     @State private var newThing = ""
+    /// While editing: which names are marked "only sometimes", by their plain form.
+    @State private var draftSometimes: Set<String> = []
 
     private var list: GrabDefinition {
         model.library.grabLists().first { $0.id == listId } ?? GRAB_FACTORY[0]
@@ -182,7 +192,10 @@ struct GrabScreen: View {
                                         .foregroundStyle(skipped || ticked ? Theme.muted : Theme.ink)
                                         .strikethrough(skipped, pattern: .solid, color: Theme.muted)
                                     Spacer(minLength: 8)
-                                    if skipped { Text("not this time").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted) }
+                                    if skipped {
+                                        Text(onlySometimes.contains(normName(name)) ? "only sometimes" : "not this time")
+                                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                                    }
                                 }
                                 .padding(.vertical, 11).contentShape(Rectangle())
                             }
@@ -237,7 +250,12 @@ struct GrabScreen: View {
         // colour — you are usually at the bottom of a long list when it lands.
         .overlay { if flash { tint.opacity(0.35).ignoresSafeArea().allowsHitTesting(false) } }
         .animation(.easeOut(duration: 0.6), value: flash)
-        .onAppear { state = GrabStore.shared.state(list.id, items: items) }
+        .onAppear {
+            // Starts from what he takes only sometimes — already skipped, out of
+            // the count — unless a session is already under way.
+            state = model.library.openingState(listId: list.id, held: GrabStore.shared.held(list.id))
+            GrabStore.shared.save(list.id, state)
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("grab-detail")
         #if os(macOS)
@@ -264,6 +282,23 @@ struct GrabScreen: View {
                                 .accessibilityIdentifier("grab-rename-\(n)")
                             mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { draft.swapAt(n, n - 1) }
                             mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { draft.swapAt(n, n + 1) }
+                            // "Only sometimes": it starts skipped every time.
+                            Button {
+                                let name = n < draft.count ? draft[n] : ""
+                                if !jsTrim(name).isEmpty { draftSometimes.formSymmetricDifference([normName(name)]) }
+                            } label: {
+                                Text("1 in 10")
+                                    .font(.system(size: 12, weight: .heavy))
+                                    .foregroundStyle(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? .white : Theme.muted)
+                                    .padding(.horizontal, 8).frame(minHeight: 30)
+                                    .background(Capsule().fill(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? tint : Theme.card))
+                                    .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
+                                    .contentShape(Capsule())
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("grab-sometimes-\(n)")
+                            .accessibilityLabel("Take \(n < draft.count ? draft[n] : "") only sometimes")
+                            .accessibilityAddTraits(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? .isSelected : [])
                             mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: draft.count > 1, label: "Remove") { draft.remove(at: n) }
                         }
                     }
@@ -307,8 +342,15 @@ struct GrabScreen: View {
 
     private func startEditing() {
         draft = list.items
+        draftSometimes = Set(model.library.sometimes(listId: listId).map(normName))
         newThing = ""
         editing = true
+    }
+
+    /// The names he takes only sometimes, in their plain form, for the list as it
+    /// stands now.
+    private var onlySometimes: Set<String> {
+        Set(model.library.sometimes(listId: listId).map(normName))
     }
 
     private func addToDraft() {
@@ -320,9 +362,15 @@ struct GrabScreen: View {
 
     private func saveEdits() {
         let items = draft
-        model.change { _ = $0.saveGrabList(id: listId, items: items) }
+        let sometimes = items.filter { draftSometimes.contains(normName($0)) }
+        model.change {
+            _ = $0.saveGrabList(id: listId, items: items)
+            _ = $0.setSometimes(listId: listId, names: sometimes)
+        }
         editing = false
-        state = GrabStore.shared.state(listId, items: list.items)
+        // The list changed under the session: start it again from the defaults.
+        state = model.library.openingState(listId: listId, held: nil)
+        GrabStore.shared.save(listId, state)
     }
 
     private func change(_ body: (GrabState) -> GrabState) {
