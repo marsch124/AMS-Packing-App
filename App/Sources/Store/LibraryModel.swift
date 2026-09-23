@@ -167,6 +167,9 @@ extension LibraryModel {
         if AMSPackingApp.testing { RescueCopies.clearForTesting() }
         let sky: Forecaster = AMSPackingApp.testing ? InventedForecast() : OpenMeteo()
         if args.contains("-uiTestingEmpty") { return LibraryModel(store: MemoryStore(), usesICloud: false, sky: sky) }
+        if args.contains("-uiTestingTwoLibraries") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.doubled().records()), usesICloud: false, sky: sky)
+        }
         if args.contains("-uiTesting") {
             return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false, sky: sky)
         }

@@ -102,6 +102,36 @@ struct SettingsScreen: View {
                 .padding(.top, 14)
                 .accessibilityIdentifier("settings-lists")
 
+                // Only when there is something to say. Both times this library went
+                // wrong, nothing on screen said so and the counts alone knew.
+                let worries = model.library.worries()
+                if !worries.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Worth a look").font(.system(size: 15, weight: .heavy))
+                            .foregroundStyle(AppSection.actions.color)
+                            .accessibilityIdentifier("health-heading")
+                        ForEach(Array(worries.enumerated()), id: \.offset) { n, worry in
+                            Text(worry.says).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("health-\(n)")
+                            if !worry.names.isEmpty {
+                                Text(worry.names.prefix(6).joined(separator: " · ")
+                                     + (worry.names.count > 6 ? " …" : ""))
+                                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .accessibilityIdentifier("health-\(n)-names")
+                            }
+                        }
+                        Text("A backup and then \"Restore from a file…\" puts a library back exactly as the file has it.")
+                            .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color.opacity(0.5), lineWidth: 1))
+                    .padding(.top, 14)
+                }
+
                 Text("This device holds").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
                 VStack(spacing: 0) {
                     ForEach(model.library.counts, id: \.table) { row in

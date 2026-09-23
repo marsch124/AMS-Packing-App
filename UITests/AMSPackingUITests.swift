@@ -859,6 +859,29 @@ final class AMSPackingUITests: XCTestCase {
                        "it is still being asked for although it is on the trip")
     }
 
+    /// The library says when it looks wrong. Both real accidents took this shape —
+    /// every template existing twice — and neither showed anywhere on screen; only
+    /// the counts knew, and only if you happened to read them. A sound library says
+    /// nothing at all.
+    func testALibraryThatHasMetAnotherSaysSo() {
+        let sound = launch()
+        tab(sound, "settings")
+        XCTAssertTrue(appears(sound, "screen-settings"))
+        XCTAssertTrue(sound.staticTexts["device-count-items"].waitForExistence(timeout: 5))
+        XCTAssertFalse(sound.staticTexts["health-heading"].exists, "a sound library worried about itself")
+        sound.terminate()
+
+        let doubled = launch("-uiTestingTwoLibraries")
+        tab(doubled, "settings")
+        XCTAssertTrue(appears(doubled, "screen-settings"))
+        XCTAssertTrue(doubled.staticTexts["health-heading"].waitForExistence(timeout: 10),
+                      "every template exists twice and the app says nothing")
+        XCTAssertTrue(waitUntil { self.words(doubled.staticTexts["health-0"]).contains("twice") },
+                      "it does not say what is wrong: '\(words(doubled.staticTexts["health-0"]))'")
+        XCTAssertTrue(waitUntil { !self.words(doubled.staticTexts["health-0-names"]).isEmpty },
+                      "it does not say which lists")
+    }
+
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
         let app = launch()
         tab(app, "settings")

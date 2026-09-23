@@ -40,6 +40,19 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with every template a SECOND time, under new ids — what
+    /// a device holds when two libraries have met on one account (31 August 2026,
+    /// and again on 23 September). Used by `-uiTestingTwoLibraries`.
+    static func doubled() -> Library {
+        var lib = make()
+        for template in lib.resolvedTemplates() {
+            var twin = newList(name: template.name, group: template.group, role: template.role)
+            twin.items = template.items.map { newItem(name: $0.name) }
+            lib.saveTemplate(twin)
+        }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that
