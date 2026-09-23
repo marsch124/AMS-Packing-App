@@ -206,9 +206,12 @@ final class AMSPackingUITests: XCTestCase {
         let mid = CGPoint(x: e.frame.midX, y: e.frame.midY)
         let window = app.windows.firstMatch
         if window.exists && !window.frame.contains(mid) { return false }
-        if let scroll = frontList(app), scroll.exists,
-           scroll.frame.contains(CGPoint(x: mid.x, y: scroll.frame.midY))
-            && !scroll.frame.contains(mid) { return false }   // inside a list, but scrolled out of it
+        // NOTHING about scroll views here. A control scrolled out of a list is
+        // already outside the window, which the check above catches — while a
+        // fixed bar BELOW a list (Save on the trip review) is perfectly visible
+        // and was being called "scrolled out", so the test swiped, and a swipe on
+        // a sheet's list at the top drags the sheet shut. That is what made CI red
+        // twice (2026-09-23).
         return true
     }
 
@@ -240,6 +243,9 @@ final class AMSPackingUITests: XCTestCase {
         guard e.exists else { return }
         var down = true
         for _ in 0..<10 {
+            // It can go while we scroll (a sheet closes, a list redraws); reading
+            // the frame of an element that is gone is a HARD failure, not nil.
+            guard e.exists else { return }
             if onScreen(app, e) { return }
             let before = e.frame.midY
             let scroll = scroller(app, for: e) ?? app.scrollViews.firstMatch
@@ -746,8 +752,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["buy-count"]), "Nothing to buy.")
 
         XCTAssertTrue(app.staticTexts["buy-offers"].waitForExistence(timeout: 5), "nothing was offered")
+        // The heading can be there a beat before the offers under it are.
+        XCTAssertTrue(app.staticTexts["buy-offer-0-name"].waitForExistence(timeout: 5), "no offer under the heading")
         let offered = words(app.staticTexts["buy-offer-0-name"])
-        XCTAssertEqual(words(app.staticTexts["buy-offer-0-why"]), "Needs replacing", "the worst reason should lead")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-offer-0-why"]) == "Needs replacing" },
+                      "the worst reason should lead, not '\(words(app.staticTexts["buy-offer-0-why"]))'")
         tap(app, id: "buy-offer-0")
         // A row carries ONE piece of text, so SwiftUI folds it into the button:
         // the row is read through the button, not through a text inside it.
