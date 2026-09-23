@@ -8,7 +8,7 @@ struct RootView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SectionScreen(section: section)
+            SectionScreen(section: section, go: { section = $0 })
                 .frame(maxWidth: 720)                 // the web app's column, on the Mac
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             TabBar(section: $section)
@@ -20,6 +20,8 @@ struct RootView: View {
 /// One section's screen. The ones not built yet show their mark and their name.
 private struct SectionScreen: View {
     let section: AppSection
+    /// A screen that sends him somewhere else (the to-do chip → Actions).
+    var go: (AppSection) -> Void = { _ in }
     @EnvironmentObject var model: LibraryModel
 
     var body: some View {
@@ -33,7 +35,7 @@ private struct SectionScreen: View {
             case (.empty, .home): FirstRunView()
             case (.ready, .home): HomeScreen()
             case (.ready, .templates): TemplatesScreen()
-            case (.ready, .events): EventsScreen()
+            case (.ready, .events): EventsScreen(goToActions: { go(.actions) })
             case (.ready, .actions): ActionsScreen()
             case (.ready, .care): CareScreen()
             case (.ready, .settings), (.empty, .settings): SettingsScreen()

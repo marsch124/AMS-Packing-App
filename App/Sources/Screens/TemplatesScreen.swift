@@ -21,18 +21,37 @@ struct TemplatesScreen: View {
         return out
     }
 
+    /// "15 lists · 431 things · 4 trips packed from them"
+    static func summary(_ lists: [PackList], _ library: Library) -> String {
+        let things = library.items.count
+        let trips = library.trips.count
+        var parts = ["\(lists.count) list\(lists.count == 1 ? "" : "s")",
+                     "\(things) thing\(things == 1 ? "" : "s")"]
+        if trips > 0 { parts.append("\(trips) trip\(trips == 1 ? "" : "s") packed from them") }
+        return parts.joined(separator: " · ")
+    }
+
     var body: some View {
         let shelves = TemplatesScreen.shelves(model.library.resolvedTemplates())
         let flat = shelves.flatMap(\.lists)
+        let use = model.library.templateUse()
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Your lists").font(.system(size: 28, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("templates-heading")
+                    Text(TemplatesScreen.summary(flat, model.library))
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("templates-summary")
+                }
+                .padding(.top, 14).padding(.bottom, 4)
                 ForEach(shelves) { shelf in
                     Text(shelf.title)
                         .font(.system(size: 15, weight: .heavy))
                         .foregroundStyle(Theme.muted)
                         .padding(.top, 14)
                     ForEach(shelf.lists, id: \.id) { list in
-                        Button { open = list } label: { TemplateRow(list: list) }
+                        Button { open = list } label: { TemplateRow(list: list, use: use[list.id]) }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
                     }
@@ -49,24 +68,46 @@ extension PackList: Identifiable {}
 
 struct TemplateRow: View {
     let list: PackList
+    /// When it was last taken along, when it has been.
+    var use: Library.TemplateUse?
 
     var body: some View {
         HStack(spacing: 12) {
             Cover(list: list, size: 40)
-            Text(list.name)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(list.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                Text(TemplateRow.lastTaken(use))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(use == nil ? Theme.line : Theme.muted)
+                    .lineLimit(1)
+                    .accessibilityIdentifier("template-used")
+            }
             Spacer(minLength: 8)
             Text("\(list.items.count)")
                 .font(.system(size: 16, weight: .bold).monospacedDigit())
                 .foregroundStyle(Theme.muted)
         }
         .padding(.horizontal, 12)
-        .frame(minHeight: 56)
+        .frame(minHeight: 62)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .contentShape(Rectangle())
+    }
+}
+
+extension TemplateRow {
+    /// "Last taken: Göteborg, 2 days ago" — or the plain truth that it has never
+    /// been out.
+    static func lastTaken(_ use: Library.TemplateUse?) -> String {
+        guard let use, use.trips > 0 else { return "Never taken along" }
+        guard !use.lastTrip.isEmpty else { return "Taken on \(use.trips) trip\(use.trips == 1 ? "" : "s")" }
+        // The WHEN first: it is the part that is always worth reading, and the part
+        // that still shows when a long trip name is cut off.
+        let ago = use.lastDate.isEmpty ? "" : countdownLabel(daysUntil(use.lastDate, Today.local))
+        return ago.isEmpty ? "Last: \(use.lastTrip)" : "\(ago) · \(use.lastTrip)"
     }
 }
 

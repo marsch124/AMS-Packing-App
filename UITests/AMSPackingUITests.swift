@@ -882,6 +882,122 @@ final class AMSPackingUITests: XCTestCase {
                       "it does not say which lists")
     }
 
+    /// When the last thing is packed the screen itself says so — his idea, and he
+    /// asked for it strong. The words are for VoiceOver; the colour is the message.
+    func testTheScreenSaysSoWhenEverythingIsPacked() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        XCTAssertNotEqual(progress.value as? String, "all packed", "a half-packed trip says it is done")
+
+        // Tick everything the trip holds.
+        var n = 0
+        while app.buttons["trip-line-\(n)"].exists, n < 60 {
+            let line = app.buttons["trip-line-\(n)"]
+            if !isOn(line) { tapVisible(app, line) }
+            n += 1
+        }
+        XCTAssertGreaterThan(n, 0, "the trip has no lines")
+        XCTAssertTrue(waitUntil(timeout: 10) { (progress.value as? String) == "all packed" },
+                      "everything is ticked and the screen does not say so: '\(words(progress))'")
+
+        // …and it stops saying so the moment something is untied again.
+        tapVisible(app, app.buttons["trip-line-0"])
+        XCTAssertTrue(waitUntil(timeout: 10) { (progress.value as? String) != "all packed" },
+                      "one thing was un-ticked and the screen still says all packed")
+    }
+
+    /// The Events screen says where each trip is in its life without him reading
+    /// numbers: a heading, a line of state, and a chip per trip that changes as the
+    /// packing does.
+    func testEachTripSaysWhereItHasGotTo() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        XCTAssertTrue(app.staticTexts["events-heading"].waitForExistence(timeout: 5), "the screen has no heading")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["events-summary"]).contains("trip") },
+                      "no line saying what there is: '\(words(app.staticTexts["events-summary"]))'")
+
+        // Read through the ROW, not a text inside it: on the Mac a button folds its
+        // children into its own words, on the iPhone they stay separate elements.
+        let row = app.buttons["trip-row-0"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no trip to look at")
+        XCTAssertTrue(words(row).contains("Planned"),
+                      "a trip nobody has packed is not 'Planned': '\(words(row))'")
+
+        // Pack one thing: it is being packed now.
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tapVisible(app, app.buttons["trip-line-0"])
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.buttons["trip-row-0"]).contains("Packing") },
+                      "one thing packed and the trip still says '\(words(app.buttons["trip-row-0"]))'")
+
+        // A to-do makes the chip to Actions appear, and it goes there.
+        tab(app, "actions")
+        type("Book the ferry", into: app.textFields["action-add-text"])
+        tap(app, id: "action-add")
+        tab(app, "events")
+        XCTAssertTrue(app.buttons["events-todos"].waitForExistence(timeout: 5), "an open to-do is not shown here")
+        tap(app, id: "events-todos")
+        XCTAssertTrue(appears(app, "screen-actions", timeout: 5), "the chip did not open Actions")
+    }
+
+    /// One press ticks a whole "When" section, and the same press takes it back —
+    /// his ask, for the days when a whole bag goes in at once.
+    func testAWholeSectionIsTickedInOnePress() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        XCTAssertTrue(words(progress).hasPrefix("0/"), "the trip does not start empty: '\(words(progress))'")
+
+        let all = app.buttons["trip-group-0-all"]
+        XCTAssertTrue(all.waitForExistence(timeout: 5), "a section with no way to tick it whole")
+        XCTAssertFalse(isOn(all))
+        tapVisible(app, all)
+        XCTAssertTrue(waitUntil(timeout: 10) { self.isOn(all) }, "the section did not go done")
+        XCTAssertFalse(words(progress).hasPrefix("0/"), "nothing was ticked: '\(words(progress))'")
+        XCTAssertTrue(isOn(app.buttons["trip-line-0"]), "the first line of the section is not ticked")
+
+        // The same press takes it back.
+        tapVisible(app, all)
+        XCTAssertTrue(waitUntil(timeout: 10) { !self.isOn(all) }, "it could not be taken back")
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("0/") }, "the ticks did not come off: '\(words(progress))'")
+    }
+
+    /// The review says WHERE each thing was packed, and a thing can be put right
+    /// without losing the review — his two asks for this screen.
+    func testTheReviewSaysWhereAThingWentAndLetsHimFixIt() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tapVisible(app, app.buttons["trip-line-0"])             // something went in the bag
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+
+        let line = app.buttons["review-line-0"]
+        XCTAssertTrue(line.waitForExistence(timeout: 5), "nothing to review")
+        XCTAssertTrue(waitUntil { self.words(line).contains("Carry-on") },
+                      "the review does not say where the thing went: '\(words(line))'")
+
+        // Fix the thing itself, and come back to the review as it was.
+        tap(app, id: "review-line-0-fix")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the thing did not open")
+        replace("Head torch", in: app.textFields["thing-name"])
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5), "the review was lost while fixing a thing")
+        XCTAssertTrue(app.buttons["review-save"].exists, "the review cannot be finished after a fix")
+    }
+
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
         let app = launch()
         tab(app, "settings")

@@ -12,7 +12,7 @@ settings:
     DEVELOPMENT_TEAM: D24ENP83QQ
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.5"
+    MARKETING_VERSION: "0.6"
     CURRENT_PROJECT_VERSION: "2"
 packages:
   # The model — everything the app knows about packing, with no screen in it.

@@ -16,6 +16,8 @@ struct ReviewScreen: View {
     /// Save on a phone with no hardware keyboard.
     @FocusState private var typingMissed: Bool
     @State private var missWhere = ""
+    /// The thing he is fixing mid-review, if any.
+    @State private var fixing: String?
 
     var body: some View {
         let lines = model.library.reviewLines(tripId: tripId)
@@ -82,13 +84,22 @@ struct ReviewScreen: View {
                         .accessibilityIdentifier("review-summary")
                     ForEach(Array(lines.packed.enumerated()), id: \.element.id) { n, line in
                         let off = unused.contains(line.id)
+                        HStack(spacing: 4) {
                         Button {
                             if off { unused.remove(line.id) } else { unused.insert(line.id) }
                         } label: {
                             HStack {
-                                Text(line.name).font(.system(size: 17, weight: .medium))
-                                    .foregroundStyle(off ? Theme.muted : Theme.ink)
-                                    .strikethrough(off, pattern: .solid, color: Theme.muted)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(line.name).font(.system(size: 17, weight: .medium))
+                                        .foregroundStyle(off ? Theme.muted : Theme.ink)
+                                        .strikethrough(off, pattern: .solid, color: Theme.muted)
+                                    // WHERE it went: the same words as packing mode,
+                                    // so "did I use it" is asked in context.
+                                    Text(ReviewScreen.where(line))
+                                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                                        .lineLimit(1)
+                                        .accessibilityIdentifier("review-line-\(n)-where")
+                                }
                                 Spacer(minLength: 8)
                                 Text(off ? "Didn't use" : "Used").font(.system(size: 14, weight: .bold))
                                     .foregroundStyle(off ? AppSection.actions.color : AppSection.events.color)
@@ -99,6 +110,22 @@ struct ReviewScreen: View {
                         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                         .accessibilityIdentifier("review-line-\(n)")
                         .accessibilityAddTraits(off ? .isSelected : [])
+                        // "That one is wrong" — fix the THING here and come straight
+                        // back; nothing about the review is lost (his ask).
+                        // A trip line points back at the thing it came from through
+                        // sourceItemId (itemId is the membership's item, not always set).
+                        if let itemId = line.sourceItemId ?? line.itemId, !itemId.isEmpty {
+                            Button { fixing = itemId } label: {
+                                SVGPath.path("M4 20h4L19 9l-4-4L4 16v4z")
+                                    .stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                                    .frame(width: 18, height: 18).foregroundStyle(Theme.muted)
+                                    .frame(width: 40, height: 40).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("review-line-\(n)-fix")
+                            .accessibilityLabel("Change \(line.name)")
+                        }
+                        }
                     }
                     if !lines.neverPacked.isEmpty {
                         Text("Never went in the bag: \(lines.neverPacked.count)")
@@ -125,10 +152,22 @@ struct ReviewScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .accessibilityElement(children: .contain)
+        .sheet(item: Binding(get: { fixing.map { Fixing(id: $0) } }, set: { fixing = $0?.id })) { it in
+            ThingEditor(itemId: it.id).environmentObject(model)
+        }
         .accessibilityIdentifier("review-detail")
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 600)
         #endif
+    }
+
+    private struct Fixing: Identifiable { let id: String }
+
+    /// Where a line was packed, in the same words as packing mode.
+    static func `where`(_ line: Item) -> String {
+        let bag = jsTrim(line.container)
+        let when = phaseLabel(line.phase)
+        return [bag.isEmpty ? "" : bag, when.isEmpty ? "" : when].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
     private func addMissed(_ target: String) {

@@ -13,11 +13,16 @@ struct TripScreen: View {
     @AppStorage("ams.view") private var view = "when"
     @State private var newName = ""
     @State private var reviewing = false
+    @State private var sweeping = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Where"), ("category", "Category")]
 
     var body: some View {
         let trip = model.library.trips.first { $0.id == tripId } ?? newEvent()
         let p = progress(trip.entries)
+        // Nothing left to decide: every line ticked or set aside. Set aside counts
+        // as handled (his choice, 2026-09-23), so it leaves the total.
+        let allPacked = p.total > 0 && p.done == p.total
         let index: [String: Int] = Dictionary(uniqueKeysWithValues: trip.entries.enumerated().map { ($1.id, $0) })
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -28,6 +33,7 @@ struct TripScreen: View {
                         .font(.system(size: 16, weight: .bold).monospacedDigit())
                         .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
                         .accessibilityIdentifier("trip-progress")
+                        .accessibilityValue(allPacked ? "all packed" : "")
                 }
                 Spacer()
                 // After the trip: what did I use, what did I miss. Once, then it says so.
@@ -57,12 +63,43 @@ struct TripScreen: View {
                     .padding(.top, 10).padding(.horizontal, 16)
                 LazyVStack(alignment: .leading, spacing: 4) {
                     // The web app's nesting: When → by bag inside; Where / Category → by When inside.
-                    ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { _, group in
+                    ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { g, group in
                         if !group.entries.isEmpty {
-                            Text(group.label)
-                                .font(.system(size: 15, weight: .heavy))
-                                .foregroundStyle(view == "when" ? Color(hexString: phaseColor(group.entries[0].phase)) : AppSection.events.color)
-                                .padding(.top, 12)
+                            // The heading, and one press to tick the whole section
+                            // (his ask: "so that I could toggle all done").
+                            let mine = group.entries.filter { !isSetAside($0) }
+                            let sectionDone = !mine.isEmpty && mine.allSatisfy { $0.checked }
+                            HStack(spacing: 8) {
+                                Text(group.label)
+                                    .font(.system(size: 15, weight: .heavy))
+                                    .foregroundStyle(view == "when" ? Color(hexString: phaseColor(group.entries[0].phase)) : AppSection.events.color)
+                                Text("\(mine.filter { $0.checked }.count)/\(mine.count)")
+                                    .font(.system(size: 13, weight: .bold).monospacedDigit())
+                                    .foregroundStyle(Theme.muted)
+                                Spacer()
+                                Button {
+                                    model.change { lib in
+                                        for line in mine { _ = lib.setChecked(!sectionDone, tripId: tripId, entryId: line.id) }
+                                    }
+                                } label: {
+                                    ZStack {
+                                        Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 2)
+                                            .frame(width: 24, height: 24)
+                                        if sectionDone {
+                                            Circle().fill(AppSection.events.color).frame(width: 24, height: 24)
+                                            Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                                                .frame(width: 24, height: 24)
+                                        }
+                                    }
+                                    .frame(width: 40, height: 36).contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .disabled(mine.isEmpty)
+                                .accessibilityIdentifier("trip-group-\(g)-all")
+                                .accessibilityLabel(sectionDone ? "Untick \(group.label)" : "Tick all of \(group.label)")
+                                .accessibilityAddTraits(sectionDone ? .isSelected : [])
+                            }
+                            .padding(.top, 12)
                             ForEach(group.entries, id: \.id) { line in
                                 let n = index[line.id] ?? 0
                                 let aside = isSetAside(line)
@@ -116,11 +153,41 @@ struct TripScreen: View {
                 .accessibilityIdentifier("trip-add")
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Theme.bg)
+            // The green is the WHOLE screen, this bar included (his call: "we need
+            // strong indicators").
+            .background(allPacked ? Color.clear : Theme.bg)
         }
-        .background(Theme.bg.ignoresSafeArea())
+        .background {
+            // Everything packed: the screen itself says so. The green is painted ON
+            // the background, not under it, or the opaque one hides it.
+            ZStack {
+                Theme.bg
+                if allPacked { AppSection.events.color.opacity(0.34) }
+            }
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.5), value: allPacked)
+        }
         .sheet(isPresented: $reviewing) { ReviewScreen(tripId: tripId).environmentObject(model) }
         .accessibilityElement(children: .contain)
+        .overlay(alignment: .top) {
+            // The moment: ONE sweep down the screen, never a blink — a blinking
+            // screen keeps demanding attention after the news is delivered.
+            if sweeping {
+                LinearGradient(colors: [AppSection.events.color.opacity(0.55), AppSection.events.color.opacity(0.0)],
+                               startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityHidden(true)
+            }
+        }
+        .onChange(of: allPacked) { _, packed in
+            guard packed, !reduceMotion else { return }
+            withAnimation(.easeOut(duration: 0.45)) { sweeping = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                withAnimation(.easeIn(duration: 0.55)) { sweeping = false }
+            }
+        }
         .accessibilityIdentifier("trip-detail")
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
