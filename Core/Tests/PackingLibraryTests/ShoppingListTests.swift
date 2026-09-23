@@ -66,6 +66,25 @@ final class ShoppingListTests: XCTestCase {
         XCTAssertTrue(lib.buySuggestions(today: "2026-09-22").contains { $0.item.name == "Sun cream" })
     }
 
+    /// The switch depends on this: a buy-list line must come back a buy-list line,
+    /// not a to-do, when the library travels through a backup file.
+    func testABuyLineSurvivesABackupAsABuyLine() {
+        var lib = library()
+        let cream = lib.buySuggestions(today: "2026-09-22").first { $0.item.name == "Sun cream" }!
+        _ = lib.addToBuyList(cream)
+        _ = lib.addToBuyList(text: "Gas canister")
+        _ = lib.addAction(text: "Book the ferry")
+
+        guard let json = try? JSONValue.parse(lib.backupData()) else { return XCTFail("the backup did not parse") }
+        let (back, report) = Importer.library(from: BackupFile(json: json))
+        XCTAssertTrue(report.isFaithful)
+        XCTAssertEqual(back.buyList().map(\.text).sorted(), ["Gas canister", "Sun cream"])
+        XCTAssertEqual(back.sortedActions().map(\.text), ["Book the ferry"])
+        XCTAssertEqual(back.buyList().first { $0.text == "Sun cream" }?.itemId,
+                       lib.buyList().first { $0.text == "Sun cream" }?.itemId,
+                       "the line lost the thing it is for")
+    }
+
     func testALineHeTypesHimselfNeedsNoThing() {
         var lib = library()
         XCTAssertNotNil(lib.addToBuyList(text: "Gas canister"))
