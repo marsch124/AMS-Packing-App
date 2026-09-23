@@ -72,3 +72,25 @@ His standing rule, from the first commit: UI tests in CI on every push, every
 control found by its `accessibilityIdentifier` and never by its words, starting
 with two and growing one at a time. A red run blocks a release. The web app's UI
 suite also runs at Mac size — this one should test both devices from the start.
+
+Every test is SEEN TO FAIL before it is committed: the fault it guards against is
+planted, the test goes red, the fault is removed. A test never falsified is a
+test that might be asserting nothing.
+
+Traps met here, each of which cost a red CI run:
+
+- **The keyboard.** This Mac has a hardware keyboard, GitHub's simulator has not.
+  So on CI the on-screen keyboard covers the bottom of the screen, and a control
+  under it takes no tap while looking perfectly hittable. Screens put the keyboard
+  away themselves once a line has been added; the tests have `hideKeyboard`.
+- **`scrollViews.firstMatch` is the screen BEHIND a sheet.** Scrolling it scrolls
+  nothing — and a swipe down there drags the sheet shut, so the test then looks
+  for a control on a screen that is no longer there. `scroller(for:)` picks the
+  list the control actually sits in.
+- **A row with ONE piece of text folds into its button**, so its inner identifier
+  is not an element of its own: read such a row through the button.
+- **The Mac runner is local-only trouble.** "The test runner hung before
+  establishing connection" means the machine is loaded, not that the code is
+  wrong (it showed up at load average 123 with three simulators booted). Use
+  `tools/build.sh test mac`, which clears the extended attributes codesign
+  refuses; CI's Mac job is the gate that counts.

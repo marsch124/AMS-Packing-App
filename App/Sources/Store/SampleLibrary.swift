@@ -22,6 +22,9 @@ enum SampleLibrary {
         if let n = lib.items.firstIndex(where: { $0.name == "Rain jacket" }) {
             lib.items[n].maintenance = Maintenance(notes: "Wash with tech wash, no softener")
         }
+        // Two things the buy-list should offer, for two different reasons.
+        if let n = lib.items.firstIndex(where: { $0.name == "Map" }) { lib.items[n].condition = "retire" }
+        if let n = lib.items.firstIndex(where: { $0.name == "Toothbrush" }) { lib.items[n].consumable = true }
         lib.saveTemplate(list("Swim", group: "WET", ["Goggles", "Swim cap", "Towel"]))
         // His lists are built in sections, so the sample has one too.
         if let hiking = lib.templates.first(where: { $0.name == "Hiking" }),

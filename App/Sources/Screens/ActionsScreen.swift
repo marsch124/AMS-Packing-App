@@ -8,11 +8,22 @@ struct ActionsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var text = ""
     @State private var high = false
+    @State private var buying = false
 
     var body: some View {
         let todos = model.library.sortedActions(kind: "todo")
         let open = todos.filter { !$0.done }.count
         VStack(spacing: 0) {
+            // Two lists, one screen: things to DO and things to BUY. The buy-list
+            // is the same store with kind "shopping", as the web app keeps it.
+            HStack(spacing: 8) {
+                sideButton("To do", on: !buying, id: "actions-tab-todo") { buying = false }
+                sideButton("To buy", on: buying, id: "actions-tab-buy") { buying = true }
+            }
+            .padding(.horizontal, 16).padding(.top, 12)
+            if buying {
+                BuyList(text: $text).environmentObject(model)
+            } else {
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     Text(todos.isEmpty ? "Nothing to do." : (open == 0 ? "All done." : "\(open) to do"))
@@ -96,7 +107,24 @@ struct ActionsScreen: View {
                 .accessibilityIdentifier("action-add")
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
+            }
         }
+    }
+
+    /// One of the two sides at the top. Which one is showing is said by colour and
+    /// by the selected trait, never by its words alone.
+    private func sideButton(_ title: String, on: Bool, id: String, _ tap: @escaping () -> Void) -> some View {
+        Button(action: tap) {
+            Text(title).font(.system(size: 17, weight: .bold))
+                .foregroundStyle(on ? Color.white : Theme.ink)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(RoundedRectangle(cornerRadius: 10).fill(on ? AppSection.actions.color : Theme.card))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: on ? 0 : 1))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private func add() {

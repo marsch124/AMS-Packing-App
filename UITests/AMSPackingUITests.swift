@@ -206,10 +206,33 @@ final class AMSPackingUITests: XCTestCase {
         let mid = CGPoint(x: e.frame.midX, y: e.frame.midY)
         let window = app.windows.firstMatch
         if window.exists && !window.frame.contains(mid) { return false }
-        let scroll = app.scrollViews.firstMatch
-        if scroll.exists && scroll.frame.contains(CGPoint(x: mid.x, y: scroll.frame.midY))
+        if let scroll = frontList(app), scroll.exists,
+           scroll.frame.contains(CGPoint(x: mid.x, y: scroll.frame.midY))
             && !scroll.frame.contains(mid) { return false }   // inside a list, but scrolled out of it
         return true
+    }
+
+    /// The list a control actually sits in. NOT `scrollViews.firstMatch`: with a
+    /// sheet open that is the screen BEHIND it, and swiping there scrolls nothing
+    /// — or drags the sheet away. (CI, 2026-09-22: the trip review was swiped
+    /// shut and the run went red while it passed here every time.)
+    /// The frontmost list. One `count` and one `element(boundBy:)` — NOT
+    /// `allElementsBoundByIndex`, which takes a fresh snapshot per element and made
+    /// every test in the suite ten times slower (2026-09-23).
+    private func frontList(_ app: XCUIApplication) -> XCUIElement? {
+        let lists = app.scrollViews
+        let n = lists.count
+        return n > 0 ? lists.element(boundBy: n - 1) : nil
+    }
+
+    private func scroller(_ app: XCUIApplication, for e: XCUIElement) -> XCUIElement? {
+        guard let front = frontList(app) else { return nil }
+        // The one in front, unless the control plainly sits in the one behind it.
+        if e.exists, front.exists, !front.frame.contains(CGPoint(x: e.frame.midX, y: e.frame.midY)) {
+            let first = app.scrollViews.firstMatch
+            if first.exists, first.frame.contains(CGPoint(x: e.frame.midX, y: e.frame.midY)) { return first }
+        }
+        return front
     }
 
     /// Scroll until a control is actually on screen.
@@ -219,12 +242,14 @@ final class AMSPackingUITests: XCTestCase {
         for _ in 0..<10 {
             if onScreen(app, e) { return }
             let before = e.frame.midY
-            let scroll = app.scrollViews.firstMatch
+            let scroll = scroller(app, for: e) ?? app.scrollViews.firstMatch
             #if os(macOS)
             guard scroll.exists else { return }
             scroll.scroll(byDeltaX: 0, deltaY: down ? -200 : 200)
             #else
-            if scroll.exists { down ? scroll.swipeUp() : scroll.swipeDown() } else { down ? app.swipeUp() : app.swipeDown() }
+            // Only ever swipe a LIST: a bare swipe down on a sheet closes it.
+            guard scroll.exists else { if down { app.swipeUp() } else { return }; usleep(300_000); continue }
+            down ? scroll.swipeUp() : scroll.swipeDown()
             #endif
             usleep(300_000)
             // A control below the screen should move UP as the list goes down; if it
@@ -236,14 +261,22 @@ final class AMSPackingUITests: XCTestCase {
     /// The tab bar sits under the keyboard on the phone. Put the keyboard away
     /// (drag the list, as a person would), then tap the tab.
     private func tab(_ app: XCUIApplication, _ name: String) {
-        #if os(iOS)
-        if app.keyboards.count > 0 {
-            let scroll = app.scrollViews.firstMatch
-            if scroll.exists { scroll.swipeDown() } else { app.swipeDown() }
-            _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
-        }
-        #endif
+        hideKeyboard(app)
         app.buttons["tab-\(name)"].tap()
+    }
+
+    /// Put the keyboard away. On GitHub's simulator there is no hardware keyboard,
+    /// so the on-screen one covers the bottom of the screen — and a control under
+    /// it takes no tap while looking perfectly hittable. (Found twice: the tab bar,
+    /// then Save on the trip review.)
+    private func hideKeyboard(_ app: XCUIApplication) {
+        #if os(iOS)
+        guard app.keyboards.count > 0 else { return }
+        // The list in front, not the one behind a sheet — and a small scroll, which
+        // `scrollDismissesKeyboard(.immediately)` turns into "keyboard away".
+        if let scroll = frontList(app), scroll.exists { scroll.swipeUp() } else { app.swipeUp() }
+        _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
+        #endif
     }
 
     private func tapVisible(_ app: XCUIApplication, _ e: XCUIElement) {
@@ -501,7 +534,8 @@ final class AMSPackingUITests: XCTestCase {
         type("Tripod", into: app.textFields["review-miss-input"])
         tap(app, id: "review-miss-add")
         XCTAssertTrue(waitUntil { self.find(app, "review-missed-0") != nil }, "the missed thing is not listed")
-        tapVisible(app, app.buttons["review-save"])
+        hideKeyboard(app)
+        tap(app, id: "review-save")
         XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["trip-reviewed"].waitForExistence(timeout: 5), "the trip does not say it is reviewed")
         XCTAssertFalse(app.buttons["trip-review"].exists, "a trip is reviewed once")
@@ -698,6 +732,43 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(things) == "10" }, "the copy did not bring everything back")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["device-count-trips"]) == "1" }, "the trip did not come back")
+    }
+
+    /// The buy-list: the library offers what is worn out or run down, saying why;
+    /// taking an offer up puts it on the list and stops it being offered; and a
+    /// line he types himself needs no thing behind it. The to-dos stay separate.
+    func testTheBuyListOffersWhatIsWornOutAndKeepsTheToDosSeparate() {
+        let app = launch()
+        tab(app, "actions")
+        XCTAssertTrue(appears(app, "screen-actions"))
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(app.staticTexts["buy-count"].waitForExistence(timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["buy-count"]), "Nothing to buy.")
+
+        XCTAssertTrue(app.staticTexts["buy-offers"].waitForExistence(timeout: 5), "nothing was offered")
+        let offered = words(app.staticTexts["buy-offer-0-name"])
+        XCTAssertEqual(words(app.staticTexts["buy-offer-0-why"]), "Needs replacing", "the worst reason should lead")
+        tap(app, id: "buy-offer-0")
+        // A row carries ONE piece of text, so SwiftUI folds it into the button:
+        // the row is read through the button, not through a text inside it.
+        XCTAssertTrue(waitUntil { app.buttons["buy-0"].exists }, "the offer did not reach the list")
+        XCTAssertEqual(words(app.buttons["buy-0"]), offered)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" })
+        XCTAssertNotEqual(words(app.staticTexts["buy-offer-0-name"]), offered,
+                          "it is still being offered although it is on the list")
+
+        type("Gas canister", into: app.textFields["buy-add-text"])
+        tap(app, id: "buy-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "2 to buy" }, "the typed line was not added")
+
+        // Ticking one off leaves the other.
+        tap(app, id: "buy-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" }, "the tick did not count")
+
+        // …and none of that turned up among the to-dos.
+        tap(app, id: "actions-tab-todo")
+        XCTAssertTrue(app.staticTexts["actions-count"].waitForExistence(timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["actions-count"]), "Nothing to do.", "a buy-list line reached the to-dos")
     }
 
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {

@@ -12,6 +12,9 @@ struct ReviewScreen: View {
     @State private var unused: Set<String> = []
     @State private var missed: [Library.Missed] = []
     @State private var missName = ""
+    /// So the keyboard goes away once a missed thing has been added — it covered
+    /// Save on a phone with no hardware keyboard.
+    @FocusState private var typingMissed: Bool
     @State private var missWhere = ""
 
     var body: some View {
@@ -39,6 +42,7 @@ struct ReviewScreen: View {
                             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                             .onSubmit { addMissed(target) }
+                            .focused($typingMissed)
                             .accessibilityIdentifier("review-miss-input")
                         Button { addMissed(target) } label: {
                             Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
@@ -132,5 +136,6 @@ struct ReviewScreen: View {
         guard !name.isEmpty, !missed.contains(where: { normName($0.name) == normName(name) }) else { missName = ""; return }
         missed.append(Library.Missed(name: name, templateId: target))
         missName = ""
+        typingMissed = false
     }
 }
