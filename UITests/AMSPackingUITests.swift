@@ -201,71 +201,76 @@ final class AMSPackingUITests: XCTestCase {
     /// `isHittable`: on GitHub's Mac runner (a 674-point window) a pill whose middle
     /// lay below the window's bottom edge reported hittable=true, and the click went
     /// nowhere — found by the TAP-REPORT, 2026-09-22.
+    /// Is the control really where a tap would land? Judged by FRAMES against the
+    /// window: XCUITest happily calls a control below the window "hittable", which
+    /// cost a red Mac run (the runner's window is 760 × 674).
     private func onScreen(_ app: XCUIApplication, _ e: XCUIElement) -> Bool {
         guard e.exists, e.isHittable else { return false }
         let mid = CGPoint(x: e.frame.midX, y: e.frame.midY)
         let window = app.windows.firstMatch
         if window.exists && !window.frame.contains(mid) { return false }
-        // NOTHING about scroll views here. A control scrolled out of a list is
-        // already outside the window, which the check above catches — while a
-        // fixed bar BELOW a list (Save on the trip review) is perfectly visible
-        // and was being called "scrolled out", so the test swiped, and a swipe on
-        // a sheet's list at the top drags the sheet shut. That is what made CI red
-        // twice (2026-09-23).
+        // In a list, but scrolled out of its visible part.
+        if let list = listHolding(app, e), list.exists, !list.frame.contains(mid) { return false }
         return true
     }
 
-    /// The list a control actually sits in. NOT `scrollViews.firstMatch`: with a
-    /// sheet open that is the screen BEHIND it, and swiping there scrolls nothing
-    /// — or drags the sheet away. (CI, 2026-09-22: the trip review was swiped
-    /// shut and the run went red while it passed here every time.)
     /// The frontmost list. One `count` and one `element(boundBy:)` — NOT
-    /// `allElementsBoundByIndex`, which takes a fresh snapshot per element and made
-    /// every test in the suite ten times slower (2026-09-23).
+    /// `allElementsBoundByIndex`, which takes a snapshot per element.
     private func frontList(_ app: XCUIApplication) -> XCUIElement? {
         let lists = app.scrollViews
         let n = lists.count
         return n > 0 ? lists.element(boundBy: n - 1) : nil
     }
 
-    private func scroller(_ app: XCUIApplication, for e: XCUIElement) -> XCUIElement? {
-        guard let front = frontList(app) else { return nil }
-        // The one in front, unless the control plainly sits in the one behind it.
-        if e.exists, front.exists, !front.frame.contains(CGPoint(x: e.frame.midX, y: e.frame.midY)) {
-            let first = app.scrollViews.firstMatch
-            if first.exists, first.frame.contains(CGPoint(x: e.frame.midX, y: e.frame.midY)) { return first }
-        }
-        return front
+    /// The screen's own list, as opposed to a strip of pills: the one with the
+    /// most area among the first and the frontmost.
+    private func biggestList(_ app: XCUIApplication) -> XCUIElement? {
+        let first = app.scrollViews.firstMatch
+        guard let front = frontList(app), front.exists else { return first.exists ? first : nil }
+        guard first.exists else { return front }
+        let a = first.frame, b = front.frame
+        return (a.width * a.height) > (b.width * b.height) ? first : front
     }
 
-    /// Scroll until a control is actually on screen.
+    /// The list the control is IN — asked by descendancy, not by frames.
+    ///
+    /// A fixed bar BELOW a list (Save on the trip review) belongs to no list, and
+    /// scrolling for it is not just useless: a swipe on a sheet's list that is
+    /// already at the top drags the sheet SHUT, and the test then hunts for a
+    /// control on a screen that is gone. That made CI red three times (2026-09-23).
+    /// `scrollViews.firstMatch`, meanwhile, is the screen BEHIND an open sheet.
+    private func listHolding(_ app: XCUIApplication, _ e: XCUIElement) -> XCUIElement? {
+        guard e.exists, !e.identifier.isEmpty else { return nil }
+        if let front = frontList(app), front.exists,
+           front.descendants(matching: .any)[e.identifier].exists { return front }
+        let first = app.scrollViews.firstMatch
+        if first.exists, first.descendants(matching: .any)[e.identifier].exists { return first }
+        return nil
+    }
+
+    /// Scroll the control's own list until it is on screen. Nothing to scroll (or
+    /// nothing that holds it) = leave the screen alone.
     private func bringIntoView(_ app: XCUIApplication, _ e: XCUIElement) {
-        guard e.exists else { return }
         var down = true
         for _ in 0..<10 {
-            // It can go while we scroll (a sheet closes, a list redraws); reading
-            // the frame of an element that is gone is a HARD failure, not nil.
+            // It can go while we scroll; reading the frame of an element that is
+            // not there is a HARD failure, not nil.
             guard e.exists else { return }
             if onScreen(app, e) { return }
+            guard let list = listHolding(app, e), list.exists, list.isHittable else { return }
             let before = e.frame.midY
-            let scroll = scroller(app, for: e) ?? app.scrollViews.firstMatch
             #if os(macOS)
-            guard scroll.exists else { return }
-            scroll.scroll(byDeltaX: 0, deltaY: down ? -200 : 200)
+            list.scroll(byDeltaX: 0, deltaY: down ? -200 : 200)
             #else
-            // Only ever swipe a LIST: a bare swipe down on a sheet closes it.
-            guard scroll.exists else { if down { app.swipeUp() } else { return }; usleep(300_000); continue }
-            down ? scroll.swipeUp() : scroll.swipeDown()
+            down ? list.swipeUp() : list.swipeDown()
             #endif
             usleep(300_000)
-            // A control below the screen should move UP as the list goes down; if it
-            // did not, this is the wrong way round.
+            // A control below the screen should move UP as the list goes down; if
+            // it did not, this is the wrong way round.
             if e.exists && e.frame.midY >= before { down.toggle() }
         }
     }
 
-    /// The tab bar sits under the keyboard on the phone. Put the keyboard away
-    /// (drag the list, as a person would), then tap the tab.
     private func tab(_ app: XCUIApplication, _ name: String) {
         hideKeyboard(app)
         app.buttons["tab-\(name)"].tap()
@@ -278,9 +283,11 @@ final class AMSPackingUITests: XCTestCase {
     private func hideKeyboard(_ app: XCUIApplication) {
         #if os(iOS)
         guard app.keyboards.count > 0 else { return }
-        // The list in front, not the one behind a sheet — and a small scroll, which
-        // `scrollDismissesKeyboard(.immediately)` turns into "keyboard away".
-        if let scroll = frontList(app), scroll.exists { scroll.swipeUp() } else { app.swipeUp() }
+        // The BIGGEST list on screen — a row of pills is a scroll view too, and
+        // swiping one of those fails outright. Any scroll is enough here, because
+        // every screen uses `scrollDismissesKeyboard(.immediately)`.
+        let big = biggestList(app)
+        if let big, big.exists, big.isHittable { big.swipeUp() } else { app.swipeUp() }
         _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
         #endif
     }
@@ -757,20 +764,23 @@ final class AMSPackingUITests: XCTestCase {
                       "the buy-list does not start empty: '\(words(app.staticTexts["buy-count"]))'")
 
         XCTAssertTrue(app.staticTexts["buy-offers"].waitForExistence(timeout: 5), "nothing was offered")
-        // The heading can be there a beat before the offers under it are.
-        XCTAssertTrue(app.staticTexts["buy-offer-0-name"].waitForExistence(timeout: 5), "no offer under the heading")
-        let offered = words(app.staticTexts["buy-offer-0-name"])
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-offer-0-why"]) == "Needs replacing" },
-                      "the worst reason should lead, not '\(words(app.staticTexts["buy-offer-0-why"]))'")
+        // The heading can be there a beat before the offers under it are. Read the
+        // offer through its BUTTON: the Mac and the iPhone fold the two lines
+        // inside it differently, but both put them in the button's own words.
+        XCTAssertTrue(app.buttons["buy-offer-0"].waitForExistence(timeout: 5), "no offer under the heading")
+        let offer = words(app.buttons["buy-offer-0"])
+        XCTAssertTrue(offer.contains("Needs replacing"), "the worst reason should lead, not '\(offer)'")
+        XCTAssertTrue(offer.contains("Map"), "the sample library is not what it was: '\(offer)'")
+        let offered = "Map"
         tap(app, id: "buy-offer-0")
         // A row carries ONE piece of text, so SwiftUI folds it into the button:
         // the row is read through the button, not through a text inside it.
         XCTAssertTrue(waitUntil { app.buttons["buy-0"].exists }, "the offer did not reach the list")
-        XCTAssertTrue(waitUntil { self.words(app.buttons["buy-0"]) == offered },
+        XCTAssertTrue(waitUntil { self.words(app.buttons["buy-0"]).contains(offered) },
                       "the line reads '\(words(app.buttons["buy-0"]))', not '\(offered)'")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" })
-        XCTAssertNotEqual(words(app.staticTexts["buy-offer-0-name"]), offered,
-                          "it is still being offered although it is on the list")
+        XCTAssertFalse(words(app.buttons["buy-offer-0"]).contains(offered),
+                       "it is still being offered although it is on the list")
 
         type("Gas canister", into: app.textFields["buy-add-text"])
         tap(app, id: "buy-add")
