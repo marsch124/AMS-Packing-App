@@ -689,18 +689,21 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         let things = app.staticTexts["device-count-items"]
         XCTAssertTrue(things.waitForExistence(timeout: 5))
-        XCTAssertEqual(words(things), "10", "the sample library is not what it was")
+        XCTAssertTrue(waitUntil { self.words(things) == "10" },
+                      "the sample library is not what it was: '\(words(things))'")
 
         tap(app, id: "backup-restore")
         XCTAssertTrue(appears(app, "restore-detail", timeout: 5), "the restore was not shown first")
-        XCTAssertEqual(words(app.staticTexts["restore-file-items"]), "2", "what the file holds")
-        XCTAssertEqual(words(app.staticTexts["restore-now-items"]), "10", "what the device holds")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "2" },
+                      "what the file holds: '\(words(app.staticTexts["restore-file-items"]))'")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-now-items"]) == "10" },
+                      "what the device holds: '\(words(app.staticTexts["restore-now-items"]))'")
         XCTAssertTrue(app.staticTexts["restore-fewer"].exists, "a file holding less said nothing")
 
         // Backing out changes nothing.
         tap(app, id: "restore-cancel")
         XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
-        XCTAssertEqual(words(things), "10", "cancelling replaced something")
+        XCTAssertTrue(waitUntil { self.words(things) == "10" }, "cancelling replaced something")
 
         tap(app, id: "backup-restore")
         XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
@@ -733,7 +736,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["rescue-row-1"].exists, "more copies than restores")
         tap(app, id: "rescue-row-0")
         XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
-        XCTAssertEqual(words(app.staticTexts["restore-file-items"]), "10", "the copy does not hold what was here")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "10" },
+                      "the copy does not hold what was here: '\(words(app.staticTexts["restore-file-items"]))'")
         tap(app, id: "restore-confirm")
         XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(things) == "10" }, "the copy did not bring everything back")
@@ -749,7 +753,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-actions"))
         tap(app, id: "actions-tab-buy")
         XCTAssertTrue(app.staticTexts["buy-count"].waitForExistence(timeout: 5))
-        XCTAssertEqual(words(app.staticTexts["buy-count"]), "Nothing to buy.")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "Nothing to buy." },
+                      "the buy-list does not start empty: '\(words(app.staticTexts["buy-count"]))'")
 
         XCTAssertTrue(app.staticTexts["buy-offers"].waitForExistence(timeout: 5), "nothing was offered")
         // The heading can be there a beat before the offers under it are.
@@ -761,7 +766,8 @@ final class AMSPackingUITests: XCTestCase {
         // A row carries ONE piece of text, so SwiftUI folds it into the button:
         // the row is read through the button, not through a text inside it.
         XCTAssertTrue(waitUntil { app.buttons["buy-0"].exists }, "the offer did not reach the list")
-        XCTAssertEqual(words(app.buttons["buy-0"]), offered)
+        XCTAssertTrue(waitUntil { self.words(app.buttons["buy-0"]) == offered },
+                      "the line reads '\(words(app.buttons["buy-0"]))', not '\(offered)'")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" })
         XCTAssertNotEqual(words(app.staticTexts["buy-offer-0-name"]), offered,
                           "it is still being offered although it is on the list")
@@ -777,7 +783,8 @@ final class AMSPackingUITests: XCTestCase {
         // …and none of that turned up among the to-dos.
         tap(app, id: "actions-tab-todo")
         XCTAssertTrue(app.staticTexts["actions-count"].waitForExistence(timeout: 5))
-        XCTAssertEqual(words(app.staticTexts["actions-count"]), "Nothing to do.", "a buy-list line reached the to-dos")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "Nothing to do." },
+                      "a buy-list line reached the to-dos: '\(words(app.staticTexts["actions-count"]))'")
     }
 
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {
