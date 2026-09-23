@@ -85,10 +85,18 @@ Traps met here, each of which cost a red CI run:
   So on CI the on-screen keyboard covers the bottom of the screen, and a control
   under it takes no tap while looking perfectly hittable. Screens put the keyboard
   away themselves once a line has been added; the tests have `hideKeyboard`.
-- **`scrollViews.firstMatch` is the screen BEHIND a sheet.** Scrolling it scrolls
-  nothing — and a swipe down there drags the sheet shut, so the test then looks
-  for a control on a screen that is no longer there. `scroller(for:)` picks the
-  list the control actually sits in.
+- **Which list a control is in is a question of descendancy, not rectangles.**
+  `scrollViews.firstMatch` is the screen BEHIND an open sheet; the frontmost one
+  may be a strip of pills. And a fixed bar below a list (Save on the trip review)
+  is in NO list — judging it by frames calls it "scrolled out", the test swipes
+  for it, and a swipe on a sheet's list that is already at the top drags the
+  sheet SHUT. Three red CI runs came from that one mistake. So: `listHolding`
+  asks the list whether the control is inside it, `bringIntoView` scrolls that
+  list or nothing, and putting the keyboard away swipes the BIGGEST list
+  (swiping a row of pills fails outright).
+- **Wait for a number, never snatch it.** A container appearing does not mean the
+  count inside it has been drawn; on a slow runner the read comes back empty and
+  the run is red for nothing. Every text assertion waits, and says what it read.
 - **A row with ONE piece of text folds into its button**, so its inner identifier
   is not an element of its own: read such a row through the button.
 - **The Mac runner is local-only trouble.** "The test runner hung before
