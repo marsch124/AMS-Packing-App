@@ -118,7 +118,7 @@ struct ThingsTable: View {
             HStack(spacing: 8) {
                 Text(thing.name)
                     .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
-                    .lineLimit(1)
+                    .lineLimit(1).minimumScaleFactor(0.85)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("table-\(n)-name")
 
@@ -127,7 +127,7 @@ struct ThingsTable: View {
                     .font(.system(size: 15, weight: .semibold).monospacedDigit())
                     .foregroundStyle(thing.weight > 0 ? Theme.ink : Theme.muted)
                     .multilineTextAlignment(.trailing)
-                    .frame(width: 62, height: 34)
+                    .frame(width: 54, height: 34)
                     .padding(.horizontal, 6)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 8)
@@ -141,11 +141,14 @@ struct ThingsTable: View {
                     }
                     Button("Nowhere") { change(nil, "") }
                 } label: {
+                    // His storage places are long ("Bedroom wardrobe", "Bathroom
+                    // cabinet"): a column that cuts them tells him nothing.
                     Text(jsTrim(thing.storage).isEmpty ? "Where?" : thing.storage)
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(jsTrim(thing.storage).isEmpty ? AppSection.care.color : Theme.muted)
-                        .lineLimit(1)
-                        .frame(width: 104, height: 34)
+                        .lineLimit(1).minimumScaleFactor(0.75)
+                        .padding(.horizontal, 4)
+                        .frame(width: 136, height: 34)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
                         .contentShape(Rectangle())

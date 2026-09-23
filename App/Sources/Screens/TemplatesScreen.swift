@@ -100,7 +100,9 @@ struct TemplateCard: View {
                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             Text(TemplateCard.lastTaken(use))
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(use == nil ? Theme.line : Theme.muted)
+                // Quiet, not invisible: the divider colour could not be read on
+                // either a white or a black background.
+                .foregroundStyle(use == nil ? Theme.muted.opacity(0.65) : Theme.muted)
                 .lineLimit(1)
                 .accessibilityIdentifier("template-used")
         }
