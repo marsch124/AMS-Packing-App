@@ -850,6 +850,7 @@ final class AMSPackingUITests: XCTestCase {
                       "2–8°C is not warm: '\(words(app.staticTexts["weather-line"]))'")
 
         XCTAssertTrue(app.buttons["weather-gear-0"].waitForExistence(timeout: 5), "wet and cold, and nothing suggested")
+        shot(app, "weather")
         let asked = words(app.buttons["weather-gear-0"])
         tap(app, id: "weather-gear-0")
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(progress) != before },
