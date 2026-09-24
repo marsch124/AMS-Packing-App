@@ -208,6 +208,34 @@ final class AMSPackingUITests: XCTestCase {
     /// Is the control really where a tap would land? Judged by FRAMES against the
     /// window: XCUITest happily calls a control below the window "hittable", which
     /// cost a red Mac run (the runner's window is 760 × 674).
+    /// The grid is wider than the screen: a column he has just added sits off to
+    /// the right, existing but unreachable. This travels sideways until the cell
+    /// is really there (or gives up, so a broken grid still fails the test).
+    ///
+    /// 🪤 It judges by FRAME, never by `isHittable`: asking an element that is off
+    /// to the side whether it is hittable is a HARD XCTest failure ("Activation
+    /// point invalid"), so the question can only be asked once it has arrived.
+    @discardableResult
+    private func bringAcross(_ app: XCUIApplication, _ e: XCUIElement, tries: Int = 10) -> Bool {
+        for _ in 0..<tries {
+            if inWindow(app, e) { return true }
+            guard let grid = biggestList(app), grid.exists else { return false }
+            grid.swipeLeft()
+        }
+        return inWindow(app, e)
+    }
+
+    /// Is the middle of this element inside the window? Frames are safe to read
+    /// for anything that exists, unlike hittability.
+    private func inWindow(_ app: XCUIApplication, _ e: XCUIElement) -> Bool {
+        guard e.exists else { return false }
+        let box = e.frame
+        guard box.width > 1, box.height > 1 else { return false }
+        let window = app.windows.firstMatch
+        guard window.exists else { return false }
+        return window.frame.contains(CGPoint(x: box.midX, y: box.midY))
+    }
+
     private func onScreen(_ app: XCUIApplication, _ e: XCUIElement) -> Bool {
         guard e.exists, e.isHittable else { return false }
         let mid = CGPoint(x: e.frame.midX, y: e.frame.midY)
@@ -1125,39 +1153,86 @@ final class AMSPackingUITests: XCTestCase {
         }
     }
 
-    /// The table: every thing with its weight and its place, both filled in on the
-    /// spot, and two chips that go straight to what is missing.
-    func testTheTableFillsInWeightsAndPlaces() {
+    /// The table is a spreadsheet: a heading sorts by its column and turns over
+    /// when pressed again, and a weight typed into a cell reaches the thing.
+    func testTheTableSortsAndSaves() {
         let app = launch()
         tab(app, "care")
         let kit = words(app.staticTexts["care-line"])
         tap(app, id: "care-table")
         XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
-        let count = app.staticTexts["table-count"]
-        XCTAssertTrue(count.waitForExistence(timeout: 5))
-        let all = words(count)
-        XCTAssertEqual(all, "10", "the sample library has ten things: '\(all)'")
+        XCTAssertEqual(words(app.staticTexts["table-count"]), "10", "the sample library has ten things")
+        shot(app, "grid")
 
-        // Only the ones with no weight.
-        tap(app, id: "table-filter-weight")
-        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) != all }, "the filter changed nothing")
-        let missing = Int(words(count)) ?? 0
-        XCTAssertGreaterThan(missing, 0, "the sample has things with no weight")
+        // Sort by weight, then turn it over: the lightest and the heaviest thing
+        // cannot be the same row.
+        tap(app, id: "table-head-weight")
+        XCTAssertTrue(waitUntil(timeout: 5) { !self.words(app.staticTexts["table-0-name"]).isEmpty })
+        let lightest = words(app.staticTexts["table-0-name"])
+        tap(app, id: "table-head-weight")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["table-0-name"]) != lightest },
+                      "pressing the heading again did not turn the order over: still '\(lightest)'")
 
-        // Fill one in, and it leaves the list of things with no weight.
-        type("5000", into: app.textFields["table-0-grams"])
-        app.textFields["table-0-grams"].typeText("\n")
-        XCTAssertTrue(waitUntil(timeout: 10) { (Int(self.words(count)) ?? missing) == missing - 1 },
-                      "the weight did not take: still \(words(count)) with none")
-
-        // …and it is on the thing itself, not just on screen.
-        tap(app, id: "table-filter-all")
-        XCTAssertTrue(waitUntil { self.words(count) == all })
+        // A weight typed into a cell is on the thing, not just on the screen.
+        tap(app, id: "table-head-name")
+        type("5000", into: app.textFields["table-0-weight"])
+        app.textFields["table-0-weight"].typeText("\n")
         tap(app, id: "table-done")
         XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["care-line"]) != kit },
                       "the kit's weight did not move: still '\(words(app.staticTexts["care-line"]))'")
-        XCTAssertTrue(words(app.staticTexts["care-line"]).contains("kg"), "the kit line lost its weight")
+    }
+
+    /// He says which columns he sees. One he adds is there, and its ticks work.
+    func testTheTableTakesTheColumnsHeChooses() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        XCTAssertFalse(app.buttons["table-head-liquid"].exists, "Liquid is not one of the starting columns")
+
+        tap(app, id: "table-columns")
+        XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
+        tap(app, id: "columns-liquid-show")
+        tap(app, id: "columns-done")
+        XCTAssertTrue(disappears(app, "columns-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["table-head-liquid"].waitForExistence(timeout: 5),
+                      "the column he added is not in the grid")
+
+        // And a column of ticks ticks. It is off to the right, so travel to it.
+        let tick = app.buttons["table-0-liquid"]
+        XCTAssertTrue(bringAcross(app, tick), "could not reach the new column's ticks")
+        let before = isOn(tick)
+        tick.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(waitUntil(timeout: 5) { self.isOn(app.buttons["table-0-liquid"]) != before },
+                      "the tick did not change")
+    }
+
+    /// The two chips go straight to what is missing, and filling one in takes that
+    /// thing off the list of things that are missing it.
+    func testTheTableChipsFindWhatIsMissing() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        let count = app.staticTexts["table-count"]
+        let all = words(count)
+        XCTAssertEqual(all, "10", "the sample library has ten things: '\(all)'")
+
+        tap(app, id: "table-filter-weight")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) != all }, "the chip changed nothing")
+        let missing = Int(words(count)) ?? 0
+        XCTAssertGreaterThan(missing, 0, "the sample has things with no weight")
+
+        type("250", into: app.textFields["table-0-weight"])
+        app.textFields["table-0-weight"].typeText("\n")
+        XCTAssertTrue(waitUntil(timeout: 10) { (Int(self.words(count)) ?? missing) == missing - 1 },
+                      "the weight did not take: still \(words(count)) with none")
+
+        tap(app, id: "table-filter-all")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) == all })
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
     }
 
     func testHisOwnListsAreAddedAndProtectedWhileInUse() {

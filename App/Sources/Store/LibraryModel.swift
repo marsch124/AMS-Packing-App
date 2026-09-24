@@ -164,7 +164,15 @@ extension LibraryModel {
     ///  otherwise             → SwiftData on this device only (a plain debug build)
     static func forThisLaunch() -> LibraryModel {
         let args = ProcessInfo.processInfo.arguments
-        if AMSPackingApp.testing { RescueCopies.clearForTesting() }
+        if AMSPackingApp.testing {
+            RescueCopies.clearForTesting()
+            // A test must start from the same screen every time: the columns he has
+            // chosen, the sort and the direction are remembered on the device, and
+            // one test's choice would otherwise decide the next test's grid.
+            for key in ["ams.table.columns", "ams.table.sort", "ams.table.down"] {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
         let sky: Forecaster = AMSPackingApp.testing ? InventedForecast() : OpenMeteo()
         if args.contains("-uiTestingEmpty") { return LibraryModel(store: MemoryStore(), usesICloud: false, sky: sky) }
         if args.contains("-uiTestingTwoLibraries") {

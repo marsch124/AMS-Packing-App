@@ -2,44 +2,233 @@ import SwiftUI
 import PackingCore
 import PackingLibrary
 
-/// Every thing as a row: name, what it weighs, where it lives — filled in on the
-/// spot. The web app's "All items · table", and the answer to the two gaps the
-/// Care dashboard names (things with no weight, things with no place): fixing
-/// them one editor at a time is what stops him doing it at all.
+/// All his things as a SPREADSHEET, the way the web app's "All items · table"
+/// works and the way he asked for it: the name column stays put while the rest
+/// travels sideways, the heading stays put while the rows travel down, every cell
+/// is changed where it stands, and he says which columns he sees, in which order,
+/// sorted by whichever one he likes.
+///
+/// (The first attempt was three fixed columns in a list. His words: "It is not at
+/// all what it should be. You should be able to quickly update items — like Excel.")
+///
+/// How it holds together: the rows live in a vertical scroll INSIDE a horizontal
+/// one, so the heading — above the vertical scroll, inside the horizontal one —
+/// stays on screen and still travels sideways with its columns. The name column
+/// sits outside both and follows the rows by their own scroll offset. One number
+/// to keep in step, and the rows stay lazy.
 struct ThingsTable: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
+
+    /// The columns he has chosen, in his order, as ids. Empty = the sensible start.
+    @AppStorage("ams.table.columns") private var chosenColumns = ""
+    @AppStorage("ams.table.sort") private var sortBy = "name"
+    @AppStorage("ams.table.down") private var descending = false
+    @State private var query = ""
     /// "" = everything; otherwise only the things missing that.
     @State private var only = ""
-    @State private var query = ""
+    @State private var picking = false
+    /// How far the rows are scrolled down, so the name column can follow.
+    @State private var downBy: CGFloat = 0
 
     private static let filters: [(id: String, label: String)] =
         [("", "All"), ("weight", "No weight"), ("place", "No place")]
 
+    private var nameWidth: CGFloat {
+        #if os(macOS)
+        return 210
+        #else
+        return 148
+        #endif
+    }
+    private var headHeight: CGFloat { 46 }
+
     var body: some View {
+        let columns = TableColumns.chosen(chosenColumns, library: model.library)
         let rows = things()
         VStack(spacing: 0) {
-            HStack {
-                Text("All your things").font(.system(size: 22, weight: .heavy))
+            top(rows.count)
+            Divider()
+            HStack(alignment: .top, spacing: 0) {
+                frozenNames(rows)
+                Rectangle().fill(Theme.line).frame(width: 1)
+                ScrollView(.horizontal) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        groupBand(columns)
+                        headingRow(columns)
+                        Rectangle().fill(Theme.line).frame(height: 1)
+                        ScrollView(.vertical) {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
+                                    Row(thing: thing, n: n, columns: columns)
+                                        .environmentObject(model)
+                                }
+                            }
+                        }
+                        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
+                            downBy = y
+                        }
+                    }
+                }
+            }
+            if rows.isEmpty {
+                Text(only.isEmpty ? "Nothing matches." : "Nothing missing that — all filled in.")
+                    .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity).padding(.top, 30)
+                    .accessibilityIdentifier("table-none")
+                Spacer()
+            }
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .sheet(isPresented: $picking) {
+            ColumnPicker(chosen: $chosenColumns, library: model.library)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("table-detail")
+        #if os(macOS)
+        .frame(minWidth: 760, minHeight: 560)
+        #endif
+    }
+
+    // MARK: - the name column, which never travels sideways
+
+    private func frozenNames(_ rows: [Item]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button { turn("name") } label: {
+                HStack(spacing: 4) {
+                    Text("Thing").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                    if sortBy == "name" {
+                        Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
+                            .foregroundStyle(AppSection.care.color)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.leading, 12).padding(.bottom, 6)
+                .frame(width: nameWidth, height: headHeight, alignment: .bottomLeading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("table-head-name")
+
+            Rectangle().fill(Theme.line).frame(height: 1)
+
+            GeometryReader { space in
+                VStack(spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
+                        Text(thing.name)
+                            .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .padding(.leading, 12)
+                            .frame(width: nameWidth, height: TableColumns.rowHeight, alignment: .leading)
+                            .background(n.isMultiple(of: 2) ? Color.clear : Theme.card.opacity(0.55))
+                            .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                            .accessibilityIdentifier("table-\(n)-name")
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(width: nameWidth, alignment: .topLeading)
+                .offset(y: -downBy)
+                .frame(width: space.size.width, height: space.size.height, alignment: .topLeading)
+                .clipped()
+            }
+        }
+        .frame(width: nameWidth)
+    }
+
+    // MARK: - the two heading rows
+
+    /// "① The thing itself" over the columns that belong to it — the same three
+    /// groups the web app names, drawn only over the columns he is showing.
+    private func groupBand(_ columns: [TableColumns.Column]) -> some View {
+        HStack(spacing: 0) {
+            ForEach(TableColumns.bands(columns)) { band in
+                Text(band.title)
+                    .font(.system(size: 11, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                    .kerning(0.4).lineLimit(1)
+                    .padding(.horizontal, 7)
+                    .frame(width: band.width, height: 20, alignment: .leading)
+                    .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
+                    .accessibilityIdentifier("table-band-\(band.id)")
+            }
+        }
+        .frame(height: 20)
+    }
+
+    private func headingRow(_ columns: [TableColumns.Column]) -> some View {
+        HStack(spacing: 0) {
+            ForEach(columns) { column in
+                Button { turn(column.id) } label: {
+                    HStack(spacing: 3) {
+                        Text(column.title)
+                            .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                        if sortBy == column.id {
+                            Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
+                                .foregroundStyle(AppSection.care.color)
+                        }
+                    }
+                    .padding(.horizontal, 6)
+                    .frame(width: column.width, height: headHeight - 20, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
+                .accessibilityIdentifier("table-head-\(column.id)")
+            }
+        }
+        .frame(height: headHeight - 20)
+    }
+
+    /// Pressing a heading sorts by it; pressing the same one again turns it over.
+    private func turn(_ key: String) {
+        if sortBy == key { descending.toggle() } else { sortBy = key; descending = false }
+    }
+
+    // MARK: - the band above the grid
+
+    private func top(_ count: Int) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Text("All your things").font(.system(size: 21, weight: .heavy))
                     .foregroundStyle(AppSection.care.color)
+                Text("\(count)")
+                    .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("table-count")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("table-done")
             }
-            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
 
             HStack(spacing: 8) {
                 TextField("Search", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 38)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 10).frame(minHeight: 34)
+                    .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.line, lineWidth: 1))
                     .accessibilityIdentifier("table-search")
+
+                Menu {
+                    Button("Name") { sortBy = "name"; descending = false }
+                    ForEach(TableColumns.chosen(chosenColumns, library: model.library)) { column in
+                        Button(column.title) { sortBy = column.id; descending = false }
+                    }
+                } label: {
+                    chip("Sort: " + TableColumns.sortName(sortBy, model.library))
+                }
+                .menuStyle(.borderlessButton)
+                .accessibilityIdentifier("table-sort")
+
+                Button { descending.toggle() } label: { chip(descending ? "▼" : "▲") }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-direction")
+
+                Button { picking = true } label: { chip("Columns") }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-columns")
             }
-            .padding(.horizontal, 16)
 
             HStack(spacing: 6) {
                 ForEach(ThingsTable.filters, id: \.id) { filter in
@@ -47,7 +236,7 @@ struct ThingsTable: View {
                         Text(filter.label)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(only == filter.id ? .white : Theme.muted)
-                            .padding(.horizontal, 12).frame(minHeight: 32)
+                            .padding(.horizontal, 12).frame(minHeight: 30)
                             .background(Capsule().fill(only == filter.id ? AppSection.care.color : Theme.card))
                             .overlay(Capsule().stroke(Theme.line, lineWidth: only == filter.id ? 0 : 1))
                             .contentShape(Capsule())
@@ -57,117 +246,63 @@ struct ThingsTable: View {
                     .accessibilityAddTraits(only == filter.id ? .isSelected : [])
                 }
                 Spacer()
-                Text("\(rows.count)")
-                    .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
-                    .accessibilityIdentifier("table-count")
-            }
-            .padding(.horizontal, 16).padding(.vertical, 8)
-
-            KeyboardAwayScroll {
-                LazyVStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
-                        Row(thing: thing, n: n) { grams, place in
-                            model.change {
-                                _ = $0.updateThing(id: thing.id) { it in
-                                    if let grams { it.weight = grams }
-                                    if let place { it.storage = place }
-                                }
-                            }
-                        }
-                        .environmentObject(model)
-                    }
-                    if rows.isEmpty {
-                        Text(only.isEmpty ? "Nothing matches." : "Nothing missing that — all filled in.")
-                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
-                            .padding(.top, 30)
-                            .accessibilityIdentifier("table-none")
-                    }
-                }
-                .padding(.horizontal, 16).padding(.bottom, 24)
             }
         }
-        .background(Theme.bg.ignoresSafeArea())
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("table-detail")
-        #if os(macOS)
-        .frame(minWidth: 520, minHeight: 560)
-        #endif
+        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
     }
+
+    private func chip(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.ink)
+            .lineLimit(1)
+            .padding(.horizontal, 10).frame(minHeight: 34)
+            .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.line, lineWidth: 1))
+            .contentShape(Rectangle())
+    }
+
+    // MARK: - which rows, in which order
 
     private func things() -> [Item] {
         let needle = normName(query)
-        return model.library.items.filter { thing in
+        let kept = model.library.items.filter { thing in
             if !needle.isEmpty, !normName(thing.name).contains(needle) { return false }
             switch only {
             case "weight": return thing.weight <= 0
             case "place": return jsTrim(thing.storage).isEmpty
             default: return true
             }
-        }.sorted { normName($0.name) < normName($1.name) }
+        }
+        let library = model.library
+        let sorted = kept.sorted { a, b in
+            let left = TableColumns.sortValue(a, key: sortBy, library: library)
+            let right = TableColumns.sortValue(b, key: sortBy, library: library)
+            if left == right { return normName(a.name) < normName(b.name) }
+            return left < right
+        }
+        return descending ? sorted.reversed() : sorted
     }
 
-    /// One thing: its name, a box for grams, and its place chosen from his own list.
+    // MARK: - one row
+
     private struct Row: View {
         let thing: Item
         let n: Int
-        let change: (Double?, String?) -> Void
+        let columns: [TableColumns.Column]
         @EnvironmentObject var model: LibraryModel
-        @State private var grams = ""
 
         var body: some View {
-            HStack(spacing: 8) {
-                Text(thing.name)
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.85)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityIdentifier("table-\(n)-name")
-
-                TextField("g", text: $grams)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(thing.weight > 0 ? Theme.ink : Theme.muted)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 54, height: 34)
-                    .padding(.horizontal, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 8)
-                        .stroke(thing.weight > 0 ? Theme.line : AppSection.care.color.opacity(0.5), lineWidth: 1))
-                    .onSubmit { commitWeight() }
-                    .accessibilityIdentifier("table-\(n)-grams")
-
-                Menu {
-                    ForEach(model.library.storagePlaces(), id: \.self) { place in
-                        Button(place) { change(nil, place) }
-                    }
-                    Button("Nowhere") { change(nil, "") }
-                } label: {
-                    // His storage places are long ("Bedroom wardrobe", "Bathroom
-                    // cabinet"): a column that cuts them tells him nothing.
-                    Text(jsTrim(thing.storage).isEmpty ? "Where?" : thing.storage)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(jsTrim(thing.storage).isEmpty ? AppSection.care.color : Theme.muted)
-                        .lineLimit(1).minimumScaleFactor(0.75)
-                        .padding(.horizontal, 4)
-                        .frame(width: 136, height: 34)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
-                        .contentShape(Rectangle())
+            HStack(spacing: 0) {
+                ForEach(columns) { column in
+                    Cell(thing: thing, n: n, column: column)
+                        .environmentObject(model)
                 }
-                .menuStyle(.borderlessButton)
-                .accessibilityIdentifier("table-\(n)-place")
-                .accessibilityLabel("Where \(thing.name) lives")
             }
-            .padding(.vertical, 5)
+            .frame(height: TableColumns.rowHeight)
+            .background(n.isMultiple(of: 2) ? Color.clear : Theme.card.opacity(0.55))
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-            .onAppear { grams = thing.weight > 0 ? String(Int(thing.weight.rounded())) : "" }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("table-row-\(n)")
-        }
-
-        private func commitWeight() {
-            let clean = jsTrim(grams).replacingOccurrences(of: ",", with: ".")
-            guard let value = Double(clean), value >= 0 else { return }
-            change(value, nil)
         }
     }
 }
