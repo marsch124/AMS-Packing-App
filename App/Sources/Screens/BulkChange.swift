@@ -118,7 +118,9 @@ struct BulkChange: View {
                     apply(one, { it in it[keyPath: path] = clean.isEmpty ? 0 : number },
                           clean.isEmpty ? "\(one.title) cleared" : "\(one.title) → \(jsTrim(typed))")
                 }
-            case .onList:
+            case .onList, .perList:
+                // Neither belongs to the thing itself, so neither can be set for many
+                // things at once. They are not offered here.
                 EmptyView()
             }
         }

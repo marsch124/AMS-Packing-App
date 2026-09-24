@@ -19,7 +19,14 @@ enum TableColumns {
         case flag(WritableKeyPath<Item, Bool>)
         /// A tick per list: on means the thing is on that list.
         case onList(String)
+        /// An answer that belongs to the thing's place ON A LIST, not to the thing:
+        /// how many of it that list wants, and which section of that list it sits in.
+        /// Only answerable when the thing is on exactly one list — with two, there
+        /// are two answers and the row cannot show which is meant.
+        case perList(PerList)
     }
+
+    enum PerList { case qty, section }
 
     struct Column: Identifiable {
         let id: String
@@ -66,7 +73,6 @@ enum TableColumns {
         Column(id: "ownedBy", title: "Owner", width: 110, kind: .choice(\Item.ownedBy, .owners)),
         Column(id: "packer", title: "Packed by", width: 110, kind: .choice(\Item.packer, .people)),
         Column(id: "condition", title: "Condition", width: 120, kind: .choice(\Item.condition, .conditions)),
-        Column(id: "qty", title: "How many", width: 84, kind: .words(\Item.qty)),
         Column(id: "color", title: "Colour", width: 100, kind: .words(\Item.color)),
         Column(id: "size", title: "Size", width: 84, kind: .words(\Item.size)),
         Column(id: "manufacturer", title: "Maker", width: 120, kind: .words(\Item.manufacturer)),
@@ -80,6 +86,15 @@ enum TableColumns {
         Column(id: "perNight", title: "Per night", width: 74, kind: .flag(\Item.perNight)),
     ]
 
+    /// What belongs to the thing's PLACE on a list rather than to the thing. Kept
+    /// apart from `intrinsic` on purpose: changing one of these for many things at
+    /// once has no meaning, so the batch sheet — which offers `intrinsic` — cannot
+    /// offer them.
+    static let perListColumns: [Column] = [
+        Column(id: "listQty", title: "How many", width: 92, kind: .perList(.qty), group: "On this list"),
+        Column(id: "listSection", title: "Section", width: 140, kind: .perList(.section), group: "On this list"),
+    ]
+
     /// One tick column per list of his, so a thing joins or leaves a list here.
     /// Taking it off a list drops only that list's own answers for it — the thing,
     /// its weight, its care and its photos stay.
@@ -90,10 +105,10 @@ enum TableColumns {
         }
     }
 
-    static func all(_ library: Library) -> [Column] { intrinsic + listColumns(library) }
+    static func all(_ library: Library) -> [Column] { intrinsic + perListColumns + listColumns(library) }
 
     /// What he sees before he has chosen anything: the gaps he actually has.
-    static let startingColumns = ["weight", "storage", "container", "ownedBy", "packer", "condition", "qty"]
+    static let startingColumns = ["weight", "storage", "container", "ownedBy", "packer", "condition", "listQty"]
 
     /// His chosen columns, in his order; unknown ids (a list he deleted) fall away.
     static func chosen(_ stored: String, library: Library) -> [Column] {
@@ -119,7 +134,7 @@ enum TableColumns {
             let on = library.memberships.contains { $0.itemId == thing.id && $0.templateId == listId }
             return on ? "0" : "1"
         }
-        guard let column = intrinsic.first(where: { $0.id == key }) else { return normName(thing.name) }
+        guard let column = (intrinsic + perListColumns).first(where: { $0.id == key }) else { return normName(thing.name) }
         switch column.kind {
         case .number(let path):
             return thing[keyPath: path] > 0 ? String(format: "%012.2f", thing[keyPath: path]) : "~"
@@ -128,7 +143,7 @@ enum TableColumns {
             return text.isEmpty ? "~" : text
         case .flag(let path):
             return thing[keyPath: path] ? "0" : "1"
-        case .onList:
+        case .onList, .perList:
             return ""
         }
     }
@@ -148,6 +163,13 @@ enum TableColumns {
         var conditions: [String] = []
         /// "itemId|listId" for every membership there is.
         var onLists: Set<String> = []
+        /// Every membership a thing has, so a per-list answer knows whether there is
+        /// exactly one of it and which list it belongs to.
+        var byThing: [String: [Membership]] = [:]
+        /// A list's own sections, by list id.
+        var sectionsOf: [String: [TemplateSection]] = [:]
+        /// A list's name, for saying which one a per-list answer belongs to.
+        var listNamed: [String: String] = [:]
 
         init() {}
         init(_ library: Library) {
@@ -157,6 +179,11 @@ enum TableColumns {
             people = library.people().map(\.name)
             conditions = library.conditions().map(\.label)
             onLists = Set(library.memberships.map { "\($0.itemId)|\($0.templateId)" })
+            byThing = Dictionary(grouping: library.memberships, by: \.itemId)
+            for list in library.templates {
+                sectionsOf[list.id] = list.sections
+                listNamed[list.id] = list.name
+            }
         }
 
         func list(_ which: Answers) -> [String] {
@@ -196,6 +223,7 @@ struct Cell: View {
             case .onList(let listId): tick(onList(listId)) { on in
                     model.change { _ = $0.setOnTemplate(itemId: thing.id, templateId: listId, on: on) }
                 }
+            case .perList(let which): perList(which)
             }
         }
         .frame(width: column.width, height: TableColumns.rowHeight)
@@ -260,6 +288,58 @@ struct Cell: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier(id)
         .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// An answer that belongs to the thing's place on a list. With exactly one
+    /// membership it is edited here; with several there is no single answer, so it
+    /// says how many lists and points at the thing itself — the same rule the web
+    /// app follows, and for the same reason.
+    @ViewBuilder
+    private func perList(_ which: TableColumns.PerList) -> some View {
+        let mine = answers.byThing[thing.id] ?? []
+        if mine.count == 1, let only = mine.first {
+            switch which {
+            case .qty:
+                box(text: only.qty, blank: jsTrim(only.qty).isEmpty) { typed in
+                    let clean = jsTrim(typed)
+                    model.change { _ = $0.updateMembership(memId: only.id) { $0.qty = clean } }
+                }
+            case .section:
+                let sections = answers.sectionsOf[only.templateId] ?? []
+                let now = sections.first { $0.id == only.section }?.name ?? ""
+                Menu {
+                    ForEach(sections, id: \.id) { section in
+                        Button(section.name) {
+                            model.change { _ = $0.updateMembership(memId: only.id) { $0.section = section.id } }
+                        }
+                    }
+                    Divider()
+                    Button("No section") {
+                        model.change { _ = $0.updateMembership(memId: only.id) { $0.section = "" } }
+                    }
+                } label: {
+                    Text(now.isEmpty ? (sections.isEmpty ? "—" : "Where?") : now)
+                        .font(.system(size: 13, weight: now.isEmpty ? .bold : .medium))
+                        .foregroundStyle(now.isEmpty ? (sections.isEmpty ? Theme.muted : AppSection.care.color) : Theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.75)
+                        .padding(.horizontal, 7)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .menuStyle(.borderlessButton)
+                .accessibilityIdentifier(id)
+                .accessibilityValue(now)
+            }
+        } else {
+            Text(mine.isEmpty ? "—" : "\(mine.count) lists")
+                .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.muted)
+                .lineLimit(1)
+                .padding(.horizontal, 7)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .accessibilityIdentifier(id)
+                .accessibilityValue(mine.isEmpty ? "" : "\(mine.count) lists")
+                .help(mine.isEmpty ? "On no list" : "Different on each list — open the thing to set it")
+        }
     }
 
     private func onList(_ listId: String) -> Bool {

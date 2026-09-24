@@ -216,7 +216,7 @@ final class AMSPackingUITests: XCTestCase {
         // `app.buttons[id]` simply does not exist there — and a missing element reads
         // as "" rather than failing, which made the Mac say "nothing changed" about a
         // change that had happened. Ask each type it can be.
-        for holder in [app.buttons, app.popUpButtons, app.menuButtons, app.otherElements] {
+        for holder in [app.buttons, app.popUpButtons, app.menuButtons, app.textFields, app.staticTexts, app.otherElements] {
             let e = holder[id]
             guard e.exists else { continue }
             if let value = e.value as? String, !value.isEmpty { return value }
@@ -1227,7 +1227,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
         // Clear the ones he starts with, so the new column is not off to the right.
         // (Hiding is also his own ask — the web app can only reorder.)
-        for gone in ["storage", "container", "ownedBy", "packer", "condition", "qty"] {
+        for gone in ["storage", "container", "ownedBy", "packer", "condition", "listQty"] {
             tap(app, id: "columns-\(gone)-hide")
         }
         tap(app, id: "columns-liquid-show")
@@ -1244,6 +1244,33 @@ final class AMSPackingUITests: XCTestCase {
         tapVisible(app, tick)
         XCTAssertTrue(waitUntil(timeout: 5) { self.isOn(app.buttons["table-0-liquid"]) != before },
                       "the tick did not change")
+    }
+
+    /// How many and Section belong to the thing's place ON A LIST, not to the thing.
+    /// With one list they are edited in the grid; with two there is no single answer
+    /// and the cell says so instead of pretending.
+    func testWhatBelongsToAListIsEditedPerList() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+
+        // The sample's second thing by name is on TWO lists.
+        XCTAssertEqual(cellSays(app, "table-1-listQty"), "2 lists",
+                       "a thing on two lists must not offer one answer")
+        XCTAssertFalse(app.textFields["table-1-listQty"].exists, "it must not be editable either")
+
+        // The first is on one list, so it takes an answer — and keeps it.
+        let box = app.textFields["table-0-listQty"]
+        XCTAssertTrue(box.waitForExistence(timeout: 5), "a thing on one list should be editable")
+        type("3", into: box)
+        box.typeText("\n")
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 10) { self.cellSays(app, "table-0-listQty") == "3" },
+                      "the quantity did not stay on that list's row: '\(cellSays(app, "table-0-listQty"))'")
     }
 
     /// Ticking several things and changing them in one go — his ask — and one press
@@ -1265,7 +1292,7 @@ final class AMSPackingUITests: XCTestCase {
         // Show the column first, so the change can be SEEN on the things themselves.
         tap(app, id: "table-columns")
         XCTAssertTrue(appears(app, "columns-detail", timeout: 5))
-        for gone in ["weight", "storage", "container", "ownedBy", "packer", "qty"] {
+        for gone in ["weight", "storage", "container", "ownedBy", "packer", "listQty"] {
             tap(app, id: "columns-\(gone)-hide")
         }
         tap(app, id: "columns-done")
