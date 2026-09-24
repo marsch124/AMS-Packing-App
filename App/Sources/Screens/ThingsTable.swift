@@ -389,17 +389,12 @@ struct ThingsTable: View {
                 // grid has travelled forward. It must be opaque: the columns pass
                 // underneath it.
                 HStack(spacing: 8) {
+                    // Filled = ticked. His words: "the check marker looks less good.
+                    // We do not need it — the colour is enough."
                     Button { pick(!ticked) } label: {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(ticked ? AppSection.care.color : Color.clear)
                             .overlay(RoundedRectangle(cornerRadius: 4).stroke(ticked ? AppSection.care.color : Theme.line, lineWidth: 1.5))
-                            .overlay {
-                                if ticked {
-                                    SVGPath.path("M5 13l4 4L19 7")
-                                        .stroke(style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
-                                        .frame(width: 14, height: 14).foregroundStyle(.white)
-                                }
-                            }
                             .frame(width: 18, height: 18)
                             .frame(width: 30, height: TableColumns.rowHeight)
                             .contentShape(Rectangle())

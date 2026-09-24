@@ -247,16 +247,12 @@ struct Cell: View {
 
     private func tick(_ on: Bool, _ set: @escaping (Bool) -> Void) -> some View {
         Button { set(!on) } label: {
+            // Filled = on, the same as the box that ticks a row. No mark inside it:
+            // the colour is the message.
             RoundedRectangle(cornerRadius: 5)
                 .fill(on ? AppSection.care.color : Theme.card)
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Theme.line, lineWidth: 1))
-                .overlay {
-                    if on {
-                        SVGPath.path("M5 13l4 4L19 7")
-                            .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                            .frame(width: 18, height: 18).foregroundStyle(.white)
-                    }
-                }
+                .overlay(RoundedRectangle(cornerRadius: 5)
+                    .stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
                 .frame(width: 20, height: 20)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
