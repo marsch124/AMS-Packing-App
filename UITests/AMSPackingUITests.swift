@@ -1226,6 +1226,54 @@ final class AMSPackingUITests: XCTestCase {
                       "the tick did not change")
     }
 
+    /// Ticking several things and changing them in one go — his ask — and one press
+    /// putting every one of them back the way it was.
+    func testManyThingsAreChangedAtOnceAndCanBePutBack() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+
+        // Nothing ticked: no bar.
+        XCTAssertFalse(app.staticTexts["table-chosen-count"].exists, "the bar is there before anything is ticked")
+
+        tap(app, id: "table-0-pick")
+        tap(app, id: "table-1-pick")
+        XCTAssertTrue(waitUntil(timeout: 5) { self.words(app.staticTexts["table-chosen-count"]) == "2 ticked" },
+                      "the bar does not say two are ticked: '\(words(app.staticTexts["table-chosen-count"]))'")
+
+        // Show the column first, so the change can be SEEN on the things themselves.
+        tap(app, id: "table-columns")
+        XCTAssertTrue(appears(app, "columns-detail", timeout: 5))
+        for gone in ["weight", "storage", "container", "ownedBy", "packer", "qty"] {
+            tap(app, id: "columns-\(gone)-hide")
+        }
+        tap(app, id: "columns-done")
+        XCTAssertTrue(disappears(app, "columns-detail", timeout: 5))
+        let wasFirst = words(app.buttons["table-0-condition"])
+        let wasThird = words(app.buttons["table-2-condition"])
+
+        // Change the two of them at once.
+        tap(app, id: "table-change-all")
+        XCTAssertTrue(appears(app, "bulk-detail", timeout: 5), "the change sheet did not open")
+        XCTAssertEqual(words(app.staticTexts["bulk-count"]), "Change 2 things")
+        tap(app, id: "bulk-field-condition")
+        tap(app, id: "bulk-value-0")
+        XCTAssertTrue(disappears(app, "bulk-detail", timeout: 5), "the sheet stayed open")
+
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.buttons["table-0-condition"]) != wasFirst },
+                      "the first thing did not change")
+        let now = words(app.buttons["table-0-condition"])
+        XCTAssertEqual(words(app.buttons["table-1-condition"]), now, "the second ticked thing did not change")
+        XCTAssertEqual(words(app.buttons["table-2-condition"]), wasThird, "a thing that was NOT ticked changed")
+
+        // And one press puts them back.
+        tap(app, id: "table-undo")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.buttons["table-0-condition"]) == wasFirst },
+                      "Undo did not put the first one back: '\(words(app.buttons["table-0-condition"]))'")
+        XCTAssertEqual(words(app.buttons["table-1-condition"]), wasThird, "Undo did not put the second one back")
+    }
+
     /// The two chips go straight to what is missing, and filling one in takes that
     /// thing off the list of things that are missing it.
     func testTheTableChipsFindWhatIsMissing() {

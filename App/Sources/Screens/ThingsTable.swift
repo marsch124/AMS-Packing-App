@@ -34,6 +34,13 @@ struct ThingsTable: View {
     /// "" = everything; otherwise only the things missing that.
     @State private var only = ""
     @State private var picking = false
+    /// The things he has ticked, by id.
+    @State private var chosen: Set<String> = []
+    @State private var changing = false
+    /// What the things looked like before the last change to many at once, and what
+    /// that change was — so one press puts them all back.
+    @State private var wasBefore: [Item] = []
+    @State private var didSay = ""
     /// How far the grid has travelled sideways, so the name cells can travel back.
     @State private var across: CGFloat = 0
 
@@ -55,6 +62,7 @@ struct ThingsTable: View {
         let rows = things()
         VStack(spacing: 0) {
             top(rows.count)
+            if !chosen.isEmpty || !wasBefore.isEmpty { chosenBar(rows) }
             Divider()
             // 🪤 The width is spelled out. A scroll view that goes BOTH ways asks its
             // content how wide it is, and a lazy stack answers that by building every
@@ -67,11 +75,15 @@ struct ThingsTable: View {
                     Section {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
                             Row(thing: thing, n: n, columns: columns, answers: answers,
-                                nameWidth: nameWidth, across: across)
+                                nameWidth: nameWidth, across: across,
+                                ticked: chosen.contains(thing.id),
+                                pick: { on in
+                                    if on { chosen.insert(thing.id) } else { chosen.remove(thing.id) }
+                                })
                                 .environmentObject(model)
                         }
                     } header: {
-                        heading(columns)
+                        heading(columns, rows)
                     }
                 }
                 .frame(width: gridWidth, alignment: .leading)
@@ -91,6 +103,12 @@ struct ThingsTable: View {
         .sheet(isPresented: $picking) {
             ColumnPicker(chosen: $chosenColumns, library: model.library)
         }
+        .sheet(isPresented: $changing) {
+            BulkChange(things: model.library.items.filter { chosen.contains($0.id) },
+                       answers: TableColumns.Answers2(model.library)) { what, said in
+                changeThemAll(what, said)
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("table-detail")
         #if os(macOS)
@@ -101,7 +119,7 @@ struct ThingsTable: View {
     /// The heading: the band saying which group a run of columns belongs to, then
     /// the column names. It pins itself to the top, and its own name cell stays at
     /// the left the same way a row's does.
-    private func heading(_ columns: [TableColumns.Column]) -> some View {
+    private func heading(_ columns: [TableColumns.Column], _ rowsNow: [Item]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 Color.clear.frame(width: nameWidth, height: 20)
@@ -118,6 +136,27 @@ struct ThingsTable: View {
                 }
             }
             HStack(spacing: 0) {
+                // Narrow with a chip, then take the lot: the whole reason the chips
+                // and the ticks are on the same screen.
+                Button {
+                    let shown = Set(rowsNow.map(\.id))
+                    if shown.isSubset(of: chosen) { chosen.subtract(shown) } else { chosen.formUnion(shown) }
+                } label: {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.clear)
+                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Theme.muted, lineWidth: 1.5))
+                        .overlay {
+                            Rectangle().fill(Theme.muted).frame(width: 9, height: 2)
+                        }
+                        .frame(width: 18, height: 18)
+                        .frame(width: 30, height: 26)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .padding(.leading, 6)
+                .accessibilityIdentifier("table-pick-all")
+                .accessibilityLabel("Tick everything shown")
+
                 Button { turn("name") } label: {
                     HStack(spacing: 4) {
                         Text("Thing").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
@@ -127,8 +166,7 @@ struct ThingsTable: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.leading, 12)
-                    .frame(width: nameWidth, height: 26, alignment: .leading)
+                    .frame(width: nameWidth - 36, height: 26, alignment: .leading)
                     .background(Theme.bg)
                     .contentShape(Rectangle())
                 }
@@ -159,6 +197,73 @@ struct ThingsTable: View {
             Rectangle().fill(Theme.line).frame(height: 1)
         }
         .background(Theme.bg)
+    }
+
+    /// While anything is ticked: how many, one press to change them all, and — after
+    /// a change — one press to put them back the way they were.
+    private func chosenBar(_ rows: [Item]) -> some View {
+        HStack(spacing: 8) {
+            if !chosen.isEmpty {
+                Text("\(chosen.count) ticked")
+                    .font(.system(size: 15, weight: .heavy).monospacedDigit())
+                    .foregroundStyle(AppSection.care.color)
+                    .accessibilityIdentifier("table-chosen-count")
+
+                Button { changing = true } label: {
+                    Text("Change all")
+                        .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 12).frame(minHeight: 32)
+                        .background(Capsule().fill(AppSection.care.color))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("table-change-all")
+
+                Button { chosen.removeAll() } label: {
+                    Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("table-clear-chosen")
+            }
+            Spacer()
+            if !wasBefore.isEmpty {
+                Text(didSay).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                    .lineLimit(1)
+                    .accessibilityIdentifier("table-said")
+                    .accessibilityLabel(didSay)
+                Button { putBack() } label: {
+                    Text("Undo")
+                        .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .padding(.horizontal, 10).frame(minHeight: 32)
+                        .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: 1))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("table-undo")
+            }
+        }
+        .padding(.horizontal, 16).padding(.bottom, 8)
+    }
+
+    /// Change every ticked thing, keeping what they were first.
+    private func changeThemAll(_ what: @escaping (inout Item) -> Void, _ said: String) {
+        let ids = chosen
+        wasBefore = model.library.items.filter { ids.contains($0.id) }
+        didSay = "\(ids.count) changed"
+        model.change { library in
+            for id in ids { _ = library.updateThing(id: id) { thing in what(&thing) } }
+        }
+    }
+
+    /// Put every one of them back exactly as it was.
+    private func putBack() {
+        let old = wasBefore
+        guard !old.isEmpty else { return }
+        model.change { library in
+            for thing in old { _ = library.updateThing(id: thing.id) { $0 = thing } }
+        }
+        wasBefore = []
+        didSay = ""
     }
 
     /// Pressing a heading sorts by it; pressing the same one again turns it over.
@@ -274,6 +379,8 @@ struct ThingsTable: View {
         let answers: TableColumns.Answers2
         let nameWidth: CGFloat
         let across: CGFloat
+        let ticked: Bool
+        let pick: (Bool) -> Void
         @EnvironmentObject var model: LibraryModel
 
         var body: some View {
@@ -281,16 +388,38 @@ struct ThingsTable: View {
                 // Nailed to the left edge by travelling back exactly as far as the
                 // grid has travelled forward. It must be opaque: the columns pass
                 // underneath it.
-                Text(thing.name)
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                    .padding(.leading, 12)
-                    .frame(width: nameWidth, height: TableColumns.rowHeight, alignment: .leading)
-                    .background(n.isMultiple(of: 2) ? Theme.bg : Theme.card)
-                    .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
-                    .offset(x: across)
-                    .zIndex(2)
-                    .accessibilityIdentifier("table-\(n)-name")
+                HStack(spacing: 8) {
+                    Button { pick(!ticked) } label: {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(ticked ? AppSection.care.color : Color.clear)
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(ticked ? AppSection.care.color : Theme.line, lineWidth: 1.5))
+                            .overlay {
+                                if ticked {
+                                    SVGPath.path("M5 13l4 4L19 7")
+                                        .stroke(style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+                                        .frame(width: 14, height: 14).foregroundStyle(.white)
+                                }
+                            }
+                            .frame(width: 18, height: 18)
+                            .frame(width: 30, height: TableColumns.rowHeight)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-\(n)-pick")
+                    .accessibilityAddTraits(ticked ? .isSelected : [])
+
+                    Text(thing.name)
+                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("table-\(n)-name")
+                }
+                .padding(.leading, 6)
+                .frame(width: nameWidth, height: TableColumns.rowHeight, alignment: .leading)
+                .background(n.isMultiple(of: 2) ? Theme.bg : Theme.card)
+                .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
+                .offset(x: across)
+                .zIndex(2)
 
                 ForEach(columns) { column in
                     Cell(thing: thing, n: n, column: column, answers: answers)
