@@ -208,6 +208,16 @@ final class AMSPackingUITests: XCTestCase {
     /// Is the control really where a tap would land? Judged by FRAMES against the
     /// window: XCUITest happily calls a control below the window "hittable", which
     /// cost a red Mac run (the runner's window is 760 × 674).
+    /// What a dropdown cell says. The Mac and the iPhone disagree about whether that
+    /// is the element's label or its value, so ask for the value first — the cells
+    /// set it deliberately — and fall back to the words.
+    private func cellSays(_ app: XCUIApplication, _ id: String) -> String {
+        let e = app.buttons[id]
+        guard e.exists else { return "" }
+        if let value = e.value as? String, !value.isEmpty { return value }
+        return words(e)
+    }
+
     /// The grid is wider than the screen: a column he has just added sits off to
     /// the right, existing but unreachable. This travels sideways until the cell
     /// is really there (or gives up, so a broken grid still fails the test).
@@ -1250,8 +1260,8 @@ final class AMSPackingUITests: XCTestCase {
         }
         tap(app, id: "columns-done")
         XCTAssertTrue(disappears(app, "columns-detail", timeout: 5))
-        let wasFirst = words(app.buttons["table-0-condition"])
-        let wasThird = words(app.buttons["table-2-condition"])
+        let wasFirst = cellSays(app, "table-0-condition")
+        let wasThird = cellSays(app, "table-2-condition")
 
         // Change the two of them at once.
         tap(app, id: "table-change-all")
@@ -1261,17 +1271,17 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "bulk-value-0")
         XCTAssertTrue(disappears(app, "bulk-detail", timeout: 5), "the sheet stayed open")
 
-        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.buttons["table-0-condition"]) != wasFirst },
-                      "the first thing did not change")
-        let now = words(app.buttons["table-0-condition"])
-        XCTAssertEqual(words(app.buttons["table-1-condition"]), now, "the second ticked thing did not change")
-        XCTAssertEqual(words(app.buttons["table-2-condition"]), wasThird, "a thing that was NOT ticked changed")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.cellSays(app, "table-0-condition") != wasFirst },
+                      "the first thing did not change (it still says '\(wasFirst)')")
+        let now = cellSays(app, "table-0-condition")
+        XCTAssertEqual(cellSays(app, "table-1-condition"), now, "the second ticked thing did not change")
+        XCTAssertEqual(cellSays(app, "table-2-condition"), wasThird, "a thing that was NOT ticked changed")
 
         // And one press puts them back.
         tap(app, id: "table-undo")
-        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.buttons["table-0-condition"]) == wasFirst },
-                      "Undo did not put the first one back: '\(words(app.buttons["table-0-condition"]))'")
-        XCTAssertEqual(words(app.buttons["table-1-condition"]), wasThird, "Undo did not put the second one back")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.cellSays(app, "table-0-condition") == wasFirst },
+                      "Undo did not put the first one back: '\(cellSays(app, "table-0-condition"))'")
+        XCTAssertEqual(cellSays(app, "table-1-condition"), wasThird, "Undo did not put the second one back")
     }
 
     /// The two chips go straight to what is missing, and filling one in takes that
