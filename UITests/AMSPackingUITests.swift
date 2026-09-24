@@ -501,7 +501,9 @@ final class AMSPackingUITests: XCTestCase {
         let button = app.buttons["grab-0"]
         XCTAssertTrue(button.waitForExistence(timeout: 5), "no grab buttons on Home")
         button.tap()
-        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        // GitHub's runner opens this sheet slower than five seconds when it is busy
+        // (it failed twice there while passing here); the usual ten is plenty.
+        XCTAssertTrue(appears(app, "grab-detail"), "the grab list did not open")
         let count = app.staticTexts["grab-count"]
         XCTAssertTrue(count.waitForExistence(timeout: 5))
         XCTAssertTrue(words(count).hasPrefix("0 of"), "a fresh list starts empty: '\(words(count))'")
