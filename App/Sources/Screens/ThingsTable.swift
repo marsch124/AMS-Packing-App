@@ -11,11 +11,17 @@ import PackingLibrary
 /// (The first attempt was three fixed columns in a list. His words: "It is not at
 /// all what it should be. You should be able to quickly update items — like Excel.")
 ///
-/// How it holds together: the rows live in a vertical scroll INSIDE a horizontal
-/// one, so the heading — above the vertical scroll, inside the horizontal one —
-/// stays on screen and still travels sideways with its columns. The name column
-/// sits outside both and follows the rows by their own scroll offset. One number
-/// to keep in step, and the rows stay lazy.
+/// How it holds together: ONE scroll view that goes both ways, holding a lazy
+/// stack whose section header is the heading — so the heading pins itself as the
+/// rows go down and travels sideways with its columns for nothing. The name cell
+/// of each row counter-scrolls by however far the grid has travelled, which makes
+/// it look nailed to the left edge while only the rows on screen ever redraw.
+///
+/// 🪤 The first build kept the names in a column of their own and moved it with
+/// the scroll offset. It looked right and was a trap: every one of his 431 name
+/// rows was laid out again on every scroll tick, so on a slower machine the app
+/// never went idle — GitHub's runner sat in "Wait for AMSPacking to idle" until
+/// the tap timed out. Counter-scrolling only the visible rows costs nothing.
 struct ThingsTable: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
@@ -28,8 +34,8 @@ struct ThingsTable: View {
     /// "" = everything; otherwise only the things missing that.
     @State private var only = ""
     @State private var picking = false
-    /// How far the rows are scrolled down, so the name column can follow.
-    @State private var downBy: CGFloat = 0
+    /// How far the grid has travelled sideways, so the name cells can travel back.
+    @State private var across: CGFloat = 0
 
     private static let filters: [(id: String, label: String)] =
         [("", "All"), ("weight", "No weight"), ("place", "No place")]
@@ -49,27 +55,21 @@ struct ThingsTable: View {
         VStack(spacing: 0) {
             top(rows.count)
             Divider()
-            HStack(alignment: .top, spacing: 0) {
-                frozenNames(rows)
-                Rectangle().fill(Theme.line).frame(width: 1)
-                ScrollView(.horizontal) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        groupBand(columns)
-                        headingRow(columns)
-                        Rectangle().fill(Theme.line).frame(height: 1)
-                        ScrollView(.vertical) {
-                            LazyVStack(spacing: 0) {
-                                ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
-                                    Row(thing: thing, n: n, columns: columns)
-                                        .environmentObject(model)
-                                }
-                            }
+            ScrollView([.horizontal, .vertical]) {
+                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    Section {
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
+                            Row(thing: thing, n: n, columns: columns,
+                                nameWidth: nameWidth, across: across)
+                                .environmentObject(model)
                         }
-                        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
-                            downBy = y
-                        }
+                    } header: {
+                        heading(columns)
                     }
                 }
+            }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.x } action: { _, x in
+                across = max(0, x)
             }
             if rows.isEmpty {
                 Text(only.isEmpty ? "Nothing matches." : "Nothing missing that — all filled in.")
@@ -90,93 +90,67 @@ struct ThingsTable: View {
         #endif
     }
 
-    // MARK: - the name column, which never travels sideways
-
-    private func frozenNames(_ rows: [Item]) -> some View {
+    /// The heading: the band saying which group a run of columns belongs to, then
+    /// the column names. It pins itself to the top, and its own name cell stays at
+    /// the left the same way a row's does.
+    private func heading(_ columns: [TableColumns.Column]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button { turn("name") } label: {
-                HStack(spacing: 4) {
-                    Text("Thing").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
-                    if sortBy == "name" {
-                        Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
-                            .foregroundStyle(AppSection.care.color)
-                    }
-                    Spacer(minLength: 0)
+            HStack(spacing: 0) {
+                Color.clear.frame(width: nameWidth, height: 20)
+                ForEach(TableColumns.bands(columns)) { band in
+                    // The title holds still inside its own run of columns instead of
+                    // sliding away, so it still says which group you are looking at.
+                    Text(band.title)
+                        .font(.system(size: 11, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                        .kerning(0.4).lineLimit(1)
+                        .padding(.horizontal, 7)
+                        .frame(width: band.width, height: 20, alignment: .leading)
+                        .offset(x: min(max(0, across - band.start), max(0, band.width - 130)))
+                        .accessibilityIdentifier("table-band-\(band.id)")
                 }
-                .padding(.leading, 12).padding(.bottom, 6)
-                .frame(width: nameWidth, height: headHeight, alignment: .bottomLeading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("table-head-name")
-
-            Rectangle().fill(Theme.line).frame(height: 1)
-
-            GeometryReader { space in
-                VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
-                        Text(thing.name)
-                            .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                            .padding(.leading, 12)
-                            .frame(width: nameWidth, height: TableColumns.rowHeight, alignment: .leading)
-                            .background(n.isMultiple(of: 2) ? Color.clear : Theme.card.opacity(0.55))
-                            .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-                            .accessibilityIdentifier("table-\(n)-name")
-                    }
-                    Spacer(minLength: 0)
-                }
-                .frame(width: nameWidth, alignment: .topLeading)
-                .offset(y: -downBy)
-                .frame(width: space.size.width, height: space.size.height, alignment: .topLeading)
-                .clipped()
-            }
-        }
-        .frame(width: nameWidth)
-    }
-
-    // MARK: - the two heading rows
-
-    /// "① The thing itself" over the columns that belong to it — the same three
-    /// groups the web app names, drawn only over the columns he is showing.
-    private func groupBand(_ columns: [TableColumns.Column]) -> some View {
-        HStack(spacing: 0) {
-            ForEach(TableColumns.bands(columns)) { band in
-                Text(band.title)
-                    .font(.system(size: 11, weight: .heavy)).foregroundStyle(AppSection.care.color)
-                    .kerning(0.4).lineLimit(1)
-                    .padding(.horizontal, 7)
-                    .frame(width: band.width, height: 20, alignment: .leading)
-                    .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
-                    .accessibilityIdentifier("table-band-\(band.id)")
-            }
-        }
-        .frame(height: 20)
-    }
-
-    private func headingRow(_ columns: [TableColumns.Column]) -> some View {
-        HStack(spacing: 0) {
-            ForEach(columns) { column in
-                Button { turn(column.id) } label: {
-                    HStack(spacing: 3) {
-                        Text(column.title)
-                            .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                        if sortBy == column.id {
+            HStack(spacing: 0) {
+                Button { turn("name") } label: {
+                    HStack(spacing: 4) {
+                        Text("Thing").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                        if sortBy == "name" {
                             Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
                                 .foregroundStyle(AppSection.care.color)
                         }
+                        Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 6)
-                    .frame(width: column.width, height: headHeight - 20, alignment: .leading)
+                    .padding(.leading, 12)
+                    .frame(width: nameWidth, height: 26, alignment: .leading)
+                    .background(Theme.bg)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
-                .accessibilityIdentifier("table-head-\(column.id)")
+                .offset(x: across).zIndex(2)
+                .accessibilityIdentifier("table-head-name")
+
+                ForEach(columns) { column in
+                    Button { turn(column.id) } label: {
+                        HStack(spacing: 3) {
+                            Text(column.title)
+                                .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                                .lineLimit(1).minimumScaleFactor(0.7)
+                            if sortBy == column.id {
+                                Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
+                                    .foregroundStyle(AppSection.care.color)
+                            }
+                        }
+                        .padding(.horizontal, 6)
+                        .frame(width: column.width, height: 26, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
+                    .accessibilityIdentifier("table-head-\(column.id)")
+                }
             }
+            Rectangle().fill(Theme.line).frame(height: 1)
         }
-        .frame(height: headHeight - 20)
+        .background(Theme.bg)
     }
 
     /// Pressing a heading sorts by it; pressing the same one again turns it over.
@@ -289,10 +263,26 @@ struct ThingsTable: View {
         let thing: Item
         let n: Int
         let columns: [TableColumns.Column]
+        let nameWidth: CGFloat
+        let across: CGFloat
         @EnvironmentObject var model: LibraryModel
 
         var body: some View {
             HStack(spacing: 0) {
+                // Nailed to the left edge by travelling back exactly as far as the
+                // grid has travelled forward. It must be opaque: the columns pass
+                // underneath it.
+                Text(thing.name)
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .padding(.leading, 12)
+                    .frame(width: nameWidth, height: TableColumns.rowHeight, alignment: .leading)
+                    .background(n.isMultiple(of: 2) ? Theme.bg : Theme.card)
+                    .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
+                    .offset(x: across)
+                    .zIndex(2)
+                    .accessibilityIdentifier("table-\(n)-name")
+
                 ForEach(columns) { column in
                     Cell(thing: thing, n: n, column: column)
                         .environmentObject(model)

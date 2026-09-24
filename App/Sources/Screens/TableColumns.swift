@@ -36,16 +36,23 @@ enum TableColumns {
         let id: String
         let title: String
         let width: CGFloat
+        /// How far from the left of the grid this run of columns begins, so its
+        /// title can hold still inside it while the grid travels.
+        let start: CGFloat
     }
 
     static func bands(_ columns: [Column]) -> [Band] {
         var out: [Band] = []
+        var x: CGFloat = 0
         for column in columns {
             if let last = out.last, last.title == column.group {
-                out[out.count - 1] = Band(id: last.id, title: last.title, width: last.width + column.width)
+                out[out.count - 1] = Band(id: last.id, title: last.title,
+                                          width: last.width + column.width, start: last.start)
             } else {
-                out.append(Band(id: "\(out.count)-\(column.group)", title: column.group, width: column.width))
+                out.append(Band(id: "\(out.count)-\(column.group)", title: column.group,
+                                width: column.width, start: x))
             }
+            x += column.width
         }
         return out
     }

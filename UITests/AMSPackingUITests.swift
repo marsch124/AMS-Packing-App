@@ -216,11 +216,23 @@ final class AMSPackingUITests: XCTestCase {
     /// to the side whether it is hittable is a HARD XCTest failure ("Activation
     /// point invalid"), so the question can only be asked once it has arrived.
     @discardableResult
-    private func bringAcross(_ app: XCUIApplication, _ e: XCUIElement, tries: Int = 10) -> Bool {
+    private func bringAcross(_ app: XCUIApplication, _ e: XCUIElement, tries: Int = 12) -> Bool {
+        var left = true
         for _ in 0..<tries {
+            guard e.exists else { return false }
             if inWindow(app, e) { return true }
             guard let grid = biggestList(app), grid.exists else { return false }
-            grid.swipeLeft()
+            let before = e.frame.midX
+            #if os(macOS)
+            // A swipe does nothing to a Mac scroll view — it takes a scroll wheel.
+            grid.scroll(byDeltaX: left ? -240 : 240, deltaY: 0)
+            #else
+            left ? grid.swipeLeft() : grid.swipeRight()
+            #endif
+            usleep(300_000)
+            // A column out to the RIGHT should move left as the grid travels; if it
+            // did not, this is the wrong way round.
+            if e.exists && e.frame.midX >= before { left.toggle() }
         }
         return inWindow(app, e)
     }
