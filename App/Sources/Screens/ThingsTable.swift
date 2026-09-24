@@ -51,15 +51,22 @@ struct ThingsTable: View {
 
     var body: some View {
         let columns = TableColumns.chosen(chosenColumns, library: model.library)
+        let answers = TableColumns.Answers2(model.library)
         let rows = things()
         VStack(spacing: 0) {
             top(rows.count)
             Divider()
+            // 🪤 The width is spelled out. A scroll view that goes BOTH ways asks its
+            // content how wide it is, and a lazy stack answers that by building every
+            // row — all 431 of them, with every cell — which is laziness undone: two
+            // UI tests went from ~20 seconds to ~150. Given the width, it builds only
+            // the rows on screen.
+            let gridWidth = nameWidth + columns.reduce(0) { $0 + $1.width }
             ScrollView([.horizontal, .vertical]) {
                 LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                     Section {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { n, thing in
-                            Row(thing: thing, n: n, columns: columns,
+                            Row(thing: thing, n: n, columns: columns, answers: answers,
                                 nameWidth: nameWidth, across: across)
                                 .environmentObject(model)
                         }
@@ -67,6 +74,7 @@ struct ThingsTable: View {
                         heading(columns)
                     }
                 }
+                .frame(width: gridWidth, alignment: .leading)
             }
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.x } action: { _, x in
                 across = max(0, x)
@@ -263,6 +271,7 @@ struct ThingsTable: View {
         let thing: Item
         let n: Int
         let columns: [TableColumns.Column]
+        let answers: TableColumns.Answers2
         let nameWidth: CGFloat
         let across: CGFloat
         @EnvironmentObject var model: LibraryModel
@@ -284,7 +293,7 @@ struct ThingsTable: View {
                     .accessibilityIdentifier("table-\(n)-name")
 
                 ForEach(columns) { column in
-                    Cell(thing: thing, n: n, column: column)
+                    Cell(thing: thing, n: n, column: column, answers: answers)
                         .environmentObject(model)
                 }
             }

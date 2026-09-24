@@ -133,14 +133,40 @@ enum TableColumns {
         }
     }
 
-    /// The answers a choice column offers, from his own Settings lists.
-    static func options(_ answers: Answers, _ library: Library) -> [String] {
-        switch answers {
-        case .places: return library.storagePlaces()
-        case .containers: return containerNames(library.templates)
-        case .owners: return library.owners()
-        case .people: return library.people().map(\.name)
-        case .conditions: return library.conditions().map(\.label)
+    /// His Settings lists and which things are on which list, worked out ONCE per
+    /// redraw and handed to every cell.
+    ///
+    /// 🪤 Each cell used to ask the library itself: a screenful is twenty rows, so
+    /// five dropdown columns meant a hundred walks of his Settings rows per frame,
+    /// and a tick column meant twenty rescans of all 538 memberships. One test went
+    /// from 21 seconds to 151. Working it out once costs nothing.
+    struct Answers2: Equatable {
+        var places: [String] = []
+        var containers: [String] = []
+        var owners: [String] = []
+        var people: [String] = []
+        var conditions: [String] = []
+        /// "itemId|listId" for every membership there is.
+        var onLists: Set<String> = []
+
+        init() {}
+        init(_ library: Library) {
+            places = library.storagePlaces()
+            containers = containerNames(library.templates)
+            owners = library.owners()
+            people = library.people().map(\.name)
+            conditions = library.conditions().map(\.label)
+            onLists = Set(library.memberships.map { "\($0.itemId)|\($0.templateId)" })
+        }
+
+        func list(_ which: Answers) -> [String] {
+            switch which {
+            case .places: return places
+            case .containers: return containers
+            case .owners: return owners
+            case .people: return people
+            case .conditions: return conditions
+            }
         }
     }
 }
@@ -150,6 +176,7 @@ struct Cell: View {
     let thing: Item
     let n: Int
     let column: TableColumns.Column
+    let answers: TableColumns.Answers2
     @EnvironmentObject var model: LibraryModel
     @State private var typed = ""
     @FocusState private var writing: Bool
@@ -162,7 +189,7 @@ struct Cell: View {
             case .number(let path): box(text: thing[keyPath: path] > 0 ? String(Int(thing[keyPath: path].rounded())) : "",
                                         blank: thing[keyPath: path] <= 0) { commitNumber($0, path) }
             case .words(let path): box(text: thing[keyPath: path], blank: false) { commitWords($0, path) }
-            case .choice(let path, let answers): choice(path, answers)
+            case .choice(let path, let which): choice(path, which)
             case .flag(let path): tick(thing[keyPath: path]) { on in
                     model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = on } }
                 }
@@ -191,10 +218,10 @@ struct Cell: View {
             .accessibilityIdentifier(id)
     }
 
-    private func choice(_ path: WritableKeyPath<Item, String>, _ answers: TableColumns.Answers) -> some View {
+    private func choice(_ path: WritableKeyPath<Item, String>, _ which: TableColumns.Answers) -> some View {
         let now = jsTrim(thing[keyPath: path])
         return Menu {
-            ForEach(TableColumns.options(answers, model.library), id: \.self) { answer in
+            ForEach(answers.list(which), id: \.self) { answer in
                 Button(answer) {
                     model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = answer } }
                 }
@@ -240,7 +267,7 @@ struct Cell: View {
     }
 
     private func onList(_ listId: String) -> Bool {
-        model.library.memberships.contains { $0.itemId == thing.id && $0.templateId == listId }
+        answers.onLists.contains("\(thing.id)|\(listId)")
     }
 
     private func commitNumber(_ text: String, _ path: WritableKeyPath<Item, Double>) {

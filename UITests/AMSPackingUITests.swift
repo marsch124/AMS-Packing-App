@@ -1205,17 +1205,23 @@ final class AMSPackingUITests: XCTestCase {
 
         tap(app, id: "table-columns")
         XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
+        // Clear the ones he starts with, so the new column is not off to the right.
+        // (Hiding is also his own ask — the web app can only reorder.)
+        for gone in ["storage", "container", "ownedBy", "packer", "condition", "qty"] {
+            tap(app, id: "columns-\(gone)-hide")
+        }
         tap(app, id: "columns-liquid-show")
         tap(app, id: "columns-done")
         XCTAssertTrue(disappears(app, "columns-detail", timeout: 5))
         XCTAssertTrue(app.buttons["table-head-liquid"].waitForExistence(timeout: 5),
                       "the column he added is not in the grid")
+        XCTAssertFalse(app.buttons["table-head-storage"].exists, "a column he hid is still in the grid")
 
-        // And a column of ticks ticks. It is off to the right, so travel to it.
+        // And a column of ticks ticks.
         let tick = app.buttons["table-0-liquid"]
-        XCTAssertTrue(bringAcross(app, tick), "could not reach the new column's ticks")
+        XCTAssertTrue(tick.waitForExistence(timeout: 5), "no ticks in the new column")
         let before = isOn(tick)
-        tick.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        tapVisible(app, tick)
         XCTAssertTrue(waitUntil(timeout: 5) { self.isOn(app.buttons["table-0-liquid"]) != before },
                       "the tick did not change")
     }
