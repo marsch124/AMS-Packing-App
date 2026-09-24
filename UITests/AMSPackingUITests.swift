@@ -212,10 +212,18 @@ final class AMSPackingUITests: XCTestCase {
     /// is the element's label or its value, so ask for the value first — the cells
     /// set it deliberately — and fall back to the words.
     private func cellSays(_ app: XCUIApplication, _ id: String) -> String {
-        let e = app.buttons[id]
-        guard e.exists else { return "" }
-        if let value = e.value as? String, !value.isEmpty { return value }
-        return words(e)
+        // 🪤 A dropdown is a BUTTON on the iPhone and a POP-UP BUTTON on the Mac, so
+        // `app.buttons[id]` simply does not exist there — and a missing element reads
+        // as "" rather than failing, which made the Mac say "nothing changed" about a
+        // change that had happened. Ask each type it can be.
+        for holder in [app.buttons, app.popUpButtons, app.menuButtons, app.otherElements] {
+            let e = holder[id]
+            guard e.exists else { continue }
+            if let value = e.value as? String, !value.isEmpty { return value }
+            let said = words(e)
+            if !said.isEmpty { return said }
+        }
+        return ""
     }
 
     /// The grid is wider than the screen: a column he has just added sits off to
