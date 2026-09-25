@@ -627,8 +627,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(summary).hasPrefix("1 overdue") }, "the sample's boots are overdue: '\(words(summary))'")
         let done = app.buttons["care-row-0-done"]
         XCTAssertTrue(done.waitForExistence(timeout: 5), "no Done today on the overdue row")
-        done.tap()
-        XCTAssertTrue(waitUntil { self.words(summary) == "All up to date" }, "Done today did not move it on: '\(words(summary))'")
+        // 🪤 On GitHub's slow iPhone (0.19) the tap was synthesised and the summary
+        // had not moved 5 s later — every step there took seconds. Wait for the button
+        // to settle, allow 10 s, and tap once more only if the row is STILL overdue.
+        tap(app, id: "care-row-0-done")
+        if !waitUntil(timeout: 10, { self.words(summary) == "All up to date" }), app.buttons["care-row-0-done"].exists {
+            print("TAP-REPORT Done today needed a second tap")
+            tap(app, id: "care-row-0-done")
+        }
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(summary) == "All up to date" }, "Done today did not move it on: '\(words(summary))'")
         tab(app, "home")
         tab(app, "care")
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["care-summary"]) == "All up to date" },
@@ -1047,14 +1054,17 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(progress.waitForExistence(timeout: 5))
         XCTAssertNotEqual(progress.value as? String, "all packed", "a half-packed trip says it is done")
 
-        // Tick everything the trip holds.
-        var n = 0
-        while app.buttons["trip-line-\(n)"].exists, n < 60 {
+        // Tick everything the trip holds. 🪤 The lines sit in a LAZY list: on the
+        // Mac's short window the last ones do not exist until scrolled to, and
+        // "tick until a line is missing" stopped at 5 of 7 (0.19, GitHub). So count
+        // from the progress ("0/7") and travel to each line.
+        let total = Int(words(progress).split(separator: "/").last ?? "") ?? 0
+        XCTAssertGreaterThan(total, 0, "the trip has no lines: '\(words(progress))'")
+        for n in 0..<total {
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)"), "line \(n + 1) of \(total) never appeared")
             let line = app.buttons["trip-line-\(n)"]
             if !isOn(line) { tapVisible(app, line) }
-            n += 1
         }
-        XCTAssertGreaterThan(n, 0, "the trip has no lines")
         XCTAssertTrue(waitUntil(timeout: 10) { (progress.value as? String) == "all packed" },
                       "everything is ticked and the screen does not say so: '\(words(progress))'")
 
