@@ -7,6 +7,7 @@ import PackingLibrary
 struct TemplatesScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var open: PackList?
+    @State private var making = false
 
     struct Shelf: Identifiable { let id: String; let title: String; let lists: [PackList] }
 
@@ -43,12 +44,25 @@ struct TemplatesScreen: View {
         let use = model.library.templateUse()
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Your lists").font(.system(size: 28, weight: .heavy)).foregroundStyle(AppSection.templates.color)
-                        .accessibilityIdentifier("templates-heading")
-                    Text(TemplatesScreen.summary(flat, model.library))
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("templates-summary")
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Your lists").font(.system(size: 28, weight: .heavy))
+                            .foregroundStyle(AppSection.templates.color)
+                            .accessibilityIdentifier("templates-heading")
+                        Text(TemplatesScreen.summary(flat, model.library))
+                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .accessibilityIdentifier("templates-summary")
+                    }
+                    Spacer(minLength: 8)
+                    Button { making = true } label: {
+                        Text("+ New")
+                            .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                            .padding(.horizontal, 14).frame(minHeight: 36)
+                            .background(Capsule().fill(AppSection.templates.color))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("templates-new")
                 }
                 .padding(.top, 14).padding(.bottom, 4)
                 ForEach(shelves) { shelf in
@@ -75,6 +89,13 @@ struct TemplatesScreen: View {
             .padding(.bottom, 24)
         }
         .sheet(item: $open) { list in TemplateDetail(listId: list.id).environmentObject(model) }
+        .sheet(isPresented: $making) {
+            NewList(made: { list in
+                model.change { $0.saveTemplate(list) }
+                // Straight into it: a list he cannot see the inside of is not made yet.
+                open = list
+            }, library: model.library)
+        }
     }
 }
 

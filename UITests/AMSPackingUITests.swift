@@ -1246,6 +1246,47 @@ final class AMSPackingUITests: XCTestCase {
                       "the tick did not change")
     }
 
+    /// A list he makes himself lands on the shelf he chose, opens straight away, and
+    /// a name he already has is refused rather than quietly duplicated.
+    func testHeMakesAListOfHisOwn() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let before = words(app.staticTexts["templates-summary"])
+
+        tap(app, id: "templates-new")
+        XCTAssertTrue(appears(app, "newlist-detail", timeout: 5), "the sheet did not open")
+
+        // A name he already has is refused, and nothing can be made from it.
+        type("Hiking", into: app.textFields["newlist-name"])
+        // 🪤 Asked for by EXISTENCE, not by `appears`: a warning is a plain Text, and
+        // XCUITest does not call a Text hittable, so the on-screen helper says it is
+        // missing while it is perfectly visible.
+        XCTAssertTrue(app.staticTexts["newlist-taken"].waitForExistence(timeout: 5),
+                      "a name he already has was accepted")
+
+        replace("Mushroom picking", in: app.textFields["newlist-name"])
+        XCTAssertTrue(waitUntil(timeout: 5) { !app.staticTexts["newlist-taken"].exists },
+                      "a free name is still called taken")
+        tap(app, id: "newlist-shelf-GA")
+        tap(app, id: "newlist-make")
+
+        // It opens straight away — a list he cannot see inside is not made yet.
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the new list did not open")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["templates-summary"]) != before },
+                      "the shelf did not gain a list: still '\(before)'")
+        // The shelf he chose, tested by the shelf he did NOT choose: nothing in the
+        // sample is unshelved, so a list that ignored his choice would make an
+        // "Other lists" shelf appear. (Asserting the GA shelf exists proved nothing
+        // — it was already there, and the test passed with the choice thrown away.)
+        XCTAssertTrue(app.staticTexts["templates-shelf-GA"].exists, "the shelf he chose is gone")
+        XCTAssertFalse(app.staticTexts["templates-shelf-other"].exists,
+                       "the list landed on no shelf, so his choice was ignored")
+    }
+
     /// How many and Section belong to the thing's place ON A LIST, not to the thing.
     /// With one list they are edited in the grid; with two there is no single answer
     /// and the cell says so instead of pretending.
