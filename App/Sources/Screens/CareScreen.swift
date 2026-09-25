@@ -17,6 +17,8 @@ struct CareScreen: View {
     @State private var table = false
     @State private var searching = false
     @State private var bagsOpen = false
+    /// "list" or "calendar", remembered on this device.
+    @AppStorage("ams.care.view") private var careView = "list"
 
     var body: some View {
         let today = Today.local
@@ -108,6 +110,30 @@ struct CareScreen: View {
                     .foregroundStyle(overdue > 0 ? AppSection.actions.color : (soon > 0 ? AppSection.care.color : AppSection.events.color))
                     .padding(.top, 10)
                     .accessibilityIdentifier("care-summary")
+
+                // List or Calendar — the web app's two views of the same services.
+                HStack(spacing: 6) {
+                    ForEach(["list", "calendar"], id: \.self) { view in
+                        Button { careView = view } label: {
+                            Text(view == "list" ? "List" : "Calendar")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(careView == view ? .white : Theme.muted)
+                                .padding(.horizontal, 14).frame(minHeight: 32)
+                                .background(Capsule().fill(careView == view ? AppSection.care.color : Theme.card))
+                                .overlay(Capsule().stroke(Theme.line, lineWidth: careView == view ? 0 : 1))
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("care-view-\(view)")
+                        .accessibilityAddTraits(careView == view ? .isSelected : [])
+                    }
+                }
+                .padding(.top, 6)
+
+                if careView == "calendar" {
+                    CareCalendarView(today: today, showList: { careView = "list" }).environmentObject(model)
+                        .padding(.top, 8)
+                } else {
                 ForEach(sections, id: \.key) { section in
                     let shown = !section.fold || open.contains(section.key)
                     Button {
@@ -136,6 +162,8 @@ struct CareScreen: View {
                             }
                         }
                     }
+                }
+
                 }
 
                 // What the kit adds up to, LAST: what needs doing comes first, and

@@ -353,7 +353,13 @@ final class AMSPackingUITests: XCTestCase {
 
     private func tab(_ app: XCUIApplication, _ name: String) {
         hideKeyboard(app)
-        app.buttons["tab-\(name)"].tap()
+        // 🪤 A tap can be swallowed on a slow machine: on GitHub (0.17, 2026-09-25)
+        // the app took 43 s to launch, the tap on Trips was synthesised — and the
+        // screen stayed on Home. So: tap, check the screen changed, tap again if not.
+        for _ in 0..<3 {
+            app.buttons["tab-\(name)"].tap()
+            if appears(app, "screen-\(name)", timeout: 4) { return }
+        }
     }
 
     /// Put the keyboard away. On GitHub's simulator there is no hardware keyboard,
@@ -627,6 +633,47 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "care")
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["care-summary"]) == "All up to date" },
                       "the service was lost on the way out and back: '\(words(app.staticTexts["care-summary"]))'")
+    }
+
+    /// The maintenance calendar: it opens on this month and flags what is overdue;
+    /// once the boots are done today, they sit on the day they next fall due —
+    /// a few months on — and a tap there shows them.
+    func testTheCareCalendarPutsEachServiceOnItsDay() {
+        let app = launch()
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        tap(app, id: "care-view-calendar")
+        let title = app.staticTexts["care-cal-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5), "Calendar did not open")
+        let now = Date()
+        let names = ["January", "February", "March", "April", "May", "June", "July",
+                     "August", "September", "October", "November", "December"]
+        let c = Calendar.current.dateComponents([.year, .month], from: now)
+        XCTAssertEqual(words(title), "\(names[c.month! - 1]) \(c.year!)", "the calendar does not open on this month")
+        XCTAssertTrue(app.buttons["care-cal-overdue"].waitForExistence(timeout: 5),
+                      "the sample's boots are overdue, and the calendar does not say so")
+
+        // The overdue line leads to the List; Done today there — then back to the Calendar.
+        tap(app, id: "care-cal-overdue")
+        tap(app, id: "care-row-0-done")
+        tap(app, id: "care-view-calendar")
+        XCTAssertTrue(waitUntil { !app.buttons["care-cal-overdue"].exists }, "still flagged overdue after Done today")
+
+        // Every 90 days: find that month and that day.
+        let due = Calendar.current.date(byAdding: .day, value: 90, to: now)!
+        let d = Calendar.current.dateComponents([.year, .month, .day], from: due)
+        let ahead = (d.year! * 12 + d.month!) - (c.year! * 12 + c.month!)
+        for _ in 0..<ahead { tap(app, id: "care-cal-next") }
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-title"]) == "\(names[d.month! - 1]) \(d.year!)" },
+                      "next month did not move the calendar: '\(words(app.staticTexts["care-cal-title"]))'")
+        let day = app.buttons["care-cal-\(d.day!)"]
+        XCTAssertTrue(day.waitForExistence(timeout: 5), "no day \(d.day!) on the calendar")
+        XCTAssertTrue(waitUntil { (day.value as? String) == "1 due" },
+                      "the boots are not on the day they fall due: '\(day.value as? String ?? "")'")
+        tap(app, id: "care-cal-\(d.day!)")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-day"]).hasSuffix("· 1") },
+                      "the day does not list what is due: '\(words(app.staticTexts["care-cal-day"]))'")
+        XCTAssertTrue(app.buttons["care-row-900-done"].waitForExistence(timeout: 5), "the boots are not under the day")
     }
 
     /// After a trip: mark what went unused, add what was missed, save — the trip
