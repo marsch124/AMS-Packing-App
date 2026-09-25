@@ -61,6 +61,8 @@ struct TripScreen: View {
                 VStack(alignment: .leading, spacing: 4) {
                 WeatherCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
+                BagsCard(tripId: trip.id).environmentObject(model)
+                    .padding(.top, 6).padding(.horizontal, 16)
                 LazyVStack(alignment: .leading, spacing: 4) {
                     // The web app's nesting: When → by bag inside; Where / Category → by When inside.
                     ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { g, group in

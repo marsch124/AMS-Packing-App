@@ -19,7 +19,8 @@ struct TemplatesScreen: View {
         add("transport", "By transport", all.filter { $0.role == "transport" })
         for g in GROUPS { add(g.id, g.label, orderActivities(g.id, all.filter { $0.role.isEmpty && $0.group == g.id })) }
         add("other", "Other lists", all.filter { $0.role.isEmpty && $0.group.isEmpty })
-        add("containers", "Containers", all.filter { $0.role == CONTAINER_ROLE })
+        // Bags are not an activity: they have their own screen, on Care (as in the
+        // web app), where each gets a weight limit.
         return out
     }
 

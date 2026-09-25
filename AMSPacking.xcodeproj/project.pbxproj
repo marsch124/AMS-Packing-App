@@ -39,9 +39,11 @@
 		C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */; };
 		CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5987DFEB47FC294A078D4D /* NewList.swift */; };
 		D0D4A2EA2FA240B7D980E71C /* KitDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112E88E5E56E46CAA3F002CE /* KitDashboard.swift */; };
+		D4F50ECCC88F8FE89A931EFC /* BagsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41F92CE24B4D203B69B5870 /* BagsCard.swift */; };
 		D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */; };
 		D5D12FDA2CC5B6443B769608 /* PackingLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 00FE6A96F5083A4802B251C6 /* PackingLibrary */; };
 		E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B838F35360E8BDAF890124 /* Theme.swift */; };
+		E26E2B17454694BAA27BDCE1 /* ContainersScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D6FFFE59377217C97261D66 /* ContainersScreen.swift */; };
 		E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA49BA1121FBB7576FC62E32 /* RootView.swift */; };
 		EB766063382A7E2DADC60C89 /* Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78A30067C884BCEB042959A /* Sections.swift */; };
 /* End PBXBuildFile section */
@@ -71,6 +73,7 @@
 		34879BF77676913C07B69267 /* RestoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestoreSheet.swift; sourceTree = "<group>"; };
 		35352F3BD8D2A7EE166961C9 /* Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Today.swift; sourceTree = "<group>"; };
 		3A74DCE749078F203A8E87BF /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
+		3D6FFFE59377217C97261D66 /* ContainersScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersScreen.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLibrary.swift; sourceTree = "<group>"; };
 		4E38CAC9C9C8FFA96DF061FC /* AMSPackingUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AMSPackingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -87,6 +90,7 @@
 		A841D9340C8D1312A6814431 /* CloudStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudStore.swift; sourceTree = "<group>"; };
 		AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
 		BA49BA1121FBB7576FC62E32 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C41F92CE24B4D203B69B5870 /* BagsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagsCard.swift; sourceTree = "<group>"; };
 		C63D25C9AA00E03651D86114 /* BuyList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyList.swift; sourceTree = "<group>"; };
 		C9BF0565DC8465EAD313C1A4 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
@@ -193,9 +197,11 @@
 			isa = PBXGroup;
 			children = (
 				9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */,
+				C41F92CE24B4D203B69B5870 /* BagsCard.swift */,
 				1E0A839566CDE77B068F47C5 /* BulkChange.swift */,
 				C63D25C9AA00E03651D86114 /* BuyList.swift */,
 				56F5604CA6875D255BD93251 /* CareScreen.swift */,
+				3D6FFFE59377217C97261D66 /* ContainersScreen.swift */,
 				77CEDA06EFED05D4A1612077 /* EventsScreen.swift */,
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
@@ -329,10 +335,12 @@
 			files = (
 				65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */,
 				AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */,
+				D4F50ECCC88F8FE89A931EFC /* BagsCard.swift in Sources */,
 				C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */,
 				21419C900E931B9CBE73B314 /* BuyList.swift in Sources */,
 				BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */,
 				B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */,
+				E26E2B17454694BAA27BDCE1 /* ContainersScreen.swift in Sources */,
 				8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */,
 				4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */,
 				622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */,
@@ -497,7 +505,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.16;
+				MARKETING_VERSION = 0.17;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -584,7 +592,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.16;
+				MARKETING_VERSION = 0.17;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

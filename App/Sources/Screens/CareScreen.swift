@@ -16,6 +16,7 @@ struct CareScreen: View {
     struct ThingsRequest: Identifiable { let id = UUID(); let search: String }
     @State private var table = false
     @State private var searching = false
+    @State private var bagsOpen = false
 
     var body: some View {
         let today = Today.local
@@ -57,6 +58,30 @@ struct CareScreen: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .padding(.top, 14)
                 .accessibilityIdentifier("care-things")
+
+                Button { bagsOpen = true } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text("Containers").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                                Text("\(model.library.bags().count)")
+                                    .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                            }
+                            Text("Your bags — how much each may carry")
+                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
+                        }
+                        Spacer()
+                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
+                    }
+                    .padding(.horizontal, 14).frame(minHeight: 52)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .padding(.top, 8)
+                .accessibilityIdentifier("care-containers")
 
                 Button { table = true } label: {
                     HStack {
@@ -125,6 +150,7 @@ struct CareScreen: View {
         .sheet(item: $opening) { ask in ThingsScreen(searching: ask.search).environmentObject(model) }
         .sheet(isPresented: $table) { ThingsTable().environmentObject(model) }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
+        .sheet(isPresented: $bagsOpen) { ContainersScreen().environmentObject(model) }
     }
 
     /// "431 things · 12.4 kg · 2 looked after" — the state of the kit in one line.

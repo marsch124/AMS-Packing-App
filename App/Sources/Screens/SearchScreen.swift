@@ -20,9 +20,22 @@ struct SearchScreen: View {
 
     @State private var query = ""
     @FocusState private var writing: Bool
-    @State private var thing: String?
-    @State private var list: String?
-    @State private var trip: String?
+    /// Where a chosen result opens. ONE sheet with a destination, not three sheets:
+    /// SwiftUI does not reliably present a second sheet on a view while the first is
+    /// still closing, so "open a thing, close it, tap a list" opened nothing on
+    /// GitHub's slower runner — and would have on his phone too.
+    @State private var opened: Opened?
+
+    enum Opened: Identifiable {
+        case thing(String), list(String), trip(String)
+        var id: String {
+            switch self {
+            case .thing(let x): return "thing:\(x)"
+            case .list(let x): return "list:\(x)"
+            case .trip(let x): return "trip:\(x)"
+            }
+        }
+    }
 
     /// How many things are listed before the rest are summed up in a line.
     private static let mostThings = 30
@@ -79,14 +92,12 @@ struct SearchScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .onAppear { writing = true }
-        .sheet(item: Binding(get: { thing.map(Holder.init) }, set: { thing = $0?.id })) { held in
-            ThingEditor(itemId: held.id).environmentObject(model)
-        }
-        .sheet(item: Binding(get: { list.map(Holder.init) }, set: { list = $0?.id })) { held in
-            TemplateDetail(listId: held.id).environmentObject(model)
-        }
-        .sheet(item: Binding(get: { trip.map(Holder.init) }, set: { trip = $0?.id })) { held in
-            TripScreen(tripId: held.id).environmentObject(model)
+        .sheet(item: $opened) { destination in
+            switch destination {
+            case .thing(let id): ThingEditor(itemId: id).environmentObject(model)
+            case .list(let id): TemplateDetail(listId: id).environmentObject(model)
+            case .trip(let id): TripScreen(tripId: id).environmentObject(model)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("search-detail")
@@ -94,8 +105,6 @@ struct SearchScreen: View {
         .frame(minWidth: 460, minHeight: 560)
         #endif
     }
-
-    private struct Holder: Identifiable { let id: String }
 
     // MARK: - what was found
 
@@ -181,9 +190,9 @@ struct SearchScreen: View {
 
     private func chose(_ row: Row) {
         switch row.kind {
-        case .thing: thing = row.id
-        case .list: list = row.id
-        case .trip: trip = row.id
+        case .thing: opened = .thing(row.id)
+        case .list: opened = .list(row.id)
+        case .trip: opened = .trip(row.id)
         case .todo:
             // A to-do is not a thing to open; it lives on Actions.
             dismiss()

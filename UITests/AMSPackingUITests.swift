@@ -1292,6 +1292,43 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "template-detail", timeout: 5), "choosing a list did not open it")
     }
 
+    /// A bag's weight limit, set on Care → Containers, is what every trip measures
+    /// that bag against — and a bag over it turns the trip's Bags card red.
+    /// (The first Bags card read the lists WITHOUT their things and so never saw a
+    /// limit he set; this is the test that would have caught it in the app.)
+    func testABagsLimitReachesTheTrip() {
+        let app = launch()
+
+        // The sample trip packs into carry-on, whose airline ceiling is 8 kg: well under.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.otherElements["bags-card"].waitForExistence(timeout: 5)
+                      || app.staticTexts["bags-total"].waitForExistence(timeout: 2), "no Bags card on the trip")
+        XCTAssertFalse(app.staticTexts["bags-over"].exists, "under its limit, a bag must not say it is over")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // Make that bag his own, with a limit it is already past.
+        tab(app, "care")
+        tap(app, id: "care-containers")
+        XCTAssertTrue(appears(app, "containers-detail", timeout: 5), "no Containers screen")
+        type("Carry-on / hand luggage", into: app.textFields["bag-new-name"])
+        tap(app, id: "bag-new")
+        XCTAssertTrue(app.textFields["bag-0-maxkg"].waitForExistence(timeout: 5), "the bag was not made")
+        type("1", into: app.textFields["bag-0-maxkg"])
+        app.textFields["bag-0-maxkg"].typeText("\n")
+        tap(app, id: "containers-done")
+        XCTAssertTrue(disappears(app, "containers-detail", timeout: 5))
+
+        // The trip must see it.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["bags-over"].waitForExistence(timeout: 10),
+                      "the limit he set did not reach the trip")
+    }
+
     /// Getting rid of a list he no longer wants, and renaming the one he keeps —
     /// his own words: "Just delete one and rename the existing."
     func testAListIsRenamedAndAnotherIsDeleted() {
