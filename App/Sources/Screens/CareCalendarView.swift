@@ -44,17 +44,31 @@ struct CareCalendarView: View {
                 .accessibilityIdentifier("care-cal-overdue")
             }
 
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-            LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(CareCalendarView.weekdays, id: \.self) { d in
-                    Text(d).font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.muted)
+            // 🪤 NOT a LazyVGrid: a lazy grid builds only the weeks on screen, and on the
+            // Mac's shorter window the last weeks of the month never existed (0.18, CI).
+            // A month is at most 42 cells — build them all.
+            let cells: [Library.CareDay?] = Array(repeating: nil, count: cal.lead) + cal.days.map { $0 }
+            let weeks = stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<min($0 + 7, cells.count)]) }
+            VStack(spacing: 4) {
+                HStack(spacing: 4) {
+                    ForEach(CareCalendarView.weekdays, id: \.self) { d in
+                        Text(d).font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.muted)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
-                ForEach(0..<cal.lead, id: \.self) { _ in Color.clear.frame(height: 40) }
-                ForEach(cal.days, id: \.ymd) { day in
-                    Button { chosen = day.ymd } label: { cell(day, picked: picked) }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("care-cal-\(day.day)")
-                        .accessibilityValue(day.count > 0 ? "\(day.count) due" : "")
+                ForEach(weeks.indices, id: \.self) { w in
+                    HStack(spacing: 4) {
+                        ForEach(0..<7, id: \.self) { i in
+                            if i < weeks[w].count, let day = weeks[w][i] {
+                                Button { chosen = day.ymd } label: { cell(day, picked: picked) }
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("care-cal-\(day.day)")
+                                    .accessibilityValue(day.count > 0 ? "\(day.count) due" : "")
+                            } else {
+                                Color.clear.frame(maxWidth: .infinity, minHeight: 40)
+                            }
+                        }
+                    }
                 }
             }
 
