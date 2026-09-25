@@ -297,19 +297,28 @@ final class AMSPackingUITests: XCTestCase {
     /// Scroll the list until a control with this id EXISTS. A row far down a long
     /// list is not in the tree at all until it has been near the screen — so a test
     /// looking for one has to travel there, exactly as he would.
+    ///
+    /// `near`: a control already in the SAME list (the row above). 🪤 Without it the
+    /// biggest list is scrolled — and on the Mac that is the Trips screen BEHIND an
+    /// open trip, so the trip's own list never moved (0.19, GitHub, second run).
     @discardableResult
-    private func scrollUntil(_ app: XCUIApplication, _ id: String, tries: Int = 8) -> Bool {
-        for _ in 0..<tries {
+    private func scrollUntil(_ app: XCUIApplication, _ id: String, near: String? = nil, tries: Int = 8) -> Bool {
+        for attempt in 0..<tries {
             if app.buttons[id].exists || app.otherElements[id].exists { return true }
-            guard let list = biggestList(app), list.exists, list.isHittable else { return false }
+            var holder: XCUIElement? = nil
+            if let near { holder = listHolding(app, app.buttons[near].exists ? app.buttons[near] : app.otherElements[near]) }
+            guard let list = holder ?? biggestList(app), list.exists, list.isHittable else { return false }
             #if os(macOS)
-            list.scroll(byDeltaX: 0, deltaY: -220)
+            // Which sign is "down" is not proven on the Mac: the second half tries the other.
+            list.scroll(byDeltaX: 0, deltaY: attempt < tries / 2 ? -220 : 220)
             #else
             list.swipeUp()
             #endif
             usleep(300_000)
         }
-        return app.buttons[id].exists || app.otherElements[id].exists
+        let found = app.buttons[id].exists || app.otherElements[id].exists
+        if !found { print("TAP-REPORT scrollUntil never found \(id)\n" + String(app.debugDescription.prefix(8000))) }
+        return found
     }
 
     /// The list the control is IN — asked by descendancy, not by frames.
@@ -1061,7 +1070,8 @@ final class AMSPackingUITests: XCTestCase {
         let total = Int(words(progress).split(separator: "/").last ?? "") ?? 0
         XCTAssertGreaterThan(total, 0, "the trip has no lines: '\(words(progress))'")
         for n in 0..<total {
-            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)"), "line \(n + 1) of \(total) never appeared")
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil),
+                          "line \(n + 1) of \(total) never appeared")
             let line = app.buttons["trip-line-\(n)"]
             if !isOn(line) { tapVisible(app, line) }
         }
