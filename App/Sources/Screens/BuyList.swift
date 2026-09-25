@@ -99,7 +99,8 @@ struct BuyList: View {
                     .onSubmit { add() }
                     .accessibilityIdentifier("buy-add-text")
                 Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("Add").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(text).isEmpty ? Theme.muted : Color.white)
                         .padding(.horizontal, 16).frame(minHeight: 44)
                         .background(RoundedRectangle(cornerRadius: 10)
                             .fill(jsTrim(text).isEmpty ? Theme.line : AppSection.actions.color))

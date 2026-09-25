@@ -15,6 +15,7 @@ struct CareScreen: View {
 
     struct ThingsRequest: Identifiable { let id = UUID(); let search: String }
     @State private var table = false
+    @State private var searching = false
 
     var body: some View {
         let today = Today.local
@@ -26,12 +27,16 @@ struct CareScreen: View {
         let stats = model.library.kitStats(today: today)
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Care").font(.system(size: 28, weight: .heavy)).foregroundStyle(AppSection.care.color)
                         .accessibilityIdentifier("care-heading")
                     Text(CareScreen.line(stats))
                         .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("care-line")
+                }
+                    Spacer()
+                    SearchButton { searching = true }
                 }
                 .padding(.top, 14).padding(.bottom, 2)
 
@@ -119,6 +124,7 @@ struct CareScreen: View {
         }
         .sheet(item: $opening) { ask in ThingsScreen(searching: ask.search).environmentObject(model) }
         .sheet(isPresented: $table) { ThingsTable().environmentObject(model) }
+        .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
     }
 
     /// "431 things · 12.4 kg · 2 looked after" — the state of the kit in one line.

@@ -385,7 +385,13 @@ final class AMSPackingUITests: XCTestCase {
         let deadline = Date().addingTimeInterval(timeout)
         repeat {
             let e = app.buttons[id]
-            if e.exists { tapVisible(app, e); return }
+            // 🪤 Existing is not enough. A control can be in the tree with NO frame
+            // yet ({inf, inf} — SwiftUI has not laid it out), and a control in a list
+            // that is reflowing (rows above it being removed) is a moving target.
+            // XCUITest's own tap failure is fatal — there is nothing to catch — so
+            // the wait has to happen BEFORE the tap. Seen twice in one suite run:
+            // a Settings field and a Columns row, both green on their own.
+            if e.exists, settled(e) { tapVisible(app, e); return }
             usleep(200_000)
         } while Date() < deadline
         print("TAP-REPORT nothing called \(id) after \(timeout)s")
@@ -393,6 +399,17 @@ final class AMSPackingUITests: XCTestCase {
         let picture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         picture.name = "no-\(id)"; picture.lifetime = .keepAlways; add(picture)
         XCTFail("no \(id) to tap — see TAP-REPORT in the log")
+    }
+
+    /// Has this control been laid out, and stopped moving? Two reads a moment apart
+    /// must agree, and the frame must be real.
+    private func settled(_ e: XCUIElement) -> Bool {
+        let first = e.frame
+        guard first.origin.x.isFinite, first.origin.y.isFinite,
+              first.width > 0, first.height > 0 else { return false }
+        usleep(120_000)
+        guard e.exists else { return false }
+        return e.frame == first
     }
 
     /// Replace what a field holds. Select-all on the Mac; on the phone the old text
@@ -1244,6 +1261,76 @@ final class AMSPackingUITests: XCTestCase {
         tapVisible(app, tick)
         XCTAssertTrue(waitUntil(timeout: 5) { self.isOn(app.buttons["table-0-liquid"]) != before },
                       "the tick did not change")
+    }
+
+    /// One search that reaches everything, from whichever screen he is on: a thing
+    /// opens the THING, a list opens the list, and a word nothing answers to says so.
+    func testOneSearchReachesEverything() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5), "the search did not open")
+
+        // A word nothing answers to.
+        type("zzzz", into: app.textFields["search-field"])
+        XCTAssertTrue(app.staticTexts["search-none"].waitForExistence(timeout: 5),
+                      "it did not say that nothing matches")
+
+        // A thing of his opens the thing itself — not whichever list happens to
+        // hold it, which is what the web app does.
+        replace("Headlamp", in: app.textFields["search-field"])
+        XCTAssertTrue(app.buttons["search-things-0"].waitForExistence(timeout: 5), "the thing was not found")
+        tapVisible(app, app.buttons["search-things-0"])
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "choosing a thing did not open it")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+
+        // A list of his opens the list.
+        replace("Hiking", in: app.textFields["search-field"])
+        XCTAssertTrue(app.buttons["search-lists-0"].waitForExistence(timeout: 5), "the list was not found")
+        tapVisible(app, app.buttons["search-lists-0"])
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5), "choosing a list did not open it")
+    }
+
+    /// Getting rid of a list he no longer wants, and renaming the one he keeps —
+    /// his own words: "Just delete one and rename the existing."
+    func testAListIsRenamedAndAnotherIsDeleted() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let before = words(app.staticTexts["templates-summary"])
+
+        // Rename the first list where its name is written.
+        tap(app, id: "template-row-0")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        replace("Mobility & Breath", in: app.textFields["template-name"])
+        XCTAssertTrue(app.buttons["template-rename"].waitForExistence(timeout: 5), "no way to save the new name")
+        tap(app, id: "template-rename")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        // Asked where it cannot be misread: reopening the list and reading its name
+        // field. (A card's name is a child of a Button, and a Button says different
+        // things about its children on the Mac and on the phone.)
+        tap(app, id: "template-row-0")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertEqual(cellSays(app, "template-name"), "Mobility & Breath", "the rename did not stick")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // Delete another one. It asks first, and says the things stay.
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-delete")
+        XCTAssertTrue(app.buttons["template-delete-yes"].waitForExistence(timeout: 5), "it deleted without asking")
+        tap(app, id: "template-delete-yes")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "the list did not close after going")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["templates-summary"]) != before },
+                      "the shelf still says the same: '\(before)'")
+
+        // And not one THING went with it.
+        tab(app, "care")
+        XCTAssertTrue(words(app.staticTexts["care-line"]).hasPrefix("10 things"),
+                      "a deleted list must not take his things: '\(words(app.staticTexts["care-line"]))'")
     }
 
     /// A list he makes himself lands on the shelf he chose, opens straight away, and

@@ -47,7 +47,8 @@ struct ReviewScreen: View {
                             .focused($typingMissed)
                             .accessibilityIdentifier("review-miss-input")
                         Button { addMissed(target) } label: {
-                            Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                            Text("Add").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(missName).isEmpty ? Theme.muted : Color.white)
                                 .padding(.horizontal, 16).frame(minHeight: 44)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(missName).isEmpty ? Theme.line : AppSection.events.color))
                                 .contentShape(Rectangle())

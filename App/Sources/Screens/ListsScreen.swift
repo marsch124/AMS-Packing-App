@@ -87,7 +87,8 @@ struct ListsScreen: View {
                                 .onSubmit { add(kind) }
                                 .accessibilityIdentifier("list-\(kind.rawValue)-add-name")
                             Button { add(kind) } label: {
-                                Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                                Text("Add").font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(jsTrim(adding[kind.rawValue] ?? "").isEmpty ? Theme.muted : Color.white)
                                     .padding(.horizontal, 16).frame(minHeight: 44)
                                     .background(RoundedRectangle(cornerRadius: 10)
                                         .fill(jsTrim(adding[kind.rawValue] ?? "").isEmpty ? Theme.line : AppSection.settings.color))

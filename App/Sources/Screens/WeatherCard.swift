@@ -68,7 +68,8 @@ struct WeatherCard: View {
                         .accessibilityIdentifier("weather-place")
                     Button { look() } label: {
                         Text(busy ? "Looking…" : "Weather")
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(jsTrim(place).isEmpty || busy ? Theme.muted : Color.white)
                             .padding(.horizontal, 14).frame(minHeight: 40)
                             .background(RoundedRectangle(cornerRadius: 10)
                                 .fill(jsTrim(place).isEmpty || busy ? Theme.line : AppSection.events.color))

@@ -1,4 +1,5 @@
 import SwiftUI
+import PackingCore
 
 /// The six sections of the app — the same six, in the same order and the same
 /// colours, as the web app's tab bar. `rawValue` is what the accessibility
@@ -11,7 +12,9 @@ enum AppSection: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .home: return "Home"
-        case .events: return "Events"
+        // The screen says Trips, so the tab says Trips. (The identifier stays
+        // "tab-events" — it is built from the case name, not the label.)
+        case .events: return "Trips"
         case .templates: return "Templates"
         case .care: return "Care"
         case .actions: return "Actions"
@@ -72,4 +75,12 @@ struct SectionMark: View {
             .stroke(style: StrokeStyle(lineWidth: weight * k, lineCap: .round, lineJoin: .round))
             .frame(width: size, height: size)
     }
+}
+
+/// "GA · GOAL ACTIVITY" — his own code for a group, then the words in capitals.
+/// The trip builder and the shelves on Your lists both say it this way, from here,
+/// so the two can never drift apart.
+func groupHeading(_ id: String, _ label: String) -> String {
+    let code = jsTrim(id)
+    return code.isEmpty ? label.uppercased() : "\(code) · \(label.uppercased())"
 }

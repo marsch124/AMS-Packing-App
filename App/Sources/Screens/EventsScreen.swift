@@ -6,6 +6,9 @@ import PackingLibrary
 /// what is coming, what has been — each saying where it is in its life without
 /// making him read numbers.
 struct EventsScreen: View {
+    @State private var searching = false
+    /// Trips he has already reviewed start folded away.
+    @State private var showReviewed = false
     @EnvironmentObject var model: LibraryModel
     @State private var openId: String?
     /// Set by the Actions chip; the tab bar owns which tab shows.
@@ -28,6 +31,7 @@ struct EventsScreen: View {
                             .accessibilityIdentifier("events-summary")
                     }
                     Spacer()
+                    SearchButton { searching = true }
                     if toDos > 0 {
                         Button(action: goToActions) {
                             HStack(spacing: 6) {
@@ -54,7 +58,11 @@ struct EventsScreen: View {
                 }
 
                 ForEach(EventsScreen.piles, id: \.0) { pile, title in
-                    let mine = cards.filter { $0.when == pile }
+                    // A trip he has been on AND reviewed is finished with. It stays —
+                    // nothing is hidden for good — but it folds away, so the trips
+                    // that still need him are not pushed down the screen by history.
+                    let mine = cards.filter { $0.when == pile && !($0.state == .reviewed && pile == .been) }
+                    let done = cards.filter { $0.when == pile && $0.state == .reviewed && pile == .been }
                     if !mine.isEmpty {
                         Text(title).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
                             .padding(.top, 10)
@@ -65,11 +73,38 @@ struct EventsScreen: View {
                                 .accessibilityIdentifier("trip-row-\(cards.firstIndex { $0.id == card.id } ?? 0)")
                         }
                     }
+                    if !done.isEmpty {
+                        Button { showReviewed.toggle() } label: {
+                            HStack(spacing: 6) {
+                                Text("Reviewed").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                                Text("\(done.count)")
+                                    .font(.system(size: 15, weight: .heavy).monospacedDigit())
+                                    .foregroundStyle(Theme.muted)
+                                Text(showReviewed ? "▾" : "▸").font(.system(size: 13, weight: .black))
+                                    .foregroundStyle(AppSection.events.color)
+                                Spacer()
+                            }
+                            .padding(.top, 10).frame(minHeight: 34)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("events-reviewed")
+                        .accessibilityAddTraits(showReviewed ? .isSelected : [])
+                        if showReviewed {
+                            ForEach(done, id: \.id) { card in
+                                Button { openId = card.id } label: { TripRow(card: card) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("trip-row-\(cards.firstIndex { $0.id == card.id } ?? 0)")
+                            }
+                        }
+                    }
                 }
+                if !cards.isEmpty { TravelYearBand(year: model.library.travelYear(today: Today.local)) }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
         }
+        .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(item: Binding(get: { openId.map { Opened(id: $0) } }, set: { openId = $0?.id })) { opened in
             TripScreen(tripId: opened.id).environmentObject(model)
         }
@@ -146,7 +181,7 @@ struct TripRow: View {
                     Rectangle().fill(tint).frame(width: max(0, min(1, card.part)) * space.size.width)
                 }
             }
-            .frame(height: 4)
+            .frame(height: 8)
             .accessibilityHidden(true)
         }
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
@@ -176,3 +211,66 @@ struct TripRow: View {
         return out.string(from: d)
     }
 }
+
+
+/// His travelling year, under the trips: a column per month for the last twelve,
+/// and what those trips came to. It answers a question the list cannot — when does
+/// he actually go away — and every mark in it is one of his own numbers.
+struct TravelYearBand: View {
+    let year: Library.TravelYear
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("YOUR YEAR")
+                .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                .padding(.top, 22)
+
+            HStack(alignment: .bottom, spacing: 5) {
+                ForEach(Array(year.byMonth.enumerated()), id: \.offset) { n, count in
+                    VStack(spacing: 5) {
+                        Text(count > 0 ? "\(count)" : " ")
+                            .font(.system(size: 10, weight: .heavy).monospacedDigit())
+                            .foregroundStyle(AppSection.events.color)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(count > 0 ? AppSection.events.color : Theme.line)
+                            .frame(height: max(4, 54 * (year.most > 0 ? Double(count) / Double(year.most) : 0)))
+                        Text(TravelYearBand.month(n < year.months.count ? year.months[n] : ""))
+                            .font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.muted)
+                    }
+                }
+            }
+            .frame(height: 84)
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier("events-year")
+            .accessibilityLabel("Trips month by month over the last year")
+
+            HStack(spacing: 8) {
+                figure("\(year.trips)", year.trips == 1 ? "trip" : "trips", "year-trips")
+                figure("\(year.nights)", year.nights == 1 ? "night away" : "nights away", "year-nights")
+                figure("\(year.packed)", "things packed", "year-packed")
+            }
+        }
+    }
+
+    private func figure(_ number: String, _ word: String, _ id: String) -> some View {
+        VStack(spacing: 2) {
+            Text(number).font(.system(size: 20, weight: .heavy).monospacedDigit())
+                .foregroundStyle(AppSection.events.color)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted)
+                .lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, minHeight: 56)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(id)
+    }
+
+    /// "Sep" from "2026-09-01" — his own dates, no calendar arithmetic needed.
+    static func month(_ firstOfMonth: String) -> String {
+        guard firstOfMonth.count >= 7, let m = Int(firstOfMonth.dropFirst(5).prefix(2)), (1...12).contains(m) else { return "" }
+        return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]
+    }
+}
+

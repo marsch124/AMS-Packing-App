@@ -71,7 +71,8 @@ struct GrabShelfScreen: View {
                     .onSubmit { add() }
                     .accessibilityIdentifier("shelf-new-name")
                 Button { add() } label: {
-                    Text("Make").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("Make").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
                         .padding(.horizontal, 16).frame(minHeight: 44)
                         .background(RoundedRectangle(cornerRadius: 10)
                             .fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.home.color))

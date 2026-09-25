@@ -143,7 +143,8 @@ struct TripScreen: View {
                     .onSubmit { add() }
                     .accessibilityIdentifier("trip-add-name")
                 Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("Add").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
                         .padding(.horizontal, 16).frame(minHeight: 44)
                         .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.events.color))
                         .contentShape(Rectangle())

@@ -5,6 +5,7 @@ import PackingLibrary
 /// Actions: the central to-do list — open before done, high before normal,
 /// sooner before later. A tick is permanent; it does not reset per trip.
 struct ActionsScreen: View {
+    @State private var searching = false
     @EnvironmentObject var model: LibraryModel
     @State private var text = ""
     @State private var high = false
@@ -19,6 +20,8 @@ struct ActionsScreen: View {
             HStack(spacing: 8) {
                 sideButton("To do", on: !buying, id: "actions-tab-todo") { buying = false }
                 sideButton("To buy", on: buying, id: "actions-tab-buy") { buying = true }
+                Spacer()
+                SearchButton { searching = true }
             }
             .padding(.horizontal, 16).padding(.top, 12)
             if buying {
@@ -97,7 +100,8 @@ struct ActionsScreen: View {
                 .accessibilityLabel("High priority")
                 .accessibilityAddTraits(high ? .isSelected : [])
                 Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("Add").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(text).isEmpty ? Theme.muted : Color.white)
                         .padding(.horizontal, 16).frame(minHeight: 44)
                         .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(text).isEmpty ? Theme.line : AppSection.actions.color))
                         .contentShape(Rectangle())
@@ -109,6 +113,7 @@ struct ActionsScreen: View {
             .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
+        .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
     }
 
     /// One of the two sides at the top. Which one is showing is said by colour and

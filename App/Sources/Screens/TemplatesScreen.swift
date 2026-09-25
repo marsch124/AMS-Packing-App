@@ -8,6 +8,7 @@ struct TemplatesScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var open: PackList?
     @State private var making = false
+    @State private var searching = false
 
     struct Shelf: Identifiable { let id: String; let title: String; let lists: [PackList] }
 
@@ -25,7 +26,7 @@ struct TemplatesScreen: View {
     /// "GA · GOAL ACTIVITY" — his code, then the words, as he wrote them.
     static func shelfHeading(_ shelf: Shelf) -> String {
         let code = GROUPS.first { $0.id == shelf.id }?.id ?? ""
-        return code.isEmpty ? shelf.title.uppercased() : "\(code) · \(shelf.title.uppercased())"
+        return groupHeading(code, shelf.title)
     }
 
     /// "15 lists · 431 things · 4 trips packed from them"
@@ -54,6 +55,7 @@ struct TemplatesScreen: View {
                             .accessibilityIdentifier("templates-summary")
                     }
                     Spacer(minLength: 8)
+                    SearchButton { searching = true }
                     Button { making = true } label: {
                         Text("+ New")
                             .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
@@ -89,6 +91,7 @@ struct TemplatesScreen: View {
             .padding(.bottom, 24)
         }
         .sheet(item: $open) { list in TemplateDetail(listId: list.id).environmentObject(model) }
+        .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(isPresented: $making) {
             NewList(made: { list in
                 model.change { $0.saveTemplate(list) }
@@ -173,6 +176,10 @@ struct TemplateDetail: View {
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
     @State private var editingRow: String?
+    /// What he is typing over the name, while he is typing it.
+    @State private var renaming: String?
+    @FocusState private var writingName: Bool
+    @State private var askingToDelete = false
 
     var body: some View {
         let list = model.library.resolvedTemplate(id: listId) ?? newList()
@@ -192,7 +199,25 @@ struct TemplateDetail: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Cover(list: list, size: 36)
-                Text(list.name).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                // The name is the field. Press it, type, and it is renamed — no
+                // second screen for one word.
+                TextField("", text: Binding(
+                    get: { renaming ?? list.name },
+                    set: { renaming = $0 }))
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .focused($writingName)
+                    .onSubmit { saveName(list) }
+                    .accessibilityIdentifier("template-name")
+                if let wanted = renaming, jsTrim(wanted) != jsTrim(list.name) {
+                    Button { saveName(list) } label: {
+                        Text("Rename").font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(nameFree(wanted, list) ? AppSection.templates.color : Theme.muted)
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .disabled(!nameFree(wanted, list))
+                    .accessibilityIdentifier("template-rename")
+                }
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(.plain)
@@ -258,7 +283,8 @@ struct TemplateDetail: View {
                     .onSubmit { add() }
                     .accessibilityIdentifier("template-add-name")
                 Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("Add").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
                         .padding(.horizontal, 16).frame(minHeight: 44)
                         .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.templates.color))
                         .contentShape(Rectangle())
@@ -268,6 +294,49 @@ struct TemplateDetail: View {
                 .accessibilityIdentifier("template-add")
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
+
+            if askingToDelete {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Delete “\(list.name)”?")
+                        .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("The list and its \(list.items.count) row\(list.items.count == 1 ? "" : "s") go. The THINGS stay — they are still in Your things and on any other list.")
+                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 10) {
+                        Button("Keep it") { askingToDelete = false }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                            .accessibilityIdentifier("template-delete-no")
+                        Spacer()
+                        Button {
+                            model.change { _ = $0.deleteTemplate(id: listId) }
+                            dismiss()
+                        } label: {
+                            Text("Delete the list")
+                                .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
+                                .padding(.horizontal, 14).frame(minHeight: 40)
+                                .background(Capsule().fill(AppSection.actions.color))
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("template-delete-yes")
+                    }
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
+                .padding(.horizontal, 16).padding(.bottom, 10)
+            } else {
+                Button { askingToDelete = true } label: {
+                    Text("Delete this list")
+                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                        .frame(maxWidth: .infinity, minHeight: 34)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .padding(.bottom, 8)
+                .accessibilityIdentifier("template-delete")
+            }
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: Binding(get: { editingRow.map { Editing(id: $0) } }, set: { editingRow = $0?.id })) { e in
@@ -278,6 +347,20 @@ struct TemplateDetail: View {
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 600)
         #endif
+    }
+
+    /// Is this name free — nobody else's, and not blank?
+    private func nameFree(_ wanted: String, _ list: PackList) -> Bool {
+        let clean = normName(wanted)
+        guard !clean.isEmpty else { return false }
+        return !model.library.templates.contains { $0.id != listId && normName($0.name) == clean }
+    }
+
+    private func saveName(_ list: PackList) {
+        guard let wanted = renaming, nameFree(wanted, list) else { return }
+        model.change { _ = $0.renameTemplate(id: listId, to: wanted) }
+        renaming = nil
+        writingName = false
     }
 
     private func add() {
@@ -340,7 +423,8 @@ struct RowEditor: View {
                     HStack(spacing: 8) {
                         field($newSectionName, "e.g. Lights", "row-section-new")
                         Button { addSection() } label: {
-                            Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                            Text("Add").font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(jsTrim(newSectionName).isEmpty ? Theme.muted : Color.white)
                                 .padding(.horizontal, 16).frame(minHeight: 44)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newSectionName).isEmpty ? Theme.line : AppSection.templates.color))
                                 .contentShape(Rectangle())

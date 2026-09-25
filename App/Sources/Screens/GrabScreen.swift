@@ -50,9 +50,14 @@ struct GrabDoodle: View {
         case "swim": return swim
         case "bike": return bike
         case "run": return runBody + " " + runLineTop + " " + runLines
-        case "swim-sun": return swim + " " + sun(11, 11)
-        case "bike-sun": return bike + " " + sun(12, 12)
-        case "run-sun": return runBody + " " + runLines + " " + sun(11, 12, 0.9)
+        // A BIGGER sun, his ask. Its rays reach 9.6 units from the middle at scale
+        // 1, so growing it means moving the middle inwards too — or it clips the
+        // edge of the 64-unit box — and keeping it clear of the swimmer's head
+        // (x from 29), the bike's frame (from 27) and the runner's speed lines
+        // (y 27.5).
+        case "swim-sun": return swim + " " + sun(12, 12, 1.2)
+        case "bike-sun": return bike + " " + sun(11.5, 11.5, 1.2)
+        case "run-sun": return runBody + " " + runLines + " " + sun(11, 12, 1.15)
         default: return runBody + " " + runLineTop + " " + runLines
         }
     }
@@ -324,7 +329,8 @@ struct GrabScreen: View {
                     .onSubmit { addToDraft() }
                     .accessibilityIdentifier("grab-add-name")
                 Button { addToDraft() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("Add").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(newThing).isEmpty ? Theme.muted : Color.white)
                         .padding(.horizontal, 16).frame(minHeight: 44)
                         .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newThing).isEmpty ? Theme.line : tint))
                         .contentShape(Rectangle())

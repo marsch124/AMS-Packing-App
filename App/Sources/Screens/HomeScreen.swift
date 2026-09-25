@@ -4,6 +4,17 @@ import PackingLibrary
 
 /// Home: build a trip. Name it, add the dates, pick what it is — press Create.
 struct HomeScreen: View {
+    /// His own words for the three food answers. The model keeps the web app's
+    /// longer labels (the parity check compares them); the chips say what he wrote.
+    static func shortFood(_ id: String, _ fallback: String) -> String {
+        switch id {
+        case "self": return "Self-sufficient"
+        case "eatout": return "Eating out"
+        case "mixed": return "Mix of both"
+        default: return fallback
+        }
+    }
+
     @EnvironmentObject var model: LibraryModel
     @State private var name = ""
     @State private var hasDates = false
@@ -17,6 +28,7 @@ struct HomeScreen: View {
     @State private var quick = false
     @State private var opened: String?
     @State private var grab: GrabDefinition?
+    @State private var searching = false
     @State private var shelf = false
 
     var body: some View {
@@ -28,7 +40,10 @@ struct HomeScreen: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Grab and go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
                     Spacer()
-                    Button("Your lists") { shelf = true }
+                    SearchButton { searching = true }
+                    // "Your lists" is the name of the TEMPLATES screen; this door
+                    // opens the grab lists. His note on the Mac: "Your Grab Lists".
+                    Button("Grab Lists") { shelf = true }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.home.color)
                         .accessibilityIdentifier("grab-shelf")
@@ -37,7 +52,7 @@ struct HomeScreen: View {
                 // Home holds six — HIS six, in his order (GrabShelf.swift).
                 GrabButtons(lists: model.library.homeGrabLists()) { grab = $0 }
 
-                Text("New trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
+                Text("Create new trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
@@ -46,20 +61,34 @@ struct HomeScreen: View {
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                         .accessibilityIdentifier("trip-name")
 
-                    Toggle(isOn: $hasDates) { Text("Dates").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink) }
+                    // Two answers about the SHAPE of the trip, on one line: his ask.
+                    HStack(spacing: 12) {
+                        Toggle(isOn: $hasDates) {
+                            Text("Dates").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                        }
+                        .fixedSize()
                         .accessibilityIdentifier("trip-dates")
+                        Spacer(minLength: 8)
+                        Toggle(isOn: $quick) {
+                            Text("Quick").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                        }
+                        .fixedSize()
+                        .accessibilityIdentifier("trip-quick")
+                    }
+                    // The explanation only when it is on, so the line stays short.
+                    if quick {
+                        Text("Only the lists you tick — no common base, no transport kit.")
+                            .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                            .accessibilityIdentifier("trip-quick-note")
+                    }
                     if hasDates {
                         DatePicker("From", selection: $start, displayedComponents: .date).accessibilityIdentifier("trip-start")
                         DatePicker("To", selection: $end, in: start..., displayedComponents: .date).accessibilityIdentifier("trip-end")
                     }
 
-                    Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: [transport], id: "trip-transport") { transport = $0 }
-                    Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season") { season = $0 }
-                    Pills(title: "Food", options: CATERING.map { ($0.id, $0.label) }, selected: [catering], id: "trip-catering") { catering = $0 }
-
                     ForEach(choices, id: \.group.id) { choice in
                         // Numbered across ALL groups, so "trip-activity-0" names one pill.
-                        Pills(title: choice.group.label,
+                        Pills(title: groupHeading(choice.group.id, choice.group.label),
                               options: choice.lists.map { ($0.id, $0.name) },
                               selected: activities, id: "trip-activity", tint: AppSection.templates.color,
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0) { id in
@@ -71,17 +100,17 @@ struct HomeScreen: View {
                             if contexts.contains(id) { contexts.remove(id) } else { contexts.insert(id) }
                         }
                     }
-                    Toggle(isOn: $quick) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Quick — only the lists ticked").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
-                            Text("No common base, no transport kit.").font(.system(size: 14)).foregroundStyle(Theme.muted)
-                        }
-                    }
-                    .accessibilityIdentifier("trip-quick")
+                    Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: [transport], id: "trip-transport") { transport = $0 }
+                    Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season") { season = $0 }
+                    Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
+                          selected: [catering], id: "trip-catering") { catering = $0 }
 
                     Button { create(flat) } label: {
                         Text("Create Event")
-                            .font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
+                            .font(.system(size: 18, weight: .bold))
+                            // White on the grey of a button that cannot be pressed is
+                            // unreadable in daylight — his words: "cant read Create Event".
+                            .foregroundStyle(canCreate ? Color.white : Theme.muted)
                             .frame(maxWidth: .infinity, minHeight: 52)
                             .background(RoundedRectangle(cornerRadius: 12).fill(canCreate ? AppSection.home.color : Theme.line))
                             .contentShape(Rectangle())
@@ -89,22 +118,30 @@ struct HomeScreen: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .disabled(!canCreate)
                     .accessibilityIdentifier("trip-create")
-                    Text("Name your trip, add the dates, then press Create Event.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
                 }
                 .padding(14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line, lineWidth: 1))
 
-                Text("This device").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
+                // His marks on the Mac: the heading struck out and written down the
+                // SIDE instead, and Trips and Templates swapped over.
                 HStack(spacing: 10) {
-                    CountTile(number: model.library.templates.count, label: "Templates", id: "count-templates", color: AppSection.templates.color)
-                    CountTile(number: model.library.items.count, label: "Things", id: "count-things", color: AppSection.care.color)
+                    Text("This Device")
+                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                        .kerning(0.5)
+                        .fixedSize()
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 16)
+                        .accessibilityIdentifier("device-heading")
                     CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
+                    CountTile(number: model.library.items.count, label: "Things", id: "count-things", color: AppSection.care.color)
+                    CountTile(number: model.library.templates.count, label: "Templates", id: "count-templates", color: AppSection.templates.color)
                 }
+                .padding(.top, 8)
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
+        .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id })) { o in
             TripScreen(tripId: o.id).environmentObject(model)
         }

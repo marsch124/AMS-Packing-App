@@ -75,7 +75,8 @@ struct NewList: View {
 
                     Button { make() } label: {
                         Text("Make the list")
-                            .font(.system(size: 17, weight: .heavy)).foregroundStyle(.white)
+                            .font(.system(size: 17, weight: .heavy))
+                            .foregroundStyle(canMake ? Color.white : Theme.muted)
                             .frame(maxWidth: .infinity).frame(minHeight: 50)
                             .background(RoundedRectangle(cornerRadius: 12)
                                 .fill(canMake ? AppSection.templates.color : Theme.line))

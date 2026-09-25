@@ -88,7 +88,8 @@ struct ThingsScreen: View {
                     .onSubmit { add() }
                     .accessibilityIdentifier("thing-new-name")
                 Button { add() } label: {
-                    Text("New").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("New").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
                         .padding(.horizontal, 16).frame(minHeight: 44)
                         .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.care.color))
                         .contentShape(Rectangle())
