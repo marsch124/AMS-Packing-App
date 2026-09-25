@@ -676,6 +676,32 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["care-row-900-done"].waitForExistence(timeout: 5), "the boots are not under the day")
     }
 
+    /// His mark (2026-09-25): "Sorting" on the left, When / Where / Category on the
+    /// same line to its right — and choosing Where sorts the trip by bag.
+    func testTheTripSaysSortingBesideItsThreeButtons() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let label = app.staticTexts["trip-view-label"]
+        XCTAssertTrue(label.waitForExistence(timeout: 5), "no Sorting label")
+        XCTAssertEqual(words(label), "Sorting")
+        let when = app.buttons["trip-view-0"], category = app.buttons["trip-view-2"]
+        XCTAssertTrue(when.waitForExistence(timeout: 5) && category.exists, "the three buttons are missing")
+        XCTAssertLessThan(label.frame.maxX, when.frame.minX, "Sorting is not to the LEFT of the buttons")
+        XCTAssertLessThan(abs(label.frame.midY - when.frame.midY), 10, "Sorting is not on the SAME line as the buttons")
+        XCTAssertLessThan(abs(category.frame.midY - when.frame.midY), 10, "the three buttons are not on one line")
+        XCTAssertTrue(when.isSelected, "When is not the starting sort")
+
+        let first = app.staticTexts["trip-group-0-label"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "no first heading")
+        let byWhen = words(first)
+        tap(app, id: "trip-view-1")
+        XCTAssertTrue(waitUntil { app.buttons["trip-view-1"].isSelected }, "Where did not become the sort")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-group-0-label"]) != byWhen },
+                      "Where did not re-sort the trip: still '\(byWhen)'")
+    }
+
     /// After a trip: mark what went unused, add what was missed, save — the trip
     /// says it is reviewed, and the missed thing is on a list for next time.
     func testATripReviewIsSavedAndTheMissedThingIsFiled() {

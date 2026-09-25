@@ -52,8 +52,31 @@ struct TripScreen: View {
                     .accessibilityIdentifier("trip-done")
             }
             .padding(16)
-            Pills(title: "", options: TripScreen.views, selected: [view], id: "trip-view", tint: AppSection.events.color) { view = $0 }
-                .padding(.horizontal, 16)
+            // His mark (2026-09-25): "Sorting" on the left, the three buttons on the same line.
+            HStack(spacing: 8) {
+                Text("Sorting")
+                    .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .accessibilityIdentifier("trip-view-label")
+                Spacer(minLength: 8)
+                ForEach(Array(TripScreen.views.enumerated()), id: \.element.id) { n, o in
+                    let on = view == o.id
+                    Button { view = o.id } label: {
+                        Text(o.label)
+                            .font(.system(size: 15, weight: on ? .bold : .semibold))
+                            .foregroundStyle(on ? Color.white : Theme.ink)
+                            .lineLimit(1).fixedSize()
+                            .padding(.horizontal, 14).frame(minHeight: 36)
+                            .background(Capsule().fill(on ? AppSection.events.color : Theme.bg))
+                            .overlay(Capsule().stroke(on ? AppSection.events.color : Theme.line, lineWidth: 1))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("trip-view-\(n)")
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 16)
             KeyboardAwayScroll {
                 // The card is deliberately OUTSIDE the lazy stack: a lazy row is
                 // thrown away and rebuilt as it scrolls off, which loses what he
@@ -75,6 +98,7 @@ struct TripScreen: View {
                                 Text(group.label)
                                     .font(.system(size: 15, weight: .heavy))
                                     .foregroundStyle(view == "when" ? Color(hexString: phaseColor(group.entries[0].phase)) : AppSection.events.color)
+                                    .accessibilityIdentifier("trip-group-\(g)-label")
                                 Text("\(mine.filter { $0.checked }.count)/\(mine.count)")
                                     .font(.system(size: 13, weight: .bold).monospacedDigit())
                                     .foregroundStyle(Theme.muted)
