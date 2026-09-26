@@ -29,22 +29,30 @@ struct ContainersScreen: View {
             }
             .padding(16)
 
+            // The line and the column names stay put while the bags scroll under
+            // them — his ask (2026-09-26): "keep the header row visible".
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Give a bag its max weight and every trip shows how full it is.")
+                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 10)
+
+                HStack(spacing: 6) {
+                    Spacer()
+                    Text("MAX KG").frame(width: 64)
+                    Text("LITRES").frame(width: 64)
+                    Text("EMPTY G").frame(width: 70)
+                }
+                .font(.system(size: 10, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.4)
+                .padding(.bottom, 4)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("containers-columns")
+            }
+            .padding(.horizontal, 16)
+            .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Give a bag its max weight and every trip shows how full it is.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, 10)
-
-                    HStack(spacing: 6) {
-                        Spacer()
-                        Text("MAX KG").frame(width: 64)
-                        Text("LITRES").frame(width: 64)
-                        Text("EMPTY G").frame(width: 70)
-                    }
-                    .font(.system(size: 10, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.4)
-                    .padding(.bottom, 4)
-
                     ForEach(Array(bags.enumerated()), id: \.element.id) { n, bag in
                         BagRow(bag: bag, n: n).environmentObject(model)
                     }

@@ -82,8 +82,9 @@ struct HomeScreen: View {
                             .accessibilityIdentifier("trip-quick-note")
                     }
                     if hasDates {
-                        DatePicker("From", selection: $start, displayedComponents: .date).accessibilityIdentifier("trip-start")
-                        DatePicker("To", selection: $end, in: start..., displayedComponents: .date).accessibilityIdentifier("trip-end")
+                        // Booking.com's way, his example (2026-09-26): one field, a month grid,
+                        // first day then last day.
+                        DateRangePicker(start: $start, end: $end)
                     }
 
                     ForEach(choices, id: \.group.id) { choice in

@@ -371,6 +371,22 @@ final class AMSPackingUITests: XCTestCase {
         }
     }
 
+    /// Is the on-screen keyboard still sliding in, when every control above it is
+    /// about to move? (Never on the Mac.) The log of the
+    /// lost Add tap showed the keyboard reported BELOW the screen (y 918 on an 874
+    /// screen) at the moment of the tap, and Add at its old place; a beat later the
+    /// keyboard sat at 590 and Add had moved up to 416.
+    private func keyboardArriving(_ app: XCUIApplication) -> Bool {
+        #if os(iOS)
+        let keys = app.keyboards.firstMatch
+        guard keys.exists else { return false }
+        let screen = app.windows.firstMatch.frame
+        return keys.frame.minY >= screen.maxY - 1 || !settled(keys)
+        #else
+        return false
+        #endif
+    }
+
     /// Put the keyboard away. On GitHub's simulator there is no hardware keyboard,
     /// so the on-screen one covers the bottom of the screen — and a control under
     /// it takes no tap while looking perfectly hittable. (Found twice: the tab bar,
@@ -406,10 +422,28 @@ final class AMSPackingUITests: XCTestCase {
             // XCUITest's own tap failure is fatal — there is nothing to catch — so
             // the wait has to happen BEFORE the tap. Seen twice in one suite run:
             // a Settings field and a Columns row, both green on their own.
-            if e.exists, settled(e) { tapVisible(app, e); return }
+            // 🪤 …and ENABLED: a typed text reaches the button a beat after the field,
+            // and a tap on a button still switched off is silently lost (the to-do chip
+            // and the buy list, 2026-09-25/26 — each seen once in a full run).
+            // 🪤 …and NOT WHILE THE KEYBOARD IS STILL SLIDING IN: a button just above it
+            // is reported at its old place, under the keys, and the tap lands on the
+            // keyboard (the buy list's Add, 2026-09-26 — every time once this simulator
+            // lost its hardware keyboard; GitHub never has one). Once the keyboard is at
+            // rest, a control it covers is scrolled into view as before — hiding the
+            // keyboard instead left the Grab Lists shelf untappable (same day).
+            if e.exists, e.isEnabled, settled(e) {
+                if keyboardArriving(app) { usleep(200_000); continue }
+                #if os(iOS)
+                if app.keyboards.count > 0 {
+                    print("TAP-KEYS \(id) at \(e.frame) · keyboard \(app.keyboards.firstMatch.frame)")
+                }
+                #endif
+                tapVisible(app, e); return
+            }
             usleep(200_000)
         } while Date() < deadline
-        print("TAP-REPORT nothing called \(id) after \(timeout)s")
+        let last = app.buttons[id]
+        print("TAP-REPORT nothing called \(id) to tap after \(timeout)s (exists=\(last.exists), enabled=\(last.exists && last.isEnabled))")
         print("TAP-REPORT tree:\n" + String(app.debugDescription.prefix(12000)))
         let picture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         picture.name = "no-\(id)"; picture.lifetime = .keepAlways; add(picture)
@@ -525,6 +559,91 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-events"))
         XCTAssertTrue(app.buttons["trip-row-1"].waitForExistence(timeout: 5), "the new trip is not listed beside the sample one")
     }
+    /// The trip's dates, Booking.com's way — his example (2026-09-26): one field,
+    /// a month grid, tap the first day and then the last; a tap before the first
+    /// starts again; and the trip made keeps the dates he picked.
+    func testDatesArePickedLikeBooking() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today)! }
+        func ymd(_ d: Date) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: d)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        let wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        let mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        func pretty(_ d: Date) -> String {
+            let c = cal.dateComponents([.weekday, .day, .month], from: d)
+            return "\(wd[c.weekday! - 1]) \(c.day!) \(mo[c.month! - 1])"
+        }
+        let months = ["January", "February", "March", "April", "May", "June", "July",
+                      "August", "September", "October", "November", "December"]
+        /// Bring a day's month on screen: page towards it from the month showing.
+        func pick(_ d: Date) {
+            let id = "range-day-\(ymd(d))"
+            for _ in 0..<3 where !app.buttons[id].exists {
+                let shown = words(app.staticTexts["range-title-0"]).split(separator: " ")
+                let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
+                let y = Int(shown.last ?? "") ?? 0
+                let c = cal.dateComponents([.year, .month], from: d)
+                tap(app, id: (c.year! * 12 + c.month!) > (y * 12 + m) ? "range-next" : "range-prev")
+            }
+            tap(app, id: id)
+        }
+
+        // Dates on: the field, and the grid open under it.
+        let dates = app.switches["trip-dates"].exists ? app.switches["trip-dates"] : app.checkBoxes["trip-dates"]
+        XCTAssertTrue(dates.waitForExistence(timeout: 5), "no Dates switch")
+        #if os(macOS)
+        dates.tap()
+        #else
+        dates.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5)).tap()   // the switch, not its word
+        #endif
+        let label = app.staticTexts["trip-dates-label"]
+        XCTAssertTrue(label.waitForExistence(timeout: 5), "Dates on and no date field")
+        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
+
+        // First day, then last day.
+        pick(day(3))
+        XCTAssertTrue(waitUntil { self.words(label) == pretty(day(3)) }, "the first day is not shown: '\(words(label))'")
+        XCTAssertFalse(app.staticTexts["trip-dates-nights"].exists, "nights counted before the last day was picked")
+        pick(day(5))
+        XCTAssertTrue(waitUntil { self.words(label) == "\(pretty(day(3))) — \(pretty(day(5)))" },
+                      "the range is not shown: '\(words(label))'")
+        XCTAssertEqual(words(app.staticTexts["trip-dates-nights"]), "2 nights")
+        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "the grid did not close after the last day")
+
+        // Open it again: a new first day — and a day BEFORE it, while the last day is
+        // awaited, becomes the new first day rather than an end before the start.
+        tap(app, id: "trip-dates-field")
+        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the field did not open the grid again")
+        pick(day(2))
+        XCTAssertTrue(waitUntil { self.words(label) == pretty(day(2)) }, "a new first day is not shown: '\(words(label))'")
+        pick(day(1))
+        XCTAssertTrue(waitUntil { self.words(label) == pretty(day(1)) }, "an earlier day did not become the first day: '\(words(label))'")
+        pick(day(2))
+        XCTAssertTrue(waitUntil { self.words(label) == "\(pretty(day(1))) — \(pretty(day(2)))" }, "'\(words(label))'")
+        XCTAssertEqual(words(app.staticTexts["trip-dates-nights"]), "1 night")
+
+        // The trip made keeps them.
+        type("Dated trip", into: app.textFields["trip-name"])
+        select(app, app.buttons["trip-activity-0"])
+        let create = app.buttons["trip-create"]
+        XCTAssertTrue(waitUntil { create.isEnabled }, "Create stayed off")
+        tapVisible(app, create)
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tab(app, "events")
+        let c1 = cal.dateComponents([.day, .month], from: day(1))
+        let startText = "\(c1.day!) \(mo[c1.month! - 1])"
+        let row = (0..<6).map { app.buttons["trip-row-\($0)"] }.first { $0.exists && self.words($0).contains("Dated trip") }
+        XCTAssertNotNil(row, "the dated trip is not listed")
+        if let row { XCTAssertTrue(words(row).contains(startText), "the trip lost its first day (\(startText)): '\(words(row))'") }
+    }
+
     /// A grab list counts what is in hand, refuses "Ready to go" while something
     /// is missing, lets a thing be skipped, and Start over clears it all.
     func testAGrabListCountsRefusesAndClears() {
@@ -690,6 +809,14 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-day"]).hasSuffix("· 1") },
                       "the day does not list what is due: '\(words(app.staticTexts["care-cal-day"]))'")
         XCTAssertTrue(app.buttons["care-row-900-done"].waitForExistence(timeout: 5), "the boots are not under the day")
+
+        // Today (his ask, 2026-09-26): back to this month, with today picked.
+        tap(app, id: "care-cal-today")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-title"]) == "\(names[c.month! - 1]) \(c.year!)" },
+                      "Today did not bring the calendar back: '\(words(app.staticTexts["care-cal-title"]))'")
+        let todayNumber = Calendar.current.component(.day, from: now)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-day"]).hasPrefix("\(todayNumber) \(names[c.month! - 1])") },
+                      "Today did not pick today: '\(words(app.staticTexts["care-cal-day"]))'")
     }
 
     /// His marks (2026-09-25): "Sorting" on the left, the buttons on the same line to
@@ -989,9 +1116,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(words(app.buttons["buy-offer-0"]).contains(offered),
                        "it is still being offered although it is on the list")
 
+        // 🪤 Wait for Add to switch on: a full run (2026-09-26) tapped it while still
+        // off — the same trap as the to-do chip test the day before.
         type("Gas canister", into: app.textFields["buy-add-text"])
+        XCTAssertTrue(waitUntil { app.buttons["buy-add"].isEnabled }, "Add did not switch on for a typed line")
         tap(app, id: "buy-add")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "2 to buy" }, "the typed line was not added")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "2 to buy" },
+                      "the typed line was not added: '\(words(app.staticTexts["buy-count"]))', field '\(app.textFields["buy-add-text"].value as? String ?? "")', lines \((0..<4).map { self.words(app.buttons["buy-\($0)"]) })")
 
         // Ticking one off leaves the other.
         tap(app, id: "buy-0")
@@ -1426,6 +1557,15 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "care")
         tap(app, id: "care-containers")
         XCTAssertTrue(appears(app, "containers-detail", timeout: 5), "no Containers screen")
+        // His ask (2026-09-26): the column names stay visible while the bags scroll —
+        // so they must sit OUTSIDE every scrolling list, where nothing can carry them off.
+        let columns = app.descendants(matching: .any)["containers-columns"]
+        XCTAssertTrue(columns.waitForExistence(timeout: 5), "no column names over the bags")
+        XCTAssertTrue(words(columns).contains("MAX KG"), "the column names are not there: '\(words(columns))'")
+        for list in app.scrollViews.allElementsBoundByIndex where list.exists {
+            XCTAssertFalse(list.descendants(matching: .any)["containers-columns"].exists,
+                           "the column names scroll away with the bags")
+        }
         type("Carry-on / hand luggage", into: app.textFields["bag-new-name"])
         tap(app, id: "bag-new")
         XCTAssertTrue(app.textFields["bag-0-maxkg"].waitForExistence(timeout: 5), "the bag was not made")

@@ -24,13 +24,27 @@ struct CareCalendarView: View {
         let due = picked.isEmpty ? [] : model.library.careDue(on: picked, today: today)
 
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                step(-1, "M15 6l-6 6 6 6", "care-cal-prev")
-                Spacer()
+            // The calendar-app layout: the month on the left; Today and the arrows on
+            // the right. Today = his ask (2026-09-26): "a button to return to today".
+            HStack(spacing: 4) {
                 Text(CareCalendarView.title(showing))
                     .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
                     .accessibilityIdentifier("care-cal-title")
-                Spacer()
+                Spacer(minLength: 8)
+                Button {
+                    month = ""
+                    chosen = today
+                } label: {
+                    Text("Today")
+                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.care.color)
+                        .padding(.horizontal, 12).frame(minHeight: 32)
+                        .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.5))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("care-cal-today")
+                step(-1, "M15 6l-6 6 6 6", "care-cal-prev")
                 step(1, "M9 6l6 6-6 6", "care-cal-next")
             }
 

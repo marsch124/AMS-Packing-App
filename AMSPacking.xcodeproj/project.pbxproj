@@ -15,6 +15,7 @@
 		1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9B041225333263C7547689 /* ThingsScreen.swift */; };
 		21419C900E931B9CBE73B314 /* BuyList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D25C9AA00E03651D86114 /* BuyList.swift */; };
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
+		3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200B88877006E1F006B96632 /* DateRangePicker.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
 		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
 		5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */; };
@@ -68,6 +69,7 @@
 		1E01A9E0DEC947610C0F642D /* GrabScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabScreen.swift; sourceTree = "<group>"; };
 		1E0A839566CDE77B068F47C5 /* BulkChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BulkChange.swift; sourceTree = "<group>"; };
 		1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingUITests.swift; sourceTree = "<group>"; };
+		200B88877006E1F006B96632 /* DateRangePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateRangePicker.swift; sourceTree = "<group>"; };
 		258F81799F958E5C5EF112C5 /* ListsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsScreen.swift; sourceTree = "<group>"; };
 		2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherCard.swift; sourceTree = "<group>"; };
 		2C5987DFEB47FC294A078D4D /* NewList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewList.swift; sourceTree = "<group>"; };
@@ -205,6 +207,7 @@
 				DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */,
 				56F5604CA6875D255BD93251 /* CareScreen.swift */,
 				3D6FFFE59377217C97261D66 /* ContainersScreen.swift */,
+				200B88877006E1F006B96632 /* DateRangePicker.swift */,
 				77CEDA06EFED05D4A1612077 /* EventsScreen.swift */,
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
@@ -345,6 +348,7 @@
 				BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */,
 				B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */,
 				E26E2B17454694BAA27BDCE1 /* ContainersScreen.swift in Sources */,
+				3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */,
 				8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */,
 				4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */,
 				622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */,
@@ -509,7 +513,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.20;
+				MARKETING_VERSION = 0.21;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -596,7 +600,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.20;
+				MARKETING_VERSION = 0.21;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
