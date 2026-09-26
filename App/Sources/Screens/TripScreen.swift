@@ -167,6 +167,11 @@ struct TripScreen: View {
                                     .accessibilityIdentifier("trip-line-\(n)-aside")
                                     .accessibilityLabel(aside ? "Take it this time" : "Not this time")
                                 }
+                                // Bug B1 (his Mac, 2026-09-26): a row kept showing NO tick while the
+                                // stored trip — and the section's own count — had it ticked. Not
+                                // reproduced on demand; this makes a row rebuild whenever its tick
+                                // or its set-aside changes, so it cannot be left showing an old state.
+                                .id("\(line.id)|\(line.checked)|\(aside)")
                             }
                         }
                     }

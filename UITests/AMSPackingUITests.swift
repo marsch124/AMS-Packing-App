@@ -601,18 +601,19 @@ final class AMSPackingUITests: XCTestCase {
         #else
         dates.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5)).tap()   // the switch, not its word
         #endif
-        let label = app.staticTexts["trip-dates-label"]
-        XCTAssertTrue(label.waitForExistence(timeout: 5), "Dates on and no date field")
+        // The field says its dates as its VALUE — the Mac folds a button's texts into it.
+        let field = app.buttons["trip-dates-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Dates on and no date field")
+        func says() -> String { field.value as? String ?? "" }
         XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
 
         // First day, then last day.
         pick(day(3))
-        XCTAssertTrue(waitUntil { self.words(label) == pretty(day(3)) }, "the first day is not shown: '\(words(label))'")
-        XCTAssertFalse(app.staticTexts["trip-dates-nights"].exists, "nights counted before the last day was picked")
+        XCTAssertTrue(waitUntil { says() == pretty(day(3)) }, "the first day is not shown: '\(says())'")
+        XCTAssertFalse(says().contains("night"), "nights counted before the last day was picked: '\(says())'")
         pick(day(5))
-        XCTAssertTrue(waitUntil { self.words(label) == "\(pretty(day(3))) — \(pretty(day(5)))" },
-                      "the range is not shown: '\(words(label))'")
-        XCTAssertEqual(words(app.staticTexts["trip-dates-nights"]), "2 nights")
+        XCTAssertTrue(waitUntil { says() == "\(pretty(day(3))) — \(pretty(day(5))) · 2 nights" },
+                      "the range is not shown: '\(says())'")
         XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "the grid did not close after the last day")
 
         // Open it again: a new first day — and a day BEFORE it, while the last day is
@@ -620,12 +621,11 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-dates-field")
         XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the field did not open the grid again")
         pick(day(2))
-        XCTAssertTrue(waitUntil { self.words(label) == pretty(day(2)) }, "a new first day is not shown: '\(words(label))'")
+        XCTAssertTrue(waitUntil { says() == pretty(day(2)) }, "a new first day is not shown: '\(says())'")
         pick(day(1))
-        XCTAssertTrue(waitUntil { self.words(label) == pretty(day(1)) }, "an earlier day did not become the first day: '\(words(label))'")
+        XCTAssertTrue(waitUntil { says() == pretty(day(1)) }, "an earlier day did not become the first day: '\(says())'")
         pick(day(2))
-        XCTAssertTrue(waitUntil { self.words(label) == "\(pretty(day(1))) — \(pretty(day(2)))" }, "'\(words(label))'")
-        XCTAssertEqual(words(app.staticTexts["trip-dates-nights"]), "1 night")
+        XCTAssertTrue(waitUntil { says() == "\(pretty(day(1))) — \(pretty(day(2))) · 1 night" }, "'\(says())'")
 
         // The trip made keeps them.
         type("Dated trip", into: app.textFields["trip-name"])
@@ -642,6 +642,40 @@ final class AMSPackingUITests: XCTestCase {
         let row = (0..<6).map { app.buttons["trip-row-\($0)"] }.first { $0.exists && self.words($0).contains("Dated trip") }
         XCTAssertNotNil(row, "the dated trip is not listed")
         if let row { XCTAssertTrue(words(row).contains(startText), "the trip lost its first day (\(startText)): '\(words(row))'") }
+    }
+
+    /// Bug B1 (his screenshot, 2026-09-26): a row showed NOT ticked while its section
+    /// said 243/243 — the stored trip had every line ticked. Every row must show the
+    /// tick the trip holds, whichever way the trip is sorted and however it was ticked.
+    func testEveryRowShowsTheTickTheTripHolds() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let total = Int(words(progress).split(separator: "/").last ?? "") ?? 0
+        XCTAssertGreaterThan(total, 1, "the sample trip has too few lines: '\(words(progress))'")
+
+        // Tick one line by itself, then whole sections, sorted by When.
+        tap(app, id: "trip-line-0")
+        for g in 0..<6 where app.buttons["trip-group-\(g)-all"].exists {
+            let all = app.buttons["trip-group-\(g)-all"]
+            if !isOn(all) { tapVisible(app, all) }
+        }
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(progress).hasPrefix("\(total)/\(total)") || (progress.value as? String) == "all packed" },
+                      "not everything is ticked: '\(words(progress))'")
+
+        // Through every sorting and back: each row must still show its tick.
+        for view in [1, 2, 3, 0] {
+            tap(app, id: "trip-view-\(view)")
+            XCTAssertTrue(waitUntil { app.buttons["trip-view-\(view)"].isSelected })
+            for n in 0..<total {
+                XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil), "line \(n + 1) never appeared")
+                XCTAssertTrue(waitUntil(timeout: 3) { self.isOn(app.buttons["trip-line-\(n)"]) },
+                              "sorted by view \(view), line \(n + 1) shows NO tick although the trip has it ticked: '\(words(app.buttons["trip-line-\(n)"]))'")
+            }
+        }
     }
 
     /// A grab list counts what is in hand, refuses "Ready to go" while something
@@ -924,6 +958,20 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).hasPrefix("Sit pad") || app.buttons["thing-row-0"].label.contains("Sit pad") },
                       "the rename did not stick: '\(app.buttons["thing-row-0"].label)'")
     }
+    /// Bug B2 (his screenshot, 2026-09-26): "Whose it is" showed one name once for
+    /// every thing he owns — a screenful of it, all lit up. Each owner once.
+    func testWhoseItIsOffersEachOwnerOnce() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["thing-owner-0"].waitForExistence(timeout: 5), "no Whose it is")
+        let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
+        XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
+    }
+
     /// A grab list is edited — renamed, one removed, one added — and stays so.
     func testAGrabListIsEditedAndStaysEdited() {
         let app = launch()

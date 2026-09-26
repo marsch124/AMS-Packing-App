@@ -64,6 +64,11 @@ struct DateRangePicker: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-dates-field")
+        // What the field says, as its VALUE: the Mac folds a button's texts into the
+        // button itself, so "trip-dates-label" never exists there as a text of its own
+        // (the Mac UI test on GitHub, 0.21).
+        .accessibilityValue(waitingForEnd ? DateRangePicker.pretty(start)
+                            : "\(DateRangePicker.pretty(start)) — \(DateRangePicker.pretty(end)) · \(nightsText)")
     }
 
     private var nightsText: String {

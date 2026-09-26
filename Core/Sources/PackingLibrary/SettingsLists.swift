@@ -15,6 +15,22 @@ extension Library {
     }
     /// A–Z, as every Owner dropdown has always offered them.
     public func owners() -> [String] { namesFromRows(shared, "owners") }
+    /// What "Whose it is" offers on a thing: his owners list, plus anyone a thing
+    /// already names who is not on it — EACH ONCE. (The editor used to add every
+    /// thing's owner as it came, so one name appeared once per thing he owns: a
+    /// screenful of the same name, all lit up. His screenshot, 2026-09-26.)
+    public func ownerChoices() -> [String] {
+        var seen: Set<String> = []
+        var out: [String] = []
+        for name in owners() + items.map(\.ownedBy).map(jsTrim).filter({ !$0.isEmpty })
+                                    .stableSorted(compare: { a, b in jsLocaleCompare(a, b) }) {
+            let key = normName(name)
+            if key.isEmpty || seen.contains(key) { continue }
+            seen.insert(key)
+            out.append(name)
+        }
+        return out
+    }
     public func people() -> [Person] {
         let mine = peopleFromRows(shared)
         return mine.isEmpty ? DEFAULT_PEOPLE.map { newPerson(name: $0.name, color: $0.color) } : mine

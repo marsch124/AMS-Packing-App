@@ -25,6 +25,22 @@ final class SettingsListsTests: XCTestCase {
         XCTAssertFalse(lib.setNames("people", ["nope"]), "people are not a name-only list")
     }
 
+    /// His screenshot (2026-09-26): "Whose it is" showed one name once for every
+    /// thing he owns. Each owner once — his list first, then anyone a thing names
+    /// who is not on the list — however many things share them.
+    func testEachOwnerIsOfferedOnce() {
+        var lib = Library()
+        lib.setNames("owners", ["Kim", "Jonas"])
+        for n in 0..<40 {
+            var it = newItem(name: "Thing \(n)")
+            it.ownedBy = n % 3 == 0 ? "Jonas" : (n % 3 == 1 ? " kim " : "Robin")
+            lib.items.append(it)
+        }
+        XCTAssertEqual(lib.ownerChoices(), ["Jonas", "Kim", "Robin"],
+                       "each owner once: the list's own A–Z, then one not on the list")
+        XCTAssertEqual(Library().ownerChoices(), [], "nobody named anywhere, nothing offered")
+    }
+
     func testPuttingTheFactoryListBackRemovesItsRows() {
         var lib = Library()
         lib.setNames("places", ["Garage shelf"])

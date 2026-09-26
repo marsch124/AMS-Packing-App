@@ -32,9 +32,14 @@ enum SampleLibrary {
                                         "Headlamp": "Garage", "Map": "Garage", "Towel": "Bathroom cabinet",
                                         "Goggles": "Bathroom cabinet", "Passport": "Chest of drawers",
                                         "Phone charger": "Chest of drawers", "Toothbrush": "Bathroom cabinet"]
+        // Owners the way his things carry them: one name on most things, another on
+        // a few — and neither on the owners list (the "Whose it is" bug, 2026-09-26).
+        let owned: [String: String] = ["Hiking boots": "Kim", "Rain jacket": "Kim", "Headlamp": "Kim",
+                                       "Map": "Kim", "Passport": "Kim", "Phone charger": "Robin", "Toothbrush": "Robin"]
         for n in lib.items.indices {
             if let g = grams[lib.items[n].name] { lib.items[n].weight = g }
             if let p = places[lib.items[n].name] { lib.items[n].storage = p }
+            if let o = owned[lib.items[n].name] { lib.items[n].ownedBy = o }
         }
 
         // Two things the buy-list should offer, for two different reasons.

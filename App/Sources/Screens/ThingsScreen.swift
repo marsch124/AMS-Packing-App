@@ -137,8 +137,7 @@ struct ThingEditor: View {
     var body: some View {
         let templates = model.library.templates.filter { $0.role != CONTAINER_ROLE }
             .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
-        let owners = ([""] + namesFromRows(model.library.shared, "owners") + model.library.items.map(\.ownedBy))
-            .filter { !$0.isEmpty }
+        let owners = model.library.ownerChoices()          // each once (his screenshot, 2026-09-26)
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
