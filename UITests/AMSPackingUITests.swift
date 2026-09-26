@@ -637,11 +637,18 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-done")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
         tab(app, "events")
+        // The row writes dates the device's way: "27 Sep 2026" here, "Sep 27, 2026" on
+        // GitHub's Mac (0.22) — so look for the day and the month, in either order.
         let c1 = cal.dateComponents([.day, .month], from: day(1))
-        let startText = "\(c1.day!) \(mo[c1.month! - 1])"
+        let startDay = "\(c1.day!)", startMonth = mo[c1.month! - 1]
         let row = (0..<6).map { app.buttons["trip-row-\($0)"] }.first { $0.exists && self.words($0).contains("Dated trip") }
         XCTAssertNotNil(row, "the dated trip is not listed")
-        if let row { XCTAssertTrue(words(row).contains(startText), "the trip lost its first day (\(startText)): '\(words(row))'") }
+        if let row {
+            let said = words(row)
+            let first = said.range(of: "Dated trip").map { String(said[$0.upperBound...]) } ?? said
+            let startsRight = first.range(of: "\\b\(startDay) \(startMonth)|\(startMonth) \(startDay)\\b", options: .regularExpression) != nil
+            XCTAssertTrue(startsRight, "the trip lost its first day (\(startDay) \(startMonth)): '\(said)'")
+        }
     }
 
     /// Bug B1 (his screenshot, 2026-09-26): a row showed NOT ticked while its section
@@ -676,6 +683,83 @@ final class AMSPackingUITests: XCTestCase {
                               "sorted by view \(view), line \(n + 1) shows NO tick although the trip has it ticked: '\(words(app.buttons["trip-line-\(n)"]))'")
             }
         }
+    }
+
+    /// His ask (2026-09-26): "The list is extremely long" — each section folds away
+    /// with the arrow before its name, opens again, and stays as he left it.
+    /// (Judged by the lines UNDER the first heading, not by counting every line: on
+    /// the Mac's short window a lazy list has not built its last lines at all.)
+    func testASectionFoldsAndStaysFolded() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let total = Int(words(progress).split(separator: "/").last ?? "") ?? 0
+        let first = app.staticTexts["trip-group-0-label"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "no first section")
+        let heading = words(first)
+        func underFirst() -> [Int] {
+            let top = first.frame.maxY
+            let next = app.staticTexts["trip-group-1-label"]
+            let bottom = next.exists ? next.frame.minY : .greatestFiniteMagnitude
+            return (0..<total).filter {
+                let line = app.buttons["trip-line-\($0)"]
+                return line.exists && line.frame.midY > top && line.frame.midY < bottom
+            }
+        }
+        let lines = underFirst()
+        XCTAssertFalse(lines.isEmpty, "no lines under '\(heading)' to fold")
+
+        tap(app, id: "trip-group-0-fold")
+        XCTAssertTrue(waitUntil { lines.allSatisfy { !app.buttons["trip-line-\($0)"].exists } },
+                      "folding '\(heading)' left its lines on screen")
+        XCTAssertEqual(words(app.staticTexts["trip-group-0-label"]), heading, "the folded section lost its heading")
+
+        // It stays folded when the trip is closed and opened again.
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["trip-group-0-label"].waitForExistence(timeout: 5))
+        XCTAssertTrue(waitUntil { lines.allSatisfy { !app.buttons["trip-line-\($0)"].exists } },
+                      "the fold was forgotten when the trip was opened again")
+
+        // And opens again.
+        tap(app, id: "trip-group-0-fold")
+        XCTAssertTrue(waitUntil { lines.allSatisfy { app.buttons["trip-line-\($0)"].exists } },
+                      "opening '\(heading)' did not bring its lines back")
+    }
+
+    /// His standing rule (the web apps; roadmap phase D): every release has its line
+    /// in What's new. This fails the build when the newest entry is not the version
+    /// being built — the version marker under the tab bar says which that is.
+    func testWhatsNewStartsWithThisVersion() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let marker = app.staticTexts["app-version"]
+        XCTAssertTrue(marker.waitForExistence(timeout: 5))
+        let shown = words(marker)                                   // "0.23 (2)"
+        let version = String(shown.split(separator: " ").first ?? "")
+        XCTAssertFalse(version.isEmpty, "no version on screen: '\(shown)'")
+
+        tab(app, "settings")
+        tap(app, id: "settings-whatsnew")
+        XCTAssertTrue(appears(app, "guide-whatsnew", timeout: 5), "What's new did not open")
+        let top = app.staticTexts["guide-release-0-version"]
+        XCTAssertTrue(top.waitForExistence(timeout: 5), "What's new lists no version")
+        XCTAssertEqual(words(top), version, "What's new does not start with this version — write its line in Releases.swift")
+        XCTAssertTrue(app.staticTexts["guide-release-1-version"].exists, "only one version listed")
+        tap(app, id: "guide-done")
+        XCTAssertTrue(disappears(app, "guide-whatsnew", timeout: 5))
+
+        tap(app, id: "settings-howitworks")
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
+        XCTAssertTrue(appears(app, "guide-topic-0", timeout: 5), "How it works says nothing")
+        XCTAssertTrue(appears(app, "guide-topic-1", timeout: 5), "How it works has one topic only")
+        tap(app, id: "guide-done")
+        XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
     }
 
     /// A grab list counts what is in hand, refuses "Ready to go" while something
@@ -970,6 +1054,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["thing-owner-0"].waitForExistence(timeout: 5), "no Whose it is")
         let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
         XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
+        // His ask (2026-09-26): keep the headings, make the buttons' text smaller — the
+        // editor's buttons are the slim ones (32 pt, not the 36 pt used elsewhere).
+        XCTAssertLessThan(app.buttons["thing-category-0"].frame.height, 35, "the editor's buttons are not the smaller ones")
     }
 
     /// A grab list is edited — renamed, one removed, one added — and stays so.

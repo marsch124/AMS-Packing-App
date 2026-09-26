@@ -158,22 +158,22 @@ struct ThingEditor: View {
                     label("Kept at home")
                     field($draft.storage, "e.g. Hall closet", "thing-storage")
                     Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
-                          id: "thing-category", tint: AppSection.care.color) { draft.category = $0 }
+                          id: "thing-category", tint: AppSection.care.color, compact: true) { draft.category = $0 }
                     Pills(title: "Usually packed in", options: containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
-                          selected: [draft.container], id: "thing-bag", tint: AppSection.care.color) { draft.container = $0 }
+                          selected: [draft.container], id: "thing-bag", tint: AppSection.care.color, compact: true) { draft.container = $0 }
                     Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
-                          id: "thing-when", tint: AppSection.care.color) { draft.phase = $0 }
+                          id: "thing-when", tint: AppSection.care.color, compact: true) { draft.phase = $0 }
                     if !owners.isEmpty {
                         Pills(title: "Whose it is", options: [("", "Nobody's in particular")] + owners.map { ($0, $0) },
-                              selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color) { draft.ownedBy = $0 }
+                              selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color, compact: true) { draft.ownedBy = $0 }
                     }
                     Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
-                          selected: [draft.condition], id: "thing-condition", tint: AppSection.care.color) { draft.condition = $0 }
+                          selected: [draft.condition], id: "thing-condition", tint: AppSection.care.color, compact: true) { draft.condition = $0 }
                     label("Weight, in grams (0 = not known)")
                     field(Binding(get: { draft.weight == 0 ? "" : String(Int(draft.weight)) },
                                   set: { draft.weight = Double(jsTrim($0)) ?? 0 }), "0", "thing-weight")
                     Pills(title: "On these lists", options: templates.map { ($0.id, $0.name) }, selected: onLists,
-                          id: "thing-lists", tint: AppSection.templates.color) { id in
+                          id: "thing-lists", tint: AppSection.templates.color, compact: true) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
                     }
                     if !problem.isEmpty {

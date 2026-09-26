@@ -192,6 +192,10 @@ struct Pills: View {
     let id: String
     var tint: Color = AppSection.home.color
     var startIndex: Int = 0
+    /// Smaller buttons under the same heading — the thing editor, where he found the
+    /// headings drowned by the buttons (2026-09-26): "keep the headings and make the
+    /// buttons' text size a bit smaller".
+    var compact = false
     let choose: (String) -> Void
 
     var body: some View {
@@ -202,9 +206,9 @@ struct Pills: View {
                     let on = selected.contains(o.id)
                     Button { choose(o.id) } label: {
                         Text(o.label)
-                            .font(.system(size: 15, weight: on ? .bold : .semibold))
+                            .font(.system(size: compact ? 13 : 15, weight: on ? .bold : .semibold))
                             .foregroundStyle(on ? Color.white : Theme.ink)
-                            .padding(.horizontal, 14).frame(minHeight: 36)
+                            .padding(.horizontal, compact ? 10 : 14).frame(minHeight: compact ? 32 : 36)
                             .background(Capsule().fill(on ? tint : Theme.bg))
                             .overlay(Capsule().stroke(on ? tint : Theme.line, lineWidth: 1))
                             .contentShape(Capsule())

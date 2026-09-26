@@ -50,4 +50,8 @@ enum AppInfo {
         let b = info?["CFBundleVersion"] as? String ?? "?"
         return "\(v) (\(b))"
     }
+    /// Just the version, "0.23" — what What's new marks as "On this device".
+    static var marketing: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+    }
 }

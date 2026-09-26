@@ -11,6 +11,9 @@ struct TripScreen: View {
     @Environment(\.dismiss) private var dismiss
     /// When / Where / Category — remembered on this device, as the web app does.
     @AppStorage("ams.view") private var view = "when"
+    /// Sections folded away — his ask (2026-09-26): "the list is extremely long".
+    /// Remembered per trip and per sorting, one "trip|sorting|heading" per line.
+    @AppStorage("ams.trip.folded") private var foldedRaw = ""
     @State private var newName = ""
     @State private var reviewing = false
     @State private var sweeping = false
@@ -18,6 +21,17 @@ struct TripScreen: View {
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
     // where it is kept at home — "so that I can pick all stuff from a specific location".
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"), ("category", "Category")]
+
+    private func foldKey(_ label: String) -> String { "\(tripId)|\(view)|\(label)" }
+    private func isFolded(_ label: String) -> Bool {
+        foldedRaw.split(separator: "\n").contains { String($0) == foldKey(label) }
+    }
+    private func toggleFold(_ label: String) {
+        var keys = foldedRaw.split(separator: "\n").map(String.init)
+        let k = foldKey(label)
+        if let i = keys.firstIndex(of: k) { keys.remove(at: i) } else { keys.append(k) }
+        foldedRaw = keys.joined(separator: "\n")
+    }
 
     private var sortingLabel: some View {
         Text("Sorting")
@@ -111,11 +125,27 @@ struct TripScreen: View {
                             // (his ask: "so that I could toggle all done").
                             let mine = group.entries.filter { !isSetAside($0) }
                             let sectionDone = !mine.isEmpty && mine.allSatisfy { $0.checked }
+                            let folded = isFolded(group.label)
                             HStack(spacing: 8) {
+                                // Fold the section away, or open it again. The arrow is its own
+                                // button: the Mac folds a button's texts into the button, and the
+                                // heading's name must stay a text of its own.
+                                Button { toggleFold(group.label) } label: {
+                                    SVGPath.path("M9 6l6 6-6 6")
+                                        .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                                        .frame(width: 16, height: 16)
+                                        .rotationEffect(.degrees(folded ? 0 : 90))
+                                        .foregroundStyle(Theme.muted)
+                                        .frame(width: 28, height: 36).contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("trip-group-\(g)-fold")
+                                .accessibilityLabel(folded ? "Open \(group.label)" : "Fold \(group.label)")
                                 Text(group.label)
                                     .font(.system(size: 15, weight: .heavy))
                                     .foregroundStyle(view == "when" ? Color(hexString: phaseColor(group.entries[0].phase)) : AppSection.events.color)
                                     .accessibilityIdentifier("trip-group-\(g)-label")
+                                    .onTapGesture { toggleFold(group.label) }
                                 Text("\(mine.filter { $0.checked }.count)/\(mine.count)")
                                     .font(.system(size: 13, weight: .bold).monospacedDigit())
                                     .foregroundStyle(Theme.muted)
@@ -143,6 +173,7 @@ struct TripScreen: View {
                                 .accessibilityAddTraits(sectionDone ? .isSelected : [])
                             }
                             .padding(.top, 12)
+                            if !folded {
                             ForEach(group.entries, id: \.id) { line in
                                 let n = index[line.id] ?? 0
                                 let aside = isSetAside(line)
@@ -172,6 +203,7 @@ struct TripScreen: View {
                                 // reproduced on demand; this makes a row rebuild whenever its tick
                                 // or its set-aside changes, so it cannot be left showing an old state.
                                 .id("\(line.id)|\(line.checked)|\(aside)")
+                            }
                             }
                         }
                     }

@@ -102,6 +102,9 @@ struct SettingsScreen: View {
                 .padding(.top, 14)
                 .accessibilityIdentifier("settings-lists")
 
+                // What's new and How it works — his standing rule from the web apps.
+                GuideDoors()
+
                 // Only when there is something to say. Both times this library went
                 // wrong, nothing on screen said so and the counts alone knew.
                 let worries = model.library.worries()
