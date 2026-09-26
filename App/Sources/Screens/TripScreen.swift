@@ -17,6 +17,7 @@ struct TripScreen: View {
     @State private var newName = ""
     @State private var reviewing = false
     @State private var sweeping = false
+    @State private var askingToDelete = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
     // where it is kept at home — "so that I can pick all stuff from a specific location".
@@ -209,6 +210,11 @@ struct TripScreen: View {
                     }
                 }
                 .padding(.horizontal, 16)
+
+                // Last on the screen, quiet and red, and it asks first — his rule for
+                // removing anything. His two test trips had no way out (2026-09-26).
+                deleteTrip(trip)
+                    .padding(.horizontal, 16).padding(.top, 18)
                 }
                 .padding(.bottom, 24)
             }
@@ -273,6 +279,50 @@ struct TripScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
         #endif
+    }
+
+    @ViewBuilder private func deleteTrip(_ trip: TripEvent) -> some View {
+        if askingToDelete {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Delete \u{201C}\(trip.name)\u{201D}?")
+                    .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("The trip and its \(trip.entries.count) line\(trip.entries.count == 1 ? "" : "s") go. Your things and your lists stay.")
+                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    Button("Keep it") { askingToDelete = false }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("trip-delete-no")
+                    Spacer()
+                    Button {
+                        let id = tripId
+                        dismiss()
+                        model.change { _ = $0.deleteTrip(id: id) }
+                    } label: {
+                        Text("Delete the trip")
+                            .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
+                            .padding(.horizontal, 14).frame(minHeight: 40)
+                            .background(Capsule().fill(AppSection.actions.color))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("trip-delete-yes")
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
+        } else {
+            Button { askingToDelete = true } label: {
+                Text("Delete this trip")
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                    .frame(maxWidth: .infinity, minHeight: 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("trip-delete")
+        }
     }
 
     private func add() {

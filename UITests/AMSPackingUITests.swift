@@ -762,6 +762,30 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
     }
 
+    /// The gap list (2026-09-26): a trip can be deleted — last on its screen, and only
+    /// after it asks. "Keep it" keeps it; the things and lists stay either way.
+    func testATripIsDeletedOnlyAfterAsking() {
+        let app = launch()
+        tab(app, "care")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") })
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-delete")
+        XCTAssertTrue(app.buttons["trip-delete-yes"].waitForExistence(timeout: 5), "it did not ask first")
+        tap(app, id: "trip-delete-no")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-delete-yes"].exists }, "Keep it did not keep it")
+        XCTAssertTrue(find(app, "trip-detail") != nil, "Keep it closed the trip")
+
+        tap(app, id: "trip-delete")
+        tap(app, id: "trip-delete-yes")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5), "the trip did not close after its delete")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-row-0"].exists }, "the deleted trip is still listed")
+        tab(app, "care")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") },
+                      "deleting a trip must not take his things: '\(words(app.staticTexts["care-line"]))'")
+    }
+
     /// A grab list counts what is in hand, refuses "Ready to go" while something
     /// is missing, lets a thing be skipped, and Start over clears it all.
     func testAGrabListCountsRefusesAndClears() {

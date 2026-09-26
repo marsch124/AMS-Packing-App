@@ -139,7 +139,8 @@ struct HowItWorksScreen: View {
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",
             "Weather: type the place; you get one line and only the rain or cold gear you have not packed yet, each with a +.",
             "Bags: how full each bag is against its max weight; red when over.",
-            "Type a thing at the bottom to add it to this trip only."]),
+            "Type a thing at the bottom to add it to this trip only.",
+            "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and lists stay."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use, add what you missed, Save.",
             "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a list for next time."]),
