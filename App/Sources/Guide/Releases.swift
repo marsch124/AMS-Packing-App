@@ -18,6 +18,12 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.25", date: "26 Sep 2026", title: "Set a place while packing",
+                new: ["Sorted From where, each thing under \u{201C}No place set\u{201D} has Set place: tap it, tap one of your places (or type a new one), and the thing is kept there from now on.",
+                      "Bags on a trip: an ⓘ explains the colours, and a bag without a maximum says \u{201C}no max\u{201D}."],
+                changed: ["Your own \u{201C}When\u{201D} colours are made darker or lighter where needed, so every heading can be read, also on the green \u{201C}all packed\u{201D} screen."],
+                fixed: ["Your bags: a number typed and left without Return was lost. Every number is now saved as you type.",
+                        "A row that moved to another section could keep showing its old state."]),
         Release(version: "0.24", date: "26 Sep 2026", title: "Delete a trip",
                 new: ["At the very end of a trip's list: Delete this trip. It asks first; your things and lists stay."]),
         Release(version: "0.23", date: "26 Sep 2026", title: "The app explains itself",

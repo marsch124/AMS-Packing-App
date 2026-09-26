@@ -321,6 +321,30 @@ final class AMSPackingUITests: XCTestCase {
         return found
     }
 
+    /// Scroll INSIDE a named screen (a sheet) until a control exists — the gesture
+    /// goes to the sheet itself, so it can never move the screen behind it (the
+    /// trap of 2026-09-25/26), and the keyboard is put away first.
+    @discardableResult
+    private func scrollWithin(_ app: XCUIApplication, _ screen: String, until id: String, tries: Int = 10) -> Bool {
+        for attempt in 0..<tries {
+            if app.buttons[id].exists { return true }
+            guard let sheet = find(app, screen) else { return false }
+            // The list INSIDE the sheet: swiping the sheet's middle can land on the
+            // keyboard's edge; the list scrolls — and, scrolling, puts the keyboard away.
+            let inner = sheet.descendants(matching: .scrollView).firstMatch
+            let target = inner.exists ? inner : sheet
+            #if os(macOS)
+            target.scroll(byDeltaX: 0, deltaY: attempt < tries / 2 ? -220 : 220)
+            #else
+            target.swipeUp()
+            #endif
+            usleep(300_000)
+        }
+        let found = app.buttons[id].exists
+        if !found { print("TAP-REPORT scrollWithin \(screen) never found \(id)\n" + String(app.debugDescription.prefix(15000))) }
+        return found
+    }
+
     /// The list the control is IN — asked by descendancy, not by frames.
     ///
     /// A fixed bar BELOW a list (Save on the trip review) belongs to no list, and
@@ -784,6 +808,58 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "care")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") },
                       "deleting a trip must not take his things: '\(words(app.staticTexts["care-line"]))'")
+    }
+
+    /// His ask (2026-09-26), packing by From where: a thing under "No place set" gets
+    /// its place right there — one of his places, or a new one typed — and moves
+    /// under that place.
+    func testAPlaceIsSetFromTheTrip() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let total = Int(words(progress).split(separator: "/").last ?? "") ?? 0
+        // Two things with no place: typed on the trip.
+        for name in ["Tripod", "Sit mat"] {
+            type(name, into: app.textFields["trip-add-name"])
+            XCTAssertTrue(waitUntil { app.buttons["trip-add"].isEnabled })
+            tap(app, id: "trip-add")
+        }
+        XCTAssertTrue(waitUntil { self.words(progress).hasSuffix("/\(total + 2)") }, "the two lines were not added")
+        tap(app, id: "trip-view-2")
+        XCTAssertTrue(waitUntil { app.buttons["trip-view-2"].isSelected })
+        func headings() -> [String] { (0..<12).map { app.staticTexts["trip-group-\($0)-label"] }.filter { $0.exists }.map { self.words($0) } }
+
+        // "No place set" is the last section: travel down it — in the TRIP's list, not
+        // the Trips screen behind it (scroll the list that holds a line on screen).
+        // One of his places, two taps.
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-\(total)-place"), "no Set place on a thing without a place")
+        tap(app, id: "trip-line-\(total)-place")
+        XCTAssertTrue(appears(app, "trip-place-panel", timeout: 5), "Set place did not offer the places")
+        let first = app.buttons["trip-place-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "no places offered")
+        let place = words(first)
+        tap(app, id: "trip-place-0")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-line-\(total)-place"].exists }, "the thing still has no place")
+
+        // A new place, typed.
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-\(total + 1)-place"), "no Set place on the second thing")
+        tap(app, id: "trip-line-\(total + 1)-place")
+        XCTAssertTrue(appears(app, "trip-place-panel", timeout: 5))
+        type("Boot room", into: app.textFields["trip-place-new"])
+        XCTAssertTrue(waitUntil { app.buttons["trip-place-save"].isEnabled })
+        tap(app, id: "trip-place-save")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-line-\(total + 1)-place"].exists }, "the second thing still has no place")
+
+        // Opened again (at the top, still From where): both places are sections now.
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { headings().contains("Boot room") && headings().contains(place) },
+                      "the places set on the trip are not its sections: \(headings()) (wanted Boot room and \(place))")
     }
 
     /// A grab list counts what is in hand, refuses "Ready to go" while something
@@ -1730,6 +1806,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.textFields["bag-0-maxkg"].waitForExistence(timeout: 5), "the bag was not made")
         type("1", into: app.textFields["bag-0-maxkg"])
         app.textFields["bag-0-maxkg"].typeText("\n")
+        // 🪤 A number typed and LEFT — no Return — must stay too: his max weights of
+        // 2026-09-26 were lost exactly so.
+        type("33", into: app.textFields["bag-0-litres"])
+        tap(app, id: "containers-done")
+        XCTAssertTrue(disappears(app, "containers-detail", timeout: 5))
+        tap(app, id: "care-containers")
+        XCTAssertTrue(appears(app, "containers-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.textFields["bag-0-litres"].value as? String) == "33" },
+                      "litres typed without Return were lost: '\(app.textFields["bag-0-litres"].value as? String ?? "")'")
         tap(app, id: "containers-done")
         XCTAssertTrue(disappears(app, "containers-detail", timeout: 5))
 
@@ -1739,6 +1824,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["bags-over"].waitForExistence(timeout: 10),
                       "the limit he set did not reach the trip")
+        // His ask (2026-09-26): a small ⓘ that explains the colours.
+        tap(app, id: "bags-key-open")
+        XCTAssertTrue(appears(app, "bags-key", timeout: 5), "the ⓘ did not explain the colours")
+        tap(app, id: "bags-key-open")
+        XCTAssertTrue(waitUntil { self.find(app, "bags-key") == nil }, "the colour key did not fold away again")
     }
 
     /// Getting rid of a list he no longer wants, and renaming the one he keeps —

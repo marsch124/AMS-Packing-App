@@ -138,7 +138,8 @@ struct HowItWorksScreen: View {
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",
             "Weather: type the place; you get one line and only the rain or cold gear you have not packed yet, each with a +.",
-            "Bags: how full each bag is against its max weight; red when over.",
+            "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over).",
+            "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
             "Type a thing at the bottom to add it to this trip only.",
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and lists stay."]),
         Topic(section: .events, title: "After a trip", lines: [

@@ -175,6 +175,8 @@ struct TemplateDetail: View {
     let listId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
+    /// His "When" colours, made readable for this screen (2026-09-26).
+    @Environment(\.colorScheme) private var scheme
     @State private var newName = ""
     @State private var editingRow: String?
     /// What he is typing over the name, while he is typing it.
@@ -193,7 +195,7 @@ struct TemplateDetail: View {
                 .map { (($0.section?.name ?? "Everything else"), nil, $0.items) }
             : entriesByPhase(list.items)
                 .filter { !$0.entries.isEmpty }
-                .map { ($0.phase.label, Color(hexString: $0.phase.color), $0.entries) }
+                .map { ($0.phase.label, Color(hexString: readableHex($0.phase.color, dark: scheme == .dark)), $0.entries) }
         // Numbered as they are READ, top to bottom — what you see first is the first.
         let index: [String: Int] = Dictionary(groups.flatMap(\.items).enumerated().map { ($1.memId ?? "\($0)", $0) },
                                               uniquingKeysWith: { a, _ in a })

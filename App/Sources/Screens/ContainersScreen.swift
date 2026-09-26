@@ -124,13 +124,13 @@ struct ContainersScreen: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("bag-\(n)-name")
-                field($maxKg, width: 64, id: "bag-\(n)-maxkg") { v in
+                field($maxKg, now: bag.maxKg, width: 64, id: "bag-\(n)-maxkg") { v in
                     model.change { _ = $0.setBag(id: bag.id, maxKg: v) }
                 }
-                field($litres, width: 64, id: "bag-\(n)-litres") { v in
+                field($litres, now: bag.capacityL, width: 64, id: "bag-\(n)-litres") { v in
                     model.change { _ = $0.setBag(id: bag.id, capacityL: v) }
                 }
-                field($empty, width: 70, id: "bag-\(n)-empty") { v in
+                field($empty, now: bag.weight, width: 70, id: "bag-\(n)-empty") { v in
                     model.change { _ = $0.setBag(id: bag.id, emptyGrams: v) }
                 }
             }
@@ -143,7 +143,10 @@ struct ContainersScreen: View {
             }
         }
 
-        private func field(_ text: Binding<String>, width: CGFloat, id: String,
+        /// 🪤 Saved AS HE TYPES. It used to save only on Return, so numbers typed and
+        /// left (Done, or a tap elsewhere) looked set and were lost — his max weights
+        /// of 2026-09-26 morning (Swim bag 5, Duffel bag 20…) never reached the trips.
+        private func field(_ text: Binding<String>, now: Double, width: CGFloat, id: String,
                            commit: @escaping (Double) -> Void) -> some View {
             TextField("", text: text)
                 .textFieldStyle(.plain)
@@ -153,9 +156,10 @@ struct ContainersScreen: View {
                 .frame(width: width, height: 34)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
-                .onSubmit {
-                    let clean = jsTrim(text.wrappedValue).replacingOccurrences(of: ",", with: ".")
-                    commit(clean.isEmpty ? 0 : (Double(clean) ?? 0))
+                .onChange(of: text.wrappedValue) { _, typed in
+                    let clean = jsTrim(typed).replacingOccurrences(of: ",", with: ".")
+                    let value = clean.isEmpty ? 0 : (Double(clean) ?? now)
+                    if value != now { commit(value) }
                 }
                 .accessibilityIdentifier(id)
         }

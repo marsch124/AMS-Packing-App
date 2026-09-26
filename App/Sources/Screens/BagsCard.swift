@@ -14,6 +14,8 @@ import PackingLibrary
 struct BagsCard: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
+    /// His ask (2026-09-26): "a small information button that explains the colors".
+    @State private var showKey = false
 
     var body: some View {
         let trip = model.library.trips.first { $0.id == tripId } ?? newEvent()
@@ -23,6 +25,16 @@ struct BagsCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
                     Text("Bags").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Button { showKey.toggle() } label: {
+                        ZStack {
+                            Circle().stroke(Theme.muted, lineWidth: 1.4).frame(width: 18, height: 18)
+                            Text("i").font(.system(size: 12, weight: .heavy, design: .serif)).foregroundStyle(Theme.muted)
+                        }
+                        .frame(width: 32, height: 28).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("bags-key-open")
+                    .accessibilityLabel("What the colours mean")
                     let over = bags.filter(\.over).count
                     if over > 0 {
                         Text("\(over) over")
@@ -36,6 +48,7 @@ struct BagsCard: View {
                         .font(.system(size: 14, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("bags-total")
                 }
+                if showKey { key }
                 ForEach(Array(bags.enumerated()), id: \.offset) { n, bag in
                     row(bag).accessibilityIdentifier("bag-\(n)")
                 }
@@ -49,6 +62,31 @@ struct BagsCard: View {
         }
     }
 
+    /// What the colours mean — the same three words everywhere a bag is weighed.
+    private var key: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            keyLine(AppSection.events.color, "Green", "well within its max")
+            keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
+            keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
+            Text("No bar: no max set. Set one in Care → Containers.")
+                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.bg))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("bags-key")
+    }
+
+    private func keyLine(_ tint: Color, _ name: String, _ meaning: String) -> some View {
+        HStack(spacing: 8) {
+            Capsule().fill(tint).frame(width: 22, height: 8)
+            Text(name).font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.ink)
+            Text(meaning).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private func row(_ bag: BagLoad) -> some View {
         let tint = BagsCard.tint(bag)
         let part = bag.limitKg > 0 ? min(1, bag.grams / 1000 / bag.limitKg) : 0
@@ -57,8 +95,10 @@ struct BagsCard: View {
                 Text(bag.container == "Other" ? "Not in a bag" : bag.container)
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
+                // Every bag says its maximum — or that it has none (his ask, 2026-09-26).
                 Text(bag.limitKg > 0 ? "\(BagsCard.kilos(bag.grams)) / \(BagsCard.number(bag.limitKg)) kg"
-                                     : BagsCard.kilos(bag.grams))
+                                     : bag.container == "Other" ? BagsCard.kilos(bag.grams)
+                                     : "\(BagsCard.kilos(bag.grams)) · no max")
                     .font(.system(size: 14, weight: .bold).monospacedDigit())
                     .foregroundStyle(bag.over ? AppSection.actions.color : Theme.muted)
             }

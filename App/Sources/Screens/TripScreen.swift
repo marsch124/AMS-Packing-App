@@ -9,6 +9,9 @@ struct TripScreen: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
+    /// His "When" colours are HIS — pale or bright — so they are made readable for
+    /// the screen they land on ("Bad text color twice", 2026-09-26).
+    @Environment(\.colorScheme) private var scheme
     /// When / Where / Category — remembered on this device, as the web app does.
     @AppStorage("ams.view") private var view = "when"
     /// Sections folded away — his ask (2026-09-26): "the list is extremely long".
@@ -18,6 +21,10 @@ struct TripScreen: View {
     @State private var reviewing = false
     @State private var sweeping = false
     @State private var askingToDelete = false
+    /// The line whose place is being chosen (his ask, 2026-09-26: set a place for
+    /// "No place set" in one or two taps, without leaving the trip).
+    @State private var placing: String?
+    @State private var newPlace = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
     // where it is kept at home — "so that I can pick all stuff from a specific location".
@@ -144,7 +151,7 @@ struct TripScreen: View {
                                 .accessibilityLabel(folded ? "Open \(group.label)" : "Fold \(group.label)")
                                 Text(group.label)
                                     .font(.system(size: 15, weight: .heavy))
-                                    .foregroundStyle(view == "when" ? Color(hexString: phaseColor(group.entries[0].phase)) : AppSection.events.color)
+                                    .foregroundStyle(view == "when" ? Color(hexString: readableHex(phaseColor(group.entries[0].phase), dark: scheme == .dark)) : AppSection.events.color)
                                     .accessibilityIdentifier("trip-group-\(g)-label")
                                     .onTapGesture { toggleFold(group.label) }
                                 Text("\(mine.filter { $0.checked }.count)/\(mine.count)")
@@ -178,11 +185,13 @@ struct TripScreen: View {
                             ForEach(group.entries, id: \.id) { line in
                                 let n = index[line.id] ?? 0
                                 let aside = isSetAside(line)
+                                let needsPlace = view == "stored" && group.label == "No place set"
+                                VStack(alignment: .leading, spacing: 6) {
                                 HStack(spacing: 4) {
                                     Button {
                                         if !aside { model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) } }
                                     } label: {
-                                        PackLine(line: line, nights: trip.nights, tint: Color(hexString: phaseColor(line.phase)), showBag: view != "container")
+                                        PackLine(line: line, nights: trip.nights, tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)), showBag: view != "container")
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("trip-line-\(n)")
@@ -199,11 +208,32 @@ struct TripScreen: View {
                                     .accessibilityIdentifier("trip-line-\(n)-aside")
                                     .accessibilityLabel(aside ? "Take it this time" : "Not this time")
                                 }
+                                // On its own line under the name, so the name keeps its width.
+                                if needsPlace {
+                                    if placing == line.id { placePanel(line) }
+                                    else {
+                                        Button { placing = line.id; newPlace = "" } label: {
+                                            Text("Set place").font(.system(size: 13, weight: .bold))
+                                                .foregroundStyle(AppSection.events.color)
+                                                .padding(.horizontal, 10).frame(minHeight: 30)
+                                                .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
+                                                .contentShape(Capsule())
+                                        }
+                                        .buttonStyle(.plain).focusEffectDisabled()
+                                        .padding(.leading, 44).padding(.bottom, 4)
+                                        .accessibilityIdentifier("trip-line-\(n)-place")
+                                    }
+                                }
+                                }
                                 // Bug B1 (his Mac, 2026-09-26): a row kept showing NO tick while the
                                 // stored trip — and the section's own count — had it ticked. Not
                                 // reproduced on demand; this makes a row rebuild whenever its tick
                                 // or its set-aside changes, so it cannot be left showing an old state.
-                                .id("\(line.id)|\(line.checked)|\(aside)")
+                                // …and when it moves to another section, or its place panel opens or
+                                // closes: a lazy row that MOVED kept its old face ("Set place" still
+                                // showing under the place just chosen — the same staleness, seen
+                                // 2026-09-26 in the Set place test).
+                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)")
                             }
                             }
                         }
@@ -279,6 +309,69 @@ struct TripScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
         #endif
+    }
+
+    /// His places, one tap each; or a new one typed. The thing keeps the place.
+    private func placePanel(_ line: Item) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Where is \(line.name) kept?")
+                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button("Close") { placing = nil; newPlace = "" }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("trip-place-close")
+            }
+            FlowRow(spacing: 6) {
+                ForEach(Array(model.library.storagePlaces().enumerated()), id: \.offset) { i, place in
+                    Button { putAway(line, place) } label: {
+                        Text(place).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 10).frame(minHeight: 32)
+                            .background(Capsule().fill(Theme.bg))
+                            .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("trip-place-\(i)")
+                }
+            }
+            HStack(spacing: 8) {
+                TextField("A new place", text: $newPlace)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 10).frame(minHeight: 36)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Theme.bg))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
+                    .onSubmit { putAway(line, newPlace) }
+                    .accessibilityIdentifier("trip-place-new")
+                Button { putAway(line, newPlace) } label: {
+                    Text("Save").font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(jsTrim(newPlace).isEmpty ? Theme.muted : Color.white)
+                        .padding(.horizontal, 14).frame(minHeight: 36)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(jsTrim(newPlace).isEmpty ? Theme.line : AppSection.events.color))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .disabled(jsTrim(newPlace).isEmpty)
+                .accessibilityIdentifier("trip-place-save")
+            }
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color.opacity(0.5), lineWidth: 1))
+        .padding(.leading, 44).padding(.bottom, 6)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("trip-place-panel")
+    }
+
+    private func putAway(_ line: Item, _ place: String) {
+        guard !jsTrim(place).isEmpty else { return }
+        let id = tripId, entry = line.id
+        model.change { _ = $0.setPlace(place, tripId: id, entryId: entry) }
+        placing = nil
+        newPlace = ""
     }
 
     @ViewBuilder private func deleteTrip(_ trip: TripEvent) -> some View {
