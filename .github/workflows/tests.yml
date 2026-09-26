@@ -43,7 +43,9 @@ jobs:
   iphone:
     name: UI tests — iPhone
     runs-on: macos-15
-    timeout-minutes: 30
+    # 30 was outgrown on 2026-09-26 (0.25): an 11-minute build plus 48 tests —
+    # cancelled at test 41 of 48 with nothing wrong. Room to grow now.
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
 
@@ -104,7 +106,7 @@ jobs:
     # SwiftUI a click on a pill "succeeded" and selected nothing, three runs in
     # a row, while the same test is green here every time.
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
