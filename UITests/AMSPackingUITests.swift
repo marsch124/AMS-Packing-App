@@ -692,8 +692,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["care-row-900-done"].waitForExistence(timeout: 5), "the boots are not under the day")
     }
 
-    /// His mark (2026-09-25): "Sorting" on the left, When / Where / Category on the
-    /// same line to its right — and choosing Where sorts the trip by bag.
+    /// His marks (2026-09-25): "Sorting" on the left, the buttons on the same line to
+    /// its right — When · Into · From where · Category. "Into" sorts by the bag a
+    /// thing goes into; "From where" by where it is kept at home, "so that I can
+    /// pick all stuff from a specific location when packing".
     func testTheTripSaysSortingBesideItsThreeButtons() {
         let app = launch()
         tab(app, "events")
@@ -702,20 +704,33 @@ final class AMSPackingUITests: XCTestCase {
         let label = app.staticTexts["trip-view-label"]
         XCTAssertTrue(label.waitForExistence(timeout: 5), "no Sorting label")
         XCTAssertEqual(words(label), "Sorting")
-        let when = app.buttons["trip-view-0"], category = app.buttons["trip-view-2"]
-        XCTAssertTrue(when.waitForExistence(timeout: 5) && category.exists, "the three buttons are missing")
-        XCTAssertLessThan(label.frame.maxX, when.frame.minX, "Sorting is not to the LEFT of the buttons")
-        XCTAssertLessThan(abs(label.frame.midY - when.frame.midY), 10, "Sorting is not on the SAME line as the buttons")
-        XCTAssertLessThan(abs(category.frame.midY - when.frame.midY), 10, "the three buttons are not on one line")
-        XCTAssertTrue(when.isSelected, "When is not the starting sort")
+        let buttons = (0..<4).map { app.buttons["trip-view-\($0)"] }
+        XCTAssertTrue(buttons[0].waitForExistence(timeout: 5) && buttons.allSatisfy { $0.exists }, "the four buttons are missing")
+        XCTAssertEqual(buttons.map { words($0) }, ["When", "Into", "From where", "Category"])
+        XCTAssertLessThan(label.frame.maxX, buttons[0].frame.minX, "Sorting is not to the LEFT of the buttons")
+        XCTAssertLessThan(abs(label.frame.midY - buttons[0].frame.midY), 10, "Sorting is not on the SAME line as the buttons")
+        XCTAssertLessThan(abs(buttons[3].frame.midY - buttons[0].frame.midY), 10, "the buttons are not on one line")
+        let sheet = find(app, "trip-detail")?.frame ?? app.windows.firstMatch.frame
+        XCTAssertLessThanOrEqual(buttons[3].frame.maxX, sheet.maxX + 1, "the last button runs off the screen")
+        XCTAssertGreaterThanOrEqual(label.frame.minX, sheet.minX - 1, "Sorting is pushed off the screen")
+        let screen = app.windows.firstMatch.frame
+        XCTAssertTrue(screen.contains(label.frame) && screen.contains(buttons[3].frame), "the Sorting row runs off the screen")
+        XCTAssertTrue(buttons[0].isSelected, "When is not the starting sort")
 
         let first = app.staticTexts["trip-group-0-label"]
         XCTAssertTrue(first.waitForExistence(timeout: 5), "no first heading")
         let byWhen = words(first)
         tap(app, id: "trip-view-1")
-        XCTAssertTrue(waitUntil { app.buttons["trip-view-1"].isSelected }, "Where did not become the sort")
+        XCTAssertTrue(waitUntil { app.buttons["trip-view-1"].isSelected }, "Into did not become the sort")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-group-0-label"]) != byWhen },
-                      "Where did not re-sort the trip: still '\(byWhen)'")
+                      "Into did not re-sort the trip: still '\(byWhen)'")
+
+        // From where: the headings are the places things are KEPT (the sample's are these).
+        let places: Set<String> = ["Bathroom cabinet", "Chest of drawers", "Garage", "Hall closet", "No place set"]
+        tap(app, id: "trip-view-2")
+        XCTAssertTrue(waitUntil { app.buttons["trip-view-2"].isSelected }, "From where did not become the sort")
+        XCTAssertTrue(waitUntil { places.contains(self.words(app.staticTexts["trip-group-0-label"])) },
+                      "From where does not group by where things are kept: '\(words(app.staticTexts["trip-group-0-label"]))'")
     }
 
     /// After a trip: mark what went unused, add what was missed, save — the trip
@@ -1112,9 +1127,14 @@ final class AMSPackingUITests: XCTestCase {
                       "one thing packed and the trip still says '\(words(app.buttons["trip-row-0"]))'")
 
         // A to-do makes the chip to Actions appear, and it goes there.
+        // 🪤 Wait for Add to switch on and the to-do to be LISTED before leaving: in a
+        // full run (2026-09-25) Add was tapped while still off, no to-do was made, and
+        // the chip was blamed for it.
         tab(app, "actions")
         type("Book the ferry", into: app.textFields["action-add-text"])
+        XCTAssertTrue(waitUntil { app.buttons["action-add"].isEnabled }, "Add did not switch on for a typed to-do")
         tap(app, id: "action-add")
+        XCTAssertTrue(app.buttons["action-0"].waitForExistence(timeout: 5), "the to-do was not made")
         tab(app, "events")
         XCTAssertTrue(app.buttons["events-todos"].waitForExistence(timeout: 5), "an open to-do is not shown here")
         tap(app, id: "events-todos")

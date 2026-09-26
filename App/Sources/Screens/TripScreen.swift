@@ -15,7 +15,36 @@ struct TripScreen: View {
     @State private var reviewing = false
     @State private var sweeping = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Where"), ("category", "Category")]
+    // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
+    // where it is kept at home — "so that I can pick all stuff from a specific location".
+    static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"), ("category", "Category")]
+
+    private var sortingLabel: some View {
+        Text("Sorting")
+            .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+            .lineLimit(1).fixedSize()
+            .accessibilityIdentifier("trip-view-label")
+    }
+
+    /// When · Into · From where · Category — `compact` trims the padding and type a touch.
+    @ViewBuilder private func sortButtons(compact: Bool) -> some View {
+        ForEach(Array(TripScreen.views.enumerated()), id: \.element.id) { n, o in
+            let on = view == o.id
+            Button { view = o.id } label: {
+                Text(o.label)
+                    .font(.system(size: compact ? 14 : 15, weight: on ? .bold : .semibold))
+                    .foregroundStyle(on ? Color.white : Theme.ink)
+                    .lineLimit(1).fixedSize()
+                    .padding(.horizontal, compact ? 8 : 14).frame(minHeight: 36)
+                    .background(Capsule().fill(on ? AppSection.events.color : Theme.bg))
+                    .overlay(Capsule().stroke(on ? AppSection.events.color : Theme.line, lineWidth: 1))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("trip-view-\(n)")
+            .accessibilityAddTraits(on ? .isSelected : [])
+        }
+    }
 
     var body: some View {
         let trip = model.library.trips.first { $0.id == tripId } ?? newEvent()
@@ -52,30 +81,18 @@ struct TripScreen: View {
                     .accessibilityIdentifier("trip-done")
             }
             .padding(16)
-            // His mark (2026-09-25): "Sorting" on the left, the three buttons on the same line.
-            HStack(spacing: 8) {
-                Text("Sorting")
-                    .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                    .accessibilityIdentifier("trip-view-label")
-                Spacer(minLength: 8)
-                ForEach(Array(TripScreen.views.enumerated()), id: \.element.id) { n, o in
-                    let on = view == o.id
-                    Button { view = o.id } label: {
-                        Text(o.label)
-                            .font(.system(size: 15, weight: on ? .bold : .semibold))
-                            .foregroundStyle(on ? Color.white : Theme.ink)
-                            .lineLimit(1).fixedSize()
-                            .padding(.horizontal, 14).frame(minHeight: 36)
-                            .background(Capsule().fill(on ? AppSection.events.color : Theme.bg))
-                            .overlay(Capsule().stroke(on ? AppSection.events.color : Theme.line, lineWidth: 1))
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("trip-view-\(n)")
-                    .accessibilityAddTraits(on ? .isSelected : [])
+            // His marks (2026-09-25): "Sorting" on the left, the buttons on the same line —
+            // now four of them. They fit on the Mac and a wide iPhone; a narrower screen
+            // gets slimmer buttons, and failing that "Sorting" moves just above them.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { sortingLabel; Spacer(minLength: 8); sortButtons(compact: false) }
+                HStack(spacing: 6) { sortingLabel; Spacer(minLength: 6); sortButtons(compact: true) }
+                VStack(alignment: .leading, spacing: 6) {
+                    sortingLabel
+                    HStack(spacing: 6) { sortButtons(compact: true) }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             KeyboardAwayScroll {
                 // The card is deliberately OUTSIDE the lazy stack: a lazy row is
