@@ -130,7 +130,8 @@ struct HowItWorksScreen: View {
         Topic(section: .home, title: "Home", lines: [
             "Grab and go: six grab lists for a quick outing. Tap one, then tick what is in your hand.",
             "Create new trip: a name, Dates (tap the first day, then the last), Quick if only the lists you tick should come along.",
-            "Pick the lists, then Transport, Season and Food, and Create Event. The trip gathers everything those lists hold.",
+            "Create trip is always ready: if a name or a list is missing, it says so right under it.",
+            "Pick the lists, then Transport, Season and Food, and Create trip. The trip gathers everything those lists hold.",
             "This Device: how many trips, things and lists this device holds."]),
         Topic(section: .events, title: "Packing a trip", lines: [
             "Tap a line to tick it; tap again to take it back. The round button by a heading ticks the whole section.",
@@ -154,7 +155,7 @@ struct HowItWorksScreen: View {
             "Delete this list asks first. Your things stay."]),
         Topic(section: .care, title: "Care", lines: [
             "Your things: every thing you own; open one to change it or put it on a list.",
-            "Containers: your bags with max weight, litres and empty weight.",
+            "Containers: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month."]),
         Topic(section: .actions, title: "Actions", lines: [

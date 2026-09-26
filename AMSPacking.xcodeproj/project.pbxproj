@@ -30,6 +30,7 @@
 		8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34879BF77676913C07B69267 /* RestoreSheet.swift */; };
 		8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CEDA06EFED05D4A1612077 /* EventsScreen.swift */; };
 		A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5844FD1A40A106FF0878B093 /* TableColumns.swift */; };
+		A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33289BF160D459176D7669 /* SmallDelete.swift */; };
 		A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */; };
 		AEC09A016E6CEAD021B5D4C6 /* SearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */; };
 		AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */; };
@@ -50,6 +51,7 @@
 		E26E2B17454694BAA27BDCE1 /* ContainersScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D6FFFE59377217C97261D66 /* ContainersScreen.swift */; };
 		E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA49BA1121FBB7576FC62E32 /* RootView.swift */; };
 		EB766063382A7E2DADC60C89 /* Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78A30067C884BCEB042959A /* Sections.swift */; };
+		F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81D1DC40B7BE148110F1C91 /* BagDetail.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +88,7 @@
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
 		56F5604CA6875D255BD93251 /* CareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareScreen.swift; sourceTree = "<group>"; };
 		5844FD1A40A106FF0878B093 /* TableColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumns.swift; sourceTree = "<group>"; };
+		6C33289BF160D459176D7669 /* SmallDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallDelete.swift; sourceTree = "<group>"; };
 		77CEDA06EFED05D4A1612077 /* EventsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsScreen.swift; sourceTree = "<group>"; };
 		7B24F2617CC7D137784F66F2 /* ThingsTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsTable.swift; sourceTree = "<group>"; };
 		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
@@ -95,6 +98,7 @@
 		A78A30067C884BCEB042959A /* Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sections.swift; sourceTree = "<group>"; };
 		A841D9340C8D1312A6814431 /* CloudStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudStore.swift; sourceTree = "<group>"; };
 		AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
+		B81D1DC40B7BE148110F1C91 /* BagDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagDetail.swift; sourceTree = "<group>"; };
 		BA49BA1121FBB7576FC62E32 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		C41F92CE24B4D203B69B5870 /* BagsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagsCard.swift; sourceTree = "<group>"; };
 		C63D25C9AA00E03651D86114 /* BuyList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyList.swift; sourceTree = "<group>"; };
@@ -215,6 +219,7 @@
 			isa = PBXGroup;
 			children = (
 				9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */,
+				B81D1DC40B7BE148110F1C91 /* BagDetail.swift */,
 				C41F92CE24B4D203B69B5870 /* BagsCard.swift */,
 				1E0A839566CDE77B068F47C5 /* BulkChange.swift */,
 				C63D25C9AA00E03651D86114 /* BuyList.swift */,
@@ -234,6 +239,7 @@
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
+				6C33289BF160D459176D7669 /* SmallDelete.swift */,
 				5844FD1A40A106FF0878B093 /* TableColumns.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
 				ED9B041225333263C7547689 /* ThingsScreen.swift */,
@@ -355,6 +361,7 @@
 			files = (
 				65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */,
 				AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */,
+				F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */,
 				D4F50ECCC88F8FE89A931EFC /* BagsCard.swift in Sources */,
 				C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */,
 				21419C900E931B9CBE73B314 /* BuyList.swift in Sources */,
@@ -384,6 +391,7 @@
 				AEC09A016E6CEAD021B5D4C6 /* SearchScreen.swift in Sources */,
 				EB766063382A7E2DADC60C89 /* Sections.swift in Sources */,
 				B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */,
+				A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */,
 				A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */,
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
 				E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */,
@@ -529,7 +537,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.25;
+				MARKETING_VERSION = 0.26;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -616,7 +624,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.25;
+				MARKETING_VERSION = 0.26;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

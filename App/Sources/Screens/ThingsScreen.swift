@@ -172,6 +172,14 @@ struct ThingEditor: View {
                     label("Weight, in grams (0 = not known)")
                     field(Binding(get: { draft.weight == 0 ? "" : String(Int(draft.weight)) },
                                   set: { draft.weight = Double(jsTrim($0)) ?? 0 }), "0", "thing-weight")
+                    // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
+                    // and for any thing: the web app's editor has had them all along.
+                    label("Brand")
+                    field($draft.manufacturer, "e.g. Patagonia", "thing-brand")
+                    label("Colour")
+                    field($draft.color, "e.g. Black", "thing-colour")
+                    label("Notes")
+                    field($draft.note, "Anything worth remembering", "thing-notes")
                     Pills(title: "On these lists", options: templates.map { ($0.id, $0.name) }, selected: onLists,
                           id: "thing-lists", tint: AppSection.templates.color, compact: true) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
@@ -230,6 +238,9 @@ struct ThingEditor: View {
                 thing.ownedBy = d.ownedBy
                 thing.condition = d.condition
                 thing.weight = d.weight
+                thing.manufacturer = jsTrim(d.manufacturer)
+                thing.color = jsTrim(d.color)
+                thing.note = jsTrim(d.note)
             }
             for t in lib.templates where t.role != CONTAINER_ROLE {
                 _ = lib.setOnTemplate(itemId: itemId, templateId: t.id, on: lists.contains(t.id))

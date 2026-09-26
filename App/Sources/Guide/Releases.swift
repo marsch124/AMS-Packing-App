@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.26", date: "26 Sep 2026", title: "Your bags have their own page",
+                new: ["Care → Containers: tap a bag's name to open its page — rename it, set its numbers, see the things usually in it and the trips it went on, open its details, or delete it.",
+                      "Renaming a bag carries the new name to your things, your lists and every trip.",
+                      "Deleting a bag first asks which bag its things should move to.",
+                      "Things have Brand, Colour and Notes."],
+                changed: ["Create trip is always blue and ready. If a name or a list is missing, it says so under the button.",
+                          "Delete trip, Delete list and Delete bag are small buttons at the side."]),
         Release(version: "0.25", date: "26 Sep 2026", title: "Set a place while packing",
                 new: ["Sorted From where, each thing under \u{201C}No place set\u{201D} has Set place: tap it, tap one of your places (or type a new one), and the thing is kept there from now on.",
                       "Bags on a trip: an ⓘ explains the colours, and a bag without a maximum says \u{201C}no max\u{201D}."],

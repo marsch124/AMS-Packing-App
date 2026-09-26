@@ -417,7 +417,11 @@ extension Library {
         let clean = jsTrim(name)
         guard !clean.isEmpty, let n = items.firstIndex(where: { $0.id == id }),
               !items.contains(where: { $0.id != id && normName($0.name) == normName(clean) }) else { return false }
+        // A BAG is found by its name everywhere — carry the new name through, from
+        // whichever screen it is renamed (his choice, 2026-09-26: all trips too).
+        let wasBag = bags().first { $0.id == id }
         items[n].name = clean
+        if let bag = wasBag, bag.name != clean { renameBagEverywhere(from: bag.name, to: clean) }
         return true
     }
 

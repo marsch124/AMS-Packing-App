@@ -12,6 +12,9 @@ struct ContainersScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
+    /// The bag whose own page is open.
+    @State private var openBag: OpenBag?
+    struct OpenBag: Identifiable { let id: String }
 
     var body: some View {
         let bags = model.library.bags()
@@ -54,7 +57,7 @@ struct ContainersScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(bags.enumerated()), id: \.element.id) { n, bag in
-                        BagRow(bag: bag, n: n).environmentObject(model)
+                        BagRow(bag: bag, n: n, open: { openBag = OpenBag(id: bag.id) }).environmentObject(model)
                     }
                     if bags.isEmpty {
                         Text("No bags yet.").font(.system(size: 15, weight: .medium))
@@ -91,6 +94,7 @@ struct ContainersScreen: View {
         .background(Theme.bg.ignoresSafeArea())
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("containers-detail")
+        .sheet(item: $openBag) { b in BagDetail(bagId: b.id).environmentObject(model) }
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 560)
         #endif
@@ -112,6 +116,8 @@ struct ContainersScreen: View {
     private struct BagRow: View {
         let bag: Item
         let n: Int
+        /// Open the bag's own page (rename, delete, what it knows).
+        let open: () -> Void
         @EnvironmentObject var model: LibraryModel
         @State private var maxKg = ""
         @State private var litres = ""
@@ -119,11 +125,29 @@ struct ContainersScreen: View {
 
         var body: some View {
             HStack(spacing: 6) {
-                Text(bag.name)
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityIdentifier("bag-\(n)-name")
+                // The name opens the bag's page; under it, what it knows at a glance.
+                let facts = model.library.bagFacts(name: bag.name)
+                let line = BagRow.glance(facts)
+                Button(action: open) {
+                    HStack(spacing: 4) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(bag.name)
+                                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
+                                .lineLimit(1).minimumScaleFactor(0.8)
+                            if !line.isEmpty {
+                                Text(line).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.muted)
+                                    .lineLimit(1).minimumScaleFactor(0.85)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                            .frame(width: 12, height: 12).foregroundStyle(Theme.muted)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("bag-\(n)-name")
+                .accessibilityValue(line)
                 field($maxKg, now: bag.maxKg, width: 64, id: "bag-\(n)-maxkg") { v in
                     model.change { _ = $0.setBag(id: bag.id, maxKg: v) }
                 }
@@ -146,6 +170,14 @@ struct ContainersScreen: View {
         /// 🪤 Saved AS HE TYPES. It used to save only on Return, so numbers typed and
         /// left (Done, or a tap elsewhere) looked set and were lost — his max weights
         /// of 2026-09-26 morning (Swim bag 5, Duffel bag 20…) never reached the trips.
+        /// "176 things · last trip 5.1 kg" — or less, when there is less to say.
+        static func glance(_ facts: Library.BagFacts) -> String {
+            var parts: [String] = []
+            if !facts.things.isEmpty { parts.append("\(facts.things.count) thing\(facts.things.count == 1 ? "" : "s")") }
+            if let last = facts.trips.first { parts.append("last trip \(BagsCard.kilos(last.grams))") }
+            return parts.joined(separator: " · ")
+        }
+
         private func field(_ text: Binding<String>, now: Double, width: CGFloat, id: String,
                            commit: @escaping (Double) -> Void) -> some View {
             TextField("", text: text)

@@ -407,14 +407,7 @@ struct TripScreen: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
         } else {
-            Button { askingToDelete = true } label: {
-                Text("Delete this trip")
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(AppSection.actions.color)
-                    .frame(maxWidth: .infinity, minHeight: 34)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("trip-delete")
+            SmallDeleteButton(title: "Delete trip", id: "trip-delete") { askingToDelete = true }
         }
     }
 

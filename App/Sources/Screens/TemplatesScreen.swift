@@ -330,15 +330,8 @@ struct TemplateDetail: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
                 .padding(.horizontal, 16).padding(.bottom, 10)
             } else {
-                Button { askingToDelete = true } label: {
-                    Text("Delete this list")
-                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(AppSection.actions.color)
-                        .frame(maxWidth: .infinity, minHeight: 34)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.bottom, 8)
-                .accessibilityIdentifier("template-delete")
+                SmallDeleteButton(title: "Delete list", id: "template-delete") { askingToDelete = true }
+                    .padding(.horizontal, 16).padding(.bottom, 8)
             }
         }
         .background(Theme.bg.ignoresSafeArea())

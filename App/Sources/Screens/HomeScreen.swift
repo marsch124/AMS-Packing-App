@@ -30,6 +30,9 @@ struct HomeScreen: View {
     @State private var grab: GrabDefinition?
     @State private var searching = false
     @State private var shelf = false
+    /// What Create said was missing, after a press with something missing.
+    @State private var stillNeeded = ""
+    @FocusState private var naming: Bool
 
     var body: some View {
         let choices = model.library.activityChoices()
@@ -59,6 +62,10 @@ struct HomeScreen: View {
                         .font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.ink)
                         .padding(.horizontal, 12).frame(minHeight: 48)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
+                        .overlay(RoundedRectangle(cornerRadius: 10)
+                            .stroke(stillNeeded.contains("name") ? AppSection.actions.color : Color.clear, lineWidth: 2))
+                        .focused($naming)
+                        .onChange(of: name) { _, _ in if !stillNeeded.isEmpty { stillNeeded = needs() } }
                         .accessibilityIdentifier("trip-name")
 
                     // Two answers about the SHAPE of the trip, on one line: his ask.
@@ -94,6 +101,7 @@ struct HomeScreen: View {
                               selected: activities, id: "trip-activity", tint: AppSection.templates.color,
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0) { id in
                             if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
+                            if !stillNeeded.isEmpty { stillNeeded = needs() }
                         }
                     }
                     if anyWorkout {
@@ -106,19 +114,26 @@ struct HomeScreen: View {
                     Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
                           selected: [catering], id: "trip-catering") { catering = $0 }
 
+                    // The app's main button is ALWAYS in full colour — his words (2026-09-26):
+                    // "The create button is something that is central to the whole app,
+                    // and you make it grayed out." A press with something missing
+                    // creates nothing and says what is missing, right under it.
                     Button { create(flat) } label: {
-                        Text("Create Event")
+                        Text("Create trip")
                             .font(.system(size: 18, weight: .bold))
-                            // White on the grey of a button that cannot be pressed is
-                            // unreadable in daylight — his words: "cant read Create Event".
-                            .foregroundStyle(canCreate ? Color.white : Theme.muted)
+                            .foregroundStyle(Color.white)
                             .frame(maxWidth: .infinity, minHeight: 52)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(canCreate ? AppSection.home.color : Theme.line))
+                            .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.home.color))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .disabled(!canCreate)
                     .accessibilityIdentifier("trip-create")
+                    if !stillNeeded.isEmpty {
+                        Text(stillNeeded)
+                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                            .frame(maxWidth: .infinity)
+                            .accessibilityIdentifier("trip-create-needs")
+                    }
                 }
                 .padding(14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
@@ -156,8 +171,22 @@ struct HomeScreen: View {
 
     private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty }
 
+    /// What is still missing before a trip can be made, in his words — "" when nothing.
+    private func needs() -> String {
+        let noName = jsTrim(name).isEmpty, noList = activities.isEmpty
+        if noName && noList { return "Give the trip a name and pick at least one list." }
+        if noName { return "Give the trip a name." }
+        if noList { return "Pick at least one list." }
+        return ""
+    }
+
     private func create(_ flat: [PackList]) {
-        guard canCreate else { return }
+        guard canCreate else {
+            stillNeeded = needs()
+            if jsTrim(name).isEmpty { naming = true }
+            return
+        }
+        stillNeeded = ""
         var draft = newEvent(name: jsTrim(name), mode: quick ? "quick" : "trip")
         draft.transport = transport
         draft.season = season
