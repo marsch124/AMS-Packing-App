@@ -37,6 +37,9 @@ struct TripScreen: View {
     // where it is kept at home — "so that I can pick all stuff from a specific location".
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"), ("category", "Category")]
 
+    /// Laundry is on AND the trip is long enough for it to cap anything.
+    private func washes(_ trip: TripEvent) -> Bool { trip.laundry && trip.nights > LAUNDRY_CAP_NIGHTS }
+
     /// What a settings save did, in a few words.
     static func saying(_ r: Library.TripRebuilt) -> String {
         switch (r.added, r.removed) {
@@ -231,10 +234,12 @@ struct TripScreen: View {
                                     Button {
                                         if !aside { model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) } }
                                     } label: {
-                                        PackLine(line: line, nights: trip.nights, tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)), showBag: view != "container")
+                                        PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
+                                                 showBag: view != "container", washed: washes(trip))
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("trip-line-\(n)")
+                                    .accessibilityValue(PackLine.count(line, qtyNights(trip), washed: washes(trip)))
                                     .accessibilityAddTraits(line.checked ? .isSelected : [])
                                     // ⊘ "not this time" — one tap, his call, no confirmation; ↻ takes it back.
                                     Button {
@@ -273,7 +278,7 @@ struct TripScreen: View {
                                 // closes: a lazy row that MOVED kept its old face ("Set place" still
                                 // showing under the place just chosen — the same staleness, seen
                                 // 2026-09-26 in the Set place test).
-                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)")
+                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)|\(qtyNights(trip))")
                             }
                             }
                         }
@@ -283,6 +288,9 @@ struct TripScreen: View {
 
                 // Last on the screen, quiet and red, and it asks first — his rule for
                 // removing anything. His two test trips had no way out (2026-09-26).
+                // The web app's Excel button: the trip as a spreadsheet.
+                TripExcelButton(tripId: tripId).environmentObject(model)
+                    .padding(.horizontal, 16).padding(.top, 18)
                 deleteTrip(trip)
                     .padding(.horizontal, 16).padding(.top, 18)
                 }
@@ -466,6 +474,16 @@ struct PackLine: View {
     let nights: Int
     let tint: Color
     var showBag = true
+    /// Laundry capped the nights: a per-night line says so with the washtub.
+    var washed = false
+
+    /// "×4 · laundry", "×7", or nothing — what the line says about how many.
+    static func count(_ line: Item, _ nights: Int, washed: Bool) -> String {
+        let qty = effectiveQty(line, nights)
+        guard qty > 1 else { return "" }
+        let n = qty.rounded() == qty ? String(Int(qty)) : String(qty)
+        return washed && line.perNight ? "×\(n) · laundry" : "×\(n)"
+    }
 
     var body: some View {
         let aside = isSetAside(line)
@@ -489,6 +507,9 @@ struct PackLine: View {
             if qty > 1 {
                 Text("×\(qty.rounded() == qty ? String(Int(qty)) : String(qty))")
                     .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                if washed && line.perNight {
+                    LaundryMark().frame(width: 18, height: 18).foregroundStyle(Theme.muted)
+                }
             }
             if showBag {
                 Text(line.container)

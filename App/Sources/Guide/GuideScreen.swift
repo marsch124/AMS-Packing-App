@@ -132,11 +132,13 @@ struct HowItWorksScreen: View {
             "Create new trip: a name, Dates (tap the first day, then the last), Quick if only the templates you tick should come along.",
             "Create trip is always ready: if a name or a template is missing, it says so right under it.",
             "Pick the templates, then Transport, Season and Food, and Create trip. The trip gathers everything those templates hold.",
+            "Laundry: wash and wear again, so per-night things count 4 nights at most. It shows as \u{00D7}4 with a washtub.",
             "This Device: how many trips, things and templates this device holds."]),
         Topic(section: .events, title: "Packing a trip", lines: [
             "Tap a line to tick it; tap again to take it back. The round button by a heading ticks the whole section.",
             "The gear beside the count: Trip settings. Change the name, dates, templates, transport, season or food; Save rebuilds the list, and what you ticked or added yourself stays.",
             "At the bottom of Trip settings: Start a new trip from this one. The same list as it ended up, nothing ticked, no dates.",
+            "Save as Excel, near the end of the list: the trip as a spreadsheet, by When and bag, with how many and what is packed.",
             "The arrow before a section's name folds it away; tap it again to open. A trip remembers its folds.",
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",

@@ -55,6 +55,9 @@ enum SampleLibrary {
         if let n = lib.items.firstIndex(where: { $0.name == "Map" }) { lib.items[n].condition = "retire" }
         if let n = lib.items.firstIndex(where: { $0.name == "Toothbrush" }) { lib.items[n].consumable = true }
         lib.saveTemplate(list("Swim", group: "WET", ["Goggles", "Swim cap", "Towel"]))
+        // One thing packed per night, for the laundry to cap (0.35). Only Swim holds
+        // it, so the sample trip's own counts do not change.
+        if let n = lib.items.firstIndex(where: { $0.name == "Towel" }) { lib.items[n].perNight = true }
         // His lists are built in sections, so the sample has one too.
         if let hiking = lib.templates.first(where: { $0.name == "Hiking" }),
            let lights = lib.addSection(templateId: hiking.id, name: "Lights"),

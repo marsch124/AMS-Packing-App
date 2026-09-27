@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.35", date: "27 Sep 2026", title: "Laundry and Excel",
+                new: ["Laundry, on Create new trip and in Trip settings: wash and wear again, so per-night things count 4 nights at most. The line says \u{00D7}4 with a washtub.",
+                      "Save as Excel, near the end of a trip: the trip as a spreadsheet by When and bag, with how many and what is packed; the header row stays in place."],
+                fixed: ["A trip from the web app with laundry on now counts its per-night things the same way here."]),
         Release(version: "0.34", date: "27 Sep 2026", title: "Templates, said one way",
                 changed: ["The app says Templates for the building blocks your trips are made from: the tab, Your templates, A new template, Delete template, On these templates, Pick at least one template. \u{201C}List\u{201D} now means only the list you pack from, and grab lists.",
                           "Settings \u{2192} Your lists is now Your choices: storage places, owners, packers, conditions and the When steps.",

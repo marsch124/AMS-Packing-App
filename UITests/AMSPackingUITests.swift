@@ -1213,6 +1213,114 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(sawOld, "the old trip is gone")
     }
 
+    /// Laundry (the web app's, gap list 2026-09-27): he can wash, so per-night things
+    /// count 4 nights at most — a 7-night trip packs 4 of the per-night towel, not 7,
+    /// and says why; Trip settings shows it, turns it off, and the 7 comes back.
+    func testLaundryCountsPerNightThingsFourNightsAtMost() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        pickDates(app, from: 3, to: 10)                      // 7 nights
+        type("Swim week", into: app.textFields["trip-name"])
+        setSwitch(app, "trip-quick", on: true)
+        select(app, app.buttons["trip-activity-1"])          // Swim: goggles, cap, a towel per night
+        setSwitch(app, "trip-laundry", on: true)
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/3" }, "Quick with Swim is not three lines: '\(words(progress))'")
+        func counts() -> [String] { (0..<3).map { app.buttons["trip-line-\($0)"].value as? String ?? "" } }
+        XCTAssertTrue(waitUntil { counts().contains("×4 · laundry") }, "the towel does not count 4 with laundry: \(counts())")
+        XCTAssertFalse(counts().contains { $0.hasPrefix("×7") }, "a night count got past the laundry: \(counts())")
+        shot(app, "laundry-trip")
+
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "tripset-laundry") }, "Trip settings does not show the laundry")
+        setSwitch(app, "tripset-laundry", on: false)
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { counts().contains("×7") }, "without laundry the towel does not count every night: \(counts())")
+    }
+
+    /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end
+    /// of a trip; it makes the file and opens the place to save it. (What the file
+    /// holds is the model's test: WorkbookTests.)
+    func testATripIsSavedAsExcel() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let excel = app.buttons["trip-excel"]
+        XCTAssertTrue(excel.waitForExistence(timeout: 5), "no Save as Excel on the trip")
+        tapVisible(app, excel)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-excel-status"]).hasPrefix("Choosing") },
+                      "the save was not started: '\(words(app.staticTexts["trip-excel-status"]))'")
+        sleep(2); shot(app, "excel-save")
+        #if os(macOS)
+        XCTAssertTrue(waitUntil(timeout: 10) { app.sheets.count > 0 || app.dialogs.count > 0 }, "no Save window opened")
+        app.typeKey(.escape, modifierFlags: [])
+        #endif
+    }
+
+    /// A Toggle is a switch on the iPhone and a check box on the Mac.
+    private func switchNamed(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        _ = waitUntil(timeout: 5) { app.switches[id].exists || app.checkBoxes[id].exists }
+        return app.switches[id].exists ? app.switches[id] : app.checkBoxes[id]
+    }
+
+    private func isSwitchOn(_ app: XCUIApplication, _ id: String) -> Bool {
+        let e = app.switches[id].exists ? app.switches[id] : app.checkBoxes[id]
+        guard e.exists else { return false }
+        if let s = e.value as? String { return s == "1" }
+        if let n = e.value as? NSNumber { return n.boolValue }
+        return false
+    }
+
+    private func setSwitch(_ app: XCUIApplication, _ id: String, on: Bool) {
+        let e = switchNamed(app, id)
+        XCTAssertTrue(e.exists, "no \(id) switch")
+        for _ in 0..<3 where isSwitchOn(app, id) != on {
+            bringIntoView(app, e)
+            #if os(macOS)
+            e.tap()
+            #else
+            e.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()    // the switch, not its words
+            #endif
+            _ = waitUntil(timeout: 2) { self.isSwitchOn(app, id) == on }
+        }
+        XCTAssertEqual(isSwitchOn(app, id), on, "\(id) did not switch")
+    }
+
+    /// Dates on Create new trip: today + `a` to today + `b`, picked in the grid.
+    private func pickDates(_ app: XCUIApplication, from a: Int, to b: Int) {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today)! }
+        func ymd(_ d: Date) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: d)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        let months = ["January", "February", "March", "April", "May", "June", "July",
+                      "August", "September", "October", "November", "December"]
+        func pick(_ d: Date) {
+            let id = "range-day-\(ymd(d))"
+            for _ in 0..<3 where !app.buttons[id].exists {
+                let shown = words(app.staticTexts["range-title-0"]).split(separator: " ")
+                let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
+                let y = Int(shown.last ?? "") ?? 0
+                let c = cal.dateComponents([.year, .month], from: d)
+                tap(app, id: (c.year! * 12 + c.month!) > (y * 12 + m) ? "range-next" : "range-prev")
+            }
+            tap(app, id: id)
+        }
+        setSwitch(app, "trip-dates", on: true)
+        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
+        pick(day(a))
+        pick(day(b))
+        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "the grid did not close after the last day")
+    }
+
     /// A grab list counts what is in hand, refuses "Ready to go" while something
     /// is missing, lets a thing be skipped, and Start over clears it all.
     func testAGrabListCountsRefusesAndClears() {
