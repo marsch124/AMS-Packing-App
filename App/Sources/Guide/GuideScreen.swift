@@ -145,6 +145,7 @@ struct HowItWorksScreen: View {
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and lists stay."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use, add what you missed, Save.",
+            "Under a trip's name: where it stands in the loop, Plan · Pack · Review · Refine. Tap it for the whole picture.",
             "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a list for next time."]),
         Topic(section: .events, title: "Trips", lines: [
             "Now, Coming up and Been. Each trip says Planned, Packing or Ready.",
@@ -176,6 +177,7 @@ struct HowItWorksScreen: View {
             GuideHeader(title: "How it works")
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
+                    LoopGuideCard()
                     ForEach(Array(HowItWorksScreen.topics.enumerated()), id: \.offset) { n, t in
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 10) {

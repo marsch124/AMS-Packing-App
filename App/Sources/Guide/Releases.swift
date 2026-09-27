@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.31", date: "27 Sep 2026", title: "The loop",
+                new: ["How it works starts with the loop: Plan → Pack → Review → Refine, and round again. Violet is about your lists, green about one trip.",
+                      "A trip, its review and Refine each show where they stand in the loop. Tap it for the whole picture, with \u{201C}You are here\u{201D}."]),
         Release(version: "0.30", date: "27 Sep 2026", title: "Refine",
                 new: ["Your lists → Refine: what your trip reviews say a list carries for nothing — packed and never used, or listed and never packed, over at least two trips. Keep settles it for good; Drop takes it off that one list (it asks first) and the thing stays yours."]),
         Release(version: "0.29", date: "27 Sep 2026", title: "Bags, said one way",

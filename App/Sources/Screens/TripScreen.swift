@@ -103,6 +103,10 @@ struct TripScreen: View {
                     .accessibilityIdentifier("trip-done")
             }
             .padding(16)
+            // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
+            LoopDoor(here: model.library.loopStep(tripId: tripId, today: Today.local))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
             // His marks (2026-09-25): "Sorting" on the left, the buttons on the same line —
             // now four of them. They fit on the Mac and a wide iPhone; a narrower screen
             // gets slimmer buttons, and failing that "Sorting" moves just above them.

@@ -46,6 +46,7 @@
 		C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */; };
 		CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5987DFEB47FC294A078D4D /* NewList.swift */; };
 		D0D4A2EA2FA240B7D980E71C /* KitDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112E88E5E56E46CAA3F002CE /* KitDashboard.swift */; };
+		D105E6CC01A99CC0BE25F875 /* Loop.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08386166D3DBA4C2883F24 /* Loop.swift */; };
 		D4F50ECCC88F8FE89A931EFC /* BagsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41F92CE24B4D203B69B5870 /* BagsCard.swift */; };
 		D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */; };
 		D5D12FDA2CC5B6443B769608 /* PackingLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 00FE6A96F5083A4802B251C6 /* PackingLibrary */; };
@@ -101,6 +102,7 @@
 		A644B6F78A0C7B86EF26025E /* AMSPacking.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPacking.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A78A30067C884BCEB042959A /* Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sections.swift; sourceTree = "<group>"; };
 		A841D9340C8D1312A6814431 /* CloudStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudStore.swift; sourceTree = "<group>"; };
+		AA08386166D3DBA4C2883F24 /* Loop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loop.swift; sourceTree = "<group>"; };
 		AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
 		B81D1DC40B7BE148110F1C91 /* BagDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagDetail.swift; sourceTree = "<group>"; };
 		BA49BA1121FBB7576FC62E32 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -239,6 +241,7 @@
 				403A4735005582B356D67F55 /* HomeScreen.swift */,
 				112E88E5E56E46CAA3F002CE /* KitDashboard.swift */,
 				258F81799F958E5C5EF112C5 /* ListsScreen.swift */,
+				AA08386166D3DBA4C2883F24 /* Loop.swift */,
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
 				6CC01537D593379C8EF1B84F /* RefineScreen.swift */,
 				34879BF77676913C07B69267 /* RestoreSheet.swift */,
@@ -387,6 +390,7 @@
 				D0D4A2EA2FA240B7D980E71C /* KitDashboard.swift in Sources */,
 				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,
 				0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */,
+				D105E6CC01A99CC0BE25F875 /* Loop.swift in Sources */,
 				CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */,
 				DAD37A1F2CA15C56CC068B58 /* RefineScreen.swift in Sources */,
 				80E3669131BEA0D1C726A660 /* Releases.swift in Sources */,
@@ -545,7 +549,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.30;
+				MARKETING_VERSION = 0.31;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -632,7 +636,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.30;
+				MARKETING_VERSION = 0.31;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

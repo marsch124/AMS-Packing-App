@@ -27,6 +27,9 @@ struct RefineScreen: View {
                     .accessibilityIdentifier("refine-done")
             }
             .padding(16)
+            LoopDoor(here: .refine, id: "refine-loop")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
                     if offers.isEmpty {

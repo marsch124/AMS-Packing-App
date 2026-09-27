@@ -1040,6 +1040,66 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") }, "Drop must not delete the thing")
     }
 
+    /// His loop (2026-09-27): Plan → Pack → Review → Refine. How it works draws it;
+    /// a trip, its review and Refine each show the step they are at, and a tap opens
+    /// the whole picture with "You are here" on that step.
+    func testTheLoopShowsWhereATripStands() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-howitworks")
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
+        XCTAssertTrue(appears(app, "guide-loop", timeout: 5), "How it works does not show the loop")
+        shot(app, "loop-guide")
+        for n in 0..<4 { XCTAssertNotNil(find(app, "loop-step-\(n)"), "the loop has no step \(n + 1)") }
+        XCTAssertFalse((0..<4).contains { self.isHere(app, $0) }, "the guide's picture says You are here")
+        tap(app, id: "guide-done")
+        XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
+
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let strip = app.buttons["trip-loop"]
+        XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
+        // The sample trip is ahead (Pack) — or, once its dates are past, waiting for Review.
+        let at = strip.value as? String ?? ""
+        XCTAssertTrue(["Pack", "Review"].contains(at), "an unreviewed trip with lines is at '\(at)'")
+        shot(app, "loop-trip")
+        tap(app, id: "trip-loop")
+        XCTAssertTrue(appears(app, "loop-screen", timeout: 5), "the strip did not open the picture")
+        let step = at == "Pack" ? 1 : 2
+        XCTAssertTrue(waitUntil { self.isHere(app, step) }, "the picture does not say You are here on \(at)")
+        XCTAssertFalse((0..<4).filter { $0 != step }.contains { self.isHere(app, $0) }, "You are here on more than one step")
+        shot(app, "loop-picture")
+        tap(app, id: "loop-done")
+        XCTAssertTrue(disappears(app, "loop-screen", timeout: 5))
+
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.buttons["review-loop"].value as? String) == "Review" },
+                      "the review is not at Review: '\(app.buttons["review-loop"].value as? String ?? "")'")
+        tap(app, id: "review-save")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (strip.value as? String) == "Refine" },
+                      "a reviewed trip is not at Refine: '\(strip.value as? String ?? "")'")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        tab(app, "templates")
+        tap(app, id: "refine-open")
+        XCTAssertTrue(appears(app, "refine-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.buttons["refine-loop"].value as? String) == "Refine" },
+                      "Refine is not at Refine: '\(app.buttons["refine-loop"].value as? String ?? "")'")
+        tap(app, id: "refine-done")
+        XCTAssertTrue(disappears(app, "refine-screen", timeout: 5))
+    }
+
+    /// Whether the loop picture marks step `n` as "You are here" — read from the box's
+    /// label, which both machines report (the Mac drops the value of a box).
+    private func isHere(_ app: XCUIApplication, _ n: Int) -> Bool {
+        find(app, "loop-step-\(n)")?.label.hasSuffix("You are here") == true
+    }
+
     /// A grab list counts what is in hand, refuses "Ready to go" while something
     /// is missing, lets a thing be skipped, and Start over clears it all.
     func testAGrabListCountsRefusesAndClears() {

@@ -33,6 +33,9 @@ struct ReviewScreen: View {
                     .accessibilityIdentifier("review-cancel")
             }
             .padding(16)
+            LoopDoor(here: .review, id: "review-loop")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     Text("Anything you wished you'd had?").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
