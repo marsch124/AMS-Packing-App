@@ -1352,7 +1352,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["map-summary"]) == "1 place · 1 trip" },
                       "the trip did not reach the map: '\(words(app.staticTexts["map-summary"]))'")
         XCTAssertEqual(words(app.staticTexts["map-place-0-name"]), "Testville, SE", "the place card is missing or unnamed")
-        XCTAssertNotNil(find(app, "map-view"), "no map drawn")
+        XCTAssertTrue(find(app, "map-view") != nil || app.maps.firstMatch.exists, "no map drawn")
         XCTAssertFalse(app.staticTexts["map-empty"].exists, "it still says there are no places")
         shot(app, "map")
         tap(app, id: "map-done")

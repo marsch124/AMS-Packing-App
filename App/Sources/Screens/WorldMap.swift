@@ -102,6 +102,9 @@ struct WorldMapScreen: View {
         .frame(height: 320)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+        // Named on a container: the Mac reports a bare map as its own kind of
+        // element, and GitHub's Mac could not find it by this name (0.37).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("map-view")
     }
 
