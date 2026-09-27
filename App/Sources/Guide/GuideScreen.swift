@@ -135,6 +135,7 @@ struct HowItWorksScreen: View {
             "This Device: how many trips, things and lists this device holds."]),
         Topic(section: .events, title: "Packing a trip", lines: [
             "Tap a line to tick it; tap again to take it back. The round button by a heading ticks the whole section.",
+            "The gear beside the count: Trip settings. Change the name, dates, lists, transport, season or food; Save rebuilds the list, and what you ticked or added yourself stays.",
             "The arrow before a section's name folds it away; tap it again to open. A trip remembers its folds.",
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",

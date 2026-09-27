@@ -55,3 +55,33 @@ extension Library {
         return true
     }
 }
+
+// A trip's settings, changed after it is made — the gap list's first High item
+// (2026-09-27): its name, dates, lists, Quick, transport, season, food, context.
+// The list is then rebuilt the web app's way (`regenerated`): ticked, edited and
+// hand-added lines stay; new matches arrive; lines no longer asked for go.
+
+extension Library {
+    public struct TripRebuilt: Equatable, Sendable {
+        public var added: Int
+        public var removed: Int
+    }
+
+    /// Change a trip and rebuild its list. nil when there is no such trip, or the
+    /// change leaves it without a name or without a list to pack from.
+    @discardableResult
+    public mutating func changeTrip(id: String, _ apply: (inout TripEvent) -> Void) -> TripRebuilt? {
+        guard let t = trips.firstIndex(where: { $0.id == id }) else { return nil }
+        var trip = trips[t]
+        let before = Set(trip.entries.map(\.id))
+        apply(&trip)
+        trip.name = jsTrim(trip.name)
+        guard !trip.name.isEmpty, !trip.activities.isEmpty || trip.mode != "quick" else { return nil }
+        trip.nights = nightsBetween(trip.startDate, trip.endDate) ?? 0
+        trip.entries = regenerated(trip)
+        trip.updatedAt = nowISO()
+        trips[t] = trip
+        let after = Set(trip.entries.map(\.id))
+        return TripRebuilt(added: after.subtracting(before).count, removed: before.subtracting(after).count)
+    }
+}

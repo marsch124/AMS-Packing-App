@@ -24,11 +24,23 @@ struct TripScreen: View {
     /// The line whose place is being chosen (his ask, 2026-09-26: set a place for
     /// "No place set" in one or two taps, without leaving the trip).
     @State private var placing: String?
+    /// What the last Trip settings save did to the list, said under the loop.
+    @State private var rebuiltNote = ""
     @State private var newPlace = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
     // where it is kept at home — "so that I can pick all stuff from a specific location".
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"), ("category", "Category")]
+
+    /// What a settings save did, in a few words.
+    static func saying(_ r: Library.TripRebuilt) -> String {
+        switch (r.added, r.removed) {
+        case (0, 0): return "Saved. The list is the same."
+        case (let a, 0): return "Saved: \(a) new on the list."
+        case (0, let g): return "Saved: \(g) no longer on the list."
+        case (let a, let g): return "Saved: \(a) new, \(g) no longer on the list."
+        }
+    }
 
     private func foldKey(_ label: String) -> String { "\(tripId)|\(view)|\(label)" }
     private func isFolded(_ label: String) -> Bool {
@@ -80,11 +92,18 @@ struct TripScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(trip.name.isEmpty ? "Untitled event" : trip.name)
                         .font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
-                    Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
-                        .font(.system(size: 16, weight: .bold).monospacedDigit())
-                        .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
-                        .accessibilityIdentifier("trip-progress")
-                        .accessibilityValue(allPacked ? "all packed" : "")
+                        .accessibilityIdentifier("trip-name")
+                    HStack(spacing: 10) {
+                        Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
+                            .font(.system(size: 16, weight: .bold).monospacedDigit())
+                            .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
+                            .accessibilityIdentifier("trip-progress")
+                            .accessibilityValue(allPacked ? "all packed" : "")
+                        // Its settings, after it is made (the gap list's first High item):
+                        // beside the count, where there is room even on a small iPhone.
+                        TripSettingsDoor(tripId: tripId) { rebuiltNote = TripScreen.saying($0) }
+                            .environmentObject(model)
+                    }
                 }
                 Spacer()
                 // After the trip: what did I use, what did I miss. Once, then it says so.
@@ -107,6 +126,13 @@ struct TripScreen: View {
             LoopDoor(here: model.library.loopStep(tripId: tripId, today: Today.local))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
+            if !rebuiltNote.isEmpty {
+                Text(rebuiltNote)
+                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.bottom, 8)
+                    .accessibilityIdentifier("trip-rebuilt")
+            }
             // His marks (2026-09-25): "Sorting" on the left, the buttons on the same line —
             // now four of them. They fit on the Mac and a wide iPhone; a narrower screen
             // gets slimmer buttons, and failing that "Sorting" moves just above them.

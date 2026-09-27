@@ -62,3 +62,41 @@ final class SetPlaceTests: XCTestCase {
         XCTAssertFalse(lib.setPlace("  ", tripId: trip.id, entryId: custom.id), "an empty place is refused")
     }
 }
+
+/// The gap list's first High item (2026-09-27): a trip's settings changed after it
+/// is made, and its list rebuilt without losing what he did.
+final class ChangeTripTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze() }
+    override func tearDown() { PackingEnv.reset() }
+
+    func testAChangedTripRebuildsAndKeepsWhatHeDid() {
+        var lib = Library()
+        lib.saveTemplate({ var l = newList(name: "Hike"); l.items = [newItem(name: "Boots"), newItem(name: "Map")]; return l }())
+        lib.saveTemplate({ var l = newList(name: "Run"); l.items = [newItem(name: "Shoes"), newItem(name: "Cap")]; return l }())
+        let hike = lib.templates.first { $0.name == "Hike" }!.id, run = lib.templates.first { $0.name == "Run" }!.id
+        var draft = newEvent(name: "Weekend", startDate: "2026-10-03", endDate: "2026-10-04")
+        draft.activities = [hike]; draft.mode = "quick"
+        let trip = lib.createTrip(draft)
+        let boots = lib.trips[0].entries.first { $0.name == "Boots" }!.id
+        lib.setChecked(true, tripId: trip.id, entryId: boots)
+        let tripod = lib.addCustomLine(tripId: trip.id, name: "Tripod")!.id
+
+        // Run instead of Hike, a new name, a longer stay.
+        let r = lib.changeTrip(id: trip.id) { t in
+            t.activities = [run]; t.name = " Long weekend "; t.endDate = "2026-10-06"
+        }
+        let names = Set(lib.trips[0].entries.map(\.name))
+        XCTAssertEqual(r, Library.TripRebuilt(added: 2, removed: 1), "Shoes and Cap in, the unticked Map out")
+        XCTAssertTrue(names.isSuperset(of: ["Shoes", "Cap"]), "Run's things arrived")
+        XCTAssertFalse(names.contains("Map"), "an unticked line no longer asked for goes")
+        XCTAssertTrue(lib.trips[0].entries.contains { $0.id == boots && $0.checked }, "a TICKED line stays, ticked")
+        XCTAssertTrue(lib.trips[0].entries.contains { $0.id == tripod }, "a hand-added line stays")
+        XCTAssertEqual(lib.trips[0].name, "Long weekend")
+        XCTAssertEqual(lib.trips[0].nights, 3)
+
+        XCTAssertNil(lib.changeTrip(id: trip.id) { $0.name = "  " }, "a trip needs a name")
+        XCTAssertNil(lib.changeTrip(id: trip.id) { $0.activities = [] }, "a quick trip needs a list")
+        XCTAssertEqual(lib.trips[0].name, "Long weekend", "a refused change changes nothing")
+        XCTAssertNil(lib.changeTrip(id: "nope") { _ in })
+    }
+}

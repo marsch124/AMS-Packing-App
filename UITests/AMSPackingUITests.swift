@@ -1100,6 +1100,58 @@ final class AMSPackingUITests: XCTestCase {
         find(app, "loop-step-\(n)")?.label.hasSuffix("You are here") == true
     }
 
+    /// The gap list's first High item (2026-09-27): a trip's settings after it is made.
+    /// A new name and one more list reach the trip; the tick he made stays; the trip
+    /// says what changed; an empty name is refused and said so, and Cancel changes nothing.
+    func testATripsSettingsAreChangedAfterItIsMade() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample trip is not 0/7: '\(words(progress))'")
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick did not count: '\(words(progress))'")
+
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5), "the gear did not open Trip settings")
+        let name = app.textFields["tripset-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        XCTAssertEqual(name.value as? String, "Weekend in the hills", "the settings do not start from the trip")
+        replace("Hills and lake", in: name)
+        hideKeyboard(app)
+        // Numbered as on Create new trip: Hiking 0 (already on), Swim 1.
+        XCTAssertTrue(isOn(app.buttons["tripset-activity-0"]), "the trip's own list is not shown as on")
+        let swim = app.buttons["tripset-activity-1"]
+        XCTAssertTrue(swim.waitForExistence(timeout: 5), "no Swim list to add")
+        XCTAssertFalse(isOn(swim), "Swim is already on the trip")
+        select(app, swim)
+        tapVisible(app, app.buttons["tripset-save"])
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Save did not close the settings")
+
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/10" },
+                      "Swim's three things did not arrive, or the tick was lost: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-rebuilt"]).hasPrefix("Saved: 3 new") },
+                      "the trip does not say what changed: '\(words(app.staticTexts["trip-rebuilt"]))'")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-name"]) == "Hills and lake" },
+                      "the new name did not reach the trip: '\(words(app.staticTexts["trip-name"]))'")
+
+        // No name (only spaces): refused, said under Save, the sheet stays; Cancel keeps the trip.
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        replace("   ", in: app.textFields["tripset-name"])
+        hideKeyboard(app)
+        tapVisible(app, app.buttons["tripset-save"])
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-needs"]).contains("name") },
+                      "a trip without a name was not refused out loud")
+        XCTAssertNotNil(find(app, "tripset-screen"), "the settings closed on an empty name")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertEqual(words(progress), "1/10", "Cancel changed the trip")
+        XCTAssertEqual(words(app.staticTexts["trip-name"]), "Hills and lake", "Cancel changed the name")
+    }
+
     /// A grab list counts what is in hand, refuses "Ready to go" while something
     /// is missing, lets a thing be skipped, and Start over clears it all.
     func testAGrabListCountsRefusesAndClears() {

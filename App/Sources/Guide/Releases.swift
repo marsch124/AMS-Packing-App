@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.32", date: "27 Sep 2026", title: "Trip settings",
+                new: ["The gear beside a trip's count opens its settings: name, dates, Quick, lists, transport, season and food — the same choices as Create new trip.",
+                      "Save rebuilds the list: what you ticked or added yourself stays, new things arrive, things no longer asked for go. The trip says how many."]),
         Release(version: "0.31", date: "27 Sep 2026", title: "The loop",
                 new: ["How it works starts with the loop: Plan → Pack → Review → Refine, and round again. Violet is about your lists, green about one trip.",
                       "A trip, its review and Refine each show where they stand in the loop. Tap it for the whole picture, with \u{201C}You are here\u{201D}."]),
