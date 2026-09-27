@@ -206,8 +206,9 @@ struct ThingEditor: View {
         #endif
     }
 
+    /// A heading in the editor — as large as the pill headings (his ask, 2026-09-27).
     private func label(_ text: String) -> some View {
-        Text(text).font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+        Text(text).font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.muted)
     }
 
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {

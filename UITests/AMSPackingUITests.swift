@@ -1227,6 +1227,10 @@ final class AMSPackingUITests: XCTestCase {
         // His ask (2026-09-26): keep the headings, make the buttons' text smaller — the
         // editor's buttons are the slim ones (32 pt, not the 36 pt used elsewhere).
         XCTAssertLessThan(app.buttons["thing-category-0"].frame.height, 35, "the editor's buttons are not the smaller ones")
+        // …and the headings are LARGE (his ask, 2026-09-27): a 19 pt line, not 14.
+        let heading = app.staticTexts["thing-category-title"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "no Kind of thing heading")
+        XCTAssertGreaterThanOrEqual(heading.frame.height, 22, "the headings are not the larger ones: \(heading.frame.height)")
     }
 
     /// A grab list is edited — renamed, one removed, one added — and stays so.

@@ -229,7 +229,10 @@ struct Pills: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+            // In the thing editor (compact) the headings are the big type — his ask
+            // (2026-09-27): "Make the headings larger".
+            Text(title).font(.system(size: compact ? 19 : 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                .accessibilityIdentifier("\(id)-title")
             FlowRow(spacing: 8) {
                 ForEach(Array(options.enumerated()), id: \.element.id) { n, o in
                     let on = selected.contains(o.id)

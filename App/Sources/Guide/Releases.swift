@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.27", date: "27 Sep 2026", title: "Larger headings",
+                changed: ["The thing editor's headings (Name, Kept at home, Kind of thing, Usually packed in, When…) are larger."]),
         Release(version: "0.26", date: "26 Sep 2026", title: "Your bags have their own page",
                 new: ["Care → Containers: tap a bag's name to open its page — rename it, set its numbers, see the things usually in it and the trips it went on, open its details, or delete it.",
                       "Renaming a bag carries the new name to your things, your lists and every trip.",
