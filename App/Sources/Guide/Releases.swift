@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.28", date: "27 Sep 2026", title: "Headings in colour",
+                changed: ["The thing editor's headings are in the colour of their buttons — Care orange, and purple for \u{201C}On these lists\u{201D} — instead of grey."]),
         Release(version: "0.27", date: "27 Sep 2026", title: "Larger headings",
                 changed: ["The thing editor's headings (Name, Kept at home, Kind of thing, Usually packed in, When…) are larger."]),
         Release(version: "0.26", date: "26 Sep 2026", title: "Your bags have their own page",

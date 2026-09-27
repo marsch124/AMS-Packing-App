@@ -231,7 +231,9 @@ struct Pills: View {
         VStack(alignment: .leading, spacing: 6) {
             // In the thing editor (compact) the headings are the big type — his ask
             // (2026-09-27): "Make the headings larger".
-            Text(title).font(.system(size: compact ? 19 : 14, weight: .heavy)).foregroundStyle(Theme.muted)
+            // …and in the colour of their own buttons, not grey (2026-09-27: "choose
+            // another color that is more distinctive regarding the headings").
+            Text(title).font(.system(size: compact ? 19 : 14, weight: .heavy)).foregroundStyle(compact ? tint : Theme.muted)
                 .accessibilityIdentifier("\(id)-title")
             FlowRow(spacing: 8) {
                 ForEach(Array(options.enumerated()), id: \.element.id) { n, o in
