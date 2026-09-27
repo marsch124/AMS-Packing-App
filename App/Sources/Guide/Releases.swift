@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.38", date: "27 Sep 2026", title: "Share",
+                new: ["Share a trip (at the end of its list), a template or a grab list (at their top): a link that opens in the web app and in this one, a QR code when it is short enough, and a trip also as a file.",
+                      "Settings \u{2192} Open a shared link: paste a link or code and see what it holds. A trip arrives as a new trip, unticked. A template arrives as a new one, or in place of yours with the same name; things you already have keep your details. A grab list waits on your shelf."]),
         Release(version: "0.37", date: "27 Sep 2026", title: "Where you have been",
                 new: ["Trips → the pin at the top: a map of your trips. One pin per place, with a number when you went more than once, a line through the trips oldest first, and a card per place with its trips. Tap a pin to find its card.",
                       "Trips that name a place but never looked up their weather can be found on the map in one press."],

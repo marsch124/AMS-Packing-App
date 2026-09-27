@@ -140,6 +140,7 @@ struct HowItWorksScreen: View {
             "At the bottom of Trip settings: Start a new trip from this one. The same list as it ended up, nothing ticked, no dates.",
             "Near the end of the list: Tick everything, and Clear every tick (it asks first). Lines set aside stay out of both.",
             "Save as Excel, near the end of the list: the trip as a spreadsheet, by When and bag, with how many and what is packed.",
+            "Share, at the very end: the trip as a link (and a QR code when it is short enough) that opens in the web app and in this one, or as a file.",
             "The arrow before a section's name folds it away; tap it again to open. A trip remembers its folds.",
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",
@@ -160,6 +161,7 @@ struct HowItWorksScreen: View {
             "Templates are the building blocks of every trip, on their shelves (GA, WET and so on). The list you pack from is made from them.",
             "+ New makes a template. Open one to rename it, add or take off things, and set How many and Section for this template.",
             "Delete template asks first. Your things stay.",
+            "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
             "Refine: after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [
             "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first).",
@@ -172,7 +174,8 @@ struct HowItWorksScreen: View {
         Topic(section: .settings, title: "Settings", lines: [
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
-            "Worth a look appears only when something in the library seems wrong."]),
+            "Worth a look appears only when something in the library seems wrong.",
+            "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list waits on your shelf."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",
             "The magnifier at the top of most screens searches everything at once."]),

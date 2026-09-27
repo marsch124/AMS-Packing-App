@@ -225,6 +225,9 @@ struct TemplateDetail: View {
                     .accessibilityIdentifier("template-rename")
                 }
                 Spacer()
+                ShareDoor(id: "template-share", tint: AppSection.templates.color) {
+                    ShareOffer(title: "Share \u{201C}\(list.name)\u{201D}", link: model.library.shareLink(templateId: list.id))
+                }
                 Button("Done") { dismiss() }
                     .buttonStyle(.plain)
                     .focusEffectDisabled()

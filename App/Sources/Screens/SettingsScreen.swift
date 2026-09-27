@@ -105,6 +105,9 @@ struct SettingsScreen: View {
                 // What's new and How it works — his standing rule from the web apps.
                 GuideDoors()
 
+                // A link or code someone shared — the web app's "Paste a shared link".
+                OpenSharedDoor().environmentObject(model)
+
                 // Only when there is something to say. Both times this library went
                 // wrong, nothing on screen said so and the counts alone knew.
                 let worries = model.library.worries()

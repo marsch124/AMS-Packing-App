@@ -294,6 +294,13 @@ struct TripScreen: View {
                 // The web app's Excel button: the trip as a spreadsheet.
                 TripExcelButton(tripId: tripId).environmentObject(model)
                     .padding(.horizontal, 16).padding(.top, 12)
+                // The web app's Share: a link (and a QR code when it fits), or a file.
+                ShareDoor(id: "trip-share") {
+                    ShareOffer(title: "Share \u{201C}\(trip.name)\u{201D}", link: model.library.shareLink(tripId: tripId),
+                               file: model.library.shareFile(tripId: tripId))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.top, 12)
                 deleteTrip(trip)
                     .padding(.horizontal, 16).padding(.top, 18)
                 }

@@ -855,6 +855,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-\(total + 1)-place"), "no Set place on the second thing")
         tap(app, id: "trip-line-\(total + 1)-place")
         XCTAssertTrue(appears(app, "trip-place-panel", timeout: 5))
+        // Into view first: near the end of the list the field can sit half behind the
+        // "Add a thing" bar, and a tap on its middle lands on the bar (0.38).
+        bringIntoView(app, app.textFields["trip-place-new"])
         type("Boot room", into: app.textFields["trip-place-new"])
         XCTAssertTrue(waitUntil { app.buttons["trip-place-save"].isEnabled })
         tap(app, id: "trip-place-save")
@@ -1357,6 +1360,110 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "map")
         tap(app, id: "map-done")
         XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
+    }
+
+    /// Sharing a trip (the web app's links, gap list 2026-09-27): its link is the web
+    /// app's; copied and opened here, it comes back as a new trip, unticked.
+    func testATripIsSharedAndOpenedAgain() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "1/7" })
+        tapVisible(app, app.buttons["trip-share"])
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5), "Share did not open")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["share-link"]).hasPrefix("https://marsch124.github.io/AMS-Packing/#/t/") },
+                      "not a web app trip link: '\(words(app.staticTexts["share-link"]).prefix(60))'")
+        XCTAssertTrue(app.buttons["share-send"].exists, "no way to send it")
+        shot(app, "share-trip")
+        tap(app, id: "share-copy")
+        XCTAssertTrue(waitUntil { (app.buttons["share-copy"].value as? String) == "copied" }, "Copy link did not say so")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        tab(app, "settings")
+        tap(app, id: "settings-openshared")
+        XCTAssertTrue(appears(app, "shared-screen", timeout: 5), "Open a shared link did not open")
+        tap(app, id: "shared-paste")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A TRIP" },
+                      "the copied link was not read as a trip: '\(words(app.staticTexts["shared-kind"]))'")
+        XCTAssertEqual(words(app.staticTexts["shared-name"]), "Weekend in the hills")
+        shot(app, "shared-trip")
+        tap(app, id: "shared-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).hasPrefix("Added") }, "the trip was not added")
+        tap(app, id: "shared-done")
+        XCTAssertTrue(disappears(app, "shared-screen", timeout: 5))
+        tab(app, "events")
+        XCTAssertTrue(waitUntil { app.buttons["trip-row-1"].exists }, "the shared trip is not among the trips")
+    }
+
+    /// Sharing a template and a grab list: the template link carries a QR code and
+    /// comes back as a new template (Replace offered, as the name is his); the grab
+    /// list comes back onto the shelf. Rubbish is refused out loud.
+    func testATemplateAndAGrabListAreSharedAndOpenedAgain() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let before = words(app.staticTexts["templates-summary"])
+        // Row 1 is Hiking, an ordinary template (row 0 is the always-packed base,
+        // which — as in the web app — is never offered for Replace).
+        app.buttons["template-row-1"].tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-share")
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.find(app, "share-qr") != nil || app.images["share-qr"].exists }, "a short template link has no QR code")
+        shot(app, "share-template")
+        tap(app, id: "share-copy")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        tab(app, "settings")
+        tap(app, id: "settings-openshared")
+        XCTAssertTrue(appears(app, "shared-screen", timeout: 5))
+        type("hello there", into: app.textFields["shared-input"])
+        tap(app, id: "shared-open")
+        XCTAssertTrue(app.staticTexts["shared-bad"].waitForExistence(timeout: 5), "rubbish was not refused out loud")
+        tap(app, id: "shared-paste")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A TEMPLATE" }, "not read as a template")
+        XCTAssertEqual(words(app.staticTexts["shared-name"]), "Hiking")
+        shot(app, "shared-template")
+        XCTAssertTrue(app.buttons["shared-replace"].exists, "his own template of that name is not offered to replace")
+        tap(app, id: "shared-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).hasPrefix("Added") })
+        tap(app, id: "shared-done")
+        XCTAssertTrue(disappears(app, "shared-screen", timeout: 5))
+        tab(app, "templates")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["templates-summary"]) != before },
+                      "the shared template did not arrive: still '\(before)'")
+
+        tab(app, "home")
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5) || app.buttons["grab-done"].waitForExistence(timeout: 5))
+        tap(app, id: "grab-share")
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5))
+        tap(app, id: "share-copy")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
+        tap(app, id: "grab-done")
+        tab(app, "settings")
+        tap(app, id: "settings-openshared")
+        XCTAssertTrue(appears(app, "shared-screen", timeout: 5))
+        tap(app, id: "shared-paste")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A GRAB LIST" }, "not read as a grab list")
+        tap(app, id: "shared-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).contains("shelf") }, "the grab list did not reach the shelf")
+        tap(app, id: "shared-done")
+        XCTAssertTrue(disappears(app, "shared-screen", timeout: 5))
+        // It really is on the shelf, waiting — not just said to be.
+        tab(app, "home")
+        tap(app, id: "grab-shelf")
+        XCTAssertTrue(waitUntil { app.buttons["shelf-waiting-0"].exists }, "nothing waits on the shelf after the import")
     }
 
     /// A Toggle is a switch on the iPhone and a check box on the Mac.

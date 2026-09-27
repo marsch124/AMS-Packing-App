@@ -18,6 +18,7 @@
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
 		3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200B88877006E1F006B96632 /* DateRangePicker.swift */; };
 		39B87583182066477449515D /* GuideScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */; };
+		3B34615E704B984738565FC3 /* Share.swift in Sources */ = {isa = PBXBuildFile; fileRef = C79C38939D0655EEE452D769 /* Share.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
 		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
 		4F3FD7E1E457A44E56AB6E19 /* Headings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCA03D292255B391659C37C /* Headings.swift */; };
@@ -114,6 +115,7 @@
 		BA49BA1121FBB7576FC62E32 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		C41F92CE24B4D203B69B5870 /* BagsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagsCard.swift; sourceTree = "<group>"; };
 		C63D25C9AA00E03651D86114 /* BuyList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyList.swift; sourceTree = "<group>"; };
+		C79C38939D0655EEE452D769 /* Share.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Share.swift; sourceTree = "<group>"; };
 		C9BF0565DC8465EAD313C1A4 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideScreen.swift; sourceTree = "<group>"; };
 		CD0CC9973692AB2A31CFC2DE /* TripSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripSettings.swift; sourceTree = "<group>"; };
@@ -257,6 +259,7 @@
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
+				C79C38939D0655EEE452D769 /* Share.swift */,
 				6C33289BF160D459176D7669 /* SmallDelete.swift */,
 				5844FD1A40A106FF0878B093 /* TableColumns.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
@@ -416,6 +419,7 @@
 				AEC09A016E6CEAD021B5D4C6 /* SearchScreen.swift in Sources */,
 				EB766063382A7E2DADC60C89 /* Sections.swift in Sources */,
 				B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */,
+				3B34615E704B984738565FC3 /* Share.swift in Sources */,
 				A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */,
 				A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */,
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
@@ -565,7 +569,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.37;
+				MARKETING_VERSION = 0.38;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -652,7 +656,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.37;
+				MARKETING_VERSION = 0.38;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

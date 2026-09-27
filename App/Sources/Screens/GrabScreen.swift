@@ -168,6 +168,9 @@ struct GrabScreen: View {
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
                     .accessibilityIdentifier("grab-edit")
                 if !editing {
+                    ShareDoor(id: "grab-share", tint: tint) {
+                        ShareOffer(title: "Share \u{201C}\(list.label)\u{201D}", link: model.library.shareLink(grabId: listId))
+                    }
                     Button("Done") { dismiss() }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
