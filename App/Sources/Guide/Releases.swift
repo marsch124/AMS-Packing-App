@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.36", date: "27 Sep 2026", title: "Everything at once",
+                new: ["Near the end of a trip: Tick everything (it says how many are still unticked), and Clear every tick, which asks first. Lines set aside stay out of both.",
+                      "The weather card: Add all, when it asks for two or more things."],
+                fixed: ["Weather gear you add from your own templates remembers where it came from, so the review counts it for that thing, and its weight reaches the bags."]),
         Release(version: "0.35", date: "27 Sep 2026", title: "Laundry and Excel",
                 new: ["Laundry, on Create new trip and in Trip settings: wash and wear again, so per-night things count 4 nights at most. The line says \u{00D7}4 with a washtub.",
                       "Save as Excel, near the end of a trip: the trip as a spreadsheet by When and bag, with how many and what is packed; the header row stays in place."],

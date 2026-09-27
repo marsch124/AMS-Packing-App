@@ -36,11 +36,24 @@ extension Library {
     }
 
     /// Take one of the suggestions along: it becomes a line on this trip, carrying
-    /// the bag and the "when" the suggestion asks for.
+    /// the bag and the "when" the suggestion asks for — and, as the web app's
+    /// `entryFromWeatherSpec` does, the item it came from (so the review credits
+    /// that item), its kind, weight and whether it is a liquid.
     @discardableResult
     public mutating func addWeatherGear(tripId: String, _ gear: WeatherGearSpec) -> Item? {
-        addCustomLine(tripId: tripId, name: gear.name,
-                      container: gear.container ?? "", phase: gear.phase ?? "")
+        guard var line = addCustomLine(tripId: tripId, name: gear.name,
+                                       container: gear.container ?? "", phase: gear.phase ?? ""),
+              let t = trips.firstIndex(where: { $0.id == tripId }),
+              let e = trips[t].entries.lastIndex(where: { $0.id == line.id }) else { return nil }
+        line.sourceListId = gear.sourceListId
+        line.sourceItemId = gear.sourceItemId
+        if !gear.category.isEmpty { line.category = gear.category }
+        if !gear.swedish.isEmpty { line.swedish = gear.swedish }
+        if let kind = gear.itemType, !kind.isEmpty { line.itemType = kind }
+        line.liquid = gear.liquid
+        if gear.weight > 0 { line.weight = gear.weight }
+        trips[t].entries[e] = line
+        return line
     }
 
     /// Is this forecast worth looking up again? Older than six hours, or for a

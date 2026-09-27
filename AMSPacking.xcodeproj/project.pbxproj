@@ -56,6 +56,7 @@
 		E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B838F35360E8BDAF890124 /* Theme.swift */; };
 		E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA49BA1121FBB7576FC62E32 /* RootView.swift */; };
 		EB766063382A7E2DADC60C89 /* Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78A30067C884BCEB042959A /* Sections.swift */; };
+		ED1AD4573764AA2A6FA0350D /* TickAll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B024F8A00820DD9D55E10D0 /* TickAll.swift */; };
 		F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81D1DC40B7BE148110F1C91 /* BagDetail.swift */; };
 /* End PBXBuildFile section */
 
@@ -96,6 +97,7 @@
 		6C33289BF160D459176D7669 /* SmallDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallDelete.swift; sourceTree = "<group>"; };
 		6CC01537D593379C8EF1B84F /* RefineScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineScreen.swift; sourceTree = "<group>"; };
 		77CEDA06EFED05D4A1612077 /* EventsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsScreen.swift; sourceTree = "<group>"; };
+		7B024F8A00820DD9D55E10D0 /* TickAll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickAll.swift; sourceTree = "<group>"; };
 		7B24F2617CC7D137784F66F2 /* ThingsTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsTable.swift; sourceTree = "<group>"; };
 		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
 				ED9B041225333263C7547689 /* ThingsScreen.swift */,
 				7B24F2617CC7D137784F66F2 /* ThingsTable.swift */,
+				7B024F8A00820DD9D55E10D0 /* TickAll.swift */,
 				878AF15AECFDDAD02F227DDD /* TripScreen.swift */,
 				CD0CC9973692AB2A31CFC2DE /* TripSettings.swift */,
 				2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */,
@@ -416,6 +419,7 @@
 				E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */,
 				1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */,
 				09A4001328DA54940464A34D /* ThingsTable.swift in Sources */,
+				ED1AD4573764AA2A6FA0350D /* TickAll.swift in Sources */,
 				0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */,
 				B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */,
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
@@ -557,7 +561,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.35;
+				MARKETING_VERSION = 0.36;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -644,7 +648,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.35;
+				MARKETING_VERSION = 0.36;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -51,6 +51,19 @@ struct WeatherCard: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("weather-gear-\(n)")
                 }
+                // The web app's "Add all": every suggestion in one press.
+                if missing.count >= 2 {
+                    Button { model.change { _ = $0.addAllWeatherGear(tripId: tripId) } } label: {
+                        Text("Add all \(missing.count)")
+                            .font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                            .padding(.horizontal, 16).frame(minHeight: 38)
+                            .background(Capsule().fill(AppSection.events.color))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("weather-addall")
+                    .accessibilityValue("\(missing.count)")
+                }
                 if missing.isEmpty {
                     Text("You have what this weather asks for.")
                         .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)

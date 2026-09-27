@@ -1263,6 +1263,65 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    /// The web app's "Mark everything packed" / "Clear every tick" (gap list,
+    /// 2026-09-27): Tick everything takes the trip to all packed at once; Clear asks
+    /// first, Keep them keeps them, and Clear the ticks takes them all away.
+    func testEverythingIsTickedAndClearedAtOnce() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick did not count: '\(words(progress))'")
+
+        let all = app.buttons["trip-tickall"]
+        XCTAssertTrue(all.waitForExistence(timeout: 5), "no Tick everything on the trip")
+        XCTAssertEqual(all.value as? String, "6", "it does not say how many are still unticked")
+        bringIntoView(app, all)
+        shot(app, "tick-all")
+        tapVisible(app, all)
+        XCTAssertTrue(waitUntil { self.words(progress) == "7/7" }, "Tick everything did not tick everything: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-tickall"].exists }, "Tick everything is still offered with nothing left")
+
+        tapVisible(app, app.buttons["trip-clearall"])
+        XCTAssertTrue(app.buttons["trip-clearall-yes"].waitForExistence(timeout: 5), "Clear did not ask first")
+        shot(app, "clear-asks")
+        tap(app, id: "trip-clearall-no")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-clearall-yes"].exists })
+        XCTAssertEqual(words(progress), "7/7", "Keep them cleared the ticks")
+        tapVisible(app, app.buttons["trip-clearall"])
+        tap(app, id: "trip-clearall-yes")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "Clear the ticks left some: '\(words(progress))'")
+        XCTAssertFalse(app.buttons["trip-clearall"].exists, "Clear is offered with nothing ticked")
+    }
+
+    /// The weather card's "Add all" (the web app's): everything the forecast asks for
+    /// reaches the trip in one press, and then it asks for nothing.
+    func testWeatherAddAllTakesEverything() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" })
+        XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5))
+        type("Testville", into: app.textFields["weather-place"])
+        app.textFields["weather-place"].typeText("\n")        // Return looks it up, and puts the keyboard away
+        XCTAssertTrue(app.staticTexts["weather-line"].waitForExistence(timeout: 10), "no forecast came back")
+        let addAll = app.buttons["weather-addall"]
+        XCTAssertTrue(addAll.waitForExistence(timeout: 5), "wet and cold, several things asked for, and no Add all")
+        let asked = Int(addAll.value as? String ?? "") ?? 0
+        shot(app, "weather-addall")
+        XCTAssertGreaterThanOrEqual(asked, 2, "Add all shown for fewer than two")
+        tapVisible(app, addAll)
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/\(7 + asked)" },
+                      "Add all did not bring all \(asked): '\(words(progress))'")
+        XCTAssertTrue(app.staticTexts["weather-nothing-missing"].waitForExistence(timeout: 5), "it still asks for something")
+        XCTAssertFalse(app.buttons["weather-addall"].exists, "Add all is still offered with nothing missing")
+    }
+
     /// A Toggle is a switch on the iPhone and a check box on the Mac.
     private func switchNamed(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         _ = waitUntil(timeout: 5) { app.switches[id].exists || app.checkBoxes[id].exists }

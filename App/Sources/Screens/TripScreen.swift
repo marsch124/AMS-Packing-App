@@ -288,9 +288,12 @@ struct TripScreen: View {
 
                 // Last on the screen, quiet and red, and it asks first — his rule for
                 // removing anything. His two test trips had no way out (2026-09-26).
+                // The web app's "Mark everything packed" / "Clear every tick".
+                TickAllRow(tripId: tripId, done: p.done, total: p.total).environmentObject(model)
+                    .padding(.horizontal, 16).padding(.top, 18)
                 // The web app's Excel button: the trip as a spreadsheet.
                 TripExcelButton(tripId: tripId).environmentObject(model)
-                    .padding(.horizontal, 16).padding(.top, 18)
+                    .padding(.horizontal, 16).padding(.top, 12)
                 deleteTrip(trip)
                     .padding(.horizontal, 16).padding(.top, 18)
                 }
