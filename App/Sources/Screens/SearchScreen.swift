@@ -53,7 +53,7 @@ struct SearchScreen: View {
             }
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
 
-            TextField("Things, lists, trips, to-dos…", text: $query)
+            TextField("Things, templates, trips, to-dos…", text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
                 .padding(.horizontal, 12).frame(minHeight: 44)
@@ -66,7 +66,7 @@ struct SearchScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
                     if jsTrim(query).isEmpty {
-                        note("Type to search across everything — your things, your lists, your trips and your to-dos.")
+                        note("Type to search across everything — your things, your templates, your trips and your to-dos.")
                     } else if found.isEmpty {
                         note("Nothing matches “\(jsTrim(query))”.")
                             .accessibilityIdentifier("search-none")
@@ -143,7 +143,7 @@ struct SearchScreen: View {
                     under.append(thing.swedish)
                 }
                 let lists = library.memberships.filter { $0.itemId == thing.id }.count
-                under.append(lists == 0 ? "on no list" : "on \(lists) list\(lists == 1 ? "" : "s")")
+                under.append(lists == 0 ? "on no template" : "on \(lists) template\(lists == 1 ? "" : "s")")
                 return Row(id: thing.id, name: thing.name, under: under.joined(separator: " · "), kind: .thing)
             }
             out.append(Part(id: "things", title: "Things", rows: Array(rows), total: things.count))
@@ -154,7 +154,7 @@ struct SearchScreen: View {
             $0.role != CONTAINER_ROLE && normName($0.name).contains(needle)
         }
         if !lists.isEmpty {
-            out.append(Part(id: "lists", title: "Lists",
+            out.append(Part(id: "lists", title: "Templates",
                             rows: lists.map { Row(id: $0.id, name: $0.name,
                                                   under: "\($0.items.count) thing\($0.items.count == 1 ? "" : "s")",
                                                   kind: .list) },

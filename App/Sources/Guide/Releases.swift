@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.34", date: "27 Sep 2026", title: "Templates, said one way",
+                changed: ["The app says Templates for the building blocks your trips are made from: the tab, Your templates, A new template, Delete template, On these templates, Pick at least one template. \u{201C}List\u{201D} now means only the list you pack from, and grab lists.",
+                          "Settings \u{2192} Your lists is now Your choices: storage places, owners, packers, conditions and the When steps.",
+                          "Trip settings: Save changes stays in sight at the bottom, above the keyboard."],
+                fixed: ["Make the template was greyed out until a name was typed. It is always ready now, and says under it what is missing."]),
         Release(version: "0.33", date: "27 Sep 2026", title: "Again, from this trip",
                 new: ["Trip settings → Start a new trip from this one: the same list as it ended up, with your own additions — nothing ticked, no dates, no review. The trip screen switches to the new trip and says so."]),
         Release(version: "0.32", date: "27 Sep 2026", title: "Trip settings",

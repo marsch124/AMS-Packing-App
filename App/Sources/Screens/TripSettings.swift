@@ -91,27 +91,34 @@ struct TripSettingsScreen: View {
                     Text("Save rebuilds the list: what you ticked or added yourself stays; new things arrive; things no longer asked for go.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
-                    // Always ready, always in colour (his rule for a main button, 2026-09-26).
-                    Button { save(flat) } label: {
-                        Text("Save changes")
-                            .font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 52)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("tripset-save")
-                    if !stillNeeded.isEmpty {
-                        Text(stillNeeded)
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
-                            .frame(maxWidth: .infinity)
-                            .accessibilityIdentifier("tripset-needs")
-                    }
                     Rectangle().fill(Theme.line).frame(height: 1).padding(.vertical, 8)
                     startAgain
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
+            // Save stays in sight at the bottom, above the keyboard — never scrolled
+            // away at the end of a long sheet (the cloud test lost it, 2026-09-27).
+            // Always ready, always in colour (his rule for a main button, 2026-09-26).
+            VStack(spacing: 8) {
+                if !stillNeeded.isEmpty {
+                    Text(stillNeeded)
+                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("tripset-needs")
+                }
+                Button { save(flat) } label: {
+                    Text("Save changes")
+                        .font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("tripset-save")
+            }
+            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 12)
+            .background(Theme.bg)
+            .overlay(alignment: .top) { Rectangle().fill(Theme.line).frame(height: 1) }
         }
         .background(Theme.bg.ignoresSafeArea())
         .onAppear(perform: load)
@@ -134,6 +141,7 @@ struct TripSettingsScreen: View {
                     .padding(.horizontal, 12).frame(minHeight: 46)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .onSubmit { startIt(againName ?? "") }
                     .accessibilityIdentifier("tripset-again-name")
                 Text("The same list as this trip, nothing ticked, no dates.")
                     .font(.system(size: 14)).foregroundStyle(Theme.muted)
@@ -209,9 +217,9 @@ struct TripSettingsScreen: View {
 
     private func needs() -> String {
         let noName = jsTrim(name).isEmpty, noList = activities.isEmpty
-        if noName && noList { return "Give the trip a name and pick at least one list." }
+        if noName && noList { return "Give the trip a name and pick at least one template." }
         if noName { return "Give the trip a name." }
-        if noList { return "Pick at least one list." }
+        if noList { return "Pick at least one template." }
         return ""
     }
 

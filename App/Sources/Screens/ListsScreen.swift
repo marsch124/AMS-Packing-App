@@ -36,7 +36,8 @@ struct ListsScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Your lists").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Your choices").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .accessibilityIdentifier("choices-title")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(.plain).focusEffectDisabled()

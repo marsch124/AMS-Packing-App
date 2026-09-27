@@ -91,8 +91,8 @@ enum TableColumns {
     /// once has no meaning, so the batch sheet — which offers `intrinsic` — cannot
     /// offer them.
     static let perListColumns: [Column] = [
-        Column(id: "listQty", title: "How many", width: 92, kind: .perList(.qty), group: "On this list"),
-        Column(id: "listSection", title: "Section", width: 140, kind: .perList(.section), group: "On this list"),
+        Column(id: "listQty", title: "How many", width: 92, kind: .perList(.qty), group: "On this template"),
+        Column(id: "listSection", title: "Section", width: 140, kind: .perList(.section), group: "On this template"),
     ]
 
     /// One tick column per list of his, so a thing joins or leaves a list here.
@@ -101,7 +101,7 @@ enum TableColumns {
     static func listColumns(_ library: Library) -> [Column] {
         library.templates.map { list in
             Column(id: "list:\(list.id)", title: library.shownName(list), width: 100,
-                   kind: .onList(list.id), group: "On these lists")
+                   kind: .onList(list.id), group: "On these templates")
         }
     }
 
@@ -331,14 +331,14 @@ struct Cell: View {
                 .accessibilityValue(now)
             }
         } else {
-            Text(mine.isEmpty ? "—" : "\(mine.count) lists")
+            Text(mine.isEmpty ? "—" : "\(mine.count) templates")
                 .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.muted)
                 .lineLimit(1)
                 .padding(.horizontal, 7)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .accessibilityIdentifier(id)
-                .accessibilityValue(mine.isEmpty ? "" : "\(mine.count) lists")
-                .help(mine.isEmpty ? "On no list" : "Different on each list — open the thing to set it")
+                .accessibilityValue(mine.isEmpty ? "" : "\(mine.count) templates")
+                .help(mine.isEmpty ? "On no template" : "Different on each template — open the thing to set it")
         }
     }
 

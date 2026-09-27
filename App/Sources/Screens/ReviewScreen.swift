@@ -61,13 +61,13 @@ struct ReviewScreen: View {
                         .accessibilityIdentifier("review-miss-add")
                     }
                     if !lists.isEmpty {
-                        Pills(title: "Goes onto", options: lists.map { ($0.id, $0.name) } + [("", "No list")],
+                        Pills(title: "Goes onto", options: lists.map { ($0.id, $0.name) } + [("", "No template")],
                               selected: [target], id: "review-miss-where", tint: AppSection.templates.color) { missWhere = $0 }
                     }
                     ForEach(Array(missed.enumerated()), id: \.offset) { n, m in
                         HStack {
                             Text(m.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
-                            Text(lists.first { $0.id == m.templateId }?.name ?? "no list")
+                            Text(lists.first { $0.id == m.templateId }?.name ?? "no template")
                                 .font(.system(size: 14)).foregroundStyle(Theme.muted)
                             Spacer()
                             Button { missed.remove(at: n) } label: {

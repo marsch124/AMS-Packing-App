@@ -139,7 +139,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["template-row-2"].exists, "the sample library has three templates")
         // A shelf says his own code as well as the words, as the web app does.
         XCTAssertEqual(words(app.staticTexts["templates-shelf-GA"]), "GA · GOAL ACTIVITY")
-        XCTAssertTrue(words(app.staticTexts["templates-summary"]).contains("lists"),
+        XCTAssertTrue(words(app.staticTexts["templates-summary"]).contains("templates"),
                       "no summary under the heading: '\(words(app.staticTexts["templates-summary"]))'")
         first.tap()
 
@@ -573,10 +573,10 @@ final class AMSPackingUITests: XCTestCase {
         tapVisible(app, create)
         let needs = app.staticTexts["trip-create-needs"]
         XCTAssertTrue(needs.waitForExistence(timeout: 5), "an early press said nothing about what is missing")
-        XCTAssertEqual(words(needs), "Give the trip a name and pick at least one list.")
+        XCTAssertEqual(words(needs), "Give the trip a name and pick at least one template.")
         XCTAssertNil(find(app, "trip-detail"), "a trip was made with nothing chosen")
         type("Test trip", into: field)
-        XCTAssertTrue(waitUntil { self.words(needs) == "Pick at least one list." }, "the hint did not follow: '\(words(needs))'")
+        XCTAssertTrue(waitUntil { self.words(needs) == "Pick at least one template." }, "the hint did not follow: '\(words(needs))'")
         select(app, app.buttons["trip-activity-0"])
         XCTAssertTrue(waitUntil { !needs.exists }, "the hint stayed after everything was there")
         tapVisible(app, create)
@@ -1120,14 +1120,14 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Weekend in the hills", "the settings do not start from the trip")
         replace("Hills and lake", in: name)
-        hideKeyboard(app)
+        name.typeText("\n")                     // Return puts the keyboard away (no swipe near a sheet)
         // Numbered as on Create new trip: Hiking 0 (already on), Swim 1.
         XCTAssertTrue(isOn(app.buttons["tripset-activity-0"]), "the trip's own list is not shown as on")
         let swim = app.buttons["tripset-activity-1"]
         XCTAssertTrue(swim.waitForExistence(timeout: 5), "no Swim list to add")
         XCTAssertFalse(isOn(swim), "Swim is already on the trip")
         select(app, swim)
-        tapVisible(app, app.buttons["tripset-save"])
+        tap(app, id: "tripset-save")                // in the bar at the bottom, always in sight
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Save did not close the settings")
 
         XCTAssertTrue(waitUntil { self.words(progress) == "1/10" },
@@ -1141,8 +1141,8 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-settings")
         XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
         replace("   ", in: app.textFields["tripset-name"])
-        hideKeyboard(app)
-        tapVisible(app, app.buttons["tripset-save"])
+        app.textFields["tripset-name"].typeText("\n")
+        tap(app, id: "tripset-save")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-needs"]).contains("name") },
                       "a trip without a name was not refused out loud")
         XCTAssertNotNil(find(app, "tripset-screen"), "the settings closed on an empty name")
@@ -1171,25 +1171,34 @@ final class AMSPackingUITests: XCTestCase {
         let name = app.textFields["tripset-again-name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5), "Start a new trip did not ask for a name")
         XCTAssertEqual(name.value as? String, "Weekend in the hills (again)", "the name offered is not the web app's")
-        replace("   ", in: name)
-        hideKeyboard(app)
-        tapVisible(app, app.buttons["tripset-again-yes"])
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-again-needs"]).contains("name") },
-                      "a blank name was not refused out loud")
-        replace("Hills again", in: app.textFields["tripset-again-name"])
-        hideKeyboard(app)
+        // The offered name as it is: nothing typed, so no keyboard in the way.
         tapVisible(app, app.buttons["tripset-again-yes"])
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Start it did not close the settings")
 
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-name"]) == "Hills again" },
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-name"]) == "Weekend in the hills (again)" },
                       "the screen did not switch to the new trip: '\(words(app.staticTexts["trip-name"]))'")
         XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the new trip is not the same list, unticked: '\(words(progress))'")
         XCTAssertTrue(words(app.staticTexts["trip-rebuilt"]).hasPrefix("New trip from"), "the trip does not say where it came from")
+
+        // A blank name (Return presses Start it) is refused out loud; Cancel starts nothing.
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tapVisible(app, app.buttons["tripset-again"])
+        let again = app.textFields["tripset-again-name"]
+        XCTAssertTrue(again.waitForExistence(timeout: 5))
+        replace("   ", in: again)
+        again.typeText("\n")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-again-needs"]).contains("name") },
+                      "a blank name was not refused out loud")
+        XCTAssertNotNil(find(app, "tripset-screen"), "a trip without a name was started")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
         tap(app, id: "trip-done")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
 
         // Two trips now; the old one still has its tick.
         XCTAssertTrue(waitUntil { app.buttons["trip-row-1"].exists }, "the new trip is not among the trips")
+        XCTAssertFalse(app.buttons["trip-row-2"].exists, "the blank name made a trip after all")
         var sawOld = false
         for row in 0..<2 {
             app.buttons["trip-row-\(row)"].tap()
@@ -2225,8 +2234,18 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-templates"))
         let before = words(app.staticTexts["templates-summary"])
 
+        // One word for one thing (his call, 2026-09-27): Templates, everywhere.
+        XCTAssertEqual(words(app.staticTexts["templates-heading"]), "Your templates")
         tap(app, id: "templates-new")
         XCTAssertTrue(appears(app, "newlist-detail", timeout: 5), "the sheet did not open")
+        XCTAssertEqual(words(app.staticTexts["newlist-title"]), "A new template")
+
+        // Never grey (his rule): pressed without a name, it stays and says what is missing.
+        XCTAssertTrue(app.buttons["newlist-make"].isEnabled, "Make the template is greyed out")
+        tap(app, id: "newlist-make")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["newlist-needs"]).contains("name") },
+                      "pressed without a name, it did not say so")
+        XCTAssertNotNil(find(app, "newlist-detail"), "a template without a name was made")
 
         // A name he already has is refused, and nothing can be made from it.
         type("Hiking", into: app.textFields["newlist-name"])
@@ -2236,6 +2255,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["newlist-taken"].waitForExistence(timeout: 5),
                       "a name he already has was accepted")
 
+        tap(app, id: "newlist-make")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["newlist-needs"]).contains("do not have") },
+                      "pressed on a name he has, it did not say so")
+        XCTAssertNotNil(find(app, "newlist-detail"), "a second Hiking was made")
         replace("Mushroom picking", in: app.textFields["newlist-name"])
         XCTAssertTrue(waitUntil(timeout: 5) { !app.staticTexts["newlist-taken"].exists },
                       "a free name is still called taken")
@@ -2251,7 +2274,7 @@ final class AMSPackingUITests: XCTestCase {
                       "the shelf did not gain a list: still '\(before)'")
         // The shelf he chose, tested by the shelf he did NOT choose: nothing in the
         // sample is unshelved, so a list that ignored his choice would make an
-        // "Other lists" shelf appear. (Asserting the GA shelf exists proved nothing
+        // "Other templates" shelf appear. (Asserting the GA shelf exists proved nothing
         // — it was already there, and the test passed with the choice thrown away.)
         XCTAssertTrue(app.staticTexts["templates-shelf-GA"].exists, "the shelf he chose is gone")
         XCTAssertFalse(app.staticTexts["templates-shelf-other"].exists,
@@ -2268,7 +2291,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
 
         // The sample's second thing by name is on TWO lists.
-        XCTAssertEqual(cellSays(app, "table-1-listQty"), "2 lists",
+        XCTAssertEqual(cellSays(app, "table-1-listQty"), "2 templates",
                        "a thing on two lists must not offer one answer")
         XCTAssertFalse(app.textFields["table-1-listQty"].exists, "it must not be editable either")
 
@@ -2366,6 +2389,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        // Its own name, so it never clashes with Your templates (2026-09-27).
+        XCTAssertEqual(words(app.staticTexts["choices-title"]), "Your choices")
 
         type("Garage shelf", into: app.textFields["list-places-add-name"])
         app.buttons["list-places-add"].tap()

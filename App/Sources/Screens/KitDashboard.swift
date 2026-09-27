@@ -50,7 +50,7 @@ struct KitDashboard: View {
             }
 
             if stats.lists.count > 1 {
-                section("What each list weighs", id: "kit-lists-heading")
+                section("What each template weighs", id: "kit-lists-heading")
                 let heaviest = stats.lists.first?.grams ?? 1
                 ForEach(Array(stats.lists.prefix(5).enumerated()), id: \.offset) { n, list in
                     bar(label: list.label, right: KitDashboard.kilos(list.grams),

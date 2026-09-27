@@ -14,12 +14,12 @@ struct FirstRunView: View {
         VStack(spacing: 22) {
             Spacer()
             SectionMark(section: .home, size: 84, weight: 1.6).foregroundStyle(AppSection.home.color)
-            Text("No lists on this device yet")
+            Text("No templates on this device yet")
                 .font(.system(size: 26, weight: .heavy)).foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
 
             VStack(spacing: 12) {
-                Door(title: "My other device has my lists",
+                Door(title: "My other device has my templates",
                      detail: model.usesICloud ? "Leave this open. They arrive through iCloud."
                                               : "This build does not use iCloud.",
                      filled: false)

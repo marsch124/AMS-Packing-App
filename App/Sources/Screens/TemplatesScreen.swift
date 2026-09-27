@@ -18,7 +18,7 @@ struct TemplatesScreen: View {
         add("base", "Always packed", all.filter { $0.role == "base" })
         add("transport", "By transport", all.filter { $0.role == "transport" })
         for g in GROUPS { add(g.id, g.label, orderActivities(g.id, all.filter { $0.role.isEmpty && $0.group == g.id })) }
-        add("other", "Other lists", all.filter { $0.role.isEmpty && $0.group.isEmpty })
+        add("other", "Other templates", all.filter { $0.role.isEmpty && $0.group.isEmpty })
         // Bags are not an activity: they have their own screen, on Care (as in the
         // web app), where each gets a weight limit.
         return out
@@ -34,7 +34,7 @@ struct TemplatesScreen: View {
     static func summary(_ lists: [PackList], _ library: Library) -> String {
         let things = library.items.count
         let trips = library.trips.count
-        var parts = ["\(lists.count) list\(lists.count == 1 ? "" : "s")",
+        var parts = ["\(lists.count) template\(lists.count == 1 ? "" : "s")",
                      "\(things) thing\(things == 1 ? "" : "s")"]
         if trips > 0 { parts.append("\(trips) trip\(trips == 1 ? "" : "s") packed from them") }
         return parts.joined(separator: " · ")
@@ -48,7 +48,7 @@ struct TemplatesScreen: View {
             LazyVStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Your lists").font(.system(size: 28, weight: .heavy))
+                        Text("Your templates").font(.system(size: 28, weight: .heavy))
                             .foregroundStyle(AppSection.templates.color)
                             .accessibilityIdentifier("templates-heading")
                         Text(TemplatesScreen.summary(flat, model.library))
@@ -270,7 +270,7 @@ struct TemplateDetail: View {
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("template-item-\(n)-remove")
-                                .accessibilityLabel("Take \(item.name) off this list")
+                                .accessibilityLabel("Take \(item.name) off this template")
                             }
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                         }
@@ -280,7 +280,7 @@ struct TemplateDetail: View {
                 .padding(.bottom, 24)
             }
             HStack(spacing: 8) {
-                TextField("Add a thing to this list", text: $newName)
+                TextField("Add a thing to this template", text: $newName)
                     .textFieldStyle(.plain)
                     .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
                     .padding(.horizontal, 12).frame(minHeight: 44)
@@ -305,7 +305,7 @@ struct TemplateDetail: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Delete “\(list.name)”?")
                         .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
-                    Text("The list and its \(list.items.count) row\(list.items.count == 1 ? "" : "s") go. The THINGS stay — they are still in Your things and on any other list.")
+                    Text("The template and its \(list.items.count) row\(list.items.count == 1 ? "" : "s") go. The THINGS stay — they are still in Your things and on any other template.")
                         .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 10) {
@@ -318,7 +318,7 @@ struct TemplateDetail: View {
                             model.change { _ = $0.deleteTemplate(id: listId) }
                             dismiss()
                         } label: {
-                            Text("Delete the list")
+                            Text("Delete the template")
                                 .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
                                 .padding(.horizontal, 14).frame(minHeight: 40)
                                 .background(Capsule().fill(AppSection.actions.color))
@@ -333,7 +333,7 @@ struct TemplateDetail: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
                 .padding(.horizontal, 16).padding(.bottom, 10)
             } else {
-                SmallDeleteButton(title: "Delete list", id: "template-delete") { askingToDelete = true }
+                SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
                     .padding(.horizontal, 16).padding(.bottom, 8)
             }
         }
@@ -408,14 +408,14 @@ struct RowEditor: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(thing.name).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
                     Text("On \(list.name)").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
-                    Pills(title: "Bag on this list", options: [("", "Same as the thing (\(thing.container))")]
+                    Pills(title: "Bag on this template", options: [("", "Same as the thing (\(thing.container))")]
                             + containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
                           selected: [bag], id: "row-bag", tint: AppSection.templates.color) { bag = $0 }
-                    Pills(title: "When, on this list", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
+                    Pills(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
                             + PHASES.map { ($0.id, $0.label) },
                           selected: [when], id: "row-when", tint: AppSection.templates.color) { when = $0 }
                     if !list.sections.isEmpty {
-                        Pills(title: "Section of this list", options: [("", "No section")] + list.sections.map { ($0.id, $0.name) },
+                        Pills(title: "Section of this template", options: [("", "No section")] + list.sections.map { ($0.id, $0.name) },
                               selected: [section], id: "row-section", tint: AppSection.templates.color) { section = $0 }
                     }
                     Text("A new section").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
@@ -436,7 +436,7 @@ struct RowEditor: View {
                     field($qty, "e.g. 2, or 2 pairs", "row-qty")
                     Text("Note").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
                     field($note, "e.g. with the red filter", "row-note")
-                    Text("Blank means the same as the thing itself, so a change to the thing still reaches this list.")
+                    Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)

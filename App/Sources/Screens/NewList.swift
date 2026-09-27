@@ -21,6 +21,8 @@ struct NewList: View {
 
     @State private var name = ""
     @State private var group = ""
+    /// What is still missing, said under the button once it is pressed too early.
+    @State private var needs = ""
     @FocusState private var writing: Bool
 
     private var taken: Bool {
@@ -31,8 +33,9 @@ struct NewList: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("A new list").font(.system(size: 20, weight: .heavy))
+                Text("A new template").font(.system(size: 20, weight: .heavy))
                     .foregroundStyle(AppSection.templates.color)
+                    .accessibilityIdentifier("newlist-title")
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -58,7 +61,7 @@ struct NewList: View {
                         .accessibilityIdentifier("newlist-name")
 
                     if taken {
-                        Text("You already have a list called that.")
+                        Text("You already have a template called that.")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(AppSection.actions.color)
                             .padding(.top, 6)
@@ -73,19 +76,25 @@ struct NewList: View {
                     }
                     shelfRow("", "No shelf")
 
+                    // Always ready, always in colour — his rule for a main button
+                    // (2026-09-26); pressed too early, it says what is missing.
                     Button { make() } label: {
-                        Text("Make the list")
+                        Text("Make the template")
                             .font(.system(size: 17, weight: .heavy))
-                            .foregroundStyle(canMake ? Color.white : Theme.muted)
+                            .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(minHeight: 50)
-                            .background(RoundedRectangle(cornerRadius: 12)
-                                .fill(canMake ? AppSection.templates.color : Theme.line))
+                            .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.templates.color))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .disabled(!canMake)
                     .padding(.top, 24)
                     .accessibilityIdentifier("newlist-make")
+                    if !needs.isEmpty {
+                        Text(needs)
+                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                            .frame(maxWidth: .infinity).padding(.top, 8)
+                            .accessibilityIdentifier("newlist-needs")
+                    }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -119,7 +128,9 @@ struct NewList: View {
     }
 
     private func make() {
-        guard canMake else { return }
+        if jsTrim(name).isEmpty { needs = "Give the template a name."; return }
+        if taken { needs = "Pick a name you do not have yet."; return }
+        needs = ""
         made(newList(name: jsTrim(name), group: group))
         dismiss()
     }

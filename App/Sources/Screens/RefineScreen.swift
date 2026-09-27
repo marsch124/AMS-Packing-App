@@ -38,7 +38,7 @@ struct RefineScreen: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("refine-empty")
                     } else {
-                        Text("Each of these has earned its place here over at least two trips. Keep settles it for good. Drop takes it off that one list — it stays your thing, and on your other lists.")
+                        Text("Each of these has earned its place here over at least two trips. Keep settles it for good. Drop takes it off that one template — it stays your thing, and on your other templates.")
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                         ForEach(Array(offers.enumerated()), id: \.offset) { n, s in row(s, n) }

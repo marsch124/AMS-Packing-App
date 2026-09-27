@@ -419,7 +419,7 @@ struct TripScreen: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Delete \u{201C}\(trip.name)\u{201D}?")
                     .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
-                Text("The trip and its \(trip.entries.count) line\(trip.entries.count == 1 ? "" : "s") go. Your things and your lists stay.")
+                Text("The trip and its \(trip.entries.count) line\(trip.entries.count == 1 ? "" : "s") go. Your things and your templates stay.")
                     .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {

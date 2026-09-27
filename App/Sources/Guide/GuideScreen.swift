@@ -129,13 +129,13 @@ struct HowItWorksScreen: View {
     static let topics: [Topic] = [
         Topic(section: .home, title: "Home", lines: [
             "Grab and go: six grab lists for a quick outing. Tap one, then tick what is in your hand.",
-            "Create new trip: a name, Dates (tap the first day, then the last), Quick if only the lists you tick should come along.",
-            "Create trip is always ready: if a name or a list is missing, it says so right under it.",
-            "Pick the lists, then Transport, Season and Food, and Create trip. The trip gathers everything those lists hold.",
-            "This Device: how many trips, things and lists this device holds."]),
+            "Create new trip: a name, Dates (tap the first day, then the last), Quick if only the templates you tick should come along.",
+            "Create trip is always ready: if a name or a template is missing, it says so right under it.",
+            "Pick the templates, then Transport, Season and Food, and Create trip. The trip gathers everything those templates hold.",
+            "This Device: how many trips, things and templates this device holds."]),
         Topic(section: .events, title: "Packing a trip", lines: [
             "Tap a line to tick it; tap again to take it back. The round button by a heading ticks the whole section.",
-            "The gear beside the count: Trip settings. Change the name, dates, lists, transport, season or food; Save rebuilds the list, and what you ticked or added yourself stays.",
+            "The gear beside the count: Trip settings. Change the name, dates, templates, transport, season or food; Save rebuilds the list, and what you ticked or added yourself stays.",
             "At the bottom of Trip settings: Start a new trip from this one. The same list as it ended up, nothing ticked, no dates.",
             "The arrow before a section's name folds it away; tap it again to open. A trip remembers its folds.",
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
@@ -144,21 +144,21 @@ struct HowItWorksScreen: View {
             "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over).",
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
             "Type a thing at the bottom to add it to this trip only.",
-            "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and lists stay."]),
+            "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and templates stay."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use, add what you missed, Save.",
             "Under a trip's name: where it stands in the loop, Plan · Pack · Review · Refine. Tap it for the whole picture.",
-            "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a list for next time."]),
+            "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time."]),
         Topic(section: .events, title: "Trips", lines: [
             "Now, Coming up and Been. Each trip says Planned, Packing or Ready.",
             "Reviewed trips fold away. Your year shows when you travel, month by month."]),
-        Topic(section: .templates, title: "Your lists", lines: [
-            "The building blocks of every trip, on their shelves (GA, WET and so on).",
-            "+ New makes a list. Open one to rename it, add or take off things, and set How many and Section for this list.",
-            "Delete this list asks first. Your things stay.",
-            "Refine: after two or more reviewed trips, what a list carries for nothing. Keep settles it; Drop takes it off that one list."]),
+        Topic(section: .templates, title: "Your templates", lines: [
+            "Templates are the building blocks of every trip, on their shelves (GA, WET and so on). The list you pack from is made from them.",
+            "+ New makes a template. Open one to rename it, add or take off things, and set How many and Section for this template.",
+            "Delete template asks first. Your things stay.",
+            "Refine: after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [
-            "Your things: every thing you own; open one to change it, put it on a list, or delete it (it asks first).",
+            "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first).",
             "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month."]),
@@ -167,7 +167,7 @@ struct HowItWorksScreen: View {
             "To buy: what to get, with worn-out or run-down things suggested."]),
         Topic(section: .settings, title: "Settings", lines: [
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",
-            "Your lists: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
+            "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
             "Worth a look appears only when something in the library seems wrong."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",

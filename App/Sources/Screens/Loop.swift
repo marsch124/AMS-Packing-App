@@ -16,7 +16,7 @@ extension Library.LoopStep {
     /// The few words inside the picture's box.
     var short: String {
         switch self {
-        case .plan: return "Make lists, create a trip"
+        case .plan: return "Make templates, create a trip"
         case .pack: return "Tick things as they go in"
         case .review: return "After it: unused, missed"
         case .refine: return "Keep or drop, from reviews"
@@ -26,10 +26,10 @@ extension Library.LoopStep {
     /// The same, in a sentence, under the picture.
     var explained: String {
         switch self {
-        case .plan: return "Your lists hold what each kind of trip needs. A new trip gathers what its lists hold."
+        case .plan: return "Your templates hold what each kind of trip needs. A new trip gathers what its templates hold."
         case .pack: return "Tick each thing as it goes in. The count says when nothing is left."
         case .review: return "After the trip: tap what you did not use, add what you missed. This looks back at one trip."
-        case .refine: return "When two or more reviews agree, Refine offers to take a thing off a list — or keep it for good. Your lists get better, and the next trip starts from them."
+        case .refine: return "When two or more reviews agree, Refine offers to take a thing off a template — or keep it for good. Your templates get better, and the next trip starts from them."
         }
     }
 }
@@ -54,7 +54,7 @@ struct LoopPicture: View {
             HStack(spacing: 0) { box(.refine); LoopArrow(to: .left).frame(width: gap); box(.review) }
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 16) {
-                key(Library.LoopStep.plan, "About your lists")
+                key(Library.LoopStep.plan, "About your templates")
                 key(Library.LoopStep.pack, "About one trip")
                 Spacer(minLength: 0)
             }
@@ -141,7 +141,7 @@ struct LoopWords: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Text("Review looks back at one trip. Refine uses several reviews to make your lists better.")
+            Text("Review looks back at one trip. Refine uses several reviews to make your templates better.")
                 .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 4)
@@ -231,7 +231,7 @@ struct LoopGuideCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("The loop").font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
-            Text("Every trip goes round the same four steps, and each time round your lists get a little better.")
+            Text("Every trip goes round the same four steps, and each time round your templates get a little better.")
                 .font(.system(size: 16)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             LoopPicture()

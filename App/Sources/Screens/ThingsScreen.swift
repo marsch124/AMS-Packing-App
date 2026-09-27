@@ -44,7 +44,7 @@ struct ThingsScreen: View {
                 Spacer()
                 if homeless > 0 {
                     Button { noListOnly.toggle() } label: {
-                        Text("On no list \(homeless)").font(.system(size: 14, weight: .bold))
+                        Text("On no template \(homeless)").font(.system(size: 14, weight: .bold))
                             .foregroundStyle(noListOnly ? Color.white : AppSection.care.color)
                             .padding(.horizontal, 12).frame(minHeight: 32)
                             .background(Capsule().fill(noListOnly ? AppSection.care.color : Theme.card))
@@ -63,7 +63,7 @@ struct ThingsScreen: View {
                         Button { editing = row.item.id } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(row.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
-                                Text([row.templates.isEmpty ? "On no list" : row.templates.joined(separator: ", "),
+                                Text([row.templates.isEmpty ? "On no template" : row.templates.joined(separator: ", "),
                                       row.item.storage].filter { !$0.isEmpty }.joined(separator: " · "))
                                     .font(.system(size: 14)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
                                     .lineLimit(1)
@@ -181,7 +181,7 @@ struct ThingEditor: View {
                     field($draft.color, "e.g. Black", "thing-colour")
                     label("Notes")
                     field($draft.note, "Anything worth remembering", "thing-notes")
-                    Pills(title: "On these lists", options: templates.map { ($0.id, $0.name) }, selected: onLists,
+                    Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
                           id: "thing-lists", tint: AppSection.templates.color, compact: true) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
                     }
@@ -189,7 +189,7 @@ struct ThingEditor: View {
                         Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("thing-problem")
                     }
-                    Text("A change here reaches every list it is on. Past trips keep what they were packed with.")
+                    Text("A change here reaches every template it is on. Past trips keep what they were packed with.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
                     deleteThing
                 }
@@ -219,8 +219,8 @@ struct ThingEditor: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Delete \u{201C}\(draft.name)\u{201D}?")
                         .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
-                    Text(lists.isEmpty ? "It is on none of your lists. Trips you already packed keep it."
-                         : "It leaves your \(BagDetail.names(lists)) list\(lists.count == 1 ? "" : "s"). Trips you already packed keep it.")
+                    Text(lists.isEmpty ? "It is on none of your templates. Trips you already packed keep it."
+                         : "It leaves your \(BagDetail.names(lists)) template\(lists.count == 1 ? "" : "s"). Trips you already packed keep it.")
                         .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack {

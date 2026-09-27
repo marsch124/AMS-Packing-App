@@ -84,7 +84,7 @@ struct HomeScreen: View {
                     }
                     // The explanation only when it is on, so the line stays short.
                     if quick {
-                        Text("Only the lists you tick — no common base, no transport kit.")
+                        Text("Only the templates you tick — no common base, no transport kit.")
                             .font(.system(size: 14)).foregroundStyle(Theme.muted)
                             .accessibilityIdentifier("trip-quick-note")
                     }
@@ -174,9 +174,9 @@ struct HomeScreen: View {
     /// What is still missing before a trip can be made, in his words — "" when nothing.
     private func needs() -> String {
         let noName = jsTrim(name).isEmpty, noList = activities.isEmpty
-        if noName && noList { return "Give the trip a name and pick at least one list." }
+        if noName && noList { return "Give the trip a name and pick at least one template." }
         if noName { return "Give the trip a name." }
-        if noList { return "Pick at least one list." }
+        if noList { return "Pick at least one template." }
         return ""
     }
 

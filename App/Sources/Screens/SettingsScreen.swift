@@ -85,7 +85,7 @@ struct SettingsScreen: View {
                 Button { lists = true } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Your lists").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+                            Text("Your choices").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                             Text("Storage places, owners, packers, conditions, \"When\" steps")
                                 .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
                         }
@@ -206,14 +206,14 @@ struct SettingsScreen: View {
     static func label(_ t: PackingLibrary.Table) -> String {
         switch t {
         case .items: return "Things"
-        case .memberships: return "Places on lists"
+        case .memberships: return "Places on templates"
         case .templates: return "Templates"
         case .trips: return "Trips"
         case .entries: return "Trip lines"
         case .actions: return "To-dos"
         case .kits: return "Kits"
         case .phases: return "Own \"When\" steps"
-        case .shared: return "Settings list entries"
+        case .shared: return "Choices"
         case .photos: return "Photos"
         case .meta: return "Notes about the library"
         }

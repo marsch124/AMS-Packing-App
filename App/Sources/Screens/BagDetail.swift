@@ -268,7 +268,7 @@ struct BagDetail: View {
                     }
                 }
                 if !lists.isEmpty {
-                    Text("The \(bag.name) is also on your \(BagDetail.names(lists)) list\(lists.count == 1 ? "" : "s"), as something you pack.")
+                    Text("The \(bag.name) is also on your \(BagDetail.names(lists)) template\(lists.count == 1 ? "" : "s"), as something you pack.")
                         .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("bag-delete-lists")
@@ -290,7 +290,7 @@ struct BagDetail: View {
                 if ready && !lists.isEmpty {
                     HStack(spacing: 8) {
                         Spacer(minLength: 0)
-                        deleteButton(lists.count == 1 ? "Keep it on \(lists[0])" : "Keep it on my lists",
+                        deleteButton(lists.count == 1 ? "Keep it on \(lists[0])" : "Keep it on my templates",
                                      id: "bag-delete-yes", filled: false, ready: true) { delete(bag, completely: false, used: used) }
                         deleteButton("Delete completely", id: "bag-delete-all", filled: true, ready: true) {
                             delete(bag, completely: true, used: used)
