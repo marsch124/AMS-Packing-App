@@ -6,7 +6,12 @@ import PackingLibrary
 /// a line — and that tick is ONE small record, so the other device can tick
 /// another line at the same moment and both survive.
 struct TripScreen: View {
-    let tripId: String
+    /// The trip that was opened. A new trip started from it (Trip settings → Start a
+    /// new trip from this one) takes its place on this screen.
+    private let openedId: String
+    @State private var startedId: String?
+    private var tripId: String { startedId ?? openedId }
+    init(tripId: String) { self.openedId = tripId }
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     /// His "When" colours are HIS — pale or bright — so they are made readable for
@@ -101,8 +106,13 @@ struct TripScreen: View {
                             .accessibilityValue(allPacked ? "all packed" : "")
                         // Its settings, after it is made (the gap list's first High item):
                         // beside the count, where there is room even on a small iPhone.
-                        TripSettingsDoor(tripId: tripId) { rebuiltNote = TripScreen.saying($0) }
-                            .environmentObject(model)
+                        TripSettingsDoor(tripId: tripId, rebuilt: { rebuiltNote = TripScreen.saying($0) },
+                                         startedAgain: { new in
+                            let from = trip.name
+                            startedId = new.id
+                            rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are in the gear."
+                        })
+                        .environmentObject(model)
                     }
                 }
                 Spacer()

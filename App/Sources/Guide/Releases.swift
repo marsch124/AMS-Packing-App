@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.33", date: "27 Sep 2026", title: "Again, from this trip",
+                new: ["Trip settings → Start a new trip from this one: the same list as it ended up, with your own additions — nothing ticked, no dates, no review. The trip screen switches to the new trip and says so."]),
         Release(version: "0.32", date: "27 Sep 2026", title: "Trip settings",
                 new: ["The gear beside a trip's count opens its settings: name, dates, Quick, lists, transport, season and food — the same choices as Create new trip.",
                       "Save rebuilds the list: what you ticked or added yourself stays, new things arrive, things no longer asked for go. The trip says how many."]),

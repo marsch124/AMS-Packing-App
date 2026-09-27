@@ -1152,6 +1152,58 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["trip-name"]), "Hills and lake", "Cancel changed the name")
     }
 
+    /// The web app's "Start a new trip from this one" (gap list, 2026-09-27): the same
+    /// list, nothing ticked; the screen switches to the new trip; the old one keeps
+    /// its tick; a blank name is refused out loud.
+    func testANewTripStartsFromThisOne() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick did not count: '\(words(progress))'")
+
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tapVisible(app, app.buttons["tripset-again"])
+        let name = app.textFields["tripset-again-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5), "Start a new trip did not ask for a name")
+        XCTAssertEqual(name.value as? String, "Weekend in the hills (again)", "the name offered is not the web app's")
+        replace("   ", in: name)
+        hideKeyboard(app)
+        tapVisible(app, app.buttons["tripset-again-yes"])
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-again-needs"]).contains("name") },
+                      "a blank name was not refused out loud")
+        replace("Hills again", in: app.textFields["tripset-again-name"])
+        hideKeyboard(app)
+        tapVisible(app, app.buttons["tripset-again-yes"])
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Start it did not close the settings")
+
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-name"]) == "Hills again" },
+                      "the screen did not switch to the new trip: '\(words(app.staticTexts["trip-name"]))'")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the new trip is not the same list, unticked: '\(words(progress))'")
+        XCTAssertTrue(words(app.staticTexts["trip-rebuilt"]).hasPrefix("New trip from"), "the trip does not say where it came from")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // Two trips now; the old one still has its tick.
+        XCTAssertTrue(waitUntil { app.buttons["trip-row-1"].exists }, "the new trip is not among the trips")
+        var sawOld = false
+        for row in 0..<2 {
+            app.buttons["trip-row-\(row)"].tap()
+            XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+            if waitUntil(timeout: 3, { self.words(app.staticTexts["trip-name"]) == "Weekend in the hills" }) {
+                sawOld = true
+                XCTAssertEqual(words(progress), "1/7", "the old trip lost its tick")
+            }
+            tap(app, id: "trip-done")
+            XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        }
+        XCTAssertTrue(sawOld, "the old trip is gone")
+    }
+
     /// A grab list counts what is in hand, refuses "Ready to go" while something
     /// is missing, lets a thing be skipped, and Start over clears it all.
     func testAGrabListCountsRefusesAndClears() {

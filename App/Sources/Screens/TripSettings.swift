@@ -10,6 +10,8 @@ struct TripSettingsScreen: View {
     let tripId: String
     /// What the rebuild did, for the trip to say.
     var rebuilt: (Library.TripRebuilt) -> Void = { _ in }
+    /// A new trip was started from this one (the web app's "same list, fresh ticks").
+    var startedAgain: (TripEvent) -> Void = { _ in }
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var loaded = false
@@ -24,6 +26,9 @@ struct TripSettingsScreen: View {
     @State private var season = "Summer"
     @State private var catering = "mixed"
     @State private var stillNeeded = ""
+    /// The new trip's name while Start a new trip is open; nil when closed.
+    @State private var againName: String?
+    @State private var againNeeds = ""
 
     var body: some View {
         let choices = model.library.activityChoices()
@@ -102,6 +107,8 @@ struct TripSettingsScreen: View {
                             .frame(maxWidth: .infinity)
                             .accessibilityIdentifier("tripset-needs")
                     }
+                    Rectangle().fill(Theme.line).frame(height: 1).padding(.vertical, 8)
+                    startAgain
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -113,6 +120,76 @@ struct TripSettingsScreen: View {
         #if os(macOS)
         .frame(minWidth: 540, minHeight: 600)
         #endif
+    }
+
+    /// "Start a new trip from this one — same list, fresh ticks" (the web app's trip
+    /// menu): the list as it ended up; no dates, ticks or review.
+    @ViewBuilder private var startAgain: some View {
+        if let draft = againName {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Name the new trip").font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                TextField("Name the new trip", text: Binding(get: { draft }, set: { againName = $0 }))
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: 46)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .accessibilityIdentifier("tripset-again-name")
+                Text("The same list as this trip, nothing ticked, no dates.")
+                    .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                HStack(spacing: 10) {
+                    Button("Not now") { againName = nil; againNeeds = "" }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("tripset-again-no")
+                    Spacer()
+                    // Always ready, always in colour; a missing name is said under it.
+                    Button { startIt(draft) } label: {
+                        Text("Start it")
+                            .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
+                            .padding(.horizontal, 18).frame(minHeight: 42)
+                            .background(Capsule().fill(AppSection.events.color))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("tripset-again-yes")
+                }
+                if !againNeeds.isEmpty {
+                    Text(againNeeds)
+                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .accessibilityIdentifier("tripset-again-needs")
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1))
+        } else {
+            Button {
+                let saved = model.library.trips.first { $0.id == tripId }?.name ?? ""
+                againName = Library.againName(saved)
+            } label: {
+                VStack(spacing: 2) {
+                    Text("Start a new trip from this one")
+                        .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    Text("Same list, nothing ticked")
+                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                }
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.4))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("tripset-again")
+        }
+    }
+
+    private func startIt(_ draft: String) {
+        guard !jsTrim(draft).isEmpty else { againNeeds = "Give the new trip a name."; return }
+        var made: TripEvent?
+        let from = tripId
+        model.change { lib in made = lib.startAgain(from: from, name: draft) }
+        if let made { startedAgain(made) }
+        dismiss()
     }
 
     private func load() {
@@ -169,6 +246,7 @@ struct TripSettingsScreen: View {
 struct TripSettingsDoor: View {
     let tripId: String
     var rebuilt: (Library.TripRebuilt) -> Void
+    var startedAgain: (TripEvent) -> Void = { _ in }
     @EnvironmentObject var model: LibraryModel
     @State private var open = false
 
@@ -181,6 +259,8 @@ struct TripSettingsDoor: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-settings")
         .accessibilityLabel("Trip settings")
-        .sheet(isPresented: $open) { TripSettingsScreen(tripId: tripId, rebuilt: rebuilt).environmentObject(model) }
+        .sheet(isPresented: $open) {
+            TripSettingsScreen(tripId: tripId, rebuilt: rebuilt, startedAgain: startedAgain).environmentObject(model)
+        }
     }
 }
