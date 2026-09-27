@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.30", date: "27 Sep 2026", title: "Refine",
+                new: ["Your lists → Refine: what your trip reviews say a list carries for nothing — packed and never used, or listed and never packed, over at least two trips. Keep settles it for good; Drop takes it off that one list (it asks first) and the thing stays yours."]),
         Release(version: "0.29", date: "27 Sep 2026", title: "Bags, said one way",
                 new: ["Deleting a bag offers No bag, and a bag nothing is packed in is deleted without choosing.",
                       "A bag that is also on your lists (like a day pack you pack on Travel) asks: keep it on those lists, or delete it completely.",

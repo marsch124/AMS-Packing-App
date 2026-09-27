@@ -1002,6 +1002,44 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(count) == "9 things" }, "the thing was not deleted: '\(words(count))'")
     }
 
+    /// Refine (roadmap stop E): what the reviews say a list carries for nothing. The
+    /// sample's Map was packed 3× and never used; its Headlamp listed 2× (on two
+    /// lists) and never packed; its boots had ONE quiet trip — not evidence. Keep
+    /// settles one; Drop asks first, then takes it off that one list only.
+    func testRefineOffersWhatTheReviewsFoundAndKeepAndDropSettleIt() {
+        let app = launch()
+        tab(app, "templates")
+        let door = app.buttons["refine-open"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "no Refine on Your lists")
+        XCTAssertTrue(waitUntil { (door.value as? String) == "3" }, "Refine does not say 3 to look at: '\(door.value as? String ?? "")'")
+        tap(app, id: "refine-open")
+        XCTAssertTrue(appears(app, "refine-screen", timeout: 5))
+        let count = app.staticTexts["refine-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "3" }, "'\(words(count))'")
+        XCTAssertEqual(words(app.staticTexts["refine-row-0-name"]), "Map", "most trips first")
+        XCTAssertFalse((0..<4).contains { self.words(app.staticTexts["refine-row-\($0)-name"]) == "Hiking boots" },
+                       "one quiet trip is offered")
+
+        tap(app, id: "refine-row-0-keep")
+        XCTAssertTrue(waitUntil { self.words(count) == "2" }, "Keep did not settle it: '\(words(count))'")
+        XCTAssertEqual(words(app.staticTexts["refine-row-0-name"]), "Headlamp")
+
+        tap(app, id: "refine-row-0-drop")
+        XCTAssertTrue(app.buttons["refine-row-0-drop-yes"].waitForExistence(timeout: 5), "Drop did not ask first")
+        tap(app, id: "refine-row-0-drop-no")
+        XCTAssertTrue(waitUntil { !app.buttons["refine-row-0-drop-yes"].exists })
+        XCTAssertEqual(words(count), "2", "Keep it still dropped it")
+        tap(app, id: "refine-row-0-drop")
+        tap(app, id: "refine-row-0-drop-yes")
+        XCTAssertTrue(waitUntil { self.words(count) == "1" }, "Drop did not take it off the list: '\(words(count))'")
+        XCTAssertEqual(words(app.staticTexts["refine-row-0-name"]), "Headlamp", "dropped from one list, still offered on the other")
+        tap(app, id: "refine-done")
+        XCTAssertTrue(disappears(app, "refine-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { (door.value as? String) == "1" }, "the door did not follow: '\(door.value as? String ?? "")'")
+        tab(app, "care")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") }, "Drop must not delete the thing")
+    }
+
     /// A grab list counts what is in hand, refuses "Ready to go" while something
     /// is missing, lets a thing be skipped, and Start over clears it all.
     func testAGrabListCountsRefusesAndClears() {
@@ -1818,11 +1856,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["kit-tips-heading"].waitForExistence(timeout: 5), "nothing worth knowing at all")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["kit-tip-0"]).contains("overdue") },
                       "something is overdue and the tips do not lead with it: '\(words(app.staticTexts["kit-tip-0"]))'")
-        // …and nothing has been reviewed, so nothing may claim to have come home unused.
-        for n in 0..<4 {
-            XCTAssertFalse(words(app.staticTexts["kit-tip-\(n)"]).contains("came home unused"),
-                           "nothing has been reviewed and it said things came home unused")
-        }
+        // …and since 0.30 the sample has reviews behind it: the Map and the Hiking
+        // boots went along and were never used — two, not the Headlamp, which never went.
+        XCTAssertTrue((0..<6).contains { self.words(app.staticTexts["kit-tip-\($0)"]).hasPrefix("2 things went along and came home unused") },
+                      "the reviews' unused things are not counted right: \((0..<6).map { self.words(app.staticTexts["kit-tip-\($0)"]) })")
     }
 
     /// The table is a spreadsheet: a heading sorts by its column and turns over

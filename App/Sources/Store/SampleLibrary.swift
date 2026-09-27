@@ -41,6 +41,15 @@ enum SampleLibrary {
             if let p = places[lib.items[n].name] { lib.items[n].storage = p }
             if let o = owned[lib.items[n].name] { lib.items[n].ownedBy = o }
         }
+        // Review history, as his reviews write it — so Refine has something to say:
+        // the Map packed three times and never used; the Headlamp listed twice and
+        // never packed; the Hiking boots one quiet trip only (not evidence).
+        let history: [String: ItemStats] = ["Map": ItemStats(packed: 3, used: 0, unused: 3),
+                                            "Headlamp": ItemStats(packed: 0, skipped: 2),
+                                            "Hiking boots": ItemStats(packed: 1, used: 0, unused: 1)]
+        for n in lib.items.indices {
+            if let h = history[lib.items[n].name] { lib.items[n].stats = h }
+        }
 
         // Two things the buy-list should offer, for two different reasons.
         if let n = lib.items.firstIndex(where: { $0.name == "Map" }) { lib.items[n].condition = "retire" }

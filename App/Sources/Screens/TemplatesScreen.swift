@@ -68,6 +68,9 @@ struct TemplatesScreen: View {
                     .accessibilityIdentifier("templates-new")
                 }
                 .padding(.top, 14).padding(.bottom, 4)
+                // What his trip reviews say a list carries for nothing (roadmap stop E).
+                RefineDoor().environmentObject(model)
+                    .padding(.bottom, 4)
                 ForEach(shelves) { shelf in
                     // His own code beside the name, as the web app has it:
                     // "GA · GOAL ACTIVITY".

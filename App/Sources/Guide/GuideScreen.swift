@@ -152,7 +152,8 @@ struct HowItWorksScreen: View {
         Topic(section: .templates, title: "Your lists", lines: [
             "The building blocks of every trip, on their shelves (GA, WET and so on).",
             "+ New makes a list. Open one to rename it, add or take off things, and set How many and Section for this list.",
-            "Delete this list asks first. Your things stay."]),
+            "Delete this list asks first. Your things stay.",
+            "Refine: after two or more reviewed trips, what a list carries for nothing. Keep settles it; Drop takes it off that one list."]),
         Topic(section: .care, title: "Care", lines: [
             "Your things: every thing you own; open one to change it, put it on a list, or delete it (it asks first).",
             "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
