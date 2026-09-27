@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.37", date: "27 Sep 2026", title: "Where you have been",
+                new: ["Trips → the pin at the top: a map of your trips. One pin per place, with a number when you went more than once, a line through the trips oldest first, and a card per place with its trips. Tap a pin to find its card.",
+                      "Trips that name a place but never looked up their weather can be found on the map in one press."],
+                changed: ["Looking up a trip's weather now keeps the place's name for the map too."]),
         Release(version: "0.36", date: "27 Sep 2026", title: "Everything at once",
                 new: ["Near the end of a trip: Tick everything (it says how many are still unticked), and Clear every tick, which asks first. Lines set aside stay out of both.",
                       "The weather card: Add all, when it asks for two or more things."],

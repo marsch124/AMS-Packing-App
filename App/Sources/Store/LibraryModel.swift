@@ -23,6 +23,8 @@ final class LibraryModel: ObservableObject {
     /// Trips whose forecast is being looked up right now, and what went wrong.
     @Published private(set) var lookingUpWeather: Set<String> = []
     @Published private(set) var weatherTrouble: [String: String] = [:]
+    /// The map's "Find N places" is looking.
+    @Published private(set) var findingPlaces = false
 
     private let store: LibraryStore
     private var held: [StoredRecord] = []
@@ -126,6 +128,24 @@ final class LibraryModel: ObservableObject {
         } catch {
             weatherTrouble[tripId] = error.localizedDescription
         }
+    }
+
+    /// The map's "Find N places": look up every trip that names a place but has no
+    /// spot yet, one at a time, and keep what is found. Returns the names not found.
+    func findPlaces() async -> [String] {
+        guard !findingPlaces else { return [] }
+        findingPlaces = true
+        defer { findingPlaces = false }
+        var missed: [String] = []
+        for trip in library.placesToFind() {
+            do {
+                let spot = try await sky.place(named: jsTrim(trip.destination))
+                change { _ = $0.setPlace(tripId: trip.id, lat: spot.lat, lon: spot.lon, label: spot.name) }
+            } catch {
+                missed.append(trip.destination)
+            }
+        }
+        return missed
     }
 
     /// Worth looking up as the trip opens? Only for a trip that is close enough for

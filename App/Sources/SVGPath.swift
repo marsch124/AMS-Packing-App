@@ -4,7 +4,9 @@ import SwiftUI
 ///
 /// The web app's pictures are all hand-drawn SVG. Reading their path data
 /// directly means every mark here is the SAME drawing, not a re-tracing of it.
-/// Supports M L H V C Q A Z, absolute and relative — what those drawings use.
+/// Supports M L H V C S Q A Z, absolute and relative — what those drawings use.
+/// Anything else stops a test build loudly: an unknown command used to end the
+/// drawing silently, and the map pin on Trips was invisible (0.37, 2026-09-27).
 enum SVGPath {
     static func path(_ d: String) -> Path {
         var p = Path()
@@ -12,12 +14,16 @@ enum SVGPath {
         var cmd: Character = " "
         var cur = CGPoint.zero
         var start = CGPoint.zero
+        /// The last curve's second control point, for S (its mirror is S's first).
+        var lastC2: CGPoint?
 
         while true {
             s.skipSeparators()
             guard !s.atEnd else { break }
             if let c = s.command() { cmd = c } else if cmd == " " { break }
             let rel = cmd.isLowercase
+            let curveBefore = lastC2
+            lastC2 = nil
             func abs(_ x: Double, _ y: Double) -> CGPoint {
                 rel ? CGPoint(x: cur.x + x, y: cur.y + y) : CGPoint(x: x, y: y)
             }
@@ -43,6 +49,14 @@ enum SVGPath {
                       let x = s.number(), let y = s.number() else { return p }
                 let c1 = abs(x1, y1), c2 = abs(x2, y2), end = abs(x, y)
                 p.addCurve(to: end, control1: c1, control2: c2); cur = end
+                lastC2 = c2
+            case "S", "s":
+                guard let x2 = s.number(), let y2 = s.number(),
+                      let x = s.number(), let y = s.number() else { return p }
+                let c1 = curveBefore.map { CGPoint(x: 2 * cur.x - $0.x, y: 2 * cur.y - $0.y) } ?? cur
+                let c2 = abs(x2, y2), end = abs(x, y)
+                p.addCurve(to: end, control1: c1, control2: c2); cur = end
+                lastC2 = c2
             case "Q", "q":
                 guard let x1 = s.number(), let y1 = s.number(),
                       let x = s.number(), let y = s.number() else { return p }
@@ -58,6 +72,7 @@ enum SVGPath {
             case "Z", "z":
                 p.closeSubpath(); cur = start
             default:
+                assertionFailure("SVGPath cannot draw '\(cmd)' in \(d)")
                 return p
             }
         }

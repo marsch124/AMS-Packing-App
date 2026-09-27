@@ -1322,6 +1322,43 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["weather-addall"].exists, "Add all is still offered with nothing missing")
     }
 
+    /// The world map (the web app's, gap list 2026-09-27): empty until a trip has a
+    /// place; a trip gets its place from its weather; then one pin, one card, and
+    /// the summary counts them.
+    func testTheMapShowsWhereTheTripsWent() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        tap(app, id: "events-map")
+        XCTAssertTrue(appears(app, "map-screen", timeout: 5), "the map did not open")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["map-summary"]) == "0 places · 0 trips" },
+                      "'\(words(app.staticTexts["map-summary"]))'")
+        XCTAssertTrue(app.staticTexts["map-empty"].exists, "an empty map does not say why")
+        tap(app, id: "map-done")
+        XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
+
+        // The trip's weather gives it its place.
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5))
+        type("Testville", into: app.textFields["weather-place"])
+        app.textFields["weather-place"].typeText("\n")
+        XCTAssertTrue(app.staticTexts["weather-line"].waitForExistence(timeout: 10), "no forecast came back")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        tap(app, id: "events-map")
+        XCTAssertTrue(appears(app, "map-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["map-summary"]) == "1 place · 1 trip" },
+                      "the trip did not reach the map: '\(words(app.staticTexts["map-summary"]))'")
+        XCTAssertEqual(words(app.staticTexts["map-place-0-name"]), "Testville, SE", "the place card is missing or unnamed")
+        XCTAssertNotNil(find(app, "map-view"), "no map drawn")
+        XCTAssertFalse(app.staticTexts["map-empty"].exists, "it still says there are no places")
+        shot(app, "map")
+        tap(app, id: "map-done")
+        XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
+    }
+
     /// A Toggle is a switch on the iPhone and a check box on the Mac.
     private func switchNamed(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         _ = waitUntil(timeout: 5) { app.switches[id].exists || app.checkBoxes[id].exists }

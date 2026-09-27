@@ -154,7 +154,8 @@ struct HowItWorksScreen: View {
             "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time."]),
         Topic(section: .events, title: "Trips", lines: [
             "Now, Coming up and Been. Each trip says Planned, Packing or Ready.",
-            "Reviewed trips fold away. Your year shows when you travel, month by month."]),
+            "Reviewed trips fold away. Your year shows when you travel, month by month.",
+            "The pin at the top: Where you have been. A map with a pin per place (a number when you went more than once), a line through your trips oldest first, and a card per place. A trip gets its place when you look up its weather."]),
         Topic(section: .templates, title: "Your templates", lines: [
             "Templates are the building blocks of every trip, on their shelves (GA, WET and so on). The list you pack from is made from them.",
             "+ New makes a template. Open one to rename it, add or take off things, and set How many and Section for this template.",

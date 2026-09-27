@@ -31,6 +31,7 @@ struct EventsScreen: View {
                             .accessibilityIdentifier("events-summary")
                     }
                     Spacer()
+                    WorldMapDoor().environmentObject(model)
                     SearchButton { searching = true }
                     if toDos > 0 {
                         Button(action: goToActions) {

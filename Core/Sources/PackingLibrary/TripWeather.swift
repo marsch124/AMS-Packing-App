@@ -30,7 +30,8 @@ extension Library {
         guard let n = trips.firstIndex(where: { $0.id == tripId }) else { return false }
         trips[n].destination = jsTrim(place).isEmpty ? trips[n].destination : jsTrim(place)
         trips[n].weather = snapshot
-        if let lat, let lon { trips[n].geo = GeoFix(lat: lat, lon: lon) }
+        // The map's label too ("Kalmar, SE"), as the web app keeps it.
+        if let lat, let lon { trips[n].geo = GeoFix(lat: lat, lon: lon, place: snapshot.place) }
         trips[n].updatedAt = nowISO()
         return true
     }
