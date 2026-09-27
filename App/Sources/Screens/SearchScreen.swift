@@ -149,7 +149,7 @@ struct SearchScreen: View {
             out.append(Part(id: "things", title: "Things", rows: Array(rows), total: things.count))
         }
 
-        // His lists. Containers are a screen of their own, as in the web app.
+        // His lists. His bags are a screen of their own (Care → Bags).
         let lists = library.resolvedTemplates().filter {
             $0.role != CONTAINER_ROLE && normName($0.name).contains(needle)
         }

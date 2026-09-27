@@ -66,17 +66,28 @@ app_id = apps["data"][0]["id"]
 # Apple processes for a few minutes before the builds exist to be released.
 # AMS Packing uploads TWO builds per run — one for the iPhone, one for the Mac —
 # with the same build number, and both must reach the group.
+#
+# 🪤 0.27 (build 33, 2026-09-27): the old loop gave up after five minutes with ONE
+# build and released only that — the Mac's copy appeared minutes later and never
+# reached his Mac. Now it waits up to 30 minutes for BOTH, and checks afterwards.
+def builds_of_this_version():
+    code, builds = call("GET", "/v1/builds" + q({"filter[app]": app_id, "filter[version]": VERSION, "limit": 10}))
+    return [b for b in builds.get("data", []) if b["attributes"].get("version") == VERSION]
+
 build_ids = []
-for attempt in range(40):
-    code, builds = call("GET", "/v1/builds" + q({"filter[app]": app_id, "limit": 40}))
-    mine = [b for b in builds.get("data", []) if b["attributes"].get("version") == VERSION]
-    for b in mine:
-        print(f"build {VERSION} ({b['id']}) is {b['attributes'].get('processingState')}")
+for attempt in range(60):
+    mine = builds_of_this_version()
+    print(f"attempt {attempt + 1}: " + ", ".join(f"{b['id'][:8]} {b['attributes'].get('processingState')}" for b in mine))
     ready = [b["id"] for b in mine if b["attributes"].get("processingState") in ("VALID", "PROCESSING")]
-    if len(ready) >= 2 or (ready and attempt >= 10):
+    if len(ready) >= 2:
         build_ids = ready
         break
-    print(f"waiting for Apple to finish processing {VERSION}...")
+    if ready and attempt >= 59:
+        build_ids = ready
+        print(f"::warning::only {len(ready)} of 2 builds of {VERSION} appeared in 30 minutes — "
+              "the other device will not get this version")
+        break
+    print(f"waiting for Apple to finish processing {VERSION} (need the iPhone AND the Mac build)...")
     time.sleep(30)
 
 if not build_ids:
@@ -95,6 +106,10 @@ for build_id in build_ids:
     if code not in (200, 201, 204):
         sys.exit(f"::error::could not release build {build_id} to '{GROUP_NAME}': HTTP {code}")
 
-code, released = call("GET", f"/v1/betaGroups/{group['id']}/builds")
+code, released = call("GET", f"/v1/betaGroups/{group['id']}/builds" + q({"limit": 200}))
 have = [b["attributes"].get("version") for b in released.get("data", [])]
 print(f"released to '{GROUP_NAME}'. That group now has: {', '.join(have)}")
+copies = have.count(VERSION)
+print(f"build {VERSION} is in the group {copies} time(s) — the iPhone and the Mac need 2")
+if copies < 2:
+    print(f"::warning::build {VERSION} reached the group only {copies} time(s): one device will not get it")

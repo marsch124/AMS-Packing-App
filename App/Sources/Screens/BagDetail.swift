@@ -18,7 +18,8 @@ struct BagDetail: View {
     @State private var empty = ""
     @State private var allThings = false
     @State private var askingToDelete = false
-    @State private var moveTo = ""
+    /// Where the bag's things go on a delete: nil = not chosen yet, "" = no bag.
+    @State private var moveTo: String?
     @State private var opened: Opened?
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
@@ -56,8 +57,8 @@ struct BagDetail: View {
         }
         .onAppear {
             guard let bag else { return }
-            maxKg = bag.maxKg > 0 ? ContainersScreen.show(bag.maxKg) : ""
-            litres = bag.capacityL > 0 ? ContainersScreen.show(bag.capacityL) : ""
+            maxKg = bag.maxKg > 0 ? BagsScreen.show(bag.maxKg) : ""
+            litres = bag.capacityL > 0 ? BagsScreen.show(bag.capacityL) : ""
             empty = bag.weight > 0 ? String(Int(bag.weight.rounded())) : ""
         }
         .accessibilityElement(children: .contain)
@@ -235,53 +236,66 @@ struct BagDetail: View {
 
     @ViewBuilder private func deleteBag(_ bag: Item, _ facts: Library.BagFacts) -> some View {
         let others = model.library.bags().filter { $0.id != bag.id }
+        // A bag nothing is packed in has nothing to move — a plain "Delete?" (his
+        // ask, 2026-09-27, about his empty Handbag).
+        let used = model.library.bagIsUsed(name: bag.name)
+        // It may ALSO be a thing he packs — his Day pack on Travel (2026-09-27). Then
+        // he chooses each time: stop it being a bag only, or delete it completely.
+        let lists = model.library.listsHoldingBag(id: bag.id)
         if askingToDelete {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Delete \u{201C}\(bag.name)\u{201D}?")
                     .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
-                if !others.isEmpty {
-                    Text(facts.things.isEmpty ? "Anything on your lists or trips that names it moves to:"
-                         : "\(facts.things.count) thing\(facts.things.count == 1 ? "" : "s") usually go\(facts.things.count == 1 ? "es" : "") in it. Move them to:")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                if !used {
+                    Text("Nothing is packed in the \(bag.name), so nothing needs to move.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("bag-delete-empty")
+                } else {
+                    // His words (2026-09-27): "any item that previously was designated to be
+                    // packed in this item should be moved to another item" — or to none.
+                    Text(facts.things.isEmpty
+                         ? "Anything packed in the \(bag.name) will be packed in another bag instead. Choose which one, or no bag:"
+                         : "The \(facts.things.count) thing\(facts.things.count == 1 ? "" : "s") packed in the \(bag.name) will be packed in another bag instead. Choose which one, or no bag:")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("bag-delete-explain")
                     FlowRow(spacing: 6) {
                         ForEach(Array(others.enumerated()), id: \.element.id) { i, other in
-                            let on = moveTo == other.name
-                            Button { moveTo = other.name } label: {
-                                Text(other.name).font(.system(size: 14, weight: on ? .bold : .semibold))
-                                    .foregroundStyle(on ? Color.white : Theme.ink)
-                                    .padding(.horizontal, 10).frame(minHeight: 32)
-                                    .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
-                                    .overlay(Capsule().stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
-                                    .contentShape(Capsule())
-                            }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("bag-move-\(i)")
-                            .accessibilityAddTraits(on ? .isSelected : [])
+                            choice(other.name, on: moveTo == other.name, id: "bag-move-\(i)") { moveTo = other.name }
                         }
+                        choice("No bag", on: moveTo == "", id: "bag-move-none") { moveTo = "" }
                     }
                 }
+                if !lists.isEmpty {
+                    Text("The \(bag.name) is also on your \(BagDetail.names(lists)) list\(lists.count == 1 ? "" : "s"), as something you pack.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("bag-delete-lists")
+                }
+                let ready = !used || moveTo != nil
                 HStack(spacing: 10) {
-                    Button("Keep it") { askingToDelete = false; moveTo = "" }
+                    Button("Keep it") { askingToDelete = false; moveTo = nil }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("bag-delete-no")
                     Spacer()
-                    let ready = others.isEmpty || !moveTo.isEmpty
-                    Button {
-                        guard ready else { return }
-                        let target = moveTo, id = bag.id
-                        dismiss()
-                        model.change { _ = $0.deleteBag(id: id, moveTo: target) }
-                    } label: {
-                        Text(others.isEmpty ? "Delete the bag" : (moveTo.isEmpty ? "Choose a bag first" : "Move and delete"))
-                            .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
-                            .padding(.horizontal, 14).frame(minHeight: 40)
-                            .background(Capsule().fill(AppSection.actions.color.opacity(ready ? 1 : 0.55)))
-                            .contentShape(Capsule())
+                    if !ready {
+                        deleteButton("Choose first", id: "bag-delete-yes", filled: true, ready: false) {}
+                    } else if lists.isEmpty {
+                        deleteButton(!used ? "Delete the bag" : moveTo == "" ? "Delete, no bag" : "Move and delete",
+                                     id: "bag-delete-yes", filled: true, ready: true) { delete(bag, completely: false, used: used) }
                     }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("bag-delete-yes")
+                }
+                if ready && !lists.isEmpty {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        deleteButton(lists.count == 1 ? "Keep it on \(lists[0])" : "Keep it on my lists",
+                                     id: "bag-delete-yes", filled: false, ready: true) { delete(bag, completely: false, used: used) }
+                        deleteButton("Delete completely", id: "bag-delete-all", filled: true, ready: true) {
+                            delete(bag, completely: true, used: used)
+                        }
+                    }
                 }
             }
             .padding(14)
@@ -290,6 +304,47 @@ struct BagDetail: View {
         } else {
             SmallDeleteButton(title: "Delete bag", id: "bag-delete") { askingToDelete = true }
         }
+    }
+
+    private func delete(_ bag: Item, completely: Bool, used: Bool) {
+        let target = used ? (moveTo ?? "") : "", id = bag.id
+        dismiss()
+        model.change { _ = $0.deleteBag(id: id, moveTo: target, completely: completely) }
+    }
+
+    private func deleteButton(_ title: String, id: String, filled: Bool, ready: Bool,
+                              _ act: @escaping () -> Void) -> some View {
+        Button { if ready { act() } } label: {
+            Text(title)
+                .font(.system(size: 15, weight: .heavy))
+                .foregroundStyle(filled ? Color.white : AppSection.actions.color)
+                .padding(.horizontal, 14).frame(minHeight: 40)
+                .background(Capsule().fill(filled ? AppSection.actions.color.opacity(ready ? 1 : 0.55) : Color.clear))
+                .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: filled ? 0 : 1.5))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+    }
+
+    /// "Travel", "Travel and Swim", "Travel, Swim and Run".
+    static func names(_ lists: [String]) -> String {
+        guard lists.count > 1 else { return lists.first ?? "" }
+        return lists.dropLast().joined(separator: ", ") + " and " + (lists.last ?? "")
+    }
+
+    private func choice(_ title: String, on: Bool, id: String, _ pick: @escaping () -> Void) -> some View {
+        Button(action: pick) {
+            Text(title).font(.system(size: 14, weight: on ? .bold : .semibold))
+                .foregroundStyle(on ? Color.white : Theme.ink)
+                .padding(.horizontal, 10).frame(minHeight: 32)
+                .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
+                .overlay(Capsule().stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     // MARK: Pieces

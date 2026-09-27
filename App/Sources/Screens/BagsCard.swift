@@ -68,7 +68,7 @@ struct BagsCard: View {
             keyLine(AppSection.events.color, "Green", "well within its max")
             keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
             keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
-            Text("No bar: no max set. Set one in Care → Containers.")
+            Text("No bar: no max set. Set one in Care → Bags.")
                 .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }

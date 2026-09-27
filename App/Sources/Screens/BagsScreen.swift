@@ -6,9 +6,10 @@ import PackingLibrary
 /// what it weighs empty. A bag given a max weight here shows how full it is on
 /// every trip it goes on.
 ///
-/// The name is not editable here, on purpose: things are packed into a bag by its
-/// NAME, so renaming it would leave everything in it bag-less (see Containers.swift).
-struct ContainersScreen: View {
+/// A bag's name opens its own page (BagDetail), where it is renamed or deleted —
+/// things are packed into a bag by its NAME, so both carry through every thing,
+/// list and trip (see Bags.swift). The app says "Bags" everywhere (his ask, 2026-09-27).
+struct BagsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
@@ -23,12 +24,12 @@ struct ContainersScreen: View {
                 Text("Your bags").font(.system(size: 22, weight: .heavy)).foregroundStyle(AppSection.care.color)
                 Text("\(bags.count)").font(.system(size: 15, weight: .heavy).monospacedDigit())
                     .foregroundStyle(Theme.muted)
-                    .accessibilityIdentifier("containers-count")
+                    .accessibilityIdentifier("yourbags-count")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
-                    .accessibilityIdentifier("containers-done")
+                    .accessibilityIdentifier("yourbags-done")
             }
             .padding(16)
 
@@ -49,7 +50,7 @@ struct ContainersScreen: View {
                 .font(.system(size: 10, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.4)
                 .padding(.bottom, 4)
                 .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("containers-columns")
+                .accessibilityIdentifier("yourbags-columns")
             }
             .padding(.horizontal, 16)
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
@@ -93,7 +94,7 @@ struct ContainersScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("containers-detail")
+        .accessibilityIdentifier("yourbags-detail")
         .sheet(item: $openBag) { b in BagDetail(bagId: b.id).environmentObject(model) }
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 560)
@@ -161,8 +162,8 @@ struct ContainersScreen: View {
             .frame(minHeight: 46)
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
             .onAppear {
-                maxKg = bag.maxKg > 0 ? ContainersScreen.show(bag.maxKg) : ""
-                litres = bag.capacityL > 0 ? ContainersScreen.show(bag.capacityL) : ""
+                maxKg = bag.maxKg > 0 ? BagsScreen.show(bag.maxKg) : ""
+                litres = bag.capacityL > 0 ? BagsScreen.show(bag.capacityL) : ""
                 empty = bag.weight > 0 ? String(Int(bag.weight.rounded())) : ""
             }
         }

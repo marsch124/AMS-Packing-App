@@ -3,6 +3,12 @@ import PackingCore
 
 // His bags: the things on the one list whose role is "container".
 //
+// 🚨 WORDS (his ask, 2026-09-27): the app says BAGS everywhere — never "containers".
+// The saved data keeps the web app's names ("container" fields, the list role
+// "container", the list called "Containers"): they are the shared format with the
+// web app, backups and iCloud, and renaming stored keys is how data gets lost.
+// Anything shown to him goes through `shownName` / the word "Bags".
+//
 // The web app keeps a bag as an ordinary thing on a special "Containers" list, and
 // gives it three numbers of its own: what it may carry (maxKg), its size (capacityL)
 // and its empty weight (the thing's own `weight`). The trip's Bags card measures a
@@ -15,9 +21,14 @@ import PackingCore
 // trips, old ones too; a delete first moves its things to a bag he picks.
 
 extension Library {
-    /// The Containers list, if he has one.
-    public var containerList: PackList? {
+    /// His bag list (stored as the web app's "Containers" list), if he has one.
+    public var bagList: PackList? {
         templates.first { $0.role == CONTAINER_ROLE }
+    }
+
+    /// A list's name as he sees it: his bag list is "Bags" (stored as "Containers").
+    public func shownName(_ list: PackList) -> String {
+        list.role == CONTAINER_ROLE ? "Bags" : list.name
     }
 
     /// Every bag's weight limit by name — the built-in airline ceilings, overlaid
@@ -25,7 +36,7 @@ extension Library {
     ///
     /// 🪤 It must be given the RESOLVED lists. `templates` are the lists' shells —
     /// their things live in `memberships` — so `containerLimits(templates)` sees a
-    /// Containers list with nothing on it and applies none of his limits. The first
+    /// bag list with nothing on it and applies none of his limits. The first
     /// Bags card did exactly that; its test caught it. Always ask here.
     public func bagLimits() -> [String: Double] {
         containerLimits(resolvedTemplates())
@@ -33,7 +44,7 @@ extension Library {
 
     /// His bags, in the list's own order.
     public func bags() -> [Item] {
-        guard let list = containerList else { return [] }
+        guard let list = bagList else { return [] }
         return resolvedTemplate(id: list.id)?.items ?? []
     }
 
@@ -49,7 +60,7 @@ extension Library {
         }
     }
 
-    /// A bag, on the Containers list — which is made first if he has none.
+    /// A bag, on his bag list — which is made first if he has none.
     ///
     /// A name he already has a BAG by is refused: two bags with one name would be one
     /// bag to every trip, because bags are joined by name. But a THING he already owns
@@ -60,10 +71,10 @@ extension Library {
     public mutating func addBag(name: String) -> Item? {
         let wanted = jsTrim(name)
         guard !wanted.isEmpty, !bags().contains(where: { normName($0.name) == normName(wanted) }) else { return nil }
-        if containerList == nil {
+        if bagList == nil {
             saveTemplate(newList(name: CONTAINER_LIST_NAME, role: CONTAINER_ROLE))
         }
-        guard let list = containerList else { return nil }
+        guard let list = bagList else { return nil }
         let bag = items.first { normName($0.name) == normName(wanted) } ?? addThing(name: wanted)
         guard let bag else { return nil }
         setOnTemplate(itemId: bag.id, templateId: list.id, on: true)
@@ -95,25 +106,46 @@ extension Library {
         }
     }
 
-    /// Delete a bag. Its things — and every list row and trip line that names it —
-    /// move to `moveTo` first (his choice), which must be another of his bags; ""
-    /// only when it is his last bag. The bag leaves the Containers list; the THING
-    /// goes too unless it is also packed on a list of his.
+    /// Is anything packed in this bag — a thing's own bag, a list row's or a list's
+    /// default, or a line on any trip? A bag nothing names can simply go.
+    public func bagIsUsed(name: String) -> Bool {
+        let k = normName(name)
+        guard !k.isEmpty else { return false }
+        func hit(_ s: String?) -> Bool { normName(s ?? "") == k }
+        return items.contains { hit($0.container) }
+            || memberships.contains { hit($0.container) }
+            || templates.contains { hit($0.defaultContainer) }
+            || trips.contains { $0.entries.contains { hit($0.container) || hit($0.ovContainer) || hit($0.tplContainer) || hit($0.defContainer) } }
+    }
+
+    /// Delete a bag. Everything that names it — things, list rows and trip lines —
+    /// moves to `moveTo` first (his choice), another of his bags; or, with "", to
+    /// NO bag (his ask, 2026-09-27: "an alternative… to not choose… do not use
+    /// another bag"). The bag leaves his bag list; the THING goes too
+    /// unless it is also packed on a list of his.
+    /// The lists (not his bag list) a bag also sits on AS A THING — the Day pack he
+    /// packs on Travel. Deleting such a bag asks whether it goes from those too.
+    public func listsHoldingBag(id: String) -> [String] {
+        templates.filter { t in t.role != CONTAINER_ROLE && memberships.contains { $0.itemId == id && $0.templateId == t.id } }
+            .map(\.name)
+    }
+
+    /// `completely`: also off every list, and the thing is gone (his choice each
+    /// time, 2026-09-27 — "I thought it would just be a deleted bag").
     @discardableResult
-    public mutating func deleteBag(id: String, moveTo: String) -> Bool {
-        guard let list = containerList, let bag = bags().first(where: { $0.id == id }) else { return false }
+    public mutating func deleteBag(id: String, moveTo: String, completely: Bool = false) -> Bool {
+        guard let list = bagList, let bag = bags().first(where: { $0.id == id }) else { return false }
         let target = jsTrim(moveTo)
         let others = bags().filter { $0.id != id }
         if target.isEmpty {
-            guard others.isEmpty else { return false }
+            renameBagEverywhere(from: bag.name, to: "")
         } else {
             guard let to = others.first(where: { normName($0.name) == normName(target) }) else { return false }
             renameBagEverywhere(from: bag.name, to: to.name)
         }
-        if target.isEmpty { renameBagEverywhere(from: bag.name, to: "") }
         setOnTemplate(itemId: id, templateId: list.id, on: false)
-        if !memberships.contains(where: { $0.itemId == id }) {
-            items.removeAll { $0.id == id }
+        if completely || !memberships.contains(where: { $0.itemId == id }) {
+            _ = deleteThing(id: id, evenABag: true)
         }
         return true
     }

@@ -65,11 +65,11 @@ struct CareScreen: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 6) {
-                                Text("Containers").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                                Text("Bags").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
                                 Text("\(model.library.bags().count)")
                                     .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
                             }
-                            Text("Your bags — how much each may carry")
+                            Text("How much each may carry, and what goes in it")
                                 .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
                         }
                         Spacer()
@@ -83,7 +83,7 @@ struct CareScreen: View {
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .padding(.top, 8)
-                .accessibilityIdentifier("care-containers")
+                .accessibilityIdentifier("care-bags")
 
                 Button { table = true } label: {
                     HStack {
@@ -178,7 +178,7 @@ struct CareScreen: View {
         .sheet(item: $opening) { ask in ThingsScreen(searching: ask.search).environmentObject(model) }
         .sheet(isPresented: $table) { ThingsTable().environmentObject(model) }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
-        .sheet(isPresented: $bagsOpen) { ContainersScreen().environmentObject(model) }
+        .sheet(isPresented: $bagsOpen) { BagsScreen().environmentObject(model) }
     }
 
     /// "431 things · 12.4 kg · 2 looked after" — the state of the kit in one line.

@@ -233,8 +233,12 @@ struct Pills: View {
             // (2026-09-27): "Make the headings larger".
             // …and in the colour of their own buttons, not grey (2026-09-27: "choose
             // another color that is more distinctive regarding the headings").
-            Text(title).font(.system(size: compact ? 19 : 14, weight: .heavy)).foregroundStyle(compact ? tint : Theme.muted)
-                .accessibilityIdentifier("\(id)-title")
+            if compact {
+                HeadingBand(title: title, tint: tint, id: "\(id)-title")     // his sketch (2026-09-27)
+            } else {
+                Text(title).font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("\(id)-title")
+            }
             FlowRow(spacing: 8) {
                 ForEach(Array(options.enumerated()), id: \.element.id) { n, o in
                     let on = selected.contains(o.id)

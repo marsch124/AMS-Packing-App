@@ -390,7 +390,9 @@ extension Library {
         var names: [String: [String]] = [:]
         for t in templates {
             for m in memberships where m.templateId == t.id {
-                if !(names[m.itemId] ?? []).contains(t.name) { names[m.itemId, default: []].append(t.name) }
+                // The bag list reads "Bags" (stored as "Containers" — see Bags.swift).
+                let shown = shownName(t)
+                if !(names[m.itemId] ?? []).contains(shown) { names[m.itemId, default: []].append(shown) }
             }
         }
         return items
@@ -423,6 +425,26 @@ extension Library {
         items[n].name = clean
         if let bag = wasBag, bag.name != clean { renameBagEverywhere(from: bag.name, to: clean) }
         return true
+    }
+
+    /// Delete a thing — his ask (2026-09-27): off every list and out of every kit,
+    /// then gone. Past trips keep their lines (a trip line is a copy); a to-do tied
+    /// to it keeps its name. A BAG is refused: things are packed in it by name, so
+    /// it goes through `deleteBag`, which asks where they go.
+    @discardableResult
+    public mutating func deleteThing(id: String, evenABag: Bool = false) -> Bool {
+        guard items.contains(where: { $0.id == id }) else { return false }
+        if !evenABag, bags().contains(where: { $0.id == id }) { return false }
+        memberships.removeAll { $0.itemId == id }
+        for k in kits.indices { kits[k].itemIds.removeAll { $0 == id } }
+        items.removeAll { $0.id == id }
+        return true
+    }
+
+    /// The lists a thing is on, by name, as he sees them.
+    public func listsOf(itemId: String) -> [String] {
+        templates.filter { t in memberships.contains { $0.itemId == itemId && $0.templateId == t.id } }
+            .map { shownName($0) }
     }
 
     /// Where the thing is kept at home ("Garage shelf"). "" = not said.

@@ -133,6 +133,7 @@ struct ThingEditor: View {
     @State private var draft = Item()
     @State private var onLists: Set<String> = []
     @State private var problem = ""
+    @State private var askingToDelete = false
 
     var body: some View {
         let templates = model.library.templates.filter { $0.role != CONTAINER_ROLE }
@@ -190,6 +191,7 @@ struct ThingEditor: View {
                     }
                     Text("A change here reaches every list it is on. Past trips keep what they were packed with.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    deleteThing
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -207,8 +209,51 @@ struct ThingEditor: View {
     }
 
     /// A heading in the editor — as large as the pill headings (his ask, 2026-09-27).
+    /// Delete the thing — his ask (2026-09-27). Small, at the side, and it asks
+    /// first. A bag is deleted on its own page, which asks where its things go.
+    @ViewBuilder private var deleteThing: some View {
+        let isBag = model.library.bags().contains { $0.id == itemId }
+        if !isBag {
+            if askingToDelete {
+                let lists = model.library.listsOf(itemId: itemId)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Delete \u{201C}\(draft.name)\u{201D}?")
+                        .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text(lists.isEmpty ? "It is on none of your lists. Trips you already packed keep it."
+                         : "It leaves your \(BagDetail.names(lists)) list\(lists.count == 1 ? "" : "s"). Trips you already packed keep it.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Button("Keep it") { askingToDelete = false }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                            .accessibilityIdentifier("thing-delete-no")
+                        Spacer()
+                        Button {
+                            let id = itemId
+                            dismiss()
+                            model.change { _ = $0.deleteThing(id: id) }
+                        } label: {
+                            Text("Delete the thing").font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
+                                .padding(.horizontal, 14).frame(minHeight: 40)
+                                .background(Capsule().fill(AppSection.actions.color))
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("thing-delete-yes")
+                    }
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
+            } else {
+                SmallDeleteButton(title: "Delete thing", id: "thing-delete") { askingToDelete = true }
+            }
+        }
+    }
+
     private func label(_ text: String) -> some View {
-        Text(text).font(.system(size: 19, weight: .heavy)).foregroundStyle(AppSection.care.color)
+        HeadingBand(title: text)
     }
 
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {

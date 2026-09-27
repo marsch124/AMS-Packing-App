@@ -10,7 +10,7 @@ enum TableColumns {
 
     /// Where a choice column gets its list of answers — his own Settings lists,
     /// never a list this app invented.
-    enum Answers { case places, containers, owners, people, conditions }
+    enum Answers { case places, bags, owners, people, conditions }
 
     enum Kind {
         case number(WritableKeyPath<Item, Double>)
@@ -69,7 +69,7 @@ enum TableColumns {
     static let intrinsic: [Column] = [
         Column(id: "weight", title: "Weight", width: 74, kind: .number(\Item.weight)),
         Column(id: "storage", title: "Storage", width: 150, kind: .choice(\Item.storage, .places)),
-        Column(id: "container", title: "Packed in", width: 140, kind: .choice(\Item.container, .containers)),
+        Column(id: "container", title: "Packed in", width: 140, kind: .choice(\Item.container, .bags)),
         Column(id: "ownedBy", title: "Owner", width: 110, kind: .choice(\Item.ownedBy, .owners)),
         Column(id: "packer", title: "Packed by", width: 110, kind: .choice(\Item.packer, .people)),
         Column(id: "condition", title: "Condition", width: 120, kind: .choice(\Item.condition, .conditions)),
@@ -100,7 +100,7 @@ enum TableColumns {
     /// its weight, its care and its photos stay.
     static func listColumns(_ library: Library) -> [Column] {
         library.templates.map { list in
-            Column(id: "list:\(list.id)", title: list.name, width: 100,
+            Column(id: "list:\(list.id)", title: library.shownName(list), width: 100,
                    kind: .onList(list.id), group: "On these lists")
         }
     }
@@ -157,7 +157,7 @@ enum TableColumns {
     /// from 21 seconds to 151. Working it out once costs nothing.
     struct Answers2: Equatable {
         var places: [String] = []
-        var containers: [String] = []
+        var bags: [String] = []
         var owners: [String] = []
         var people: [String] = []
         var conditions: [String] = []
@@ -174,7 +174,7 @@ enum TableColumns {
         init() {}
         init(_ library: Library) {
             places = library.storagePlaces()
-            containers = containerNames(library.templates)
+            bags = containerNames(library.templates)
             owners = library.owners()
             people = library.people().map(\.name)
             conditions = library.conditions().map(\.label)
@@ -182,14 +182,14 @@ enum TableColumns {
             byThing = Dictionary(grouping: library.memberships, by: \.itemId)
             for list in library.templates {
                 sectionsOf[list.id] = list.sections
-                listNamed[list.id] = list.name
+                listNamed[list.id] = library.shownName(list)
             }
         }
 
         func list(_ which: Answers) -> [String] {
             switch which {
             case .places: return places
-            case .containers: return containers
+            case .bags: return bags
             case .owners: return owners
             case .people: return people
             case .conditions: return conditions

@@ -875,8 +875,8 @@ final class AMSPackingUITests: XCTestCase {
     func testABagIsRenamedAndDeletedFromItsPage() {
         let app = launch()
         tab(app, "care")
-        tap(app, id: "care-containers")
-        XCTAssertTrue(appears(app, "containers-detail", timeout: 5))
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
         for name in ["Carry-on / hand luggage", "Duffel bag"] {
             type(name, into: app.textFields["bag-new-name"])
             XCTAssertTrue(waitUntil { app.buttons["bag-new"].isEnabled })
@@ -900,8 +900,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.buttons["bag-0-name"]).contains("Cabin bag") },
                       "the list still shows the old name: '\(words(app.buttons["bag-0-name"]))'")
-        tap(app, id: "containers-done")
-        XCTAssertTrue(disappears(app, "containers-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -913,23 +913,93 @@ final class AMSPackingUITests: XCTestCase {
 
         // Deleted — only after choosing where its things go.
         tab(app, "care")
-        tap(app, id: "care-containers")
-        XCTAssertTrue(appears(app, "containers-detail", timeout: 5))
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
         tap(app, id: "bag-0-name")
         XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
         XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-delete"), "no Delete on the bag's page")
         tap(app, id: "bag-delete")
         XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-delete-yes"), "it did not ask")
+        // Said plainly (his words, 2026-09-27): the things packed in THIS bag will be
+        // packed in another one — which?
+        let explain = app.staticTexts["bag-delete-explain"]
+        XCTAssertTrue(explain.waitForExistence(timeout: 5), "the delete does not explain itself")
+        XCTAssertTrue(words(explain).contains("packed in the Cabin bag will be packed in another bag"),
+                      "the explanation is not the plain one: '\(words(explain))'")
+        XCTAssertTrue(app.buttons["bag-move-none"].exists, "no way to leave its things without a bag (his ask, 2026-09-27)")
         tap(app, id: "bag-delete-yes")
         XCTAssertTrue(find(app, "bag-detail") != nil, "it deleted before a bag was chosen for its things")
         tap(app, id: "bag-move-0")
         tap(app, id: "bag-delete-yes")
         XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "the page did not close after the delete")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["containers-count"]) == "1" }, "the bag is still listed")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" }, "the bag is still listed")
         tap(app, id: "bag-0-name")
         XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
         XCTAssertTrue(waitUntil { Int(self.words(app.staticTexts["bag-things-count"])) == inIt },
                       "its \(inIt) things did not move to the Duffel bag: '\(words(app.staticTexts["bag-things-count"]))'")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+
+        // A bag NOTHING is packed in (his Handbag, 2026-09-27): no choosing, a plain delete.
+        type("Spare bag", into: app.textFields["bag-new-name"])
+        XCTAssertTrue(waitUntil { app.buttons["bag-new"].isEnabled })
+        tap(app, id: "bag-new")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "2" }, "the spare bag was not made")
+        tap(app, id: "bag-1-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-delete"))
+        tap(app, id: "bag-delete")
+        XCTAssertTrue(app.staticTexts["bag-delete-empty"].waitForExistence(timeout: 5), "an empty bag still asks where its things go")
+        XCTAssertFalse(app.buttons["bag-move-none"].exists, "an empty bag offers bags to move nothing to")
+        tap(app, id: "bag-delete-yes")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "the empty bag was not deleted at once")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" }, "the empty bag is still listed")
+
+        // A bag that is ALSO a thing he packs (his Day pack on Travel, 2026-09-27): the
+        // sample's Rain jacket, on Hiking, made a bag. Deleting asks: keep it on Hiking,
+        // or delete it completely.
+        type("Rain jacket", into: app.textFields["bag-new-name"])
+        XCTAssertTrue(waitUntil { app.buttons["bag-new"].isEnabled })
+        tap(app, id: "bag-new")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "2" }, "the thing did not become a bag")
+        tap(app, id: "bag-1-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-delete"))
+        tap(app, id: "bag-delete")
+        XCTAssertTrue(app.staticTexts["bag-delete-lists"].waitForExistence(timeout: 5), "it does not say the bag is also on a list")
+        XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-delete-all"), "no Delete completely")
+        XCTAssertTrue(app.buttons["bag-delete-yes"].exists, "no Keep it on the list")
+        tap(app, id: "bag-delete-all")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" })
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        // 10 sample things + the Duffel bag − the Rain jacket, deleted completely.
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") },
+                      "Delete completely left the thing: '\(words(app.staticTexts["care-line"]))'")
+    }
+
+    /// His ask (2026-09-27): a thing can be deleted from its details — small, at the
+    /// side, asking first; Keep it keeps it.
+    func testAThingIsDeletedOnlyAfterAsking() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let count = app.staticTexts["things-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "10 things" }, "'\(words(count))'")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-delete"), "no Delete thing")
+        tap(app, id: "thing-delete")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-delete-yes"), "it did not ask first")
+        tap(app, id: "thing-delete-no")
+        XCTAssertTrue(waitUntil { !app.buttons["thing-delete-yes"].exists }, "Keep it did not keep it")
+        tap(app, id: "thing-delete")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-delete-yes"))
+        tap(app, id: "thing-delete-yes")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "the editor did not close")
+        XCTAssertTrue(waitUntil { self.words(count) == "9 things" }, "the thing was not deleted: '\(words(count))'")
     }
 
     /// A grab list counts what is in hand, refuses "Ready to go" while something
@@ -1864,15 +1934,15 @@ final class AMSPackingUITests: XCTestCase {
 
         // Make that bag his own, with a limit it is already past.
         tab(app, "care")
-        tap(app, id: "care-containers")
-        XCTAssertTrue(appears(app, "containers-detail", timeout: 5), "no Containers screen")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5), "no Containers screen")
         // His ask (2026-09-26): the column names stay visible while the bags scroll —
         // so they must sit OUTSIDE every scrolling list, where nothing can carry them off.
-        let columns = app.descendants(matching: .any)["containers-columns"]
+        let columns = app.descendants(matching: .any)["yourbags-columns"]
         XCTAssertTrue(columns.waitForExistence(timeout: 5), "no column names over the bags")
         XCTAssertTrue(words(columns).contains("MAX KG"), "the column names are not there: '\(words(columns))'")
         for list in app.scrollViews.allElementsBoundByIndex where list.exists {
-            XCTAssertFalse(list.descendants(matching: .any)["containers-columns"].exists,
+            XCTAssertFalse(list.descendants(matching: .any)["yourbags-columns"].exists,
                            "the column names scroll away with the bags")
         }
         type("Carry-on / hand luggage", into: app.textFields["bag-new-name"])
@@ -1883,14 +1953,14 @@ final class AMSPackingUITests: XCTestCase {
         // 🪤 A number typed and LEFT — no Return — must stay too: his max weights of
         // 2026-09-26 were lost exactly so.
         type("33", into: app.textFields["bag-0-litres"])
-        tap(app, id: "containers-done")
-        XCTAssertTrue(disappears(app, "containers-detail", timeout: 5))
-        tap(app, id: "care-containers")
-        XCTAssertTrue(appears(app, "containers-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
         XCTAssertTrue(waitUntil { (app.textFields["bag-0-litres"].value as? String) == "33" },
                       "litres typed without Return were lost: '\(app.textFields["bag-0-litres"].value as? String ?? "")'")
-        tap(app, id: "containers-done")
-        XCTAssertTrue(disappears(app, "containers-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
 
         // The trip must see it.
         tab(app, "events")

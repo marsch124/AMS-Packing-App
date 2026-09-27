@@ -154,8 +154,8 @@ struct HowItWorksScreen: View {
             "+ New makes a list. Open one to rename it, add or take off things, and set How many and Section for this list.",
             "Delete this list asks first. Your things stay."]),
         Topic(section: .care, title: "Care", lines: [
-            "Your things: every thing you own; open one to change it or put it on a list.",
-            "Containers: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
+            "Your things: every thing you own; open one to change it, put it on a list, or delete it (it asks first).",
+            "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month."]),
         Topic(section: .actions, title: "Actions", lines: [
