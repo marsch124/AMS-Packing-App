@@ -49,6 +49,8 @@ go in `private/`, which git ignores. The parity checker reads them from there.
   web app's model turns the CI job red until the Swift model follows.
 - ✅ `Core/PackingLibrary` — the library in memory, the records it is stored and
   synced as, the one-time import (self-checking), backups. [`docs/store.md`](docs/store.md).
+- 🎨 Every colour the app uses, and the workout colours he chose:
+  [`docs/colours.md`](docs/colours.md).
 - ✅ iCloud sync, proved end to end on his Mac (1,438 records up, wiped, all back).
 - ✅ TestFlight: both the iPhone and the Mac build go to his group from the
   Actions tab ([`TESTFLIGHT.md`](TESTFLIGHT.md)).
