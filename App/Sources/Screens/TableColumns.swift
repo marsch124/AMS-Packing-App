@@ -113,7 +113,7 @@ enum TableColumns {
     /// His chosen columns, in his order; unknown ids (a list he deleted) fall away.
     static func chosen(_ stored: String, library: Library) -> [Column] {
         let ids = stored.isEmpty ? startingColumns : stored.split(separator: ",").map(String.init)
-        let byId = Dictionary(uniqueKeysWithValues: all(library).map { ($0.id, $0) })
+        let byId = Dictionary(all(library).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return ids.compactMap { byId[$0] }
     }
 

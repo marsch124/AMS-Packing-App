@@ -151,15 +151,42 @@ public struct Library: Equatable, Sendable {
     /// templates he has since deleted would lose every unticked line — one of his
     /// real trips would go from 88 lines to none. A line whose source template is
     /// gone has nothing left to be regenerated FROM: it stays, where it was.
+    ///
+    /// It matches the web app's `regenerateEntries` in what it keeps, with one fix
+    /// the web app never needed: a thing on the trip TWICE (Underwear from two
+    /// templates, going into two bags) made both fresh lines take the SAME old
+    /// line — one id twice on the trip, and the Mac app stopped (his E.6 crash,
+    /// 2026-09-28). Here each old line is taken at most once, the same thing in the
+    /// same bag first, so each keeps its own tick; and no id ever appears twice.
     public func regenerated(_ trip: TripEvent) -> [Item] {
         let known = Set(templates.map(\.id))
-        let fresh = regenerateEntries(trip, resolvedTemplates())
-        let kept = Set(fresh.map(\.id))
-        let orphans = trip.entries.filter { e in
-            guard !kept.contains(e.id), let source = e.sourceListId, !source.isEmpty else { return false }
-            return !known.contains(source)
+        let fresh = buildTotalEntries(trip, resolvedTemplates())
+        let prev = trip.entries
+        var taken = Set<Int>()
+        func match(_ f: Item) -> Item? {
+            guard let sid = f.sourceItemId, !sid.isEmpty else { return nil }
+            let same = prev.indices.filter { !taken.contains($0) && prev[$0].sourceItemId == sid }
+            let pick = same.first { normName(prev[$0].container) == normName(f.container) } ?? same.first
+            guard let i = pick else { return nil }
+            taken.insert(i)
+            return prev[i]
         }
-        return fresh + orphans
+        var out = fresh.map { match($0) ?? $0 }
+        let matched = Set(out.compactMap { $0.sourceItemId }.filter { !$0.isEmpty })
+        for (i, e) in prev.enumerated() where !taken.contains(i) {
+            if e.custom { out.append(e); continue }
+            // Ticked or edited, and nothing fresh covers it: kept, as in the web app.
+            if let sid = e.sourceItemId, !sid.isEmpty, !matched.contains(sid), e.checked || e.edited { out.append(e); continue }
+            // Its template is gone: nothing to regenerate it from, so it stays.
+            if let source = e.sourceListId, !source.isEmpty, !known.contains(source) { out.append(e) }
+        }
+        // Belt and braces: never two lines with one id.
+        var seen = Set<String>()
+        for n in out.indices where !seen.insert(out[n].id).inserted {
+            out[n].id = PackingEnv.makeId()
+            seen.insert(out[n].id)
+        }
+        return out
     }
 
     /// Tick or untick one line. The smallest write the app makes, and the most common.

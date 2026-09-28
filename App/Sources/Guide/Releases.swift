@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.39", date: "28 Sep 2026", title: "A crash fixed",
+                fixed: ["Changing a trip's dates, templates or laundry in Trip settings could close the app when the same thing was on the trip twice (from two templates, in two bags). Now each of those lines comes back once, with its own tick."]),
         Release(version: "0.38", date: "27 Sep 2026", title: "Share",
                 new: ["Share a trip (at the end of its list), a template or a grab list (at their top): a link that opens in the web app and in this one, a QR code when it is short enough, and a trip also as a file.",
                       "Settings \u{2192} Open a shared link: paste a link or code and see what it holds. A trip arrives as a new trip, unticked. A template arrives as a new one, or in place of yours with the same name; things you already have keep your details. A grab list waits on your shelf."]),

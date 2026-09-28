@@ -99,4 +99,37 @@ final class ChangeTripTests: XCTestCase {
         XCTAssertEqual(lib.trips[0].name, "Long weekend", "a refused change changes nothing")
         XCTAssertNil(lib.changeTrip(id: "nope") { _ in })
     }
+
+    /// His E.6 crash (28 Sep, Mac): a thing on the trip TWICE — from two templates,
+    /// into two bags — and the dates changed. Both fresh lines took the same old line,
+    /// the trip held one id twice, and the Mac app stopped. Each line must come back
+    /// once, with its own tick, and no id twice.
+    func testAThingOnTheTripTwiceKeepsBothLinesAndTheirTicks() {
+        var lib = Library()
+        lib.saveTemplate({ var l = newList(name: "Swim"); l.items = [newItem(name: "Underwear"), newItem(name: "Goggles")]; return l }())
+        lib.saveTemplate({ var l = newList(name: "Run"); l.items = [newItem(name: "Underwear"), newItem(name: "Shoes")]; return l }())
+        let swim = lib.templates.first { $0.name == "Swim" }!.id, run = lib.templates.first { $0.name == "Run" }!.id
+        let underwear = lib.items.first { $0.name == "Underwear" }!.id
+        // The same thing, a different bag on each template.
+        for (list, bag) in [(swim, "Swim bag"), (run, "Duffel bag")] {
+            if let m = lib.memberships.firstIndex(where: { $0.itemId == underwear && $0.templateId == list }) { lib.memberships[m].container = bag }
+        }
+        var draft = newEvent(name: "Swim and run", startDate: "2026-10-03", endDate: "2026-10-04")
+        draft.activities = [swim, run]; draft.mode = "quick"
+        let trip = lib.createTrip(draft)
+        let twice = lib.trips[0].entries.filter { $0.name == "Underwear" }
+        XCTAssertEqual(twice.count, 2, "the setup must put Underwear on the trip twice, in two bags")
+        guard twice.count == 2 else { return }
+        let duffel = twice.first { $0.container == "Duffel bag" }!.id
+        lib.setChecked(true, tripId: trip.id, entryId: duffel)
+
+        XCTAssertNotNil(lib.changeTrip(id: trip.id) { $0.endDate = "2026-10-06" })
+        let after = lib.trips[0].entries
+        XCTAssertEqual(Set(after.map(\.id)).count, after.count, "one id twice on the trip: the Mac app stops on this")
+        let lines = after.filter { $0.name == "Underwear" }
+        XCTAssertEqual(lines.count, 2, "a line was lost or doubled: \(lines.map(\.container))")
+        XCTAssertEqual(lines.first { $0.container == "Duffel bag" }?.checked, true, "the Duffel bag line lost its tick")
+        XCTAssertEqual(lines.first { $0.container == "Swim bag" }?.checked, false, "the tick moved to the other bag's line")
+        XCTAssertEqual(lines.first { $0.container == "Duffel bag" }?.id, duffel, "the ticked line did not keep its id")
+    }
 }

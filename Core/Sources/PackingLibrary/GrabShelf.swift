@@ -43,7 +43,7 @@ extension Library {
         let all = allGrabLists()
         let chosen = (meta[GRAB_HOME_META]?.arrayValue ?? []).compactMap { $0.stringValue }
         guard !chosen.isEmpty else { return Array(all.prefix(GRAB_HOME_SLOTS)) }
-        let byId = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+        let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return chosen.compactMap { byId[$0] }.prefix(GRAB_HOME_SLOTS).map { $0 }
     }
 

@@ -94,7 +94,8 @@ struct TripScreen: View {
         // Nothing left to decide: every line ticked or set aside. Set aside counts
         // as handled (his choice, 2026-09-23), so it leaves the total.
         let allPacked = p.total > 0 && p.done == p.total
-        let index: [String: Int] = Dictionary(uniqueKeysWithValues: trip.entries.enumerated().map { ($1.id, $0) })
+        // Never trap on a repeated id (his E.6 crash, 28 Sep): the first line keeps it.
+        let index: [String: Int] = Dictionary(trip.entries.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
