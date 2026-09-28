@@ -39,7 +39,10 @@ struct ReviewScreen: View {
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     Text("Anything you wished you'd had?").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
-                    HStack(spacing: 8) {
+                    // In the order it is done (his test F.3: "I have forgotten how to pick
+                    // where it goes"): the thing, the template it goes onto, then one
+                    // button that says where it will go.
+                    VStack(alignment: .leading, spacing: 10) {
                         TextField("e.g. Power bank", text: $missName)
                             .textFieldStyle(.plain)
                             .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
@@ -49,20 +52,23 @@ struct ReviewScreen: View {
                             .onSubmit { addMissed(target) }
                             .focused($typingMissed)
                             .accessibilityIdentifier("review-miss-input")
+                        if !lists.isEmpty {
+                            Pills(title: "Put it on which template, for next time?", options: lists.map { ($0.id, $0.name) } + [("", "No template")],
+                                  selected: [target], id: "review-miss-where", tint: AppSection.templates.color) { missWhere = $0 }
+                        }
+                        // Always in full colour (his rule for a main button); with nothing
+                        // typed it adds nothing.
                         Button { addMissed(target) } label: {
-                            Text("Add").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(missName).isEmpty ? Theme.muted : Color.white)
-                                .padding(.horizontal, 16).frame(minHeight: 44)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(missName).isEmpty ? Theme.line : AppSection.events.color))
+                            Text(target.isEmpty ? "Add it, on no template"
+                                 : "Add it to \(lists.first { $0.id == target }?.name ?? "the template")")
+                                .font(.system(size: 16, weight: .bold)).foregroundStyle(Color.white)
+                                .lineLimit(1).minimumScaleFactor(0.8)
+                                .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 44)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color))
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .disabled(jsTrim(missName).isEmpty)
                         .accessibilityIdentifier("review-miss-add")
-                    }
-                    if !lists.isEmpty {
-                        Pills(title: "Goes onto", options: lists.map { ($0.id, $0.name) } + [("", "No template")],
-                              selected: [target], id: "review-miss-where", tint: AppSection.templates.color) { missWhere = $0 }
                     }
                     ForEach(Array(missed.enumerated()), id: \.offset) { n, m in
                         HStack {

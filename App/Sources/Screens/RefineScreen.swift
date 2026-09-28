@@ -127,24 +127,49 @@ struct RefineDoor: View {
 
     var body: some View {
         let waiting = model.library.refineSuggestions().count
+        // His test F.6: "make it pop and make a symbol like constant improving, so
+        // that the eyes are drawn to it". Steps going up: better, trip after trip.
+        let violet = AppSection.templates.color
         Button { open = true } label: {
-            HStack(spacing: 8) {
-                Text("Refine").font(.system(size: 16, weight: .heavy)).foregroundStyle(AppSection.templates.color)
-                Text(waiting == 0 ? "nothing to trim yet" : "\(waiting) to look at")
-                    .font(.system(size: 15, weight: waiting == 0 ? .medium : .bold))
-                    .foregroundStyle(waiting == 0 ? Theme.muted : AppSection.care.color)
-                Spacer()
-                SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .frame(width: 20, height: 20).foregroundStyle(Theme.muted)
+            HStack(spacing: 12) {
+                ImprovingMark().frame(width: 28, height: 28)
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(violet))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Refine your templates").font(.system(size: 18, weight: .heavy)).foregroundStyle(violet)
+                    Text(waiting == 0 ? "Better with every trip. Review a few trips, and what they teach waits here."
+                         : "Your trip reviews found \(waiting) thing\(waiting == 1 ? "" : "s") to look at.")
+                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 4)
+                if waiting > 0 {
+                    Text("\(waiting)").font(.system(size: 16, weight: .heavy).monospacedDigit()).foregroundStyle(.white)
+                        .frame(minWidth: 30, minHeight: 30)
+                        .background(Capsule().fill(AppSection.care.color))
+                }
+                SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                    .frame(width: 20, height: 20).foregroundStyle(violet)
             }
-            .padding(.horizontal, 14).frame(minHeight: 44)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 14).fill(violet.opacity(0.12)))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(violet, lineWidth: 1.6))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("refine-open")
         .accessibilityValue(waiting == 0 ? "" : "\(waiting)")
         .sheet(isPresented: $open) { RefineScreen().environmentObject(model) }
+    }
+}
+
+/// Steps going up with an arrow at the top — getting better, trip after trip.
+/// Drawn, not stock art (his rule).
+struct ImprovingMark: View {
+    var body: some View {
+        SVGPath.path("M2.5 21.5H7V17H11.5V12.5H16V8H21.5M16 8V2.5M13.2 5.3L16 2.5L18.8 5.3")
+            .stroke(style: StrokeStyle(lineWidth: 2.1, lineCap: .round, lineJoin: .round))
+            .accessibilityHidden(true)
     }
 }

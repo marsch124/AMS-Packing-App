@@ -1059,6 +1059,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "guide-loop", timeout: 5), "How it works does not show the loop")
         shot(app, "loop-guide")
         for n in 0..<4 { XCTAssertNotNil(find(app, "loop-step-\(n)"), "the loop has no step \(n + 1)") }
+        // Each step says the tab where it is done (his test F.7).
+        XCTAssertTrue(find(app, "loop-step-0")?.label.contains("on Home") == true, "Plan does not say Home")
+        XCTAssertTrue(find(app, "loop-step-3")?.label.contains("on Templates") == true, "Refine does not say Templates")
+        // The Words chapter (F.7, I.2) — Kit among them.
+        XCTAssertNotNil(find(app, "guide-words"), "How it works has no Words")
+        XCTAssertTrue((0..<30).contains { self.words(app.staticTexts["word-\($0)"]) == "Kit" }, "Words does not say what Kit means")
         XCTAssertFalse((0..<4).contains { self.isHere(app, $0) }, "the guide's picture says You are here")
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
@@ -1857,6 +1863,9 @@ final class AMSPackingUITests: XCTestCase {
         line.tap()
         XCTAssertTrue(waitUntil { self.isOn(line) }, "the line was not marked didn't use")
         type("Tripod", into: app.textFields["review-miss-input"])
+        // The button says where it goes (his test F.3): the trip's first template.
+        XCTAssertTrue(words(app.buttons["review-miss-add"]).hasPrefix("Add it to "),
+                      "Add does not say where it goes: '\(words(app.buttons["review-miss-add"]))'")
         tap(app, id: "review-miss-add")
         XCTAssertTrue(waitUntil { self.find(app, "review-missed-0") != nil }, "the missed thing is not listed")
         hideKeyboard(app)
@@ -1993,8 +2002,10 @@ final class AMSPackingUITests: XCTestCase {
         // Its section headings, in capitals since 0.40 (his "much larger headings", H.13).
         let headings = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH 'template-group-'"))
         XCTAssertTrue(headings.firstMatch.waitForExistence(timeout: 5), "the list has no headings")
-        XCTAssertTrue(headings.allElementsBoundByIndex.contains { $0.label == "LIGHTS" },
-                      "the list does not read in its sections: \(headings.allElementsBoundByIndex.map(\.label))")
+        // words(): the iPhone reports a text's words as its label, the Mac as its value
+        // (0.40's first CI run read "" on the Mac).
+        XCTAssertTrue(headings.allElementsBoundByIndex.contains { self.words($0) == "LIGHTS" },
+                      "the list does not read in its sections: \(headings.allElementsBoundByIndex.map { self.words($0) })")
 
         let row = app.buttons["template-item-0"]
         XCTAssertTrue(row.waitForExistence(timeout: 5))

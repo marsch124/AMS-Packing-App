@@ -13,6 +13,23 @@ extension Library.LoopStep {
     /// The tint made readable as words on this screen (his "bad text colour", 2026-09-26).
     func words(_ scheme: ColorScheme) -> Color { Color(hexString: readableHex(hex, dark: scheme == .dark)) }
 
+    /// The tab where this step is done — its mark rides on the strip (his F.7:
+    /// "symbols that show where create, pack, review and refine are made").
+    var tab: AppSection {
+        switch self {
+        case .plan: return .home
+        case .pack, .review: return .events
+        case .refine: return .templates
+        }
+    }
+    var tabName: String {
+        switch self {
+        case .plan: return "Home"
+        case .pack, .review: return "Trips"
+        case .refine: return "Templates"
+        }
+    }
+
     /// The few words inside the picture's box.
     var short: String {
         switch self {
@@ -73,6 +90,10 @@ struct LoopPicture: View {
                 .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 4) {
+                SectionMark(section: step.tab, size: 15, weight: 1.8).foregroundStyle(step.tab.color)
+                Text("on \(step.tabName)").font(.system(size: 13, weight: .bold)).foregroundStyle(step.tab.color)
+            }
             if on {
                 Text("You are here")
                     .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
@@ -88,7 +109,7 @@ struct LoopPicture: View {
         // "You are here" is in the label: the Mac does not pass on the value of a
         // box that is not a control (its test found that, 2026-09-27).
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(step.name): \(step.short)" + (on ? ". You are here" : ""))
+        .accessibilityLabel("\(step.name): \(step.short), on \(step.tabName)" + (on ? ". You are here" : ""))
         .accessibilityIdentifier("loop-step-\(step.rawValue)")
     }
 
@@ -167,11 +188,14 @@ struct LoopDoor: View {
                             .frame(width: 14, height: 24).foregroundStyle(Theme.muted)
                     }
                     let on = step == here
-                    Text(step.name)
-                        .font(.system(size: 14, weight: on ? .heavy : .semibold))
+                    HStack(spacing: 4) {
+                        SectionMark(section: step.tab, size: 13, weight: 1.9)
+                        Text(step.name)
+                            .font(.system(size: 14, weight: on ? .heavy : .semibold))
+                            .lineLimit(1).fixedSize()
+                    }
                         .foregroundStyle(on ? Color.white : step.words(scheme))
-                        .lineLimit(1).fixedSize()
-                        .padding(.horizontal, 10).frame(minHeight: 28)
+                        .padding(.horizontal, 8).frame(minHeight: 28)
                         // A solid card under the others, so they stand out on the
                         // green of an all-packed trip too (night mode, 2026-09-27).
                         .background(Capsule().fill(on ? step.tint : Theme.card))

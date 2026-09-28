@@ -45,6 +45,7 @@
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
 		BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5604CA6875D255BD93251 /* CareScreen.swift */; };
 		C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0A839566CDE77B068F47C5 /* BulkChange.swift */; };
+		C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A986BF2DF0FA5E39E42559C /* Words.swift */; };
 		C71A0323F1D4E4CFC1A8B0F2 /* CareCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */; };
 		C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */; };
 		CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5987DFEB47FC294A078D4D /* NewList.swift */; };
@@ -98,6 +99,7 @@
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
 		56F5604CA6875D255BD93251 /* CareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareScreen.swift; sourceTree = "<group>"; };
 		5844FD1A40A106FF0878B093 /* TableColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumns.swift; sourceTree = "<group>"; };
+		5A986BF2DF0FA5E39E42559C /* Words.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Words.swift; sourceTree = "<group>"; };
 		5D88FA9EA0BC448F857072B9 /* WorldMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldMap.swift; sourceTree = "<group>"; };
 		6C33289BF160D459176D7669 /* SmallDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallDelete.swift; sourceTree = "<group>"; };
 		6CC01537D593379C8EF1B84F /* RefineScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineScreen.swift; sourceTree = "<group>"; };
@@ -174,6 +176,7 @@
 			children = (
 				CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */,
 				2F6B09947C62AF9C62758EFD /* Releases.swift */,
+				5A986BF2DF0FA5E39E42559C /* Words.swift */,
 			);
 			path = Guide;
 			sourceTree = "<group>";
@@ -435,6 +438,7 @@
 				B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */,
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
 				811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */,
+				C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */,
 				DAE1DC1E5B87843793C1371E /* WorldMap.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -573,7 +577,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.40;
+				MARKETING_VERSION = 0.41;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -660,7 +664,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.40;
+				MARKETING_VERSION = 0.41;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -149,8 +149,8 @@ struct HowItWorksScreen: View {
             "Type a thing at the bottom to add it to this trip only.",
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and templates stay."]),
         Topic(section: .events, title: "After a trip", lines: [
-            "Review: tap what you did not use, add what you missed, Save.",
-            "Under a trip's name: where it stands in the loop, Plan · Pack · Review · Refine. Tap it for the whole picture.",
+            "Review: tap what you did not use; type what you missed, pick the template it goes onto, and Add it; then Save.",
+            "Under a trip's name: where it stands in the loop, Plan · Pack · Review · Refine, each with the mark of the tab where it is done. Tap it for the whole picture.",
             "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time."]),
         Topic(section: .events, title: "Trips", lines: [
             "Now, Coming up and Done — Now is always there, even when no trip is under way. Each trip says Planned, Packing or Ready.",
@@ -161,7 +161,7 @@ struct HowItWorksScreen: View {
             "+ New makes a template and asks on which shelf it should live. Open one to rename it, add things, or take one off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
             "Delete template asks first. Your things stay.",
             "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
-            "Refine: after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
+            "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [
             "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first).",
             "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
@@ -187,6 +187,7 @@ struct HowItWorksScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
                     LoopGuideCard()
+                    WordsCard()
                     ForEach(Array(HowItWorksScreen.topics.enumerated()), id: \.offset) { n, t in
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 10) {

@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.41", date: "28 Sep 2026", title: "Your test comments, part 2",
+                new: ["How it works has a Words chapter: every word the app uses, said once — template, shelf, list, kit, the loop, review, refine and more."],
+                changed: ["The loop strip carries the mark of the tab where each step is done: Plan on Home, Pack and Review on Trips, Refine on Templates. The picture says so too.",
+                          "Refine on the Templates tab stands out: steps going up, in violet, with how many things wait.",
+                          "Review: type what you missed, pick the template it goes onto, then Add it to that template — in that order, and the button says where."]),
         Release(version: "0.40", date: "28 Sep 2026", title: "Your test comments, part 1",
                 new: ["Trip settings has the trip's place. Change it there and the weather starts again from the new place.",
                       "The date grid has Cancel: it closes and puts the dates back.",
