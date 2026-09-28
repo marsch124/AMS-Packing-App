@@ -15,7 +15,8 @@ struct EventsScreen: View {
     var goToActions: () -> Void = {}
 
     private static let piles: [(Library.TripWhen, String)] =
-        [(.now, "Now"), (.comingUp, "Coming up"), (.been, "Been")]
+        // "Been" was not a good word (his test G.1) — he offered "done".
+        [(.now, "Now"), (.comingUp, "Coming up"), (.been, "Done")]
 
     var body: some View {
         let cards = model.library.tripCards(today: Today.local)
@@ -64,10 +65,26 @@ struct EventsScreen: View {
                     // that still need him are not pushed down the screen by history.
                     let mine = cards.filter { $0.when == pile && !($0.state == .reviewed && pile == .been) }
                     let done = cards.filter { $0.when == pile && $0.state == .reviewed && pile == .been }
+                    // NOW is always there, empty or not, so the three piles read as one
+                    // idea — and it is in colour: it is what matters today (his test G.1).
+                    if !mine.isEmpty || !done.isEmpty || (pile == .now && !cards.isEmpty) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            SectionTitle(title: title, tint: pile == .now ? AppSection.events.color : Theme.ink,
+                                         id: "events-pile-\(pile.rawValue)")
+                            Text("\(mine.count + done.count)")
+                                .font(.system(size: 18, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                                .accessibilityIdentifier("events-pile-\(pile.rawValue)-count")
+                        }
+                    }
+                    if pile == .now && mine.isEmpty && !cards.isEmpty {
+                        Text("No trip under way today.")
+                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .overlay(RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppSection.events.color.opacity(0.6), style: StrokeStyle(lineWidth: 1.4, dash: [5, 4])))
+                            .accessibilityIdentifier("events-now-empty")
+                    }
                     if !mine.isEmpty {
-                        Text(title).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
-                            .padding(.top, 10)
-                            .accessibilityIdentifier("events-pile-\(pile.rawValue)")
                         ForEach(mine, id: \.id) { card in
                             Button { openId = card.id } label: { TripRow(card: card) }
                                 .buttonStyle(.plain)
@@ -76,16 +93,23 @@ struct EventsScreen: View {
                     }
                     if !done.isEmpty {
                         Button { showReviewed.toggle() } label: {
-                            HStack(spacing: 6) {
-                                Text("Reviewed").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
-                                Text("\(done.count)")
-                                    .font(.system(size: 15, weight: .heavy).monospacedDigit())
-                                    .foregroundStyle(Theme.muted)
-                                Text(showReviewed ? "▾" : "▸").font(.system(size: 13, weight: .black))
+                            // A big arrow in a circle (his test G.2: the fold mark was "very,
+                            // very, very small").
+                            HStack(spacing: 10) {
+                                SVGPath.path("M9 6l6 6-6 6")
+                                    .stroke(style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+                                    .frame(width: 22, height: 22)
+                                    .rotationEffect(.degrees(showReviewed ? 90 : 0))
                                     .foregroundStyle(AppSection.events.color)
+                                    .frame(width: 38, height: 38)
+                                    .background(Circle().fill(AppSection.events.color.opacity(0.14)))
+                                Text("Reviewed").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                                Text("\(done.count)")
+                                    .font(.system(size: 17, weight: .heavy).monospacedDigit())
+                                    .foregroundStyle(Theme.muted)
                                 Spacer()
                             }
-                            .padding(.top, 10).frame(minHeight: 34)
+                            .padding(.top, 6).frame(minHeight: 44)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()

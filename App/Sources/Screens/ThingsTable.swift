@@ -283,7 +283,7 @@ struct ThingsTable: View {
                     .accessibilityIdentifier("table-count")
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("table-done")
             }

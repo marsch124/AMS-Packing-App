@@ -123,10 +123,30 @@ final class LibraryModel: ObservableObject {
         defer { lookingUpWeather.remove(tripId) }
         do {
             let spot = try await sky.place(named: name)
+            // The MAP needs only the place, so it is kept the moment it is found —
+            // even when no forecast exists for the dates (his test G.6, 2026-09-28: a
+            // trip already over, with no forecast, never reached the map).
+            keepPlace(tripId: tripId, name: name, spot: spot)
             let days = try await sky.forecast(at: spot, from: trip.startDate, nights: trip.nights, today: Today.local)
             change { _ = $0.setWeather(tripId: tripId, place: name, lat: spot.lat, lon: spot.lon, snapshot: days) }
         } catch {
             weatherTrouble[tripId] = error.localizedDescription
+        }
+    }
+
+    /// Put a trip on the map without asking for weather: its place is looked up
+    /// and kept. For a new place typed in Trip settings when no forecast can exist.
+    func placeOnMap(tripId: String) async {
+        guard let trip = library.trip(tripId) else { return }
+        let name = jsTrim(trip.destination)
+        guard !name.isEmpty, let spot = try? await sky.place(named: name) else { return }
+        keepPlace(tripId: tripId, name: name, spot: spot)
+    }
+
+    private func keepPlace(tripId: String, name: String, spot: Place) {
+        change { lib in
+            if let n = lib.trips.firstIndex(where: { $0.id == tripId }) { lib.trips[n].destination = name }
+            _ = lib.setPlace(tripId: tripId, lat: spot.lat, lon: spot.lon, label: spot.name)
         }
     }
 

@@ -140,8 +140,9 @@ struct CareScreen: View {
                         if section.fold { if open.contains(section.key) { open.remove(section.key) } else { open.insert(section.key) } }
                     } label: {
                         HStack {
-                            Text(section.label).font(.system(size: 15, weight: .heavy)).foregroundStyle(CareScreen.tone(section.state))
-                            Text("\(section.rows.count)").font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                            Text(section.label.uppercased()).font(.system(size: 18, weight: .heavy)).kerning(0.8)
+                                .foregroundStyle(CareScreen.tone(section.state))
+                            Text("\(section.rows.count)").font(.system(size: 18, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
                             Spacer()
                             if section.fold {
                                 SVGPath.path(shown ? "M6 9l6 6 6-6" : "M9 6l6 6-6 6")

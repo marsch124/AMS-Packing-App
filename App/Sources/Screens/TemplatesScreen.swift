@@ -75,10 +75,10 @@ struct TemplatesScreen: View {
                     // His own code beside the name, as the web app has it:
                     // "GA · GOAL ACTIVITY".
                     Text(TemplatesScreen.shelfHeading(shelf))
-                        .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(Theme.muted)
-                        .kerning(0.6)
-                        .padding(.top, 16)
+                        .font(.system(size: 18, weight: .heavy))       // "Much larger headings" (H.13)
+                        .foregroundStyle(Theme.ink)
+                        .kerning(0.8)
+                        .padding(.top, 20)
                         .accessibilityIdentifier("templates-shelf-\(shelf.id)")
                     // Two across: more of his lists at a glance, as the web app shows them.
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
@@ -186,6 +186,10 @@ struct TemplateDetail: View {
     @State private var renaming: String?
     @FocusState private var writingName: Bool
     @State private var askingToDelete = false
+    /// The row whose ✕ was pressed — it asks first (his test H.5).
+    @State private var takingOff: TakingOff?
+
+    struct TakingOff: Equatable { let memId: String; let name: String }
 
     var body: some View {
         let list = model.library.resolvedTemplate(id: listId) ?? newList()
@@ -229,7 +233,7 @@ struct TemplateDetail: View {
                     ShareOffer(title: "Share \u{201C}\(list.name)\u{201D}", link: model.library.shareLink(templateId: list.id))
                 }
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain)
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true))
                     .focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(AppSection.templates.color)
@@ -238,11 +242,12 @@ struct TemplateDetail: View {
             .padding(16)
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
-                    ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
-                        Text(group.title)
-                            .font(.system(size: 15, weight: .heavy))
+                    ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
+                        Text(group.title.uppercased())
+                            .font(.system(size: 18, weight: .heavy)).kerning(0.8)   // "Much larger headings" (H.13)
                             .foregroundStyle(group.colour ?? AppSection.templates.color)
-                            .padding(.top, 12)
+                            .padding(.top, 16)
+                            .accessibilityIdentifier("template-group-\(g)")
                         ForEach(group.items, id: \.memId) { item in
                             let n = index[item.memId ?? ""] ?? 0
                             HStack(spacing: 4) {
@@ -264,7 +269,7 @@ struct TemplateDetail: View {
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("template-item-\(n)")
                                 Button {
-                                    if let mid = item.memId { model.change { _ = $0.removeFromTemplate(templateId: listId, memId: mid) } }
+                                    if let mid = item.memId { withAnimation(.easeOut(duration: 0.15)) { takingOff = TakingOff(memId: mid, name: item.name) } }
                                 } label: {
                                     SVGPath.path("M6 6L18 18M18 6L6 18")
                                         .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
@@ -341,6 +346,7 @@ struct TemplateDetail: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
+        .overlay { if let t = takingOff { takeOffCard(t, list: list) } }
         .sheet(item: Binding(get: { editingRow.map { Editing(id: $0) } }, set: { editingRow = $0?.id })) { e in
             RowEditor(templateId: listId, memId: e.id).environmentObject(model)
         }
@@ -363,6 +369,56 @@ struct TemplateDetail: View {
         model.change { _ = $0.renameTemplate(id: listId, to: wanted) }
         renaming = nil
         writingName = false
+    }
+
+    /// "Take it off?" — in the middle of the screen, the rest dimmed: his ask (test
+    /// H.5), "a confirmation and cancel button. Make it visually pleasing". The thing
+    /// itself is never touched: it stays in Your things and on its other templates.
+    private func takeOffCard(_ t: TakingOff, list: PackList) -> some View {
+        ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea()
+                .onTapGesture { takingOff = nil }
+            VStack(spacing: 14) {
+                SVGPath.path("M6 6L18 18M18 6L6 18")
+                    .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                    .frame(width: 22, height: 22)
+                    .foregroundStyle(AppSection.actions.color)
+                    .frame(width: 48, height: 48)
+                    .background(Circle().fill(AppSection.actions.color.opacity(0.14)))
+                Text("Take \u{201C}\(t.name)\u{201D} off \u{201C}\(list.name)\u{201D}?")
+                    .font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("template-remove-question")
+                Text("It stays in Your things and on your other templates.")
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 12) {
+                    Button { takingOff = nil } label: {
+                        Text("Keep it")
+                    }
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.ink, filled: false, stretch: true)).focusEffectDisabled()
+                    .accessibilityIdentifier("template-remove-no")
+                    Button {
+                        model.change { _ = $0.removeFromTemplate(templateId: listId, memId: t.memId) }
+                        takingOff = nil
+                    } label: {
+                        Text("Take it off")
+                    }
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.actions.color, filled: true, stretch: true)).focusEffectDisabled()
+                    .accessibilityIdentifier("template-remove-yes")
+                }
+                .padding(.top, 4)
+            }
+            .padding(22)
+            .frame(maxWidth: 360)
+            .background(RoundedRectangle(cornerRadius: 18).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.line, lineWidth: 1))
+            .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
+            .padding(24)
+        }
+        .transition(.opacity)
     }
 
     private func add() {
@@ -397,18 +453,19 @@ struct RowEditor: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("row-cancel")
                 Spacer()
                 Button("Save") { save() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.templates.color)
                     .accessibilityIdentifier("row-save")
             }
             .padding(16)
             KeyboardAwayScroll {
-                VStack(alignment: .leading, spacing: 14) {
+                // Headings 20 apart, each field 4 under its own (his screenshot, 2026-09-28).
+                VStack(alignment: .leading, spacing: 20) {
                     Text(thing.name).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
                     Text("On \(list.name)").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                     Pills(title: "Bag on this template", options: [("", "Same as the thing (\(thing.container))")]
@@ -421,6 +478,7 @@ struct RowEditor: View {
                         Pills(title: "Section of this template", options: [("", "No section")] + list.sections.map { ($0.id, $0.name) },
                               selected: [section], id: "row-section", tint: AppSection.templates.color) { section = $0 }
                     }
+                    VStack(alignment: .leading, spacing: 4) {
                     Text("A new section").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
                     HStack(spacing: 8) {
                         field($newSectionName, "e.g. Lights", "row-section-new")
@@ -435,10 +493,15 @@ struct RowEditor: View {
                         .disabled(jsTrim(newSectionName).isEmpty)
                         .accessibilityIdentifier("row-section-add")
                     }
-                    Text("How many").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
-                    field($qty, "e.g. 2, or 2 pairs", "row-qty")
-                    Text("Note").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
-                    field($note, "e.g. with the red filter", "row-note")
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("How many").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                        field($qty, "e.g. 2, or 2 pairs", "row-qty")
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Note").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                        field($note, "e.g. with the red filter", "row-note")
+                    }
                     Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
                 }

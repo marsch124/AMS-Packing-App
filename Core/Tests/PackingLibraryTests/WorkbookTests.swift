@@ -32,6 +32,7 @@ final class WorkbookTests: XCTestCase {
         trip.nights = 7
         trip.laundry = true
         var socks = newItem(name: "Socks"); socks.perNight = true; socks.container = "Duffel bag"; socks.phase = "week"
+        socks.storage = "Bedroom drawer"
         socks.checked = true
         var gels = newItem(name: "Gels <mango>"); gels.qty = "3"; gels.container = "Day pack"; gels.phase = "week"
         gels.note = "Two for the run & one spare"
@@ -57,7 +58,10 @@ final class WorkbookTests: XCTestCase {
             XCTAssertTrue(list.contains(part), "missing \(part)")
         }
         let sheet = try run("/usr/bin/unzip", ["-p", file.path, "xl/worksheets/sheet1.xml"]).out
-        XCTAssertTrue(sheet.contains(">When<") && sheet.contains(">Bag<") && sheet.contains(">How many<"), "no header row")
+        XCTAssertTrue(sheet.contains(">When<") && sheet.contains(">How many<"), "no header row")
+        // D.23: where it comes from at home, and the bag it goes into.
+        XCTAssertTrue(sheet.contains(">From where<") && sheet.contains(">Into<"), "no From where / Into columns")
+        XCTAssertFalse(sheet.contains(">Bag<"), "the bag column still says Bag, not Into")
         XCTAssertTrue(sheet.contains("state=\"frozen\""), "the header row does not stay in place")
         XCTAssertTrue(sheet.contains("Gels &lt;mango&gt;"), "his words are not escaped")
         XCTAssertTrue(sheet.contains("Two for the run &amp; one spare"))
@@ -71,6 +75,8 @@ final class WorkbookTests: XCTestCase {
         XCTAssertEqual(rows.count, 4, "a header and three lines")
         XCTAssertTrue(rows[1].contains("Socks") && rows[1].contains("<v>4</v>") && rows[1].contains(">yes<"),
                       "per night is not capped by the laundry, or the tick is lost: \(rows[1])")
+        XCTAssertTrue(rows[1].contains(">Bedroom drawer<") && rows[1].contains(">Duffel bag<"),
+                      "a line does not say where it comes from and what it goes into: \(rows[1])")
         XCTAssertTrue(rows[2].contains("Gels") && rows[2].contains("<v>3</v>"), "the order is not the trip's: \(rows)")
         XCTAssertTrue(rows[3].contains("Swim cap") && rows[3].contains(">set aside<"))
 

@@ -24,7 +24,7 @@ struct WorldMapScreen: View {
                 Text("Where you have been").font(.system(size: 22, weight: .heavy)).foregroundStyle(AppSection.events.color)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
                     .accessibilityIdentifier("map-done")
             }
@@ -41,7 +41,7 @@ struct WorldMapScreen: View {
                                 .accessibilityIdentifier("map-most")
                         }
                         if pins.isEmpty {
-                            Text("No places yet. A trip gets its place on the map when you look up its weather.")
+                            Text("No places yet. A trip joins the map when it has a place: type it in Trip settings (the pen) or on its weather line.")
                                 .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityIdentifier("map-empty")
@@ -124,7 +124,7 @@ struct WorldMapScreen: View {
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("map-find")
-            Text("Trips that name a place but never looked up their weather.")
+            Text("Trips that name a place but are not on the map yet.")
                 .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
             if !findNote.isEmpty {
                 Text(findNote).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)

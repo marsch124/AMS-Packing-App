@@ -23,7 +23,7 @@ struct KitDashboard: View {
             }
 
             if !stats.heaviest.isEmpty {
-                section("The heavy end", id: "kit-heavy-heading")
+                section("Heaviest things", id: "kit-heavy-heading")
                 let top = stats.heaviest.first?.grams ?? 1
                 ForEach(Array(stats.heaviest.prefix(6).enumerated()), id: \.offset) { n, thing in
                     Button { look(thing.name) } label: {
@@ -93,9 +93,7 @@ struct KitDashboard: View {
     }
 
     private func section(_ title: String, id: String) -> some View {
-        Text(title).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
-            .padding(.top, 6)
-            .accessibilityIdentifier(id)
+        SectionTitle(title: title, id: id)
     }
 
     /// One big number with its word under it.

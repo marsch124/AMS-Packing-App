@@ -16,6 +16,8 @@ struct DateRangePicker: View {
     /// Between the two taps: the first day is set, the last is not yet.
     @State private var waitingForEnd = false
     @State private var width: CGFloat = 0
+    /// The dates as they were when the grid opened — Cancel puts them back.
+    @State private var before: (Date, Date)?
 
     private static let cal: Calendar = {
         var c = Calendar(identifier: .gregorian)
@@ -30,6 +32,7 @@ struct DateRangePicker: View {
             field
             if open { grid }
         }
+        .onAppear { if open && before == nil { before = (start, end) } }
     }
 
     // MARK: The field
@@ -37,7 +40,7 @@ struct DateRangePicker: View {
     private var field: some View {
         Button {
             open.toggle()
-            if open { month = "" }          // opens on the month of the first day
+            if open { month = ""; before = (start, end) }   // opens on the month of the first day
         } label: {
             HStack(spacing: 12) {
                 SectionMark(section: .events, size: 24, weight: 1.8)
@@ -86,6 +89,14 @@ struct DateRangePicker: View {
             HStack(alignment: .top, spacing: 24) {
                 monthView(first, index: 0, showPrev: true, showNext: !two)
                 if two { monthView(DateRangePicker.shift(first, by: 1), index: 1, showPrev: false, showNext: true) }
+            }
+            // A way out without picking (his test C.2: "I do not come out of this date"):
+            // the dates go back to what they were and the grid closes.
+            HStack {
+                Spacer()
+                Button("Cancel") { cancel() }
+                    .buttonStyle(HeaderButtonStyle(tint: tint, filled: false)).focusEffectDisabled()
+                    .accessibilityIdentifier("range-cancel")
             }
         }
         .padding(12)
@@ -157,6 +168,12 @@ struct DateRangePicker: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("range-day-\(key)")
         .accessibilityAddTraits(isStart || isEnd ? .isSelected : [])
+    }
+
+    private func cancel() {
+        if let b = before { start = b.0; end = b.1 }
+        waitingForEnd = false
+        open = false
     }
 
     /// First tap: the first day. Second tap: the last day — or, if it is before the

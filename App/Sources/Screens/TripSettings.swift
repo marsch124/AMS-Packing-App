@@ -20,6 +20,8 @@ struct TripSettingsScreen: View {
     @State private var start = Date()
     @State private var end = Date()
     @State private var quick = false
+    /// Where the trip goes — his test G.6: "the place is not shown in the edit view".
+    @State private var place = ""
     @State private var laundry = false
     @State private var activities: Set<String> = []
     @State private var contexts: Set<String> = []
@@ -38,7 +40,7 @@ struct TripSettingsScreen: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("tripset-cancel")
                 Spacer()
@@ -56,6 +58,16 @@ struct TripSettingsScreen: View {
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .accessibilityIdentifier("tripset-name")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Place").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                        TextField("Where the trip goes, e.g. Kalmar", text: $place)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 12).frame(minHeight: 46)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                            .accessibilityIdentifier("tripset-place")
+                    }
                     HStack(spacing: 12) {
                         Toggle(isOn: $hasDates) {
                             Text("Dates").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -69,19 +81,21 @@ struct TripSettingsScreen: View {
                         .fixedSize()
                         .accessibilityIdentifier("tripset-quick")
                     }
+                    if quick { QuickNote(id: "tripset-quick-note") }
                     if hasDates { DateRangePicker(start: $start, end: $end, tint: AppSection.events.color, open: false) }
                     ForEach(choices, id: \.group.id) { choice in
                         Pills(title: groupHeading(choice.group.id, choice.group.label),
                               options: choice.lists.map { ($0.id, $0.name) },
                               selected: activities, id: "tripset-activity", tint: AppSection.templates.color,
-                              startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0) { id in
+                              startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
+                              tones: choice.group.id == "WET" ? WorkoutTone.of : nil) { id in
                             if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
                             if !stillNeeded.isEmpty { stillNeeded = needs() }
                         }
-                    }
-                    if anyWorkout {
-                        Pills(title: "Context", options: CONTEXTS.map { ($0, $0) }, selected: contexts, id: "tripset-context") { id in
-                            if contexts.contains(id) { contexts.remove(id) } else { contexts.insert(id) }
+                        if choice.group.id == "WET" && anyWorkout {
+                            ContextPills(selected: contexts, id: "tripset-context") { id in
+                                if contexts.contains(id) { contexts.remove(id) } else { contexts.insert(id) }
+                            }
                         }
                     }
                     Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: [transport], id: "tripset-transport") { transport = $0 }
@@ -206,6 +220,7 @@ struct TripSettingsScreen: View {
         guard !loaded, let t = model.library.trips.first(where: { $0.id == tripId }) else { return }
         loaded = true
         name = t.name
+        place = t.destination
         hasDates = !t.startDate.isEmpty
         start = DateRangePicker.date(t.startDate) ?? Date()
         end = DateRangePicker.date(t.endDate.isEmpty ? t.startDate : t.endDate) ?? start
@@ -232,11 +247,14 @@ struct TripSettingsScreen: View {
         let n = name, dated = hasDates, s = start, e = end, q = quick
         let acts = flat.map(\.id).filter { activities.contains($0) }
         let ctx = CONTEXTS.filter { contexts.contains($0) }
-        let tr = transport, se = season, ca = catering, la = laundry
+        let tr = transport, se = season, ca = catering, la = laundry, pl = jsTrim(place)
         var result: Library.TripRebuilt?
         model.change { lib in
             result = lib.changeTrip(id: tripId) { t in
                 t.name = n
+                // A NEW place: the old weather and map point were for somewhere else,
+                // so they go; the weather line looks the new place up.
+                if pl != jsTrim(t.destination) { t.destination = pl; t.weather = nil; t.geo = nil }
                 t.mode = q ? "quick" : "trip"
                 t.activities = acts
                 t.contexts = ctx
@@ -253,7 +271,7 @@ struct TripSettingsScreen: View {
     }
 }
 
-/// The gear on a trip: opens its settings, and owns its sheet (the trip already
+/// The pen on a trip: opens its settings, and owns its sheet (the trip already
 /// has one for the review).
 struct TripSettingsDoor: View {
     let tripId: String
@@ -264,7 +282,8 @@ struct TripSettingsDoor: View {
 
     var body: some View {
         Button { open = true } label: {
-            SectionMark(section: .settings, size: 22, weight: 1.9)
+            // A pen, not a gear (his tests C.3 and D.1): this CHANGES the trip.
+            PenMark().frame(width: 24, height: 24)
                 .foregroundStyle(AppSection.events.color)
                 .frame(width: 36, height: 34).contentShape(Rectangle())
         }

@@ -73,14 +73,7 @@ struct TripExcelButton: View {
                 status = "Choosing where to save…"
                 exporting = true
             } label: {
-                HStack(spacing: 10) {
-                    SheetMark().frame(width: 22, height: 22)
-                    Text("Save as Excel").font(.system(size: 17, weight: .bold))
-                }
-                .foregroundStyle(AppSection.events.color)
-                .frame(maxWidth: .infinity, minHeight: 48)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.4))
-                .contentShape(Rectangle())
+                WideButtonLabel(title: "Save as Excel", tint: AppSection.events.color) { SheetMark() }
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("trip-excel")

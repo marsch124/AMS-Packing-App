@@ -112,6 +112,17 @@ struct WeatherCard: View {
                 Task { await model.lookUpWeather(tripId: tripId) }
             }
         }
+        // A new place typed in Trip settings (0.40): the field follows it, and the
+        // weather is looked up again when a forecast can exist.
+        .onChange(of: trip?.destination ?? "") { _, now in
+            place = now
+            guard !jsTrim(now).isEmpty, model.library.weather(tripId: tripId) == nil else { return }
+            if model.forecastWorthFetching(tripId: tripId) {
+                Task { await model.lookUpWeather(tripId: tripId) }
+            } else if model.library.trip(tripId)?.geo == nil {
+                Task { await model.placeOnMap(tripId: tripId) }     // on the map all the same (G.6)
+            }
+        }
     }
 
     private func look() {

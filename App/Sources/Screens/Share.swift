@@ -57,22 +57,34 @@ struct ShareOffer: Identifiable {
 struct ShareDoor: View {
     let id: String
     var tint: Color = AppSection.events.color
+    /// Wide = the big framed button at the foot of a trip, beside Save as Excel
+    /// (his test D.22); otherwise the outlined button in a sheet's top bar.
+    var wide = false
+    /// Only the drawn mark — for a top bar with no room for the word (a grab list).
+    var markOnly = false
     let make: () -> ShareOffer
     @State private var offer: ShareOffer?
 
     var body: some View {
-        Button { offer = make() } label: {
-            HStack(spacing: 6) {
-                SVGPath.path("M12 15V4.5M8 8.5l4-4 4 4M6.5 11.5H5.5v8h13v-8h-1")
-                    .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round, lineJoin: .round))
-                    .frame(width: 20, height: 20)
-                Text("Share").font(.system(size: 17, weight: .bold))
+        Group {
+            if wide {
+                Button { offer = make() } label: {
+                    WideButtonLabel(title: "Share", tint: tint) { ShareMark() }
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button { offer = make() } label: {
+                    HStack(spacing: 6) {
+                        ShareMark().frame(width: 18, height: 18)
+                        if !markOnly { Text("Share") }
+                    }
+                }
+                .buttonStyle(HeaderButtonStyle(tint: tint, filled: false))
             }
-            .foregroundStyle(tint)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain).focusEffectDisabled()
+        .focusEffectDisabled()
         .accessibilityIdentifier(id)
+        .accessibilityLabel("Share")
         .sheet(item: $offer) { ShareScreen(offer: $0) }
     }
 }
@@ -89,7 +101,7 @@ struct ShareScreen: View {
                 Text(offer.title).font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
                     .accessibilityIdentifier("share-done")
             }
@@ -193,7 +205,7 @@ struct OpenSharedScreen: View {
                 Text("Open a shared link").font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
                     .accessibilityIdentifier("shared-done")
             }

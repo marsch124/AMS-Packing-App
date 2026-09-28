@@ -177,11 +177,8 @@ struct LoopDoor: View {
                         .background(Capsule().fill(on ? step.tint : Theme.card))
                         .overlay(Capsule().stroke(step.tint.opacity(on ? 0 : 0.7), lineWidth: 1.2))
                 }
-                // Round again: Refine feeds the next Plan.
-                SVGPath.path("M19 12a7 7 0 1 1-2.05-4.95M19 4.5v3.5h-3.5")
-                    .stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                    .frame(width: 22, height: 24).foregroundStyle(Theme.muted)
-                    .padding(.leading, 2)
+                // No "round again" arrow after Refine: it read as a reload button (his
+                // screenshot, 2026-09-28). The loop itself is in the picture a tap opens.
             }
             .contentShape(Rectangle())
         }
@@ -204,7 +201,7 @@ struct LoopScreen: View {
                 Text("The loop").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
                     .accessibilityIdentifier("loop-done")
             }

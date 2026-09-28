@@ -164,6 +164,11 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
+        // NOW is always there, even with nothing under way (his test G.1); the sample
+        // trip is coming up.
+        XCTAssertTrue(app.staticTexts["events-pile-now"].waitForExistence(timeout: 5), "no Now pile")
+        XCTAssertTrue(app.staticTexts["events-now-empty"].exists, "an empty Now does not say so")
+        XCTAssertEqual(words(app.staticTexts["events-pile-now-count"]), "0")
         let row = app.buttons["trip-row-0"]
         XCTAssertTrue(row.waitForExistence(timeout: 5), "no trip is listed")
         row.tap()
@@ -1124,6 +1129,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(name.value as? String, "Weekend in the hills", "the settings do not start from the trip")
         replace("Hills and lake", in: name)
         name.typeText("\n")                     // Return puts the keyboard away (no swipe near a sheet)
+        // The place is here too (his test G.6).
+        let place = app.textFields["tripset-place"]
+        XCTAssertTrue(place.waitForExistence(timeout: 5), "Trip settings has no place")
+        type("Lakeside", into: place)
+        place.typeText("\n")
         // Numbered as on Create new trip: Hiking 0 (already on), Swim 1.
         XCTAssertTrue(isOn(app.buttons["tripset-activity-0"]), "the trip's own list is not shown as on")
         let swim = app.buttons["tripset-activity-1"]
@@ -1143,6 +1153,8 @@ final class AMSPackingUITests: XCTestCase {
         // No name (only spaces): refused, said under Save, the sheet stays; Cancel keeps the trip.
         tap(app, id: "trip-settings")
         XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.textFields["tripset-place"].value as? String) == "Lakeside" },
+                      "the place was not kept: '\(app.textFields["tripset-place"].value ?? "")'")
         replace("   ", in: app.textFields["tripset-name"])
         app.textFields["tripset-name"].typeText("\n")
         tap(app, id: "tripset-save")
@@ -1256,6 +1268,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         let excel = app.buttons["trip-excel"]
         XCTAssertTrue(excel.waitForExistence(timeout: 5), "no Save as Excel on the trip")
+        bringIntoView(app, excel)
+        // Share is a real button ON THE SAME LINE as Save as Excel (his test D.22).
+        let share = app.buttons["trip-share"]
+        XCTAssertTrue(share.exists, "no Share on the trip")
+        XCTAssertLessThan(abs(share.frame.midY - excel.frame.midY), 4,
+                          "Share is not on the Excel line: \(share.frame) vs \(excel.frame)")
+        XCTAssertGreaterThan(share.frame.minX, excel.frame.maxX - 1, "Share is not beside Save as Excel")
         tapVisible(app, excel)
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-excel-status"]).hasPrefix("Choosing") },
                       "the save was not started: '\(words(app.staticTexts["trip-excel-status"]))'")
@@ -1264,6 +1283,51 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 10) { app.sheets.count > 0 || app.dialogs.count > 0 }, "no Save window opened")
         app.typeKey(.escape, modifierFlags: [])
         #endif
+    }
+
+    /// His test comments on Create new trip (2026-09-28): the date grid has a way
+    /// out that puts the dates back (C.2), and Quick says what it means in green,
+    /// only while it is on (C.7).
+    func testTheDateGridCanBeLeftAndQuickSaysSo() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertFalse(app.staticTexts["trip-quick-note"].exists, "the Quick note shows while Quick is off")
+        setSwitch(app, "trip-quick", on: true)
+        XCTAssertTrue(app.staticTexts["trip-quick-note"].waitForExistence(timeout: 5), "Quick on says nothing")
+        setSwitch(app, "trip-quick", on: false)
+        XCTAssertTrue(waitUntil { !app.staticTexts["trip-quick-note"].exists }, "the Quick note stays after Quick is off")
+
+        setSwitch(app, "trip-dates", on: true)
+        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
+        let field = app.buttons["trip-dates-field"]
+        let before = field.value as? String ?? ""
+        let cal = Calendar.current
+        let d = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: 1, to: Date())!)
+        let tomorrow = String(format: "range-day-%04d-%02d-%02d", d.year!, d.month!, d.day!)
+        if app.buttons[tomorrow].exists { tap(app, id: tomorrow) } else { tap(app, id: "range-next"); tap(app, id: tomorrow) }
+        XCTAssertTrue(waitUntil { (field.value as? String ?? "") != before }, "picking a first day changed nothing")
+        tap(app, id: "range-cancel")
+        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "Cancel did not close the grid")
+        XCTAssertEqual(field.value as? String ?? "", before, "Cancel did not put the dates back")
+    }
+
+    /// Context sits UNDER the workouts it describes — set in, after WET and before
+    /// Transport (his ask, 2026-09-28) — on Create new trip.
+    func testContextSitsUnderTheWorkouts() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertFalse(app.staticTexts["trip-context-title"].exists, "Context shows before a workout is picked")
+        let swim = app.buttons["trip-activity-1"]                  // Swim, on the WET shelf
+        XCTAssertTrue(swim.waitForExistence(timeout: 5))
+        select(app, swim)
+        let context = app.staticTexts["trip-context-title"]
+        XCTAssertTrue(context.waitForExistence(timeout: 5), "picking Swim did not bring Context")
+        bringIntoView(app, context)
+        let transport = app.staticTexts["trip-transport-title"]
+        XCTAssertGreaterThan(context.frame.minY, swim.frame.maxY, "Context is not under the workouts")
+        XCTAssertLessThan(context.frame.maxY, transport.frame.minY, "Context is not before Transport")
+        XCTAssertGreaterThan(context.frame.minX, transport.frame.minX + 24,
+                             "Context is not set in: \(context.frame.minX) vs \(transport.frame.minX)")
     }
 
     /// The web app's "Mark everything packed" / "Clear every tick" (gap list,
@@ -1340,11 +1404,29 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "map-done")
         XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
 
+        // A place with NO forecast for the dates still reaches the map (his test G.6:
+        // a trip already over never got its pin).
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5))
+        type("Lateplace", into: app.textFields["weather-place"])
+        app.textFields["weather-place"].typeText("\n")
+        XCTAssertTrue(app.staticTexts["weather-trouble"].waitForExistence(timeout: 10), "no word that there is no forecast")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tap(app, id: "events-map")
+        XCTAssertTrue(appears(app, "map-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["map-summary"]) == "1 place · 1 trip" },
+                      "a place without a forecast did not reach the map: '\(words(app.staticTexts["map-summary"]))'")
+        XCTAssertEqual(words(app.staticTexts["map-place-0-name"]), "Lateville, SE")
+        tap(app, id: "map-done")
+        XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
+
         // The trip's weather gives it its place.
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5))
-        type("Testville", into: app.textFields["weather-place"])
+        replace("Testville", in: app.textFields["weather-place"])
         app.textFields["weather-place"].typeText("\n")
         XCTAssertTrue(app.staticTexts["weather-line"].waitForExistence(timeout: 10), "no forecast came back")
         tap(app, id: "trip-done")
@@ -1546,7 +1628,11 @@ final class AMSPackingUITests: XCTestCase {
 
         app.buttons["grab-ready"].tap()
         XCTAssertTrue(app.staticTexts["grab-message"].waitForExistence(timeout: 5), "Ready to go must refuse while things are missing")
+        // In the middle of the screen, in red, with its own way back (his test B.4).
+        XCTAssertTrue(app.staticTexts["grab-notyet"].exists, "no Not yet heading on the refusal")
         XCTAssertNotNil(find(app, "grab-detail"), "…and stay open")
+        tap(app, id: "grab-message-ok")
+        XCTAssertTrue(waitUntil { !app.staticTexts["grab-message"].exists }, "Keep packing did not close the Not yet")
 
         app.buttons["grab-reset"].tap()
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of") && !self.words(count).contains("skipped") }, "Start over did not clear: '\(words(count))'")
@@ -1624,6 +1710,18 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["template-row-1"].tap()
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         XCTAssertTrue(waitUntil { app.buttons["template-item-4"].exists }, "the thing was lost on the way out and back")
+
+        // ✕ asks first (his test H.5): Keep it keeps it, Take it off takes it off.
+        tap(app, id: "template-item-4-remove")
+        XCTAssertTrue(app.staticTexts["template-remove-question"].waitForExistence(timeout: 5), "✕ did not ask first")
+        XCTAssertTrue(app.buttons["template-item-4"].exists, "asking already took it off")
+        tap(app, id: "template-remove-no")
+        XCTAssertTrue(waitUntil { !app.staticTexts["template-remove-question"].exists }, "Keep it did not close the question")
+        XCTAssertTrue(app.buttons["template-item-4"].exists, "Keep it took it off anyway")
+        tap(app, id: "template-item-4-remove")
+        tap(app, id: "template-remove-yes")
+        XCTAssertTrue(waitUntil { !app.buttons["template-item-4"].exists }, "Take it off did not take it off")
+        XCTAssertTrue(app.buttons["template-item-3"].exists, "the other things went too")
     }
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.
     func testCareShowsWhatIsOverdueAndDoneTodayMovesItOn() {
@@ -1892,7 +1990,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-templates"))
         app.buttons["template-row-1"].tap()                       // Hiking, which has a section
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        XCTAssertTrue(app.staticTexts["Lights"].waitForExistence(timeout: 5), "the list does not read in its sections")
+        // Its section headings, in capitals since 0.40 (his "much larger headings", H.13).
+        let headings = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH 'template-group-'"))
+        XCTAssertTrue(headings.firstMatch.waitForExistence(timeout: 5), "the list has no headings")
+        XCTAssertTrue(headings.allElementsBoundByIndex.contains { $0.label == "LIGHTS" },
+                      "the list does not read in its sections: \(headings.allElementsBoundByIndex.map(\.label))")
 
         let row = app.buttons["template-item-0"]
         XCTAssertTrue(row.waitForExistence(timeout: 5))
@@ -2217,6 +2319,14 @@ final class AMSPackingUITests: XCTestCase {
         // Fix the thing itself, and come back to the review as it was.
         tap(app, id: "review-line-0-fix")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the thing did not open")
+        // Each field sits right under ITS heading; the space goes between headings
+        // (his screenshot, 2026-09-28).
+        let nameHeading = app.staticTexts["thing-heading-name"], nameField = app.textFields["thing-name"]
+        let keptHeading = app.staticTexts["thing-heading-kept"]
+        XCTAssertTrue(nameHeading.waitForExistence(timeout: 5) && keptHeading.exists, "the editor's headings have no names")
+        let under = nameField.frame.minY - nameHeading.frame.maxY
+        let between = keptHeading.frame.minY - nameField.frame.maxY
+        XCTAssertLessThan(under, between - 8, "the Name field is not nearer its own heading: \(under) under, \(between) to the next")
         replace("Head torch", in: app.textFields["thing-name"])
         tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
@@ -2322,8 +2432,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).contains("kg") },
                       "the line under Care does not say what the kit weighs: '\(words(app.staticTexts["care-line"]))'")
 
-        // The heavy end is drawn from the things that have a weight…
-        XCTAssertTrue(app.buttons["kit-heavy-0"].waitForExistence(timeout: 5), "nothing in the heavy end")
+        // The heaviest things are drawn from the things that have a weight — under a
+        // heading in capitals (his words, 2026-09-28: "The heavy end" was misleading).
+        XCTAssertTrue(app.buttons["kit-heavy-0"].waitForExistence(timeout: 5), "nothing in the heaviest things")
+        XCTAssertEqual(words(app.staticTexts["kit-heavy-heading"]), "HEAVIEST THINGS")
         let heaviest = words(app.buttons["kit-heavy-0"])
         XCTAssertTrue(heaviest.contains("g"), "the heaviest thing does not say its weight: '\(heaviest)'")
 

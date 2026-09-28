@@ -379,7 +379,7 @@ struct ColumnPicker: View {
                 Text("Columns").font(.system(size: 20, weight: .heavy)).foregroundStyle(AppSection.care.color)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("columns-done")
             }

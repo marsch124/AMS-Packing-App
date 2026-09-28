@@ -97,10 +97,11 @@ struct TripScreen: View {
         // Never trap on a repeated id (his E.6 crash, 28 Sep): the first line keeps it.
         let index: [String: Int] = Dictionary(trip.entries.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
         VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+            HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(trip.name.isEmpty ? "Untitled event" : trip.name)
-                        .font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
+                        .font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .lineLimit(2).minimumScaleFactor(0.85)          // the whole name, not "Weekend in the…"
                         .accessibilityIdentifier("trip-name")
                     HStack(spacing: 10) {
                         Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
@@ -114,7 +115,7 @@ struct TripScreen: View {
                                          startedAgain: { new in
                             let from = trip.name
                             startedId = new.id
-                            rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are in the gear."
+                            rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are under the pen."
                         })
                         .environmentObject(model)
                     }
@@ -126,12 +127,12 @@ struct TripScreen: View {
                         .accessibilityIdentifier("trip-reviewed")
                 } else if !trip.entries.isEmpty {
                     Button("Review") { reviewing = true }
-                        .buttonStyle(.plain).focusEffectDisabled()
+                        .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: false)).focusEffectDisabled()
                         .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
                         .accessibilityIdentifier("trip-review")
                 }
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
                     .accessibilityIdentifier("trip-done")
             }
@@ -184,11 +185,11 @@ struct TripScreen: View {
                                 // heading's name must stay a text of its own.
                                 Button { toggleFold(group.label) } label: {
                                     SVGPath.path("M9 6l6 6-6 6")
-                                        .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                                        .frame(width: 16, height: 16)
+                                        .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                                        .frame(width: 20, height: 20)
                                         .rotationEffect(.degrees(folded ? 0 : 90))
-                                        .foregroundStyle(Theme.muted)
-                                        .frame(width: 28, height: 36).contentShape(Rectangle())
+                                        .foregroundStyle(Theme.ink)
+                                        .frame(width: 34, height: 36).contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("trip-group-\(g)-fold")
@@ -292,15 +293,16 @@ struct TripScreen: View {
                 // The web app's "Mark everything packed" / "Clear every tick".
                 TickAllRow(tripId: tripId, done: p.done, total: p.total).environmentObject(model)
                     .padding(.horizontal, 16).padding(.top, 18)
-                // The web app's Excel button: the trip as a spreadsheet.
-                TripExcelButton(tripId: tripId).environmentObject(model)
-                    .padding(.horizontal, 16).padding(.top, 12)
-                // The web app's Share: a link (and a QR code when it fits), or a file.
-                ShareDoor(id: "trip-share") {
-                    ShareOffer(title: "Share \u{201C}\(trip.name)\u{201D}", link: model.library.shareLink(tripId: tripId),
-                               file: model.library.shareFile(tripId: tripId))
+                // The web app's Excel button (the trip as a spreadsheet) and its Share (a
+                // link, a QR code when it fits, or a file) — two real buttons side by side,
+                // his test D.22.
+                HStack(alignment: .top, spacing: 12) {
+                    TripExcelButton(tripId: tripId).environmentObject(model)
+                    ShareDoor(id: "trip-share", wide: true) {
+                        ShareOffer(title: "Share \u{201C}\(trip.name)\u{201D}", link: model.library.shareLink(tripId: tripId),
+                                   file: model.library.shareFile(tripId: tripId))
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, 12)
                 deleteTrip(trip)
                     .padding(.horizontal, 16).padding(.top, 18)
@@ -379,7 +381,7 @@ struct TripScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Button("Close") { placing = nil; newPlace = "" }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("trip-place-close")
             }

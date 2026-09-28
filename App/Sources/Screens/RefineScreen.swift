@@ -22,7 +22,7 @@ struct RefineScreen: View {
                     .accessibilityIdentifier("refine-count")
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.templates.color)
                     .accessibilityIdentifier("refine-done")
             }

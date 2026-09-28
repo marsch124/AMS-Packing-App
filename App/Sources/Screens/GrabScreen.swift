@@ -159,38 +159,31 @@ struct GrabScreen: View {
         let items = list.items
         let complete = state.isComplete(items)
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
-                Text(list.title).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
-                Spacer()
+                Text(list.title).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Spacer(minLength: 4)
                 Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: tint, filled: editing)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
                     .accessibilityIdentifier("grab-edit")
                 if !editing {
-                    ShareDoor(id: "grab-share", tint: tint) {
+                    ShareDoor(id: "grab-share", tint: tint, markOnly: true) {
                         ShareOffer(title: "Share \u{201C}\(list.label)\u{201D}", link: model.library.shareLink(grabId: listId))
                     }
                     Button("Done") { dismiss() }
-                        .buttonStyle(.plain).focusEffectDisabled()
+                        .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
                         .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
                         .accessibilityIdentifier("grab-done")
                 }
             }
             .padding(16)
+            // The count stays in sight while the list scrolls under it (his test B.2:
+            // "When scrolling, the counter moves out of sight").
+            if !editing { counter(items: items, complete: complete) }
             if editing { editor } else { KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 6) {
-                    if complete {
-                        Text("All there — go!")
-                            .font(.system(size: 20, weight: .heavy)).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 52)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(tint))
-                            .accessibilityIdentifier("grab-allthere")
-                    } else {
-                        Text("\(state.done.count) of \(state.active(items).count) in hand" + (state.skipped.isEmpty ? "" : " · \(state.skipped.count) skipped"))
-                            .font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
-                            .accessibilityIdentifier("grab-count")
-                    }
                     ForEach(Array(items.enumerated()), id: \.offset) { n, name in
                         let ticked = state.done.contains(name)
                         let skipped = state.skipped.contains(name)
@@ -232,8 +225,8 @@ struct GrabScreen: View {
                         if complete { flash = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { dismiss() }; return }
                         let missing = state.missing(items)
                         if missing.isEmpty { message = "Nothing left to take — everything is skipped." }
-                        else if missing.count <= 3 { message = "Not yet — still missing: \(missing.joined(separator: ", "))." }
-                        else { message = "Not yet — \(missing.count) things still missing." }
+                        else if missing.count <= 3 { message = "Still missing: \(missing.joined(separator: ", "))." }
+                        else { message = "\(missing.count) things still missing." }
                     } label: {
                         Text("Ready to go")
                             .font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
@@ -244,10 +237,6 @@ struct GrabScreen: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .padding(.top, 14)
                     .accessibilityIdentifier("grab-ready")
-                    if !message.isEmpty {
-                        Text(message).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color(hex: 0xdc3d43))
-                            .accessibilityIdentifier("grab-message")
-                    }
                     if !state.done.isEmpty || !state.skipped.isEmpty {
                         Button { change { _ in GrabState() } } label: {
                             Text("Start over").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.muted)
@@ -266,6 +255,9 @@ struct GrabScreen: View {
         // The moment the last thing is ticked, the whole screen blinks the list's
         // colour — you are usually at the bottom of a long list when it lands.
         .overlay { if flash { tint.opacity(0.35).ignoresSafeArea().allowsHitTesting(false) } }
+        // "Not yet" in the MIDDLE of the screen, in red (his test B.4: "even more
+        // distinctive — maybe a pop-up window at the center of the screen").
+        .overlay { if !message.isEmpty { notYet } }
         .animation(.easeOut(duration: 0.6), value: flash)
         .onAppear {
             // Starts from what he takes only sometimes — already skipped, out of
@@ -389,6 +381,71 @@ struct GrabScreen: View {
         // The list changed under the session: start it again from the defaults.
         state = model.library.openingState(listId: listId, held: nil)
         GrabStore.shared.save(listId, state)
+    }
+
+    /// The pinned line under the title: how many are in hand, a bar that fills in
+    /// the list's colour — or, when all are there, the list's colour itself.
+    @ViewBuilder private func counter(items: [String], complete: Bool) -> some View {
+        let active = state.active(items).count
+        VStack(alignment: .leading, spacing: 6) {
+            if complete {
+                Text("All there — go!")
+                    .font(.system(size: 20, weight: .heavy)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(tint))
+                    .accessibilityIdentifier("grab-allthere")
+            } else {
+                Text("\(state.done.count) of \(active) in hand" + (state.skipped.isEmpty ? "" : " · \(state.skipped.count) skipped"))
+                    .font(.system(size: 18, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.ink)
+                    .accessibilityIdentifier("grab-count")
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.line)
+                        Capsule().fill(tint)
+                            .frame(width: active == 0 ? 0 : g.size.width * Double(state.done.count) / Double(active))
+                    }
+                }
+                .frame(height: 8)
+                .accessibilityHidden(true)
+            }
+        }
+        .padding(.horizontal, 16).padding(.bottom, 10)
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+    }
+
+    private var notYet: some View {
+        let red = AppSection.actions.color
+        return ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea()
+                .onTapGesture { message = "" }
+            VStack(spacing: 12) {
+                Text("!")
+                    .font(.system(size: 30, weight: .black)).foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(Circle().fill(red))
+                    .accessibilityHidden(true)
+                Text("Not yet")
+                    .font(.system(size: 28, weight: .heavy)).foregroundStyle(red)
+                    .accessibilityIdentifier("grab-notyet")
+                Text(message)
+                    .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("grab-message")
+                Button { message = "" } label: {
+                    Text("Keep packing")
+                }
+                .buttonStyle(HeaderButtonStyle(tint: red, filled: true, stretch: true)).focusEffectDisabled()
+                .padding(.top, 6)
+                .accessibilityIdentifier("grab-message-ok")
+            }
+            .padding(24)
+            .frame(maxWidth: 340)
+            .background(RoundedRectangle(cornerRadius: 20).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(red, lineWidth: 2))
+            .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
+            .padding(24)
+        }
     }
 
     private func change(_ body: (GrabState) -> GrabState) {

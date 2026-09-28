@@ -24,7 +24,7 @@ struct ThingsScreen: View {
                 Text("Your things").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("things-done")
             }
@@ -142,22 +142,23 @@ struct ThingEditor: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("thing-cancel")
                 Spacer()
                 Button("Save") { save() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("thing-save")
             }
             .padding(16)
             KeyboardAwayScroll {
-                VStack(alignment: .leading, spacing: 14) {
-                    label("Name")
-                    field($draft.name, "Name", "thing-name")
-                    label("Kept at home")
-                    field($draft.storage, "e.g. Hall closet", "thing-storage")
+                // A field sits right under its heading, and the space goes BETWEEN the
+                // headings (his screenshot, 2026-09-28: "put the Bike field much nearer
+                // its heading, the same goes for everything").
+                VStack(alignment: .leading, spacing: 22) {
+                    labelled("Name") { field($draft.name, "Name", "thing-name") }
+                    labelled("Kept at home") { field($draft.storage, "e.g. Hall closet", "thing-storage") }
                     Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
                           id: "thing-category", tint: AppSection.care.color, compact: true) { draft.category = $0 }
                     Pills(title: "Usually packed in", options: containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
@@ -170,17 +171,15 @@ struct ThingEditor: View {
                     }
                     Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
                           selected: [draft.condition], id: "thing-condition", tint: AppSection.care.color, compact: true) { draft.condition = $0 }
-                    label("Weight, in grams (0 = not known)")
-                    field(Binding(get: { draft.weight == 0 ? "" : String(Int(draft.weight)) },
-                                  set: { draft.weight = Double(jsTrim($0)) ?? 0 }), "0", "thing-weight")
+                    labelled("Weight, in grams (0 = not known)") {
+                        field(Binding(get: { draft.weight == 0 ? "" : String(Int(draft.weight)) },
+                                      set: { draft.weight = Double(jsTrim($0)) ?? 0 }), "0", "thing-weight")
+                    }
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
-                    label("Brand")
-                    field($draft.manufacturer, "e.g. Patagonia", "thing-brand")
-                    label("Colour")
-                    field($draft.color, "e.g. Black", "thing-colour")
-                    label("Notes")
-                    field($draft.note, "Anything worth remembering", "thing-notes")
+                    labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand") }
+                    labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
+                    labelled("Notes") { field($draft.note, "Anything worth remembering", "thing-notes") }
                     Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
                           id: "thing-lists", tint: AppSection.templates.color, compact: true) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
@@ -252,8 +251,13 @@ struct ThingEditor: View {
         }
     }
 
-    private func label(_ text: String) -> some View {
-        HeadingBand(title: text)
+    /// A heading and its field, held together: 4 points apart, where the headings
+    /// themselves are 22 apart.
+    private func labelled<Content: View>(_ text: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HeadingBand(title: text, id: "thing-heading-\(text.prefix { $0.isLetter }.lowercased())")
+            content()
+        }
     }
 
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {

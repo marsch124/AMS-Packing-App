@@ -40,7 +40,7 @@ struct ListsScreen: View {
                     .accessibilityIdentifier("choices-title")
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
                     .accessibilityIdentifier("lists-done")
             }
@@ -53,7 +53,7 @@ struct ListsScreen: View {
                     }
                     ForEach(Kind.allCases, id: \.rawValue) { kind in
                         let entries = entries(kind)
-                        Text(kind.title).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
+                        SectionTitle(title: kind.title)
                         Text(kind.hint).font(.system(size: 14)).foregroundStyle(Theme.muted)
                         ForEach(Array(entries.enumerated()), id: \.offset) { n, entry in
                             HStack {

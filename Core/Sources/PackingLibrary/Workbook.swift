@@ -184,12 +184,15 @@ extension Library {
             for bag in groupByContainer(g.entries) {
                 for e in bag.entries {
                     let packed: String = isSetAside(e) ? "set aside" : (e.checked ? "yes" : "")
-                    rows.append([.text(g.phase.label), .text(e.container), .text(e.name),
+                    rows.append([.text(g.phase.label), .text(jsTrim(e.storage)), .text(e.container), .text(e.name),
                                  .number(effectiveQty(e, nights)), .text(packed), .text(e.note)])
                 }
             }
         }
-        let columns = [XlsxColumn("When", width: 22), XlsxColumn("Bag", width: 20), XlsxColumn("Thing", width: 30),
+        // His words (test D.23, 2026-09-28): where it comes FROM at home, and the bag it goes INTO —
+        // the same two words as the trip screen's sorting.
+        let columns = [XlsxColumn("When", width: 22), XlsxColumn("From where", width: 20), XlsxColumn("Into", width: 20),
+                       XlsxColumn("Thing", width: 30),
                        XlsxColumn("How many", width: 10), XlsxColumn("Packed", width: 10), XlsxColumn("Note", width: 30)]
         let data = Xlsx.workbook([XlsxSheet(name: trip.name.isEmpty ? "Trip" : trip.name, columns: columns, rows: rows)])
         return (Library.workbookFileName(trip.name), data)

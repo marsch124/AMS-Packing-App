@@ -38,7 +38,7 @@ struct NewList: View {
                     .accessibilityIdentifier("newlist-title")
                 Spacer()
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("newlist-cancel")
             }
@@ -68,9 +68,9 @@ struct NewList: View {
                             .accessibilityIdentifier("newlist-taken")
                     }
 
-                    Text("WHICH SHELF")
-                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
-                        .padding(.top, 20).padding(.bottom, 6)
+                    // His words (test H.6): "On which shelf should it live?"
+                    SectionTitle(title: "On which shelf should it live?")
+                        .padding(.top, 4).padding(.bottom, 6)
                     ForEach(GROUPS, id: \.id) { shelf in
                         shelfRow(shelf.id, "\(shelf.id) · \(shelf.label)")
                     }

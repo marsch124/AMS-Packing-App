@@ -47,7 +47,7 @@ struct SearchScreen: View {
                 Text("Search").font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
                     .accessibilityIdentifier("search-done")
             }

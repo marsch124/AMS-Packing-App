@@ -38,7 +38,7 @@ struct BulkChange: View {
                 }
                 Spacer()
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("bulk-cancel")
             }

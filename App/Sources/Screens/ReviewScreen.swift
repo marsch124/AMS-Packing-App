@@ -28,7 +28,7 @@ struct ReviewScreen: View {
                 Text("Trip review").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("review-cancel")
             }

@@ -33,7 +33,7 @@ struct RestoreSheet: View {
                 Text("Restore from a file").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Cancel") { answer(false); dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
                     .accessibilityIdentifier("restore-cancel")
             }

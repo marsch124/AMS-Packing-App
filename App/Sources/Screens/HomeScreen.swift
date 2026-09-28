@@ -84,11 +84,9 @@ struct HomeScreen: View {
                         .accessibilityIdentifier("trip-quick")
                     }
                     // The explanation only when it is on, so the line stays short.
-                    if quick {
-                        Text("Only the templates you tick — no common base, no transport kit.")
-                            .font(.system(size: 14)).foregroundStyle(Theme.muted)
-                            .accessibilityIdentifier("trip-quick-note")
-                    }
+                    // In GREEN, like the switch that brought it (his test C.7: grey, "you
+                    // almost don't see it, so you don't see that anything has changed").
+                    if quick { QuickNote(id: "trip-quick-note") }
                     if hasDates {
                         // Booking.com's way, his example (2026-09-26): one field, a month grid,
                         // first day then last day.
@@ -100,14 +98,15 @@ struct HomeScreen: View {
                         Pills(title: groupHeading(choice.group.id, choice.group.label),
                               options: choice.lists.map { ($0.id, $0.name) },
                               selected: activities, id: "trip-activity", tint: AppSection.templates.color,
-                              startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0) { id in
+                              startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
+                              tones: choice.group.id == "WET" ? WorkoutTone.of : nil) { id in
                             if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
                             if !stillNeeded.isEmpty { stillNeeded = needs() }
                         }
-                    }
-                    if anyWorkout {
-                        Pills(title: "Context", options: CONTEXTS.map { ($0, $0) }, selected: contexts, id: "trip-context") { id in
-                            if contexts.contains(id) { contexts.remove(id) } else { contexts.insert(id) }
+                        if choice.group.id == "WET" && anyWorkout {
+                            ContextPills(selected: contexts, id: "trip-context") { id in
+                                if contexts.contains(id) { contexts.remove(id) } else { contexts.insert(id) }
+                            }
                         }
                     }
                     Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: [transport], id: "trip-transport") { transport = $0 }
@@ -228,10 +227,13 @@ struct Pills: View {
     /// headings drowned by the buttons (2026-09-26): "keep the headings and make the
     /// buttons' text size a bit smaller".
     var compact = false
+    /// A colour of its own for some pills, by their words — the workouts (his
+    /// colours, 2026-09-28). Picked: filled in it; not picked: outlined in it.
+    var tones: ((String) -> PillTone?)? = nil
     let choose: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: compact ? 4 : 6) {
             // In the thing editor (compact) the headings are the big type — his ask
             // (2026-09-27): "Make the headings larger".
             // …and in the colour of their own buttons, not grey (2026-09-27: "choose
@@ -245,13 +247,15 @@ struct Pills: View {
             FlowRow(spacing: 8) {
                 ForEach(Array(options.enumerated()), id: \.element.id) { n, o in
                     let on = selected.contains(o.id)
+                    let tone = tones?(o.label)
                     Button { choose(o.id) } label: {
                         Text(o.label)
                             .font(.system(size: compact ? 13 : 15, weight: on ? .bold : .semibold))
-                            .foregroundStyle(on ? Color.white : Theme.ink)
+                            .foregroundStyle(on ? (tone?.ink ?? Color.white) : Theme.ink)
                             .padding(.horizontal, compact ? 10 : 14).frame(minHeight: compact ? 32 : 36)
-                            .background(Capsule().fill(on ? tint : Theme.bg))
-                            .overlay(Capsule().stroke(on ? tint : Theme.line, lineWidth: 1))
+                            .background(Capsule().fill(on ? (tone?.fill ?? tint) : Theme.bg))
+                            .overlay(Capsule().stroke(on ? (tone?.fill ?? tint) : (tone?.fill ?? Theme.line),
+                                                      lineWidth: tone == nil || on ? 1 : 1.8))
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -301,5 +305,64 @@ struct CountTile: View {
         .frame(maxWidth: .infinity, minHeight: 76)
         .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line, lineWidth: 1))
+    }
+}
+
+/// What Quick means, shown while it is on — green like the switch, framed so the
+/// change is seen (his test C.7).
+struct QuickNote: View {
+    let id: String
+    var body: some View {
+        Text("Quick: only the templates you tick — no common base, no transport kit.")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(AppSection.events.color)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 12).padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color.opacity(0.12)))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color, lineWidth: 1.2))
+            .accessibilityIdentifier(id)
+    }
+}
+
+/// A pill's own colour: its fill, and the words on it.
+struct PillTone {
+    let fill: Color
+    let ink: Color
+}
+
+/// The workout colours he chose (2026-09-28), the same in the grab lists and AMS
+/// Workout Sync — written down in docs/colours.md. Yellow and the light ones carry
+/// dark words: white is unreadable on them. He does not like teal.
+enum WorkoutTone {
+    static func of(_ name: String) -> PillTone? {
+        switch normName(name).filter({ !$0.isWhitespace }) {
+        case "swim": return PillTone(fill: Color(hex: 0x0a84ff), ink: .white)
+        case "bike": return PillTone(fill: Color(hex: 0xffd60a), ink: Color(hex: 0x3d3000))
+        case "run": return PillTone(fill: Color(hex: 0x30d158), ink: Color(hex: 0x0b3a17))
+        case "strength": return PillTone(fill: Color(hex: 0xff8c1a), ink: Color(hex: 0x4a2300))
+        case "breathwork": return PillTone(fill: Color(hex: 0xbf9cff), ink: Color(hex: 0x2e1a5c))
+        case "mobility": return PillTone(fill: Color(hex: 0xff6fa8), ink: Color(hex: 0x5a0f2e))
+        default: return nil
+        }
+    }
+}
+
+/// Indoor / Outdoor / Race — set in under the workouts, with a line down its side,
+/// so it reads as belonging to them (his ask, 2026-09-28), in a quiet grey: it
+/// describes the workouts rather than being one.
+struct ContextPills: View {
+    let selected: Set<String>
+    let id: String
+    let choose: (String) -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            RoundedRectangle(cornerRadius: 1.5).fill(Theme.line).frame(width: 3)
+            Pills(title: "Context", options: CONTEXTS.map { ($0, $0) }, selected: selected, id: id,
+                  tint: AppSection.settings.color, choose: choose)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.leading, 18)
     }
 }

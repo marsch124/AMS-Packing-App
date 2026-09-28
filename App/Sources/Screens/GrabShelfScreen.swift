@@ -21,7 +21,7 @@ struct GrabShelfScreen: View {
                 Text("Your grab lists").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
                     .accessibilityIdentifier("shelf-done")
             }
@@ -218,7 +218,7 @@ struct SwapScreen: View {
                 Text("Which one steps back?").font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
                     .accessibilityIdentifier("swap-cancel")
             }

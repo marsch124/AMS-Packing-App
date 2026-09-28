@@ -18,6 +18,22 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.40", date: "28 Sep 2026", title: "Your test comments, part 1",
+                new: ["Trip settings has the trip's place. Change it there and the weather starts again from the new place.",
+                      "The date grid has Cancel: it closes and puts the dates back.",
+                      "Taking a thing off a template with ✕ asks first, in the middle of the screen. The thing stays in Your things.",
+                      "Save as Excel has two more columns: From where (where it is kept at home) and Into (the bag)."],
+                changed: ["A pen, not a gear, opens a trip's settings.",
+                          "Share is a real button, beside Save as Excel. Done, Save, Cancel and Share look like buttons everywhere.",
+                          "The workouts have their own colours: Swim blue, Bike yellow, Run green, Strength orange, Breath work lavender, Mobility pink. Context sits set in under them, in grey.",
+                          "Quick says what it means in green while it is on.",
+                          "Grab lists: the count stays at the top while you scroll, and Not yet is a red card in the middle of the screen.",
+                          "Headings on Care, Templates and Your choices are larger and in capitals. The heavy end is now Heaviest things.",
+                          "In a thing's editor, each field sits right under its heading.",
+                          "Trips: Now, Coming up and Done (was Been). Now is always there, with how many. The Reviewed arrow is much larger.",
+                          "A new template asks: On which shelf should it live?"],
+                fixed: ["A trip with a place but no forecast (already over, or too far ahead) now reaches the map. Before, only trips whose weather came back were on it."],
+                removed: ["The round arrow at the end of the loop strip — it looked like a reload button."]),
         Release(version: "0.39", date: "28 Sep 2026", title: "A crash fixed",
                 fixed: ["Changing a trip's dates, templates or laundry in Trip settings could close the app when the same thing was on the trip twice (from two templates, in two bags). Now each of those lines comes back once, with its own tick."]),
         Release(version: "0.38", date: "27 Sep 2026", title: "Share",

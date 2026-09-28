@@ -27,7 +27,7 @@ struct BagsScreen: View {
                     .accessibilityIdentifier("yourbags-count")
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.plain).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("yourbags-done")
             }

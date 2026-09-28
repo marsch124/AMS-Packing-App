@@ -23,3 +23,25 @@ struct HeadingBand: View {
         if let id { text.accessibilityIdentifier(id) } else { text }
     }
 }
+
+/// A heading that starts a part of a screen — in CAPITALS, larger, in full-strength
+/// words, with room above it. His words (2026-09-28): the Care headings were grey
+/// and row-sized, so "The heavy end" read like one more row — "should be larger or
+/// in capitals, as should all headings on the Care tab"; and on the templates:
+/// "Much larger headings, please" (test H.13).
+struct SectionTitle: View {
+    let title: String
+    var tint: Color = Theme.ink
+    var id: String? = nil
+
+    var body: some View {
+        let text = Text(title.uppercased())
+            .font(.system(size: 18, weight: .heavy))
+            .kerning(0.8)
+            .foregroundStyle(tint)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 16)
+        if let id { text.accessibilityIdentifier(id) } else { text }
+    }
+}
+
