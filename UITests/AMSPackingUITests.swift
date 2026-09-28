@@ -1409,6 +1409,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["map-empty"].exists, "an empty map does not say why")
         tap(app, id: "map-done")
         XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
+        // All your trips, and its small map, under Your year (his G.3).
+        XCTAssertTrue(app.staticTexts["events-alltime-heading"].waitForExistence(timeout: 5), "no All your trips")
+        let mini = app.buttons["events-minimap"]
+        XCTAssertTrue(mini.exists, "no map on Trips")
+        XCTAssertEqual(mini.value as? String, "0 places · 0 trips")
 
         // A place with NO forecast for the dates still reaches the map (his test G.6:
         // a trip already over never got its pin).
@@ -1446,6 +1451,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(find(app, "map-view") != nil || app.maps.firstMatch.exists, "no map drawn")
         XCTAssertFalse(app.staticTexts["map-empty"].exists, "it still says there are no places")
         shot(app, "map")
+        tap(app, id: "map-done")
+        XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
+        // The small map on Trips follows, and opens the whole map.
+        XCTAssertTrue(waitUntil { (mini.value as? String) == "1 place · 1 trip" },
+                      "the map on Trips did not follow: '\(mini.value as? String ?? "")'")
+        tapVisible(app, mini)
+        XCTAssertTrue(appears(app, "map-screen", timeout: 5), "the map on Trips does not open the whole map")
         tap(app, id: "map-done")
         XCTAssertTrue(disappears(app, "map-screen", timeout: 5))
     }
@@ -1729,6 +1741,72 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { !app.buttons["template-item-4"].exists }, "Take it off did not take it off")
         XCTAssertTrue(app.buttons["template-item-3"].exists, "the other things went too")
     }
+    /// His test H.9 (the one red box, 2026-09-28): things he already owns are
+    /// chosen onto a template from the whole list — grouped the way he likes, what
+    /// is already on it shown as such — and a new one can be made from there too.
+    func testThingsHeOwnsArePickedOntoATemplate() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                       // Hiking: 4 things
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["template-item-4"].exists, "expected 4 things")
+        tap(app, id: "template-pick")
+        XCTAssertTrue(appears(app, "pick-screen", timeout: 5), "Choose from your things did not open")
+
+        // Grouped A–Z on request; what is on Hiking already says so and cannot be ticked.
+        tap(app, id: "pick-group-name")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "A–Z" },
+                      "A–Z did not regroup: '\(words(app.staticTexts["pick-heading-0"]))'")
+        let rows = (0..<14).map { app.buttons["pick-row-\($0)"] }.filter { $0.exists }
+        let onAlready = rows.filter { ($0.value as? String) == "already on it" }
+        XCTAssertEqual(onAlready.count, 4, "Hiking's 4 things are not shown as already on it")
+        let free = rows.filter { ($0.value as? String) != "already on it" }
+        XCTAssertGreaterThanOrEqual(free.count, 2, "nothing left to choose")
+        select(app, free[0])
+        select(app, free[1])
+        XCTAssertTrue(waitUntil { self.words(app.buttons["pick-add"]) == "Add 2" },
+                      "the button does not count: '\(words(app.buttons["pick-add"]))'")
+        tap(app, id: "pick-add")
+        XCTAssertTrue(disappears(app, "pick-screen", timeout: 5), "Add did not close the picker")
+        XCTAssertTrue(waitUntil { app.buttons["template-item-5"].exists }, "the two things did not reach the template")
+        XCTAssertFalse(app.buttons["template-item-6"].exists, "more than two arrived")
+
+        // A name he owns nothing by becomes a new thing, straight onto the template.
+        tap(app, id: "template-pick")
+        XCTAssertTrue(appears(app, "pick-screen", timeout: 5))
+        type("Gaiters", into: app.textFields["pick-search"])
+        tap(app, id: "pick-new")
+        tap(app, id: "pick-cancel")
+        XCTAssertTrue(disappears(app, "pick-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["template-item-6"].exists }, "the new thing is not on the template")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tab(app, "care")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("11 things") },
+                      "picking made copies instead of using his things: '\(words(app.staticTexts["care-line"]))'")
+    }
+
+    /// His test H.3: a template's things group the ways a trip sorts — its own
+    /// sections first, then A–Z, Into and the rest.
+    func testATemplatesThingsGroupTheWaysATripSorts() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                       // Hiking, which has a section
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(isOn(app.buttons["template-grouping-section"]), "a sectioned template does not start by its sections")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "LIGHTS" })
+        tap(app, id: "template-grouping-name")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "A–Z" },
+                      "A–Z did not regroup: '\(words(app.staticTexts["template-group-0"]))'")
+        XCTAssertFalse(app.staticTexts["template-group-1"].exists, "A–Z is one group")
+        tap(app, id: "template-grouping-into")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "CARRY-ON / HAND LUGGAGE" },
+                      "Into does not group by bag: '\(words(app.staticTexts["template-group-0"]))'")
+    }
+
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.
     func testCareShowsWhatIsOverdueAndDoneTodayMovesItOn() {
         let app = launch()

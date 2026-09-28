@@ -1,0 +1,202 @@
+import SwiftUI
+import PackingCore
+import PackingLibrary
+
+/// Choose things for a template — his test H.9 (2026-09-28, the one red box): "How
+/// do we add things to a template? We need the list of things. We need to be able to
+/// choose from existing ones and also define new ones … order, sort and group the
+/// things to pick from in a variety of ways, the same as when packing."
+///
+/// Every thing he owns, grouped the way he chooses (Kind, From where, Into, When,
+/// A–Z), searchable; tick as many as he likes and put them on in one press. What is
+/// already on the template shows as such and cannot be ticked twice. A name that
+/// matches nothing can be made into a new thing, straight onto the template.
+struct PickThingsScreen: View {
+    let templateId: String
+    @EnvironmentObject var model: LibraryModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var picked: Set<String> = []
+    @AppStorage("ams.pick.grouping") private var groupingRaw = ThingGrouping.kind.rawValue
+
+    private static let ways: [ThingGrouping] = [.kind, .fromWhere, .into, .when, .name]
+
+    var body: some View {
+        let list = model.library.resolvedTemplate(id: templateId)
+        let already = model.library.thingIds(onTemplate: templateId)
+        let q = normName(query)
+        let things = model.library.items.filter { q.isEmpty || normName($0.name).contains(q) }
+        let grouping = ThingGrouping(rawValue: groupingRaw).flatMap { PickThingsScreen.ways.contains($0) ? $0 : nil } ?? .kind
+        let groups = grouping.groups(things)
+        let exact = model.library.items.contains { normName($0.name) == q }
+        let numbered = PickThingsScreen.numbered(groups)
+        let violet = AppSection.templates.color
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .accessibilityIdentifier("pick-cancel")
+                Spacer(minLength: 4)
+                Text(list.map { "Add to \($0.name)" } ?? "Add things")
+                    .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .accessibilityIdentifier("pick-title")
+                Spacer(minLength: 4)
+                // Always in full colour (his rule for a main button); with nothing
+                // ticked it says so under the title instead of doing nothing silently.
+                Button(picked.isEmpty ? "Add" : "Add \(picked.count)") { putOn() }
+                    .buttonStyle(HeaderButtonStyle(tint: violet, filled: true)).focusEffectDisabled()
+                    .accessibilityIdentifier("pick-add")
+            }
+            .padding(16)
+            VStack(alignment: .leading, spacing: 10) {
+                TextField("Search your things, or type a new one", text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .accessibilityIdentifier("pick-search")
+                FlowRow(spacing: 6) {
+                    Text("Group").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                        .frame(minHeight: 32)
+                            ForEach(PickThingsScreen.ways, id: \.self) { way in
+                                let on = way == grouping
+                                Button { groupingRaw = way.rawValue } label: {
+                                    Text(way.label).font(.system(size: 14, weight: on ? .heavy : .semibold))
+                                        .foregroundStyle(on ? Color.white : Theme.ink)
+                                        .padding(.horizontal, 12).frame(minHeight: 32)
+                                        .background(Capsule().fill(on ? violet : Theme.card))
+                                        .overlay(Capsule().stroke(on ? violet : Theme.line, lineWidth: 1))
+                                        .contentShape(Capsule())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("pick-group-\(way.rawValue)")
+                                .accessibilityAddTraits(on ? .isSelected : [])
+                            }
+                }
+            }
+            .padding(.horizontal, 16).padding(.bottom, 8)
+            KeyboardAwayScroll {
+                VStack(alignment: .leading, spacing: 4) {
+                    // A name he owns nothing by: make it, straight onto this template.
+                    if !q.isEmpty && !exact {
+                        Button { makeNew() } label: {
+                            HStack(spacing: 10) {
+                                Text("+").font(.system(size: 22, weight: .heavy)).foregroundStyle(violet).frame(width: 26)
+                                Text("A new thing: \u{201C}\(jsTrim(query))\u{201D}")
+                                    .font(.system(size: 17, weight: .bold)).foregroundStyle(violet)
+                                Spacer()
+                            }
+                            .padding(.vertical, 10).padding(.horizontal, 12)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(violet.opacity(0.10)))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(violet, lineWidth: 1.2))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("pick-new")
+                    }
+                    ForEach(Array(numbered.enumerated()), id: \.offset) { g, group in
+                        Text(group.title.uppercased())
+                            .font(.system(size: 16, weight: .heavy)).kerning(0.6).foregroundStyle(violet)
+                            .padding(.top, 14)
+                            .accessibilityIdentifier("pick-heading-\(g)")
+                        ForEach(group.rows, id: \.1.id) { n, thing in
+                            row(thing, n: n, on: already.contains(thing.id), grouping: grouping)
+                        }
+                    }
+                    if things.isEmpty && q.isEmpty {
+                        Text("You have no things yet. Type a name above to make one.")
+                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                            .padding(.top, 20)
+                    }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("pick-screen")
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 620)
+        #endif
+    }
+
+    private func row(_ thing: Item, n: Int, on: Bool, grouping: ThingGrouping) -> some View {
+        let ticked = picked.contains(thing.id)
+        let violet = AppSection.templates.color
+        // What the row says beside the name: the thing's other answer, never the one
+        // it is grouped by.
+        let aside = grouping == .fromWhere ? thing.container
+            : (jsTrim(thing.storage).isEmpty ? thing.container : thing.storage)
+        return Button {
+            guard !on else { return }
+            if ticked { picked.remove(thing.id) } else { picked.insert(thing.id) }
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle().stroke(on ? Theme.line : violet, lineWidth: 2).frame(width: 24, height: 24)
+                    if ticked || on {
+                        Circle().fill(on ? Theme.line : violet).frame(width: 24, height: 24)
+                        Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                            .frame(width: 24, height: 24)
+                    }
+                }
+                Text(thing.name).font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(on ? Theme.muted : Theme.ink).lineLimit(1)
+                Spacer(minLength: 8)
+                Text(on ? "already on it" : aside)
+                    .font(.system(size: 14, weight: on ? .semibold : .regular)).foregroundStyle(Theme.muted).lineLimit(1)
+            }
+            .padding(.vertical, 9).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        .accessibilityIdentifier("pick-row-\(n)")
+        .accessibilityAddTraits(ticked || on ? .isSelected : [])
+        .accessibilityValue(on ? "already on it" : "")
+    }
+
+    /// Rows numbered as they are READ, top to bottom, across the groups.
+    static func numbered(_ groups: [(title: String, items: [Item])]) -> [(title: String, rows: [(Int, Item)])] {
+        var n = 0
+        return groups.map { g in
+            (g.title, g.items.map { it -> (Int, Item) in n += 1; return (n - 1, it) })
+        }
+    }
+
+    private func putOn() {
+        guard !picked.isEmpty else { return }
+        let ids = Array(picked)
+        model.change { _ = $0.putOnTemplate(templateId: templateId, itemIds: ids) }
+        dismiss()
+    }
+
+    private func makeNew() {
+        let name = jsTrim(query)
+        guard !name.isEmpty else { return }
+        model.change { _ = $0.addToTemplate(templateId: templateId, name: name) }
+        query = ""
+    }
+}
+
+/// "Choose from your things" at the foot of a template — owns its sheet, so the
+/// template screen keeps the one sheet it has (several sheets on one view is a
+/// trap met in Search).
+struct PickThingsDoor: View {
+    let templateId: String
+    @EnvironmentObject var model: LibraryModel
+    @State private var open = false
+
+    var body: some View {
+        Button { open = true } label: {
+            WideButtonLabel(title: "Choose from your things", tint: AppSection.templates.color) {
+                SVGPath.path("M4 6.5h2M9 6.5h11M4 12h2M9 12h11M4 17.5h2M9 17.5h11")
+                    .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round))
+            }
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("template-pick")
+        .sheet(isPresented: $open) { PickThingsScreen(templateId: templateId).environmentObject(model) }
+    }
+}

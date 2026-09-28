@@ -54,6 +54,26 @@ extension Library {
         return out
     }
 
+    /// Everything, not just the last twelve months — his test G.3 (2026-09-28): "a
+    /// strip underneath that would be all trips, totally".
+    public struct TravelTotals: Equatable, Sendable {
+        public var trips = 0
+        public var nights = 0
+        public var places = 0
+        public var packed = 0
+    }
+
+    public func travelAllTime() -> TravelTotals {
+        var out = TravelTotals()
+        out.trips = trips.count
+        for trip in trips {
+            out.nights += nightsOf(trip)
+            out.packed += trip.entries.filter { $0.checked }.count
+        }
+        out.places = mapPlaces().count
+        return out
+    }
+
     /// How many nights a trip covers, when it says. A trip with no end date, or
     /// one that ends the day it starts, counts as none — not as one.
     private func nightsOf(_ trip: TripEvent) -> Int {

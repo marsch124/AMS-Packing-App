@@ -154,11 +154,13 @@ struct HowItWorksScreen: View {
             "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time."]),
         Topic(section: .events, title: "Trips", lines: [
             "Now, Coming up and Done — Now is always there, even when no trip is under way. Each trip says Planned, Packing or Ready.",
-            "Reviewed trips fold away. Your year shows when you travel, month by month.",
+            "Reviewed trips fold away. Your year shows when you travel, month by month; All your trips counts everything, ever, with the map of where they went under it.",
             "The pin at the top: Where you have been. A map with a pin per place (a number when you went more than once), a line through your trips oldest first, and a card per place. A trip joins the map as soon as it has a place (in Trip settings or on its weather line), forecast or not."]),
         Topic(section: .templates, title: "Your templates", lines: [
             "Templates are the building blocks of every trip, on their shelves (GA, WET and so on). The list you pack from is made from them.",
-            "+ New makes a template and asks on which shelf it should live. Open one to rename it, add things, or take one off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
+            "+ New makes a template and asks on which shelf it should live. Open one to rename it, take a thing off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
+            "Adding: Choose from your things, at the foot of a template — everything you own, grouped as you like, ticked and added in one go. Or type a new thing beside it.",
+            "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",
             "Delete template asks first. Your things stay.",
             "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
             "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),

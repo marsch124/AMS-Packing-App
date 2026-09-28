@@ -188,6 +188,10 @@ struct TemplateDetail: View {
     @State private var askingToDelete = false
     /// The row whose ✕ was pressed — it asks first (his test H.5).
     @State private var takingOff: TakingOff?
+    /// How the things are grouped (his test H.3: "group and sort the items in a
+    /// template in the same way as when you pack"). "" = the template's own way:
+    /// its sections, or When when it has none. Remembered on this device.
+    @AppStorage("ams.template.grouping") private var groupingRaw = ""
 
     struct TakingOff: Equatable { let memId: String; let name: String }
 
@@ -196,13 +200,15 @@ struct TemplateDetail: View {
         // His lists are built in SECTIONS (511 of his 538 rows sit in one), so that
         // is how a list reads here. A list with no sections falls back to "When".
         let sectioned = list.items.contains { !$0.section.isEmpty }
-        let groups: [(title: String, colour: Color?, items: [Item])] = sectioned
-            ? groupItemsBySection(list.items, list.sections)
-                .filter { !$0.items.isEmpty }
-                .map { (($0.section?.name ?? "Everything else"), nil, $0.items) }
-            : entriesByPhase(list.items)
+        let ways: [ThingGrouping] = (sectioned ? [.section] : []) + [.when, .into, .fromWhere, .kind, .name]
+        let grouping = ThingGrouping(rawValue: groupingRaw).flatMap { ways.contains($0) ? $0 : nil } ?? ways[0]
+        let groups: [(title: String, colour: Color?, items: [Item])] = grouping == .when
+            ? entriesByPhase(list.items)
                 .filter { !$0.entries.isEmpty }
                 .map { ($0.phase.label, Color(hexString: readableHex($0.phase.color, dark: scheme == .dark)), $0.entries) }
+            : grouping.groups(list.items, sections: list.sections)
+                .filter { !$0.items.isEmpty }
+                .map { ($0.title, nil, $0.items) }
         // Numbered as they are READ, top to bottom — what you see first is the first.
         let index: [String: Int] = Dictionary(groups.flatMap(\.items).enumerated().map { ($1.memId ?? "\($0)", $0) },
                                               uniquingKeysWith: { a, _ in a })
@@ -240,6 +246,27 @@ struct TemplateDetail: View {
                     .accessibilityIdentifier("template-detail-done")
             }
             .padding(16)
+            // Group the things the ways a trip sorts (his H.3), in sight above the list.
+            FlowRow(spacing: 6) {
+                Text("Group").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    .frame(minHeight: 32)
+                        ForEach(ways, id: \.self) { way in
+                            let on = way == grouping
+                            Button { groupingRaw = way.rawValue } label: {
+                                Text(way.label).font(.system(size: 14, weight: on ? .heavy : .semibold))
+                                    .foregroundStyle(on ? Color.white : Theme.ink)
+                                    .padding(.horizontal, 12).frame(minHeight: 32)
+                                    .background(Capsule().fill(on ? AppSection.templates.color : Theme.card))
+                                    .overlay(Capsule().stroke(on ? AppSection.templates.color : Theme.line, lineWidth: 1))
+                                    .contentShape(Capsule())
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("template-grouping-\(way.rawValue)")
+                            .accessibilityAddTraits(on ? .isSelected : [])
+                        }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.bottom, 4)
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
@@ -287,8 +314,12 @@ struct TemplateDetail: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
+            // Things he already owns, picked from the whole list (his H.9 — the one red
+            // box of the test); or a new one typed beside it.
+            PickThingsDoor(templateId: listId).environmentObject(model)
+                .padding(.horizontal, 16).padding(.top, 10)
             HStack(spacing: 8) {
-                TextField("Add a thing to this template", text: $newName)
+                TextField("Or type a new thing", text: $newName)
                     .textFieldStyle(.plain)
                     .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
                     .padding(.horizontal, 12).frame(minHeight: 44)

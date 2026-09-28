@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.42", date: "28 Sep 2026", title: "Choosing things for a template",
+                new: ["A template: Choose from your things. Every thing you own, grouped by Kind, From where, Into, When or A–Z, with a search. Tick as many as you like and Add them in one go; what is already on the template says so. A name you own nothing by becomes a new thing, straight onto the template.",
+                      "A template's own things can be grouped the same ways: its sections, When, Into, From where, Kind or A–Z.",
+                      "Trips: All your trips under Your year — trips, nights away, places and things packed, ever — and under it the map of where they went. Tap the map for the whole map."]),
         Release(version: "0.41", date: "28 Sep 2026", title: "Your test comments, part 2",
                 new: ["How it works has a Words chapter: every word the app uses, said once — template, shelf, list, kit, the loop, review, refine and more."],
                 changed: ["The loop strip carries the mark of the tab where each step is done: Plan on Home, Pack and Review on Trips, Refine on Templates. The picture says so too.",

@@ -34,6 +34,21 @@ final class TravelYearTests: XCTestCase {
         XCTAssertEqual(year.most, 2)
     }
 
+    /// All his trips, ever (his G.3): the old one counts here, and a trip with a
+    /// place on the map counts its place once, however often he went.
+    func testAllTimeCountsEveryTripAndEachPlaceOnce() {
+        var lib = library()
+        _ = lib.setPlace(tripId: lib.trips[0].id, lat: 57.71, lon: 11.97, label: "Gothenburg, SE")
+        _ = lib.setPlace(tripId: lib.trips[3].id, lat: 57.71, lon: 11.97, label: "Gothenburg, SE")
+        _ = lib.setPlace(tripId: lib.trips[2].id, lat: 56.66, lon: 16.36, label: "Kalmar, SE")
+        let all = lib.travelAllTime()
+        XCTAssertEqual(all.trips, 4, "the trip from two years ago counts too")
+        XCTAssertEqual(all.nights, 3 + 1 + 7 + 2)
+        XCTAssertEqual(all.packed, 6)
+        XCTAssertEqual(all.places, 2, "two visits to one place are one place")
+        XCTAssertEqual(Library().travelAllTime(), Library.TravelTotals())
+    }
+
     func testATripWithNoDatesIsNotCounted() {
         var lib = Library()
         lib.trips = [newEvent(name: "someday", startDate: "", endDate: "")]

@@ -185,3 +185,56 @@ struct WorldMapDoor: View {
         .sheet(isPresented: $open) { WorldMapScreen().environmentObject(model) }
     }
 }
+
+/// The map on the Trips tab, under All your trips: every place he has been, as a
+/// dot. It is a picture, not a thing to drag — a tap opens the whole map.
+struct MiniWorldMap: View {
+    @EnvironmentObject var model: LibraryModel
+    @State private var open = false
+
+    var body: some View {
+        let pins = model.library.mapPlaces()
+        Button { open = true } label: {
+            ZStack(alignment: .bottomLeading) {
+                if pins.isEmpty {
+                    Text("Your trips appear here once they have a place.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity, minHeight: 90)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                } else {
+                    // One place alone would zoom to its streets — show its region instead.
+                    Map(initialPosition: pins.count == 1
+                            ? .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: pins[0].lat, longitude: pins[0].lon),
+                                                         span: MKCoordinateSpan(latitudeDelta: 9, longitudeDelta: 12)))
+                            : .automatic,
+                        interactionModes: []) {
+                        ForEach(Array(pins.enumerated()), id: \.element.key) { _, pin in
+                            Annotation(pin.place, coordinate: CLLocationCoordinate2D(latitude: pin.lat, longitude: pin.lon)) {
+                                Circle().fill(AppSection.events.color)
+                                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                    .frame(width: 13, height: 13)
+                            }
+                        }
+                    }
+                    .mapStyle(.standard(pointsOfInterest: .excludingAll))
+                    .frame(height: 210)
+                    .allowsHitTesting(false)
+                    Text(Library.mapSummary(pins))
+                        .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Capsule().fill(AppSection.events.color))
+                        .padding(10)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("events-minimap")
+        .accessibilityLabel("Map of your trips")
+        .accessibilityValue(Library.mapSummary(pins))
+        .sheet(isPresented: $open) { WorldMapScreen().environmentObject(model) }
+    }
+}
+

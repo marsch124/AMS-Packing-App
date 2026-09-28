@@ -124,7 +124,13 @@ struct EventsScreen: View {
                         }
                     }
                 }
-                if !cards.isEmpty { TravelYearBand(year: model.library.travelYear(today: Today.local)) }
+                if !cards.isEmpty {
+                    TravelYearBand(year: model.library.travelYear(today: Today.local))
+                    // All his trips, ever, and where they went — his G.3 (2026-09-28):
+                    // "a strip underneath that would be all trips, totally. Under that,
+                    // a world map with small indications where the trips have been."
+                    AllTimeBand(totals: model.library.travelAllTime()).environmentObject(model)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
@@ -246,9 +252,8 @@ struct TravelYearBand: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("YOUR YEAR")
-                .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
-                .padding(.top, 22)
+            SectionTitle(title: "Your year", id: "events-year-heading")
+                .padding(.top, 6)
 
             HStack(alignment: .bottom, spacing: 5) {
                 ForEach(Array(year.byMonth.enumerated()), id: \.offset) { n, count in
@@ -296,6 +301,41 @@ struct TravelYearBand: View {
     static func month(_ firstOfMonth: String) -> String {
         guard firstOfMonth.count >= 7, let m = Int(firstOfMonth.dropFirst(5).prefix(2)), (1...12).contains(m) else { return "" }
         return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]
+    }
+}
+
+/// All his trips, ever — four figures — and under them the map of where they went.
+/// A tap on the map opens the whole map with its cards.
+struct AllTimeBand: View {
+    let totals: Library.TravelTotals
+    @EnvironmentObject var model: LibraryModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionTitle(title: "All your trips", id: "events-alltime-heading")
+            HStack(spacing: 8) {
+                figure("\(totals.trips)", totals.trips == 1 ? "trip" : "trips", "alltime-trips")
+                figure("\(totals.nights)", totals.nights == 1 ? "night away" : "nights away", "alltime-nights")
+                figure("\(totals.places)", totals.places == 1 ? "place" : "places", "alltime-places")
+                figure("\(totals.packed)", "things packed", "alltime-packed")
+            }
+            MiniWorldMap().environmentObject(model)
+        }
+    }
+
+    private func figure(_ number: String, _ word: String, _ id: String) -> some View {
+        VStack(spacing: 2) {
+            Text(number).font(.system(size: 20, weight: .heavy).monospacedDigit())
+                .foregroundStyle(AppSection.events.color)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted)
+                .lineLimit(1).minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity, minHeight: 56)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(id)
     }
 }
 
