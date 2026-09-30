@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.43", date: "30 Sep 2026", title: "Actions is now To do",
+                changed: ["The Actions tab is called To do — your choice. It still has both sides: To do and To buy."]),
         Release(version: "0.42", date: "28 Sep 2026", title: "Choosing things for a template",
                 new: ["A template: Choose from your things. Every thing you own, grouped by Kind, From where, Into, When or A–Z, with a search. Tick as many as you like and Add them in one go; what is already on the template says so. A name you own nothing by becomes a new thing, straight onto the template.",
                       "A template's own things can be grouped the same ways: its sections, When, Into, From where, Kind or A–Z.",

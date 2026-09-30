@@ -170,7 +170,7 @@ struct HowItWorksScreen: View {
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month.",
             "Under the services: your things in numbers — how many, the total weight, the heaviest things, where it all lives, what each template weighs, the year ahead, and what is worth knowing."]),
-        Topic(section: .actions, title: "Actions", lines: [
+        Topic(section: .actions, title: "To do", lines: [
             "To do: things to sort out before you go.",
             "To buy: what to get, with worn-out or run-down things suggested."]),
         Topic(section: .settings, title: "Settings", lines: [

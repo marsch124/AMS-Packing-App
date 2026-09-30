@@ -119,6 +119,11 @@ final class AMSPackingUITests: XCTestCase {
 
         for name in ["events", "templates", "care", "actions", "settings", "home"] {
             XCTAssertTrue(app.buttons["tab-\(name)"].waitForExistence(timeout: 5), "no tab-\(name)")
+            // His name for it (G.4, 2026-09-30): the Actions tab says To do.
+            if name == "actions" {
+                XCTAssertTrue(words(app.buttons["tab-actions"]).hasPrefix("To do"),
+                              "the tab still says '\(words(app.buttons["tab-actions"]))'")
+            }
             tab(app, name)
             XCTAssertTrue(appears(app, "screen-\(name)", timeout: 5),
                           "tab-\(name) did not open screen-\(name)")

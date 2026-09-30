@@ -47,7 +47,7 @@ struct EventsScreen: View {
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("events-todos")
-                        .accessibilityLabel("\(toDos) to do, open the Actions tab")
+                        .accessibilityLabel("\(toDos) to do, open the To do tab")
                     }
                 }
                 .padding(.top, 14).padding(.bottom, 4)

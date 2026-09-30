@@ -17,7 +17,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .events: return "Trips"
         case .templates: return "Templates"
         case .care: return "Care"
-        case .actions: return "Actions"
+        case .actions: return "To do"            // his choice (test G.4, 2026-09-30); was "Actions"
         case .settings: return "Settings"
         }
     }

@@ -28,6 +28,7 @@ enum Words {
         Entry(term: "Review", meaning: "Looking back at ONE trip: what you did not use, and what you missed.", section: .events),
         Entry(term: "Refine", meaning: "Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab.", section: .templates),
         Entry(term: "Keep · Drop", meaning: "In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays.", section: .templates),
+        Entry(term: "To do", meaning: "The tab for getting ready: things to sort out before you go, and — on its other side — To buy, with worn-out or run-down things suggested.", section: .actions),
         Entry(term: "Your choices", meaning: "Your own lists in Settings: storage places, owners, packers, conditions and the When steps.", section: .settings),
         Entry(term: "Care", meaning: "Looking after your things: services that fall due, weights, bags. The Care tab.", section: .care),
     ]
