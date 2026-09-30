@@ -92,6 +92,13 @@ jobs:
               -e 's|<string>development</string>|<string>production</string>|' \
               App/Config/AMSPacking-iCloud.entitlements > App/Config/AMSPacking-Ship.entitlements
           grep -c "Production" App/Config/AMSPacking-Ship.entitlements
+          # The iPhone names the push entitlement "aps-environment"; the Mac names it
+          # "com.apple.developer.aps-environment". With only the Mac's name the iPhone
+          # never got iCloud's "something changed" notice and fetched only when the
+          # app was opened again (his test A.4, 2026-09-28).
+          sed -e 's|<key>com.apple.developer.aps-environment</key>|<key>aps-environment</key>|' \
+              App/Config/AMSPacking-Ship.entitlements > App/Config/AMSPacking-Ship-iOS.entitlements
+          grep -c "<key>aps-environment</key>" App/Config/AMSPacking-Ship-iOS.entitlements
 
       - name: Write the App Store Connect key
         env:
@@ -118,6 +125,8 @@ jobs:
           mkdir -p build
           for platform in iOS macOS; do
             echo "=== $platform"
+            ENTITLEMENTS=App/Config/AMSPacking-Ship.entitlements
+            if [ "$platform" = iOS ]; then ENTITLEMENTS=App/Config/AMSPacking-Ship-iOS.entitlements; fi
             # -allowProvisioningUpdates lets Apple register the bundle identifier
             # and its iCloud container on the first run.
             xcodebuild archive \
@@ -131,7 +140,7 @@ jobs:
               -authenticationKeyIssuerID "$ISSUER" \
               DEVELOPMENT_TEAM="$TEAM_ID" \
               CODE_SIGN_STYLE=Automatic \
-              CODE_SIGN_ENTITLEMENTS=App/Config/AMSPacking-Ship.entitlements \
+              CODE_SIGN_ENTITLEMENTS="$ENTITLEMENTS" \
               PACKING_USES_ICLOUD=YES \
               MARKETING_VERSION="$APP_VERSION" \
               CURRENT_PROJECT_VERSION="$BUILD" \

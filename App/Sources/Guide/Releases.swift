@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.44", date: "30 Sep 2026", title: "The iPhone hears about changes",
+                fixed: ["The iPhone app was built without permission to be told when iCloud has something new, so a trip made on the Mac showed up only after the app was opened again (your A.4). It now carries it, like the Mac app."]),
         Release(version: "0.43", date: "30 Sep 2026", title: "Actions is now To do",
                 changed: ["The Actions tab is called To do — your choice. It still has both sides: To do and To buy."]),
         Release(version: "0.42", date: "28 Sep 2026", title: "Choosing things for a template",
