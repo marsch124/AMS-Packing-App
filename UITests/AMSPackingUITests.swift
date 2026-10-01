@@ -1812,6 +1812,35 @@ final class AMSPackingUITests: XCTestCase {
                       "Into does not group by bag: '\(words(app.staticTexts["template-group-0"]))'")
     }
 
+    /// His decision on test I.7 (1 Oct 2026): a thing's new bag reaches a trip still
+    /// ahead, on a line not ticked yet.
+    func testAChangeToAThingReachesATripStillAhead() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Headlamp", into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let bag = app.buttons["thing-bag-2"]
+        XCTAssertTrue(bag.waitForExistence(timeout: 5))
+        let newBag = words(bag)
+        XCTAssertFalse(newBag.isEmpty || newBag.contains("Carry-on"), "pick a bag other than the one it has: '\(newBag)'")
+        select(app, bag)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()                          // the sample trip, 3–5 Oct: still ahead
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let line = (0..<12).map { app.buttons["trip-line-\($0)"] }.first { self.words($0).contains("Headlamp") }
+        XCTAssertNotNil(line, "no Headlamp on the trip")
+        XCTAssertTrue(waitUntil { self.words(line!).contains(newBag) },
+                      "the thing's new bag did not reach the trip still ahead: '\(self.words(line!))'")
+    }
+
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.
     func testCareShowsWhatIsOverdueAndDoneTodayMovesItOn() {
         let app = launch()

@@ -165,7 +165,7 @@ struct HowItWorksScreen: View {
             "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
             "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [
-            "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first).",
+            "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first). A change reaches the trips still ahead, on the lines you have not ticked yet.",
             "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month.",

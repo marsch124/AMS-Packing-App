@@ -197,6 +197,9 @@ final class ThingsTests: XCTestCase {
         XCTAssertNil(lib.addThing(name: "sit MAT"), "no second thing of the same name")
 
         let lamp = lib.items.first { $0.name == "Headlamp" }!
+        // A trip that is OVER keeps what it was packed as (one still ahead follows the
+        // thing since his I.7 decision, 1 Oct 2026 — ThingFollowsTests).
+        lib.trips[0].startDate = "2025-06-01"; lib.trips[0].endDate = "2025-06-03"
         XCTAssertTrue(lib.renameThing(id: lamp.id, to: "Head torch"))
         for t in lib.resolvedTemplates() where t.name == "Hiking" || t.name == "Night run" {
             XCTAssertTrue(t.items.contains { $0.name == "Head torch" }, "\(t.name) shows the new name")

@@ -451,6 +451,7 @@ extension Library {
         let wasBag = bags().first { $0.id == id }
         items[n].name = clean
         if let bag = wasBag, bag.name != clean { renameBagEverywhere(from: bag.name, to: clean) }
+        followThing(id: id)                  // its open lines on trips still ahead (his I.7)
         return true
     }
 
@@ -495,6 +496,8 @@ extension Library {
         var it = items[n]
         apply(&it)
         items[n] = coerceItem(it)
+        // …and on to the trips still ahead, where nothing is decided yet (his I.7).
+        followThing(id: id)
         return true
     }
 
