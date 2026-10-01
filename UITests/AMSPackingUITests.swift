@@ -1835,7 +1835,14 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         app.buttons["trip-row-0"].tap()                          // the sample trip, 3–5 Oct: still ahead
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        let line = (0..<12).map { app.buttons["trip-line-\($0)"] }.first { self.words($0).contains("Headlamp") }
+        // The Mac's short window builds only the lines on screen (a lazy list): bring
+        // each one in before reading it (0.45's first CI run: "no Headlamp" on the Mac).
+        var line: XCUIElement?
+        for n in 0..<12 {
+            guard scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil) else { break }
+            let l = app.buttons["trip-line-\(n)"]
+            if words(l).contains("Headlamp") { line = l; break }
+        }
         XCTAssertNotNil(line, "no Headlamp on the trip")
         XCTAssertTrue(waitUntil { self.words(line!).contains(newBag) },
                       "the thing's new bag did not reach the trip still ahead: '\(self.words(line!))'")
