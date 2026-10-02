@@ -368,6 +368,11 @@ final class AMSPackingUITests: XCTestCase {
            front.descendants(matching: .any)[e.identifier].exists { return front }
         let first = app.scrollViews.firstMatch
         if first.exists, first.descendants(matching: .any)[e.identifier].exists { return first }
+        // 🪤 Neither: with the keyboard up, the frontmost "list" is the text field being
+        // typed in (a 44-point scroll view), and the trip's own list sits between it
+        // and the screen behind (0.52, Bought there). Ask each one, front to back.
+        for list in app.scrollViews.allElementsBoundByIndex.reversed()
+        where list.exists && list.descendants(matching: .any)[e.identifier].exists { return list }
         return nil
     }
 
@@ -949,7 +954,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(find(app, "bag-detail") != nil, "it deleted before a bag was chosen for its things")
         tap(app, id: "bag-move-0")
         tap(app, id: "bag-delete-yes")
-        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "the page did not close after the delete")
+        // 15 s: the suite's FIRST test meets GitHub's freshly started simulator, slow at
+        // everything — 0.50's run took 6 s here and went red with the delete done.
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 15), "the page did not close after the delete")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" }, "the bag is still listed")
         tap(app, id: "bag-0-name")
         XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
@@ -1471,6 +1478,49 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(trip, "trip-detail", timeout: 20), "the Shortcut did not open the next trip")
         XCTAssertTrue(waitUntil { self.words(trip.staticTexts["trip-name"]) == "Sunny weeks" },
                       "it opened another trip: '\(words(trip.staticTexts["trip-name"]))'")
+    }
+
+    /// A photo of each packed bag (his idea 11): tap a bag on the trip, take its photo
+    /// (under the tests a drawn picture stands in for the camera), see it large, remove it.
+    func testAPackedBagKeepsItsPhoto() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "bag-0")
+        XCTAssertTrue(app.buttons["bag-0-photo"].waitForExistence(timeout: 5), "an open bag offers no photo")
+        XCTAssertFalse(app.buttons["bag-0-photo-thumb"].exists, "a photo before one was taken")
+        tap(app, id: "bag-0-photo")
+        XCTAssertTrue(app.buttons["bag-0-photo-thumb"].waitForExistence(timeout: 5), "the photo was not kept")
+        tap(app, id: "bag-0-photo-thumb")
+        XCTAssertTrue(app.buttons["bag-photo-done"].waitForExistence(timeout: 5), "the photo does not open large")
+        shot(app, "bag-photo-large")
+        tap(app, id: "bag-photo-done")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-photo-done"].exists }, "the large photo did not close")
+        tap(app, id: "bag-0-photo-remove")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-0-photo-thumb"].exists }, "Remove kept the photo")
+    }
+
+    /// Bought there (his idea 12): a thing bought on the trip goes onto its list in one
+    /// press — ticked, since it is in hand, and marked Bought there.
+    func testSomethingBoughtThereGoesOnTheList() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample trip is not what it was: '\(words(progress))'")
+        XCTAssertFalse(app.buttons["trip-add-bought"].exists, "Bought there is offered before anything is typed")
+        type("Sun cream", into: app.textFields["trip-add-name"])
+        tap(app, id: "trip-add-bought")
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/8" }, "it is not on the list, in hand: '\(words(progress))'")
+        hideKeyboard(app)
+        // The list builds its lines as they come near: walk down to the new one.
+        for n in 0...7 {
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil), "line \(n + 1) never appeared")
+        }
+        XCTAssertTrue(waitUntil { self.words(app.buttons["trip-line-7"]).contains("Bought there") },
+                      "the line does not say it was bought there: '\(words(app.buttons["trip-line-7"]))'")
     }
 
     /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end

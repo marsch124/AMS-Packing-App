@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.52", date: "2 Oct 2026", title: "A photo of the packed bag, and Bought there",
+                new: ["Tap a bag on a trip's Bags: besides the luggage scale, Take a photo (or Choose a photo) of it packed. It stays with the trip; tap it to see it large \u{2014} the picture to repack from on the way home.",
+                      "Bought something on the trip? Type it at the bottom of the list and press Bought there: it goes on, ticked, marked Bought there."]),
         Release(version: "0.51", date: "2 Oct 2026", title: "Shortcuts and the Action button",
                 new: ["Two Shortcuts actions: Open a grab list (pick Swim, Bike, Run\u{2026}) and Open my next trip. Put one on the iPhone's Action button (Settings \u{2192} Action Button \u{2192} Shortcut), on the Home Screen, or ask Siri; they work in Shortcuts on the Mac too."]),
         Release(version: "0.50", date: "2 Oct 2026", title: "The luggage scale, and To buy in Reminders",

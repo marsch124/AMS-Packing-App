@@ -26,6 +26,8 @@
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.travel</string>
+	<key>NSCameraUsageDescription</key>
+	<string>A photo of a packed bag, kept with the trip, to repack from on the way home.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
 	<key>NSRemindersUsageDescription</key>

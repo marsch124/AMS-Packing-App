@@ -12,7 +12,7 @@ settings:
     DEVELOPMENT_TEAM: D24ENP83QQ
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.51"
+    MARKETING_VERSION: "0.52"
     CURRENT_PROJECT_VERSION: "2"
 packages:
   # The model — everything the app knows about packing, with no screen in it.
@@ -71,6 +71,8 @@ targets:
         # What the device says when the buy list first goes to Reminders (0.50).
         NSRemindersFullAccessUsageDescription: Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.
         NSRemindersUsageDescription: Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.
+        # A photo of a packed bag (0.52).
+        NSCameraUsageDescription: A photo of a packed bag, kept with the trip, to repack from on the way home.
         # YES only in builds that carry the iCloud entitlements (see settings below).
         PackingUsesICloud: $(PACKING_USES_ICLOUD)
         # A change on the other device arrives as a silent push (iPhone).

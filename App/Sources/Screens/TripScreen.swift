@@ -336,6 +336,18 @@ struct TripScreen: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .disabled(jsTrim(newName).isEmpty)
                 .accessibilityIdentifier("trip-add")
+                // Bought there (his idea 12): on the list in one go, in hand already.
+                if !jsTrim(newName).isEmpty {
+                    Button { addBought() } label: {
+                        Text("Bought there").font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(AppSection.events.color)
+                            .padding(.horizontal, 12).frame(minHeight: 44)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color, lineWidth: 1.4))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("trip-add-bought")
+                }
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
             // The green is the WHOLE screen, this bar included (his call: "we need
@@ -485,6 +497,13 @@ struct TripScreen: View {
         model.change { _ = $0.addCustomLine(tripId: tripId, name: name) }
         newName = ""
     }
+
+    private func addBought() {
+        let name = newName
+        guard !jsTrim(name).isEmpty else { return }
+        model.change { _ = $0.addBoughtThere(tripId: tripId, name: name) }
+        newName = ""
+    }
 }
 
 /// One line of a packing list. Ticked = a filled circle; set aside = greyed and
@@ -518,11 +537,16 @@ struct PackLine: View {
                 }
             }
             .accessibilityHidden(true)
-            Text(line.name)
-                .font(.system(size: 17, weight: line.checked ? .regular : .medium))
-                .foregroundStyle(aside ? Theme.muted : (line.checked ? Theme.muted : Theme.ink))
-                .strikethrough(aside, pattern: .solid, color: Theme.muted)
-                .lineLimit(2)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(line.name)
+                    .font(.system(size: 17, weight: line.checked ? .regular : .medium))
+                    .foregroundStyle(aside ? Theme.muted : (line.checked ? Theme.muted : Theme.ink))
+                    .strikethrough(aside, pattern: .solid, color: Theme.muted)
+                    .lineLimit(2)
+                if Library.isBoughtThere(line) {
+                    Text("Bought there").font(.system(size: 13, weight: .bold)).foregroundStyle(AppSection.events.color)
+                }
+            }
             Spacer(minLength: 8)
             if qty > 1 {
                 Text("×\(qty.rounded() == qty ? String(Int(qty)) : String(qty))")

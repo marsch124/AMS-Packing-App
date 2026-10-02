@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06244CC7FE9451C6DA719388 /* BagPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */; };
 		09A4001328DA54940464A34D /* ThingsTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B24F2617CC7D137784F66F2 /* ThingsTable.swift */; };
 		09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */; };
 		0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 258F81799F958E5C5EF112C5 /* ListsScreen.swift */; };
@@ -141,6 +142,7 @@
 		CE240BD38035471259419B81 /* TemplateIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateIcons.swift; sourceTree = "<group>"; };
 		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
 		DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareCalendarView.swift; sourceTree = "<group>"; };
+		DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagPhoto.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		ED9B041225333263C7547689 /* ThingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsScreen.swift; sourceTree = "<group>"; };
@@ -262,6 +264,7 @@
 			children = (
 				9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */,
 				B81D1DC40B7BE148110F1C91 /* BagDetail.swift */,
+				DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */,
 				C41F92CE24B4D203B69B5870 /* BagsCard.swift */,
 				4EB48F2667254D2AD3862586 /* BagsScreen.swift */,
 				1E0A839566CDE77B068F47C5 /* BulkChange.swift */,
@@ -416,6 +419,7 @@
 				65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */,
 				AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */,
 				F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */,
+				06244CC7FE9451C6DA719388 /* BagPhoto.swift in Sources */,
 				D4F50ECCC88F8FE89A931EFC /* BagsCard.swift in Sources */,
 				0C6CADF139B1A87388BE3DD4 /* BagsScreen.swift in Sources */,
 				C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */,
@@ -609,7 +613,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.51;
+				MARKETING_VERSION = 0.52;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -696,7 +700,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.51;
+				MARKETING_VERSION = 0.52;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

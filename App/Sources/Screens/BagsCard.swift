@@ -61,7 +61,11 @@ struct BagsCard: View {
                         Button { open(bag) } label: { row(bag) }
                             .buttonStyle(.plain).focusEffectDisabled()
                             .accessibilityIdentifier("bag-\(n)")
-                        if weighing == bag.load.container { scaleEditor(bag, n) }
+                        if weighing == bag.load.container {
+                            scaleEditor(bag, n)
+                            // A photo of it packed (his idea 11), to repack from on the way home.
+                            BagPhotoRow(tripId: tripId, bag: bag.load.container, n: n).environmentObject(model)
+                        }
                     }
                 }
             }
@@ -80,7 +84,7 @@ struct BagsCard: View {
             keyLine(AppSection.events.color, "Green", "well within its max")
             keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
             keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
-            Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag to type what the luggage scale says.")
+            Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag for the luggage scale, and a photo of it packed.")
                 .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -173,7 +177,6 @@ struct BagsCard: View {
         if weighing == bag.load.container { weighing = nil; return }
         weighing = bag.load.container
         scaleText = bag.scaleGrams.map { BagsCard.number(($0 / 100).rounded() / 10) } ?? ""
-        typing = true
     }
 
     private func save(_ bag: WeighedBag) {
