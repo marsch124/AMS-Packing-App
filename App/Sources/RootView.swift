@@ -1,10 +1,12 @@
 import SwiftUI
+import Combine
 import PackingCore
 import PackingLibrary
 
 /// The frame of the app: one screen at a time, and the tab bar under it.
 struct RootView: View {
     @State private var section: AppSection = .home
+    @EnvironmentObject var model: LibraryModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -14,6 +16,18 @@ struct RootView: View {
             TabBar(section: $section)
         }
         .background(Theme.bg.ignoresSafeArea())
+        // Packing reminders (his idea 7): a tapped one opens its trip on Home; and
+        // whenever the library settles after a change, the waiting ones are put right.
+        .onAppear {
+            PackingReminders.shared.open = { id in
+                section = .home
+                model.tripToOpen = id
+            }
+            PackingReminders.shared.start()
+        }
+        .onReceive(model.$library.debounce(for: .seconds(2), scheduler: RunLoop.main)) { library in
+            Task { await PackingReminders.shared.reschedule(library) }
+        }
     }
 }
 

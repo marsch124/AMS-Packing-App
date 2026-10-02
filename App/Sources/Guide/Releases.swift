@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.49", date: "2 Oct 2026", title: "Counting down, and reminders",
+                new: ["Home counts down to your next trip, under the grab lists: the days in big figures, the trip, and the next packing step with when it is due. Tap it to open the trip.",
+                      "Settings \u{2192} Remind me to pack: on this device, at 9 in the morning of the day each packing step is due (a week ahead, the day before, the morning\u{2026}), the trip and what is left to pack. Tap a reminder to open the trip. Off until you turn it on, so each device reminds you only if you want it to."]),
         Release(version: "0.48", date: "2 Oct 2026", title: "Check before you go",
                 new: ["A trip shows Check before you go at the top when something needs you. On a plane trip: what in a cabin bag the airport stops \u{2014} not allowed on board in red, a liquid in orange (100 ml at most, in the clear bag). And what runs out before you are home; a passport or ID card six months ahead. Tap a line to open the thing and put it right.",
                       "A thing's page has On a plane (Liquid, Not allowed in the cabin) and Valid until (Add a date).",

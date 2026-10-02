@@ -57,6 +57,13 @@ struct HomeScreen: View {
                 // Home holds eight (4 × 2) — HIS, in his order; free places fill from the shelf (GrabShelf.swift).
                 GrabButtons(lists: model.library.homeGrabLists()) { grab = $0 }
 
+                // The trip he leaves on next, counted down (his idea 6) — under the grab
+                // lists, which keep their place at the top.
+                if let next = model.library.nextTrip(today: Today.local) {
+                    CountdownCard(next: next) { opened = next.id }
+                        .padding(.top, 4)
+                }
+
                 Text("Create new trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Name your trip", text: $name)
@@ -164,6 +171,12 @@ struct HomeScreen: View {
             TripScreen(tripId: o.id).environmentObject(model)
         }
         .sheet(isPresented: $shelf) { GrabShelfScreen().environmentObject(model) }
+        // A tapped packing reminder: its trip.
+        .onChange(of: model.tripToOpen, initial: true) { _, id in
+            guard let id else { return }
+            model.tripToOpen = nil
+            if model.library.trips.contains(where: { $0.id == id }) { opened = id }
+        }
         .sheet(item: Binding(get: { grab.map { GrabOpened(list: $0) } }, set: { grab = $0?.list })) { g in
             GrabScreen(listId: g.list.id).environmentObject(model)
         }

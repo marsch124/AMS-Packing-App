@@ -41,6 +41,9 @@ struct SettingsScreen: View {
                 .padding(.top, 14)
                 .accessibilityIdentifier("settings-lists")
 
+                // Remind me to pack (his idea 7) — per device, off until he says.
+                RemindersCard().environmentObject(model)
+
                 // What's new and How it works — his standing rule from the web apps.
                 GuideDoors()
 

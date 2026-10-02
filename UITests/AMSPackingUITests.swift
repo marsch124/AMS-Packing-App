@@ -1289,6 +1289,43 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { counts().contains("×7") }, "without laundry the towel does not count every night: \(counts())")
     }
 
+    /// The next trip counted down on Home (his idea 6, 2 Oct 2026): the days, the trip,
+    /// the next packing step; a tap opens it. (`-uiTestingChecks`: a trip 20 days out,
+    /// its things on "≥1 week ahead".)
+    func testHomeCountsDownToTheNextTrip() {
+        let app = launch("-uiTestingChecks")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let card = app.buttons["home-countdown"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "Home does not count down to the next trip")
+        XCTAssertTrue(waitUntil { self.words(card).contains("20") && self.words(card).contains("Sunny weeks") },
+                      "the countdown does not say 20 days to Sunny weeks: '\(words(card))'")
+        XCTAssertTrue(words(card).contains("week ahead"), "the next packing step is missing: '\(words(card))'")
+        shot(app, "home-countdown")
+        tap(app, id: "home-countdown")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the countdown did not open the trip")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-name"]) == "Sunny weeks" },
+                      "the countdown opened another trip: '\(words(app.staticTexts["trip-name"]))'")
+    }
+
+    /// Remind me to pack (his idea 7): per device and off until he says. On, Settings
+    /// names the next reminder — the day, the trip, the step; off, it names none.
+    func testSettingsTurnsOnPackingReminders() {
+        let app = launch("-uiTestingChecks")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        XCTAssertTrue(switchNamed(app, "settings-reminders").exists, "no Remind me to pack switch")
+        XCTAssertFalse(isSwitchOn(app, "settings-reminders"), "reminders are on before he asked")
+        XCTAssertFalse(app.staticTexts["settings-reminders-next"].exists, "a next reminder is named while off")
+        setSwitch(app, "settings-reminders", on: true)
+        let next = app.staticTexts["settings-reminders-next"]
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "on, the next reminder is not named")
+        XCTAssertTrue(waitUntil { self.words(next).contains("Sunny weeks") && self.words(next).contains("week ahead") },
+                      "the next reminder is not the trip's week-ahead step: '\(words(next))'")
+        shot(app, "settings-reminders")
+        setSwitch(app, "settings-reminders", on: false)
+        XCTAssertTrue(waitUntil { !app.staticTexts["settings-reminders-next"].exists }, "off, a reminder is still named")
+    }
+
     /// Check before you go (his ideas 4 and 5, 2 Oct 2026): on a plane trip, what in
     /// a cabin bag the airport stops; and what runs out before he is home — a passport
     /// six months ahead. A tap opens the thing to put it right. (`-uiTestingChecks`: a

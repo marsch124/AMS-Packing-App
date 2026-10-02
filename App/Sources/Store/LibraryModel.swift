@@ -25,6 +25,9 @@ final class LibraryModel: ObservableObject {
     @Published private(set) var weatherTrouble: [String: String] = [:]
     /// The map's "Find N places" is looking.
     @Published private(set) var findingPlaces = false
+    /// A trip asked to open from outside the screens — a tapped packing reminder.
+    /// Home opens it and clears it.
+    @Published var tripToOpen: String?
 
     private let store: LibraryStore
     private var held: [StoredRecord] = []
@@ -209,7 +212,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.sort", "ams.table.down", "ams.care.view", "ams.view", "ams.trip.folded", "ams.template.grouping", "ams.pick.grouping"] {
+            for key in ["ams.table.columns", "ams.table.sort", "ams.table.down", "ams.care.view", "ams.view", "ams.trip.folded", "ams.template.grouping", "ams.pick.grouping", PackingReminders.onKey] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
         }
