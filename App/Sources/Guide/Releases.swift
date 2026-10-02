@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.53", date: "2 Oct 2026", title: "Pack to go home",
+                new: ["Once a trip has begun (or something was bought there), the trip shows Pack to go home: what went and what you bought there, bag by bag, with ticks of its own. Used up takes a thing off. The photos of your packed bags sit at the top, to repack from. The ticks of the way out stay as they were, for the review."]),
         Release(version: "0.52", date: "2 Oct 2026", title: "A photo of the packed bag, and Bought there",
                 new: ["Tap a bag on a trip's Bags: besides the luggage scale, Take a photo (or Choose a photo) of it packed. It stays with the trip; tap it to see it large \u{2014} the picture to repack from on the way home.",
                       "Bought something on the trip? Type it at the bottom of the list and press Bought there: it goes on, ticked, marked Bought there."]),

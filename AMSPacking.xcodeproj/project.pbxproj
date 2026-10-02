@@ -62,6 +62,7 @@
 		D4F50ECCC88F8FE89A931EFC /* BagsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41F92CE24B4D203B69B5870 /* BagsCard.swift */; };
 		D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */; };
 		D5D12FDA2CC5B6443B769608 /* PackingLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 00FE6A96F5083A4802B251C6 /* PackingLibrary */; };
+		D8BFC0A9124CC984A49C398B /* WayHomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F244475495E5E17D2F7126 /* WayHomeScreen.swift */; };
 		DAD37A1F2CA15C56CC068B58 /* RefineScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC01537D593379C8EF1B84F /* RefineScreen.swift */; };
 		DAE1DC1E5B87843793C1371E /* WorldMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D88FA9EA0BC448F857072B9 /* WorldMap.swift */; };
 		DE244FF0F4F0D12DF0F82CF0 /* RemindersSend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4926F40EBD71822EA9165684 /* RemindersSend.swift */; };
@@ -102,6 +103,7 @@
 		2F6B09947C62AF9C62758EFD /* Releases.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Releases.swift; sourceTree = "<group>"; };
 		34879BF77676913C07B69267 /* RestoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestoreSheet.swift; sourceTree = "<group>"; };
 		35352F3BD8D2A7EE166961C9 /* Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Today.swift; sourceTree = "<group>"; };
+		38F244475495E5E17D2F7126 /* WayHomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WayHomeScreen.swift; sourceTree = "<group>"; };
 		3A74DCE749078F203A8E87BF /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
@@ -301,6 +303,7 @@
 				AC9F694B5D78B16B402CD363 /* TripChecks.swift */,
 				878AF15AECFDDAD02F227DDD /* TripScreen.swift */,
 				CD0CC9973692AB2A31CFC2DE /* TripSettings.swift */,
+				38F244475495E5E17D2F7126 /* WayHomeScreen.swift */,
 				2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */,
 				5D88FA9EA0BC448F857072B9 /* WorldMap.swift */,
 			);
@@ -473,6 +476,7 @@
 				55A2BB9EF7E8AA1F601802AC /* TripChecks.swift in Sources */,
 				B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */,
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
+				D8BFC0A9124CC984A49C398B /* WayHomeScreen.swift in Sources */,
 				811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */,
 				C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */,
 				DAE1DC1E5B87843793C1371E /* WorldMap.swift in Sources */,
@@ -613,7 +617,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.52;
+				MARKETING_VERSION = 0.53;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -700,7 +704,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.52;
+				MARKETING_VERSION = 0.53;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

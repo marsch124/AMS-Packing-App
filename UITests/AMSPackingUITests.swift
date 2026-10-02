@@ -1523,6 +1523,38 @@ final class AMSPackingUITests: XCTestCase {
                       "the line does not say it was bought there: '\(words(app.buttons["trip-line-7"]))'")
     }
 
+    /// Pack to go home (his idea 13): what went and what was bought there, with ticks of
+    /// its own; Used up takes a thing off; it is kept when closed.
+    func testTheWayHomeIsPackedFromWhatWent() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" })
+        app.buttons["trip-line-1"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" })
+        type("Sandals", into: app.textFields["trip-add-name"])
+        tap(app, id: "trip-add-bought")
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "Sandals did not go on: '\(words(progress))'")
+        tap(app, id: "trip-wayhome")
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open")
+        let home = app.staticTexts["wayhome-progress"]
+        XCTAssertTrue(waitUntil { self.words(home) == "0/3" }, "the way home is not what went and what was bought: '\(words(home))'")
+        tap(app, id: "wayhome-line-0")
+        XCTAssertTrue(waitUntil { self.words(home) == "1/3" }, "the home tick did not count: '\(words(home))'")
+        tap(app, id: "wayhome-line-1-usedup")
+        XCTAssertTrue(waitUntil { self.words(home) == "1/2" }, "used up still counts for the way home: '\(words(home))'")
+        shot(app, "way-home")
+        tap(app, id: "wayhome-done")
+        XCTAssertTrue(disappears(app, "wayhome-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "the way home touched the way-out ticks: '\(words(progress))'")
+        tap(app, id: "trip-wayhome")
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-progress"]) == "1/2" }, "the way home was not kept")
+    }
+
     /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end
     /// of a trip; it makes the file and opens the place to save it. (What the file
     /// holds is the model's test: WorkbookTests.)

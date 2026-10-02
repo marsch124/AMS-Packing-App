@@ -150,6 +150,11 @@ struct HowItWorksScreen: View {
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
             "Type a thing at the bottom to add it to this trip only. Bought it there? Press Bought there: it goes on ticked, marked so.",
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and templates stay."]),
+        Topic(section: .events, title: "The way home", lines: [
+            "Pack to go home appears on the trip once it has begun, or as soon as something is bought there.",
+            "It lists what went (ticked on the way out) and what you bought there, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
+            "Used up: the thing stays there or is finished \u{2014} off the way home. Back puts it on again.",
+            "The photos of your packed bags are at the top; tap one to see it large."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use; type what you missed, pick the template it goes onto, and Add it; then Save.",
             "Under a trip's name: where it stands in the loop, Plan · Pack · Review · Refine, each with the mark of the tab where it is done. Tap it for the whole picture.",
