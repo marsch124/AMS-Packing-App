@@ -132,7 +132,7 @@ struct HowItWorksScreen: View {
             "Create new trip: a name, Dates (tap the first day, then the last; Cancel under the month puts them back), Quick if only the templates you tick should come along — it says so in green while it is on.",
             "Create trip is always ready: if a name or a template is missing, it says so right under it.",
             "Pick the templates, then Transport, Season and Food, and Create trip. The trip gathers everything those templates hold. The workouts have their own colours (Swim blue, Bike yellow, Run green, Strength orange, Breath work lavender, Mobility pink), and picking one brings Context (Indoor, Outdoor, Race) set in under them.",
-            "Laundry: wash and wear again, so per-night things count 4 nights at most. It shows as \u{00D7}4 with a washtub.",
+            "Laundry: wash and wear again, so per-night things count only the nights you pack for before a wash — 4 unless you pick 3, 5, 7, 10 or 14 under the switch (Trip settings has it too). It shows as \u{00D7}4 \u{00B7} laundry with a washtub.",
             "This Device: how many trips, things and templates this device holds."]),
         Topic(section: .events, title: "Packing a trip", lines: [
             "Tap a line to tick it; tap again to take it back. The round button by a heading ticks the whole section.",
@@ -189,6 +189,7 @@ struct HowItWorksScreen: View {
             GuideHeader(title: "How it works")
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
+                    FirstTripCard()
                     LoopGuideCard()
                     WordsCard()
                     ForEach(Array(HowItWorksScreen.topics.enumerated()), id: \.offset) { n, t in
@@ -224,3 +225,44 @@ struct HowItWorksScreen: View {
         #endif
     }
 }
+
+/// "Your first real trip in 6 steps" — his idea 13 (2 Oct 2026), before his first real trip:
+/// the whole app as one path, numbered, at the top of How it works.
+struct FirstTripCard: View {
+    static let steps: [(title: String, says: String)] = [
+        ("Save a backup", "Settings → Save a backup. Do it again once the trip is set up — your safety net."),
+        ("Tidy your things", "Care → All your things · table: the No weight and No place chips find what is missing. Weights make the bag bars honest; places make From where one walk through the house."),
+        ("Build your templates", "One per activity or need (Beach, Long stay…). On a template: Choose from your things, or type a new one. Tap a thing there for Only on some trips."),
+        ("Create the trip", "Home → Create new trip: name, Dates, the templates, Transport, Season, Food, Laundry and its nights. Then the pen: type the Place — the map pin and the weather follow."),
+        ("Pack", "Sorting: When for the timeline, From where to fetch room by room, Into to fill each bag. ⊘ is not this time. Watch the bag bars."),
+        ("Go, use, review", "There, the grab lists on Home are for each outing. Back home: Review — tap what you did not use, add what you missed. Refine learns from it."),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Your first real trip in 6 steps").font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
+                .accessibilityIdentifier("quickstart-title")
+            ForEach(Array(FirstTripCard.steps.enumerated()), id: \.offset) { n, step in
+                HStack(alignment: .top, spacing: 12) {
+                    Text("\(n + 1)").font(.system(size: 17, weight: .heavy)).foregroundStyle(.white)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(AppSection.home.color))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(step.title).font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                        Text(step.says).font(.system(size: 16)).foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("quickstart-step-\(n)")
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.home.color.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.home.color, lineWidth: 1.2))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("guide-quickstart")
+    }
+}
+

@@ -23,6 +23,7 @@ extension Library {
         var copy = newEvent(name: n, mode: old.mode, activities: old.activities, transport: old.transport,
                             season: old.season, contexts: old.contexts, weatherOn: old.weatherOn,
                             catering: old.catering, laundry: old.laundry, destination: old.destination)
+        copy.extra[LAUNDRY_NIGHTS_KEY] = old.extra[LAUNDRY_NIGHTS_KEY]
         copy.entries = old.entries.map { line in
             var fresh = line
             fresh.id = PackingEnv.makeId()

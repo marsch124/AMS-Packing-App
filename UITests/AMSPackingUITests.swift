@@ -1066,6 +1066,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "guide-loop", timeout: 5), "How it works does not show the loop")
         shot(app, "loop-guide")
         for n in 0..<4 { XCTAssertNotNil(find(app, "loop-step-\(n)"), "the loop has no step \(n + 1)") }
+        // Your first real trip in 6 steps, at the very top (his idea 13, 2 Oct 2026).
+        XCTAssertNotNil(find(app, "guide-quickstart"), "How it works has no first-trip guide")
+        XCTAssertTrue((0..<6).allSatisfy { app.otherElements["quickstart-step-\($0)"].exists || app.staticTexts["quickstart-step-\($0)"].exists },
+                      "the first-trip guide does not have six steps")
+        XCTAssertFalse(app.otherElements["quickstart-step-6"].exists || app.staticTexts["quickstart-step-6"].exists, "more than six steps")
         // Each step says the tab where it is done (his test F.7).
         XCTAssertTrue(find(app, "loop-step-0")?.label.contains("on Home") == true, "Plan does not say Home")
         XCTAssertTrue(find(app, "loop-step-3")?.label.contains("on Templates") == true, "Refine does not say Templates")
@@ -1252,6 +1257,8 @@ final class AMSPackingUITests: XCTestCase {
         setSwitch(app, "trip-quick", on: true)
         select(app, app.buttons["trip-activity-1"])          // Swim: goggles, cap, a towel per night
         setSwitch(app, "trip-laundry", on: true)
+        // The nights to pack for before a wash (his idea, 2 Oct 2026): 4 unless he picks.
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-laundry-nights-1"]) }, "4 nights is not the starting choice")
         tapVisible(app, app.buttons["trip-create"])
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
         let progress = app.staticTexts["trip-progress"]
@@ -1264,6 +1271,18 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-settings")
         XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
         XCTAssertTrue(waitUntil { self.isSwitchOn(app, "tripset-laundry") }, "Trip settings does not show the laundry")
+        // Pack for 5 nights before a wash: the towel follows.
+        let five = app.buttons["tripset-laundry-nights-2"]
+        bringIntoView(app, five)
+        select(app, five)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-laundry-says"]).contains("5 nights") },
+                      "the switch does not say 5 nights: '\(words(app.staticTexts["tripset-laundry-says"]))'")
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { counts().contains("×5 · laundry") }, "the towel does not follow the 5 nights: \(counts())")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-laundry-nights-2"]) }, "the 5 nights were not kept")
         setSwitch(app, "tripset-laundry", on: false)
         tap(app, id: "tripset-save")
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))

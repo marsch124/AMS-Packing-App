@@ -23,6 +23,7 @@ struct TripSettingsScreen: View {
     /// Where the trip goes — his test G.6: "the place is not shown in the edit view".
     @State private var place = ""
     @State private var laundry = false
+    @State private var laundryNights = LAUNDRY_CAP_NIGHTS
     @State private var activities: Set<String> = []
     @State private var contexts: Set<String> = []
     @State private var transport = "Car"
@@ -102,7 +103,7 @@ struct TripSettingsScreen: View {
                     Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "tripset-season") { season = $0 }
                     Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
                           selected: [catering], id: "tripset-catering") { catering = $0 }
-                    LaundrySwitch(on: $laundry, id: "tripset-laundry")
+                    LaundrySwitch(on: $laundry, nights: $laundryNights, id: "tripset-laundry")
 
                     Text("Save rebuilds the list: what you ticked or added yourself stays; new things arrive; things no longer asked for go.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
@@ -226,6 +227,7 @@ struct TripSettingsScreen: View {
         end = DateRangePicker.date(t.endDate.isEmpty ? t.startDate : t.endDate) ?? start
         quick = t.mode == "quick"
         laundry = t.laundry
+        laundryNights = PackingCore.laundryNights(t)
         activities = Set(t.activities)
         contexts = Set(t.contexts)
         transport = t.transport.isEmpty ? "Car" : t.transport
@@ -247,7 +249,7 @@ struct TripSettingsScreen: View {
         let n = name, dated = hasDates, s = start, e = end, q = quick
         let acts = flat.map(\.id).filter { activities.contains($0) }
         let ctx = CONTEXTS.filter { contexts.contains($0) }
-        let tr = transport, se = season, ca = catering, la = laundry, pl = jsTrim(place)
+        let tr = transport, se = season, ca = catering, la = laundry, pl = jsTrim(place), ln = laundryNights
         var result: Library.TripRebuilt?
         model.change { lib in
             result = lib.changeTrip(id: tripId) { t in
@@ -262,6 +264,7 @@ struct TripSettingsScreen: View {
                 t.season = se
                 t.catering = ca
                 t.laundry = la
+                t.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(ln))
                 t.startDate = dated ? HomeScreen.ymd(s) : ""
                 t.endDate = dated ? HomeScreen.ymd(max(s, e)) : ""
             }

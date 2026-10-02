@@ -27,6 +27,7 @@ struct HomeScreen: View {
     @State private var contexts: Set<String> = []
     @State private var quick = false
     @State private var laundry = false
+    @State private var laundryNights = LAUNDRY_CAP_NIGHTS
     @State private var opened: String?
     @State private var grab: GrabDefinition?
     @State private var searching = false
@@ -113,7 +114,7 @@ struct HomeScreen: View {
                     Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season") { season = $0 }
                     Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
                           selected: [catering], id: "trip-catering") { catering = $0 }
-                    LaundrySwitch(on: $laundry, id: "trip-laundry")
+                    LaundrySwitch(on: $laundry, nights: $laundryNights, id: "trip-laundry")
 
                     // The app's main button is ALWAYS in full colour — his words (2026-09-26):
                     // "The create button is something that is central to the whole app,
@@ -193,6 +194,7 @@ struct HomeScreen: View {
         draft.season = season
         draft.catering = catering
         draft.laundry = laundry
+        draft.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(laundryNights))
         draft.activities = flat.map(\.id).filter { activities.contains($0) }   // in the order offered
         draft.contexts = CONTEXTS.filter { contexts.contains($0) }
         if hasDates {
@@ -201,7 +203,7 @@ struct HomeScreen: View {
         }
         var made: TripEvent?
         model.change { made = $0.createTrip(draft) }
-        name = ""; activities = []; contexts = []; hasDates = false; quick = false; laundry = false
+        name = ""; activities = []; contexts = []; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
         opened = made?.id
     }
 

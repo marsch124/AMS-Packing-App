@@ -38,7 +38,7 @@ struct TripScreen: View {
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"), ("category", "Category")]
 
     /// Laundry is on AND the trip is long enough for it to cap anything.
-    private func washes(_ trip: TripEvent) -> Bool { trip.laundry && trip.nights > LAUNDRY_CAP_NIGHTS }
+    private func washes(_ trip: TripEvent) -> Bool { laundryWashes(trip) }
 
     /// What a settings save did, in a few words.
     static func saying(_ r: Library.TripRebuilt) -> String {

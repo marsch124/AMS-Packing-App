@@ -162,10 +162,25 @@ public func effectiveQty(_ entry: Item?, _ nights: Int = 0) -> Double {
 /// (min never raises the count); only display quantities change, not the real
 /// trip length. Feed the result to effectiveQty / bagLoads / packingFlags.
 public let LAUNDRY_CAP_NIGHTS = 4
+/// The nights packed for before a wash: the trip's own choice (his idea, 2 Oct
+/// 2026 — a two-month stay may want 7), kept in its extra keys so the web app's
+/// model is untouched; otherwise the web app's 4.
+public let LAUNDRY_NIGHTS_KEY = "laundryNights"
+public func laundryNights(_ event: TripEvent) -> Int {
+    if let n = event.extra[LAUNDRY_NIGHTS_KEY]?.numberValue, n.isFinite, n >= 1, n <= 60 { return Int(n) }
+    return LAUNDRY_CAP_NIGHTS
+}
 public func qtyNights(_ event: TripEvent?) -> Int {
     guard let event = event else { return 0 }
     let n = event.nights
-    return (event.laundry && n > LAUNDRY_CAP_NIGHTS) ? LAUNDRY_CAP_NIGHTS : n
+    let cap = laundryNights(event)
+    return (event.laundry && n > cap) ? cap : n
+}
+/// The trip is longer than its laundry nights, so per-night things are washed and
+/// worn again — the line says "· laundry". Judged against the trip's OWN nights
+/// (a 6-night trip packing 7 nights' worth washes nothing).
+public func laundryWashes(_ event: TripEvent) -> Bool {
+    event.laundry && event.nights > laundryNights(event)
 }
 
 /// A per-container-name weight-limit map (kg): the built-in airline defaults,

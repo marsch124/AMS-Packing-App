@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.47", date: "2 Oct 2026", title: "Your first real trip",
+                new: ["How it works starts with Your first real trip in 6 steps: backup, tidy your things, templates, the trip, packing, and the review afterwards."],
+                changed: ["Laundry: you choose how many nights you pack for before a wash (3, 4, 5, 7, 10 or 14) — on Create new trip and in Trip settings. Every count, bag weight and the Excel file follow."]),
         Release(version: "0.46", date: "2 Oct 2026", title: "Icons, and eight grab lists",
                 new: ["Every template has an icon — 50 drawn ones to choose from. Each starts with the one its name suggests (Swim, Bike, Run, Car, Plane…); tap the square on a template to pick another, or Letter for its first letter."],
                 changed: ["Home holds eight grab lists, four in a row and slimmer. Free places fill from your shelf; when Home is full, a new list waits there as before.",
