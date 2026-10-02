@@ -128,7 +128,7 @@ struct HowItWorksScreen: View {
 
     static let topics: [Topic] = [
         Topic(section: .home, title: "Home", lines: [
-            "Grab and go: six grab lists for a quick outing. Tap one, then tick what is in your hand. The count stays at the top while you scroll; Ready to go too early says Not yet in the middle of the screen, with what is missing.",
+            "Grab and go: eight grab lists, four in a row, for a quick outing. Tap one, then tick what is in your hand. The count stays at the top while you scroll; Ready to go too early says Not yet in the middle of the screen, with what is missing.",
             "Create new trip: a name, Dates (tap the first day, then the last; Cancel under the month puts them back), Quick if only the templates you tick should come along — it says so in green while it is on.",
             "Create trip is always ready: if a name or a template is missing, it says so right under it.",
             "Pick the templates, then Transport, Season and Food, and Create trip. The trip gathers everything those templates hold. The workouts have their own colours (Swim blue, Bike yellow, Run green, Strength orange, Breath work lavender, Mobility pink), and picking one brings Context (Indoor, Outdoor, Race) set in under them.",
@@ -158,6 +158,7 @@ struct HowItWorksScreen: View {
             "The pin at the top: Where you have been. A map with a pin per place (a number when you went more than once), a line through your trips oldest first, and a card per place. A trip joins the map as soon as it has a place (in Trip settings or on its weather line), forecast or not."]),
         Topic(section: .templates, title: "Your templates", lines: [
             "Templates are the building blocks of every trip, on their shelves (GA, WET and so on). The list you pack from is made from them.",
+            "Each template has an icon: the one its name suggests, or tap the square on its page to pick from 50 drawn ones (or Letter).",
             "+ New makes a template and asks on which shelf it should live. Open one to rename it, take a thing off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
             "Adding: Choose from your things, at the foot of a template — everything you own, grouped as you like, ticked and added in one go. Or type a new thing beside it.",
             "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",
@@ -177,7 +178,7 @@ struct HowItWorksScreen: View {
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
             "Worth a look appears only when something in the library seems wrong.",
-            "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list waits on your shelf."]),
+            "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list takes a free place on Home, or waits on your shelf when Home is full."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",
             "The magnifier at the top of most screens searches everything at once."]),

@@ -562,7 +562,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["device-count-items"].waitForExistence(timeout: 5), "the device check is missing")
         let save = app.buttons["backup-save"]
         XCTAssertTrue(save.waitForExistence(timeout: 5), "no way to save a backup")
-        save.tap()
+        // Further down than the everyday doors (his K.2, 1 Oct 2026).
+        XCTAssertGreaterThan(save.frame.minY, app.buttons["settings-lists"].frame.maxY, "Save a backup is still above Your choices")
+        tapVisible(app, save)
         let status = app.staticTexts["backup-status"]
         XCTAssertTrue(waitUntil { self.words(status).hasPrefix("Choosing") }, "the save was not started: '\(words(status))'")
         #if os(macOS)
@@ -1562,13 +1564,14 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "shared-paste")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A GRAB LIST" }, "not read as a grab list")
         tap(app, id: "shared-add")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).contains("shelf") }, "the grab list did not reach the shelf")
+        // Home holds eight and the sample has six: it takes a free place — and says so.
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).contains("on Home") },
+                      "it does not say where the grab list went: '\(words(app.staticTexts["shared-result"]))'")
         tap(app, id: "shared-done")
         XCTAssertTrue(disappears(app, "shared-screen", timeout: 5))
-        // It really is on the shelf, waiting — not just said to be.
+        // It really is on Home — not just said to be.
         tab(app, "home")
-        tap(app, id: "grab-shelf")
-        XCTAssertTrue(waitUntil { app.buttons["shelf-waiting-0"].exists }, "nothing waits on the shelf after the import")
+        XCTAssertTrue(waitUntil { app.buttons["grab-6"].exists }, "the shared grab list is not on Home")
     }
 
     /// A Toggle is a switch on the iPhone and a check box on the Mac.
@@ -1846,6 +1849,40 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertNotNil(line, "no Headlamp on the trip")
         XCTAssertTrue(waitUntil { self.words(line!).contains(newBag) },
                       "the thing's new bag did not reach the trip still ahead: '\(self.words(line!))'")
+    }
+
+    /// His H.1 (icons approved 2 Oct 2026): a template shows the icon its name
+    /// suggests; a tap on the cover picks another, which stays; Letter shows the
+    /// first letter; Suggested goes back.
+    func testATemplatesIconIsSuggestedAndCanBeChosen() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                        // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        let cover = app.buttons["template-cover"]
+        XCTAssertTrue(cover.waitForExistence(timeout: 5), "the template has no cover to tap")
+        XCTAssertEqual(cover.value as? String, "hiking", "Hiking does not show its suggested icon")
+
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the icons")
+        XCTAssertTrue(app.buttons["icon-suggested"].isSelected, "Suggested is not marked as the current choice")
+        tap(app, id: "icon-tent")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+        XCTAssertTrue(waitUntil { (cover.value as? String) == "tent" }, "the tent was not taken: '\(cover.value as? String ?? "")'")
+
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        app.buttons["template-row-1"].tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.buttons["template-cover"].value as? String) == "tent" }, "the icon was lost on the way out and back")
+
+        tap(app, id: "template-cover")
+        tap(app, id: "icon-letter")
+        XCTAssertTrue(waitUntil { (app.buttons["template-cover"].value as? String) == "letter" }, "Letter did not take")
+        tap(app, id: "template-cover")
+        tap(app, id: "icon-suggested")
+        XCTAssertTrue(waitUntil { (app.buttons["template-cover"].value as? String) == "hiking" }, "Suggested did not go back")
     }
 
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.
@@ -2139,6 +2176,26 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["template-item-0"].label.contains("red filter") },
                       "the note is not on the row: '\(app.buttons["template-item-0"].label)'")
         XCTAssertFalse(app.buttons["template-item-0"].label.contains("Carry-on"), "this list now has its own bag")
+
+        // Only on some trips (his ask, 2 Oct 2026): a Season picked here is kept; Context
+        // is offered only on workout templates (Hiking is not one).
+        let row0 = app.buttons["template-item-0"]
+        XCTAssertTrue(row0.waitForExistence(timeout: 5))
+        tapVisible(app, row0)
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        let summer = app.buttons["row-seasons-0"]
+        bringIntoView(app, summer)
+        XCTAssertTrue(summer.exists, "no Season on the row")
+        XCTAssertFalse(app.buttons["row-contexts-0"].exists, "Context is offered on a template that is not a workout")
+        select(app, summer)
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tapVisible(app, app.buttons["template-item-0"])
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        bringIntoView(app, app.buttons["row-seasons-0"])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["row-seasons-0"]) }, "the Season was not kept")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
 
         // The thing itself still says what it always said.
         tap(app, id: "template-detail-done")
@@ -2498,45 +2555,57 @@ final class AMSPackingUITests: XCTestCase {
                       "it could not be brought in for today")
     }
 
-    /// More grab lists than Home can hold: six slots in his order, the rest
-    /// waiting with everything on them, and he says which one steps back.
+    /// More grab lists than Home can hold: eight places (4 × 2, his ask 2 Oct 2026)
+    /// in his order; new lists fill free places, then wait with everything on
+    /// them, and he says which one steps back.
     func testMoreGrabListsThanHomeHolds() {
         let app = launch()
         tab(app, "home")
+        // Four in a row: the fourth beside the first, the fifth under it.
+        XCTAssertTrue(app.buttons["grab-4"].waitForExistence(timeout: 5))
+        XCTAssertLessThan(abs(app.buttons["grab-3"].frame.midY - app.buttons["grab-0"].frame.midY), 4, "the 4th is not on the first row")
+        XCTAssertGreaterThan(app.buttons["grab-4"].frame.minY, app.buttons["grab-0"].frame.maxY, "the 5th is not on the second row")
         tap(app, id: "grab-shelf")
         XCTAssertTrue(appears(app, "shelf-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shelf-home-heading"]).contains("6 of 6") },
-                      "Home does not start with six: '\(words(app.staticTexts["shelf-home-heading"]))'")
+        let homeHeading = app.staticTexts["shelf-home-heading"], waiting = app.staticTexts["shelf-waiting-heading"]
+        XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") },
+                      "Home does not start with six of eight: '\(words(homeHeading))'")
 
-        // A new list waits rather than shoving one off Home.
-        type("Padel", into: app.textFields["shelf-new-name"])
+        // New lists take the free places…
+        for (n, name) in ["Padel", "Golf"].enumerated() {
+            type(name, into: app.textFields["shelf-new-name"])
+            hideKeyboard(app)
+            tap(app, id: "shelf-new")
+            XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("\(7 + n) of 8") },
+                          "\(name) did not take a free place: '\(words(homeHeading))'")
+        }
+        // …and once Home is full, the next one waits rather than shoving one off.
+        type("Kayak", into: app.textFields["shelf-new-name"])
         hideKeyboard(app)
         tap(app, id: "shelf-new")
-        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["shelf-waiting-heading"]).contains("1") },
-                      "the new list did not go to the shelf")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shelf-home-heading"]).contains("6 of 6") },
-                      "it pushed something off Home by itself")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(waiting).contains("1") }, "the new list did not go to the shelf")
+        XCTAssertTrue(waitUntil { self.words(homeHeading).contains("8 of 8") }, "it pushed something off Home by itself")
 
-        // Putting it on Home asks which of the six steps back.
+        // Putting it on Home asks which of the eight steps back.
         tap(app, id: "shelf-waiting-0")
         XCTAssertTrue(appears(app, "swap-detail", timeout: 5), "it did not ask what steps back")
         let steppingBack = words(app.buttons["swap-0"])
         tap(app, id: "swap-0")
         XCTAssertTrue(disappears(app, "swap-detail", timeout: 5))
 
-        // Home still holds six, and the one that stepped back is waiting, whole.
-        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["shelf-home-heading"]).contains("6 of 6") })
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shelf-waiting-heading"]).contains("1") })
+        // Home still holds eight, and the one that stepped back is waiting, whole.
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("8 of 8") })
+        XCTAssertTrue(waitUntil { self.words(waiting).contains("1") })
         XCTAssertTrue(waitUntil { self.words(app.buttons["shelf-waiting-0"]).contains(String(steppingBack.prefix(4))) },
                       "the list that stepped back is not the one he chose: '\(words(app.buttons["shelf-waiting-0"]))'")
         XCTAssertFalse(words(app.buttons["shelf-waiting-0"]).contains("0 things"), "it lost its things on the way")
 
-        // …and Home shows his six, Padel among them.
+        // …and Home shows his eight, Kayak among them.
         tap(app, id: "shelf-done")
         XCTAssertTrue(disappears(app, "shelf-detail", timeout: 5))
         XCTAssertTrue(waitUntil(timeout: 10) {
-            (0..<6).contains { self.words(app.buttons["grab-\($0)"]).contains("Padel") }
-        }, "Padel is not on Home")
+            (0..<8).contains { self.words(app.buttons["grab-\($0)"]).contains("Kayak") }
+        }, "Kayak is not on Home")
     }
 
     /// The Care tab says what the kit adds up to — and every word of it is true of
@@ -2944,6 +3013,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
         // Its own name, so it never clashes with Your templates (2026-09-27).
         XCTAssertEqual(words(app.staticTexts["choices-title"]), "Your choices")
+        // Each part says what it is and where it is used — a line or two (his K.3).
+        XCTAssertTrue(app.staticTexts["choices-intro"].exists, "the page does not say what it is")
+        for kind in ["places", "owners", "people", "conditions", "phases"] {
+            let hint = app.staticTexts["choices-hint-\(kind)"]
+            XCTAssertTrue(hint.exists, "no explanation for \(kind)")
+            XCTAssertGreaterThan(words(hint).count, 80, "\(kind) is explained in too few words: '\(words(hint))'")
+        }
 
         type("Garage shelf", into: app.textFields["list-places-add-name"])
         app.buttons["list-places-add"].tap()

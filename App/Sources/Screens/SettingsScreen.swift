@@ -21,7 +21,65 @@ struct SettingsScreen: View {
     var body: some View {
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Backup").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
+                Button { lists = true } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Your choices").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+                            Text("Storage places, owners, packers, conditions, \"When\" steps")
+                                .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                        }
+                        Spacer()
+                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
+                    }
+                    .padding(.horizontal, 14).frame(minHeight: 60)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .padding(.top, 14)
+                .accessibilityIdentifier("settings-lists")
+
+                // What's new and How it works — his standing rule from the web apps.
+                GuideDoors()
+
+                // A link or code someone shared — the web app's "Paste a shared link".
+                OpenSharedDoor().environmentObject(model)
+
+                // Only when there is something to say. Both times this library went
+                // wrong, nothing on screen said so and the counts alone knew.
+                let worries = model.library.worries()
+                if !worries.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Worth a look").font(.system(size: 15, weight: .heavy))
+                            .foregroundStyle(AppSection.actions.color)
+                            .accessibilityIdentifier("health-heading")
+                        ForEach(Array(worries.enumerated()), id: \.offset) { n, worry in
+                            Text(worry.says).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("health-\(n)")
+                            if !worry.names.isEmpty {
+                                Text(worry.names.prefix(6).joined(separator: " · ")
+                                     + (worry.names.count > 6 ? " …" : ""))
+                                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .accessibilityIdentifier("health-\(n)-names")
+                            }
+                        }
+                        Text("A backup and then \"Restore from a file…\" puts a library back exactly as the file has it.")
+                            .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color.opacity(0.5), lineWidth: 1))
+                    .padding(.top, 14)
+                }
+
+                // Lower down, his test K.2 (1 Oct 2026): "Move down, back up, and restore to
+                // the bottom or at least further down." Used now and then, not every day.
+                SectionTitle(title: "Backup", id: "backup-heading")
                 Button {
                     status = "Choosing where to save…"
                     exporting = true
@@ -80,62 +138,6 @@ struct SettingsScreen: View {
                     }
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                }
-
-                Button { lists = true } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Your choices").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
-                            Text("Storage places, owners, packers, conditions, \"When\" steps")
-                                .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
-                        }
-                        Spacer()
-                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                    }
-                    .padding(.horizontal, 14).frame(minHeight: 60)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.top, 14)
-                .accessibilityIdentifier("settings-lists")
-
-                // What's new and How it works — his standing rule from the web apps.
-                GuideDoors()
-
-                // A link or code someone shared — the web app's "Paste a shared link".
-                OpenSharedDoor().environmentObject(model)
-
-                // Only when there is something to say. Both times this library went
-                // wrong, nothing on screen said so and the counts alone knew.
-                let worries = model.library.worries()
-                if !worries.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Worth a look").font(.system(size: 15, weight: .heavy))
-                            .foregroundStyle(AppSection.actions.color)
-                            .accessibilityIdentifier("health-heading")
-                        ForEach(Array(worries.enumerated()), id: \.offset) { n, worry in
-                            Text(worry.says).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .accessibilityIdentifier("health-\(n)")
-                            if !worry.names.isEmpty {
-                                Text(worry.names.prefix(6).joined(separator: " · ")
-                                     + (worry.names.count > 6 ? " …" : ""))
-                                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .accessibilityIdentifier("health-\(n)-names")
-                            }
-                        }
-                        Text("A backup and then \"Restore from a file…\" puts a library back exactly as the file has it.")
-                            .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color.opacity(0.5), lineWidth: 1))
-                    .padding(.top, 14)
                 }
 
                 Text("This device holds").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)

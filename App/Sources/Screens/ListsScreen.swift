@@ -22,13 +22,16 @@ struct ListsScreen: View {
             case .phases: return "\"When\" steps"
             }
         }
+        /// What it is, where it is used, what it is good for — his test K.3 (1 Oct
+        /// 2026): "a line or two of explanations for each choice … so that this is
+        /// totally clear to the user".
         var hint: String {
             switch self {
-            case .places: return "Where a thing lives at home."
-            case .owners: return "Whose a thing is."
-            case .people: return "Who packs what."
-            case .conditions: return "How worn a thing is."
-            case .phases: return "The timeline a trip is packed along."
+            case .places: return "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place under Kept at home; a trip sorted by From where then lists what to fetch room by room."
+            case .owners: return "Whose a thing is — you, your partner, a child. You pick it under Whose it is on a thing, so on a shared trip everyone sees which things are theirs."
+            case .people: return "Who packs a thing. You set it in the All your things table (Packed by), so you can see who is in charge of what."
+            case .conditions: return "How worn a thing is: New, Good, Worn, Needs replacing. You set it under Condition on a thing; a thing that needs replacing is suggested on To buy."
+            case .phases: return "The steps of packing, from a week ahead to the day you leave. Every thing has its When, and a trip shows its list in this order, step by step."
             }
         }
     }
@@ -47,6 +50,11 @@ struct ListsScreen: View {
             .padding(16)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 8) {
+                    // What this page is, once, at the top (K.3).
+                    Text("The words the app offers you as buttons. Add your own with the field under each part; one that is still in use somewhere cannot be removed.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("choices-intro")
                     if !problem.isEmpty {
                         Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("lists-problem")
@@ -54,7 +62,9 @@ struct ListsScreen: View {
                     ForEach(Kind.allCases, id: \.rawValue) { kind in
                         let entries = entries(kind)
                         SectionTitle(title: kind.title)
-                        Text(kind.hint).font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        Text(kind.hint).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink.opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("choices-hint-\(kind.rawValue)")
                         ForEach(Array(entries.enumerated()), id: \.offset) { n, entry in
                             HStack {
                                 Text(entry.label).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)

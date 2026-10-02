@@ -18,6 +18,12 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.46", date: "2 Oct 2026", title: "Icons, and eight grab lists",
+                new: ["Every template has an icon — 50 drawn ones to choose from. Each starts with the one its name suggests (Swim, Bike, Run, Car, Plane…); tap the square on a template to pick another, or Letter for its first letter."],
+                changed: ["Home holds eight grab lists, four in a row and slimmer. Free places fill from your shelf; when Home is full, a new list waits there as before.",
+                          "Settings: Save a backup and Restore are further down, under Your choices, What's new and How it works.",
+                          "Your choices: each part says what it is and where you use it.",
+                          "A shared grab list takes a free place on Home, and says where it went."]),
         Release(version: "0.45", date: "1 Oct 2026", title: "A change to a thing reaches your trips",
                 changed: ["Change a thing — its bag, weight, place or name — and the trips still ahead follow: coming-up and current trips, on every line you have not ticked and not changed on the trip itself. Ticked lines and finished trips keep what they were packed with. A bag chosen for one template still wins there."]),
         Release(version: "0.44", date: "30 Sep 2026", title: "The iPhone hears about changes",

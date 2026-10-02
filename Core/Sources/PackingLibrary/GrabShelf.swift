@@ -15,7 +15,7 @@ import PackingCore
 public let GRAB_OWN_META = "grabOwnLists"
 public let GRAB_HOME_META = "grabHome"
 /// How many fit on Home.
-public let GRAB_HOME_SLOTS = 6
+public let GRAB_HOME_SLOTS = 8          // 4 × 2 since 2 Oct 2026, his ask: "I need four of them × 2 rows" (was 6)
 
 extension Library {
     /// Every grab list there is: the original six, then his own, in the order he
@@ -42,9 +42,15 @@ extension Library {
     public func homeGrabLists() -> [GrabDefinition] {
         let all = allGrabLists()
         let chosen = (meta[GRAB_HOME_META]?.arrayValue ?? []).compactMap { $0.stringValue }
-        guard !chosen.isEmpty else { return Array(all.prefix(GRAB_HOME_SLOTS)) }
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return chosen.compactMap { byId[$0] }.prefix(GRAB_HOME_SLOTS).map { $0 }
+        var home = Array(chosen.compactMap { byId[$0] }.prefix(GRAB_HOME_SLOTS))
+        // A free place on Home is never left empty while a list waits: the next one
+        // from the shelf, in shelf order, takes it (Home grew from 6 to 8 on 2 Oct
+        // 2026 — his arranged six were joined by the next two).
+        for d in all where home.count < GRAB_HOME_SLOTS && !home.contains(where: { $0.id == d.id }) {
+            home.append(d)
+        }
+        return home
     }
 
     /// The ones waiting: everything that is not on Home, with all their things.

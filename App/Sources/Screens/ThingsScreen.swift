@@ -184,6 +184,11 @@ struct ThingEditor: View {
                           id: "thing-lists", tint: AppSection.templates.color, compact: true) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
                     }
+                    // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
+                    Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("thing-tags-hint")
                     if !problem.isEmpty {
                         Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("thing-problem")

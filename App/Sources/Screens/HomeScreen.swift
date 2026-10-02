@@ -53,7 +53,7 @@ struct HomeScreen: View {
                         .accessibilityIdentifier("grab-shelf")
                 }
                 .padding(.top, 14)
-                // Home holds six — HIS six, in his order (GrabShelf.swift).
+                // Home holds eight (4 × 2) — HIS, in his order; free places fill from the shelf (GrabShelf.swift).
                 GrabButtons(lists: model.library.homeGrabLists()) { grab = $0 }
 
                 Text("Create new trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)

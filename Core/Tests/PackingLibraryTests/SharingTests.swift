@@ -80,7 +80,11 @@ final class SharingTests: XCTestCase {
         XCTAssertTrue(link.contains("#/g/"))
         guard case .grab(let g)? = Library.readShared(link) else { return XCTFail("not read as a grab list") }
         var me = Library()
+        // Home holds eight: with two of his own it is full, so the shared list waits.
+        // (On a Home with a free place it takes that place — GrabShelfTests.)
+        _ = me.addGrabList(label: "Padel"); _ = me.addGrabList(label: "Golf")
         let home = me.homeGrabLists().map(\.id)
+        XCTAssertEqual(home.count, GRAB_HOME_SLOTS)
         let got = try XCTUnwrap(me.importGrab(g))
         XCTAssertEqual(got.label, "Sauna")
         XCTAssertEqual(got.items, ["Towel", "Water", "Sandals"])

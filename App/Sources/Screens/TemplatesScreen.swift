@@ -162,13 +162,142 @@ struct Cover: View {
     var size: Double = 40
 
     var body: some View {
-        let glyph = list.emoji.isEmpty ? String(list.name.prefix(1)).uppercased() : list.emoji
-        Text(glyph)
-            .font(.system(size: size * (list.emoji.isEmpty ? 0.46 : 0.52), weight: .heavy))
-            .foregroundStyle(.white)
+        // His icon, or the one suggested for its name (approved 2 Oct 2026); else
+        // the first letter, as before. White on the template's own colour.
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28).fill(Color(hexString: listColor(list)))
+            if let icon = TemplateIcons.icon(Library.icon(of: list)) {
+                IconMark(path: icon.path, size: size * 0.66).foregroundStyle(.white)
+            } else {
+                let glyph = list.emoji.isEmpty ? String(list.name.prefix(1)).uppercased() : list.emoji
+                Text(glyph)
+                    .font(.system(size: size * (list.emoji.isEmpty ? 0.46 : 0.52), weight: .heavy))
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// One of the template icons, drawn at any size from its 24-point path.
+struct IconMark: View {
+    let path: String
+    var size: Double = 24
+    var weight: Double = 1.9
+
+    var body: some View {
+        let k = size / 24
+        SVGPath.path(path)
+            .applying(CGAffineTransform(scaleX: k, y: k))
+            .stroke(style: StrokeStyle(lineWidth: weight * k, lineCap: .round, lineJoin: .round))
             .frame(width: size, height: size)
-            .background(RoundedRectangle(cornerRadius: size * 0.28).fill(Color(hexString: listColor(list))))
-            .accessibilityHidden(true)
+    }
+}
+
+/// The template's cover on its own page: a tap chooses its icon (his H.1). Owns
+/// its sheet — the page keeps the one sheet it has.
+struct CoverDoor: View {
+    let list: PackList
+    @EnvironmentObject var model: LibraryModel
+    @State private var open = false
+
+    var body: some View {
+        Button { open = true } label: { Cover(list: list, size: 40) }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("template-cover")
+            .accessibilityLabel("Icon of \(list.name)")
+            .accessibilityValue(Library.icon(of: list) ?? Library.letterIcon)
+            .sheet(isPresented: $open) { IconPickerScreen(templateId: list.id).environmentObject(model) }
+    }
+}
+
+/// Choose a template's icon: the 50 drawn icons in rows, the one it has now
+/// ringed; "Suggested" goes back to the icon its name suggests, "Letter" shows
+/// the first letter instead.
+struct IconPickerScreen: View {
+    let templateId: String
+    @EnvironmentObject var model: LibraryModel
+    @Environment(\.dismiss) private var dismiss
+    private let columns = 5
+
+    var body: some View {
+        let list = model.library.resolvedTemplate(id: templateId) ?? newList()
+        let now = Library.icon(of: list)
+        let chosen = model.library.chosenIcon(templateId: templateId)
+        let tint = Color(hexString: listColor(list))
+        let rows = stride(from: 0, to: TemplateIcons.all.count, by: columns).map {
+            Array(TemplateIcons.all[$0..<min($0 + columns, TemplateIcons.all.count)])
+        }
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Cover(list: list, size: 40)
+                Text(list.name).font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 4)
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .accessibilityIdentifier("icon-cancel")
+            }
+            .padding(16)
+            KeyboardAwayScroll {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint) {
+                            if let s = Library.suggestedIcon(for: list), let icon = TemplateIcons.icon(s) {
+                                IconMark(path: icon.path, size: 30)
+                            } else { Text(String(list.name.prefix(1)).uppercased()).font(.system(size: 22, weight: .heavy)) }
+                        } pick: { pick(nil) }
+                        choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint) {
+                            Text(String(list.name.prefix(1)).uppercased()).font(.system(size: 22, weight: .heavy))
+                        } pick: { pick(Library.letterIcon) }
+                    }
+                    SectionTitle(title: "All icons")
+                    // Plain rows, not a lazy grid (the Mac builds only what is on screen).
+                    ForEach(rows.indices, id: \.self) { r in
+                        HStack(spacing: 10) {
+                            ForEach(rows[r]) { icon in
+                                choice(title: icon.label, on: chosen != nil && now == icon.key, id: "icon-\(icon.key)", tint: tint) {
+                                    IconMark(path: icon.path, size: 30)
+                                } pick: { pick(icon.key) }
+                            }
+                            if rows[r].count < columns { Spacer(minLength: 0) }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("icon-picker")
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 620)
+        #endif
+    }
+
+    private func choice<Mark: View>(title: String, on: Bool, id: String, tint: Color,
+                                    @ViewBuilder mark: () -> Mark, pick: @escaping () -> Void) -> some View {
+        Button(action: pick) {
+            VStack(spacing: 6) {
+                mark().foregroundStyle(on ? Color.white : Theme.ink).frame(height: 32)
+                Text(title).font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(on ? Color.white : Theme.muted)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity, minHeight: 74)
+            .background(RoundedRectangle(cornerRadius: 12).fill(on ? tint : Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? tint : Theme.line, lineWidth: on ? 2 : 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func pick(_ key: String?) {
+        model.change { _ = $0.setTemplateIcon(id: templateId, key: key) }
+        dismiss()
     }
 }
 
@@ -214,7 +343,7 @@ struct TemplateDetail: View {
                                               uniquingKeysWith: { a, _ in a })
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Cover(list: list, size: 36)
+                CoverDoor(list: list).environmentObject(model)
                 // The name is the field. Press it, type, and it is renamed — no
                 // second screen for one word.
                 TextField("", text: Binding(
@@ -476,6 +605,11 @@ struct RowEditor: View {
     @State private var note = ""
     @State private var section = ""
     @State private var newSectionName = ""
+    /// Only on some trips (his ask, 2 Oct 2026): none = always comes along.
+    @State private var seasons: Set<String> = []
+    @State private var contexts: Set<String> = []
+    @State private var transports: Set<String> = []
+    @State private var catering: Set<String> = []
 
     var body: some View {
         let found = model.library.row(templateId: templateId, memId: memId)
@@ -535,6 +669,27 @@ struct RowEditor: View {
                     }
                     Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
+
+                    // Only on some trips — per template, as the web app keeps it: a towel
+                    // can be summer-only on Beach and always on Swim (his ask, 2 Oct 2026).
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionTitle(title: "Only on some trips", tint: AppSection.templates.color)
+                        Text("Leave these off and it always comes along. Pick one or more and it comes only on trips that match — on this template.")
+                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: seasons,
+                              id: "row-seasons", tint: AppSection.templates.color) { toggle(&seasons, $0) }
+                        // Context narrows only workout (WET) templates, as the trip builder reads it.
+                        if contextApplies(list) {
+                            Pills(title: "Context", options: CONTEXTS.map { ($0, $0) }, selected: contexts,
+                                  id: "row-contexts", tint: AppSection.templates.color) { toggle(&contexts, $0) }
+                        }
+                        Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: transports,
+                              id: "row-transports", tint: AppSection.templates.color) { toggle(&transports, $0) }
+                        Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
+                              selected: catering, id: "row-catering", tint: AppSection.templates.color) { toggle(&catering, $0) }
+                    }
+                    .padding(.top, 6)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -544,6 +699,8 @@ struct RowEditor: View {
             guard let f = model.library.row(templateId: templateId, memId: memId) else { return }
             bag = f.membership.container; when = f.membership.phase
             qty = f.membership.qty; note = f.membership.note; section = f.membership.section
+            seasons = Set(f.membership.seasons); contexts = Set(f.membership.contexts)
+            transports = Set(f.membership.transports); catering = Set(f.membership.catering)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("row-detail")
@@ -571,11 +728,19 @@ struct RowEditor: View {
         newSectionName = ""
     }
 
+    private func toggle(_ set: inout Set<String>, _ value: String) {
+        if set.contains(value) { set.remove(value) } else { set.insert(value) }
+    }
+
     private func save() {
         let (b, w, q, n, s) = (bag, when, qty, note, section)
+        // In the app's own order, so the stored lists read the same every time.
+        let se = SEASONS.filter(seasons.contains), co = CONTEXTS.filter(contexts.contains)
+        let tr = TRANSPORTS.filter(transports.contains), ca = CATERING.map(\.id).filter(catering.contains)
         model.change {
             _ = $0.updateMembership(memId: memId) { m in
                 m.container = b; m.phase = w; m.qty = jsTrim(q); m.note = jsTrim(n); m.section = s
+                m.seasons = se; m.contexts = co; m.transports = tr; m.catering = ca
             }
         }
         dismiss()

@@ -315,9 +315,13 @@ struct OpenSharedScreen: View {
                 }
             case .grab(let g):
                 line("A grab list", g.name, "\(g.items.count) things")
-                bigButton("Put it on your shelf", id: "shared-add") {
-                    model.change { _ = $0.importGrab(g) }
-                    finish("Added to your grab lists shelf. Put it on Home when you want it there.")
+                bigButton("Add it to your grab lists", id: "shared-add") {
+                    var made: GrabDefinition?
+                    model.change { made = $0.importGrab(g) }
+                    // Home holds eight (since 0.46): a free place takes it, else it waits.
+                    let onHome = made.map { m in model.library.homeGrabLists().contains { $0.id == m.id } } ?? false
+                    finish(onHome ? "Added — it is on Home, in a free place."
+                                  : "Added to your grab lists shelf. Home is full: put it on Home when you want it there.")
                 }
             }
         }

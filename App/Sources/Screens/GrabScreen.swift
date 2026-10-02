@@ -106,28 +106,39 @@ final class GrabStore {
     }
 }
 
-/// The six Home buttons — indoor row, outdoor row beneath (his order).
+/// The Home buttons — four in a row, two rows (his ask, 2 Oct 2026: "compress the
+/// buttons a bit so they are thinner … four on each row … two rows"; was 3 × 2).
+/// Plain rows, not a lazy grid: the Mac builds only what is on screen.
 struct GrabButtons: View {
     let lists: [GrabDefinition]
     let open: (GrabDefinition) -> Void
+    private let perRow = 4
 
     var body: some View {
-        let cols = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
-        LazyVGrid(columns: cols, spacing: 10) {
-            ForEach(Array(lists.enumerated()), id: \.element.id) { n, d in
-                Button { open(d) } label: {
-                    VStack(spacing: 4) {
-                        GrabDoodle(icon: d.icon, size: 44, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
-                        Text(d.label).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink).lineLimit(1)
+        let rows = stride(from: 0, to: lists.count, by: perRow).map { Array(lists.enumerated())[$0..<min($0 + perRow, lists.count)] }
+        VStack(spacing: 8) {
+            ForEach(rows.indices, id: \.self) { r in
+                HStack(spacing: 8) {
+                    ForEach(Array(rows[r]), id: \.element.id) { n, d in
+                        Button { open(d) } label: {
+                            VStack(spacing: 3) {
+                                GrabDoodle(icon: d.icon, size: 36, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
+                                Text(d.label).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.ink)
+                                    .lineLimit(1).minimumScaleFactor(0.75)
+                            }
+                            .padding(.horizontal, 4)
+                            .frame(maxWidth: .infinity, minHeight: 68)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(GrabTone.color(d.tone).opacity(0.5), lineWidth: 1.5))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("grab-\(n)")
+                        .accessibilityLabel(d.title)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 84)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(GrabTone.color(d.tone).opacity(0.5), lineWidth: 1.5))
-                    .contentShape(Rectangle())
+                    // A short last row keeps the same button width as the full ones.
+                    ForEach(0..<(perRow - rows[r].count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, minHeight: 1) }
                 }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("grab-\(n)")
-                .accessibilityLabel(d.title)
             }
         }
     }

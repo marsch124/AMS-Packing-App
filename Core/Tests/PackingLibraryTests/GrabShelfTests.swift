@@ -2,7 +2,7 @@ import XCTest
 import PackingCore
 @testable import PackingLibrary
 
-/// More lists than Home can hold: six slots, his order, and a shelf where the
+/// More lists than Home can hold: eight places (4 × 2), his order, and a shelf where the
 /// rest wait with everything they hold. Making room never deletes anything.
 final class GrabShelfTests: XCTestCase {
     override func setUp() { PackingEnv.reset() }
@@ -10,45 +10,63 @@ final class GrabShelfTests: XCTestCase {
 
     func testAFreshLibraryShowsTheOriginalSix() {
         let lib = Library()
+        XCTAssertEqual(GRAB_HOME_SLOTS, 8, "Home holds 4 × 2 (his ask, 2 Oct 2026)")
         XCTAssertEqual(lib.homeGrabLists().count, 6)
         XCTAssertEqual(lib.homeGrabLists().map(\.id), GRAB_FACTORY.map(\.id))
         XCTAssertTrue(lib.shelvedGrabLists().isEmpty)
         XCTAssertTrue(lib.ownGrabLists().isEmpty)
     }
 
-    func testANewListGoesOnTheShelfNotOnHome() {
+    /// New lists take Home's free places; once all eight are taken, the next one
+    /// waits on the shelf instead of pushing anything off.
+    func testNewListsFillHomeThenWaitOnTheShelf() {
         var lib = Library()
-        guard let made = lib.addGrabList(label: "Padel", items: ["Racket", "Balls", "Grip"]) else {
-            return XCTFail("it was not made")
-        }
-        XCTAssertEqual(lib.ownGrabLists().map(\.label), ["Padel"])
-        XCTAssertEqual(lib.homeGrabLists().count, 6, "Home still holds six")
-        XCTAssertFalse(lib.homeGrabLists().contains { $0.id == made.id }, "it pushed something off Home by itself")
-        XCTAssertEqual(lib.shelvedGrabLists().map(\.id), [made.id])
-        XCTAssertEqual(lib.allGrabLists().count, 7)
+        let padel = lib.addGrabList(label: "Padel", items: ["Racket", "Balls", "Grip"])!
+        let golf = lib.addGrabList(label: "Golf", items: ["Clubs"])!
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), GRAB_FACTORY.map(\.id) + [padel.id, golf.id], "free places were not filled")
+        XCTAssertTrue(lib.shelvedGrabLists().isEmpty)
+
+        let kayak = lib.addGrabList(label: "Kayak", items: ["Paddle"])!
+        XCTAssertEqual(lib.homeGrabLists().count, 8, "Home holds eight")
+        XCTAssertFalse(lib.homeGrabLists().contains { $0.id == kayak.id }, "it pushed something off a full Home")
+        XCTAssertEqual(lib.shelvedGrabLists().map(\.id), [kayak.id])
+        XCTAssertEqual(lib.allGrabLists().count, 9)
     }
 
-    func testHeChoosesTheSixAndTheirOrder() {
-        var lib = Library()
-        let padel = lib.addGrabList(label: "Padel", items: ["Racket"])!
-        var six = GRAB_FACTORY.map(\.id)
-        six[0] = padel.id                                  // Padel takes the first slot
-        XCTAssertTrue(lib.setHomeGrabLists(six))
-        XCTAssertEqual(lib.homeGrabLists().first?.id, padel.id)
-        XCTAssertEqual(lib.homeGrabLists().count, 6)
-
-        // …and the one that stepped back is on the shelf, whole.
-        let shelved = lib.shelvedGrabLists()
-        XCTAssertEqual(shelved.map(\.id), [GRAB_FACTORY[0].id])
-        XCTAssertEqual(shelved[0].items, GRAB_FACTORY[0].items, "the list that stepped back lost its things")
-    }
-
-    func testSevenOnHomeIsRefused() {
+    /// His six as he arranged them (before Home grew) stay first, in his order; the
+    /// next two from the shelf join them.
+    func testHisArrangedSixAreJoinedByTheNextTwo() {
         var lib = Library()
         let padel = lib.addGrabList(label: "Padel")!
-        XCTAssertFalse(lib.setHomeGrabLists(GRAB_FACTORY.map(\.id) + [padel.id]),
-                       "seven were allowed onto a screen that holds six")
-        XCTAssertEqual(lib.homeGrabLists().count, 6)
+        let golf = lib.addGrabList(label: "Golf")!
+        var six = GRAB_FACTORY.map(\.id)
+        six.swapAt(0, 5)
+        XCTAssertTrue(lib.setHomeGrabLists(six))
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), six + [padel.id, golf.id])
+    }
+
+    func testHeChoosesTheEightAndTheirOrder() {
+        var lib = Library()
+        let own = ["Padel", "Golf", "Kayak"].map { lib.addGrabList(label: $0, items: ["\($0) thing"])! }
+        var eight = [own[2].id] + GRAB_FACTORY.map(\.id) + [own[0].id]   // Kayak first; Golf left out
+        XCTAssertTrue(lib.setHomeGrabLists(eight))
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), eight)
+
+        // …and the one left out is on the shelf, whole.
+        let shelved = lib.shelvedGrabLists()
+        XCTAssertEqual(shelved.map(\.id), [own[1].id])
+        XCTAssertEqual(shelved[0].items, ["Golf thing"], "the list that stepped back lost its things")
+        eight.removeLast()
+        XCTAssertTrue(lib.setHomeGrabLists(eight))
+        XCTAssertEqual(lib.homeGrabLists().last?.id, own[0].id, "a free place was not filled from the shelf in order")
+    }
+
+    func testNineOnHomeIsRefused() {
+        var lib = Library()
+        let own = ["Padel", "Golf", "Kayak"].map { lib.addGrabList(label: $0)! }
+        XCTAssertFalse(lib.setHomeGrabLists(GRAB_FACTORY.map(\.id) + own.map(\.id)),
+                       "nine were allowed onto a screen that holds eight")
+        XCTAssertEqual(lib.homeGrabLists().count, 8)
     }
 
     func testAListOfHisOwnIsEditedAndKeepsItsThings() {
@@ -70,7 +88,11 @@ final class GrabShelfTests: XCTestCase {
         XCTAssertTrue(lib.deleteOwnGrabList(id: padel.id))
         XCTAssertTrue(lib.ownGrabLists().isEmpty)
         XCTAssertFalse(lib.homeGrabLists().contains { $0.id == padel.id }, "a deleted list is still on Home")
-        XCTAssertEqual(lib.homeGrabLists().count, 5, "the rest of his arrangement stands")
+        // The rest of his arrangement stands, first and in his order; the place Padel
+        // left is taken by the list that was waiting (Home never keeps a hole).
+        XCTAssertEqual(Array(lib.homeGrabLists().map(\.id).prefix(5)), Array(GRAB_FACTORY.map(\.id).prefix(5)),
+                       "the rest of his arrangement stands")
+        XCTAssertEqual(lib.homeGrabLists().count, 6)
     }
 
     /// The backup is the one bridge between devices and between apps — a list of

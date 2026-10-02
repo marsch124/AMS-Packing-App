@@ -223,7 +223,7 @@ struct SwapScreen: View {
                     .accessibilityIdentifier("swap-cancel")
             }
             .padding(16)
-            Text("Home holds six. \(coming?.label ?? "The new list") takes the place of the one you pick — and the one that steps back keeps everything on it.")
+            Text("Home holds eight. \(coming?.label ?? "The new list") takes the place of the one you pick — and the one that steps back keeps everything on it.")
                 .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                 .padding(.horizontal, 16).padding(.bottom, 8)
             KeyboardAwayScroll {
