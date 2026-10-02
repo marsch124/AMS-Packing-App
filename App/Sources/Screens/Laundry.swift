@@ -14,26 +14,27 @@ struct LaundrySwitch: View {
     static let choices = [3, 4, 5, 7, 10, 14]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 2) {
             Toggle(isOn: $on) {
-                HStack(alignment: .top, spacing: 10) {
+                HStack(alignment: .center, spacing: 10) {
                     LaundryMark().frame(width: 24, height: 24).foregroundStyle(AppSection.events.color)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Laundry").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
-                        Text(on ? "Wash and wear again: per-night things count \(nights) nights at most."
-                                : "Wash and wear again, so you pack fewer per-night things.")
-                            .font(.system(size: 14)).foregroundStyle(Theme.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityIdentifier("\(id)-says")
-                    }
+                    Text("Laundry").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                 }
             }
             .accessibilityIdentifier(id)
+            // Its own line, not inside the switch: the Mac folds a switch's words into
+            // the switch, and nothing could read them there (0.47, GitHub's Mac).
+            Text(on ? "Wash and wear again: per-night things count \(nights) nights at most."
+                    : "Wash and wear again, so you pack fewer per-night things.")
+                .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.leading, 34)
+                .accessibilityIdentifier("\(id)-says")
             if on {
                 Pills(title: "Pack for this many nights, then wash",
                       options: LaundrySwitch.choices.map { ("\($0)", "\($0)") }, selected: ["\(nights)"],
                       id: "\(id)-nights", tint: AppSection.events.color) { nights = Int($0) ?? LAUNDRY_CAP_NIGHTS }
-                    .padding(.leading, 34)
+                    .padding(.leading, 34).padding(.top, 6)
             }
         }
     }
