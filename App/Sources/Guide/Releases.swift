@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.51", date: "2 Oct 2026", title: "Shortcuts and the Action button",
+                new: ["Two Shortcuts actions: Open a grab list (pick Swim, Bike, Run\u{2026}) and Open my next trip. Put one on the iPhone's Action button (Settings \u{2192} Action Button \u{2192} Shortcut), on the Home Screen, or ask Siri; they work in Shortcuts on the Mac too."]),
         Release(version: "0.50", date: "2 Oct 2026", title: "The luggage scale, and To buy in Reminders",
                 new: ["On a trip's Bags, tap a bag and type what the luggage scale says. From then on that is the bag's weight \u{2014} the bag itself and everything never weighed included \u{2014} and the things' own sum stays under it. Over its max, the card turns red. Clear takes the reading away.",
                       "To do \u{2192} To buy: Send to Reminders puts the open lines into a Reminders list of their own, \u{201C}To buy \u{00B7} Packing\u{201D}, to take to the shop. Each line goes once; what you tick there is ticked here the next time you open the list."]),

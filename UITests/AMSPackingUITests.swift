@@ -1454,6 +1454,25 @@ final class AMSPackingUITests: XCTestCase {
                       "the new line is not the one offered: '\(words(app.buttons["buy-send"]))'")
     }
 
+    /// Shortcuts (his idea 10): what the Action button's Shortcut does — open a grab
+    /// list, or the next trip — played here by a launch argument that sets the very
+    /// request the Shortcut sets. The app opens on that grab list / trip.
+    func testAShortcutOpensAGrabListOrTheNextTrip() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-openGrab", "Bike"]
+        app.launch()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 20),
+                      "the Shortcut did not open the grab list")
+        app.terminate()
+
+        let trip = XCUIApplication()
+        trip.launchArguments += ["-uiTestingChecks", "-openNextTrip"]
+        trip.launch()
+        XCTAssertTrue(appears(trip, "trip-detail", timeout: 20), "the Shortcut did not open the next trip")
+        XCTAssertTrue(waitUntil { self.words(trip.staticTexts["trip-name"]) == "Sunny weeks" },
+                      "it opened another trip: '\(words(trip.staticTexts["trip-name"]))'")
+    }
+
     /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end
     /// of a trip; it makes the file and opens the place to save it. (What the file
     /// holds is the model's test: WorkbookTests.)

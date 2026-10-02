@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct AMSPackingApp: App {
-    @StateObject private var model = LibraryModel.forThisLaunch()
+    @StateObject private var model = LibraryModel.shared
 
     var body: some Scene {
         WindowGroup {

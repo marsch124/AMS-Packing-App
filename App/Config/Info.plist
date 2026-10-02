@@ -26,6 +26,10 @@
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.travel</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
 	<key>PackingUsesICloud</key>
 	<string>$(PACKING_USES_ICLOUD)</string>
 	<key>UIBackgroundModes</key>

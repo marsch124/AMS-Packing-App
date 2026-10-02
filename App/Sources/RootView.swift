@@ -27,7 +27,12 @@ struct RootView: View {
         }
         .onReceive(model.$library.debounce(for: .seconds(2), scheduler: RunLoop.main)) { library in
             Task { await PackingReminders.shared.reschedule(library) }
+            // The grab lists Shortcuts offers by name follow his.
+            PackingShortcuts.updateAppShortcutParameters()
         }
+        // A Shortcut asked for a grab list or a trip: both open on Home.
+        .onChange(of: model.grabToOpen, initial: true) { _, id in if id != nil { section = .home } }
+        .onChange(of: model.tripToOpen, initial: true) { _, id in if id != nil { section = .home } }
     }
 }
 

@@ -25,9 +25,11 @@ final class LibraryModel: ObservableObject {
     @Published private(set) var weatherTrouble: [String: String] = [:]
     /// The map's "Find N places" is looking.
     @Published private(set) var findingPlaces = false
-    /// A trip asked to open from outside the screens — a tapped packing reminder.
-    /// Home opens it and clears it.
+    /// A trip asked to open from outside the screens — a tapped packing reminder, a
+    /// Shortcut. Home opens it and clears it.
     @Published var tripToOpen: String?
+    /// A grab list asked to open from a Shortcut (the Action button). Home opens it.
+    @Published var grabToOpen: String?
 
     private let store: LibraryStore
     private var held: [StoredRecord] = []
@@ -200,6 +202,22 @@ final class LibraryModel: ObservableObject {
 }
 
 extension LibraryModel {
+    /// The one model of this run — the screens and the Shortcuts share it.
+    static let shared: LibraryModel = {
+        let model = LibraryModel.forThisLaunch()
+        // Under the tests, a Shortcut is played by a launch argument: what the
+        // Shortcut does is set the same request the argument sets.
+        let args = ProcessInfo.processInfo.arguments
+        if AMSPackingApp.testing, let n = args.firstIndex(of: "-openGrab"), n + 1 < args.count {
+            model.grabToOpen = model.library.allGrabLists().first { $0.label == args[n + 1] || $0.title == args[n + 1] }?.id
+        }
+        if AMSPackingApp.testing, args.contains("-openNextTrip"),
+           let next = model.library.nextTrip(today: Today.local) {
+            model.tripToOpen = next.id
+        }
+        return model
+    }()
+
     /// Which store this launch uses.
     ///  -uiTesting            → memory, holding the invented sample library
     ///  -uiTestingEmpty       → memory, holding nothing (the first-run screen)

@@ -171,7 +171,13 @@ struct HomeScreen: View {
             TripScreen(tripId: o.id).environmentObject(model)
         }
         .sheet(isPresented: $shelf) { GrabShelfScreen().environmentObject(model) }
-        // A tapped packing reminder: its trip.
+        // A Shortcut (the Action button): its grab list.
+        .onChange(of: model.grabToOpen, initial: true) { _, id in
+            guard let id else { return }
+            model.grabToOpen = nil
+            if let list = model.library.allGrabLists().first(where: { $0.id == id }) { grab = list }
+        }
+        // A tapped packing reminder, or a Shortcut: its trip.
         .onChange(of: model.tripToOpen, initial: true) { _, id in
             guard let id else { return }
             model.tripToOpen = nil

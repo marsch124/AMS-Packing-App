@@ -184,6 +184,10 @@ struct HowItWorksScreen: View {
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
             "Worth a look appears only when something in the library seems wrong.",
             "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list takes a free place on Home, or waits on your shelf when Home is full."]),
+        Topic(section: .home, title: "Shortcuts and the Action button", lines: [
+            "In the Shortcuts app, Packing offers Open a grab list (choose which) and Open my next trip.",
+            "On the iPhone: Settings \u{2192} Action Button \u{2192} Shortcut, and pick one \u{2014} one press and the grab list is open, ready to tick.",
+            "Or add the Shortcut to the Home Screen, or say \u{201C}Open Swim in Packing\u{201D} to Siri."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",
             "The magnifier at the top of most screens searches everything at once."]),
