@@ -32,7 +32,9 @@ final class PackingReminders: NSObject, UNUserNotificationCenterDelegate {
         if AMSPackingApp.testing { return true }
         let center = UNUserNotificationCenter.current()
         switch await center.notificationSettings().authorizationStatus {
-        case .authorized, .provisional, .ephemeral: return true
+        // (Not .ephemeral: that is the iPhone's App Clips only, and the Mac has no such
+        // thing — naming it broke the Mac build, 0.49 on GitHub.)
+        case .authorized, .provisional: return true
         case .denied: return false
         default: return (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
         }
@@ -70,7 +72,7 @@ final class PackingReminders: NSObject, UNUserNotificationCenterDelegate {
         center.removePendingNotificationRequests(withIdentifiers: ours)
         guard Self.isOn else { return }
         let status = await center.notificationSettings().authorizationStatus
-        guard status == .authorized || status == .provisional || status == .ephemeral else { return }
+        guard status == .authorized || status == .provisional else { return }
         for r in Self.upcoming(library) {
             guard var parts = Self.day(r.date) else { continue }
             parts.hour = Self.hour; parts.minute = 0

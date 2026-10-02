@@ -439,6 +439,9 @@ final class AMSPackingUITests: XCTestCase {
 
     private func tapVisible(_ app: XCUIApplication, _ e: XCUIElement) {
         bringIntoView(app, e)
+        // 🪤 A list still gliding from the swipe takes a tap as "stop", not as a press:
+        // Start a new trip was tapped mid-glide on GitHub and nothing started (0.49).
+        _ = waitUntil(timeout: 3) { e.exists && self.settled(e) }
         e.tap()
     }
 
