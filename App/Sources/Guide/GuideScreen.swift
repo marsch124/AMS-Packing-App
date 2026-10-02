@@ -146,7 +146,7 @@ struct HowItWorksScreen: View {
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",
             "Weather: type the place; you get one line and only the rain or cold gear you have not packed yet, each with a +, and Add all when there are several.",
-            "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over).",
+            "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over). Tap a bag to type what the luggage scale says \u{2014} from then on that is its weight; Clear takes it away.",
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
             "Type a thing at the bottom to add it to this trip only.",
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and templates stay."]),
@@ -176,7 +176,8 @@ struct HowItWorksScreen: View {
             "Under the services: your things in numbers — how many, the total weight, the heaviest things, where it all lives, what each template weighs, the year ahead, and what is worth knowing."]),
         Topic(section: .actions, title: "To do", lines: [
             "To do: things to sort out before you go.",
-            "To buy: what to get, with worn-out or run-down things suggested."]),
+            "To buy: what to get, with worn-out or run-down things suggested.",
+            "Send to Reminders, at the top of To buy: the open lines go into the Reminders list \u{201C}To buy \u{00B7} Packing\u{201D}, each once. Tick them there in the shop; they are ticked here the next time you open the list."]),
         Topic(section: .settings, title: "Settings", lines: [
             "Remind me to pack: on this device, at 9 in the morning of the day each packing step is due, the trip and what is left. Each device asks for itself; under it, the next reminder and what it will say.",
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",

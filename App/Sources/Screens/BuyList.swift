@@ -21,6 +21,8 @@ struct BuyList: View {
                         .font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .padding(.top, 14)
                         .accessibilityIdentifier("buy-count")
+                    // To buy → Apple Reminders (his idea 9), to take to the shop.
+                    if !lines.isEmpty { RemindersSend().environmentObject(model) }
 
                     ForEach(Array(lines.enumerated()), id: \.element.id) { n, line in
                         HStack(spacing: 4) {

@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.50", date: "2 Oct 2026", title: "The luggage scale, and To buy in Reminders",
+                new: ["On a trip's Bags, tap a bag and type what the luggage scale says. From then on that is the bag's weight \u{2014} the bag itself and everything never weighed included \u{2014} and the things' own sum stays under it. Over its max, the card turns red. Clear takes the reading away.",
+                      "To do \u{2192} To buy: Send to Reminders puts the open lines into a Reminders list of their own, \u{201C}To buy \u{00B7} Packing\u{201D}, to take to the shop. Each line goes once; what you tick there is ticked here the next time you open the list."]),
         Release(version: "0.49", date: "2 Oct 2026", title: "Counting down, and reminders",
                 new: ["Home counts down to your next trip, under the grab lists: the days in big figures, the trip, and the next packing step with when it is due. Tap it to open the trip.",
                       "Settings \u{2192} Remind me to pack: on this device, at 9 in the morning of the day each packing step is due (a week ahead, the day before, the morning\u{2026}), the trip and what is left to pack. Tap a reminder to open the trip. Off until you turn it on, so each device reminds you only if you want it to."]),

@@ -11,16 +11,23 @@ import PackingLibrary
 ///
 /// Colour is the message, as he asked of every indicator: a bag over its limit is
 /// red; one near it is the Care orange; the rest are the trip's green.
+///
+/// The luggage scale (his idea 8, 2 Oct 2026): tap a bag and type what the scale
+/// says. From then on that is the weight the bag is judged by — the bag itself and
+/// everything never weighed included — and the things' sum stays beside it.
 struct BagsCard: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
     /// His ask (2026-09-26): "a small information button that explains the colors".
     @State private var showKey = false
+    /// The bag whose scale reading is being typed, and what is typed.
+    @State private var weighing: String?
+    @State private var scaleText = ""
+    @FocusState private var typing: Bool
 
     var body: some View {
-        let trip = model.library.trips.first { $0.id == tripId } ?? newEvent()
-        let bags = bagLoads(trip.entries, qtyNights(trip), model.library.bagLimits())
-            .filter { $0.items > 0 && $0.grams > 0 }
+        let bags = model.library.weighedBags(tripId: tripId)
+            .filter { $0.load.items > 0 && ($0.load.grams > 0 || $0.scaleGrams != nil) }
         if !bags.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
@@ -50,7 +57,12 @@ struct BagsCard: View {
                 }
                 if showKey { key }
                 ForEach(Array(bags.enumerated()), id: \.offset) { n, bag in
-                    row(bag).accessibilityIdentifier("bag-\(n)")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button { open(bag) } label: { row(bag) }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("bag-\(n)")
+                        if weighing == bag.load.container { scaleEditor(bag, n) }
+                    }
                 }
             }
             .padding(14)
@@ -68,7 +80,7 @@ struct BagsCard: View {
             keyLine(AppSection.events.color, "Green", "well within its max")
             keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
             keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
-            Text("No bar: no max set. Set one in Care → Bags.")
+            Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag to type what the luggage scale says.")
                 .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -87,23 +99,24 @@ struct BagsCard: View {
         }
     }
 
-    private func row(_ bag: BagLoad) -> some View {
+    private func row(_ bag: WeighedBag) -> some View {
         let tint = BagsCard.tint(bag)
-        let part = bag.limitKg > 0 ? min(1, bag.grams / 1000 / bag.limitKg) : 0
+        let limit = bag.load.limitKg
+        let part = limit > 0 ? min(1, bag.grams / 1000 / limit) : 0
+        let name = bag.load.container == "Other" ? "Not in a bag" : bag.load.container
+        let weight = bag.scaleGrams != nil ? "\(BagsCard.kilos(bag.grams)) weighed" : BagsCard.kilos(bag.grams)
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(bag.container == "Other" ? "Not in a bag" : bag.container)
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(name).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
                 // Every bag says its maximum — or that it has none (his ask, 2026-09-26).
-                Text(bag.limitKg > 0 ? "\(BagsCard.kilos(bag.grams)) / \(BagsCard.number(bag.limitKg)) kg"
-                                     : bag.container == "Other" ? BagsCard.kilos(bag.grams)
-                                     : "\(BagsCard.kilos(bag.grams)) · no max")
+                Text(limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
+                               : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
                     .font(.system(size: 14, weight: .bold).monospacedDigit())
                     .foregroundStyle(bag.over ? AppSection.actions.color : Theme.muted)
             }
             // Only a bag that HAS a limit gets a bar — a bar with no end says nothing.
-            if bag.limitKg > 0 {
+            if limit > 0 {
                 GeometryReader { space in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Theme.line)
@@ -112,14 +125,70 @@ struct BagsCard: View {
                 }
                 .frame(height: 8)
             }
+            if bag.scaleGrams != nil {
+                Text("The things in it add up to \(BagsCard.kilos(bag.load.grams))")
+                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+            }
         }
-        .accessibilityElement(children: .combine)
+        .contentShape(Rectangle())
+    }
+
+    /// Type what the scale says, in kg; Save keeps it, Clear takes it away.
+    private func scaleEditor(_ bag: WeighedBag, _ n: Int) -> some View {
+        HStack(spacing: 8) {
+            TextField("kg on the scale", text: $scaleText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 17, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
+                .padding(.horizontal, 10).frame(height: 40)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.bg))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
+                #if os(iOS)
+                .keyboardType(.decimalPad)
+                #endif
+                .focused($typing)
+                .onSubmit { save(bag) }
+                .accessibilityIdentifier("bag-\(n)-scale")
+            Button { save(bag) } label: {
+                Text("Save").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    .padding(.horizontal, 14).frame(minHeight: 40)
+                    .background(Capsule().fill(AppSection.events.color))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("bag-\(n)-scale-save")
+            if bag.scaleGrams != nil {
+                Button("Clear") {
+                    let container = bag.load.container
+                    model.change { _ = $0.setWeighed(tripId: tripId, bag: container, grams: nil) }
+                    weighing = nil
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                .accessibilityIdentifier("bag-\(n)-scale-clear")
+            }
+        }
+    }
+
+    private func open(_ bag: WeighedBag) {
+        if weighing == bag.load.container { weighing = nil; return }
+        weighing = bag.load.container
+        scaleText = bag.scaleGrams.map { BagsCard.number(($0 / 100).rounded() / 10) } ?? ""
+        typing = true
+    }
+
+    private func save(_ bag: WeighedBag) {
+        let clean = jsTrim(scaleText).replacingOccurrences(of: ",", with: ".")
+        let kg = Double(clean) ?? 0
+        let container = bag.load.container
+        model.change { _ = $0.setWeighed(tripId: tripId, bag: container, grams: kg > 0 ? kg * 1000 : nil) }
+        weighing = nil
+        typing = false
     }
 
     /// Red when over, orange from nine tenths, green below.
-    static func tint(_ bag: BagLoad) -> Color {
+    static func tint(_ bag: WeighedBag) -> Color {
         if bag.over { return AppSection.actions.color }
-        if bag.limitKg > 0, bag.grams / 1000 >= bag.limitKg * 0.9 { return AppSection.care.color }
+        if bag.load.limitKg > 0, bag.grams / 1000 >= bag.load.limitKg * 0.9 { return AppSection.care.color }
         return AppSection.events.color
     }
 

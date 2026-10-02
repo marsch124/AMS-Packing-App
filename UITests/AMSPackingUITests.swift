@@ -1399,6 +1399,61 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["trip-check-cabin-0"].exists, "a bag out of the cabin is still checked")
     }
 
+    /// The luggage scale (his idea 8, 2 Oct 2026): tap a bag on the trip, type what the
+    /// scale says; that is the weight it is judged by — over its max, the card says so —
+    /// and Clear takes it away again. (The sample's carry-on: 8 kg max, 2 kg of things.)
+    func testABagIsWeighedOnTheLuggageScale() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let bag = app.buttons["bag-0"]
+        XCTAssertTrue(bag.waitForExistence(timeout: 5), "no bag on the trip")
+        XCTAssertFalse(app.staticTexts["bags-over"].exists, "the sample's carry-on starts over its max")
+        tap(app, id: "bag-0")
+        let field = app.textFields["bag-0-scale"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "tapping a bag does not ask what the scale says")
+        type("9.5", into: field)
+        tap(app, id: "bag-0-scale-save")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["bag-0"]).contains("9.5 kg weighed") },
+                      "the scale's 9.5 kg is not the bag's weight: '\(words(app.buttons["bag-0"]))'")
+        XCTAssertTrue(app.staticTexts["bags-over"].waitForExistence(timeout: 5), "9.5 kg in an 8 kg carry-on is not over")
+        shot(app, "bag-weighed")
+        tap(app, id: "bag-0")
+        tap(app, id: "bag-0-scale-clear")
+        XCTAssertTrue(waitUntil { !self.words(app.buttons["bag-0"]).contains("weighed") }, "Clear kept the scale's weight")
+        XCTAssertTrue(waitUntil { !app.staticTexts["bags-over"].exists }, "without the scale it is still over")
+    }
+
+    /// To buy → Reminders (his idea 9): the open lines go in one press, and the list
+    /// says where; what went is not offered again, a new line is. (Under the tests a
+    /// pretend Reminders stands in: the real one asks the device first.)
+    func testTheBuyListGoesToReminders() {
+        let app = launch()
+        tab(app, "actions")
+        XCTAssertTrue(appears(app, "screen-actions"))
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(app.staticTexts["buy-count"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["buy-send"].exists, "nothing to buy, yet something to send")
+        for line in ["Sun cream", "Plasters"] {
+            type(line, into: app.textFields["buy-add-text"])
+            XCTAssertTrue(waitUntil { app.buttons["buy-add"].isEnabled }, "Add did not switch on")
+            tap(app, id: "buy-add")
+        }
+        XCTAssertTrue(waitUntil { self.words(app.buttons["buy-send"]).contains("Send 2") },
+                      "the two lines are not offered: '\(words(app.buttons["buy-send"]))'")
+        tap(app, id: "buy-send")
+        let says = app.staticTexts["buy-send-says"]
+        XCTAssertTrue(says.waitForExistence(timeout: 5), "the list does not say where they went")
+        XCTAssertTrue(words(says).contains("2 in Reminders"), "it does not say 2 went: '\(words(says))'")
+        XCTAssertTrue(waitUntil { !app.buttons["buy-send"].exists }, "what went is offered again")
+        type("Socks", into: app.textFields["buy-add-text"])
+        XCTAssertTrue(waitUntil { app.buttons["buy-add"].isEnabled })
+        tap(app, id: "buy-add")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["buy-send"]).contains("Send 1") },
+                      "the new line is not the one offered: '\(words(app.buttons["buy-send"]))'")
+    }
+
     /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end
     /// of a trip; it makes the file and opens the place to save it. (What the file
     /// holds is the model's test: WorkbookTests.)

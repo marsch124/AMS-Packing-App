@@ -51,6 +51,7 @@
 		C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0A839566CDE77B068F47C5 /* BulkChange.swift */; };
 		C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A986BF2DF0FA5E39E42559C /* Words.swift */; };
 		C71A0323F1D4E4CFC1A8B0F2 /* CareCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */; };
+		C92C70F13CEE0569A0E0B014 /* ShopReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 029AD64D1791D9D681EA7DDF /* ShopReminders.swift */; };
 		C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */; };
 		CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5987DFEB47FC294A078D4D /* NewList.swift */; };
 		D0D4A2EA2FA240B7D980E71C /* KitDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112E88E5E56E46CAA3F002CE /* KitDashboard.swift */; };
@@ -61,6 +62,7 @@
 		D5D12FDA2CC5B6443B769608 /* PackingLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 00FE6A96F5083A4802B251C6 /* PackingLibrary */; };
 		DAD37A1F2CA15C56CC068B58 /* RefineScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC01537D593379C8EF1B84F /* RefineScreen.swift */; };
 		DAE1DC1E5B87843793C1371E /* WorldMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D88FA9EA0BC448F857072B9 /* WorldMap.swift */; };
+		DE244FF0F4F0D12DF0F82CF0 /* RemindersSend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4926F40EBD71822EA9165684 /* RemindersSend.swift */; };
 		E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B838F35360E8BDAF890124 /* Theme.swift */; };
 		E2B76A8A26AB8A0D50EEA5C3 /* PickThings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F66AF282FB2C3C22DC9F76 /* PickThings.swift */; };
 		E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA49BA1121FBB7576FC62E32 /* RootView.swift */; };
@@ -81,6 +83,7 @@
 
 /* Begin PBXFileReference section */
 		01F66AF282FB2C3C22DC9F76 /* PickThings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickThings.swift; sourceTree = "<group>"; };
+		029AD64D1791D9D681EA7DDF /* ShopReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopReminders.swift; sourceTree = "<group>"; };
 		09188E6ECCD40487862AB202 /* GrabShelfScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabShelfScreen.swift; sourceTree = "<group>"; };
 		09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Forecast.swift; sourceTree = "<group>"; };
 		0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatesScreen.swift; sourceTree = "<group>"; };
@@ -101,6 +104,7 @@
 		3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLibrary.swift; sourceTree = "<group>"; };
+		4926F40EBD71822EA9165684 /* RemindersSend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersSend.swift; sourceTree = "<group>"; };
 		4E38CAC9C9C8FFA96DF061FC /* AMSPackingUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AMSPackingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EB48F2667254D2AD3862586 /* BagsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagsScreen.swift; sourceTree = "<group>"; };
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
@@ -200,6 +204,7 @@
 				3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */,
 				F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */,
 				47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */,
+				029AD64D1791D9D681EA7DDF /* ShopReminders.swift */,
 				35352F3BD8D2A7EE166961C9 /* Today.swift */,
 			);
 			path = Store;
@@ -275,6 +280,7 @@
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
 				01F66AF282FB2C3C22DC9F76 /* PickThings.swift */,
 				6CC01537D593379C8EF1B84F /* RefineScreen.swift */,
+				4926F40EBD71822EA9165684 /* RemindersSend.swift */,
 				34879BF77676913C07B69267 /* RestoreSheet.swift */,
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */,
@@ -435,6 +441,7 @@
 				DAD37A1F2CA15C56CC068B58 /* RefineScreen.swift in Sources */,
 				80E3669131BEA0D1C726A660 /* Releases.swift in Sources */,
 				7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */,
+				DE244FF0F4F0D12DF0F82CF0 /* RemindersSend.swift in Sources */,
 				D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */,
 				8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */,
 				09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */,
@@ -445,6 +452,7 @@
 				EB766063382A7E2DADC60C89 /* Sections.swift in Sources */,
 				B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */,
 				3B34615E704B984738565FC3 /* Share.swift in Sources */,
+				C92C70F13CEE0569A0E0B014 /* ShopReminders.swift in Sources */,
 				A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */,
 				A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */,
 				A2EF7B9D15A856E17FB773D8 /* TemplateIcons.swift in Sources */,
@@ -597,7 +605,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.49;
+				MARKETING_VERSION = 0.50;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -684,7 +692,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.49;
+				MARKETING_VERSION = 0.50;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

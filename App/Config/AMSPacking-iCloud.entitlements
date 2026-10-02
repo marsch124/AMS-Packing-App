@@ -43,5 +43,9 @@
 	<!-- How a change made on the other device arrives: a silent push. -->
 	<key>com.apple.developer.aps-environment</key>
 	<string>development</string>
+	<!-- To buy → Apple Reminders (0.50): the Mac's sandbox keeps the app out of
+	     Reminders without it. -->
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
 </dict>
 </plist>
