@@ -35,6 +35,19 @@ final class AMSPackingUITests: XCTestCase {
         return app
     }
 
+    /// Runs FIRST (tests run in name order): opens the app once, so a freshly started
+    /// simulator has done its slow first launch before any real test needs it. On
+    /// GitHub the first tests failed at the launch itself — "Failed to get background
+    /// assertion… Timed out" (0.53) — or ran past their time (0.46, 0.50), with the app
+    /// fine. A failure HERE is expected and allowed; it proves nothing about the app.
+    func testAAAWarmsUpTheSimulator() {
+        XCTExpectFailure("a cold simulator may fumble its first launch", options: .nonStrict()) {
+            let app = launch()
+            _ = appears(app, "screen-home", timeout: 60)
+            app.terminate()
+        }
+    }
+
     /// A named screen or container. The SAME SwiftUI container is a Group to the Mac,
     /// an Other to the iPhone — and when its content is a scroll view, the iPhone puts
     /// the name on the ScrollView instead (all three found by dumping the tree, not by
