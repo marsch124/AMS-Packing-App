@@ -19,6 +19,7 @@ enum Words {
         Entry(term: "Context", meaning: "Indoor, Outdoor or Race: how a workout is done. It adds what that setting needs.", section: .home),
         Entry(term: "Thing", meaning: "One thing you own, in Your things on Care. It can be on many templates; a change to it reaches all of them.", section: .care),
         Entry(term: "Kit", meaning: "All your things together — what Care counts and weighs.", section: .care),
+        Entry(term: "Cabin bag", meaning: "A bag that goes on board with you \u{2014} Goes in the cabin, on the bag's page. On a plane trip it is checked for liquids and things not allowed.", section: .care),
         Entry(term: "Bag", meaning: "What a thing is packed into. A bag can have a max weight, and the trip shows how full it is.", section: .care),
         Entry(term: "From where · Into", meaning: "Where a thing is kept at home · the bag it goes into.", section: .events),
         Entry(term: "When", meaning: "The step of the packing timeline a thing belongs to: a week ahead, the day before, on the day…", section: .events),

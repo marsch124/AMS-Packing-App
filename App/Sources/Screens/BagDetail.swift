@@ -37,6 +37,7 @@ struct BagDetail: View {
                 KeyboardAwayScroll {
                     VStack(alignment: .leading, spacing: 18) {
                         numbers(bag)
+                        cabinSwitch(bag)
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)
@@ -144,6 +145,23 @@ struct BagDetail: View {
                 }
                 .accessibilityIdentifier(id)
         }
+    }
+
+    // MARK: The cabin — a plane trip checks this bag (his idea 4, 2 Oct 2026)
+
+    private func cabinSwitch(_ bag: Item) -> some View {
+        let thing = model.library.items.first { $0.id == bag.id } ?? bag
+        return Toggle(isOn: Binding(get: { Library.isCabinBag(thing) },
+                                    set: { on in model.change { _ = $0.setBagCabin(id: bag.id, on) } })) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Goes in the cabin").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("Carry-on. On a plane trip, the trip checks it for liquids and things not allowed on board.")
+                    .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .tint(AppSection.care.color)
+        .accessibilityIdentifier("bag-detail-cabin")
     }
 
     // MARK: What goes in it

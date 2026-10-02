@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.48", date: "2 Oct 2026", title: "Check before you go",
+                new: ["A trip shows Check before you go at the top when something needs you. On a plane trip: what in a cabin bag the airport stops \u{2014} not allowed on board in red, a liquid in orange (100 ml at most, in the clear bag). And what runs out before you are home; a passport or ID card six months ahead. Tap a line to open the thing and put it right.",
+                      "A thing's page has On a plane (Liquid, Not allowed in the cabin) and Valid until (Add a date).",
+                      "A bag's page has Goes in the cabin. A carry-on, hand luggage or cabin bag starts switched on."]),
         Release(version: "0.47", date: "2 Oct 2026", title: "Your first real trip",
                 new: ["How it works starts with Your first real trip in 6 steps: backup, tidy your things, templates, the trip, packing, and the review afterwards."],
                 changed: ["Laundry: you choose how many nights you pack for before a wash (3, 4, 5, 7, 10 or 14) — on Create new trip and in Trip settings. Every count, bag weight and the Excel file follow."]),

@@ -72,6 +72,40 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library ready for Check before you go (`-uiTestingChecks`): a plane
+    /// trip three weeks out, built from Hiking and the base template, which now carries a pocket
+    /// knife and sun cream in the carry-on (where every sample thing goes); the sun
+    /// cream runs out during the trip, the passport five months after it.
+    static func checks() -> Library {
+        var lib = make()
+        lib.addBag(name: "Carry-on / hand luggage")
+        if let base = lib.templates.first(where: { $0.role == "base" }) {
+            for name in ["Pocket knife", "Sun cream"] {
+                if let t = lib.addThing(name: name) { _ = lib.setOnTemplate(itemId: t.id, templateId: base.id, on: true) }
+            }
+        }
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        for n in lib.items.indices {
+            switch lib.items[n].name {
+            case "Pocket knife": lib.items[n].restricted = true
+            case "Sun cream": lib.items[n].liquid = true; lib.items[n].expiry = day(25)
+            case "Passport": lib.items[n].category = DOCUMENTS_CATEGORY; lib.items[n].expiry = day(180)
+            default: break
+            }
+        }
+        var trip = newEvent(name: "Sunny weeks", startDate: day(20), endDate: day(34))
+        trip.transport = "Plane"
+        // A trip has a template (Trip settings will not save one without).
+        trip.activities = lib.templates.filter { $0.name == "Hiking" }.map { $0.id }
+        lib.trips = []
+        _ = lib.createTrip(trip)
+        return lib
+    }
+
     /// The sample library with every template a SECOND time, under new ids — what
     /// a device holds when two libraries have met on one account (31 August 2026,
     /// and again on 23 September). Used by `-uiTestingTwoLibraries`.

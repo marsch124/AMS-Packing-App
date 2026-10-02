@@ -1289,6 +1289,76 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { counts().contains("×7") }, "without laundry the towel does not count every night: \(counts())")
     }
 
+    /// Check before you go (his ideas 4 and 5, 2 Oct 2026): on a plane trip, what in
+    /// a cabin bag the airport stops; and what runs out before he is home — a passport
+    /// six months ahead. A tap opens the thing to put it right. (`-uiTestingChecks`: a
+    /// plane trip three weeks out; a pocket knife and sun cream in the carry-on; the
+    /// sun cream runs out during the trip, the passport five months after it.)
+    func testATripChecksTheCabinAndTheDatesBeforeYouGo() {
+        let app = launch("-uiTestingChecks")
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "the plane trip has nothing to check")
+        func says(_ id: String) -> String { words(app.buttons[id]) }
+        XCTAssertTrue(waitUntil { says("trip-check-cabin-0").contains("Pocket knife") },
+                      "not allowed on board is not first: '\(says("trip-check-cabin-0"))'")
+        XCTAssertTrue(says("trip-check-cabin-1").contains("Sun cream"), "the liquid is not asked about: '\(says("trip-check-cabin-1"))'")
+        XCTAssertTrue(says("trip-check-date-0").contains("Sun cream"), "what runs out first is not first: '\(says("trip-check-date-0"))'")
+        XCTAssertTrue(says("trip-check-date-1").contains("Passport"), "the passport's six months are not checked: '\(says("trip-check-date-1"))'")
+        shot(app, "trip-checks")
+
+        // The sun cream goes in a small bottle after all: open it from the check, Liquid off.
+        tap(app, id: "trip-check-cabin-1")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the check did not open the thing")
+        setSwitch(app, "thing-liquid", on: false)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { !app.buttons["trip-check-cabin-1"].exists }, "the liquid is still asked about")
+        XCTAssertTrue(says("trip-check-cabin-0").contains("Pocket knife"), "the knife went too")
+
+        // A new passport: the date goes, and so does the warning.
+        tap(app, id: "trip-check-date-1")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-expiry-clear")
+        XCTAssertTrue(waitUntil { app.buttons["thing-expiry-add"].exists }, "the date was not removed")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { !app.buttons["trip-check-date-1"].exists }, "the passport without a date is still checked")
+
+        // By car the cabin is nobody's business — but the sun cream still runs out.
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        select(app, app.buttons["tripset-transport-0"])
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { !app.buttons["trip-check-cabin-0"].exists }, "a car trip is checked for the cabin")
+        XCTAssertTrue(says("trip-check-date-0").contains("Sun cream"), "the date check went with the plane")
+    }
+
+    /// A bag says whether it goes in the cabin (his idea 4): a carry-on by its name until
+    /// he says otherwise, and the plane trip's check follows his word.
+    func testABagSaysWhetherItGoesInTheCabin() {
+        let app = launch("-uiTestingChecks")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the bag's page did not open")
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "bag-detail-cabin") }, "a carry-on by its name is not in the cabin")
+        setSwitch(app, "bag-detail-cabin", on: false)
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "the dates are no longer checked")
+        XCTAssertFalse(app.buttons["trip-check-cabin-0"].exists, "a bag out of the cabin is still checked")
+    }
+
     /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end
     /// of a trip; it makes the file and opens the place to save it. (What the file
     /// holds is the model's test: WorkbookTests.)

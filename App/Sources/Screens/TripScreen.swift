@@ -32,6 +32,9 @@ struct TripScreen: View {
     /// What the last Trip settings save did to the list, said under the loop.
     @State private var rebuiltNote = ""
     @State private var newPlace = ""
+    /// The thing opened from Check before you go.
+    @State private var checking: CheckedThing?
+    struct CheckedThing: Identifiable { let id: String }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
     // where it is kept at home — "so that I can pick all stuff from a specific location".
@@ -166,6 +169,9 @@ struct TripScreen: View {
                 // thrown away and rebuilt as it scrolls off, which loses what he
                 // has typed into it (found by the test, 2026-09-23).
                 VStack(alignment: .leading, spacing: 4) {
+                // Check before you go (his ideas 4 and 5): first, and only when something needs him.
+                TripChecksCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
+                    .padding(.top, 10).padding(.horizontal, 16)
                 WeatherCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
                 BagsCard(tripId: trip.id).environmentObject(model)
@@ -309,6 +315,7 @@ struct TripScreen: View {
                 }
                 .padding(.bottom, 24)
             }
+            .sheet(item: $checking) { c in ThingEditor(itemId: c.id).environmentObject(model) }
             // "Also the tripod" — a thing for THIS trip only, typed on the spot.
             HStack(spacing: 8) {
                 TextField("Add a thing to this trip", text: $newName)

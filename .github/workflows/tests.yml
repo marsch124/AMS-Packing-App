@@ -44,8 +44,9 @@ jobs:
     name: UI tests — iPhone
     runs-on: macos-15
     # 30 was outgrown on 2026-09-26 (0.25): an 11-minute build plus 48 tests —
-    # cancelled at test 41 of 48 with nothing wrong. Room to grow now.
-    timeout-minutes: 55
+    # cancelled at test 41 of 48 with nothing wrong. 55 was nearly outgrown on
+    # 2026-10-02 (0.46: 67 tests, ~50 minutes). Room to grow again.
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
 
@@ -78,6 +79,14 @@ jobs:
           echo "SIM_UDID=$UDID" >> $GITHUB_ENV
           echo "Using simulator:$(echo "$LINE" | sed -E 's/ *\(.*//')"
 
+      - name: Wake the simulator before the first test
+        # 0.46 (2026-10-02): a cold simulator cost the FIRST test 95 seconds
+        # before it could even start, and slow steps after — 336 s against the
+        # 300 s a test may take, so a test that passes was counted red.
+        run: |
+          xcrun simctl boot "$SIM_UDID" || true
+          xcrun simctl bootstatus "$SIM_UDID" -b
+
       - name: UI tests on the iPhone simulator
         run: |
           xcodebuild test \
@@ -88,7 +97,7 @@ jobs:
             -resultBundlePath TestResults-iPhone.xcresult \
             -collect-test-diagnostics never \
             -test-timeouts-enabled YES \
-            -maximum-test-execution-time-allowance 300 \
+            -maximum-test-execution-time-allowance 480 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=""
@@ -106,7 +115,7 @@ jobs:
     # SwiftUI a click on a pill "succeeded" and selected nothing, three runs in
     # a row, while the same test is green here every time.
     runs-on: macos-26
-    timeout-minutes: 55
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen

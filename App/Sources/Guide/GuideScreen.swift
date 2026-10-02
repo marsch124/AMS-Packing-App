@@ -136,6 +136,7 @@ struct HowItWorksScreen: View {
             "This Device: how many trips, things and templates this device holds."]),
         Topic(section: .events, title: "Packing a trip", lines: [
             "Tap a line to tick it; tap again to take it back. The round button by a heading ticks the whole section.",
+            "Check before you go, at the top when something needs you: on a plane trip, what in a cabin bag is not allowed on board (red) or is a liquid (orange: 100 ml at most, in the clear bag); and what runs out before you are home \u{2014} a passport or ID card (Documents & money) six months ahead. Tap a line to open the thing and put it right.",
             "The pen beside the count: Trip settings. Change the name, dates, place, templates, transport, season or food; Save rebuilds the list, and what you ticked or added yourself stays.",
             "At the bottom of Trip settings: Start a new trip from this one. The same list as it ended up, nothing ticked, no dates.",
             "Near the end of the list: Tick everything, and Clear every tick (it asks first). Lines set aside stay out of both.",
@@ -167,7 +168,8 @@ struct HowItWorksScreen: View {
             "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [
             "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first). A change reaches the trips still ahead, on the lines you have not ticked yet.",
-            "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
+            "On a thing's page: On a plane (Liquid, Not allowed in the cabin) and Valid until \u{2014} what a trip's Check before you go reads.",
+            "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, say whether it goes in the cabin, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month.",
             "Under the services: your things in numbers — how many, the total weight, the heaviest things, where it all lives, what each template weighs, the year ahead, and what is worth knowing."]),
@@ -234,7 +236,7 @@ struct FirstTripCard: View {
         ("Tidy your things", "Care → All your things · table: the No weight and No place chips find what is missing. Weights make the bag bars honest; places make From where one walk through the house."),
         ("Build your templates", "One per activity or need (Beach, Long stay…). On a template: Choose from your things, or type a new one. Tap a thing there for Only on some trips."),
         ("Create the trip", "Home → Create new trip: name, Dates, the templates, Transport, Season, Food, Laundry and its nights. Then the pen: type the Place — the map pin and the weather follow."),
-        ("Pack", "Sorting: When for the timeline, From where to fetch room by room, Into to fill each bag. ⊘ is not this time. Watch the bag bars."),
+        ("Pack", "Sorting: When for the timeline, From where to fetch room by room, Into to fill each bag. ⊘ is not this time. Watch the bag bars, and Check before you go when it shows."),
         ("Go, use, review", "There, the grab lists on Home are for each outing. Back home: Review — tap what you did not use, add what you missed. Refine learns from it."),
     ]
 

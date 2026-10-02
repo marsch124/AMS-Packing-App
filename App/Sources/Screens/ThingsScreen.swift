@@ -163,6 +163,17 @@ struct ThingEditor: View {
                           id: "thing-category", tint: AppSection.care.color, compact: true) { draft.category = $0 }
                     Pills(title: "Usually packed in", options: containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
                           selected: [draft.container], id: "thing-bag", tint: AppSection.care.color, compact: true) { draft.container = $0 }
+                    // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
+                    VStack(alignment: .leading, spacing: 8) {
+                        HeadingBand(title: "On a plane", id: "thing-heading-plane")
+                        Toggle(isOn: $draft.liquid) { flagWords("Liquid", "In the cabin: 100 ml at most, in the clear bag.") }
+                            .tint(AppSection.care.color)
+                            .accessibilityIdentifier("thing-liquid")
+                        Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin", "A knife, tools, gas — it goes in the hold.") }
+                            .tint(AppSection.care.color)
+                            .accessibilityIdentifier("thing-restricted")
+                    }
+                    labelled("Valid until") { validUntil }
                     Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
                           id: "thing-when", tint: AppSection.care.color, compact: true) { draft.phase = $0 }
                     if !owners.isEmpty {
@@ -256,6 +267,57 @@ struct ThingEditor: View {
         }
     }
 
+    /// A passport, an ID card, sun cream, medicine: the trip warns before it runs out.
+    @ViewBuilder private var validUntil: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if draft.expiry.isEmpty {
+                Button { draft.expiry = Today.local } label: {
+                    Text("Add a date").font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.care.color)
+                        .padding(.horizontal, 14).frame(minHeight: 40)
+                        .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("thing-expiry-add")
+            } else {
+                HStack(spacing: 12) {
+                    DatePicker("", selection: Binding(get: { ThingEditor.date(draft.expiry) ?? Date() },
+                                                      set: { draft.expiry = ThingEditor.ymd($0) }),
+                               displayedComponents: .date)
+                        .labelsHidden()
+                        .accessibilityIdentifier("thing-expiry")
+                    Spacer(minLength: 8)
+                    Button("Remove the date") { draft.expiry = "" }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("thing-expiry-clear")
+                }
+            }
+            Text("The trip warns before it runs out \u{2014} a document (Documents & money) six months ahead.")
+                .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func flagWords(_ title: String, _ says: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+            Text(says).font(.system(size: 14)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private static func formatter() -> DateFormatter {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }
+    static func date(_ ymd: String) -> Date? { formatter().date(from: ymd) }
+    static func ymd(_ d: Date) -> String { formatter().string(from: d) }
+
     /// A heading and its field, held together: 4 points apart, where the headings
     /// themselves are 22 apart.
     private func labelled<Content: View>(_ text: String, @ViewBuilder _ content: () -> Content) -> some View {
@@ -296,6 +358,9 @@ struct ThingEditor: View {
                 thing.manufacturer = jsTrim(d.manufacturer)
                 thing.color = jsTrim(d.color)
                 thing.note = jsTrim(d.note)
+                thing.liquid = d.liquid
+                thing.restricted = d.restricted
+                thing.expiry = d.expiry
             }
             for t in lib.templates where t.role != CONTAINER_ROLE {
                 _ = lib.setOnTemplate(itemId: itemId, templateId: t.id, on: lists.contains(t.id))
