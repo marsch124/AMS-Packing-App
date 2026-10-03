@@ -1,21 +1,26 @@
 import SwiftUI
 
-/// The two doors in Settings: What's new and How it works — his standing rule from
-/// the web apps, missing here until 0.23. They own their sheet, so Settings keeps
-/// the sheets it already has (several sheets on one view is a trap met in Search).
+/// The doors in Settings: What's new and How it works — his standing rule from the
+/// web apps, missing here until 0.23 — and the first real trip in six steps, which
+/// he and Anna asked to keep where they can read it again (field test, 3 Oct 2026:
+/// "Please save this in the app … so that we can choose to read that later as
+/// well"). They own their sheet, so Settings keeps the sheets it already has
+/// (several sheets on one view is a trap met in Search).
 struct GuideDoors: View {
-    enum Page: String, Identifiable { case whatsNew, howItWorks; var id: String { rawValue } }
+    enum Page: String, Identifiable { case whatsNew, howItWorks, firstTrip; var id: String { rawValue } }
     @State private var page: Page?
 
     var body: some View {
         VStack(spacing: 10) {
             door("What's new", Releases.all.first.map { "\($0.version) · \($0.title)" } ?? "", "settings-whatsnew") { page = .whatsNew }
             door("How it works", "The whole app in plain words, screen by screen", "settings-howitworks") { page = .howItWorks }
+            door("Your first real trip", "In 6 steps, from a backup to the review", "settings-firsttrip") { page = .firstTrip }
         }
         .sheet(item: $page) { p in
             switch p {
             case .whatsNew: WhatsNewScreen()
             case .howItWorks: HowItWorksScreen()
+            case .firstTrip: FirstTripScreen()
             }
         }
     }
@@ -235,6 +240,26 @@ struct HowItWorksScreen: View {
         .background(Theme.bg)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("guide-howitworks")
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 620)
+        #endif
+    }
+}
+
+/// The six steps on a page of their own, opened from Settings — the same card as at
+/// the top of How it works, so the two can never say different things.
+struct FirstTripScreen: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            GuideHeader(title: "First real trip")
+            KeyboardAwayScroll {
+                FirstTripCard()
+                    .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+        }
+        .background(Theme.bg)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("guide-firsttrip")
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 620)
         #endif
