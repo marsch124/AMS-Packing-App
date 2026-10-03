@@ -66,9 +66,23 @@ final class ShopReminders {
         return made.map { ($0.0, $0.1.calendarItemExternalIdentifier ?? $0.1.calendarItemIdentifier) }
     }
 
-    /// Which of these reminders have been ticked.
+    /// What was ticked in the shop is ticked here — whenever the app comes back to the
+    /// front, not only when To buy is opened (field test 8.4, 3 Oct 2026: "we had to
+    /// change tabs between To Buy and To Do for it to update"). Never asks for access.
+    func readBack(into model: LibraryModel) async {
+        let open = model.library.sentBuyLines().filter { !$0.line.done }
+        guard !open.isEmpty, mayRead else { return }
+        let ticked = await ticked(open.map(\.reminderId))
+        if !ticked.isEmpty { model.change { _ = $0.takeBought(reminderIds: ticked) } }
+    }
+
+    /// Which of these reminders have been ticked. (Under the tests "-pretendShopTicks"
+    /// plays a shop where everything sent has been ticked.)
     func ticked(_ ids: [String]) async -> Set<String> {
-        if AMSPackingApp.testing { return Set(ids.filter { pretend[$0] == true }) }
+        if AMSPackingApp.testing {
+            if ProcessInfo.processInfo.arguments.contains("-pretendShopTicks") { return Set(ids.filter { pretend[$0] != nil }) }
+            return Set(ids.filter { pretend[$0] == true })
+        }
         var out = Set<String>()
         for id in ids {
             let items = store.calendarItems(withExternalIdentifier: id)

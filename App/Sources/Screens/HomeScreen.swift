@@ -171,6 +171,10 @@ struct HomeScreen: View {
             TripScreen(tripId: o.id).environmentObject(model)
         }
         .sheet(isPresented: $shelf) { GrabShelfScreen().environmentObject(model) }
+        // The Action button's "Choose a grab list" (field test 2.3): the menu of them all.
+        .sheet(isPresented: Binding(get: { model.grabMenuOpen }, set: { model.grabMenuOpen = $0 })) {
+            GrabMenuScreen().environmentObject(model)
+        }
         // A Shortcut (the Action button): its grab list.
         .onChange(of: model.grabToOpen, initial: true) { _, id in
             guard let id else { return }
@@ -334,7 +338,9 @@ struct CountTile: View {
 struct QuickNote: View {
     let id: String
     var body: some View {
-        Text("Quick: only the templates you tick — no common base, no transport kit.")
+        // Field test 5.1/6.1 (3 Oct 2026): the old words made Transport look switched
+        // off, the trip stayed "Car", and the plane's cabin check never ran.
+        Text("Quick: only the templates you tick \u{2014} no common base, no transport kit. Transport still counts: pick Plane and the cabin is checked.")
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(AppSection.events.color)
             .fixedSize(horizontal: false, vertical: true)

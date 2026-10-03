@@ -7,6 +7,7 @@ import PackingLibrary
 struct RootView: View {
     @State private var section: AppSection = .home
     @EnvironmentObject var model: LibraryModel
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,8 +31,13 @@ struct RootView: View {
             // The grab lists Shortcuts offers by name follow his.
             PackingShortcuts.updateAppShortcutParameters()
         }
+        // Back from the shop: what was ticked in Reminders is ticked here (field test 8.4).
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await ShopReminders.shared.readBack(into: model) } }
+        }
         // A Shortcut asked for a grab list or a trip: both open on Home.
         .onChange(of: model.grabToOpen, initial: true) { _, id in if id != nil { section = .home } }
+        .onChange(of: model.grabMenuOpen, initial: true) { _, open in if open { section = .home } }
         .onChange(of: model.tripToOpen, initial: true) { _, id in if id != nil { section = .home } }
     }
 }

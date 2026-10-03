@@ -86,6 +86,44 @@ final class TripChecksTests: XCTestCase {
         XCTAssertFalse(lib.isCabin(container: "Checked luggage"))
     }
 
+    /// Field test 7.3/6.1 (3 Oct 2026): the bag they packed into was a name on the lines,
+    /// not one of their bags — the trip itself must be able to say it goes in the cabin.
+    func testABagNameOnTheTripCanBeSaidToGoInTheCabin() {
+        var (lib, trip) = library()
+        // A thing packed into a name that is no bag, and says nothing about the cabin.
+        let t = lib.addThing(name: "Multitool")!
+        _ = lib.updateThing(id: t.id) { $0.container = "Red backpack"; $0.restricted = true }
+        _ = lib.setOnTemplate(itemId: t.id, templateId: lib.templates.first { $0.role == "base" }!.id, on: true)
+        _ = lib.changeTrip(id: trip) { $0.name = "Two months" }          // rebuild: the multitool comes along
+        XCTAssertFalse(lib.cabinCheck(tripId: trip).map(\.line.name).contains("Multitool"), "a bag not said to be the cabin is checked")
+        XCTAssertTrue(lib.setCabin(container: "Red backpack", true))
+        XCTAssertTrue(lib.bags().contains { $0.name == "Red backpack" }, "the name did not become a bag")
+        XCTAssertTrue(lib.cabinCheck(tripId: trip).map(\.line.name).contains("Multitool"), "the cabin bag said from the trip is not checked")
+        XCTAssertTrue(lib.setCabin(container: "Red backpack", false))
+        XCTAssertFalse(lib.cabinCheck(tripId: trip).map(\.line.name).contains("Multitool"))
+        XCTAssertEqual(lib.bags().filter { $0.name == "Red backpack" }.count, 1, "saying it twice made two bags")
+        XCTAssertFalse(lib.setCabin(container: "Other", true), "\"Not in a bag\" became a bag")
+    }
+
+    /// Field test 6.1: a QUICK trip by plane is checked too — Quick drops the transport
+    /// kit, not the transport.
+    func testAQuickTripByPlaneIsCheckedToo() {
+        var lib = Library()
+        _ = lib.addBag(name: "Cabin bag")
+        var kit = newList(name: "Kit", group: "GA")
+        kit.items = []
+        lib.saveTemplate(kit)
+        let kitId = lib.templates.first { $0.name == "Kit" }!.id
+        let knife = lib.addThing(name: "Knife")!
+        _ = lib.updateThing(id: knife.id) { $0.container = "Cabin bag"; $0.restricted = true }
+        _ = lib.setOnTemplate(itemId: knife.id, templateId: kitId, on: true)
+        var trip = newEvent(name: "Quick hop", startDate: "2026-11-01", endDate: "2026-11-03")
+        trip.mode = "quick"; trip.activities = [kitId]; trip.transport = "Plane"
+        let made = lib.createTrip(trip)
+        XCTAssertEqual(made.entries.map(\.name), ["Knife"], "the quick trip is not just the kit")
+        XCTAssertEqual(lib.cabinCheck(tripId: made.id).map(\.line.name), ["Knife"], "a quick trip by plane is not checked")
+    }
+
     func testWhatRunsOutBeforeHomeAndADocumentSixMonthsAhead() {
         var (lib, trip) = library()                               // the trip ends 2026-12-31
         set(&lib, "Sun cream") { $0.expiry = "2026-12-01" }      // runs out during the trip

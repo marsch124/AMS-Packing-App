@@ -30,6 +30,8 @@ final class LibraryModel: ObservableObject {
     @Published var tripToOpen: String?
     /// A grab list asked to open from a Shortcut (the Action button). Home opens it.
     @Published var grabToOpen: String?
+    /// The Action button's "Choose a grab list": Home shows the menu of grab lists.
+    @Published var grabMenuOpen = false
 
     private let store: LibraryStore
     private var held: [StoredRecord] = []
@@ -211,6 +213,7 @@ extension LibraryModel {
         if AMSPackingApp.testing, let n = args.firstIndex(of: "-openGrab"), n + 1 < args.count {
             model.grabToOpen = model.library.allGrabLists().first { $0.label == args[n + 1] || $0.title == args[n + 1] }?.id
         }
+        if AMSPackingApp.testing, args.contains("-openGrabMenu") { model.grabMenuOpen = true }
         if AMSPackingApp.testing, args.contains("-openNextTrip"),
            let next = model.library.nextTrip(today: Today.local) {
             model.tripToOpen = next.id

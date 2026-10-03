@@ -53,12 +53,9 @@ struct RemindersSend: View {
         }
     }
 
-    /// What was ticked in the shop is ticked here. Never asks for access: only reads
-    /// when the app already may.
+    /// What was ticked in the shop is ticked here (also whenever the app comes back to
+    /// the front — RootView). Never asks for access: only reads when the app already may.
     private func readBack() async {
-        let open = model.library.sentBuyLines().filter { !$0.line.done }
-        guard !open.isEmpty, ShopReminders.shared.mayRead else { return }
-        let ticked = await ShopReminders.shared.ticked(open.map(\.reminderId))
-        if !ticked.isEmpty { model.change { _ = $0.takeBought(reminderIds: ticked) } }
+        await ShopReminders.shared.readBack(into: model)
     }
 }

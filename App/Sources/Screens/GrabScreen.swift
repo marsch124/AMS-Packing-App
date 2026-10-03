@@ -111,6 +111,7 @@ final class GrabStore {
 /// Plain rows, not a lazy grid: the Mac builds only what is on screen.
 struct GrabButtons: View {
     let lists: [GrabDefinition]
+    var prefix = "grab"
     let open: (GrabDefinition) -> Void
     private let perRow = 4
 
@@ -133,7 +134,7 @@ struct GrabButtons: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("grab-\(n)")
+                        .accessibilityIdentifier("\(prefix)-\(n)")
                         .accessibilityLabel(d.title)
                     }
                     // A short last row keeps the same button width as the full ones.

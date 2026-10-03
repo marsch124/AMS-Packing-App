@@ -63,6 +63,7 @@ struct BagsCard: View {
                             .accessibilityIdentifier("bag-\(n)")
                         if weighing == bag.load.container {
                             scaleEditor(bag, n)
+                            BagCabinRow(bag: bag.load.container, n: n).environmentObject(model)
                             // A photo of it packed (his idea 11), to repack from on the way home.
                             BagPhotoRow(tripId: tripId, bag: bag.load.container, n: n).environmentObject(model)
                         }

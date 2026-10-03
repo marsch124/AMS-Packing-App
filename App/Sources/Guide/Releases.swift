@@ -18,6 +18,12 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.55", date: "3 Oct 2026", title: "Fixes from your field test",
+                new: ["The Action button: a new Shortcuts action, Choose a grab list. One press opens all your grab lists as big tiles; tap the one for today.",
+                      "On a trip, tap a bag: Goes in the cabin can be switched on right there \u{2014} also for a bag that was only a name on your lines. It then shows in Care \u{2192} Bags too."],
+                changed: ["Quick says that Transport still counts: pick Plane and the cabin is checked.",
+                          "A row on a template says what it is limited to: Only on: Summer.",
+                          "What you tick in Reminders in the shop is ticked here as soon as you come back to the app."]),
         Release(version: "0.54", date: "3 Oct 2026", title: "iCloud sync, made visible",
                 new: ["Settings \u{2192} iCloud sync: when this device last sent and received, what iCloud does not have yet, and \u{2014} if a send failed \u{2014} why, in plain words.",
                       "Sync now: this device checks in, and the other device's Settings shows it within a minute or so. A direct test of each direction.",

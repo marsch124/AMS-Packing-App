@@ -4,6 +4,16 @@ import PackingLibrary
 
 /// The Templates tab: every template, grouped the way he organises his life —
 /// always packed, by transport, then his activity groups.
+extension TemplatesScreen {
+    static let cateringShort = ["self": "Self-sufficient", "eatout": "Eating out", "mixed": "Mix of both"]
+
+    /// "Only on: Summer · Plane" — what a row on a template is limited to, or "".
+    static func tags(_ item: Item) -> String {
+        let all = item.seasons + item.contexts + item.transports + item.catering.map { cateringShort[$0] ?? $0 }
+        return all.isEmpty ? "" : "Only on: " + all.joined(separator: " \u{00B7} ")
+    }
+}
+
 struct TemplatesScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var open: PackList?
@@ -415,6 +425,12 @@ struct TemplateDetail: View {
                                                 Text([item.qty.isEmpty ? "" : "×\(item.qty)", item.note]
                                                         .filter { !$0.isEmpty }.joined(separator: " · "))
                                                     .font(.system(size: 13)).foregroundStyle(Theme.muted).lineLimit(1)
+                                            }
+                                            // Only on some trips, said on the row (field test 4.4, 3 Oct 2026).
+                                            let tags = TemplatesScreen.tags(item)
+                                            if !tags.isEmpty {
+                                                Text(tags).font(.system(size: 13, weight: .semibold))
+                                                    .foregroundStyle(AppSection.templates.color).lineLimit(1)
                                             }
                                         }
                                         Spacer(minLength: 8)

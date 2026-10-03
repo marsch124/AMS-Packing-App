@@ -74,6 +74,19 @@ extension Library {
         return updateThing(id: id) { $0.extra[CABIN_KEY] = .bool(on) }
     }
 
+    /// Say whether the bag a trip packs into goes in the cabin — from the trip itself
+    /// (field test 7.3, 3 Oct 2026: their cabin bag was a name on the lines, not one of
+    /// their bags, so there was nowhere to say so). A name that is not a bag yet
+    /// becomes one, and then appears in Care → Bags too.
+    @discardableResult
+    public mutating func setCabin(container: String, _ on: Bool) -> Bool {
+        let name = jsTrim(container)
+        guard !name.isEmpty, name != "Other" else { return false }
+        let bag = bags().first { normName($0.name) == normName(name) } ?? addBag(name: name)
+        guard let bag else { return false }
+        return setBagCabin(id: bag.id, on)
+    }
+
     /// The thing behind a trip line as it is NOW — or the line itself, for a thing
     /// typed on the trip only.
     func thingNow(_ line: Item) -> Item {

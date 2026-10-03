@@ -146,6 +146,7 @@ struct HowItWorksScreen: View {
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",
             "Weather: type the place; you get one line and only the rain or cold gear you have not packed yet, each with a +, and Add all when there are several.",
+            "Tap a bag on a trip for Goes in the cabin: switched on, a plane trip checks that bag for liquids and things not allowed on board. A bag that was only a name on your lines becomes one of your Bags.",
             "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over). Tap a bag to type what the luggage scale says \u{2014} from then on that is its weight; Clear takes it away \u{2014} and to take a photo of it packed, kept with the trip.",
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
             "Type a thing at the bottom to add it to this trip only. Bought it there? Press Bought there: it goes on ticked, marked so.",
@@ -191,8 +192,9 @@ struct HowItWorksScreen: View {
             "Worth a look appears only when something in the library seems wrong.",
             "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list takes a free place on Home, or waits on your shelf when Home is full."]),
         Topic(section: .home, title: "Shortcuts and the Action button", lines: [
-            "In the Shortcuts app, Packing offers Open a grab list (choose which) and Open my next trip.",
-            "On the iPhone: Settings \u{2192} Action Button \u{2192} Shortcut, and pick one \u{2014} one press and the grab list is open, ready to tick.",
+            "Packing offers three actions to Shortcuts and the Action button: Choose a grab list (a menu of them all, every time), Open a grab list (always the same one) and Open my next trip.",
+            "The Action button: iPhone Settings \u{2192} Action Button \u{2192} swipe to Shortcut \u{2192} Choose a Shortcut \u{2192} Packing \u{2192} Choose a grab list. Press it: your grab lists appear; tap the one for today.",
+            "If Packing is not in the list there: open Packing once, then look again.",
             "Or add the Shortcut to the Home Screen, or say \u{201C}Open Swim in Packing\u{201D} to Siri."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",

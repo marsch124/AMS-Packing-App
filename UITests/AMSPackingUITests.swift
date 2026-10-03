@@ -1585,6 +1585,68 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "sync-card")
     }
 
+    /// Field test 7.3/6.1 (3 Oct 2026): the trip's own bag says whether it goes in the cabin,
+    /// and the cabin check follows at once. (-uiTestingChecks: a plane trip, a knife and
+    /// sun cream in the carry-on.) And Quick says that Transport still counts.
+    func testABagOnTheTripSaysWhetherItGoesInTheCabin() {
+        let app = launch("-uiTestingChecks")
+        setSwitch(app, "trip-quick", on: true)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-quick-note"]).contains("Transport still counts") },
+                      "Quick does not say that Transport still counts: '\(words(app.staticTexts["trip-quick-note"]))'")
+        setSwitch(app, "trip-quick", on: false)
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["trip-check-cabin-0"].exists }, "the carry-on is not checked to begin with")
+        tap(app, id: "bag-0")
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "bag-0-cabin") }, "the trip's carry-on does not say it goes in the cabin")
+        setSwitch(app, "bag-0-cabin", on: false)
+        XCTAssertTrue(waitUntil { !app.buttons["trip-check-cabin-0"].exists }, "out of the cabin, it is still checked")
+        setSwitch(app, "bag-0-cabin", on: true)
+        XCTAssertTrue(waitUntil { app.buttons["trip-check-cabin-0"].exists }, "back in the cabin, it is not checked again")
+    }
+
+    /// Field test 2.3 (3 Oct 2026): the Action button's "Choose a grab list" opens a menu
+    /// of every grab list; one tap opens the chosen one. ("-openGrabMenu" sets the very
+    /// request the Shortcut sets.)
+    func testTheActionButtonMenuOpensTheChosenGrabList() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-openGrabMenu"]
+        app.launch()
+        XCTAssertTrue(appears(app, "grab-menu", timeout: 20), "the Action button did not open the menu of grab lists")
+        XCTAssertTrue(app.buttons["grab-menu-5"].waitForExistence(timeout: 5), "the menu does not hold every grab list")
+        shot(app, "grab-menu")
+        tap(app, id: "grab-menu-1")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10), "choosing in the menu did not open that grab list")
+    }
+
+    #if os(iOS)
+    /// Field test 8.4 (3 Oct 2026): what was ticked in Reminders in the shop is ticked here
+    /// as soon as the app is back in front — no switching tabs. ("-pretendShopTicks": a
+    /// shop where everything sent was ticked.)
+    func testWhatWasTickedInTheShopIsTickedOnReturn() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-pretendShopTicks"]
+        app.launch()
+        tab(app, "actions")
+        XCTAssertTrue(appears(app, "screen-actions"))
+        tap(app, id: "actions-tab-buy")
+        for line in ["Sun cream", "Plasters"] {
+            type(line, into: app.textFields["buy-add-text"])
+            XCTAssertTrue(waitUntil { app.buttons["buy-add"].isEnabled })
+            tap(app, id: "buy-add")
+        }
+        tap(app, id: "buy-send")
+        XCTAssertTrue(app.staticTexts["buy-send-says"].waitForExistence(timeout: 5), "they were not sent")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "2 to buy" }, "ticked before the shop")
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["buy-count"]) == "All bought." },
+                      "back from the shop, the ticks did not come: '\(words(app.staticTexts["buy-count"]))'")
+    }
+    #endif
+
     /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end
     /// of a trip; it makes the file and opens the place to save it. (What the file
     /// holds is the model's test: WorkbookTests.)
@@ -2505,6 +2567,9 @@ final class AMSPackingUITests: XCTestCase {
         select(app, summer)
         tap(app, id: "row-save")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        // …and the row says so (field test 4.4, 3 Oct 2026: "the row does not say summer").
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-item-0"]).contains("Only on: Summer") },
+                      "the row does not say it is only on summer trips: '\(words(app.buttons["template-item-0"]))'")
         tapVisible(app, app.buttons["template-item-0"])
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
         bringIntoView(app, app.buttons["row-seasons-0"])

@@ -64,8 +64,15 @@ enum SampleLibrary {
            let row = lib.resolvedTemplate(id: hiking.id)?.items.first(where: { $0.name == "Headlamp" })?.memId {
             lib.updateMembership(memId: row) { $0.section = lights.id }
         }
-        // One trip, built from Hiking (and the base list, as a trip is).
-        var trip = newEvent(name: "Weekend in the hills", startDate: "2026-10-03", endDate: "2026-10-05")
+        // One trip, built from Hiking (and the base list, as a trip is) — always a month
+        // ahead, counted from the day the tests run. Its first dates were fixed (3–5 Oct
+        // 2026), and on those very days it was under way and "an empty Now" went red.
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        var trip = newEvent(name: "Weekend in the hills", startDate: day(30), endDate: day(32))
         trip.activities = lib.templates.filter { $0.name == "Hiking" }.map { $0.id }
         trip.entries = buildTotalEntries(trip, lib.resolvedTemplates())
         lib.trips = [trip]

@@ -43,6 +43,19 @@ struct OpenGrabListIntent: AppIntent {
     }
 }
 
+/// The Action button's menu (field test 2.3, 3 Oct 2026): no choice made beforehand —
+/// the app opens on every grab list as a big tile, and one tap opens the one for today.
+struct ChooseGrabListIntent: AppIntent {
+    static var title: LocalizedStringResource = "Choose a grab list"
+    static var description = IntentDescription("Opens Packing on all your grab lists, to pick the one for today.")
+    static var openAppWhenRun = true
+
+    @MainActor func perform() async throws -> some IntentResult {
+        LibraryModel.shared.grabMenuOpen = true
+        return .result()
+    }
+}
+
 struct OpenNextTripIntent: AppIntent {
     static var title: LocalizedStringResource = "Open my next trip"
     static var description = IntentDescription("Opens the trip you leave on next, at its packing list.")
@@ -58,6 +71,9 @@ struct OpenNextTripIntent: AppIntent {
 
 struct PackingShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        AppShortcut(intent: ChooseGrabListIntent(),
+                    phrases: ["Choose a grab list in \(.applicationName)", "Grab lists in \(.applicationName)"],
+                    shortTitle: "Choose a grab list", systemImageName: "square.grid.2x2")
         AppShortcut(intent: OpenGrabListIntent(),
                     phrases: ["Open \(\.$list) in \(.applicationName)", "Grab \(\.$list) with \(.applicationName)"],
                     shortTitle: "Open a grab list", systemImageName: "checklist")
