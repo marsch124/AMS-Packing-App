@@ -4,7 +4,8 @@ import SwiftUI
 /// one field saying "Sat 26 Sep — Sun 27 Sep · 1 night", and under it a month
 /// grid, Monday first: tap the first day, then the last; the two ends are filled,
 /// the nights between shaded. Two months side by side where there is room (the
-/// Mac), one on the iPhone.
+/// Mac), one on the iPhone. The grid then stays open on the range picked until OK
+/// keeps it or Cancel puts the dates back (his and Anna's field test, Oct 2026).
 struct DateRangePicker: View {
     @Binding var start: Date
     @Binding var end: Date
@@ -18,6 +19,8 @@ struct DateRangePicker: View {
     @State private var width: CGFloat = 0
     /// The dates as they were when the grid opened — Cancel puts them back.
     @State private var before: (Date, Date)?
+    /// OK was pressed with only the first day picked: say what is missing.
+    @State private var okTooSoon = false
 
     private static let cal: Calendar = {
         var c = Calendar(identifier: .gregorian)
@@ -40,7 +43,7 @@ struct DateRangePicker: View {
     private var field: some View {
         Button {
             open.toggle()
-            if open { month = ""; before = (start, end) }   // opens on the month of the first day
+            if open { month = ""; before = (start, end); okTooSoon = false }   // opens on the month of the first day
         } label: {
             HStack(spacing: 12) {
                 SectionMark(section: .events, size: 24, weight: 1.8)
@@ -90,13 +93,37 @@ struct DateRangePicker: View {
                 monthView(first, index: 0, showPrev: true, showNext: !two)
                 if two { monthView(DateRangePicker.shift(first, by: 1), index: 1, showPrev: false, showNext: true) }
             }
-            // A way out without picking (his test C.2: "I do not come out of this date"):
-            // the dates go back to what they were and the grid closes.
-            HStack {
+            // What OK will keep, under the grid where the eye already is — or, when OK
+            // came before the last day, what is still missing (in its place, not as
+            // one more line).
+            if okTooSoon && waitingForEnd {
+                Text("Tap the last day first \u{2014} the same day again for a day trip.")
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("range-needs")
+            } else {
+                Text(waitingForEnd ? "Now tap the last day"
+                     : "\(DateRangePicker.short(start)) \u{2013} \(DateRangePicker.short(end)) \u{00B7} \(nightsText)")
+                    .font(.system(size: 18, weight: .heavy).monospacedDigit())
+                    .foregroundStyle(waitingForEnd ? Theme.muted : Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("range-summary")
+            }
+            // His and Anna's field test (Oct 2026): "When I choose the end date, don't
+            // just pop out back, but stay there and present an OK button or a cancel
+            // button." Cancel is the way out without picking (his test C.2: "I do not
+            // come out of this date"): the dates go back to what they were. OK keeps
+            // them — in full colour, always (his rule for a main button, 2026-09-26).
+            HStack(spacing: 10) {
                 Spacer()
                 Button("Cancel") { cancel() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: false)).focusEffectDisabled()
                     .accessibilityIdentifier("range-cancel")
+                Button { ok() } label: { Text("OK").frame(minWidth: 44) }
+                    .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
+                    .accessibilityIdentifier("range-ok")
             }
         }
         .padding(12)
@@ -173,16 +200,26 @@ struct DateRangePicker: View {
     private func cancel() {
         if let b = before { start = b.0; end = b.1 }
         waitingForEnd = false
+        okTooSoon = false
+        open = false
+    }
+
+    /// Keeps the range picked. With only the first day picked it stays open and
+    /// says what is missing, rather than guess.
+    private func ok() {
+        if waitingForEnd { okTooSoon = true; return }
+        okTooSoon = false
         open = false
     }
 
     /// First tap: the first day. Second tap: the last day — or, if it is before the
-    /// first, a new first day. A picked range closes the grid.
+    /// first, a new first day. A tap after a whole range starts a new one. The grid
+    /// stays open until OK or Cancel.
     private func pick(_ d: Date) {
+        okTooSoon = false
         if waitingForEnd && d >= DateRangePicker.cal.startOfDay(for: start) {
             end = d
             waitingForEnd = false
-            open = false
         } else {
             start = d
             end = d
@@ -241,6 +278,12 @@ struct DateRangePicker: View {
     static func title(_ ym: String) -> String {
         let m = Int(ym.dropFirst(5).prefix(2)) ?? 1
         return "\(monthNames[max(0, min(11, m - 1))]) \(ym.prefix(4))"
+    }
+
+    /// "3 Nov" — the summary over OK.
+    static func short(_ d: Date) -> String {
+        let c = cal.dateComponents([.day, .month], from: d)
+        return "\(c.day ?? 1) \(shortMonths[max(0, min(11, (c.month ?? 1) - 1))])"
     }
 
     /// "Sat 26 Sep" — English words, written the same on every device.
