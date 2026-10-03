@@ -93,20 +93,23 @@ struct DateRangePicker: View {
                 monthView(first, index: 0, showPrev: true, showNext: !two)
                 if two { monthView(DateRangePicker.shift(first, by: 1), index: 1, showPrev: false, showNext: true) }
             }
-            // What OK will keep, under the grid where the eye already is.
-            Text(waitingForEnd ? "Now tap the last day"
-                 : "\(DateRangePicker.short(start)) \u{2013} \(DateRangePicker.short(end)) \u{00B7} \(nightsText)")
-                .font(.system(size: 18, weight: .heavy).monospacedDigit())
-                .foregroundStyle(waitingForEnd ? Theme.muted : Theme.ink)
-                .lineLimit(1).minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityIdentifier("range-summary")
+            // What OK will keep, under the grid where the eye already is — or, when OK
+            // came before the last day, what is still missing (in its place, not as
+            // one more line).
             if okTooSoon && waitingForEnd {
                 Text("Tap the last day first \u{2014} the same day again for a day trip.")
-                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.actions.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("range-needs")
+            } else {
+                Text(waitingForEnd ? "Now tap the last day"
+                     : "\(DateRangePicker.short(start)) \u{2013} \(DateRangePicker.short(end)) \u{00B7} \(nightsText)")
+                    .font(.system(size: 18, weight: .heavy).monospacedDigit())
+                    .foregroundStyle(waitingForEnd ? Theme.muted : Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("range-summary")
             }
             // His and Anna's field test (Oct 2026): "When I choose the end date, don't
             // just pop out back, but stay there and present an OK button or a cancel

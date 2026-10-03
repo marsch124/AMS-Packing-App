@@ -1644,6 +1644,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "range-ok")
         XCTAssertTrue(app.staticTexts["range-needs"].waitForExistence(timeout: 5), "OK before the last day said nothing")
         XCTAssertTrue(app.staticTexts["range-title-0"].exists, "OK before the last day closed the grid")
+        shot(app, "range-needs")
         tap(app, id: "range-cancel")
         XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "Cancel did not close the grid")
         XCTAssertEqual(field.value as? String ?? "", before, "Cancel did not put the dates back")
