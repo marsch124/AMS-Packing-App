@@ -26,10 +26,11 @@ enum Words {
         Entry(term: "From where · Into", meaning: "Where a thing is kept at home · the bag it goes into.", section: .events),
         Entry(term: "When", meaning: "The step of the packing timeline a thing belongs to: a week ahead, the day before, on the day…", section: .events),
         // Their word for the trip's own place, from the same field test: "on site", not "there".
-        Entry(term: "On site", meaning: "At the place the trip takes you, while the trip is under way. Bought on site: a thing you bought on the trip \u{2014} it goes on ticked, and comes home with you.", section: .events),
+        // …and since the same field test a step of the loop of its own, with its own page.
+        Entry(term: "On site", meaning: "At the place the trip takes you, while the trip is under way \u{2014} and the step of the loop after Pack. The trip's On site page holds what you bought, what you left, maintenance notes, and Pack to go home.", section: .events),
         Entry(term: "Set aside ⊘", meaning: "Not this time: the thing stays on the list but is not packed, and leaves the count. ↻ brings it back.", section: .events),
-        Entry(term: "The loop", meaning: "Plan (Home) › Pack (Trips) › Review (the trip, afterwards) › Refine (Templates) — and round again.", section: .events),
-        Entry(term: "Loop strip", meaning: "The four steps under a trip's name. The filled one is where this trip stands; each carries the mark of the tab where that step is done.", section: .events),
+        Entry(term: "The loop", meaning: "Plan (Home) › Pack (Trips) › On site (the trip, while away) › Review (the trip, afterwards) › Refine (Templates) — and round again.", section: .events),
+        Entry(term: "Loop strip", meaning: "The five steps under a trip's name. The filled one is where this trip stands, with the mark of the tab where that step is done (on a wide screen every step has its mark).", section: .events),
         Entry(term: "Review", meaning: "Looking back at ONE trip: what you did not use, and what you missed.", section: .events),
         Entry(term: "Refine", meaning: "Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab.", section: .templates),
         Entry(term: "Keep · Drop", meaning: "In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays.", section: .templates),

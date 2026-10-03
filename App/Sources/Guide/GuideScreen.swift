@@ -157,16 +157,19 @@ struct HowItWorksScreen: View {
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
             "Type a thing at the bottom to add it to this trip only. Bought it on site? Press Bought on site: it goes on ticked, marked so.",
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and templates stay."]),
-        Topic(section: .events, title: "The way home", lines: [
-            "Pack to go home appears on the trip once it has begun, or as soon as something is bought on site.",
-            "It lists what went (ticked on the way out) and what you bought on site, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
-            "Used up: the thing stays on site or is finished \u{2014} off the way home; the heading counts it. Undo puts it on again.",
-            "Search the list at the top; the \u{2715} empties it. Tick everything ticks all that still comes home; pressed again it clears the ticks.",
-            "Note writes a note on this trip's line (\u{201C}zip broken\u{201D}) \u{2014} the thing itself is not changed. Open opens the thing to change it; Save or Cancel brings you back where you were.",
-            "The photos of every packed bag are at the top; tap one to see it large, Next steps through them."]),
+        Topic(section: .events, title: "On site", lines: [
+            "On site is the step after Pack: the trip's On site door appears once the trip has begun, or as soon as something is bought on site. Its line says what it holds \u{2014} 2 bought \u{00B7} 1 left \u{00B7} 3 notes \u{00B7} home 4/9.",
+            "Bought on site: what you bought while away. Type it and press Bought on site \u{2014} it goes on the list ticked, marked so, and comes home with you.",
+            "Left on site: what was used up or stays behind; it does not come home. Leave something here picks it from what went (type to find it); Undo brings it back.",
+            "Maintenance notes: a note per thing \u{2014} \u{201C}zip broken\u{201D}, \u{201C}wash before next trip\u{201D}. Add a note picks the thing; Change rewrites it. The note also goes onto the thing itself, dated (On site 3 Oct 2026: zip broken), so Care has it after the trip.",
+            "Pack to go home: what went (ticked on the way out) and what you bought on site, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
+            "On the way home, Used up takes a thing off \u{2014} the same as leaving it on site; the heading counts it. Undo puts it on again.",
+            "Search the way home at the top; the \u{2715} empties it. Tick everything ticks all that still comes home; pressed again it clears the ticks.",
+            "Note on the way home is the same maintenance note. Open opens the thing to change it; Save or Cancel brings you back where you were.",
+            "The photos of every packed bag are at the top of the way home; tap one to see it large, Next steps through them."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use; type what you missed, pick the template it goes onto, and Add it; then Save.",
-            "Under a trip's name: where it stands in the loop, Plan · Pack · Review · Refine, each with the mark of the tab where it is done. Tap it for the whole picture.",
+            "Under a trip's name: where it stands in the loop, Plan · Pack · On site · Review · Refine, the step it is at filled in with the mark of the tab where it is done. Tap it for the whole picture.",
             "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time."]),
         Topic(section: .events, title: "Trips", lines: [
             "Now, Coming up and Done — Now is always there, even when no trip is under way. Each trip says Planned, Packing or Ready.",
@@ -283,7 +286,7 @@ struct FirstTripCard: View {
         ("Build your templates", "One per activity or need (Beach, Long stay…). On a template: Choose from your things, or type a new one. Tap a thing there for Only on some trips."),
         ("Create the trip", "Home → Create new trip: name, Dates, the templates, Transport, Season, Food, Laundry and its nights. Then the pen: type the Place — the map pin and the weather follow."),
         ("Pack", "Sorting: When for the timeline, From where to fetch room by room, Into to fill each bag. ⊘ is not this time. Watch the bag bars, and Check before you go when it shows. Settings \u{2192} Remind me to pack tells you when each step is due."),
-        ("Go, use, review", "On site, the grab lists on Home are for each outing. Back home: Review — tap what you did not use, add what you missed. Refine learns from it."),
+        ("Go, use, review", "On site, the trip's On site page keeps what you buy, leave and note, and packs you home; the grab lists on Home are for each outing. Back home: Review — tap what you did not use, add what you missed. Refine learns from it."),
     ]
 
     var body: some View {

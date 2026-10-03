@@ -113,6 +113,23 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with its trip under way (`-uiTestingOnSite`): it began
+    /// yesterday and ends in two days, so it stands at On site in the loop and its On
+    /// site page is open without anything bought.
+    static func underWay() -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if !lib.trips.isEmpty {
+            lib.trips[0].startDate = day(-1)
+            lib.trips[0].endDate = day(2)
+        }
+        return lib
+    }
+
     /// The sample library with every template a SECOND time, under new ids — what
     /// a device holds when two libraries have met on one account (31 August 2026,
     /// and again on 23 September). Used by `-uiTestingTwoLibraries`.

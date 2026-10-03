@@ -224,6 +224,7 @@ extension LibraryModel {
     /// Which store this launch uses.
     ///  -uiTesting            → memory, holding the invented sample library
     ///  -uiTestingEmpty       → memory, holding nothing (the first-run screen)
+    ///  -uiTestingOnSite      → memory, the sample with its trip under way (On site)
     ///  PackingUsesICloud=YES → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise             → SwiftData on this device only (a plain debug build)
     static func forThisLaunch() -> LibraryModel {
@@ -241,6 +242,9 @@ extension LibraryModel {
         if args.contains("-uiTestingEmpty") { return LibraryModel(store: MemoryStore(), usesICloud: false, sky: sky) }
         if args.contains("-uiTestingChecks") {
             return LibraryModel(store: MemoryStore(SampleLibrary.checks().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingOnSite") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.underWay().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingTwoLibraries") {
             return LibraryModel(store: MemoryStore(SampleLibrary.doubled().records()), usesICloud: false, sky: sky)
