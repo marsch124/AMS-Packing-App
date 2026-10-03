@@ -1493,8 +1493,10 @@ final class AMSPackingUITests: XCTestCase {
                       "it opened another trip: '\(words(trip.staticTexts["trip-name"]))'")
     }
 
-    /// A photo of each packed bag (his idea 11): tap a bag on the trip, take its photo
-    /// (under the tests a drawn picture stands in for the camera), see it large, remove it.
+    /// Photos of each packed bag (his idea 11; up to three since the field test, 3 Oct
+    /// 2026): tap a bag on the trip, take three photos (under the tests a drawn picture
+    /// stands in for the camera) — no fourth is offered — see one large and step to the
+    /// next, remove one and the way to add is back; the way home shows both that are left.
     func testAPackedBagKeepsItsPhoto() {
         let app = launch()
         tab(app, "events")
@@ -1502,16 +1504,52 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         tap(app, id: "bag-0")
         XCTAssertTrue(app.buttons["bag-0-photo"].waitForExistence(timeout: 5), "an open bag offers no photo")
-        XCTAssertFalse(app.buttons["bag-0-photo-thumb"].exists, "a photo before one was taken")
-        tap(app, id: "bag-0-photo")
-        XCTAssertTrue(app.buttons["bag-0-photo-thumb"].waitForExistence(timeout: 5), "the photo was not kept")
-        tap(app, id: "bag-0-photo-thumb")
+        XCTAssertFalse(app.buttons["bag-0-photo-thumb-0"].exists, "a photo before one was taken")
+        for k in 0..<3 {
+            tap(app, id: "bag-0-photo")
+            XCTAssertTrue(app.buttons["bag-0-photo-thumb-\(k)"].waitForExistence(timeout: 5), "photo \(k + 1) was not kept")
+        }
+        XCTAssertTrue(waitUntil { !app.buttons["bag-0-photo"].exists }, "a fourth photo is still offered")
+        XCTAssertTrue(app.staticTexts["bag-0-photo-full"].waitForExistence(timeout: 5), "three photos, and no word why there is no fourth")
+        bringIntoView(app, app.buttons["bag-0-photo-thumb-2"])
+        shot(app, "bag-photos-three")
+        // Large, and on to the next angle.
+        tap(app, id: "bag-0-photo-thumb-1")
         XCTAssertTrue(app.buttons["bag-photo-done"].waitForExistence(timeout: 5), "the photo does not open large")
+        let count = app.staticTexts["bag-photo-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "2 of 3" }, "the second photo did not open: '\(words(count))'")
         shot(app, "bag-photo-large")
+        tap(app, id: "bag-photo-next")
+        XCTAssertTrue(waitUntil { self.words(count) == "3 of 3" }, "Next did not step on: '\(words(count))'")
         tap(app, id: "bag-photo-done")
         XCTAssertTrue(waitUntil { !app.buttons["bag-photo-done"].exists }, "the large photo did not close")
-        tap(app, id: "bag-0-photo-remove")
-        XCTAssertTrue(waitUntil { !app.buttons["bag-0-photo-thumb"].exists }, "Remove kept the photo")
+        // One removed: two left, and the way to add another is back.
+        tap(app, id: "bag-0-photo-remove-1")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-0-photo-thumb-2"].exists }, "Remove kept the photo")
+        XCTAssertTrue(app.buttons["bag-0-photo-thumb-1"].exists, "Remove took more than one photo")
+        XCTAssertTrue(app.buttons["bag-0-photo"].waitForExistence(timeout: 5), "no way to add a photo after one was removed")
+        XCTAssertFalse(app.staticTexts["bag-0-photo-full"].exists, "still says three photos with two")
+        shot(app, "bag-photos-two")
+        // The way home shows every photo of the bag, to repack from — everything packed first,
+        // so the bag goes home; and a thing bought there, so the way home is open whatever
+        // the sample trip's dates.
+        tapVisible(app, app.buttons["trip-tickall"])
+        XCTAssertTrue(waitUntil { !app.buttons["trip-tickall"].exists }, "Tick everything did not tick everything")
+        type("Sun hat", into: app.textFields["trip-add-name"])
+        tap(app, id: "trip-add-bought")
+        hideKeyboard(app)
+        tap(app, id: "trip-wayhome")
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open")
+        XCTAssertTrue(app.buttons["wayhome-photo-1"].waitForExistence(timeout: 5), "the way home does not show both photos")
+        XCTAssertFalse(app.buttons["wayhome-photo-2"].exists, "the way home shows a photo that was removed")
+        shot(app, "way-home-photos")
+        tap(app, id: "wayhome-photo-1")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["bag-photo-count"]) == "2 of 2" },
+                      "the way home's second photo did not open large: '\(words(app.staticTexts["bag-photo-count"]))'")
+        XCTAssertTrue(app.staticTexts["bag-photo-caption"].exists, "the large photo does not say which bag")
+        shot(app, "way-home-photo-large")
+        tap(app, id: "bag-photo-done")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-photo-done"].exists }, "the large photo did not close")
     }
 
     /// Bought there (his idea 12): a thing bought on the trip goes onto its list in one

@@ -4,17 +4,18 @@ import PackingLibrary
 
 /// Pack to go home — his pre-trip idea 13 (2 Oct 2026). What went, and what was
 /// bought there, bag by bag, with ticks of its own; Used up takes a thing off. The
-/// photos of the packed bags sit at the top, to repack from.
+/// photos of the packed bags (all of each bag's, up to three) sit at the top, to repack from.
 struct WayHomeScreen: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
-    @State private var large: CGImage?
+    @State private var large: Shown?
 
     var body: some View {
         let lines = model.library.homeLines(tripId: tripId)
         let p = model.library.homeProgress(tripId: tripId)
         let bags = lines.reduce(into: [String]()) { if !$0.contains($1.container) { $0.append($1.container) } }
+        let shots = bagShots(bags)
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -32,7 +33,7 @@ struct WayHomeScreen: View {
             .padding(16)
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
-                    photos(bags)
+                    photos(shots)
                     if lines.isEmpty {
                         Text("Nothing to bring home yet: tick what you pack on the way out, and add what you buy there with Bought there.")
                             .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
@@ -53,7 +54,7 @@ struct WayHomeScreen: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
-        .sheet(item: Binding(get: { large.map(Large.init) }, set: { large = $0?.image })) { BigPhoto(image: $0.image) }
+        .sheet(item: $large) { BigPhoto(images: shots.map(\.image), captions: shots.map(\.bag), start: $0.start) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("wayhome-screen")
         #if os(macOS)
@@ -61,22 +62,28 @@ struct WayHomeScreen: View {
         #endif
     }
 
-    private struct Large: Identifiable { let image: CGImage; var id: ObjectIdentifier { ObjectIdentifier(image) } }
+    private struct Shown: Identifiable { let start: Int; var id: Int { start } }
+    private struct Shot { let bag: String; let image: CGImage }
+
+    /// Every photo of every bag, bag by bag, each bag's in the order taken.
+    private func bagShots(_ bags: [String]) -> [Shot] {
+        bags.flatMap { bag in
+            model.library.bagPhotos(tripId: tripId, bag: bag).compactMap { JPEG.image(dataURL: $0.data) }
+                .map { Shot(bag: bag.isEmpty || bag == "Other" ? "Not in a bag" : bag, image: $0) }
+        }
+    }
 
     /// The packed bags' photos, to repack from.
-    @ViewBuilder private func photos(_ bags: [String]) -> some View {
-        let shots = bags.compactMap { bag in
-            model.library.bagPhoto(tripId: tripId, bag: bag).flatMap { JPEG.image(dataURL: $0.data) }.map { (bag, $0) }
-        }
+    @ViewBuilder private func photos(_ shots: [Shot]) -> some View {
         if !shots.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Array(shots.enumerated()), id: \.offset) { n, shot in
-                        Button { large = shot.1 } label: {
+                        Button { large = Shown(start: n) } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Image(decorative: shot.1, scale: 1).resizable().scaledToFill()
+                                Image(decorative: shot.image, scale: 1).resizable().scaledToFill()
                                     .frame(width: 120, height: 90).clipShape(RoundedRectangle(cornerRadius: 10))
-                                Text(shot.0).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
+                                Text(shot.bag).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
                             }
                             .frame(width: 120)
                         }
