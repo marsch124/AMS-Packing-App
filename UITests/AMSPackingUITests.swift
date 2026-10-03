@@ -1795,6 +1795,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { (strip.value as? String) == "On site" }, "a trip under way is at '\(strip.value as? String ?? "")'")
         let window = app.windows.firstMatch.frame
         XCTAssertLessThanOrEqual(strip.frame.maxX, window.maxX + 1, "the five steps run off the screen: \(strip.frame) in \(window)")
+        XCTAssertGreaterThanOrEqual(strip.frame.minX, window.minX - 1, "the five steps run off the screen: \(strip.frame) in \(window)")
         shot(app, "loop-trip-onsite")
         tap(app, id: "trip-loop")
         XCTAssertTrue(appears(app, "loop-screen", timeout: 5), "the strip did not open the picture")
