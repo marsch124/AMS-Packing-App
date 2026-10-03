@@ -33,7 +33,7 @@ struct LaundrySwitch: View {
             if on {
                 Pills(title: "Pack for this many nights, then wash",
                       options: LaundrySwitch.choices.map { ("\($0)", "\($0)") }, selected: ["\(nights)"],
-                      id: "\(id)-nights", tint: AppSection.events.color) { nights = Int($0) ?? LAUNDRY_CAP_NIGHTS }
+                      id: "\(id)-nights", tint: AppSection.events.color, heading: .question) { nights = Int($0) ?? LAUNDRY_CAP_NIGHTS }
                     .padding(.leading, 34).padding(.top, 6)
             }
         }

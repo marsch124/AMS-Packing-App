@@ -390,14 +390,14 @@ struct TemplateDetail: View {
             .padding(16)
             // Group the things the ways a trip sorts (his H.3), in sight above the list.
             FlowRow(spacing: 6) {
-                Text("Group").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
-                    .frame(minHeight: 32)
+                Text("Group").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                    .frame(minHeight: 36)
                         ForEach(ways, id: \.self) { way in
                             let on = way == grouping
                             Button { groupingRaw = way.rawValue } label: {
-                                Text(way.label).font(.system(size: 14, weight: on ? .heavy : .semibold))
+                                Text(way.label).font(.system(size: 15, weight: on ? .heavy : .medium))
                                     .foregroundStyle(on ? Color.white : Theme.ink)
-                                    .padding(.horizontal, 12).frame(minHeight: 32)
+                                    .padding(.horizontal, 12).frame(minHeight: 36)
                                     .background(Capsule().fill(on ? AppSection.templates.color : Theme.card))
                                     .overlay(Capsule().stroke(on ? AppSection.templates.color : Theme.line, lineWidth: 1))
                                     .contentShape(Capsule())
@@ -648,22 +648,29 @@ struct RowEditor: View {
             }
             .padding(16)
             KeyboardAwayScroll {
-                // Headings 20 apart, each field 4 under its own (his screenshot, 2026-09-28).
+                // Headings 20 apart, each field right under its own (his screenshot,
+                // 2026-09-28). Each heading a band in the template colour, as in the thing
+                // editor — his and Anna's field test (3 Oct 2026) tapped a thing here and
+                // found the headings (14, grey) smaller than the pills under them.
                 VStack(alignment: .leading, spacing: 20) {
-                    Text(thing.name).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
-                    Text("On \(list.name)").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(thing.name).font(.system(size: 26, weight: .heavy)).foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("row-thing-name")
+                        Text("On \(list.name)").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                    }
                     Pills(title: "Bag on this template", options: [("", "Same as the thing (\(thing.container))")]
                             + containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
-                          selected: [bag], id: "row-bag", tint: AppSection.templates.color) { bag = $0 }
+                          selected: [bag], id: "row-bag", tint: AppSection.templates.color, heading: .band) { bag = $0 }
                     Pills(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
                             + PHASES.map { ($0.id, $0.label) },
-                          selected: [when], id: "row-when", tint: AppSection.templates.color) { when = $0 }
+                          selected: [when], id: "row-when", tint: AppSection.templates.color, heading: .band) { when = $0 }
                     if !list.sections.isEmpty {
                         Pills(title: "Section of this template", options: [("", "No section")] + list.sections.map { ($0.id, $0.name) },
-                              selected: [section], id: "row-section", tint: AppSection.templates.color) { section = $0 }
+                              selected: [section], id: "row-section", tint: AppSection.templates.color, heading: .band) { section = $0 }
                     }
-                    VStack(alignment: .leading, spacing: 4) {
-                    Text("A new section").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    VStack(alignment: .leading, spacing: 6) {
+                    HeadingBand(title: "A new section", tint: AppSection.templates.color, id: "row-heading-section-new")
                     HStack(spacing: 8) {
                         field($newSectionName, "e.g. Lights", "row-section-new")
                         Button { addSection() } label: {
@@ -678,12 +685,12 @@ struct RowEditor: View {
                         .accessibilityIdentifier("row-section-add")
                     }
                     }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("How many").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HeadingBand(title: "How many", tint: AppSection.templates.color, id: "row-heading-qty")
                         field($qty, "e.g. 2, or 2 pairs", "row-qty")
                     }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Note").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HeadingBand(title: "Note", tint: AppSection.templates.color, id: "row-heading-note")
                         field($note, "e.g. with the red filter", "row-note")
                     }
                     Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
@@ -691,10 +698,12 @@ struct RowEditor: View {
 
                     // Only on some trips — per template, as the web app keeps it: a towel
                     // can be summer-only on Beach and always on Swim (his ask, 2 Oct 2026).
-                    VStack(alignment: .leading, spacing: 12) {
-                        SectionTitle(title: "Only on some trips", tint: AppSection.templates.color)
+                    // A band like the others; its four parts are headings INSIDE it, a size down.
+                    VStack(alignment: .leading, spacing: 14) {
+                        HeadingBand(title: "Only on some trips", tint: AppSection.templates.color, id: "row-heading-some")
                         Text("Leave these off and it always comes along. Pick one or more and it comes only on trips that match — on this template.")
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .padding(.top, -6)
                             .fixedSize(horizontal: false, vertical: true)
                         Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: seasons,
                               id: "row-seasons", tint: AppSection.templates.color) { toggle(&seasons, $0) }
@@ -708,7 +717,6 @@ struct RowEditor: View {
                         Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
                               selected: catering, id: "row-catering", tint: AppSection.templates.color) { toggle(&catering, $0) }
                     }
-                    .padding(.top, 6)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }

@@ -61,7 +61,10 @@ struct ListsScreen: View {
                     }
                     ForEach(Kind.allCases, id: \.rawValue) { kind in
                         let entries = entries(kind)
-                        SectionTitle(title: kind.title)
+                        // A band, as the editors' headings are — bigger than the rows under
+                        // it (field test, 3 Oct 2026: the headings "dominant").
+                        HeadingBand(title: kind.title, tint: AppSection.settings.color, id: "choices-heading-\(kind.rawValue)")
+                            .padding(.top, 16)
                         Text(kind.hint).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink.opacity(0.85))
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("choices-hint-\(kind.rawValue)")

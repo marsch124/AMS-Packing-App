@@ -3985,4 +3985,102 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-firsttrip", timeout: 5), "the six steps did not close")
     }
+
+    // MARK: - Headings first (his and Anna's field test, 3 Oct 2026)
+
+    /// Mission 4.4: "adjust the headings so that they are dominant, and the other
+    /// buttons and pills are much smaller than the heading … throughout the app". No
+    /// test can read a size or a colour, so this one keeps every heading THERE, by its
+    /// id, on the screens he named, and photographs each one (SHOTS_DIR) to be looked at.
+    func testTheEditorsLeadWithTheirHeadings() {
+        let app = launch()
+        // The thing editor (Care, Your things, a thing).
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        for id in ["thing-heading-name", "thing-heading-kept", "thing-category-title", "thing-bag-title",
+                   "thing-heading-plane", "thing-heading-valid", "thing-when-title", "thing-condition-title",
+                   "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-heading-notes",
+                   "thing-lists-title"] {
+            XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "the thing editor lost its heading \(id)")
+        }
+        shot(app, "looks-thing")
+        bringIntoView(app, app.buttons["thing-when-0"])
+        shot(app, "looks-thing-when")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // A template's row (Templates, Hiking, its first thing).
+        tab(app, "templates")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        for id in ["row-bag-title", "row-when-title", "row-section-title", "row-heading-section-new",
+                   "row-heading-qty", "row-heading-note", "row-heading-some", "row-seasons-title",
+                   "row-transports-title", "row-catering-title"] {
+            XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "the row editor lost its heading \(id)")
+        }
+        shot(app, "looks-row")
+        bringIntoView(app, app.buttons["row-seasons-0"])
+        shot(app, "looks-row-sometimes")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // Create new trip, on Home.
+        tab(app, "home")
+        for id in ["home-grab-heading", "home-create-heading"] {
+            XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "Home lost its heading \(id)")
+        }
+        for id in ["trip-activity-title", "trip-transport-title", "trip-season-title", "trip-catering-title"] {
+            XCTAssertTrue(app.staticTexts.matching(identifier: id).firstMatch.waitForExistence(timeout: 5),
+                          "Create new trip lost its heading \(id)")
+        }
+        bringIntoView(app, app.buttons["trip-activity-0"])
+        shot(app, "looks-create")
+        bringIntoView(app, app.buttons["trip-catering-0"])
+        shot(app, "looks-create-food")
+
+        // Trip settings.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        for id in ["tripset-heading-place", "tripset-activity-title", "tripset-transport-title",
+                   "tripset-season-title", "tripset-catering-title"] {
+            XCTAssertTrue(app.staticTexts.matching(identifier: id).firstMatch.waitForExistence(timeout: 5),
+                          "Trip settings lost its heading \(id)")
+        }
+        shot(app, "looks-tripset")
+        bringIntoView(app, app.buttons["tripset-transport-0"])
+        shot(app, "looks-tripset-transport")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+
+        // The trip's review: its question over the pills.
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["review-miss-where-title"].waitForExistence(timeout: 5), "the review lost its question")
+        shot(app, "looks-review")
+        tap(app, id: "review-cancel")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // Your choices.
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        for kind in ["places", "owners", "people", "conditions", "phases"] {
+            XCTAssertTrue(app.staticTexts["choices-heading-\(kind)"].waitForExistence(timeout: 5), "Your choices lost its heading for \(kind)")
+        }
+        shot(app, "looks-choices")
+    }
 }
