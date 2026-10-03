@@ -18,6 +18,15 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.57", date: "3 Oct 2026", title: "On site, and one bar per bag",
+                new: ["On site, the step after Pack. Once a trip has begun (or something was bought on site), its On site page holds what you bought, what you left on site, maintenance notes, and Pack to go home.",
+                      "A maintenance note (\u{201C}zip broken\u{201D}), written on site or on the way home, also goes onto the thing itself, dated \u{2014} Care has it after the trip."],
+                changed: ["The loop has five steps: Plan \u{203A} Pack \u{203A} On site \u{203A} Review \u{203A} Refine \u{2014} in the line under a trip's name and in the picture. Pack to go home opens from the On site page.",
+                          "Each bag on a trip has one thick bar: the grey is what the bag may carry, the blue what is in it \u{2014} orange close to its max, red over.",
+                          "Headings lead: on a thing, a template's row, Create new trip, Trip settings, Your choices and the review, each heading is clearly the biggest thing in its part; the buttons under it are smaller.",
+                          "Add, New, Make and Weather are never grey: press one before typing and it says under the field what is missing.",
+                          "What goes from To buy to Reminders carries the day you sent it.",
+                          "A thing's Notes show every line, one under the other."]),
         Release(version: "0.56", date: "3 Oct 2026", title: "Your field test, part two",
                 new: ["Pack to go home: search the list; Tick everything (and Clear the ticks); the heading counts what was used up \u{2014} \u{201C}1/2 \u{00B7} 1 used up\u{201D}. Each line takes a note (\u{201C}zip broken\u{201D}), and Open changes the thing and comes straight back.",
                       "Up to three photos of each packed bag. Tap one to see it large; Next steps through them. The way home shows them all.",

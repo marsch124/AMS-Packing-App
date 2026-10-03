@@ -5,8 +5,8 @@ import PackingCore
 // Refine, and Refine feeds the next Plan. Plan and Refine are about his LISTS;
 // Pack and Review are about ONE trip.
 //
-// On site joined it between Pack and Review — their field test (Martin and Anna,
-// 3 Oct 2026): "I'm still pondering if we should add a phase (in the graphics as
+// On site joined it between Pack and Review — their field test
+// (3 Oct 2026): "I'm still pondering if we should add a phase (in the graphics as
 // well). The phase could be 'During the trip' or 'On site'. It should come
 // immediately after Pack, process-wise." It is about one trip too.
 

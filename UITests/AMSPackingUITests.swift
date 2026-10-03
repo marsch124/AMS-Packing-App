@@ -679,7 +679,7 @@ final class AMSPackingUITests: XCTestCase {
         pick(day(5))
         XCTAssertTrue(waitUntil { says() == "\(pretty(day(3))) — \(pretty(day(5))) · 2 nights" },
                       "the range is not shown: '\(says())'")
-        // It waits for OK (his and Anna's field test, Oct 2026).
+        // It waits for OK (their field test, Oct 2026).
         tap(app, id: "range-ok")
         XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "OK did not close the grid")
 
@@ -1432,7 +1432,7 @@ final class AMSPackingUITests: XCTestCase {
     /// The luggage scale (his idea 8, 2 Oct 2026): tap a bag on the trip, type what the
     /// scale says; that is the weight it is judged by — over its max, the card says so —
     /// and Clear takes it away again. (The sample's carry-on: 8 kg max, 2 kg of things.)
-    /// The one bar (his and Anna's choice, 3 Oct 2026) says in words what its colour
+    /// The one bar (their choice, 3 Oct 2026) says in words what its colour
     /// says: blue "fine", orange "close" from nine tenths, red "over".
     func testABagIsWeighedOnTheLuggageScale() {
         let app = launch()
@@ -1925,10 +1925,12 @@ final class AMSPackingUITests: XCTestCase {
         let c = Calendar.current.dateComponents([.year, .month, .day], from: Date())
         let mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         let line = "On site \(c.day!) \(mo[c.month! - 1]) \(c.year!): Zip broken"
-        let notes = app.textFields["thing-notes"]
+        // The old note and, on a line of its own, the new one. (A one-line field shows
+        // them run together — "Keep it dry On site…" — and this fails; seen 3 Oct 2026.)
+        let notes = app.descendants(matching: .any).matching(identifier: "thing-notes").firstMatch
         XCTAssertTrue(notes.waitForExistence(timeout: 5), "the thing has no Notes field")
-        XCTAssertTrue(waitUntil { (notes.value as? String ?? "").contains(line) },
-                      "the thing's notes do not hold '\(line)': '\(notes.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil { (notes.value as? String ?? "") == "Keep it dry\n" + line },
+                      "the thing's notes are not its old note and, under it, '\(line)': '\(notes.value as? String ?? "")'")
         bringIntoView(app, notes)
         shot(app, "onsite-note-on-thing")
     }
@@ -2073,7 +2075,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(field.value as? String ?? "", before, "Cancel did not put the dates back")
     }
 
-    /// His and Anna's field test (Oct 2026): "When I choose the end date, don't just
+    /// Their field test (Oct 2026): "When I choose the end date, don't just
     /// pop out back, but stay there and present an OK button or a cancel button."
     /// The grid stays open on the range picked, says it, offers OK and Cancel — and
     /// OK keeps it.
@@ -2111,7 +2113,7 @@ final class AMSPackingUITests: XCTestCase {
 
     /// With the grid waiting for OK, a tap after a whole range starts a new one (as
     /// it always did), and Cancel — even after a whole range — puts back the dates
-    /// the grid opened with (his and Anna's field test, Oct 2026).
+    /// the grid opened with (their field test, Oct 2026).
     func testTheDateGridStartsOverAndCancelPutsItBack() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
@@ -2145,7 +2147,7 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// Valid until says how far away the date is, and offers the usual spans in one
-    /// tap — his and Anna's field test (Oct 2026): "It didn't say 10 days. You have
+    /// tap — their field test (Oct 2026): "It didn't say 10 days. You have
     /// to calculate that yourself. Maybe we could add that information visually."
     func testValidUntilSaysHowFarAwayAndOffersQuickSpans() {
         let app = launch()
@@ -2488,7 +2490,7 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// Dates on Create new trip: today + `a` to today + `b`, picked in the grid and
-    /// kept with OK (the grid waits for it since his and Anna's field test, Oct 2026).
+    /// kept with OK (the grid waits for it since their field test, Oct 2026).
     private func pickDates(_ app: XCUIApplication, from a: Int, to b: Int) {
         setSwitch(app, "trip-dates", on: true)
         XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
@@ -2929,14 +2931,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["things-nolist"].exists, "nothing is on no list yet")
 
         type("Sit mat", into: app.textFields["thing-new-name"])
-        app.buttons["thing-new"].tap()
+        tap(app, id: "thing-new")
         XCTAssertTrue(waitUntil { self.words(count) == "11 things" }, "the new thing is not counted: '\(words(count))'")
         let noList = app.buttons["things-nolist"]
         XCTAssertTrue(noList.waitForExistence(timeout: 5), "the new thing is on no list, and says so")
-        noList.tap()
+        tap(app, id: "things-nolist")
         XCTAssertTrue(waitUntil { self.words(count) == "1 thing" }, "the filter did not narrow: '\(words(count))'")
 
-        app.buttons["thing-row-0"].tap()
+        // The new thing glides to the top and glows for a moment (0.56): on GitHub's
+        // Mac the list was briefly not there to tap at all — wait for it, freshly.
+        tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         replace("Sit pad", in: app.textFields["thing-name"])
         tap(app, id: "thing-save")
@@ -3952,7 +3956,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.find(app, "list-places-row-12") != nil }, "…and it must still be there")
     }
 
-    // MARK: - Long lists made easier (his and Anna's field test, 3 Oct 2026)
+    // MARK: - Long lists made easier (their field test, 3 Oct 2026)
 
     /// Choose from your things on Hiking, grouped From where — the sample's places, A–Z
     /// (seen on the screen, 3 Oct 2026): Bathroom cabinet (Toothbrush: row 0), Chest of
@@ -4291,7 +4295,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(misses.isEmpty, "buttons that are not ready, or do not say what is missing:\n" + misses.joined(separator: "\n"))
     }
 
-    // MARK: - Headings first (his and Anna's field test, 3 Oct 2026)
+    // MARK: - Headings first (their field test, 3 Oct 2026)
 
     /// Mission 4.4: "adjust the headings so that they are dominant, and the other
     /// buttons and pills are much smaller than the heading … throughout the app". No

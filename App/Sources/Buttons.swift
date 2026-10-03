@@ -115,7 +115,7 @@ struct ShareMark: View {
     }
 }
 
-/// An ✕ at the end of a search field — his and Anna's field test (3 Oct 2026): "When
+/// An ✕ at the end of a search field — their field test (3 Oct 2026): "When
 /// typing in the search field, please add an X so that it's quick to delete all typed
 /// alphanumeric characters." It is there only while there is something to clear; one
 /// tap empties the field and the keyboard stays, ready for the next word.

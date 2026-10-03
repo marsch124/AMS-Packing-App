@@ -2,7 +2,7 @@ import SwiftUI
 import PackingCore
 import PackingLibrary
 
-/// On site — the step after Pack (their field test, Martin and Anna, 3 Oct 2026,
+/// On site — the step after Pack (their field test, 3 Oct 2026,
 /// mission 9.1): "During this phase, we could add stuff as: items bought there; items
 /// discarded there (not more needed); maintenance or other actions." He chose that it
 /// holds all four, each under its own heading:

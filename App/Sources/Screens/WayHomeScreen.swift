@@ -6,7 +6,7 @@ import PackingLibrary
 /// bought on site, bag by bag, with ticks of its own; Used up takes a thing off. The
 /// photos of the packed bags (all of each bag's, up to three) sit at the top, to repack from.
 ///
-/// Their field test (Martin and Anna, 3 Oct 2026) added: a search, "1 used up" in the
+/// Their field test (3 Oct 2026) added: a search, "1 used up" in the
 /// heading, Tick everything, Undo for Used up, a note per line for maintenance ("zip
 /// broken"), and Open — change the thing and "come straight back here when done".
 /// It opens from the trip's On site page, the step it belongs to (same field test).
@@ -50,7 +50,7 @@ struct WayHomeScreen: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Way home").font(.system(size: 24, weight: .heavy)).foregroundStyle(AppSection.events.color)
-                    // "I think there should be '1 used up' in the heading counting" (Anna, 3 Oct 2026).
+                    // "I think there should be '1 used up' in the heading counting" (3 Oct 2026).
                     Text(usedUp > 0 ? "\(p.done)/\(p.total) · \(usedUp) used up" : "\(p.done)/\(p.total)")
                         .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("wayhome-progress")

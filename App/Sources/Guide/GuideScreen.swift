@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The doors in Settings: What's new and How it works — his standing rule from the
 /// web apps, missing here until 0.23 — and the first real trip in six steps, which
-/// he and Anna asked to keep where they can read it again (field test, 3 Oct 2026:
+/// they asked to keep where they can read it again (field test, 3 Oct 2026:
 /// "Please save this in the app … so that we can choose to read that later as
 /// well"). They own their sheet, so Settings keeps the sheets it already has
 /// (several sheets on one view is a trap met in Search).
@@ -138,6 +138,7 @@ struct HowItWorksScreen: View {
             "Under the grab lists: the countdown to your next trip \u{2014} the days, the trip, and the next packing step with when it is due. Tap it to open the trip.",
             "Create new trip: a name, Dates (tap the first day, then the last; the line under the calendar says the range and the nights; OK keeps it, Cancel puts the dates back), Quick if only the templates you tick should come along — it says so in green while it is on.",
             "Create trip is always ready: if a name or a template is missing, it says so right under it.",
+            "So is every button that takes what you typed \u{2014} Add, New, Make, Weather: pressed with an empty field it adds nothing, and a short red line under the field says what is missing. The line goes as soon as you type.",
             "Pick the templates, then Transport, Season and Food, and Create trip. The trip gathers everything those templates hold. The workouts have their own colours (Swim blue, Bike yellow, Run green, Strength orange, Breath work lavender, Mobility pink), and picking one brings Context (Indoor, Outdoor, Race) set in under them.",
             "Laundry: wash and wear again, so per-night things count only the nights you pack for before a wash — 4 unless you pick 3, 5, 7, 10 or 14 under the switch (Trip settings has it too). It shows as \u{00D7}4 \u{00B7} laundry with a washtub.",
             "This Device: how many trips, things and templates this device holds."]),
@@ -196,7 +197,7 @@ struct HowItWorksScreen: View {
         Topic(section: .actions, title: "To do", lines: [
             "To do: things to sort out before you go.",
             "To buy: what to get, with worn-out or run-down things suggested.",
-            "Send to Reminders, at the top of To buy: the open lines go into the Reminders list \u{201C}To buy \u{00B7} Packing\u{201D}, each once. Tick them there in the shop; they are ticked here the next time you open the list."]),
+            "Send to Reminders, at the top of To buy: the open lines go into the Reminders list \u{201C}To buy \u{00B7} Packing\u{201D}, each once, dated the day you send them (all day, no alarm). Tick them there in the shop; they are ticked here as soon as you come back to the app."]),
         Topic(section: .settings, title: "Settings", lines: [
             "Remind me to pack: on this device, at 9 in the morning of the day each packing step is due, the trip and what is left. Each device asks for itself; under it, the next reminder and what it will say.",
             "iCloud sync: when this device last sent and received, and what is not in iCloud yet. Sync now checks in from here; the other device shows it within a minute or so \u{2014} if it does not, the card says why. Copy details for Claude gives me the full story.",

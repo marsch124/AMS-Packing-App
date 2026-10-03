@@ -57,7 +57,7 @@ final class WayHomeTests: XCTestCase {
         XCTAssertFalse(lib.setPackedHome(true, tripId: trip, entryId: "no such line"))
     }
 
-    // Their field test (Martin and Anna, 3 Oct 2026): the heading counts what was used
+    // Their field test (3 Oct 2026): the heading counts what was used
     // up, everything can be ticked at once, a line takes a note, and it opens its thing.
 
     func testTheWayHomeCountsWhatWasUsedUp() {

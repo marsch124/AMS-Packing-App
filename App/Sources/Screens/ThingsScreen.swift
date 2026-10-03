@@ -15,7 +15,7 @@ struct ThingsScreen: View {
     /// What New was missing, said under the field (never a grey button).
     @State private var newNeeds = ""
     @State private var editing: String?
-    /// What he added on this visit, newest first — his and Anna's field test (3 Oct
+    /// What he added on this visit, newest first — their field test (3 Oct
     /// 2026): "When you add an item, it needs to be on top of the list. Now it is just
     /// hidden in the total list." They stay on top until the screen is left.
     @State private var justAdded: [String] = []
@@ -241,7 +241,7 @@ struct ThingEditor: View {
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand") }
                     labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
-                    labelled("Notes") { field($draft.note, "Anything worth remembering", "thing-notes") }
+                    labelled("Notes") { notesField }
                     Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
                           id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
@@ -345,7 +345,7 @@ struct ThingEditor: View {
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("thing-expiry-clear")
                 }
-                // How far away it is, in words, as the date changes — his and Anna's
+                // How far away it is, in words, as the date changes — their
                 // field test (Oct 2026): "It didn't say 10 days. You have to calculate
                 // that yourself." Large, and red once it has run out. A text of its own,
                 // outside any button, so the Mac does not fold it away.
@@ -411,6 +411,19 @@ struct ThingEditor: View {
             HeadingBand(title: text, id: "thing-heading-\(text.prefix { $0.isLetter }.lowercased())")
             content()
         }
+    }
+
+    /// Notes grow downwards: a note written on site lands on a line of its own under
+    /// what the thing already said (3 Oct 2026), and one line ran them together.
+    private var notesField: some View {
+        TextField("Anything worth remembering", text: $draft.note, axis: .vertical)
+            .lineLimit(1...8)
+            .textFieldStyle(.plain)
+            .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: 46)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            .accessibilityIdentifier("thing-notes")
     }
 
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {

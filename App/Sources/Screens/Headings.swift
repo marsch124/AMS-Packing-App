@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The sizes that make a heading lead its block — his and Anna's field test (3 Oct
+/// The sizes that make a heading lead its block — their field test (3 Oct
 /// 2026, the thing and row editors): "adjust the headings so that they are dominant,
 /// and the other buttons and pills are much smaller than the heading … throughout
 /// the app". So: a block's heading 22 heavy, a heading inside a block 20 heavy, a

@@ -124,4 +124,11 @@ What it took, each one found in a log rather than guessed:
 - 🪤 The Mac CI job signs ad hoc (`-`). An ad-hoc app carrying iCloud entitlements
   is refused at launch, so CI builds with a second entitlements file without them.
 - The CloudKit schema has to be deployed to Production once (CloudKit Console)
-  before a TestFlight build can sync. With one model it is deployed once.
+  before a TestFlight build can sync. With one model it is deployed once — but a
+  schema is made of the fields records have actually USED. The first deployment
+  (22 Sep 2026) came from a Development schema that had never seen a photo, so
+  Production had no `CD_blob` (Bytes) or `CD_blob_ckAsset` (Asset). The first bag
+  photo (3 Oct 2026) then sank every send from that iPhone: one record the server
+  refuses fails its whole batch, so trips, lines and to-dos stuck behind it too.
+  Both fields were added in Development and deployed. Before a new attribute ships,
+  check the Production record type has its field(s).

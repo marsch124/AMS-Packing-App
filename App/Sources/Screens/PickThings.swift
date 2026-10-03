@@ -12,7 +12,7 @@ import PackingLibrary
 /// already on the template shows as such and cannot be ticked twice. A name that
 /// matches nothing can be made into a new thing, straight onto the template.
 ///
-/// Every group folds — his and Anna's field test (3 Oct 2026): "It is an extremely
+/// Every group folds — their field test (3 Oct 2026): "It is an extremely
 /// long list when adding, so we need toggles everywhere. We need the list to be
 /// collapsible and expandable. Also, an alternative: Collapse All or Expand All."
 struct PickThingsScreen: View {

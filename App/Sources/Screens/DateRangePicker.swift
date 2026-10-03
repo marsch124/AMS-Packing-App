@@ -5,7 +5,7 @@ import SwiftUI
 /// grid, Monday first: tap the first day, then the last; the two ends are filled,
 /// the nights between shaded. Two months side by side where there is room (the
 /// Mac), one on the iPhone. The grid then stays open on the range picked until OK
-/// keeps it or Cancel puts the dates back (his and Anna's field test, Oct 2026).
+/// keeps it or Cancel puts the dates back (their field test, Oct 2026).
 struct DateRangePicker: View {
     @Binding var start: Date
     @Binding var end: Date
@@ -111,7 +111,7 @@ struct DateRangePicker: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("range-summary")
             }
-            // His and Anna's field test (Oct 2026): "When I choose the end date, don't
+            // Their field test (Oct 2026): "When I choose the end date, don't
             // just pop out back, but stay there and present an OK button or a cancel
             // button." Cancel is the way out without picking (his test C.2: "I do not
             // come out of this date"): the dates go back to what they were. OK keeps

@@ -655,7 +655,7 @@ struct RowEditor: View {
             KeyboardAwayScroll {
                 // Headings 20 apart, each field right under its own (his screenshot,
                 // 2026-09-28). Each heading a band in the template colour, as in the thing
-                // editor — his and Anna's field test (3 Oct 2026) tapped a thing here and
+                // editor — their field test (3 Oct 2026) tapped a thing here and
                 // found the headings (14, grey) smaller than the pills under them.
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 4) {

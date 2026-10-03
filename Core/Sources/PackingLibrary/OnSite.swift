@@ -1,7 +1,7 @@
 import Foundation
 import PackingCore
 
-// On site — a step of its own, right after Pack (their field test, Martin and Anna,
+// On site — a step of its own, right after Pack (their field test,
 // 3 Oct 2026, mission 9.1): "During this phase, we could add stuff as: items bought
 // there; items discarded there (not more needed); maintenance or other actions. I
 // would also like to change the word 'there' to 'on site'." He then chose that it

@@ -2,7 +2,7 @@ import XCTest
 @testable import PackingCore
 @testable import PackingLibrary
 
-/// A thing's Valid until says how far away it is (his and Anna's field test,
+/// A thing's Valid until says how far away it is (their field test,
 /// Oct 2026: "It didn't say 10 days. You have to calculate that yourself.").
 final class DateWordsTests: XCTestCase {
     private let today = "2026-10-03"

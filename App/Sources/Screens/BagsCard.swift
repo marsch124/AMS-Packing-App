@@ -12,7 +12,7 @@ import PackingLibrary
 /// Colour is the message, as he asked of every indicator: a bag over its limit is
 /// red; one near it is the Care orange; the rest are blue.
 ///
-/// One bar per bag, thick and blue on grey — his and Anna's choice, 3 Oct 2026 ("we
+/// One bar per bag, thick and blue on grey — their choice, 3 Oct 2026 ("we
 /// would like one bar"): the grey is what the bag may carry, the blue what is in it.
 /// The thin green bar before was easy to miss.
 ///

@@ -54,7 +54,7 @@ final class ShopReminders {
             }
         }
         let into = try list()
-        // Dated the day it is sent — his and Anna's field test (8.3, 3 Oct 2026): "it
+        // Dated the day it is sent — their field test (8.3, 3 Oct 2026): "it
         // created a reminder in the to-buy packing list, but there is no date, so it's
         // very anonymous"; he chose the day he sends it. Year, month and day only (the
         // Gregorian calendar, his time zone's today): with no time it is an all-day

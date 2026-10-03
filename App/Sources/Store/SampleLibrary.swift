@@ -127,6 +127,8 @@ enum SampleLibrary {
             lib.trips[0].startDate = day(-1)
             lib.trips[0].endDate = day(2)
         }
+        // A note the passport already had: one written on site goes on a line of its own.
+        if let n = lib.items.firstIndex(where: { $0.name == "Passport" }) { lib.items[n].note = "Keep it dry" }
         return lib
     }
 

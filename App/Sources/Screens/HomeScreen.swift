@@ -253,7 +253,7 @@ struct Pills: View {
     let id: String
     var tint: Color = AppSection.home.color
     var startIndex: Int = 0
-    /// How its heading reads. The heading always LEADS: his and Anna's field test (3
+    /// How its heading reads. The heading always LEADS: their field test (3
     /// Oct 2026) found the pills drowning it — "the other buttons and pills are much
     /// smaller than the heading". Until then most pill rows had a small grey heading
     /// (14) over bigger buttons (15).

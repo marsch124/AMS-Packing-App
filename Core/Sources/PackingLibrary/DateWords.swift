@@ -1,7 +1,7 @@
 import Foundation
 import PackingCore
 
-// How far away a date is, in words — his and Anna's field test (Oct 2026), on a
+// How far away a date is, in words — their field test (Oct 2026), on a
 // thing's Valid until: "It didn't say 10 days. You have to calculate that
 // yourself. Maybe we could add that information visually."
 //
