@@ -219,7 +219,7 @@ struct WayHomeScreen: View {
                 } else {
                     // Something bought there has no thing to open; the space is kept so
                     // the words stay lined up down the list.
-                    smallWords("Open").hidden()
+                    smallWords("Open").hidden().accessibilityHidden(true)
                 }
                 // "The user could change his or her mind… I think it should be called
                 // something else, such as Undo" (their field test, 3 Oct 2026).
@@ -318,14 +318,13 @@ struct WayHomeScreen: View {
     /// thing it ever says, so "Undo" takes the room of "Used up" and nothing shifts.
     private func small(_ title: String, id: String, keepsRoomFor widest: String? = nil,
                        action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            ZStack {
-                if let widest { smallWords(widest).hidden() }
-                smallWords(title)
-            }
-            .contentShape(Rectangle())
+        ZStack {
+            // The room is kept OUTSIDE the button: on the Mac a button folds every word
+            // of its label into what it says, and this one is never to be read.
+            if let widest { smallWords(widest).hidden().accessibilityHidden(true) }
+            Button(action: action) { smallWords(title).contentShape(Rectangle()) }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier(id)
         }
-        .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityIdentifier(id)
     }
 }
