@@ -221,7 +221,11 @@ struct LoopDoor: View {
         HStack(spacing: fit.space) {
             ForEach(Library.LoopStep.allCases, id: \.self) { step in
                 if step != .plan {
-                    SVGPath.path("M9 7l5 5-5 5").stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                    // The chevron is 5 wide, drawn in the middle of its room: a narrower
+                    // room with the full-size path ran into the next step (the iPhone
+                    // screenshot, 3 Oct 2026).
+                    let x = (fit.arrow - 5) / 2
+                    SVGPath.path("M\(x) 7l5 5-5 5").stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
                         .frame(width: fit.arrow, height: 24).foregroundStyle(Theme.muted)
                 }
                 let on = step == here

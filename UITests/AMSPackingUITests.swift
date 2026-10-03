@@ -1109,6 +1109,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertNotNil(find(app, "guide-words"), "How it works has no Words")
         XCTAssertTrue((0..<30).contains { self.words(app.staticTexts["word-\($0)"]) == "Kit" }, "Words does not say what Kit means")
         XCTAssertFalse((0..<5).contains { self.isHere(app, $0) }, "the guide's picture says You are here")
+        if let refine = find(app, "loop-step-4") { bringIntoView(app, refine) }
+        shot(app, "loop-guide-picture")
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
 
