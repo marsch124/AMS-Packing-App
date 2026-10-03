@@ -10,11 +10,14 @@ struct TemplatesScreen: View {
     @State private var making = false
     @State private var searching = false
 
-    struct Shelf: Identifiable { let id: String; let title: String; let lists: [PackList] }
+    /// One activity area (GA, WET…, or Always packed, By transport, Other) and its
+    /// templates. The template's stored field is still called `group`, as the web app
+    /// reads it; only the word he sees changed (field test, Oct 2026).
+    struct ActivityArea: Identifiable { let id: String; let title: String; let lists: [PackList] }
 
-    static func shelves(_ all: [PackList]) -> [Shelf] {
-        var out: [Shelf] = []
-        func add(_ id: String, _ title: String, _ lists: [PackList]) { if !lists.isEmpty { out.append(Shelf(id: id, title: title, lists: lists)) } }
+    static func activityAreas(_ all: [PackList]) -> [ActivityArea] {
+        var out: [ActivityArea] = []
+        func add(_ id: String, _ title: String, _ lists: [PackList]) { if !lists.isEmpty { out.append(ActivityArea(id: id, title: title, lists: lists)) } }
         add("base", "Always packed", all.filter { $0.role == "base" })
         add("transport", "By transport", all.filter { $0.role == "transport" })
         for g in GROUPS { add(g.id, g.label, orderActivities(g.id, all.filter { $0.role.isEmpty && $0.group == g.id })) }
@@ -25,9 +28,9 @@ struct TemplatesScreen: View {
     }
 
     /// "GA · GOAL ACTIVITY" — his code, then the words, as he wrote them.
-    static func shelfHeading(_ shelf: Shelf) -> String {
-        let code = GROUPS.first { $0.id == shelf.id }?.id ?? ""
-        return groupHeading(code, shelf.title)
+    static func areaHeading(_ area: ActivityArea) -> String {
+        let code = GROUPS.first { $0.id == area.id }?.id ?? ""
+        return groupHeading(code, area.title)
     }
 
     /// "15 lists · 431 things · 4 trips packed from them"
@@ -41,8 +44,8 @@ struct TemplatesScreen: View {
     }
 
     var body: some View {
-        let shelves = TemplatesScreen.shelves(model.library.resolvedTemplates())
-        let flat = shelves.flatMap(\.lists)
+        let areas = TemplatesScreen.activityAreas(model.library.resolvedTemplates())
+        let flat = areas.flatMap(\.lists)
         let use = model.library.templateUse()
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
@@ -71,19 +74,19 @@ struct TemplatesScreen: View {
                 // What his trip reviews say a list carries for nothing (roadmap stop E).
                 RefineDoor().environmentObject(model)
                     .padding(.bottom, 4)
-                ForEach(shelves) { shelf in
+                ForEach(areas) { area in
                     // His own code beside the name, as the web app has it:
                     // "GA · GOAL ACTIVITY".
-                    Text(TemplatesScreen.shelfHeading(shelf))
+                    Text(TemplatesScreen.areaHeading(area))
                         .font(.system(size: 18, weight: .heavy))       // "Much larger headings" (H.13)
                         .foregroundStyle(Theme.ink)
                         .kerning(0.8)
                         .padding(.top, 20)
-                        .accessibilityIdentifier("templates-shelf-\(shelf.id)")
+                        .accessibilityIdentifier("templates-area-\(area.id)")
                     // Two across: more of his lists at a glance, as the web app shows them.
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
                               spacing: 8) {
-                        ForEach(shelf.lists, id: \.id) { list in
+                        ForEach(area.lists, id: \.id) { list in
                             Button { open = list } label: { TemplateCard(list: list, use: use[list.id]) }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")

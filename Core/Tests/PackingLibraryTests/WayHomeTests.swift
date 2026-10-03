@@ -2,7 +2,7 @@ import XCTest
 @testable import PackingCore
 @testable import PackingLibrary
 
-/// Pack to go home (his idea 13, 2 Oct 2026): what went, plus what was bought there,
+/// Pack to go home (his idea 13, 2 Oct 2026): what went, plus what was bought on site,
 /// less what was used up — with ticks of its own.
 final class WayHomeTests: XCTestCase {
     override func setUp() { PackingEnv.freeze(at: "2026-10-01T12:00:00.000Z") }
@@ -33,8 +33,8 @@ final class WayHomeTests: XCTestCase {
         var (lib, trip) = library()
         XCTAssertEqual(lib.homeLines(tripId: trip).map(\.name), ["Swimsuit", "Sun cream"],
                        "not what went: set aside and never-packed lines do not come home")
-        _ = lib.addBoughtThere(tripId: trip, name: "Sandals")
-        XCTAssertEqual(lib.homeLines(tripId: trip).map(\.name), ["Swimsuit", "Sun cream", "Sandals"], "what was bought there is not on it")
+        _ = lib.addBoughtOnSite(tripId: trip, name: "Sandals")
+        XCTAssertEqual(lib.homeLines(tripId: trip).map(\.name), ["Swimsuit", "Sun cream", "Sandals"], "what was bought on site is not on it")
         XCTAssertTrue(lib.homeProgress(tripId: trip) == (0, 3))
     }
 

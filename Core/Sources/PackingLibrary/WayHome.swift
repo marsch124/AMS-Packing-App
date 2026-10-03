@@ -2,21 +2,21 @@ import Foundation
 import PackingCore
 
 // Pack to go home — his pre-trip idea 13 (2 Oct 2026). The way out is the list; the
-// way home is what actually went, plus what was bought there, less what was used up
+// way home is what actually went, plus what was bought on site, less what was used up
 // or left behind. Its own ticks (the way-out ticks stay as they were, for the
 // review), kept in the lines' extra keys so the web app's model is untouched.
 
 /// A line's extra key: packed for the way home.
 public let HOME_KEY = "packedHome"
-/// A line's extra key: used up or left there — nothing to pack home.
+/// A line's extra key: used up or left on site — nothing to pack home.
 public let USED_UP_KEY = "usedUp"
 
 extension Library {
     /// What goes home: the lines that went (ticked on the way out, not set aside),
-    /// and everything bought there, in the list's order.
+    /// and everything bought on site, in the list's order.
     public func homeLines(tripId: String) -> [Item] {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return [] }
-        return trip.entries.filter { ($0.checked && !isSetAside($0)) || Library.isBoughtThere($0) }
+        return trip.entries.filter { ($0.checked && !isSetAside($0)) || Library.isBoughtOnSite($0) }
     }
 
     public static func isPackedHome(_ line: Item) -> Bool { line.extra[HOME_KEY]?.boolValue == true }
@@ -35,7 +35,7 @@ extension Library {
         }
     }
 
-    /// Used up or left there: off the way home (and not packed). Again: back on.
+    /// Used up or left on site: off the way home (and not packed). Again: back on.
     @discardableResult
     public mutating func setUsedUp(_ on: Bool, tripId: String, entryId: String) -> Bool {
         mark(tripId: tripId, entryId: entryId) { line in

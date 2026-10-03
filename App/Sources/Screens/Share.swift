@@ -321,7 +321,7 @@ struct OpenSharedScreen: View {
                     // Home holds eight (since 0.46): a free place takes it, else it waits.
                     let onHome = made.map { m in model.library.homeGrabLists().contains { $0.id == m.id } } ?? false
                     finish(onHome ? "Added — it is on Home, in a free place."
-                                  : "Added to your grab lists shelf. Home is full: put it on Home when you want it there.")
+                                  : "Added \u{2014} it waits in Grab Lists, as Home is full. Put it on Home when you want it there.")
                 }
             }
         }

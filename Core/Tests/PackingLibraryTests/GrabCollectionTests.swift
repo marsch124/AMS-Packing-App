@@ -2,9 +2,9 @@ import XCTest
 import PackingCore
 @testable import PackingLibrary
 
-/// More lists than Home can hold: eight places (4 × 2), his order, and a shelf where the
-/// rest wait with everything they hold. Making room never deletes anything.
-final class GrabShelfTests: XCTestCase {
+/// More lists than Home can hold: eight places (4 × 2), his order, and Grab Lists where
+/// the rest wait with everything they hold. Making room never deletes anything.
+final class GrabCollectionTests: XCTestCase {
     override func setUp() { PackingEnv.reset() }
     override func tearDown() { PackingEnv.reset() }
 
@@ -13,28 +13,28 @@ final class GrabShelfTests: XCTestCase {
         XCTAssertEqual(GRAB_HOME_SLOTS, 8, "Home holds 4 × 2 (his ask, 2 Oct 2026)")
         XCTAssertEqual(lib.homeGrabLists().count, 6)
         XCTAssertEqual(lib.homeGrabLists().map(\.id), GRAB_FACTORY.map(\.id))
-        XCTAssertTrue(lib.shelvedGrabLists().isEmpty)
+        XCTAssertTrue(lib.waitingGrabLists().isEmpty)
         XCTAssertTrue(lib.ownGrabLists().isEmpty)
     }
 
     /// New lists take Home's free places; once all eight are taken, the next one
-    /// waits on the shelf instead of pushing anything off.
-    func testNewListsFillHomeThenWaitOnTheShelf() {
+    /// waits in Grab Lists instead of pushing anything off.
+    func testNewListsFillHomeThenWaitInGrabLists() {
         var lib = Library()
         let padel = lib.addGrabList(label: "Padel", items: ["Racket", "Balls", "Grip"])!
         let golf = lib.addGrabList(label: "Golf", items: ["Clubs"])!
         XCTAssertEqual(lib.homeGrabLists().map(\.id), GRAB_FACTORY.map(\.id) + [padel.id, golf.id], "free places were not filled")
-        XCTAssertTrue(lib.shelvedGrabLists().isEmpty)
+        XCTAssertTrue(lib.waitingGrabLists().isEmpty)
 
         let kayak = lib.addGrabList(label: "Kayak", items: ["Paddle"])!
         XCTAssertEqual(lib.homeGrabLists().count, 8, "Home holds eight")
         XCTAssertFalse(lib.homeGrabLists().contains { $0.id == kayak.id }, "it pushed something off a full Home")
-        XCTAssertEqual(lib.shelvedGrabLists().map(\.id), [kayak.id])
+        XCTAssertEqual(lib.waitingGrabLists().map(\.id), [kayak.id])
         XCTAssertEqual(lib.allGrabLists().count, 9)
     }
 
     /// His six as he arranged them (before Home grew) stay first, in his order; the
-    /// next two from the shelf join them.
+    /// next two waiting join them.
     func testHisArrangedSixAreJoinedByTheNextTwo() {
         var lib = Library()
         let padel = lib.addGrabList(label: "Padel")!
@@ -52,13 +52,13 @@ final class GrabShelfTests: XCTestCase {
         XCTAssertTrue(lib.setHomeGrabLists(eight))
         XCTAssertEqual(lib.homeGrabLists().map(\.id), eight)
 
-        // …and the one left out is on the shelf, whole.
-        let shelved = lib.shelvedGrabLists()
-        XCTAssertEqual(shelved.map(\.id), [own[1].id])
-        XCTAssertEqual(shelved[0].items, ["Golf thing"], "the list that stepped back lost its things")
+        // …and the one left out is waiting, whole.
+        let waiting = lib.waitingGrabLists()
+        XCTAssertEqual(waiting.map(\.id), [own[1].id])
+        XCTAssertEqual(waiting[0].items, ["Golf thing"], "the list that stepped back lost its things")
         eight.removeLast()
         XCTAssertTrue(lib.setHomeGrabLists(eight))
-        XCTAssertEqual(lib.homeGrabLists().last?.id, own[0].id, "a free place was not filled from the shelf in order")
+        XCTAssertEqual(lib.homeGrabLists().last?.id, own[0].id, "a free place was not filled from the waiting lists in order")
     }
 
     func testNineOnHomeIsRefused() {

@@ -3,7 +3,7 @@ import PackingCore
 import PackingLibrary
 
 /// Pack to go home — his pre-trip idea 13 (2 Oct 2026). What went, and what was
-/// bought there, bag by bag, with ticks of its own; Used up takes a thing off. The
+/// bought on site, bag by bag, with ticks of its own; Used up takes a thing off. The
 /// photos of the packed bags sit at the top, to repack from.
 struct WayHomeScreen: View {
     let tripId: String
@@ -34,7 +34,7 @@ struct WayHomeScreen: View {
                 VStack(alignment: .leading, spacing: 4) {
                     photos(bags)
                     if lines.isEmpty {
-                        Text("Nothing to bring home yet: tick what you pack on the way out, and add what you buy there with Bought there.")
+                        Text("Nothing to bring home yet: tick what you pack on the way out, and add what you buy on site with Bought on site.")
                             .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("wayhome-empty")
@@ -116,8 +116,8 @@ struct WayHomeScreen: View {
                             .lineLimit(2)
                         if used {
                             Text("Used up").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.muted)
-                        } else if Library.isBoughtThere(line) {
-                            Text("Bought there").font(.system(size: 13, weight: .bold)).foregroundStyle(tint)
+                        } else if Library.isBoughtOnSite(line) {
+                            Text("Bought on site").font(.system(size: 13, weight: .bold)).foregroundStyle(tint)
                         }
                     }
                     Spacer(minLength: 8)

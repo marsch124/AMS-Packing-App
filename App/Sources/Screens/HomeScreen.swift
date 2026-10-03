@@ -31,7 +31,7 @@ struct HomeScreen: View {
     @State private var opened: String?
     @State private var grab: GrabDefinition?
     @State private var searching = false
-    @State private var shelf = false
+    @State private var showingGrabLists = false
     /// What Create said was missing, after a press with something missing.
     @State private var stillNeeded = ""
     @FocusState private var naming: Bool
@@ -48,13 +48,13 @@ struct HomeScreen: View {
                     SearchButton { searching = true }
                     // "Your lists" is the name of the TEMPLATES screen; this door
                     // opens the grab lists. His note on the Mac: "Your Grab Lists".
-                    Button("Grab Lists") { shelf = true }
+                    Button("Grab Lists") { showingGrabLists = true }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.home.color)
-                        .accessibilityIdentifier("grab-shelf")
+                        .accessibilityIdentifier("grab-lists")
                 }
                 .padding(.top, 14)
-                // Home holds eight (4 × 2) — HIS, in his order; free places fill from the shelf (GrabShelf.swift).
+                // Home holds eight (4 × 2) — HIS, in his order; free places fill from the waiting ones (GrabCollection.swift).
                 GrabButtons(lists: model.library.homeGrabLists()) { grab = $0 }
 
                 // The trip he leaves on next, counted down (his idea 6) — under the grab
@@ -170,7 +170,7 @@ struct HomeScreen: View {
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id })) { o in
             TripScreen(tripId: o.id).environmentObject(model)
         }
-        .sheet(isPresented: $shelf) { GrabShelfScreen().environmentObject(model) }
+        .sheet(isPresented: $showingGrabLists) { GrabCollectionScreen().environmentObject(model) }
         // A Shortcut (the Action button): its grab list.
         .onChange(of: model.grabToOpen, initial: true) { _, id in
             guard let id else { return }

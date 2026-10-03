@@ -3,7 +3,7 @@ import XCTest
 @testable import PackingLibrary
 
 /// On the trip (his ideas 11 and 12, 2 Oct 2026): a photo of each packed bag, and
-/// "Bought there" lines.
+/// "Bought on site" lines.
 final class OnTheTripTests: XCTestCase {
     override func setUp() { PackingEnv.freeze(at: "2026-10-01T12:00:00.000Z") }
     override func tearDown() { PackingEnv.reset() }
@@ -50,18 +50,29 @@ final class OnTheTripTests: XCTestCase {
         XCTAssertTrue(lib.photos.contains { $0.id == id }, "a photo the swimsuit shows was thrown away")
     }
 
-    func testABoughtThereLineIsInHandMarkedAndKept() {
+    func testABoughtOnSiteLineIsInHandMarkedAndKept() {
         var (lib, trip) = library()
-        let cream = lib.addBoughtThere(tripId: trip, name: "Sun cream")
-        XCTAssertEqual(cream?.checked, true, "bought there is in hand already")
-        XCTAssertTrue(cream.map(Library.isBoughtThere) ?? false, "not marked bought there")
+        let cream = lib.addBoughtOnSite(tripId: trip, name: "Sun cream")
+        XCTAssertEqual(cream?.checked, true, "bought on site is in hand already")
+        XCTAssertTrue(cream.map(Library.isBoughtOnSite) ?? false, "not marked bought on site")
         _ = lib.addCustomLine(tripId: trip, name: "Tripod")
-        XCTAssertEqual(lib.boughtThere(tripId: trip).map(\.name), ["Sun cream"], "a line typed at home counts as bought there")
-        // Trip settings rebuild the list: a bought-there line stays, still marked.
+        XCTAssertEqual(lib.boughtOnSite(tripId: trip).map(\.name), ["Sun cream"], "a line typed at home counts as bought on site")
+        // Trip settings rebuild the list: a bought-on-site line stays, still marked.
         _ = lib.changeTrip(id: trip) { $0.season = "Winter" }
-        XCTAssertEqual(lib.boughtThere(tripId: trip).map(\.name), ["Sun cream"], "the rebuild lost what was bought there")
-        XCTAssertEqual(Library(records: lib.records()).boughtThere(tripId: trip).map(\.name), ["Sun cream"],
-                       "the stored records lost what was bought there")
-        XCTAssertNil(lib.addBoughtThere(tripId: trip, name: "  "), "a nameless thing was bought")
+        XCTAssertEqual(lib.boughtOnSite(tripId: trip).map(\.name), ["Sun cream"], "the rebuild lost what was bought on site")
+        XCTAssertEqual(Library(records: lib.records()).boughtOnSite(tripId: trip).map(\.name), ["Sun cream"],
+                       "the stored records lost what was bought on site")
+        XCTAssertNil(lib.addBoughtOnSite(tripId: trip, name: "  "), "a nameless thing was bought")
+    }
+
+    /// The word changed to "on site" (field test, Oct 2026); the STORED key did not:
+    /// lines marked before then, on his devices, in iCloud and in backups, say "boughtThere".
+    func testTheStoredMarkKeepsItsFirstName() {
+        var (lib, trip) = library()
+        let cream = lib.addBoughtOnSite(tripId: trip, name: "Sun cream")
+        XCTAssertEqual(cream?.extra["boughtThere"], .bool(true), "the stored key was renamed: older marks would be lost")
+        var older = lib.trips[0].entries.first { $0.name == "Swimsuit" }!
+        older.extra["boughtThere"] = .bool(true)
+        XCTAssertTrue(Library.isBoughtOnSite(older), "a line marked by an older version is not read as bought on site")
     }
 }

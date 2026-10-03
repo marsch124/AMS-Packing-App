@@ -2,10 +2,10 @@ import SwiftUI
 import PackingCore
 import PackingLibrary
 
-/// All his grab lists: the six on Home, in his order, and the rest waiting on the
-/// shelf with everything they hold. Nothing here deletes a list by making room —
-/// a list that steps back off Home keeps its things and waits.
-struct GrabShelfScreen: View {
+/// Grab Lists (Home's door of that name): the eight on Home, in his order, and the
+/// rest waiting here with everything they hold. Nothing here deletes a list by making
+/// room — a list that steps back off Home keeps its things and waits.
+struct GrabCollectionScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
@@ -15,7 +15,7 @@ struct GrabShelfScreen: View {
 
     var body: some View {
         let home = model.library.homeGrabLists()
-        let shelved = model.library.shelvedGrabLists()
+        let waiting = model.library.waitingGrabLists()
         VStack(spacing: 0) {
             HStack {
                 Text("Your grab lists").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
@@ -23,7 +23,7 @@ struct GrabShelfScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
-                    .accessibilityIdentifier("shelf-done")
+                    .accessibilityIdentifier("grablists-done")
             }
             .padding(16)
 
@@ -32,25 +32,25 @@ struct GrabShelfScreen: View {
                     if !problem.isEmpty {
                         Text(problem).font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(AppSection.actions.color)
-                            .accessibilityIdentifier("shelf-problem")
+                            .accessibilityIdentifier("grablists-problem")
                     }
 
                     Text("On Home · \(home.count) of \(GRAB_HOME_SLOTS)")
                         .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("shelf-home-heading")
+                        .accessibilityIdentifier("grablists-home-heading")
                     ForEach(Array(home.enumerated()), id: \.element.id) { n, list in
                         row(list, n: n, onHome: true, count: home.count)
                     }
 
-                    Text("Waiting · \(shelved.count)")
+                    Text("Waiting · \(waiting.count)")
                         .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
                         .padding(.top, 14)
-                        .accessibilityIdentifier("shelf-waiting-heading")
-                    if shelved.isEmpty {
+                        .accessibilityIdentifier("grablists-waiting-heading")
+                    if waiting.isEmpty {
                         Text("Nothing waiting. A new list starts here.")
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                     }
-                    ForEach(Array(shelved.enumerated()), id: \.element.id) { n, list in
+                    ForEach(Array(waiting.enumerated()), id: \.element.id) { n, list in
                         row(list, n: n, onHome: false, count: home.count)
                     }
 
@@ -69,7 +69,7 @@ struct GrabShelfScreen: View {
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
-                    .accessibilityIdentifier("shelf-new-name")
+                    .accessibilityIdentifier("grablists-new-name")
                 Button { add() } label: {
                     Text("Make").font(.system(size: 16, weight: .bold))
                         .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
@@ -80,7 +80,7 @@ struct GrabShelfScreen: View {
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .disabled(jsTrim(newName).isEmpty)
-                .accessibilityIdentifier("shelf-new")
+                .accessibilityIdentifier("grablists-new")
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
@@ -90,7 +90,7 @@ struct GrabShelfScreen: View {
             SwapScreen(comingIn: coming.id).environmentObject(model)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("shelf-detail")
+        .accessibilityIdentifier("grablists-detail")
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 560)
         #endif
@@ -119,7 +119,7 @@ struct GrabShelfScreen: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier("shelf-waiting-\(n)")
+            .accessibilityIdentifier("grablists-waiting-\(n)")
             .accessibilityLabel("\(list.label), \(list.items.count) things. Put it on Home")
         }
     }
@@ -137,13 +137,13 @@ struct GrabShelfScreen: View {
             Group {
                 Button { move(list.id, by: -1) } label: { chevron("M6 14l6-6 6 6", on: n > 0) }
                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == 0)
-                    .accessibilityIdentifier("shelf-up-\(n)").accessibilityLabel("Move \(list.label) earlier")
+                    .accessibilityIdentifier("grablists-up-\(n)").accessibilityLabel("Move \(list.label) earlier")
                 Button { move(list.id, by: 1) } label: { chevron("M6 10l6 6 6-6", on: n < count - 1) }
                     .buttonStyle(.plain).focusEffectDisabled().disabled(n >= count - 1)
-                    .accessibilityIdentifier("shelf-down-\(n)").accessibilityLabel("Move \(list.label) later")
+                    .accessibilityIdentifier("grablists-down-\(n)").accessibilityLabel("Move \(list.label) later")
                 Button { takeOff(list.id) } label: { pill("Off Home", filled: false) }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("shelf-off-\(n)")
+                    .accessibilityIdentifier("grablists-off-\(n)")
                     .accessibilityLabel("Take \(list.label) off Home; it waits with everything on it")
             }
         }
@@ -151,7 +151,7 @@ struct GrabShelfScreen: View {
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("shelf-home-\(n)")
+        .accessibilityIdentifier("grablists-home-\(n)")
     }
 
     private func pill(_ words: String, filled: Bool) -> some View {
@@ -204,7 +204,7 @@ struct GrabShelfScreen: View {
     private struct Swapping: Identifiable { let id: String }
 }
 
-/// Home is full. Which of the six steps back to the shelf?
+/// Home is full. Which of the eight steps back, to wait in Grab Lists?
 struct SwapScreen: View {
     let comingIn: String
     @EnvironmentObject var model: LibraryModel

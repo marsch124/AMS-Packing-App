@@ -72,8 +72,8 @@ final class SharingTests: XCTestCase {
         XCTAssertEqual(me.resolvedTemplate(id: old)?.items.map(\.name).sorted(), ["Fins", "Goggles", "Towel"])
     }
 
-    /// A grab list arrives on the shelf, not on Home.
-    func testAGrabListWaitsOnTheShelf() throws {
+    /// A grab list arrives in Grab Lists, waiting, not on Home.
+    func testAGrabListWaitsInGrabLists() throws {
         var sender = Library()
         let own = try XCTUnwrap(sender.addGrabList(label: "Sauna", tone: "green", items: ["Towel", "Water", "Sandals"]))
         let link = try XCTUnwrap(sender.shareLink(grabId: own.id))
@@ -81,7 +81,7 @@ final class SharingTests: XCTestCase {
         guard case .grab(let g)? = Library.readShared(link) else { return XCTFail("not read as a grab list") }
         var me = Library()
         // Home holds eight: with two of his own it is full, so the shared list waits.
-        // (On a Home with a free place it takes that place — GrabShelfTests.)
+        // (On a Home with a free place it takes that place — GrabCollectionTests.)
         _ = me.addGrabList(label: "Padel"); _ = me.addGrabList(label: "Golf")
         let home = me.homeGrabLists().map(\.id)
         XCTAssertEqual(home.count, GRAB_HOME_SLOTS)
@@ -89,7 +89,7 @@ final class SharingTests: XCTestCase {
         XCTAssertEqual(got.label, "Sauna")
         XCTAssertEqual(got.items, ["Towel", "Water", "Sandals"])
         XCTAssertEqual(me.homeGrabLists().map(\.id), home, "Home changed")
-        XCTAssertTrue(me.shelvedGrabLists().contains { $0.id == got.id }, "it is not on the shelf")
+        XCTAssertTrue(me.waitingGrabLists().contains { $0.id == got.id }, "it is not waiting in Grab Lists")
         XCTAssertNil(Library.readShared("hello there"), "any text read as something")
         XCTAssertNil(Library.readShared("   "))
     }
