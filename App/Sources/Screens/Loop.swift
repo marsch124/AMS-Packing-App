@@ -5,7 +5,8 @@ import PackingLibrary
 // The loop the app runs on — his picture (2026-09-27): "Phase 1 is the planning,
 // making the lists, and performing, packing, and later on reviewing, and then
 // refining and so on." Violet is about his LISTS, green about ONE trip: the same
-// colours as the Templates and Trips tabs.
+// colours as the Templates and Trips tabs. On site joined it after Pack (their field
+// test, 3 Oct 2026: "add a phase (in the graphics as well)… immediately after Pack").
 
 extension Library.LoopStep {
     var tint: Color { aboutOneTrip ? AppSection.events.color : AppSection.templates.color }
@@ -18,14 +19,14 @@ extension Library.LoopStep {
     var tab: AppSection {
         switch self {
         case .plan: return .home
-        case .pack, .review: return .events
+        case .pack, .onSite, .review: return .events
         case .refine: return .templates
         }
     }
     var tabName: String {
         switch self {
         case .plan: return "Home"
-        case .pack, .review: return "Trips"
+        case .pack, .onSite, .review: return "Trips"
         case .refine: return "Templates"
         }
     }
@@ -35,6 +36,7 @@ extension Library.LoopStep {
         switch self {
         case .plan: return "Make templates, create a trip"
         case .pack: return "Tick things as they go in"
+        case .onSite: return "Bought, left, notes, and packing for home"
         case .review: return "After it: unused, missed"
         case .refine: return "Keep or drop, from reviews"
         }
@@ -45,13 +47,16 @@ extension Library.LoopStep {
         switch self {
         case .plan: return "Your templates hold what each kind of trip needs. A new trip gathers what its templates hold."
         case .pack: return "Tick each thing as it goes in. The count says when nothing is left."
+        case .onSite: return "While you are away: what you bought, what you left on site, a note on a thing that needs care, and packing to go home. It opens on the trip once the trip has begun."
         case .review: return "After the trip: tap what you did not use, add what you missed. This looks back at one trip."
         case .refine: return "When two or more reviews agree, Refine offers to take a thing off a template — or keep it for good. Your templates get better, and the next trip starts from them."
         }
     }
 }
 
-/// The picture: Plan → Pack, down to Review, back to Refine, and up to Plan again.
+/// The picture: Plan → Pack, down through On site to Review, back to Refine, and up
+/// to Plan again — still two boxes side by side, so it reads at the same size on an
+/// iPhone; the trip's three steps run down the right, the lists' two sit on the left.
 /// `here` marks where a trip stands.
 struct LoopPicture: View {
     var here: Library.LoopStep? = nil
@@ -62,12 +67,19 @@ struct LoopPicture: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) { box(.plan); LoopArrow(to: .right).frame(width: gap); box(.pack) }
                 .fixedSize(horizontal: false, vertical: true)
+            // On site in the middle of the right side; the long way back up the left,
+            // from Refine to Plan, is one arrow beside it.
             HStack(spacing: 0) {
                 LoopArrow(to: .up).frame(maxWidth: .infinity)
                 Color.clear.frame(width: gap)
-                LoopArrow(to: .down).frame(maxWidth: .infinity)
+                VStack(spacing: 0) {
+                    LoopArrow(to: .down).frame(height: 30)
+                    box(.onSite)
+                    LoopArrow(to: .down).frame(height: 30)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .frame(height: 30)
+            .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 0) { box(.refine); LoopArrow(to: .left).frame(width: gap); box(.review) }
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 16) {
@@ -149,7 +161,7 @@ private struct LoopArrow: View {
     }
 }
 
-/// The four steps and what each means — the picture's words.
+/// The five steps and what each means — the picture's words.
 struct LoopWords: View {
     @Environment(\.colorScheme) private var scheme
     var body: some View {
@@ -157,7 +169,7 @@ struct LoopWords: View {
             ForEach(Library.LoopStep.allCases, id: \.self) { step in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(step.name).font(.system(size: 16, weight: .heavy)).foregroundStyle(step.words(scheme))
-                        .frame(width: 64, alignment: .leading)
+                        .frame(width: 72, alignment: .leading)
                     Text(step.explained).font(.system(size: 16)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -170,8 +182,13 @@ struct LoopWords: View {
     }
 }
 
-/// The slim line on a trip, its review and Refine: the four steps, the one this
+/// The slim line on a trip, its review and Refine: the five steps, the one this
 /// is at filled in. A tap opens the whole picture.
+///
+/// Five names and their marks do not fit an iPhone's width (On site joined, 3 Oct
+/// 2026), so the strip slims down until it fits: every mark where there is room (the
+/// Mac); then the mark of the step it is at only; then smaller words. The names stay
+/// in every one — they are what is read.
 struct LoopDoor: View {
     let here: Library.LoopStep
     /// Its own name on each screen: a sheet can sit over another strip.
@@ -179,30 +196,17 @@ struct LoopDoor: View {
     @Environment(\.colorScheme) private var scheme
     @State private var open = false
 
+    private struct Fit { let marks: Bool; let size: CGFloat; let pad: CGFloat; let arrow: CGFloat; let space: CGFloat }
+    private static let fits = [Fit(marks: true, size: 14, pad: 8, arrow: 14, space: 3),
+                               Fit(marks: false, size: 14, pad: 7, arrow: 10, space: 2),
+                               Fit(marks: false, size: 13, pad: 5, arrow: 8, space: 1)]
+
     var body: some View {
         Button { open = true } label: {
-            HStack(spacing: 3) {
-                ForEach(Library.LoopStep.allCases, id: \.self) { step in
-                    if step != .plan {
-                        SVGPath.path("M9 7l5 5-5 5").stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                            .frame(width: 14, height: 24).foregroundStyle(Theme.muted)
-                    }
-                    let on = step == here
-                    HStack(spacing: 4) {
-                        SectionMark(section: step.tab, size: 13, weight: 1.9)
-                        Text(step.name)
-                            .font(.system(size: 14, weight: on ? .heavy : .semibold))
-                            .lineLimit(1).fixedSize()
-                    }
-                        .foregroundStyle(on ? Color.white : step.words(scheme))
-                        .padding(.horizontal, 8).frame(minHeight: 28)
-                        // A solid card under the others, so they stand out on the
-                        // green of an all-packed trip too (night mode, 2026-09-27).
-                        .background(Capsule().fill(on ? step.tint : Theme.card))
-                        .overlay(Capsule().stroke(step.tint.opacity(on ? 0 : 0.7), lineWidth: 1.2))
-                }
-                // No "round again" arrow after Refine: it read as a reload button (his
-                // screenshot, 2026-09-28). The loop itself is in the picture a tap opens.
+            ViewThatFits(in: .horizontal) {
+                strip(LoopDoor.fits[0])
+                strip(LoopDoor.fits[1])
+                strip(LoopDoor.fits[2])
             }
             .contentShape(Rectangle())
         }
@@ -211,6 +215,38 @@ struct LoopDoor: View {
         .accessibilityLabel("The loop")
         .accessibilityValue(here.name)
         .sheet(isPresented: $open) { LoopScreen(here: here) }
+    }
+
+    private func strip(_ fit: Fit) -> some View {
+        HStack(spacing: fit.space) {
+            ForEach(Library.LoopStep.allCases, id: \.self) { step in
+                if step != .plan {
+                    // The chevron is 5 wide, drawn in the middle of its room: a narrower
+                    // room with the full-size path ran into the next step (the iPhone
+                    // screenshot, 3 Oct 2026).
+                    let x = (fit.arrow - 5) / 2
+                    SVGPath.path("M\(x) 7l5 5-5 5").stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                        .frame(width: fit.arrow, height: 24).foregroundStyle(Theme.muted)
+                }
+                let on = step == here
+                HStack(spacing: 4) {
+                    // Slimmed down, the step it is at keeps its mark.
+                    if fit.marks || on { SectionMark(section: step.tab, size: 13, weight: 1.9) }
+                    Text(step.name)
+                        .font(.system(size: fit.size, weight: on ? .heavy : .semibold))
+                        .lineLimit(1).fixedSize()
+                }
+                    .foregroundStyle(on ? Color.white : step.words(scheme))
+                    .padding(.horizontal, fit.pad).frame(minHeight: 28)
+                    // A solid card under the others, so they stand out on the
+                    // green of an all-packed trip too (night mode, 2026-09-27).
+                    .background(Capsule().fill(on ? step.tint : Theme.card))
+                    .overlay(Capsule().stroke(step.tint.opacity(on ? 0 : 0.7), lineWidth: 1.2))
+            }
+            // No "round again" arrow after Refine: it read as a reload button (his
+            // screenshot, 2026-09-28). The loop itself is in the picture a tap opens.
+        }
+        .fixedSize()
     }
 }
 
@@ -252,7 +288,7 @@ struct LoopGuideCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("The loop").font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
-            Text("Every trip goes round the same four steps, and each time round your templates get a little better.")
+            Text("Every trip goes round the same five steps, and each time round your templates get a little better.")
                 .font(.system(size: 16)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             LoopPicture()

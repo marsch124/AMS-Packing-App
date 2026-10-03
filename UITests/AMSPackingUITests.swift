@@ -1082,7 +1082,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") }, "Drop must not delete the thing")
     }
 
-    /// His loop (2026-09-27): Plan → Pack → Review → Refine. How it works draws it;
+    /// His loop (2026-09-27): Plan → Pack → Review → Refine, with On site after Pack since
+    /// their field test (3 Oct 2026). How it works draws it;
     /// a trip, its review and Refine each show the step they are at, and a tap opens
     /// the whole picture with "You are here" on that step.
     func testTheLoopShowsWhereATripStands() {
@@ -1092,7 +1093,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
         XCTAssertTrue(appears(app, "guide-loop", timeout: 5), "How it works does not show the loop")
         shot(app, "loop-guide")
-        for n in 0..<4 { XCTAssertNotNil(find(app, "loop-step-\(n)"), "the loop has no step \(n + 1)") }
+        for n in 0..<5 { XCTAssertNotNil(find(app, "loop-step-\(n)"), "the loop has no step \(n + 1)") }
+        XCTAssertNil(find(app, "loop-step-5"), "the loop has more than five steps")
         // Your first real trip in 6 steps, at the very top (his idea 13, 2 Oct 2026).
         XCTAssertNotNil(find(app, "guide-quickstart"), "How it works has no first-trip guide")
         XCTAssertTrue((0..<6).allSatisfy { app.otherElements["quickstart-step-\($0)"].exists || app.staticTexts["quickstart-step-\($0)"].exists },
@@ -1100,11 +1102,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.otherElements["quickstart-step-6"].exists || app.staticTexts["quickstart-step-6"].exists, "more than six steps")
         // Each step says the tab where it is done (his test F.7).
         XCTAssertTrue(find(app, "loop-step-0")?.label.contains("on Home") == true, "Plan does not say Home")
-        XCTAssertTrue(find(app, "loop-step-3")?.label.contains("on Templates") == true, "Refine does not say Templates")
+        XCTAssertTrue(find(app, "loop-step-2")?.label.hasPrefix("On site") == true, "the third step is not On site")
+        XCTAssertTrue(find(app, "loop-step-2")?.label.contains("on Trips") == true, "On site does not say Trips")
+        XCTAssertTrue(find(app, "loop-step-4")?.label.contains("on Templates") == true, "Refine does not say Templates")
         // The Words chapter (F.7, I.2) — Kit among them.
         XCTAssertNotNil(find(app, "guide-words"), "How it works has no Words")
         XCTAssertTrue((0..<30).contains { self.words(app.staticTexts["word-\($0)"]) == "Kit" }, "Words does not say what Kit means")
-        XCTAssertFalse((0..<4).contains { self.isHere(app, $0) }, "the guide's picture says You are here")
+        XCTAssertFalse((0..<5).contains { self.isHere(app, $0) }, "the guide's picture says You are here")
+        if let refine = find(app, "loop-step-4") { bringIntoView(app, refine) }
+        shot(app, "loop-guide-picture")
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
 
@@ -1120,9 +1126,9 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "loop-trip")
         tap(app, id: "trip-loop")
         XCTAssertTrue(appears(app, "loop-screen", timeout: 5), "the strip did not open the picture")
-        let step = at == "Pack" ? 1 : 2
+        let step = at == "Pack" ? 1 : 3
         XCTAssertTrue(waitUntil { self.isHere(app, step) }, "the picture does not say You are here on \(at)")
-        XCTAssertFalse((0..<4).filter { $0 != step }.contains { self.isHere(app, $0) }, "You are here on more than one step")
+        XCTAssertFalse((0..<5).filter { $0 != step }.contains { self.isHere(app, $0) }, "You are here on more than one step")
         shot(app, "loop-picture")
         tap(app, id: "loop-done")
         XCTAssertTrue(disappears(app, "loop-screen", timeout: 5))
@@ -1555,7 +1561,7 @@ final class AMSPackingUITests: XCTestCase {
         type("Sun hat", into: app.textFields["trip-add-name"])
         tap(app, id: "trip-add-bought")
         hideKeyboard(app)
-        tap(app, id: "trip-wayhome")
+        openWayHome(app)
         XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open")
         XCTAssertTrue(app.buttons["wayhome-photo-1"].waitForExistence(timeout: 5), "the way home does not show both photos")
         XCTAssertFalse(app.buttons["wayhome-photo-2"].exists, "the way home shows a photo that was removed")
@@ -1612,7 +1618,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-add-bought")
         XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "Sandals did not go on: '\(words(progress))'")
         shot(app, "way-home-door")
-        tap(app, id: "trip-wayhome")
+        openWayHome(app)
         XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open")
         let home = app.staticTexts["wayhome-progress"]
         XCTAssertTrue(waitUntil { self.words(home) == "0/3" }, "the way home is not what went and what was bought: '\(words(home))'")
@@ -1623,8 +1629,10 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "way-home")
         tap(app, id: "wayhome-done")
         XCTAssertTrue(disappears(app, "wayhome-screen", timeout: 5))
+        tap(app, id: "onsite-done")
+        XCTAssertTrue(disappears(app, "onsite-screen", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "the way home touched the way-out ticks: '\(words(progress))'")
-        tap(app, id: "trip-wayhome")
+        openWayHome(app)
         XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-progress"]) == "1/2 · 1 used up" }, "the way home was not kept")
     }
@@ -1644,7 +1652,7 @@ final class AMSPackingUITests: XCTestCase {
         type("Sandals", into: app.textFields["trip-add-name"])
         tap(app, id: "trip-add-bought")
         XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "Sandals did not go on: '\(words(progress))'")
-        tap(app, id: "trip-wayhome")
+        openWayHome(app)
         XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open")
         let home = app.staticTexts["wayhome-progress"]
         XCTAssertTrue(waitUntil { self.words(home) == "0/3" }, "the way home is not the three lines: '\(words(home))'")
@@ -1705,7 +1713,8 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// "A button for each item to write maintenance in the comment" (their field test,
-    /// 3 Oct 2026): Note opens a field under the line; saved, it shows under the name and is kept.
+    /// 3 Oct 2026): Note opens a field under the line; saved, it shows under the name and is
+    /// kept — and it is one of On site's maintenance notes too.
     func testALineKeepsANoteForTheWayHome() {
         let app = launch()
         _ = openWayHomeOfThree(app)
@@ -1722,7 +1731,9 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "way-home-note")
         tap(app, id: "wayhome-done")
         XCTAssertTrue(disappears(app, "wayhome-screen", timeout: 5))
-        tap(app, id: "trip-wayhome")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["onsite-note-0-text"]) == "Zip broken" },
+                      "On site does not list the note: '\(words(app.staticTexts["onsite-note-0-text"]))'")
+        openWayHome(app)
         XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-line-0-notetext"]) == "Zip broken" }, "the note was not kept")
     }
@@ -1757,6 +1768,169 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Cancel did not close the thing")
         XCTAssertTrue(waitUntil { (search.value as? String ?? "").contains("pass") && app.buttons["wayhome-line-0"].exists },
                       "Cancel did not come back to the way home as it was")
+    }
+
+    /// Pack to go home lives on the trip's On site page (their field test, 3 Oct 2026):
+    /// the trip's On site door, then the page's Pack to go home. With On site already
+    /// open (back from the way home), straight to its button.
+    private func openWayHome(_ app: XCUIApplication) {
+        if find(app, "onsite-screen") == nil {
+            tap(app, id: "trip-onsite")
+            XCTAssertTrue(appears(app, "onsite-screen", timeout: 5), "the On site door did not open On site")
+        }
+        tap(app, id: "onsite-wayhome-open")
+    }
+
+    /// The sample trip, under way (`-uiTestingOnSite`: it began yesterday), open — with
+    /// Passport and Phone charger packed on the way out, so two things went.
+    private func openTripUnderWay(_ app: XCUIApplication) {
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "'\(words(progress))'")
+        app.buttons["trip-line-1"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" }, "'\(words(progress))'")
+    }
+
+    /// "Add a phase (in the graphics as well)… 'On site'. It should come immediately after
+    /// Pack" (their field test, 3 Oct 2026): a trip under way stands at On site — on the
+    /// strip under its name, which still fits the screen with five steps, and in the
+    /// picture a tap opens.
+    func testATripUnderWayStandsAtOnSite() {
+        let app = launch("-uiTestingOnSite")
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let strip = app.buttons["trip-loop"]
+        XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
+        XCTAssertTrue(waitUntil { (strip.value as? String) == "On site" }, "a trip under way is at '\(strip.value as? String ?? "")'")
+        let window = app.windows.firstMatch.frame
+        XCTAssertLessThanOrEqual(strip.frame.maxX, window.maxX + 1, "the five steps run off the screen: \(strip.frame) in \(window)")
+        XCTAssertGreaterThanOrEqual(strip.frame.minX, window.minX - 1, "the five steps run off the screen: \(strip.frame) in \(window)")
+        shot(app, "loop-trip-onsite")
+        tap(app, id: "trip-loop")
+        XCTAssertTrue(appears(app, "loop-screen", timeout: 5), "the strip did not open the picture")
+        XCTAssertTrue(waitUntil { self.isHere(app, 2) }, "the picture does not say You are here on On site")
+        XCTAssertFalse([0, 1, 3, 4].contains { self.isHere(app, $0) }, "You are here on more than one step")
+        shot(app, "loop-picture-onsite")
+        tap(app, id: "loop-done")
+        XCTAssertTrue(disappears(app, "loop-screen", timeout: 5))
+    }
+
+    /// On site holds all four (his choice, 3 Oct 2026): Bought on site, Left on site,
+    /// Maintenance notes, Pack to go home. Its door on a trip under way says what it holds;
+    /// a thing bought is added there, one that went is left on site and Undo brings it
+    /// back, and Pack to go home opens from the page.
+    func testOnSiteHoldsBoughtLeftNotesAndTheWayHome() {
+        let app = launch("-uiTestingOnSite")
+        openTripUnderWay(app)
+        let door = app.buttons["trip-onsite"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "a trip under way has no On site door")
+        XCTAssertTrue(waitUntil { (door.value as? String) == "home 0/2" }, "the door says '\(door.value as? String ?? "")'")
+        shot(app, "onsite-door")
+        tap(app, id: "trip-onsite")
+        XCTAssertTrue(appears(app, "onsite-screen", timeout: 5), "the door did not open On site")
+        for part in ["onsite-bought", "onsite-left", "onsite-notes", "onsite-wayhome"] {
+            XCTAssertNotNil(find(app, part), "On site has no \(part)")
+        }
+        let summary = app.staticTexts["onsite-summary"]
+        XCTAssertTrue(waitUntil { self.words(summary) == "home 0/2" }, "'\(words(summary))'")
+        shot(app, "onsite-empty")
+
+        // Bought on site: pressed too early it says what is missing; then it is on the list.
+        tap(app, id: "onsite-bought-add")
+        XCTAssertTrue(app.staticTexts["onsite-bought-needs"].waitForExistence(timeout: 5), "Bought on site with nothing typed said nothing")
+        type("Sun hat", into: app.textFields["onsite-bought-name"])
+        tap(app, id: "onsite-bought-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["onsite-bought-0"]) == "Sun hat" }, "what was bought is not listed")
+        XCTAssertTrue(waitUntil { self.words(summary) == "1 bought \u{00B7} home 0/3" }, "'\(words(summary))'")
+        hideKeyboard(app)
+
+        // Left on site: picked from what went, by a word; Undo brings it back.
+        XCTAssertTrue(app.staticTexts["onsite-left-none"].exists, "something is left before anything was")
+        tap(app, id: "onsite-leave")
+        let search = app.textFields["onsite-leave-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5), "Leave something here offers no search")
+        type("charg", into: search)
+        XCTAssertTrue(waitUntil { self.words(app.buttons["onsite-leave-pick-0"]).hasPrefix("Phone charger") && !app.buttons["onsite-leave-pick-1"].exists },
+                      "the search did not find the charger alone: '\(words(app.buttons["onsite-leave-pick-0"]))'")
+        shot(app, "onsite-leave-pick")
+        tap(app, id: "onsite-leave-pick-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["onsite-left-0"]) == "Phone charger" }, "the charger is not left on site")
+        XCTAssertFalse(app.textFields["onsite-leave-search"].exists, "the list to pick from stayed open")
+        XCTAssertTrue(waitUntil { self.words(summary) == "1 bought \u{00B7} 1 left \u{00B7} home 0/2" }, "'\(words(summary))'")
+        shot(app, "onsite-left")
+        tap(app, id: "onsite-left-0-undo")
+        XCTAssertTrue(app.staticTexts["onsite-left-none"].waitForExistence(timeout: 5), "Undo did not bring it back")
+        XCTAssertTrue(waitUntil { self.words(summary) == "1 bought \u{00B7} home 0/3" }, "'\(words(summary))'")
+
+        // Pack to go home, from the page: what went and what was bought.
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["onsite-wayhome-progress"]) == "0 of 3 packed" },
+                      "'\(words(app.staticTexts["onsite-wayhome-progress"]))'")
+        tap(app, id: "onsite-wayhome-open")
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open from On site")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-progress"]) == "0/3" }, "'\(words(app.staticTexts["wayhome-progress"]))'")
+        tap(app, id: "wayhome-line-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-progress"]) == "1/3" })
+        tap(app, id: "wayhome-done")
+        XCTAssertTrue(disappears(app, "wayhome-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["onsite-wayhome-progress"]) == "1 of 3 packed" },
+                      "On site did not follow the way home: '\(words(app.staticTexts["onsite-wayhome-progress"]))'")
+        tap(app, id: "onsite-done")
+        XCTAssertTrue(disappears(app, "onsite-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { (door.value as? String) == "1 bought \u{00B7} home 1/3" }, "the door says '\(door.value as? String ?? "")'")
+    }
+
+    /// A maintenance note made on site (his choice, 3 Oct 2026) stays with the trip AND
+    /// lands on the thing, dated, for Care: Care → Your things → the thing → Notes has it.
+    func testANoteMadeOnSiteReachesTheThing() {
+        let app = launch("-uiTestingOnSite")
+        openTripUnderWay(app)
+        tap(app, id: "trip-onsite")
+        XCTAssertTrue(appears(app, "onsite-screen", timeout: 5))
+        XCTAssertTrue(app.staticTexts["onsite-notes-none"].waitForExistence(timeout: 5), "a note before one was written")
+        tap(app, id: "onsite-note-add")
+        type("pass", into: app.textFields["onsite-note-search"])
+        XCTAssertTrue(waitUntil { self.words(app.buttons["onsite-note-pick-0"]).hasPrefix("Passport") }, "the search did not find the passport")
+        tap(app, id: "onsite-note-pick-0")
+        let field = app.textFields["onsite-note-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "picking a thing opens no note")
+        XCTAssertEqual(words(app.staticTexts["onsite-note-for"]), "Passport", "the note is not said to be for the passport")
+        // Save with nothing typed says what is missing.
+        tap(app, id: "onsite-note-save")
+        XCTAssertTrue(app.staticTexts["onsite-note-needs"].waitForExistence(timeout: 5), "an empty note was saved without a word")
+        type("Zip broken", into: field)
+        shot(app, "onsite-note-writing")
+        tap(app, id: "onsite-note-save")
+        XCTAssertTrue(waitUntil { !app.textFields["onsite-note-field"].exists }, "the note field stayed open")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["onsite-note-0"]) == "Passport" }, "the note is not listed")
+        XCTAssertEqual(words(app.staticTexts["onsite-note-0-text"]), "Zip broken")
+        XCTAssertTrue(words(app.staticTexts["onsite-summary"]).contains("1 note"), "'\(words(app.staticTexts["onsite-summary"]))'")
+        hideKeyboard(app)
+        shot(app, "onsite-note")
+        tap(app, id: "onsite-done")
+        XCTAssertTrue(disappears(app, "onsite-screen", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // On the thing, for Care.
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Passport", into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        let mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        let line = "On site \(c.day!) \(mo[c.month! - 1]) \(c.year!): Zip broken"
+        let notes = app.textFields["thing-notes"]
+        XCTAssertTrue(notes.waitForExistence(timeout: 5), "the thing has no Notes field")
+        XCTAssertTrue(waitUntil { (notes.value as? String ?? "").contains(line) },
+                      "the thing's notes do not hold '\(line)': '\(notes.value as? String ?? "")'")
+        bringIntoView(app, notes)
+        shot(app, "onsite-note-on-thing")
     }
 
     /// iCloud sync, made visible (his field test, 3 Oct 2026): Settings has the card;

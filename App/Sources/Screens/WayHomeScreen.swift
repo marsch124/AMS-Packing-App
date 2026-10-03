@@ -9,6 +9,7 @@ import PackingLibrary
 /// Their field test (Martin and Anna, 3 Oct 2026) added: a search, "1 used up" in the
 /// heading, Tick everything, Undo for Used up, a note per line for maintenance ("zip
 /// broken"), and Open — change the thing and "come straight back here when done".
+/// It opens from the trip's On site page, the step it belongs to (same field test).
 struct WayHomeScreen: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
@@ -251,7 +252,8 @@ struct WayHomeScreen: View {
     }
 
     /// "A button for each item to write maintenance in the comment" (their field test,
-    /// 3 Oct 2026): the note stays on this trip's line — the thing itself is untouched.
+    /// 3 Oct 2026). The note stays on this trip's line, and — since On site (same day,
+    /// his choice) — it also lands on the thing itself, dated, for Care.
     private func noteEditor(_ line: Item) -> some View {
         HStack(spacing: 8) {
             TextField("e.g. Zip broken", text: $noteDraft)
@@ -278,7 +280,7 @@ struct WayHomeScreen: View {
 
     private func saveNote(_ line: Item) {
         let text = noteDraft, id = line.id
-        model.change { _ = $0.setHomeNote(text, tripId: tripId, entryId: id) }
+        model.change { _ = $0.noteOnSite(text, tripId: tripId, entryId: id, today: Today.local) }
         writingNote = false
         noting = nil
     }

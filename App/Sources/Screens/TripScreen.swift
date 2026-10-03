@@ -34,8 +34,8 @@ struct TripScreen: View {
     @State private var newPlace = ""
     /// The thing opened from Check before you go.
     @State private var checking: CheckedThing?
-    /// Pack to go home is open (his idea 13).
-    @State private var goingHome = false
+    /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
+    @State private var onSite = false
     struct CheckedThing: Identifiable { let id: String }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
@@ -178,11 +178,10 @@ struct TripScreen: View {
                     .padding(.top, 10).padding(.horizontal, 16)
                 BagsCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, 6).padding(.horizontal, 16)
-                // Pack to go home (his idea 13): once the trip has begun, or something
-                // was bought on site.
-                if (isYMD(trip.startDate) && !jsStringLess(Today.local, trip.startDate))
-                    || !model.library.boughtOnSite(tripId: trip.id).isEmpty {
-                    wayHomeDoor(trip)
+                // On site (their field test, 3 Oct 2026; Pack to go home, his idea 13, is in
+                // it now): once the trip has begun, or something was bought on site.
+                if model.library.onSiteBegun(tripId: trip.id, today: Today.local) {
+                    onSiteDoor(trip)
                         .padding(.top, 6).padding(.horizontal, 16)
                 }
                 LazyVStack(alignment: .leading, spacing: 4) {
@@ -509,16 +508,18 @@ struct TripScreen: View {
         newName = ""
     }
 
-    private func wayHomeDoor(_ trip: TripEvent) -> some View {
-        let p = model.library.homeProgress(tripId: trip.id)
-        return Button { goingHome = true } label: {
+    /// The door to On site: what it holds in one line — "2 bought · 1 left · 3 notes ·
+    /// home 4/9" — short enough for an iPhone. The line is also the button's value:
+    /// the Mac folds a button's words into the button.
+    private func onSiteDoor(_ trip: TripEvent) -> some View {
+        let says = model.library.onSiteSummary(tripId: trip.id)
+        return Button { onSite = true } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Pack to go home").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
-                    // Short enough for one line on an iPhone: "what you bought on site" in
-                    // full ran off the card on the iPhone (Oct 2026).
-                    Text("\(p.done)/\(p.total) \u{00B7} what went, and bought on site")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
+                    Text("On site").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text(says)
+                        .font(.system(size: 14, weight: .medium).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .lineLimit(1).minimumScaleFactor(0.85)
                 }
                 Spacer()
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -530,8 +531,9 @@ struct TripScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityIdentifier("trip-wayhome")
-        .sheet(isPresented: $goingHome) { WayHomeScreen(tripId: trip.id).environmentObject(model) }
+        .accessibilityIdentifier("trip-onsite")
+        .accessibilityValue(says)
+        .sheet(isPresented: $onSite) { OnSiteScreen(tripId: trip.id).environmentObject(model) }
     }
 
     private func addBought() {
