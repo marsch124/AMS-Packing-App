@@ -65,7 +65,13 @@ enum SampleLibrary {
             lib.updateMembership(memId: row) { $0.section = lights.id }
         }
         // One trip, built from Hiking (and the base list, as a trip is).
-        var trip = newEvent(name: "Weekend in the hills", startDate: "2026-10-03", endDate: "2026-10-05")
+        // Always a month ahead, so the tests see a trip still to come whatever the date.
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        var trip = newEvent(name: "Weekend in the hills", startDate: day(30), endDate: day(32))
         trip.activities = lib.templates.filter { $0.name == "Hiking" }.map { $0.id }
         trip.entries = buildTotalEntries(trip, lib.resolvedTemplates())
         lib.trips = [trip]
