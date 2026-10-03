@@ -86,8 +86,9 @@ extension Library {
 
 extension Library {
     /// Every field that names a bag, from `old` to `new`: things' own bag, each
-    /// list row's exception, each list's default bag, and every trip line (its
-    /// bag and the three it remembers). "" as `new` leaves them with no bag.
+    /// list row's exception, each list's default bag, every trip line (its bag and
+    /// the three it remembers), and what each trip keeps about the bag — the scale
+    /// reading and the photos of it packed. "" as `new` leaves them with no bag.
     mutating func renameBagEverywhere(from old: String, to new: String) {
         let o = normName(old)
         guard !o.isEmpty else { return }
@@ -96,14 +97,72 @@ extension Library {
         for n in items.indices { swap(&items[n].container) }
         for n in memberships.indices { swap(&memberships[n].container) }
         for n in templates.indices { swap(&templates[n].defaultContainer) }
+        var dropped: [String] = []
         for t in trips.indices {
+            // Asked BEFORE the lines move: did the new name already carry things of
+            // its own on this trip? Then this is two bags made one, not a new name.
+            let joinsAnother = !new.isEmpty && trips[t].entries.contains { $0.container == new }
             for e in trips[t].entries.indices {
                 swap(&trips[t].entries[e].container)
                 swapOpt(&trips[t].entries[e].ovContainer)
                 swapOpt(&trips[t].entries[e].tplContainer)
                 swapOpt(&trips[t].entries[e].defContainer)
             }
+            dropped += moveBagNotes(trip: t, from: o, to: new, joinsAnother: joinsAnother)
         }
+        // A photo pushed out by the three-photo limit goes the way `removeBagPhoto`
+        // sends one: its record too, unless something else still shows it.
+        for id in dropped where !photoInUse(id) { photos.removeAll { $0.id == id } }
+    }
+
+    /// What one trip keeps about a bag BY ITS NAME — the luggage scale's reading
+    /// (`weighed`) and the photos of it packed (`bagPhotos`) — moved from every key
+    /// that is the old name (as `normName` sees it) to the new one. Until 3 Oct 2026
+    /// a rename left them under the old name: nothing was deleted, but the trip's
+    /// reading and photos silently vanished from view.
+    ///
+    /// Both are kept under the name the trip's Bags card shows (`bagLoads`), so a
+    /// line with NO bag is "Other" there — the photos of a bag deleted with "no bag"
+    /// follow its things to "Other" ("Not in a bag" on the way home).
+    ///
+    /// Photos: where the new name already has its own (two bags made one, by a rename
+    /// or by a delete that moves the things into another bag), its own come first,
+    /// then the moved ones, up to three — the most a bag shows. The ids beyond that
+    /// are returned, for the caller to let go. A photo is still a true picture of how
+    /// those things went in, wherever they are now said to be.
+    ///
+    /// The scale reading is different: it is what ONE bag weighed, with what was in it
+    /// then, and once kept it is the weight the bag is judged by (over its limit or
+    /// not). So it goes along only where the bag is simply renamed — the new name had
+    /// neither a reading nor things of its own on that trip (`joinsAnother`). Where
+    /// two bags became one, the bag kept keeps its own reading, or none: handed the
+    /// other bag's, it would be judged by a weight that never included its own things.
+    /// With "no bag" the reading goes too: "Other" is loose things, never weighed as one.
+    private mutating func moveBagNotes(trip t: Int, from o: String, to new: String, joinsAnother: Bool) -> [String] {
+        let target = new.isEmpty ? "Other" : new
+        func movable(_ keys: Dictionary<String, JSONValue>.Keys) -> [String] {
+            keys.filter { $0 != target && normName($0) == o }.sorted()
+        }
+        if var scale = trips[t].extra[WEIGHED_KEY]?.objectValue, !movable(scale.keys).isEmpty {
+            var goesAlong = !new.isEmpty && !joinsAnother && (scale[target]?.finiteNumber ?? 0) <= 0
+            for key in movable(scale.keys) {
+                let reading = scale.removeValue(forKey: key)
+                if goesAlong, let g = reading?.finiteNumber, g > 0 { scale[target] = reading; goesAlong = false }
+            }
+            trips[t].extra[WEIGHED_KEY] = scale.isEmpty ? nil : .object(scale)
+        }
+        var dropped: [String] = []
+        if var shots = trips[t].extra[BAG_PHOTOS_KEY]?.objectValue, !movable(shots.keys).isEmpty {
+            var ids = Library.bagPhotoIds(shots[target])
+            for key in movable(shots.keys) {
+                for id in Library.bagPhotoIds(shots.removeValue(forKey: key)) where !ids.contains(id) {
+                    if ids.count < BAG_PHOTOS_MAX { ids.append(id) } else { dropped.append(id) }
+                }
+            }
+            shots[target] = ids.isEmpty ? nil : .array(ids.map(JSONValue.string))
+            trips[t].extra[BAG_PHOTOS_KEY] = shots.isEmpty ? nil : .object(shots)
+        }
+        return dropped
     }
 
     /// Is anything packed in this bag — a thing's own bag, a list row's or a list's
@@ -132,6 +191,10 @@ extension Library {
 
     /// `completely`: also off every list, and the thing is gone (his choice each
     /// time, 2026-09-27 — "I thought it would just be a deleted bag").
+    /// What each trip kept about the bag goes where its things go (see `moveBagNotes`):
+    /// its photos to the bag he picks, or with no bag to the things left without one.
+    /// Its scale reading goes along only to a bag that had nothing of its own on that
+    /// trip; otherwise that bag keeps its own reading, or none.
     @discardableResult
     public mutating func deleteBag(id: String, moveTo: String, completely: Bool = false) -> Bool {
         guard let list = bagList, let bag = bags().first(where: { $0.id == id }) else { return false }

@@ -175,3 +175,139 @@ final class BagEditsTests: XCTestCase {
         XCTAssertGreaterThan(facts.heaviest?.grams ?? 0, 0)
     }
 }
+
+/// What a trip keeps about a bag BY ITS NAME — the luggage scale's reading and the
+/// photos of it packed. Until 3 Oct 2026 a rename or a delete left them under the old
+/// name: nothing deleted, but the trip's reading and photos silently gone from view.
+final class BagNotesTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze(at: "2026-10-03T12:00:00.000Z") }
+    override func tearDown() { PackingEnv.reset() }
+
+    /// Two bags, and two trips packing a thing into each.
+    private func library() -> (Library, duffel: String, swim: String, trips: [String]) {
+        var lib = Library()
+        let duffel = lib.addBag(name: "Duffel bag")!.id
+        let swim = lib.addBag(name: "Swim bag")!.id
+        lib.saveTemplate(newList(name: "Base", role: "base"))
+        let base = lib.templates.first { $0.role == "base" }!.id
+        for (name, bag) in [("Towel", "Duffel bag"), ("Goggles", "Swim bag")] {
+            let t = lib.addThing(name: name)!
+            _ = lib.updateThing(id: t.id) { $0.container = bag; $0.weight = 300 }
+            _ = lib.setOnTemplate(itemId: t.id, templateId: base, on: true)
+        }
+        var trips: [String] = []
+        for (name, day) in [("Spring", "2026-04-01"), ("Autumn", "2026-11-01")] {
+            trips.append(lib.createTrip(newEvent(name: name, startDate: day, endDate: day)).id)
+        }
+        return (lib, duffel, swim, trips)
+    }
+
+    private func trip(_ lib: Library, _ id: String) -> TripEvent { lib.trips.first { $0.id == id }! }
+
+    func testARenamedBagTakesItsScaleReadingAndPhotosAlongOnEveryTrip() {
+        var (lib, duffel, _, trips) = library()
+        var shots: [String: [String]] = [:]
+        for (k, t) in trips.enumerated() {
+            _ = lib.setWeighed(tripId: t, bag: "Duffel bag", grams: Double(9000 + k * 1000))
+            shots[t] = (1...2).compactMap { n in lib.addBagPhoto(tripId: t, bag: "Duffel bag", jpeg: Data([UInt8(k), UInt8(n)]))?.id }
+        }
+        XCTAssertTrue(lib.renameThing(id: duffel, to: "Big duffel"))
+        for (k, t) in trips.enumerated() {
+            XCTAssertEqual(lib.weighed(tripId: t), ["Big duffel": Double(9000 + k * 1000)],
+                           "the scale reading stayed under the old name")
+            XCTAssertEqual(lib.weighedBags(tripId: t).first { $0.load.container == "Big duffel" }?.scaleGrams,
+                           Double(9000 + k * 1000), "the trip's Bags card lost the reading")
+            XCTAssertEqual(lib.bagPhotoIds(tripId: t, bag: "Big duffel"), shots[t],
+                           "the photos stayed under the old name, or lost their order")
+            XCTAssertNil(trip(lib, t).extra[BAG_PHOTOS_KEY]?.objectValue?["Duffel bag"], "photos left under the old name")
+        }
+        XCTAssertEqual(lib.photos.count, 4, "a photo record was lost")
+        XCTAssertEqual(Library(records: lib.records()).bagPhotos(tripId: trips[0], bag: "Big duffel").map(\.id), shots[trips[0]],
+                       "the stored records lost the moved photos")
+    }
+
+    /// 0.52 and 0.53 kept a bag's one photo as a plain id, not a list; and a trip may
+    /// hold the name spelled another way. Both are this bag, and both move.
+    func testAPhotoKeptByAnOlderVersionAndAnotherSpellingFollowTheRename() {
+        var (lib, duffel, _, trips) = library()
+        lib.photos.append(PhotoRecord(id: "old-photo", data: "data:image/jpeg;base64,AQID", createdAt: "2026-04-01T12:00:00.000Z"))
+        let n = lib.trips.firstIndex { $0.id == trips[0] }!
+        lib.trips[n].extra[BAG_PHOTOS_KEY] = .object(["duffel  BAG ": .string("old-photo")])
+        lib.trips[n].extra[WEIGHED_KEY] = .object(["duffel  BAG ": .number(8000)])
+        XCTAssertTrue(lib.renameThing(id: duffel, to: "Big duffel"))
+        XCTAssertEqual(lib.bagPhotoIds(tripId: trips[0], bag: "Big duffel"), ["old-photo"], "the older photo was left behind")
+        XCTAssertEqual(trip(lib, trips[0]).extra[BAG_PHOTOS_KEY], .object(["Big duffel": .array([.string("old-photo")])]),
+                       "not stored as the list 0.54 writes, or something left under the old name")
+        XCTAssertEqual(lib.weighed(tripId: trips[0]), ["Big duffel": 8000], "a reading under another spelling was left behind")
+        XCTAssertTrue(lib.photos.contains { $0.id == "old-photo" }, "the older photo's record was lost")
+    }
+
+    /// The new name already has its own on a trip (here: kept from a bag that once had
+    /// that name). Its own reading stays; photos: its own first, then the moved ones,
+    /// up to three. The one pushed out goes — unless something else still shows it.
+    func testARenameOntoANameTheTripAlreadyKeepsMergesThem() {
+        var (lib, duffel, _, trips) = library()
+        let t = trips[1]
+        _ = lib.setWeighed(tripId: t, bag: "Big duffel", grams: 15000)
+        let own = (1...2).compactMap { k in lib.addBagPhoto(tripId: t, bag: "Big duffel", jpeg: Data([9, UInt8(k)]))?.id }
+        _ = lib.setWeighed(tripId: t, bag: "Duffel bag", grams: 4000)
+        let moved = (1...3).compactMap { k in lib.addBagPhoto(tripId: t, bag: "Duffel bag", jpeg: Data([8, UInt8(k)]))?.id }
+        // The third moved photo is also shown on the other trip's Swim bag.
+        let other = lib.trips.firstIndex { $0.id == trips[0] }!
+        lib.trips[other].extra[BAG_PHOTOS_KEY] = .object(["Swim bag": .array([.string(moved[2])])])
+
+        XCTAssertTrue(lib.renameThing(id: duffel, to: "Big duffel"))
+        XCTAssertEqual(lib.weighed(tripId: t), ["Big duffel": 15000], "the new name's own reading was replaced")
+        XCTAssertEqual(lib.bagPhotoIds(tripId: t, bag: "Big duffel"), own + [moved[0]],
+                       "not its own first, then the moved ones, up to three")
+        XCTAssertNil(trip(lib, t).extra[BAG_PHOTOS_KEY]?.objectValue?["Duffel bag"], "photos left under the old name")
+        XCTAssertFalse(lib.photos.contains { $0.id == moved[1] }, "a photo nothing shows any more was kept")
+        XCTAssertTrue(lib.photos.contains { $0.id == moved[2] }, "a photo another bag still shows was deleted")
+    }
+
+    /// A deleted bag's things move to the bag he picks — and so do its photos. Its
+    /// scale reading goes along only where that bag had nothing of its own on the
+    /// trip: a reading is what ONE bag weighed, and the bag kept is judged by it.
+    func testADeletedBagTakesItsPhotosAndReadingToTheBagHePicks() {
+        var (lib, _, swim, trips) = library()
+        // Spring: both bags went, both weighed. Autumn: only the Swim bag went.
+        _ = lib.setWeighed(tripId: trips[0], bag: "Duffel bag", grams: 12000)
+        let duffelShot = lib.addBagPhoto(tripId: trips[0], bag: "Duffel bag", jpeg: Data([1]))!.id
+        _ = lib.setWeighed(tripId: trips[0], bag: "Swim bag", grams: 2500)
+        let swimShot = lib.addBagPhoto(tripId: trips[0], bag: "Swim bag", jpeg: Data([2]))!.id
+        let autumn = lib.trips.firstIndex { $0.id == trips[1] }!
+        lib.trips[autumn].entries.removeAll { $0.container == "Duffel bag" }
+        _ = lib.setWeighed(tripId: trips[1], bag: "Swim bag", grams: 2600)
+
+        XCTAssertTrue(lib.deleteBag(id: swim, moveTo: "Duffel bag"))
+        XCTAssertEqual(lib.weighed(tripId: trips[0]), ["Duffel bag": 12000], "the bag he picked lost its own reading")
+        XCTAssertEqual(lib.bagPhotoIds(tripId: trips[0], bag: "Duffel bag"), [duffelShot, swimShot],
+                       "the deleted bag's photo did not follow its things")
+        XCTAssertEqual(lib.weighed(tripId: trips[1]), ["Duffel bag": 2600],
+                       "where only the deleted bag went, its reading is the reading of what it held")
+
+        // And a Duffel bag that went on Spring unweighed does not take the Swim bag's reading.
+        var (again, _, swim2, trips2) = library()
+        _ = again.setWeighed(tripId: trips2[0], bag: "Swim bag", grams: 2500)
+        XCTAssertTrue(again.deleteBag(id: swim2, moveTo: "Duffel bag"))
+        XCTAssertTrue(again.weighed(tripId: trips2[0]).isEmpty,
+                      "the Duffel bag is judged by a reading that never included its own things")
+        XCTAssertEqual(again.weighedBags(tripId: trips2[0]).first { $0.load.container == "Duffel bag" }?.grams, 600,
+                       "unweighed, its things' sum")
+    }
+
+    /// Deleted with NO bag: its things show under "Other" ("Not in a bag" on the way
+    /// home), and its photos go with them. Its reading goes — loose things were never
+    /// one bag on the scale.
+    func testABagDeletedWithNoBagLeavesItsPhotosWithItsThingsAndDropsItsReading() {
+        var (lib, _, swim, trips) = library()
+        _ = lib.setWeighed(tripId: trips[0], bag: "Swim bag", grams: 2500)
+        let shot = lib.addBagPhoto(tripId: trips[0], bag: "Swim bag", jpeg: Data([3]))!.id
+        XCTAssertTrue(lib.deleteBag(id: swim, moveTo: ""))
+        XCTAssertTrue(lib.weighedBags(tripId: trips[0]).contains { $0.load.container == "Other" }, "the things are not under Other")
+        XCTAssertEqual(lib.bagPhotoIds(tripId: trips[0], bag: "Other"), [shot], "the photo did not go with its things")
+        XCTAssertTrue(lib.photos.contains { $0.id == shot }, "the photo's record was lost")
+        XCTAssertTrue(lib.weighed(tripId: trips[0]).isEmpty, "a bag that is gone still has a scale reading")
+        XCTAssertNil(trip(lib, trips[0]).extra[WEIGHED_KEY], "an empty record is left on the trip")
+    }
+}

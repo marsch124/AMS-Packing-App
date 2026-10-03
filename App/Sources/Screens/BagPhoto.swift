@@ -47,9 +47,10 @@ enum JPEG {
     }
 }
 
-/// A photo of the packed bag — his pre-trip idea 11 (2 Oct 2026): take one (iPhone)
-/// or choose one, see it large, replace or remove it. Kept with the trip, so the way
-/// home can be packed from it.
+/// Photos of the packed bag — his pre-trip idea 11 (2 Oct 2026): take one (iPhone)
+/// or choose one, see it large, remove it. Kept with the trip, so the way home can be
+/// packed from them. Up to three since the field test (3 Oct 2026): "maybe up to
+/// three, because sometimes you would like a photo from different angles."
 struct BagPhotoRow: View {
     let tripId: String
     let bag: String
@@ -57,45 +58,62 @@ struct BagPhotoRow: View {
     @EnvironmentObject var model: LibraryModel
     @State private var picked: PhotosPickerItem?
     @State private var camera = false
-    @State private var large = false
+    @State private var large: Shown?
 
     var body: some View {
-        let photo = model.library.bagPhoto(tripId: tripId, bag: bag)
-        let image = photo.flatMap { JPEG.image(dataURL: $0.data) }
-        HStack(spacing: 10) {
-            if let image {
-                Button { large = true } label: {
-                    Image(decorative: image, scale: 1).resizable().scaledToFill()
-                        .frame(width: 56, height: 56).clipShape(RoundedRectangle(cornerRadius: 8))
+        let shots = model.library.bagPhotos(tripId: tripId, bag: bag).compactMap { p in
+            JPEG.image(dataURL: p.data).map { Shot(id: p.id, image: $0) }
+        }
+        // As stored: a photo still on its way from the other device takes its place too.
+        let full = model.library.bagPhotoIds(tripId: tripId, bag: bag).count >= BAG_PHOTOS_MAX
+        VStack(alignment: .leading, spacing: 10) {
+            if !shots.isEmpty {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(Array(shots.enumerated()), id: \.element.id) { k, shot in
+                        VStack(spacing: 2) {
+                            Button { large = Shown(start: k) } label: {
+                                Image(decorative: shot.image, scale: 1).resizable().scaledToFill()
+                                    .frame(width: 80, height: 80).clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("bag-\(n)-photo-thumb-\(k)")
+                            .accessibilityLabel("Photo \(k + 1) of the packed bag")
+                            Button("Remove") {
+                                let t = tripId, b = bag, id = shot.id
+                                model.change { _ = $0.removeBagPhoto(tripId: t, bag: b, photoId: id) }
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .frame(minWidth: 80, minHeight: 34).contentShape(Rectangle())
+                            .accessibilityIdentifier("bag-\(n)-photo-remove-\(k)")
+                        }
+                    }
                 }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("bag-\(n)-photo-thumb")
-                .accessibilityLabel("The photo of the packed bag")
-                .sheet(isPresented: $large) { BigPhoto(image: image) }
+                .sheet(item: $large) { BigPhoto(images: shots.map(\.image), start: $0.start) }
             }
-            if AMSPackingApp.testing {
-                pill(image == nil ? "Photo of the packed bag" : "New photo", id: "bag-\(n)-photo") { keep(JPEG.sample()) }
+            if full {
+                // No fourth: one has to go first, and it says so rather than hiding the way silently.
+                Text("Three photos \u{2014} remove one to add another")
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("bag-\(n)-photo-full")
             } else {
-                #if os(iOS)
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    pill(image == nil ? "Take a photo" : "New photo", id: "bag-\(n)-photo") { camera = true }
+                HStack(spacing: 10) {
+                    if AMSPackingApp.testing {
+                        pill(shots.isEmpty ? "Photo of the packed bag" : "Another photo", id: "bag-\(n)-photo") { keep(JPEG.sample()) }
+                    } else {
+                        #if os(iOS)
+                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                            pill(shots.isEmpty ? "Take a photo" : "Take another", id: "bag-\(n)-photo") { camera = true }
+                        }
+                        #endif
+                        PhotosPicker(selection: $picked, matching: .images) {
+                            pillLabel(shots.isEmpty ? "Choose a photo" : "Choose another")
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("bag-\(n)-photo-pick")
+                    }
                 }
-                #endif
-                PhotosPicker(selection: $picked, matching: .images) {
-                    pillLabel(image == nil ? "Choose a photo" : "Choose another")
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("bag-\(n)-photo-pick")
-            }
-            Spacer(minLength: 4)
-            if image != nil {
-                Button("Remove") {
-                    let t = tripId, b = bag
-                    model.change { _ = $0.setBagPhoto(tripId: t, bag: b, jpeg: nil) }
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
-                .accessibilityIdentifier("bag-\(n)-photo-remove")
             }
         }
         .onChange(of: picked) { _, item in
@@ -116,10 +134,13 @@ struct BagPhotoRow: View {
         #endif
     }
 
+    private struct Shot { let id: String; let image: CGImage }
+    private struct Shown: Identifiable { let start: Int; var id: Int { start } }
+
     private func keep(_ jpeg: Data?) {
         guard let jpeg else { return }
         let t = tripId, b = bag
-        model.change { _ = $0.setBagPhoto(tripId: t, bag: b, jpeg: jpeg) }
+        model.change { _ = $0.addBagPhoto(tripId: t, bag: b, jpeg: jpeg) }
     }
 
     private func pill(_ title: String, id: String, action: @escaping () -> Void) -> some View {
@@ -136,29 +157,70 @@ struct BagPhotoRow: View {
     }
 }
 
-/// The photo, as large as the screen allows.
+/// The photos, as large as the screen allows — one at a time, Next (or a swipe on the
+/// iPhone) for the next angle. A caption, when given, says whose photo it is (the way
+/// home shows every bag's).
 struct BigPhoto: View {
-    let image: CGImage
+    let images: [CGImage]
+    var captions: [String] = []
+    @State private var at: Int
     @Environment(\.dismiss) private var dismiss
+
+    init(images: [CGImage], captions: [String] = [], start: Int = 0) {
+        self.images = images
+        self.captions = captions
+        _at = State(initialValue: min(max(0, start), max(0, images.count - 1)))
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if captions.indices.contains(at), !captions[at].isEmpty {
+                        Text(captions[at]).font(.system(size: 17, weight: .heavy)).foregroundStyle(AppSection.events.color)
+                            .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("bag-photo-caption")
+                    }
+                    if images.count > 1 {
+                        Text("\(at + 1) of \(images.count)")
+                            .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                            .accessibilityIdentifier("bag-photo-count")
+                    }
+                }
                 Spacer()
+                if images.count > 1 {
+                    Button("Next") { step(1) }
+                        .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: false)).focusEffectDisabled()
+                        .font(.system(size: 17, weight: .bold))
+                        .accessibilityIdentifier("bag-photo-next")
+                }
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold))
                     .accessibilityIdentifier("bag-photo-done")
             }
             .padding(16)
-            Image(decorative: image, scale: 1).resizable().scaledToFit()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 8).padding(.bottom, 16)
+            if images.indices.contains(at) {
+                Image(decorative: images[at], scale: 1).resizable().scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 8).padding(.bottom, 16)
+                    .contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 30).onEnded { drag in
+                        guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                        step(drag.translation.width < 0 ? 1 : -1)
+                    })
+            }
         }
         .background(Theme.bg.ignoresSafeArea())
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 600)
         #endif
+    }
+
+    /// Round and round: after the last comes the first again.
+    private func step(_ by: Int) {
+        guard images.count > 1 else { return }
+        at = (at + by + images.count) % images.count
     }
 }
 

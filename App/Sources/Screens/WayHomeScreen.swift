@@ -4,7 +4,7 @@ import PackingLibrary
 
 /// Pack to go home — his pre-trip idea 13 (2 Oct 2026). What went, and what was
 /// bought on site, bag by bag, with ticks of its own; Used up takes a thing off. The
-/// photos of the packed bags sit at the top, to repack from.
+/// photos of the packed bags (all of each bag's, up to three) sit at the top, to repack from.
 ///
 /// Their field test (Martin and Anna, 3 Oct 2026) added: a search, "1 used up" in the
 /// heading, Tick everything, Undo for Used up, a note per line for maintenance ("zip
@@ -25,10 +25,10 @@ struct WayHomeScreen: View {
     @FocusState private var writingNote: Bool
 
     private enum Opened: Identifiable {
-        case photo(CGImage), thing(String)
+        case photos(Int), thing(String)
         var id: String {
             switch self {
-            case .photo(let image): return "photo:\(ObjectIdentifier(image).hashValue)"
+            case .photos(let start): return "photos:\(start)"
             case .thing(let id): return "thing:\(id)"
             }
         }
@@ -44,6 +44,7 @@ struct WayHomeScreen: View {
         // line to a test (and to the eye) whatever is typed.
         let number = Dictionary(lines.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
         let bags = Self.bags(shown)
+        let shots = bagShots(Self.bags(lines))
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -66,7 +67,7 @@ struct WayHomeScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
                     // The photos are for repacking the whole of a bag; a search is after one thing.
-                    if needle.isEmpty { photos(Self.bags(lines)) }
+                    if needle.isEmpty { photos(shots) }
                     if lines.isEmpty {
                         Text("Nothing to bring home yet: tick what you pack on the way out, and add what you buy on site with Bought on site.")
                             .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
@@ -100,7 +101,7 @@ struct WayHomeScreen: View {
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: $opened) { what in
             switch what {
-            case .photo(let image): BigPhoto(image: image)
+            case .photos(let start): BigPhoto(images: shots.map(\.image), captions: shots.map(\.bag), start: start)
             case .thing(let id): ThingEditor(itemId: id).environmentObject(model)
             }
         }
@@ -142,19 +143,27 @@ struct WayHomeScreen: View {
     }
 
     /// The packed bags' photos, to repack from.
-    @ViewBuilder private func photos(_ bags: [String]) -> some View {
-        let shots = bags.compactMap { bag in
-            model.library.bagPhoto(tripId: tripId, bag: bag).flatMap { JPEG.image(dataURL: $0.data) }.map { (bag, $0) }
+    private struct Shot { let bag: String; let image: CGImage }
+
+    /// Every photo of every bag, bag by bag, each bag's in the order taken.
+    private func bagShots(_ bags: [String]) -> [Shot] {
+        bags.flatMap { bag in
+            model.library.bagPhotos(tripId: tripId, bag: bag).compactMap { JPEG.image(dataURL: $0.data) }
+                .map { Shot(bag: bag.isEmpty || bag == "Other" ? "Not in a bag" : bag, image: $0) }
         }
+    }
+
+    /// The packed bags' photos, to repack from.
+    @ViewBuilder private func photos(_ shots: [Shot]) -> some View {
         if !shots.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Array(shots.enumerated()), id: \.offset) { n, shot in
-                        Button { opened = .photo(shot.1) } label: {
+                        Button { opened = .photos(n) } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Image(decorative: shot.1, scale: 1).resizable().scaledToFill()
+                                Image(decorative: shot.image, scale: 1).resizable().scaledToFill()
                                     .frame(width: 120, height: 90).clipShape(RoundedRectangle(cornerRadius: 10))
-                                Text(shot.0).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
+                                Text(shot.bag).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
                             }
                             .frame(width: 120)
                         }
