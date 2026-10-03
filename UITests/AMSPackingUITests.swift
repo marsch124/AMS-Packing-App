@@ -1426,6 +1426,8 @@ final class AMSPackingUITests: XCTestCase {
     /// The luggage scale (his idea 8, 2 Oct 2026): tap a bag on the trip, type what the
     /// scale says; that is the weight it is judged by — over its max, the card says so —
     /// and Clear takes it away again. (The sample's carry-on: 8 kg max, 2 kg of things.)
+    /// The one bar (his and Anna's choice, 3 Oct 2026) says in words what its colour
+    /// says: blue "fine", orange "close" from nine tenths, red "over".
     func testABagIsWeighedOnTheLuggageScale() {
         let app = launch()
         tab(app, "events")
@@ -1434,14 +1436,25 @@ final class AMSPackingUITests: XCTestCase {
         let bag = app.buttons["bag-0"]
         XCTAssertTrue(bag.waitForExistence(timeout: 5), "no bag on the trip")
         XCTAssertFalse(app.staticTexts["bags-over"].exists, "the sample's carry-on starts over its max")
+        let gauge = { (bag.value as? String) ?? "" }
+        XCTAssertTrue(waitUntil { gauge() == "fine, 25% of its max" }, "2 kg in an 8 kg carry-on: '\(gauge())'")
+        shot(app, "bag-bar-fine")
         tap(app, id: "bag-0")
         let field = app.textFields["bag-0-scale"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "tapping a bag does not ask what the scale says")
-        type("9.5", into: field)
+        type("7.5", into: field)
+        tap(app, id: "bag-0-scale-save")
+        XCTAssertTrue(waitUntil { gauge() == "close, 94% of its max" }, "7.5 kg in an 8 kg carry-on: '\(gauge())'")
+        XCTAssertFalse(app.staticTexts["bags-over"].exists, "7.5 kg in an 8 kg carry-on is called over")
+        shot(app, "bag-bar-close")
+        tap(app, id: "bag-0")
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the scale field does not come back")
+        replace("9.5", in: field)
         tap(app, id: "bag-0-scale-save")
         XCTAssertTrue(waitUntil { self.words(app.buttons["bag-0"]).contains("9.5 kg weighed") },
                       "the scale's 9.5 kg is not the bag's weight: '\(words(app.buttons["bag-0"]))'")
         XCTAssertTrue(app.staticTexts["bags-over"].waitForExistence(timeout: 5), "9.5 kg in an 8 kg carry-on is not over")
+        XCTAssertTrue(waitUntil { gauge() == "over, 119% of its max" }, "9.5 kg in an 8 kg carry-on: '\(gauge())'")
         shot(app, "bag-weighed")
         tap(app, id: "bag-0")
         tap(app, id: "bag-0-scale-clear")

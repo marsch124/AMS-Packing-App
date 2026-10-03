@@ -10,7 +10,11 @@ import PackingLibrary
 /// have no volume of their own.
 ///
 /// Colour is the message, as he asked of every indicator: a bag over its limit is
-/// red; one near it is the Care orange; the rest are the trip's green.
+/// red; one near it is the Care orange; the rest are blue.
+///
+/// One bar per bag, thick and blue on grey — his and Anna's choice, 3 Oct 2026 ("we
+/// would like one bar"): the grey is what the bag may carry, the blue what is in it.
+/// The thin green bar before was easy to miss.
 ///
 /// The luggage scale (his idea 8, 2 Oct 2026): tap a bag and type what the scale
 /// says. From then on that is the weight the bag is judged by — the bag itself and
@@ -61,6 +65,9 @@ struct BagsCard: View {
                         Button { open(bag) } label: { row(bag) }
                             .buttonStyle(.plain).focusEffectDisabled()
                             .accessibilityIdentifier("bag-\(n)")
+                            // What the bar shows, in words: the colour cannot be read
+                            // any other way (VoiceOver, and the tests).
+                            .accessibilityValue(BagsCard.gauge(bag))
                         if weighing == bag.load.container {
                             scaleEditor(bag, n)
                             BagCabinRow(bag: bag.load.container, n: n).environmentObject(model)
@@ -82,7 +89,7 @@ struct BagsCard: View {
     /// What the colours mean — the same three words everywhere a bag is weighed.
     private var key: some View {
         VStack(alignment: .leading, spacing: 6) {
-            keyLine(AppSection.events.color, "Green", "well within its max")
+            keyLine(AppSection.home.color, "Blue", "well within its max")
             keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
             keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
             Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag for the luggage scale, and a photo of it packed.")
@@ -125,10 +132,11 @@ struct BagsCard: View {
                 GeometryReader { space in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Theme.line)
-                        Capsule().fill(tint).frame(width: max(6, part * space.size.width))
+                        Capsule().fill(tint).frame(width: max(16, part * space.size.width))
                     }
                 }
-                .frame(height: 8)
+                .frame(height: 16)
+                .padding(.vertical, 2)
             }
             if bag.scaleGrams != nil {
                 Text("The things in it add up to \(BagsCard.kilos(bag.load.grams))")
@@ -189,11 +197,27 @@ struct BagsCard: View {
         typing = false
     }
 
-    /// Red when over, orange from nine tenths, green below.
+    /// Red when over, orange from nine tenths, blue below.
     static func tint(_ bag: WeighedBag) -> Color {
-        if bag.over { return AppSection.actions.color }
-        if bag.load.limitKg > 0, bag.grams / 1000 >= bag.load.limitKg * 0.9 { return AppSection.care.color }
-        return AppSection.events.color
+        switch state(bag) {
+        case "over": return AppSection.actions.color
+        case "close": return AppSection.care.color
+        default: return AppSection.home.color
+        }
+    }
+
+    /// "fine", "close" (nine tenths of its max or more) or "over" — the bar's colour.
+    static func state(_ bag: WeighedBag) -> String {
+        if bag.over { return "over" }
+        if bag.load.limitKg > 0, bag.grams / 1000 >= bag.load.limitKg * 0.9 { return "close" }
+        return "fine"
+    }
+
+    /// The bar in words: "fine, 25% of its max"; "no max" when it has none.
+    static func gauge(_ bag: WeighedBag) -> String {
+        let limit = bag.load.limitKg
+        guard limit > 0 else { return "no max" }
+        return "\(state(bag)), \(Int((bag.grams / 10 / limit).rounded()))% of its max"
     }
 
     static func kilos(_ grams: Double) -> String {
