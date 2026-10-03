@@ -12,6 +12,8 @@ struct ThingsScreen: View {
     @State private var query = ""
     @State private var noListOnly = false
     @State private var newName = ""
+    /// What New was missing, said under the field (never a grey button).
+    @State private var newNeeds = ""
     @State private var editing: String?
     /// What he added on this visit, newest first — his and Anna's field test (3 Oct
     /// 2026): "When you add an item, it needs to be on top of the list. Now it is just
@@ -99,17 +101,11 @@ struct ThingsScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("thing-new-name")
-                Button { add() } label: {
-                    Text("New").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.care.color))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(newName).isEmpty)
-                .accessibilityIdentifier("thing-new")
+                Button { add() } label: { FieldButtonLabel(title: "New", tint: AppSection.care.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("thing-new")
             }
+            .needsLine($newNeeds, typed: newName, id: "thing-new-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
@@ -157,7 +153,7 @@ struct ThingsScreen: View {
 
     private func add() {
         let name = newName
-        guard !jsTrim(name).isEmpty else { return }
+        guard !jsTrim(name).isEmpty else { newNeeds = "Type a name first."; return }
         var made: Item?
         model.change { made = $0.addThing(name: name) }
         newName = ""
@@ -322,11 +318,11 @@ struct ThingEditor: View {
         }
     }
 
-                // Pill-sized, under a heading that is bigger (field test, 3 Oct 2026).
     /// A passport, an ID card, sun cream, medicine: the trip warns before it runs out.
     @ViewBuilder private var validUntil: some View {
         VStack(alignment: .leading, spacing: 8) {
             if draft.expiry.isEmpty {
+                // Pill-sized, under a heading that is bigger (field test, 3 Oct 2026).
                 Button { draft.expiry = Today.local } label: {
                     Text("Add a date").font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.care.color)
                         .padding(.horizontal, 12).frame(minHeight: 36)

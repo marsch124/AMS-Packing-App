@@ -2355,9 +2355,15 @@ final class AMSPackingUITests: XCTestCase {
         let field = app.textFields["trip-add-name"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
         let add = app.buttons["trip-add"]
-        XCTAssertFalse(add.isEnabled, "Add must wait for a name")
+        // Never grey, never switched off (his rule for a main button): pressed with
+        // nothing typed it adds nothing and says what is missing, under the field.
+        XCTAssertTrue(add.waitForExistence(timeout: 5) && add.isEnabled, "Add is switched off with nothing typed")
+        tapVisible(app, add)
+        let needs = app.staticTexts["trip-add-needs"]
+        XCTAssertTrue(needs.waitForExistence(timeout: 5), "Add pressed with nothing typed said nothing")
+        XCTAssertEqual(words(progress), before, "Add with nothing typed changed the trip")
         type("Tripod", into: field)
-        XCTAssertTrue(waitUntil { add.isEnabled })
+        XCTAssertTrue(waitUntil { !needs.exists }, "the line stayed once a name was typed")
         add.tap()
         XCTAssertTrue(waitUntil { self.words(progress).hasSuffix("/\(total + 1)") }, "the line did not count: '\(words(progress))'")
         // The count above is the claim that matters: the line joined the trip. Whether
@@ -2375,9 +2381,14 @@ final class AMSPackingUITests: XCTestCase {
         let field = app.textFields["action-add-text"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a to-do")
         let add = app.buttons["action-add"]
-        XCTAssertFalse(add.isEnabled, "Add must wait for a text")
+        // Never grey (his rule for a main button): pressed empty, it says what is missing.
+        XCTAssertTrue(add.waitForExistence(timeout: 5) && add.isEnabled, "Add is switched off with nothing typed")
+        tapVisible(app, add)
+        let needs = app.staticTexts["action-add-needs"]
+        XCTAssertTrue(needs.waitForExistence(timeout: 5), "Add pressed with nothing typed said nothing")
+        XCTAssertFalse(app.buttons["action-0"].exists, "Add with nothing typed made a to-do")
         type("Book the ferry", into: field)
-        XCTAssertTrue(waitUntil { add.isEnabled })
+        XCTAssertTrue(waitUntil { !needs.exists }, "the line stayed once a to-do was typed")
         add.tap()
         let row = app.buttons["action-0"]
         XCTAssertTrue(row.waitForExistence(timeout: 5), "the to-do is not listed")
@@ -3984,6 +3995,106 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "first-trip")
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-firsttrip", timeout: 5), "the six steps did not close")
+    }
+
+    // MARK: - Main buttons never grey (his standing rule, 2026-09-26)
+
+    /// A button that takes what was typed, pressed too early: it is THERE to press
+    /// (never switched off, never grey) and the line `<id>-needs` says what is
+    /// missing. "" when it behaves; what went wrong when not — so one run lists every
+    /// button that misbehaves instead of stopping at the first.
+    private func saysWhatIsMissing(_ app: XCUIApplication, _ id: String) -> String {
+        let button = app.buttons[id]
+        guard button.waitForExistence(timeout: 5) else { return "\(id): not there" }
+        guard button.isEnabled else { return "\(id): switched off with nothing to take" }
+        tapVisible(app, button)
+        let says = app.staticTexts["\(id)-needs"]
+        guard says.waitForExistence(timeout: 5) else { return "\(id): pressed too early, and said nothing" }
+        return words(says).isEmpty ? "\(id): an empty line under the field" : ""
+    }
+
+    /// His rule: "the app's central button is ALWAYS full colour; pressed too early it
+    /// says what's missing under it. Never disable+grey a primary action." Until the
+    /// field test (3 Oct 2026) every Add, New and Make beside a field sat grey and
+    /// switched off until something was typed. (Trip's Add and To do's Add are in their
+    /// own tests.) A colour cannot be read by a test; being pressable and answering can.
+    func testEveryAddButtonIsReadyAndSaysWhatIsMissing() {
+        let app = launch()
+        var misses: [String] = []
+
+        // Care: Your things (New) — and the line goes once something is typed.
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "thing-new"))
+        if app.staticTexts["thing-new-needs"].exists {
+            type("Zip ties", into: app.textFields["thing-new-name"])
+            if !waitUntil({ !app.staticTexts["thing-new-needs"].exists }) { misses.append("thing-new-needs: stayed after typing") }
+        }
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        // Care: Your bags.
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "bag-new"))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+
+        // To buy.
+        tab(app, "actions")
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(app.staticTexts["buy-count"].waitForExistence(timeout: 5))
+        misses.append(saysWhatIsMissing(app, "buy-add"))
+
+        // Your Grab Lists (Make), and a grab list being changed (Add).
+        tab(app, "home")
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "grablists-new"))
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        tap(app, id: "grab-edit")
+        misses.append(saysWhatIsMissing(app, "grab-add"))
+        tap(app, id: "grab-edit")                                    // Save, unchanged
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+
+        // Your choices (the first part's Add).
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "list-places-add"))
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+
+        // A template: Add, Rename to a name another template has, a row's new section.
+        tab(app, "templates")
+        tap(app, id: "template-row-1")                               // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "template-add"))
+        replace("Swim", in: app.textFields["template-name"])          // the sample's Swim template
+        misses.append(saysWhatIsMissing(app, "template-rename"))
+        hideKeyboard(app)
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "row-section-add"))
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // A trip with no place yet: Weather.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5), "the sample trip has a place already")
+        misses.append(saysWhatIsMissing(app, "weather-look"))
+        shot(app, "weather-needs")
+
+        misses.removeAll { $0.isEmpty }
+        XCTAssertTrue(misses.isEmpty, "buttons that are not ready, or do not say what is missing:\n" + misses.joined(separator: "\n"))
     }
 
     // MARK: - Headings first (his and Anna's field test, 3 Oct 2026)

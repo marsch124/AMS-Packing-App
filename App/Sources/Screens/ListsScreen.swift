@@ -9,6 +9,8 @@ struct ListsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var adding: [String: String] = [:]
+    /// What each part's Add was missing, said under its field (never a grey button).
+    @State private var needs: [String: String] = [:]
     @State private var problem = ""
 
     private enum Kind: String, CaseIterable {
@@ -100,18 +102,12 @@ struct ListsScreen: View {
                                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                                 .onSubmit { add(kind) }
                                 .accessibilityIdentifier("list-\(kind.rawValue)-add-name")
-                            Button { add(kind) } label: {
-                                Text("Add").font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(jsTrim(adding[kind.rawValue] ?? "").isEmpty ? Theme.muted : Color.white)
-                                    .padding(.horizontal, 16).frame(minHeight: 44)
-                                    .background(RoundedRectangle(cornerRadius: 10)
-                                        .fill(jsTrim(adding[kind.rawValue] ?? "").isEmpty ? Theme.line : AppSection.settings.color))
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .disabled(jsTrim(adding[kind.rawValue] ?? "").isEmpty)
-                            .accessibilityIdentifier("list-\(kind.rawValue)-add")
+                            Button { add(kind) } label: { FieldButtonLabel(title: "Add", tint: AppSection.settings.color) }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("list-\(kind.rawValue)-add")
                         }
+                        .needsLine(Binding(get: { needs[kind.rawValue] ?? "" }, set: { needs[kind.rawValue] = $0 }),
+                                   typed: adding[kind.rawValue] ?? "", id: "list-\(kind.rawValue)-add-needs")
                     }
                     Text("These belong to your account, so both your devices show the same.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted).padding(.top, 14)
@@ -141,7 +137,7 @@ struct ListsScreen: View {
 
     private func add(_ kind: Kind) {
         let name = jsTrim(adding[kind.rawValue] ?? "")
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else { needs[kind.rawValue] = "Type a name first."; return }
         problem = ""
         model.change { lib in
             switch kind {

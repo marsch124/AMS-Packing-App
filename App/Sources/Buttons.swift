@@ -29,6 +29,53 @@ struct HeaderButtonStyle: ButtonStyle {
     }
 }
 
+/// The button beside a field that takes what was typed — Add, New, Make. ALWAYS in
+/// full colour: his standing rule (2026-09-26), "the app's central button is ALWAYS
+/// full colour; pressed too early it says what's missing under it". Until the field
+/// test (3 Oct 2026) these sat grey and switched off until something was typed.
+struct FieldButtonLabel: View {
+    let title: String
+    let tint: Color
+
+    var body: some View {
+        Text(title).font(.system(size: 16, weight: .bold))
+            .foregroundStyle(Color.white)
+            .lineLimit(1).fixedSize()
+            .padding(.horizontal, 16).frame(minHeight: 44)
+            .background(RoundedRectangle(cornerRadius: 10).fill(tint))
+            .contentShape(Rectangle())
+    }
+}
+
+/// The short line under a field that says what a press was missing ("Type a name
+/// first"), named `id`. It goes as soon as something is typed (`typed` changes),
+/// so it never outstays the problem it was about.
+struct NeedsLine<Typed: Equatable>: ViewModifier {
+    @Binding var says: String
+    let typed: Typed
+    let id: String
+
+    func body(content: Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            content
+            if !says.isEmpty {
+                Text(says)
+                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier(id)
+            }
+        }
+        .onChange(of: typed) { _, _ in if !says.isEmpty { says = "" } }
+    }
+}
+
+extension View {
+    /// Says under this row what a press was missing (see `NeedsLine`).
+    func needsLine<Typed: Equatable>(_ says: Binding<String>, typed: Typed, id: String) -> some View {
+        modifier(NeedsLine(says: says, typed: typed, id: id))
+    }
+}
+
 /// The wide outlined button at the foot of a trip (Save as Excel, Share): a
 /// drawn mark and a word, framed in the screen's colour.
 struct WideButtonLabel<Mark: View>: View {

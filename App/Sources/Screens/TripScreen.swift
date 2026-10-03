@@ -23,6 +23,8 @@ struct TripScreen: View {
     /// Remembered per trip and per sorting, one "trip|sorting|heading" per line.
     @AppStorage("ams.trip.folded") private var foldedRaw = ""
     @State private var newName = ""
+    /// What Add was missing, said under the field (never a grey button).
+    @State private var addNeeds = ""
     @State private var reviewing = false
     @State private var sweeping = false
     @State private var askingToDelete = false
@@ -335,15 +337,12 @@ struct TripScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("trip-add-name")
-                Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.events.color))
-                        .contentShape(Rectangle())
+                // Always in colour (his rule for a main button); pressed with nothing
+                // typed it says so under the field.
+                Button { if jsTrim(newName).isEmpty { addNeeds = "Type a thing first." } else { add() } } label: {
+                    FieldButtonLabel(title: "Add", tint: AppSection.events.color)
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(newName).isEmpty)
                 .accessibilityIdentifier("trip-add")
                 // Bought on site (his idea 12): on the list in one go, in hand already.
                 // "On site", not "there" — their word from the field test (Oct 2026).
@@ -360,6 +359,7 @@ struct TripScreen: View {
                     .accessibilityIdentifier("trip-add-bought")
                 }
             }
+            .needsLine($addNeeds, typed: newName, id: "trip-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
             // The green is the WHOLE screen, this bar included (his call: "we need
             // strong indicators").

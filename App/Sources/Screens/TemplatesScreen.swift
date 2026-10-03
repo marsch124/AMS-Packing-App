@@ -323,6 +323,10 @@ struct TemplateDetail: View {
     /// His "When" colours, made readable for this screen (2026-09-26).
     @Environment(\.colorScheme) private var scheme
     @State private var newName = ""
+    /// What Add was missing, said under the field (never a grey button).
+    @State private var addNeeds = ""
+    /// Why Rename could not take the name.
+    @State private var renameNeeds = ""
     @State private var editingRow: String?
     /// What he is typing over the name, while he is typing it.
     @State private var renaming: String?
@@ -367,13 +371,13 @@ struct TemplateDetail: View {
                     .focused($writingName)
                     .onSubmit { saveName(list) }
                     .accessibilityIdentifier("template-name")
+                // Always in colour; a name that cannot be taken is said under the row.
                 if let wanted = renaming, jsTrim(wanted) != jsTrim(list.name) {
                     Button { saveName(list) } label: {
                         Text("Rename").font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(nameFree(wanted, list) ? AppSection.templates.color : Theme.muted)
+                            .foregroundStyle(AppSection.templates.color)
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .disabled(!nameFree(wanted, list))
                     .accessibilityIdentifier("template-rename")
                 }
                 Spacer()
@@ -387,6 +391,7 @@ struct TemplateDetail: View {
                     .foregroundStyle(AppSection.templates.color)
                     .accessibilityIdentifier("template-detail-done")
             }
+            .needsLine($renameNeeds, typed: renaming ?? "", id: "template-rename-needs")
             .padding(16)
             // Group the things the ways a trip sorts (his H.3), in sight above the list.
             FlowRow(spacing: 6) {
@@ -475,17 +480,11 @@ struct TemplateDetail: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("template-add-name")
-                Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.templates.color))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(newName).isEmpty)
-                .accessibilityIdentifier("template-add")
+                Button { add() } label: { FieldButtonLabel(title: "Add", tint: AppSection.templates.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("template-add")
             }
+            .needsLine($addNeeds, typed: newName, id: "template-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
 
             if askingToDelete {
@@ -544,7 +543,11 @@ struct TemplateDetail: View {
     }
 
     private func saveName(_ list: PackList) {
-        guard let wanted = renaming, nameFree(wanted, list) else { return }
+        guard let wanted = renaming else { return }
+        guard nameFree(wanted, list) else {
+            renameNeeds = normName(wanted).isEmpty ? "Type a name first." : "You already have a template called that."
+            return
+        }
         model.change { _ = $0.renameTemplate(id: listId, to: wanted) }
         renaming = nil
         writingName = false
@@ -602,7 +605,7 @@ struct TemplateDetail: View {
 
     private func add() {
         let name = newName
-        guard !jsTrim(name).isEmpty else { return }
+        guard !jsTrim(name).isEmpty else { addNeeds = "Type a thing first."; return }
         model.change { _ = $0.addToTemplate(templateId: listId, name: name) }
         newName = ""
     }
@@ -624,6 +627,8 @@ struct RowEditor: View {
     @State private var note = ""
     @State private var section = ""
     @State private var newSectionName = ""
+    /// What Add was missing, said under the field (never a grey button).
+    @State private var sectionNeeds = ""
     /// Only on some trips (his ask, 2 Oct 2026): none = always comes along.
     @State private var seasons: Set<String> = []
     @State private var contexts: Set<String> = []
@@ -673,17 +678,11 @@ struct RowEditor: View {
                     HeadingBand(title: "A new section", tint: AppSection.templates.color, id: "row-heading-section-new")
                     HStack(spacing: 8) {
                         field($newSectionName, "e.g. Lights", "row-section-new")
-                        Button { addSection() } label: {
-                            Text("Add").font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(jsTrim(newSectionName).isEmpty ? Theme.muted : Color.white)
-                                .padding(.horizontal, 16).frame(minHeight: 44)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newSectionName).isEmpty ? Theme.line : AppSection.templates.color))
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .disabled(jsTrim(newSectionName).isEmpty)
-                        .accessibilityIdentifier("row-section-add")
+                        Button { addSection() } label: { FieldButtonLabel(title: "Add", tint: AppSection.templates.color) }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("row-section-add")
                     }
+                    .needsLine($sectionNeeds, typed: newSectionName, id: "row-section-add-needs")
                     }
                     VStack(alignment: .leading, spacing: 6) {
                         HeadingBand(title: "How many", tint: AppSection.templates.color, id: "row-heading-qty")
@@ -703,8 +702,8 @@ struct RowEditor: View {
                         HeadingBand(title: "Only on some trips", tint: AppSection.templates.color, id: "row-heading-some")
                         Text("Leave these off and it always comes along. Pick one or more and it comes only on trips that match — on this template.")
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
-                            .padding(.top, -6)
                             .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, -6)
                         Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: seasons,
                               id: "row-seasons", tint: AppSection.templates.color) { toggle(&seasons, $0) }
                         // Context narrows only workout (WET) templates, as the trip builder reads it.
@@ -748,7 +747,7 @@ struct RowEditor: View {
 
     private func addSection() {
         let name = newSectionName
-        guard !jsTrim(name).isEmpty else { return }
+        guard !jsTrim(name).isEmpty else { sectionNeeds = "Type the section's name first."; return }
         var made: TemplateSection?
         model.change { made = $0.addSection(templateId: templateId, name: name) }
         if let made = made { section = made.id }
