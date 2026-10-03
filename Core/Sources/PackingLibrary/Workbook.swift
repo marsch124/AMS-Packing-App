@@ -184,15 +184,20 @@ extension Library {
             for bag in groupByContainer(g.entries) {
                 for e in bag.entries {
                     let packed: String = isSetAside(e) ? "set aside" : (e.checked ? "yes" : "")
+                    // A line with no kind set is sorted as the default kind on the trip screen; it says so here too.
+                    let category = jsTrim(e.category).isEmpty ? CATEGORY_DEFAULT : jsTrim(e.category)
                     rows.append([.text(g.phase.label), .text(jsTrim(e.storage)), .text(e.container), .text(e.name),
+                                 .text(category),
                                  .number(effectiveQty(e, nights)), .text(packed), .text(e.note)])
                 }
             }
         }
         // His words (test D.23, 2026-09-28): where it comes FROM at home, and the bag it goes INTO —
         // the same two words as the trip screen's sorting.
+        // Their words (field test, 3 Oct 2026): "Please add a category to the Excel export as a new
+        // column." — the kind of thing, next to the thing.
         let columns = [XlsxColumn("When", width: 22), XlsxColumn("From where", width: 20), XlsxColumn("Into", width: 20),
-                       XlsxColumn("Thing", width: 30),
+                       XlsxColumn("Thing", width: 30), XlsxColumn("Category", width: 20),
                        XlsxColumn("How many", width: 10), XlsxColumn("Packed", width: 10), XlsxColumn("Note", width: 30)]
         let data = Xlsx.workbook([XlsxSheet(name: trip.name.isEmpty ? "Trip" : trip.name, columns: columns, rows: rows)])
         return (Library.workbookFileName(trip.name), data)

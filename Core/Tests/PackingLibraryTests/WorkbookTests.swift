@@ -32,11 +32,14 @@ final class WorkbookTests: XCTestCase {
         trip.nights = 7
         trip.laundry = true
         var socks = newItem(name: "Socks"); socks.perNight = true; socks.container = "Duffel bag"; socks.phase = "week"
+        socks.category = "Clothing"
         socks.storage = "Bedroom drawer"
         socks.checked = true
         var gels = newItem(name: "Gels <mango>"); gels.qty = "3"; gels.container = "Day pack"; gels.phase = "week"
         gels.note = "Two for the run & one spare"
+        gels.category = "Food & drink"
         var cap = newItem(name: "Swim cap"); cap.skipped = true; cap.container = "Day pack"; cap.phase = "week"
+        cap.category = ""
         trip.entries = [socks, gels, cap]
         lib.trips = [trip]
 
@@ -62,6 +65,12 @@ final class WorkbookTests: XCTestCase {
         // D.23: where it comes from at home, and the bag it goes into.
         XCTAssertTrue(sheet.contains(">From where<") && sheet.contains(">Into<"), "no From where / Into columns")
         XCTAssertFalse(sheet.contains(">Bag<"), "the bag column still says Bag, not Into")
+        // Their words (field test, 3 Oct 2026): "Please add a category to the Excel export as a new
+        // column." — the kind of thing, right after the Thing column.
+        let header = rowsOf(sheet)[0]
+        XCTAssertEqual(["A", "B", "C", "D", "E", "F", "G", "H"].map { cellText(header, "\($0)1") },
+                       ["When", "From where", "Into", "Thing", "Category", "How many", "Packed", "Note"],
+                       "the columns are not as they should be: \(header)")
         XCTAssertTrue(sheet.contains("state=\"frozen\""), "the header row does not stay in place")
         XCTAssertTrue(sheet.contains("Gels &lt;mango&gt;"), "his words are not escaped")
         XCTAssertTrue(sheet.contains("Two for the run &amp; one spare"))
@@ -79,6 +88,12 @@ final class WorkbookTests: XCTestCase {
                       "a line does not say where it comes from and what it goes into: \(rows[1])")
         XCTAssertTrue(rows[2].contains("Gels") && rows[2].contains("<v>3</v>"), "the order is not the trip's: \(rows)")
         XCTAssertTrue(rows[3].contains("Swim cap") && rows[3].contains(">set aside<"))
+        // Each line says what kind of thing it is, in the Category column; a thing never given one
+        // says the app's own default, as the trip screen sorts it.
+        XCTAssertEqual(cellText(rows[1], "E2"), "Clothing", "the socks do not say their category: \(rows[1])")
+        XCTAssertEqual(cellText(rows[2], "E3"), "Food &amp; drink", "the gels do not say their category: \(rows[2])")
+        XCTAssertEqual(cellText(rows[3], "E4"), CATEGORY_DEFAULT.replacingOccurrences(of: "&", with: "&amp;"),
+                       "a thing with no category set says nothing: \(rows[3])")
 
         // Without laundry, Socks count every night.
         lib.trips[0].laundry = false
@@ -86,6 +101,16 @@ final class WorkbookTests: XCTestCase {
         try plain.data.write(to: file)
         let again = rowsOf(try run("/usr/bin/unzip", ["-p", file.path, "xl/worksheets/sheet1.xml"]).out)
         XCTAssertTrue(again[1].contains("<v>7</v>"), "per night does not count the nights: \(again[1])")
+    }
+
+    /// The words in one cell of a row, by its reference ("E2"); nil when the cell is empty.
+    private func cellText(_ row: String, _ ref: String) -> String? {
+        guard let start = row.range(of: "<c r=\"\(ref)\""),
+              let open = row.range(of: "<t xml:space=\"preserve\">", range: start.upperBound..<row.endIndex),
+              let close = row.range(of: "</t>", range: open.upperBound..<row.endIndex) else { return nil }
+        // The cell's own words only — not the next cell's, when this one has none.
+        if let next = row.range(of: "<c r=", range: start.upperBound..<row.endIndex), next.lowerBound < open.lowerBound { return nil }
+        return String(row[open.upperBound..<close.lowerBound])
     }
 
     private func rowsOf(_ xml: String) -> [String] {
