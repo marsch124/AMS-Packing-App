@@ -275,13 +275,16 @@ struct PickThingsScreen: View {
     }
 }
 
-/// Fold all / Unfold all, drawn: two arrows closing together, or opening apart.
+/// Fold all / Unfold all, drawn: the groups' own arrow, as the groups will be after
+/// the press — pointing on (folded) or down (open). Two arrows meeting read as an ✕
+/// beside the search's ✕ (seen on the screen, 3 Oct 2026).
 struct FoldAllMark: View {
-    /// true = the press folds (arrows meet); false = it opens (arrows part).
+    /// true = the press folds; false = it opens.
     let folding: Bool
     var body: some View {
-        SVGPath.path(folding ? "M7 4.5l5 5 5-5M7 19.5l5-5 5 5" : "M7 9.5l5-5 5 5M7 14.5l5 5 5-5")
-            .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+        SVGPath.path("M9 6l6 6-6 6")
+            .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+            .rotationEffect(.degrees(folding ? 0 : 90))
             .accessibilityHidden(true)
     }
 }

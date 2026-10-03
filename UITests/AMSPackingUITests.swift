@@ -3370,9 +3370,10 @@ final class AMSPackingUITests: XCTestCase {
 
     // MARK: - Long lists made easier (his and Anna's field test, 3 Oct 2026)
 
-    /// Choose from your things on Hiking, grouped From where — the sample's places, A–Z:
-    /// Bathroom cabinet (Goggles, Toothbrush, Towel: rows 0–2, none on Hiking yet),
-    /// Chest of drawers (3–4), Garage (5–6), Hall closet (7–8), No place set (9).
+    /// Choose from your things on Hiking, grouped From where — the sample's places, A–Z
+    /// (seen on the screen, 3 Oct 2026): Bathroom cabinet (Toothbrush: row 0), Chest of
+    /// drawers (Passport, Phone charger: 1–2), Garage (3–4) and Hall closet (5–6), both
+    /// already on Hiking, and No place set (Goggles, Swim cap, Towel: 7–9).
     private func openPickerByPlace(_ app: XCUIApplication) {
         tab(app, "templates")
         XCTAssertTrue(appears(app, "screen-templates"))
@@ -3397,23 +3398,23 @@ final class AMSPackingUITests: XCTestCase {
     func testAGroupOfThingsToChooseFoldsAndSaysWhatItHolds() {
         let app = launch()
         openPickerByPlace(app)
-        XCTAssertEqual(words(app.staticTexts["pick-heading-0-count"]), "3 things", "a group does not say how many it holds")
-        XCTAssertTrue(pickRowsShown(app, 0...2), "Bathroom cabinet's three things are not listed")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things", "a group does not say how many it holds")
+        XCTAssertTrue(pickRowsShown(app, 1...2), "Chest of drawers' two things are not listed")
 
-        tap(app, id: "pick-group-0-fold")
-        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "folding Bathroom cabinet left its things on screen")
-        XCTAssertEqual(words(app.staticTexts["pick-heading-0"]), "BATHROOM CABINET", "the folded group lost its name")
-        XCTAssertEqual(words(app.staticTexts["pick-heading-0-count"]), "3 things", "the folded group no longer says how many it holds")
-        XCTAssertTrue(pickRowsShown(app, 3...4), "the next group folded as well")
+        tap(app, id: "pick-group-1-fold")
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 1...2) }, "folding Chest of drawers left its things on screen")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1"]), "CHEST OF DRAWERS", "the folded group lost its name")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things", "the folded group no longer says how many it holds")
+        XCTAssertTrue(pickRowsShown(app, 0...0) && pickRowsShown(app, 3...4), "the groups around it folded as well")
         shot(app, "pick-folded")
 
         // The name folds too, as on a trip.
-        tapVisible(app, app.staticTexts["pick-heading-1"])
-        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 3...4) }, "tapping a group's name did not fold it")
+        tapVisible(app, app.staticTexts["pick-heading-0"])
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...0) }, "tapping a group's name did not fold it")
 
         // And it opens again.
-        tap(app, id: "pick-group-0-fold")
-        XCTAssertTrue(waitUntil { self.pickRowsShown(app, 0...2) }, "opening Bathroom cabinet did not bring its things back")
+        tap(app, id: "pick-group-1-fold")
+        XCTAssertTrue(waitUntil { self.pickRowsShown(app, 1...2) }, "opening Chest of drawers did not bring its things back")
     }
 
     /// "Collapse All or Expand All": one button folds every group, then opens them all.
@@ -3424,7 +3425,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "pick-fold-all")
         XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...9) }, "Fold all left things on screen")
         XCTAssertTrue((0...4).allSatisfy { app.staticTexts["pick-heading-\($0)"].exists }, "a folded group lost its heading")
-        XCTAssertEqual(words(app.staticTexts["pick-heading-4-count"]), "1 thing")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-4-count"]), "3 things", "a folded group does not say how many it holds")
         XCTAssertTrue(waitUntil { self.words(app.buttons["pick-fold-all"]) == "Unfold all" },
                       "the button did not turn into Unfold all: '\(words(app.buttons["pick-fold-all"]))'")
         shot(app, "pick-all-folded")
@@ -3466,6 +3467,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.buttons["pick-row-0"]).contains("Toothbrush") },
                       "the Toothbrush stayed hidden in its folded group: '\(words(app.buttons["pick-row-0"]))'")
         XCTAssertFalse(app.buttons["pick-fold-all"].exists, "Fold all is offered while searching")
+        shot(app, "pick-searching")
         tap(app, id: "pick-search-clear")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" })
         XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "the folds did not come back after the search")
@@ -3476,15 +3478,16 @@ final class AMSPackingUITests: XCTestCase {
     func testATickSurvivesFolding() {
         let app = launch()
         openPickerByPlace(app)
-        select(app, app.buttons["pick-row-0"])
+        select(app, app.buttons["pick-row-1"])                    // the Passport, in Chest of drawers
         XCTAssertTrue(waitUntil { self.words(app.buttons["pick-add"]) == "Add 1" })
-        XCTAssertEqual(words(app.staticTexts["pick-heading-0-count"]), "3 things · 1 ticked")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things · 1 ticked")
         tap(app, id: "pick-fold-all")
         XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) })
-        XCTAssertEqual(words(app.staticTexts["pick-heading-0-count"]), "3 things · 1 ticked", "the folded group lost its tick")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things · 1 ticked", "the folded group lost its tick")
         XCTAssertEqual(words(app.buttons["pick-add"]), "Add 1", "folding lost the tick")
+        shot(app, "pick-tick-folded")
         tap(app, id: "pick-fold-all")
-        XCTAssertTrue(waitUntil { self.isOn(app.buttons["pick-row-0"]) }, "the thing came back unticked")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["pick-row-1"]) }, "the thing came back unticked")
         XCTAssertEqual(words(app.buttons["pick-add"]), "Add 1")
     }
 
