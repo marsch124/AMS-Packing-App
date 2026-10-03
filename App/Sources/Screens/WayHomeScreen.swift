@@ -91,6 +91,9 @@ struct WayHomeScreen: View {
                     // where it would seem to tick only what is shown.
                     if needle.isEmpty { tickAll(p) }
                 }
+                // Full width, words at the left: with only a message to show (nothing
+                // matches) the column would otherwise shrink to it and sit in the middle.
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
         }

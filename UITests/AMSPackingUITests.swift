@@ -1603,6 +1603,7 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "way-home-search")
         type("q", into: app.textFields["wayhome-search"])
         XCTAssertTrue(app.staticTexts["wayhome-search-none"].waitForExistence(timeout: 5), "nothing matches, and it does not say so")
+        shot(app, "way-home-search-none")
         tap(app, id: "wayhome-search-clear")
         XCTAssertTrue(waitUntil { app.buttons["wayhome-line-0"].exists && app.buttons["wayhome-line-1"].exists
                                   && app.buttons["wayhome-line-2"].exists }, "the cross did not bring the whole way home back")
@@ -1679,6 +1680,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { !app.buttons["wayhome-line-2"].exists }, "the search did not narrow the list")
         tap(app, id: "wayhome-line-0-open")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Open did not open the thing")
+        shot(app, "way-home-open-thing")
         replace("Safe", in: app.textFields["thing-storage"])
         tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Save did not close the thing")
