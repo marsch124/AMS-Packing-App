@@ -67,3 +67,51 @@ struct ShareMark: View {
             .accessibilityHidden(true)
     }
 }
+
+/// An ✕ at the end of a search field — his and Anna's field test (3 Oct 2026): "When
+/// typing in the search field, please add an X so that it's quick to delete all typed
+/// alphanumeric characters." It is there only while there is something to clear; one
+/// tap empties the field and the keyboard stays, ready for the next word.
+///
+/// ONE modifier for every search field, so they all behave alike. It also names the
+/// field (`id`) and its ✕ (`id-clear`): an id put on the whole row afterwards would
+/// reach the ✕ as well, so the field is named here, on the field itself.
+struct ClearButton: ViewModifier {
+    @Binding var text: String
+    let id: String
+
+    func body(content: Content) -> some View {
+        HStack(spacing: 4) {
+            content.accessibilityIdentifier(id)
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    ClearMark().frame(width: 24, height: 24)
+                        .frame(width: 36, height: 36).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .padding(.trailing, -6)
+                .accessibilityIdentifier("\(id)-clear")
+                .accessibilityLabel("Clear the search")
+            }
+        }
+    }
+}
+
+extension View {
+    /// The ✕ that empties a search field (see `ClearButton`).
+    func clearButton(_ text: Binding<String>, id: String) -> some View {
+        modifier(ClearButton(text: text, id: id))
+    }
+}
+
+/// A round ✕, drawn: a soft disc with the cross cut out of it.
+struct ClearMark: View {
+    var body: some View {
+        ZStack {
+            Circle().fill(Theme.muted)
+            SVGPath.path("M8.5 8.5L15.5 15.5M15.5 8.5L8.5 15.5")
+                .stroke(Theme.card, style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+        }
+        .accessibilityHidden(true)
+    }
+}

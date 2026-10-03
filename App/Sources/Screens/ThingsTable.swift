@@ -292,10 +292,10 @@ struct ThingsTable: View {
                 TextField("Search", text: $query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                    .clearButton($query, id: "table-search")
                     .padding(.horizontal, 10).frame(minHeight: 34)
                     .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.line, lineWidth: 1))
-                    .accessibilityIdentifier("table-search")
 
                 Menu {
                     Button("Name") { sortBy = "name"; descending = false }
