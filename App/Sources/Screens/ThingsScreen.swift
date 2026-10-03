@@ -76,7 +76,10 @@ struct ThingsScreen: View {
                         if !fresh.isEmpty {
                             listHeading("Just added", id: "things-just-added")
                             ForEach(Array(fresh.enumerated()), id: \.element.item.id) { n, row in
-                                thingRow(row, n: n)
+                                // A row of its own, not the A–Z row moved up: the Mac kept
+                                // the moved row's old name ("thing-row-7" at the top of the
+                                // list, 3 Oct 2026), so a test — and VoiceOver — lost it.
+                                thingRow(row, n: n).id("just-added-\(row.item.id)")
                             }
                             if !rest.isEmpty { listHeading("A–Z", id: "things-rest") }
                         }
