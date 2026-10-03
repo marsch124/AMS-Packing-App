@@ -45,7 +45,7 @@ struct TripSettingsScreen: View {
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("tripset-cancel")
                 Spacer()
-                Text("Trip settings").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Trip settings").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(Theme.ink)
                 Spacer()
                 Color.clear.frame(width: 56, height: 1)
             }
@@ -59,8 +59,9 @@ struct TripSettingsScreen: View {
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .accessibilityIdentifier("tripset-name")
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Place").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    // A heading like the pills' headings below (field test, 3 Oct 2026).
+                    VStack(alignment: .leading, spacing: 6) {
+                        HeadingTitle(title: "Place", tint: AppSection.events.color, id: "tripset-heading-place")
                         TextField("Where the trip goes, e.g. Kalmar", text: $place)
                             .textFieldStyle(.plain)
                             .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)

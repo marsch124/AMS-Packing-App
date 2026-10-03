@@ -9,6 +9,8 @@ import PackingLibrary
 struct BuyList: View {
     @EnvironmentObject var model: LibraryModel
     @Binding var text: String
+    /// What Add was missing, said under the field (never a grey button).
+    @State private var needs = ""
 
     var body: some View {
         let lines = model.library.buyList()
@@ -100,25 +102,18 @@ struct BuyList: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("buy-add-text")
-                Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(text).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10)
-                            .fill(jsTrim(text).isEmpty ? Theme.line : AppSection.actions.color))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(text).isEmpty)
-                .accessibilityIdentifier("buy-add")
+                Button { add() } label: { FieldButtonLabel(title: "Add", tint: AppSection.actions.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("buy-add")
             }
+            .needsLine($needs, typed: text, id: "buy-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
     }
 
     private func add() {
         let t = text
-        guard !jsTrim(t).isEmpty else { return }
+        guard !jsTrim(t).isEmpty else { needs = "Type what to buy first."; return }
         model.change { _ = $0.addToBuyList(text: t) }
         text = ""
     }

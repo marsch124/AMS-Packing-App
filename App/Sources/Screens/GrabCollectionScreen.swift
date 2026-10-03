@@ -9,6 +9,8 @@ struct GrabCollectionScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
+    /// What Make was missing, said under the field (never a grey button).
+    @State private var newNeeds = ""
     /// When Home is full and he wants another one on it: which one steps back?
     @State private var swappingIn: String?
     @State private var problem = ""
@@ -70,18 +72,11 @@ struct GrabCollectionScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("grablists-new-name")
-                Button { add() } label: {
-                    Text("Make").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10)
-                            .fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.home.color))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(newName).isEmpty)
-                .accessibilityIdentifier("grablists-new")
+                Button { add() } label: { FieldButtonLabel(title: "Make", tint: AppSection.home.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("grablists-new")
             }
+            .needsLine($newNeeds, typed: newName, id: "grablists-new-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
@@ -172,7 +167,7 @@ struct GrabCollectionScreen: View {
 
     private func add() {
         let name = jsTrim(newName)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else { newNeeds = "Type a name first."; return }
         model.change { _ = $0.addGrabList(label: name) }
         newName = ""
         problem = "\(name) is waiting. Put it on Home when you want it there."

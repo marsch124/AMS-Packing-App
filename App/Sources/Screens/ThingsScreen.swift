@@ -12,6 +12,8 @@ struct ThingsScreen: View {
     @State private var query = ""
     @State private var noListOnly = false
     @State private var newName = ""
+    /// What New was missing, said under the field (never a grey button).
+    @State private var newNeeds = ""
     @State private var editing: String?
     /// What he added on this visit, newest first — his and Anna's field test (3 Oct
     /// 2026): "When you add an item, it needs to be on top of the list. Now it is just
@@ -54,9 +56,9 @@ struct ThingsScreen: View {
                 Spacer()
                 if homeless > 0 {
                     Button { noListOnly.toggle() } label: {
-                        Text("On no template \(homeless)").font(.system(size: 14, weight: .bold))
+                        Text("On no template \(homeless)").font(.system(size: 15, weight: .bold))
                             .foregroundStyle(noListOnly ? Color.white : AppSection.care.color)
-                            .padding(.horizontal, 12).frame(minHeight: 32)
+                            .padding(.horizontal, 12).frame(minHeight: 36)
                             .background(Capsule().fill(noListOnly ? AppSection.care.color : Theme.card))
                             .overlay(Capsule().stroke(AppSection.care.color.opacity(0.6), lineWidth: 1))
                             .contentShape(Capsule())
@@ -99,17 +101,11 @@ struct ThingsScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("thing-new-name")
-                Button { add() } label: {
-                    Text("New").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(newName).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newName).isEmpty ? Theme.line : AppSection.care.color))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(newName).isEmpty)
-                .accessibilityIdentifier("thing-new")
+                Button { add() } label: { FieldButtonLabel(title: "New", tint: AppSection.care.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("thing-new")
             }
+            .needsLine($newNeeds, typed: newName, id: "thing-new-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
@@ -157,7 +153,7 @@ struct ThingsScreen: View {
 
     private func add() {
         let name = newName
-        guard !jsTrim(name).isEmpty else { return }
+        guard !jsTrim(name).isEmpty else { newNeeds = "Type a name first."; return }
         var made: Item?
         model.change { made = $0.addThing(name: name) }
         newName = ""
@@ -215,9 +211,9 @@ struct ThingEditor: View {
                     labelled("Name") { field($draft.name, "Name", "thing-name") }
                     labelled("Kept at home") { field($draft.storage, "e.g. Hall closet", "thing-storage") }
                     Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
-                          id: "thing-category", tint: AppSection.care.color, compact: true) { draft.category = $0 }
+                          id: "thing-category", tint: AppSection.care.color, heading: .band) { draft.category = $0 }
                     Pills(title: "Usually packed in", options: containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
-                          selected: [draft.container], id: "thing-bag", tint: AppSection.care.color, compact: true) { draft.container = $0 }
+                          selected: [draft.container], id: "thing-bag", tint: AppSection.care.color, heading: .band) { draft.container = $0 }
                     // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
                     VStack(alignment: .leading, spacing: 8) {
                         HeadingBand(title: "On a plane", id: "thing-heading-plane")
@@ -230,13 +226,13 @@ struct ThingEditor: View {
                     }
                     labelled("Valid until") { validUntil }
                     Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
-                          id: "thing-when", tint: AppSection.care.color, compact: true) { draft.phase = $0 }
+                          id: "thing-when", tint: AppSection.care.color, heading: .band) { draft.phase = $0 }
                     if !owners.isEmpty {
                         Pills(title: "Whose it is", options: [("", "Nobody's in particular")] + owners.map { ($0, $0) },
-                              selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color, compact: true) { draft.ownedBy = $0 }
+                              selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color, heading: .band) { draft.ownedBy = $0 }
                     }
                     Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
-                          selected: [draft.condition], id: "thing-condition", tint: AppSection.care.color, compact: true) { draft.condition = $0 }
+                          selected: [draft.condition], id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }
                     labelled("Weight, in grams (0 = not known)") {
                         field(Binding(get: { draft.weight == 0 ? "" : String(Int(draft.weight)) },
                                       set: { draft.weight = Double(jsTrim($0)) ?? 0 }), "0", "thing-weight")
@@ -247,7 +243,7 @@ struct ThingEditor: View {
                     labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
                     labelled("Notes") { field($draft.note, "Anything worth remembering", "thing-notes") }
                     Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
-                          id: "thing-lists", tint: AppSection.templates.color, compact: true) { id in
+                          id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
                     }
                     // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
@@ -326,9 +322,10 @@ struct ThingEditor: View {
     @ViewBuilder private var validUntil: some View {
         VStack(alignment: .leading, spacing: 8) {
             if draft.expiry.isEmpty {
+                // Pill-sized, under a heading that is bigger (field test, 3 Oct 2026).
                 Button { draft.expiry = Today.local } label: {
-                    Text("Add a date").font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.care.color)
-                        .padding(.horizontal, 14).frame(minHeight: 40)
+                    Text("Add a date").font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.care.color)
+                        .padding(.horizontal, 12).frame(minHeight: 36)
                         .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
                         .contentShape(Capsule())
                 }
@@ -363,9 +360,9 @@ struct ThingEditor: View {
                         let on = draft.expiry == addMonths(today, span.months)
                         Button { draft.expiry = addMonths(today, span.months) } label: {
                             Text(span.label)
-                                .font(.system(size: 15, weight: .bold).monospacedDigit())
+                                .font(.system(size: 15, weight: on ? .bold : .medium).monospacedDigit())
                                 .foregroundStyle(on ? Color.white : AppSection.care.color)
-                                .padding(.horizontal, 14).frame(minHeight: 38)
+                                .padding(.horizontal, 12).frame(minHeight: 36)
                                 .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
                                 .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
                                 .contentShape(Capsule())
@@ -407,10 +404,10 @@ struct ThingEditor: View {
     static func date(_ ymd: String) -> Date? { formatter().date(from: ymd) }
     static func ymd(_ d: Date) -> String { formatter().string(from: d) }
 
-    /// A heading and its field, held together: 4 points apart, where the headings
-    /// themselves are 22 apart.
+    /// A heading and its field, held together: 6 points apart (as a row of pills is
+    /// under its heading), where the headings themselves are 22 apart.
     private func labelled<Content: View>(_ text: String, @ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HeadingBand(title: text, id: "thing-heading-\(text.prefix { $0.isLetter }.lowercased())")
             content()
         }

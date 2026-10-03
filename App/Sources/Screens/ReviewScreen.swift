@@ -38,7 +38,10 @@ struct ReviewScreen: View {
                 .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
-                    Text("Anything you wished you'd had?").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    // The two parts' headings above the question asked inside them (17) and
+                    // the pills (15) — field test, 3 Oct 2026: headings "dominant".
+                    Text("Anything you wished you'd had?").font(.system(size: HeadingSize.title, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
                     // In the order it is done (his test F.3: "I have forgotten how to pick
                     // where it goes"): the thing, the template it goes onto, then one
                     // button that says where it will go.
@@ -54,7 +57,7 @@ struct ReviewScreen: View {
                             .accessibilityIdentifier("review-miss-input")
                         if !lists.isEmpty {
                             Pills(title: "Put it on which template, for next time?", options: lists.map { ($0.id, $0.name) } + [("", "No template")],
-                                  selected: [target], id: "review-miss-where", tint: AppSection.templates.color) { missWhere = $0 }
+                                  selected: [target], id: "review-miss-where", tint: AppSection.templates.color, heading: .question) { missWhere = $0 }
                         }
                         // Always in full colour (his rule for a main button); with nothing
                         // typed it adds nothing.
@@ -89,7 +92,7 @@ struct ReviewScreen: View {
                     }
 
                     Text(unused.isEmpty ? "Tap anything you didn't use." : "\(unused.count) marked \u{201C}didn't use\u{201D}")
-                        .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .font(.system(size: HeadingSize.title, weight: .heavy)).foregroundStyle(Theme.ink)
                         .padding(.top, 18)
                         .accessibilityIdentifier("review-summary")
                     ForEach(Array(lines.packed.enumerated()), id: \.element.id) { n, line in

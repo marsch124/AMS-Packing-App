@@ -159,6 +159,8 @@ struct GrabScreen: View {
     @State private var editing = false
     @State private var draft: [String] = []
     @State private var newThing = ""
+    /// What Add was missing, said under the field (never a grey button).
+    @State private var addNeeds = ""
     /// While editing: which names are marked "only sometimes", by their plain form.
     @State private var draftSometimes: Set<String> = []
 
@@ -335,17 +337,11 @@ struct GrabScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { addToDraft() }
                     .accessibilityIdentifier("grab-add-name")
-                Button { addToDraft() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(newThing).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(newThing).isEmpty ? Theme.line : tint))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(newThing).isEmpty)
-                .accessibilityIdentifier("grab-add")
+                Button { addToDraft() } label: { FieldButtonLabel(title: "Add", tint: tint) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("grab-add")
             }
+            .needsLine($addNeeds, typed: newThing, id: "grab-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
     }
@@ -377,7 +373,7 @@ struct GrabScreen: View {
 
     private func addToDraft() {
         let name = jsTrim(newThing)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else { addNeeds = "Type a thing first."; return }
         if !draft.contains(where: { normName($0) == normName(name) }) { draft.append(name) }
         newThing = ""
     }

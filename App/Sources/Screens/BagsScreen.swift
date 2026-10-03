@@ -13,6 +13,8 @@ struct BagsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
+    /// What Add was missing, said under the field (never a grey button).
+    @State private var addNeeds = ""
     /// The bag whose own page is open.
     @State private var openBag: OpenBag?
     struct OpenBag: Identifiable { let id: String }
@@ -78,18 +80,11 @@ struct BagsScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("bag-new-name")
-                Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(canAdd ? Color.white : Theme.muted)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10)
-                            .fill(canAdd ? AppSection.care.color : Theme.line))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(!canAdd)
-                .accessibilityIdentifier("bag-new")
+                Button { add() } label: { FieldButtonLabel(title: "Add", tint: AppSection.care.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("bag-new")
             }
+            .needsLine($addNeeds, typed: newName, id: "bag-new-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
@@ -107,7 +102,10 @@ struct BagsScreen: View {
     }
 
     private func add() {
-        guard canAdd else { return }
+        guard canAdd else {
+            addNeeds = normName(newName).isEmpty ? "Type a name first." : "You already have a bag called that."
+            return
+        }
         let name = newName
         model.change { _ = $0.addBag(name: name) }
         newName = ""

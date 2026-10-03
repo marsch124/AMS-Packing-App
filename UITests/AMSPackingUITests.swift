@@ -2196,8 +2196,13 @@ final class AMSPackingUITests: XCTestCase {
         let transport = app.staticTexts["trip-transport-title"]
         XCTAssertGreaterThan(context.frame.minY, swim.frame.maxY, "Context is not under the workouts")
         XCTAssertLessThan(context.frame.maxY, transport.frame.minY, "Context is not before Transport")
-        XCTAssertGreaterThan(context.frame.minX, transport.frame.minX + 24,
-                             "Context is not set in: \(context.frame.minX) vs \(transport.frame.minX)")
+        // Set in = its PILLS start further in than Transport's. (Measured on the pills since
+        // the field test of 3 Oct 2026: a heading over a block now starts with the band's
+        // mark, so the headings' words no longer start at the edge.)
+        let inner = app.buttons["trip-context-0"], outer = app.buttons["trip-transport-0"]
+        XCTAssertTrue(inner.exists && outer.exists, "no Context or Transport pills")
+        XCTAssertGreaterThan(inner.frame.minX, outer.frame.minX + 24,
+                             "Context is not set in: \(inner.frame.minX) vs \(outer.frame.minX)")
     }
 
     /// The web app's "Mark everything packed" / "Clear every tick" (gap list,
@@ -2542,9 +2547,15 @@ final class AMSPackingUITests: XCTestCase {
         let field = app.textFields["trip-add-name"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
         let add = app.buttons["trip-add"]
-        XCTAssertFalse(add.isEnabled, "Add must wait for a name")
+        // Never grey, never switched off (his rule for a main button): pressed with
+        // nothing typed it adds nothing and says what is missing, under the field.
+        XCTAssertTrue(add.waitForExistence(timeout: 5) && add.isEnabled, "Add is switched off with nothing typed")
+        tapVisible(app, add)
+        let needs = app.staticTexts["trip-add-needs"]
+        XCTAssertTrue(needs.waitForExistence(timeout: 5), "Add pressed with nothing typed said nothing")
+        XCTAssertEqual(words(progress), before, "Add with nothing typed changed the trip")
         type("Tripod", into: field)
-        XCTAssertTrue(waitUntil { add.isEnabled })
+        XCTAssertTrue(waitUntil { !needs.exists }, "the line stayed once a name was typed")
         add.tap()
         XCTAssertTrue(waitUntil { self.words(progress).hasSuffix("/\(total + 1)") }, "the line did not count: '\(words(progress))'")
         // The count above is the claim that matters: the line joined the trip. Whether
@@ -2562,9 +2573,14 @@ final class AMSPackingUITests: XCTestCase {
         let field = app.textFields["action-add-text"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a to-do")
         let add = app.buttons["action-add"]
-        XCTAssertFalse(add.isEnabled, "Add must wait for a text")
+        // Never grey (his rule for a main button): pressed empty, it says what is missing.
+        XCTAssertTrue(add.waitForExistence(timeout: 5) && add.isEnabled, "Add is switched off with nothing typed")
+        tapVisible(app, add)
+        let needs = app.staticTexts["action-add-needs"]
+        XCTAssertTrue(needs.waitForExistence(timeout: 5), "Add pressed with nothing typed said nothing")
+        XCTAssertFalse(app.buttons["action-0"].exists, "Add with nothing typed made a to-do")
         type("Book the ferry", into: field)
-        XCTAssertTrue(waitUntil { add.isEnabled })
+        XCTAssertTrue(waitUntil { !needs.exists }, "the line stayed once a to-do was typed")
         add.tap()
         let row = app.buttons["action-0"]
         XCTAssertTrue(row.waitForExistence(timeout: 5), "the to-do is not listed")
@@ -2940,13 +2956,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["thing-owner-0"].waitForExistence(timeout: 5), "no Whose it is")
         let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
         XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
-        // His ask (2026-09-26): keep the headings, make the buttons' text smaller — the
-        // editor's buttons are the slim ones (32 pt, not the 36 pt used elsewhere).
-        XCTAssertLessThan(app.buttons["thing-category-0"].frame.height, 35, "the editor's buttons are not the smaller ones")
-        // …and the headings are LARGE (his ask, 2026-09-27): a 19 pt line, not 14.
+        // His asks (2026-09-26/27, and the field test of 3 Oct 2026, "the headings …
+        // dominant, and the other buttons and pills are much smaller"): the headings are
+        // the big type — a 22 pt line (26 tall), where 19 pt was 23 — and the pills under
+        // them stay easy to press, 36 tall (their words 15, which no test can read).
         let heading = app.staticTexts["thing-category-title"]
         XCTAssertTrue(heading.waitForExistence(timeout: 5), "no Kind of thing heading")
-        XCTAssertGreaterThanOrEqual(heading.frame.height, 22, "the headings are not the larger ones: \(heading.frame.height)")
+        let line = heading.frame.height, pill = app.buttons["thing-category-0"].frame.height
+        XCTAssertTrue(line >= 25 && pill >= 36,
+                      "headings must lead (a 22 pt line: got \(line) tall) over pills still easy to press (36 tall: got \(pill))")
     }
 
     /// A grab list is edited — renamed, one removed, one added — and stays so.
@@ -4171,5 +4189,203 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "first-trip")
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-firsttrip", timeout: 5), "the six steps did not close")
+    }
+
+    // MARK: - Main buttons never grey (his standing rule, 2026-09-26)
+
+    /// A button that takes what was typed, pressed too early: it is THERE to press
+    /// (never switched off, never grey) and the line `<id>-needs` says what is
+    /// missing. "" when it behaves; what went wrong when not — so one run lists every
+    /// button that misbehaves instead of stopping at the first.
+    private func saysWhatIsMissing(_ app: XCUIApplication, _ id: String) -> String {
+        let button = app.buttons[id]
+        guard button.waitForExistence(timeout: 5) else { return "\(id): not there" }
+        guard button.isEnabled else { return "\(id): switched off with nothing to take" }
+        tapVisible(app, button)
+        let says = app.staticTexts["\(id)-needs"]
+        guard says.waitForExistence(timeout: 5) else { return "\(id): pressed too early, and said nothing" }
+        return words(says).isEmpty ? "\(id): an empty line under the field" : ""
+    }
+
+    /// His rule: "the app's central button is ALWAYS full colour; pressed too early it
+    /// says what's missing under it. Never disable+grey a primary action." Until the
+    /// field test (3 Oct 2026) every Add, New and Make beside a field sat grey and
+    /// switched off until something was typed. (Trip's Add and To do's Add are in their
+    /// own tests.) A colour cannot be read by a test; being pressable and answering can.
+    func testEveryAddButtonIsReadyAndSaysWhatIsMissing() {
+        let app = launch()
+        var misses: [String] = []
+
+        // Care: Your things (New) — and the line goes once something is typed.
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "thing-new"))
+        if app.staticTexts["thing-new-needs"].exists {
+            type("Zip ties", into: app.textFields["thing-new-name"])
+            if !waitUntil({ !app.staticTexts["thing-new-needs"].exists }) { misses.append("thing-new-needs: stayed after typing") }
+        }
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        // Care: Your bags.
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "bag-new"))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+
+        // To buy.
+        tab(app, "actions")
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(app.staticTexts["buy-count"].waitForExistence(timeout: 5))
+        misses.append(saysWhatIsMissing(app, "buy-add"))
+
+        // Your Grab Lists (Make), and a grab list being changed (Add).
+        tab(app, "home")
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "grablists-new"))
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        tap(app, id: "grab-edit")
+        misses.append(saysWhatIsMissing(app, "grab-add"))
+        tap(app, id: "grab-edit")                                    // Save, unchanged
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+
+        // Your choices (the first part's Add).
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "list-places-add"))
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+
+        // A template: Add, Rename to a name another template has, a row's new section.
+        tab(app, "templates")
+        tap(app, id: "template-row-1")                               // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "template-add"))
+        replace("Swim", in: app.textFields["template-name"])          // the sample's Swim template
+        misses.append(saysWhatIsMissing(app, "template-rename"))
+        hideKeyboard(app)
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "row-section-add"))
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // A trip with no place yet: Weather.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5), "the sample trip has a place already")
+        misses.append(saysWhatIsMissing(app, "weather-look"))
+        shot(app, "weather-needs")
+
+        misses.removeAll { $0.isEmpty }
+        XCTAssertTrue(misses.isEmpty, "buttons that are not ready, or do not say what is missing:\n" + misses.joined(separator: "\n"))
+    }
+
+    // MARK: - Headings first (his and Anna's field test, 3 Oct 2026)
+
+    /// Mission 4.4: "adjust the headings so that they are dominant, and the other
+    /// buttons and pills are much smaller than the heading … throughout the app". No
+    /// test can read a size or a colour, so this one keeps every heading THERE, by its
+    /// id, on the screens he named, and photographs each one (SHOTS_DIR) to be looked at.
+    func testTheEditorsLeadWithTheirHeadings() {
+        let app = launch()
+        // The thing editor (Care, Your things, a thing).
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        for id in ["thing-heading-name", "thing-heading-kept", "thing-category-title", "thing-bag-title",
+                   "thing-heading-plane", "thing-heading-valid", "thing-when-title", "thing-condition-title",
+                   "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-heading-notes",
+                   "thing-lists-title"] {
+            XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "the thing editor lost its heading \(id)")
+        }
+        shot(app, "looks-thing")
+        bringIntoView(app, app.buttons["thing-when-0"])
+        shot(app, "looks-thing-when")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // A template's row (Templates, Hiking, its first thing).
+        tab(app, "templates")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        for id in ["row-bag-title", "row-when-title", "row-section-title", "row-heading-section-new",
+                   "row-heading-qty", "row-heading-note", "row-heading-some", "row-seasons-title",
+                   "row-transports-title", "row-catering-title"] {
+            XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "the row editor lost its heading \(id)")
+        }
+        shot(app, "looks-row")
+        bringIntoView(app, app.buttons["row-seasons-0"])
+        shot(app, "looks-row-sometimes")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // Create new trip, on Home.
+        tab(app, "home")
+        for id in ["home-grab-heading", "home-create-heading"] {
+            XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "Home lost its heading \(id)")
+        }
+        for id in ["trip-activity-title", "trip-transport-title", "trip-season-title", "trip-catering-title"] {
+            XCTAssertTrue(app.staticTexts.matching(identifier: id).firstMatch.waitForExistence(timeout: 5),
+                          "Create new trip lost its heading \(id)")
+        }
+        bringIntoView(app, app.buttons["trip-activity-0"])
+        shot(app, "looks-create")
+        bringIntoView(app, app.buttons["trip-catering-0"])
+        shot(app, "looks-create-food")
+
+        // Trip settings.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        for id in ["tripset-heading-place", "tripset-activity-title", "tripset-transport-title",
+                   "tripset-season-title", "tripset-catering-title"] {
+            XCTAssertTrue(app.staticTexts.matching(identifier: id).firstMatch.waitForExistence(timeout: 5),
+                          "Trip settings lost its heading \(id)")
+        }
+        shot(app, "looks-tripset")
+        bringIntoView(app, app.buttons["tripset-transport-0"])
+        shot(app, "looks-tripset-transport")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+
+        // The trip's review: its question over the pills.
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["review-miss-where-title"].waitForExistence(timeout: 5), "the review lost its question")
+        shot(app, "looks-review")
+        tap(app, id: "review-cancel")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // Your choices.
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        for kind in ["places", "owners", "people", "conditions", "phases"] {
+            XCTAssertTrue(app.staticTexts["choices-heading-\(kind)"].waitForExistence(timeout: 5), "Your choices lost its heading for \(kind)")
+        }
+        shot(app, "looks-choices")
     }
 }

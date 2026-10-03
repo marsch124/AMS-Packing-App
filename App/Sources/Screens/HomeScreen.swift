@@ -42,8 +42,12 @@ struct HomeScreen: View {
         let anyWorkout = flat.contains { $0.group == "WET" && activities.contains($0.id) }
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 14) {
+                // Home's two parts lead with real headings (field test, 3 Oct 2026: "the
+                // headings … dominant"); they were small and grey, smaller than the
+                // headings inside Create new trip.
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Grab and go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                    Text("Grab and go").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("home-grab-heading")
                     Spacer()
                     SearchButton { searching = true }
                     // "Your lists" is the name of the TEMPLATES screen; this door
@@ -64,7 +68,8 @@ struct HomeScreen: View {
                         .padding(.top, 4)
                 }
 
-                Text("Create new trip").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
+                Text("Create new trip").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(Theme.ink).padding(.top, 8)
+                    .accessibilityIdentifier("home-create-heading")
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
@@ -248,36 +253,37 @@ struct Pills: View {
     let id: String
     var tint: Color = AppSection.home.color
     var startIndex: Int = 0
-    /// Smaller buttons under the same heading — the thing editor, where he found the
-    /// headings drowned by the buttons (2026-09-26): "keep the headings and make the
-    /// buttons' text size a bit smaller".
-    var compact = false
+    /// How its heading reads. The heading always LEADS: his and Anna's field test (3
+    /// Oct 2026) found the pills drowning it — "the other buttons and pills are much
+    /// smaller than the heading". Until then most pill rows had a small grey heading
+    /// (14) over bigger buttons (15).
+    var heading: PillsHeading = .title
     /// A colour of its own for some pills, by their words — the workouts (his
     /// colours, 2026-09-28). Picked: filled in it; not picked: outlined in it.
     var tones: ((String) -> PillTone?)? = nil
     let choose: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 4 : 6) {
-            // In the thing editor (compact) the headings are the big type — his ask
-            // (2026-09-27): "Make the headings larger".
-            // …and in the colour of their own buttons, not grey (2026-09-27: "choose
-            // another color that is more distinctive regarding the headings").
-            if compact {
-                HeadingBand(title: title, tint: tint, id: "\(id)-title")     // his sketch (2026-09-27)
-            } else {
-                Text(title).font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
-                    .accessibilityIdentifier("\(id)-title")
+        VStack(alignment: .leading, spacing: 6) {
+            // In the colour of their own buttons, not grey (2026-09-27: "choose another
+            // color that is more distinctive regarding the headings").
+            switch heading {
+            case .band: HeadingBand(title: title, tint: tint, id: "\(id)-title")     // his sketch (2026-09-27)
+            case .title: HeadingTitle(title: title, tint: tint, id: "\(id)-title")
+            case .question: HeadingTitle(title: title, tint: tint, id: "\(id)-title", question: true)
             }
-            FlowRow(spacing: 8) {
+            // The pills: 15 (his floor for reading without glasses), medium until
+            // picked, a little less padding — smaller than any heading over them, and
+            // still 36 tall to press.
+            FlowRow(spacing: 6) {
                 ForEach(Array(options.enumerated()), id: \.element.id) { n, o in
                     let on = selected.contains(o.id)
                     let tone = tones?(o.label)
                     Button { choose(o.id) } label: {
                         Text(o.label)
-                            .font(.system(size: compact ? 13 : 15, weight: on ? .bold : .semibold))
+                            .font(.system(size: 15, weight: on ? .bold : .medium))
                             .foregroundStyle(on ? (tone?.ink ?? Color.white) : Theme.ink)
-                            .padding(.horizontal, compact ? 10 : 14).frame(minHeight: compact ? 32 : 36)
+                            .padding(.horizontal, 12).frame(minHeight: 36)
                             .background(Capsule().fill(on ? (tone?.fill ?? tint) : Theme.bg))
                             .overlay(Capsule().stroke(on ? (tone?.fill ?? tint) : (tone?.fill ?? Theme.line),
                                                       lineWidth: tone == nil || on ? 1 : 1.8))
@@ -291,6 +297,10 @@ struct Pills: View {
         }
     }
 }
+
+/// The heading over a row of pills: a band of its own (the editors), a title inside
+/// a block (Create new trip, Trip settings), or a question inside one.
+enum PillsHeading { case band, title, question }
 
 /// Pills that wrap onto the next line when the row is full.
 struct FlowRow: Layout {
@@ -387,7 +397,7 @@ struct ContextPills: View {
         HStack(alignment: .top, spacing: 10) {
             RoundedRectangle(cornerRadius: 1.5).fill(Theme.line).frame(width: 3)
             Pills(title: "Context", options: CONTEXTS.map { ($0, $0) }, selected: selected, id: id,
-                  tint: AppSection.settings.color, choose: choose)
+                  tint: AppSection.settings.color, heading: .question, choose: choose)
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.leading, 18)

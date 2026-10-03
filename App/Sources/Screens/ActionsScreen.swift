@@ -8,6 +8,8 @@ struct ActionsScreen: View {
     @State private var searching = false
     @EnvironmentObject var model: LibraryModel
     @State private var text = ""
+    /// What Add was missing, said under the field (never a grey button).
+    @State private var needs = ""
     @State private var high = false
     @State private var buying = false
 
@@ -99,17 +101,11 @@ struct ActionsScreen: View {
                 .accessibilityIdentifier("action-add-high")
                 .accessibilityLabel("High priority")
                 .accessibilityAddTraits(high ? .isSelected : [])
-                Button { add() } label: {
-                    Text("Add").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(jsTrim(text).isEmpty ? Theme.muted : Color.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(jsTrim(text).isEmpty ? Theme.line : AppSection.actions.color))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(text).isEmpty)
-                .accessibilityIdentifier("action-add")
+                Button { add() } label: { FieldButtonLabel(title: "Add", tint: AppSection.actions.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("action-add")
             }
+            .needsLine($needs, typed: text, id: "action-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
@@ -134,7 +130,7 @@ struct ActionsScreen: View {
 
     private func add() {
         let t = text
-        guard !jsTrim(t).isEmpty else { return }
+        guard !jsTrim(t).isEmpty else { needs = "Type a to-do first."; return }
         model.change { _ = $0.addAction(text: t, priority: high ? "high" : "normal") }
         text = ""; high = false
     }

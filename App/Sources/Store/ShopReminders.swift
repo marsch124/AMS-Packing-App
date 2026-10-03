@@ -54,11 +54,21 @@ final class ShopReminders {
             }
         }
         let into = try list()
+        // Dated the day it is sent — his and Anna's field test (8.3, 3 Oct 2026): "it
+        // created a reminder in the to-buy packing list, but there is no date, so it's
+        // very anonymous"; he chose the day he sends it. Year, month and day only (the
+        // Gregorian calendar, his time zone's today): with no time it is an all-day
+        // reminder for today, never an alarm. The pretend Reminders the UI tests use
+        // above keeps no dates, so this is seen in Reminders itself, not by a test.
+        let gregorian = Calendar(identifier: .gregorian)          // in TimeZone.current
+        var today = gregorian.dateComponents([.year, .month, .day], from: Date())
+        today.calendar = gregorian
         var made: [(String, EKReminder)] = []
         for a in lines {
             let r = EKReminder(eventStore: store)
             r.title = a.text
             r.calendar = into
+            r.dueDateComponents = today
             try store.save(r, commit: false)
             made.append((a.id, r))
         }

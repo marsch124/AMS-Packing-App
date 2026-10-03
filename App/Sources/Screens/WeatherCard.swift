@@ -10,6 +10,8 @@ struct WeatherCard: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
     @State private var place = ""
+    /// What Weather was missing, said under the field (never a grey button).
+    @State private var needs = ""
     @State private var asked = false
 
     private var trip: TripEvent? { model.library.trip(tripId) }
@@ -79,19 +81,20 @@ struct WeatherCard: View {
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .onSubmit { look() }
                         .accessibilityIdentifier("weather-place")
+                    // Always in colour (his rule for a main button); with no place it
+                    // says so under the field, and while it looks it says "Looking…".
                     Button { look() } label: {
                         Text(busy ? "Looking…" : "Weather")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(jsTrim(place).isEmpty || busy ? Theme.muted : Color.white)
+                            .foregroundStyle(Color.white)
                             .padding(.horizontal, 14).frame(minHeight: 40)
-                            .background(RoundedRectangle(cornerRadius: 10)
-                                .fill(jsTrim(place).isEmpty || busy ? Theme.line : AppSection.events.color))
+                            .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .disabled(jsTrim(place).isEmpty || busy)
                     .accessibilityIdentifier("weather-look")
                 }
+                .needsLine($needs, typed: place, id: "weather-look-needs")
             }
             if let trouble = model.weatherTrouble[tripId], !trouble.isEmpty {
                 Text(trouble).font(.system(size: 14, weight: .semibold))
@@ -127,7 +130,8 @@ struct WeatherCard: View {
 
     private func look() {
         let name = jsTrim(place)
-        guard !name.isEmpty else { return }
+        guard !busy else { return }                 // one look at a time
+        guard !name.isEmpty else { needs = "Type a place first."; return }
         Task { await model.lookUpWeather(tripId: tripId, place: name) }
     }
 
