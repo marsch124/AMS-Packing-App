@@ -1564,14 +1564,144 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "wayhome-line-0")
         XCTAssertTrue(waitUntil { self.words(home) == "1/3" }, "the home tick did not count: '\(words(home))'")
         tap(app, id: "wayhome-line-1-usedup")
-        XCTAssertTrue(waitUntil { self.words(home) == "1/2" }, "used up still counts for the way home: '\(words(home))'")
+        XCTAssertTrue(waitUntil { self.words(home) == "1/2 · 1 used up" }, "used up still counts for the way home: '\(words(home))'")
         shot(app, "way-home")
         tap(app, id: "wayhome-done")
         XCTAssertTrue(disappears(app, "wayhome-screen", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "the way home touched the way-out ticks: '\(words(progress))'")
         tap(app, id: "trip-wayhome")
         XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5))
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-progress"]) == "1/2" }, "the way home was not kept")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-progress"]) == "1/2 · 1 used up" }, "the way home was not kept")
+    }
+
+    /// The sample trip with two lines packed and Sandals bought on site, and Pack to go
+    /// home open on it: three lines to bring home — Passport, Phone charger, and Sandals, which
+    /// has no thing behind it.
+    private func openWayHomeOfThree(_ app: XCUIApplication) -> XCUIElement {
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" })
+        app.buttons["trip-line-1"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" })
+        type("Sandals", into: app.textFields["trip-add-name"])
+        tap(app, id: "trip-add-bought")
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "Sandals did not go on: '\(words(progress))'")
+        tap(app, id: "trip-wayhome")
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open")
+        let home = app.staticTexts["wayhome-progress"]
+        XCTAssertTrue(waitUntil { self.words(home) == "0/3" }, "the way home is not the three lines: '\(words(home))'")
+        return home
+    }
+
+    /// "I would like a search function in the 'Pack to go home'" (their field test, 3 Oct
+    /// 2026): typing narrows the list by name, says so when nothing matches, the cross empties it.
+    func testTheWayHomeIsSearched() {
+        let app = launch()
+        _ = openWayHomeOfThree(app)
+        XCTAssertFalse(app.buttons["wayhome-search-clear"].exists, "a cross on an empty search")
+        type("sand", into: app.textFields["wayhome-search"])
+        XCTAssertTrue(waitUntil { !app.buttons["wayhome-line-0"].exists }, "the search did not narrow the list")
+        XCTAssertFalse(app.buttons["wayhome-line-1"].exists, "the search did not narrow the list")
+        XCTAssertTrue(app.buttons["wayhome-line-2"].exists, "the search lost what it was looking for")
+        shot(app, "way-home-search")
+        type("q", into: app.textFields["wayhome-search"])
+        XCTAssertTrue(app.staticTexts["wayhome-search-none"].waitForExistence(timeout: 5), "nothing matches, and it does not say so")
+        shot(app, "way-home-search-none")
+        tap(app, id: "wayhome-search-clear")
+        XCTAssertTrue(waitUntil { app.buttons["wayhome-line-0"].exists && app.buttons["wayhome-line-1"].exists
+                                  && app.buttons["wayhome-line-2"].exists }, "the cross did not bring the whole way home back")
+        XCTAssertFalse(app.staticTexts["wayhome-search-none"].exists, "it still says nothing matches")
+        XCTAssertFalse((app.textFields["wayhome-search"].value as? String ?? "").contains("sand"), "the cross left the search typed")
+        XCTAssertFalse(app.buttons["wayhome-search-clear"].exists, "the cross stayed on an empty search")
+    }
+
+    /// "There should be '1 used up' in the heading counting", and Used up is taken back
+    /// with Undo, not Back (their field test, 3 Oct 2026).
+    func testUsedUpIsCountedInTheHeadingAndUndone() {
+        let app = launch()
+        let home = openWayHomeOfThree(app)
+        tap(app, id: "wayhome-line-1-usedup")
+        XCTAssertTrue(waitUntil { self.words(home) == "0/2 · 1 used up" }, "the heading does not count what was used up: '\(words(home))'")
+        let undo = app.buttons["wayhome-line-1-usedup"]
+        XCTAssertTrue(waitUntil { self.words(undo) == "Undo" }, "a used-up line does not offer Undo: '\(words(undo))'")
+        shot(app, "way-home-used-up")
+        tap(app, id: "wayhome-line-1-usedup")
+        XCTAssertTrue(waitUntil { self.words(home) == "0/3" }, "Undo did not bring it back: '\(words(home))'")
+        XCTAssertTrue(waitUntil { self.words(undo) == "Used up" }, "after Undo it does not offer Used up again: '\(words(undo))'")
+    }
+
+    /// "While packing, we need a button to check off all items" (their field test, 3 Oct
+    /// 2026): one press ticks everything still coming home; the same place clears the ticks.
+    func testEverythingIsTickedForTheWayHomeAtOnce() {
+        let app = launch()
+        let home = openWayHomeOfThree(app)
+        tap(app, id: "wayhome-line-1-usedup")
+        XCTAssertTrue(waitUntil { self.words(home) == "0/2 · 1 used up" }, "'\(words(home))'")
+        tap(app, id: "wayhome-tickall")
+        XCTAssertTrue(waitUntil { self.words(home) == "2/2 · 1 used up" }, "Tick everything did not tick everything: '\(words(home))'")
+        XCTAssertTrue(isOn(app.buttons["wayhome-line-0"]) && isOn(app.buttons["wayhome-line-2"]), "the lines do not show their ticks")
+        XCTAssertFalse(isOn(app.buttons["wayhome-line-1"]), "a used-up line was ticked")
+        shot(app, "way-home-all-ticked")
+        tap(app, id: "wayhome-tickall")
+        XCTAssertTrue(waitUntil { self.words(home) == "0/2 · 1 used up" }, "the same place did not clear the ticks: '\(words(home))'")
+    }
+
+    /// "A button for each item to write maintenance in the comment" (their field test,
+    /// 3 Oct 2026): Note opens a field under the line; saved, it shows under the name and is kept.
+    func testALineKeepsANoteForTheWayHome() {
+        let app = launch()
+        _ = openWayHomeOfThree(app)
+        XCTAssertFalse(app.staticTexts["wayhome-line-0-notetext"].exists, "a note before one was written")
+        tap(app, id: "wayhome-line-0-note")
+        let field = app.textFields["wayhome-note-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Note opens no field")
+        type("Zip broken", into: field)
+        shot(app, "way-home-note-writing")
+        tap(app, id: "wayhome-note-save")
+        XCTAssertTrue(waitUntil { !app.textFields["wayhome-note-field"].exists }, "the note field stayed open")
+        let note = app.staticTexts["wayhome-line-0-notetext"]
+        XCTAssertTrue(waitUntil { self.words(note) == "Zip broken" }, "the note is not shown under the line: '\(words(note))'")
+        shot(app, "way-home-note")
+        tap(app, id: "wayhome-done")
+        XCTAssertTrue(disappears(app, "wayhome-screen", timeout: 5))
+        tap(app, id: "trip-wayhome")
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-line-0-notetext"]) == "Zip broken" }, "the note was not kept")
+    }
+
+    /// "A possibility to open the item from here, change or adjust stuff regarding the
+    /// item, and then come straight back here when done" (their field test, 3 Oct 2026).
+    /// Save and Cancel both land on the way home as it was — the search still typed.
+    func testAThingOpensFromTheWayHomeAndComesBack() {
+        let app = launch()
+        let home = openWayHomeOfThree(app)
+        XCTAssertFalse(app.buttons["wayhome-line-2-open"].exists, "something bought on site offers a thing to open")
+        tap(app, id: "wayhome-line-0")
+        XCTAssertTrue(waitUntil { self.words(home) == "1/3" }, "'\(words(home))'")
+        let search = app.textFields["wayhome-search"]
+        type("pass", into: search)
+        XCTAssertTrue(waitUntil { !app.buttons["wayhome-line-2"].exists }, "the search did not narrow the list")
+        tap(app, id: "wayhome-line-0-open")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Open did not open the thing")
+        shot(app, "way-home-open-thing")
+        replace("Safe", in: app.textFields["thing-storage"])
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Save did not close the thing")
+        XCTAssertTrue(waitUntil { (search.value as? String ?? "").contains("pass") }, "the search was lost on the way back")
+        XCTAssertTrue(app.buttons["wayhome-line-0"].exists && !app.buttons["wayhome-line-2"].exists,
+                      "the way home did not come back as it was")
+        XCTAssertTrue(waitUntil { self.words(home) == "1/3" }, "the ticks changed: '\(words(home))'")
+        // The change reached the thing itself; Cancel comes back the same way.
+        tap(app, id: "wayhome-line-0-open")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Open did not open the thing a second time")
+        XCTAssertTrue(waitUntil { (app.textFields["thing-storage"].value as? String) == "Safe" }, "the change did not reach the thing")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Cancel did not close the thing")
+        XCTAssertTrue(waitUntil { (search.value as? String ?? "").contains("pass") && app.buttons["wayhome-line-0"].exists },
+                      "Cancel did not come back to the way home as it was")
     }
 
     /// iCloud sync, made visible (his field test, 3 Oct 2026): Settings has the card;
