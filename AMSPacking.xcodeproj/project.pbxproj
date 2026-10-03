@@ -25,6 +25,7 @@
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
 		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
 		4F3FD7E1E457A44E56AB6E19 /* Headings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCA03D292255B391659C37C /* Headings.swift */; };
+		514EBAAF09401092026E5930 /* SyncCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EB78B915B77AE7BA834A4A /* SyncCheck.swift */; };
 		5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */; };
 		55A2BB9EF7E8AA1F601802AC /* TripChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9F694B5D78B16B402CD363 /* TripChecks.swift */; };
 		622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */; };
@@ -72,6 +73,7 @@
 		EB766063382A7E2DADC60C89 /* Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78A30067C884BCEB042959A /* Sections.swift */; };
 		ED1AD4573764AA2A6FA0350D /* TickAll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B024F8A00820DD9D55E10D0 /* TickAll.swift */; };
 		F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81D1DC40B7BE148110F1C91 /* BagDetail.swift */; };
+		FBC13904D9EB455D6F6AEDE9 /* SyncCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCE6F6679B4724E0039268E /* SyncCard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +87,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		01EB78B915B77AE7BA834A4A /* SyncCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCheck.swift; sourceTree = "<group>"; };
 		01F66AF282FB2C3C22DC9F76 /* PickThings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickThings.swift; sourceTree = "<group>"; };
 		029AD64D1791D9D681EA7DDF /* ShopReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopReminders.swift; sourceTree = "<group>"; };
 		09188E6ECCD40487862AB202 /* GrabShelfScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabShelfScreen.swift; sourceTree = "<group>"; };
@@ -144,6 +147,7 @@
 		CE240BD38035471259419B81 /* TemplateIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateIcons.swift; sourceTree = "<group>"; };
 		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
 		DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareCalendarView.swift; sourceTree = "<group>"; };
+		DBCE6F6679B4724E0039268E /* SyncCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCard.swift; sourceTree = "<group>"; };
 		DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagPhoto.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -212,6 +216,7 @@
 				47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */,
 				029AD64D1791D9D681EA7DDF /* ShopReminders.swift */,
 				76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */,
+				01EB78B915B77AE7BA834A4A /* SyncCheck.swift */,
 				35352F3BD8D2A7EE166961C9 /* Today.swift */,
 			);
 			path = Store;
@@ -295,6 +300,7 @@
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
 				C79C38939D0655EEE452D769 /* Share.swift */,
 				6C33289BF160D459176D7669 /* SmallDelete.swift */,
+				DBCE6F6679B4724E0039268E /* SyncCard.swift */,
 				5844FD1A40A106FF0878B093 /* TableColumns.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
 				ED9B041225333263C7547689 /* ThingsScreen.swift */,
@@ -465,6 +471,8 @@
 				C92C70F13CEE0569A0E0B014 /* ShopReminders.swift in Sources */,
 				38D87FC50351C1AC76DA3DE1 /* Shortcuts.swift in Sources */,
 				A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */,
+				FBC13904D9EB455D6F6AEDE9 /* SyncCard.swift in Sources */,
+				514EBAAF09401092026E5930 /* SyncCheck.swift in Sources */,
 				A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */,
 				A2EF7B9D15A856E17FB773D8 /* TemplateIcons.swift in Sources */,
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
@@ -617,7 +625,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.53;
+				MARKETING_VERSION = 0.54;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -704,7 +712,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.53;
+				MARKETING_VERSION = 0.54;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

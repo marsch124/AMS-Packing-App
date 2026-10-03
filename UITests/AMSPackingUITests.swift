@@ -1568,6 +1568,23 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["wayhome-progress"]) == "1/2" }, "the way home was not kept")
     }
 
+    /// iCloud sync, made visible (his field test, 3 Oct 2026): Settings has the card;
+    /// Sync now checks in from this device, and the card says so. (The tests keep the
+    /// library on the device, so the card says sync is off — the check-in still shows.)
+    func testSyncNowChecksInFromThisDevice() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let me = app.staticTexts["sync-self"]
+        XCTAssertTrue(me.waitForExistence(timeout: 5), "no iCloud sync card in Settings")
+        XCTAssertTrue(words(me).contains("has not checked in"), "a check-in before Sync now: '\(words(me))'")
+        XCTAssertTrue(words(app.staticTexts["sync-other"]).contains("has not checked in"), "the other device checked in in a test")
+        tap(app, id: "sync-now")
+        XCTAssertTrue(waitUntil { self.words(me).contains("checked in today") }, "Sync now did not check in: '\(words(me))'")
+        XCTAssertTrue(app.staticTexts["sync-said"].waitForExistence(timeout: 5), "Sync now said nothing")
+        shot(app, "sync-card")
+    }
+
     /// Save as Excel (the web app's Excel button, gap list 2026-09-27): near the end
     /// of a trip; it makes the file and opens the place to save it. (What the file
     /// holds is the model's test: WorkbookTests.)

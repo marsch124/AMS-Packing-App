@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.54", date: "3 Oct 2026", title: "iCloud sync, made visible",
+                new: ["Settings \u{2192} iCloud sync: when this device last sent and received, what iCloud does not have yet, and \u{2014} if a send failed \u{2014} why, in plain words.",
+                      "Sync now: this device checks in, and the other device's Settings shows it within a minute or so. A direct test of each direction.",
+                      "Copy details for Claude: everything iCloud recorded on this device, to paste into the chat."]),
         Release(version: "0.53", date: "2 Oct 2026", title: "Pack to go home",
                 new: ["Once a trip has begun (or something was bought there), the trip shows Pack to go home: what went and what you bought there, bag by bag, with ticks of its own. Used up takes a thing off. The photos of your packed bags sit at the top, to repack from. The ticks of the way out stay as they were, for the review."]),
         Release(version: "0.52", date: "2 Oct 2026", title: "A photo of the packed bag, and Bought there",
