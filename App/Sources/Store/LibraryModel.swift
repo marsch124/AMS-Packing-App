@@ -230,7 +230,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.sort", "ams.table.down", "ams.care.view", "ams.view", "ams.trip.folded", "ams.template.grouping", "ams.pick.grouping", PackingReminders.onKey] {
+            for key in ["ams.table.columns", "ams.table.sort", "ams.table.down", "ams.care.view", "ams.view", "ams.trip.folded", "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
         }
