@@ -679,7 +679,9 @@ final class AMSPackingUITests: XCTestCase {
         pick(day(5))
         XCTAssertTrue(waitUntil { says() == "\(pretty(day(3))) — \(pretty(day(5))) · 2 nights" },
                       "the range is not shown: '\(says())'")
-        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "the grid did not close after the last day")
+        // It waits for OK (his and Anna's field test, Oct 2026).
+        tap(app, id: "range-ok")
+        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "OK did not close the grid")
 
         // Open it again: a new first day — and a day BEFORE it, while the last day is
         // awaited, becomes the new first day rather than an end before the start.
@@ -691,6 +693,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { says() == pretty(day(1)) }, "an earlier day did not become the first day: '\(says())'")
         pick(day(2))
         XCTAssertTrue(waitUntil { says() == "\(pretty(day(1))) — \(pretty(day(2))) · 1 night" }, "'\(says())'")
+        tap(app, id: "range-ok")
+        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "OK did not close the grid")
 
         // The trip made keeps them.
         type("Dated trip", into: app.textFields["trip-name"])
@@ -1634,9 +1638,123 @@ final class AMSPackingUITests: XCTestCase {
         let tomorrow = String(format: "range-day-%04d-%02d-%02d", d.year!, d.month!, d.day!)
         if app.buttons[tomorrow].exists { tap(app, id: tomorrow) } else { tap(app, id: "range-next"); tap(app, id: tomorrow) }
         XCTAssertTrue(waitUntil { (field.value as? String ?? "") != before }, "picking a first day changed nothing")
+        // OK before the last day: the grid stays and says what is missing (his rule for
+        // a main button, 2026-09-26 — never grey, and pressed too early it says why).
+        XCTAssertFalse(app.staticTexts["range-needs"].exists, "the grid asks for the last day before OK was pressed")
+        tap(app, id: "range-ok")
+        XCTAssertTrue(app.staticTexts["range-needs"].waitForExistence(timeout: 5), "OK before the last day said nothing")
+        XCTAssertTrue(app.staticTexts["range-title-0"].exists, "OK before the last day closed the grid")
         tap(app, id: "range-cancel")
         XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "Cancel did not close the grid")
         XCTAssertEqual(field.value as? String ?? "", before, "Cancel did not put the dates back")
+    }
+
+    /// His and Anna's field test (Oct 2026): "When I choose the end date, don't just
+    /// pop out back, but stay there and present an OK button or a cancel button."
+    /// The grid stays open on the range picked, says it, offers OK and Cancel — and
+    /// OK keeps it.
+    func testTheDateGridWaitsForOK() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let cal = Calendar.current
+        let mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        func short(_ n: Int) -> String {
+            let c = cal.dateComponents([.day, .month], from: dayFromToday(n))
+            return "\(c.day!) \(mo[c.month! - 1])"
+        }
+        setSwitch(app, "trip-dates", on: true)
+        let grid = app.staticTexts["range-title-0"]
+        XCTAssertTrue(grid.waitForExistence(timeout: 5), "the month grid did not open")
+        let field = app.buttons["trip-dates-field"]
+        let summary = app.staticTexts["range-summary"]
+        func says() -> String { field.value as? String ?? "" }
+
+        // The last day picked: the grid stays, saying the range, with OK and Cancel.
+        pickDay(app, dayFromToday(3))
+        pickDay(app, dayFromToday(13))
+        XCTAssertTrue(waitUntil { self.words(summary) == "\(short(3)) \u{2013} \(short(13)) \u{00B7} 10 nights" },
+                      "the grid does not say the range: '\(words(summary))'")
+        XCTAssertTrue(grid.exists, "the grid closed after the last day")
+        XCTAssertTrue(app.buttons["range-ok"].exists, "no OK")
+        XCTAssertTrue(app.buttons["range-cancel"].exists, "no Cancel")
+        shot(app, "range-picked")
+
+        // OK keeps it.
+        tap(app, id: "range-ok")
+        XCTAssertTrue(waitUntil { !grid.exists }, "OK did not close the grid")
+        XCTAssertTrue(says().hasSuffix("10 nights"), "OK did not keep the range: '\(says())'")
+    }
+
+    /// With the grid waiting for OK, a tap after a whole range starts a new one (as
+    /// it always did), and Cancel — even after a whole range — puts back the dates
+    /// the grid opened with (his and Anna's field test, Oct 2026).
+    func testTheDateGridStartsOverAndCancelPutsItBack() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let cal = Calendar.current
+        let mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        func short(_ n: Int) -> String {
+            let c = cal.dateComponents([.day, .month], from: dayFromToday(n))
+            return "\(c.day!) \(mo[c.month! - 1])"
+        }
+        pickDates(app, from: 3, to: 13)
+        let grid = app.staticTexts["range-title-0"]
+        let field = app.buttons["trip-dates-field"]
+        let summary = app.staticTexts["range-summary"]
+        func says() -> String { field.value as? String ?? "" }
+        let kept = says()
+        XCTAssertTrue(kept.hasSuffix("10 nights"), "'\(kept)'")
+
+        tap(app, id: "trip-dates-field")
+        XCTAssertTrue(grid.waitForExistence(timeout: 5), "the field did not open the grid again")
+        pickDay(app, dayFromToday(5))
+        pickDay(app, dayFromToday(7))
+        XCTAssertTrue(waitUntil { self.words(summary).hasSuffix("2 nights") }, "'\(words(summary))'")
+        pickDay(app, dayFromToday(6))
+        XCTAssertTrue(waitUntil { !says().contains("night") }, "a tap after a whole range did not start a new one: '\(says())'")
+        pickDay(app, dayFromToday(9))
+        XCTAssertTrue(waitUntil { self.words(summary) == "\(short(6)) \u{2013} \(short(9)) \u{00B7} 3 nights" },
+                      "the new range is not said: '\(words(summary))'")
+        tap(app, id: "range-cancel")
+        XCTAssertTrue(waitUntil { !grid.exists }, "Cancel did not close the grid")
+        XCTAssertEqual(says(), kept, "Cancel did not put the dates back")
+    }
+
+    /// Valid until says how far away the date is, and offers the usual spans in one
+    /// tap — his and Anna's field test (Oct 2026): "It didn't say 10 days. You have
+    /// to calculate that yourself. Maybe we could add that information visually."
+    func testValidUntilSaysHowFarAwayAndOffersQuickSpans() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let distance = app.staticTexts["thing-expiry-distance"]
+        XCTAssertFalse(distance.exists, "a thing without a date says how far away it is")
+        tap(app, id: "thing-expiry-add")
+        XCTAssertTrue(waitUntil { self.words(distance) == "today" }, "a date added today does not say so: '\(words(distance))'")
+
+        // Each quick choice sets the date, and the words follow it.
+        for (n, said) in ["in 1 month", "in 6 months", "in 1 year", "in 5 years", "in 10 years"].enumerated() {
+            select(app, app.buttons["thing-expiry-quick-\(n)"])
+            XCTAssertTrue(waitUntil { self.words(distance) == said },
+                          "quick choice \(n) reads '\(words(distance))', not '\(said)'")
+        }
+        shot(app, "valid-until")
+
+        // It is the date itself that moved: saved, and read again.
+        select(app, app.buttons["thing-expiry-quick-2"])
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(distance) == "in 1 year" }, "the date did not keep: '\(words(distance))'")
+        XCTAssertTrue(isOn(app.buttons["thing-expiry-quick-2"]), "+1 year is not shown as the date's choice")
+
+        // Without the date, nothing is said.
+        tap(app, id: "thing-expiry-clear")
+        XCTAssertTrue(waitUntil { !distance.exists }, "the words stay after the date is removed")
     }
 
     /// Context sits UNDER the workouts it describes — set in, after WET and before
@@ -1918,33 +2036,37 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(isSwitchOn(app, id), on, "\(id) did not switch")
     }
 
-    /// Dates on Create new trip: today + `a` to today + `b`, picked in the grid.
-    private func pickDates(_ app: XCUIApplication, from a: Int, to b: Int) {
+    /// Today + `n` days, at midnight here.
+    private func dayFromToday(_ n: Int) -> Date {
         let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today)! }
-        func ymd(_ d: Date) -> String {
-            let c = cal.dateComponents([.year, .month, .day], from: d)
-            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
-        }
+        return cal.date(byAdding: .day, value: n, to: cal.startOfDay(for: Date()))!
+    }
+
+    /// Tap a day in the open month grid, paging towards its month first.
+    private func pickDay(_ app: XCUIApplication, _ d: Date) {
+        let cal = Calendar.current
+        let c = cal.dateComponents([.year, .month, .day], from: d)
+        let id = String(format: "range-day-%04d-%02d-%02d", c.year!, c.month!, c.day!)
         let months = ["January", "February", "March", "April", "May", "June", "July",
                       "August", "September", "October", "November", "December"]
-        func pick(_ d: Date) {
-            let id = "range-day-\(ymd(d))"
-            for _ in 0..<3 where !app.buttons[id].exists {
-                let shown = words(app.staticTexts["range-title-0"]).split(separator: " ")
-                let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
-                let y = Int(shown.last ?? "") ?? 0
-                let c = cal.dateComponents([.year, .month], from: d)
-                tap(app, id: (c.year! * 12 + c.month!) > (y * 12 + m) ? "range-next" : "range-prev")
-            }
-            tap(app, id: id)
+        for _ in 0..<3 where !app.buttons[id].exists {
+            let shown = words(app.staticTexts["range-title-0"]).split(separator: " ")
+            let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
+            let y = Int(shown.last ?? "") ?? 0
+            tap(app, id: (c.year! * 12 + c.month!) > (y * 12 + m) ? "range-next" : "range-prev")
         }
+        tap(app, id: id)
+    }
+
+    /// Dates on Create new trip: today + `a` to today + `b`, picked in the grid and
+    /// kept with OK (the grid waits for it since his and Anna's field test, Oct 2026).
+    private func pickDates(_ app: XCUIApplication, from a: Int, to b: Int) {
         setSwitch(app, "trip-dates", on: true)
         XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
-        pick(day(a))
-        pick(day(b))
-        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "the grid did not close after the last day")
+        pickDay(app, dayFromToday(a))
+        pickDay(app, dayFromToday(b))
+        tap(app, id: "range-ok")
+        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "OK did not close the grid")
     }
 
     /// A grab list counts what is in hand, refuses "Ready to go" while something

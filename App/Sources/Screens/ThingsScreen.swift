@@ -269,7 +269,7 @@ struct ThingEditor: View {
 
     /// A passport, an ID card, sun cream, medicine: the trip warns before it runs out.
     @ViewBuilder private var validUntil: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             if draft.expiry.isEmpty {
                 Button { draft.expiry = Today.local } label: {
                     Text("Add a date").font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.care.color)
@@ -280,6 +280,7 @@ struct ThingEditor: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("thing-expiry-add")
             } else {
+                let today = Today.local
                 HStack(spacing: 12) {
                     DatePicker("", selection: Binding(get: { ThingEditor.date(draft.expiry) ?? Date() },
                                                       set: { draft.expiry = ThingEditor.ymd($0) }),
@@ -292,12 +293,45 @@ struct ThingEditor: View {
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("thing-expiry-clear")
                 }
+                // How far away it is, in words, as the date changes — his and Anna's
+                // field test (Oct 2026): "It didn't say 10 days. You have to calculate
+                // that yourself." Large, and red once it has run out. A text of its own,
+                // outside any button, so the Mac does not fold it away.
+                Text(distanceWords(from: today, to: draft.expiry))
+                    .font(.system(size: 20, weight: .heavy))
+                    .foregroundStyle((daysBetween(today, draft.expiry) ?? 0) < 0 ? AppSection.actions.color : Theme.ink)
+                    .accessibilityIdentifier("thing-expiry-distance")
+                // The usual spans in one tap, counted from today; the date above still
+                // picks an exact day. The one matching the date is filled in.
+                FlowRow(spacing: 8) {
+                    ForEach(Array(ThingEditor.quickSpans.enumerated()), id: \.offset) { n, span in
+                        let on = draft.expiry == addMonths(today, span.months)
+                        Button { draft.expiry = addMonths(today, span.months) } label: {
+                            Text(span.label)
+                                .font(.system(size: 15, weight: .bold).monospacedDigit())
+                                .foregroundStyle(on ? Color.white : AppSection.care.color)
+                                .padding(.horizontal, 14).frame(minHeight: 38)
+                                .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
+                                .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("thing-expiry-quick-\(n)")
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
             }
             Text("The trip warns before it runs out \u{2014} a document (Documents & money) six months ahead.")
                 .font(.system(size: 14)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
+
+    /// The quick choices under Valid until: sun cream lasts about a year once open,
+    /// a passport five or ten.
+    static let quickSpans: [(label: String, months: Int)] = [
+        ("+1 month", 1), ("+6 months", 6), ("+1 year", 12), ("+5 years", 60), ("+10 years", 120),
+    ]
 
     private func flagWords(_ title: String, _ says: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
