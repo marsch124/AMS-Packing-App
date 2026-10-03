@@ -72,6 +72,7 @@
 		E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B838F35360E8BDAF890124 /* Theme.swift */; };
 		E2B76A8A26AB8A0D50EEA5C3 /* PickThings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F66AF282FB2C3C22DC9F76 /* PickThings.swift */; };
 		E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA49BA1121FBB7576FC62E32 /* RootView.swift */; };
+		E942A15DD0530D3181AEBD4C /* OnSiteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */; };
 		EB766063382A7E2DADC60C89 /* Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78A30067C884BCEB042959A /* Sections.swift */; };
 		ED1AD4573764AA2A6FA0350D /* TickAll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B024F8A00820DD9D55E10D0 /* TickAll.swift */; };
 		F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81D1DC40B7BE148110F1C91 /* BagDetail.swift */; };
@@ -111,6 +112,7 @@
 		3A74DCE749078F203A8E87BF /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnSiteScreen.swift; sourceTree = "<group>"; };
 		47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLibrary.swift; sourceTree = "<group>"; };
 		4926F40EBD71822EA9165684 /* RemindersSend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersSend.swift; sourceTree = "<group>"; };
 		4E38CAC9C9C8FFA96DF061FC /* AMSPackingUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AMSPackingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -297,6 +299,7 @@
 				258F81799F958E5C5EF112C5 /* ListsScreen.swift */,
 				AA08386166D3DBA4C2883F24 /* Loop.swift */,
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
+				44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */,
 				01F66AF282FB2C3C22DC9F76 /* PickThings.swift */,
 				6CC01537D593379C8EF1B84F /* RefineScreen.swift */,
 				4926F40EBD71822EA9165684 /* RemindersSend.swift */,
@@ -461,6 +464,7 @@
 				0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */,
 				D105E6CC01A99CC0BE25F875 /* Loop.swift in Sources */,
 				CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */,
+				E942A15DD0530D3181AEBD4C /* OnSiteScreen.swift in Sources */,
 				E2B76A8A26AB8A0D50EEA5C3 /* PickThings.swift in Sources */,
 				DAD37A1F2CA15C56CC068B58 /* RefineScreen.swift in Sources */,
 				80E3669131BEA0D1C726A660 /* Releases.swift in Sources */,
@@ -633,7 +637,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.56;
+				MARKETING_VERSION = 0.55;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -720,7 +724,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.56;
+				MARKETING_VERSION = 0.55;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
