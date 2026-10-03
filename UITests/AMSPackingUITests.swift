@@ -2009,8 +2009,13 @@ final class AMSPackingUITests: XCTestCase {
         let transport = app.staticTexts["trip-transport-title"]
         XCTAssertGreaterThan(context.frame.minY, swim.frame.maxY, "Context is not under the workouts")
         XCTAssertLessThan(context.frame.maxY, transport.frame.minY, "Context is not before Transport")
-        XCTAssertGreaterThan(context.frame.minX, transport.frame.minX + 24,
-                             "Context is not set in: \(context.frame.minX) vs \(transport.frame.minX)")
+        // Set in = its PILLS start further in than Transport's. (Measured on the pills since
+        // the field test of 3 Oct 2026: a heading over a block now starts with the band's
+        // mark, so the headings' words no longer start at the edge.)
+        let inner = app.buttons["trip-context-0"], outer = app.buttons["trip-transport-0"]
+        XCTAssertTrue(inner.exists && outer.exists, "no Context or Transport pills")
+        XCTAssertGreaterThan(inner.frame.minX, outer.frame.minX + 24,
+                             "Context is not set in: \(inner.frame.minX) vs \(outer.frame.minX)")
     }
 
     /// The web app's "Mark everything packed" / "Clear every tick" (gap list,
@@ -2764,13 +2769,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["thing-owner-0"].waitForExistence(timeout: 5), "no Whose it is")
         let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
         XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
-        // His ask (2026-09-26): keep the headings, make the buttons' text smaller — the
-        // editor's buttons are the slim ones (32 pt, not the 36 pt used elsewhere).
-        XCTAssertLessThan(app.buttons["thing-category-0"].frame.height, 35, "the editor's buttons are not the smaller ones")
-        // …and the headings are LARGE (his ask, 2026-09-27): a 19 pt line, not 14.
+        // His asks (2026-09-26/27, and the field test of 3 Oct 2026, "the headings …
+        // dominant, and the other buttons and pills are much smaller"): the headings are
+        // the big type — a 22 pt line (26 tall), where 19 pt was 23 — and the pills under
+        // them stay easy to press, 36 tall (their words 15, which no test can read).
         let heading = app.staticTexts["thing-category-title"]
         XCTAssertTrue(heading.waitForExistence(timeout: 5), "no Kind of thing heading")
-        XCTAssertGreaterThanOrEqual(heading.frame.height, 22, "the headings are not the larger ones: \(heading.frame.height)")
+        let line = heading.frame.height, pill = app.buttons["thing-category-0"].frame.height
+        XCTAssertTrue(line >= 25 && pill >= 36,
+                      "headings must lead (a 22 pt line: got \(line) tall) over pills still easy to press (36 tall: got \(pill))")
     }
 
     /// A grab list is edited — renamed, one removed, one added — and stays so.
