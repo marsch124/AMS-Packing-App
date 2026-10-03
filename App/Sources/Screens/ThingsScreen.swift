@@ -13,12 +13,22 @@ struct ThingsScreen: View {
     @State private var noListOnly = false
     @State private var newName = ""
     @State private var editing: String?
+    /// What he added on this visit, newest first — his and Anna's field test (3 Oct
+    /// 2026): "When you add an item, it needs to be on top of the list. Now it is just
+    /// hidden in the total list." They stay on top until the screen is left.
+    @State private var justAdded: [String] = []
+    /// The one just added, lit up for a moment so the eye lands on it.
+    @State private var lit: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let all = model.library.thingRows()
         let homeless = all.filter { $0.templates.isEmpty }.count
         let q = normName(query)
         let shown = all.filter { (!noListOnly || $0.templates.isEmpty) && (q.isEmpty || normName($0.item.name).contains(q)) }
+        // The ones added on this visit first (newest on top), then the rest A–Z.
+        let fresh = justAdded.compactMap { id in shown.first { $0.item.id == id } }
+        let rest = fresh.isEmpty ? shown : shown.filter { !justAdded.contains($0.item.id) }
         VStack(spacing: 0) {
             HStack {
                 Text("Your things").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
@@ -32,11 +42,11 @@ struct ThingsScreen: View {
             TextField("Search your things…", text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 17)).foregroundStyle(Theme.ink)
+                .clearButton($query, id: "things-search")
                 .padding(.horizontal, 12).frame(minHeight: 40)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 .padding(.horizontal, 16)
-                .accessibilityIdentifier("things-search")
             HStack(spacing: 10) {
                 Text(shown.count == 1 ? "1 thing" : "\(shown.count) things")
                     .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
@@ -57,26 +67,28 @@ struct ThingsScreen: View {
                 }
             }
             .padding(.horizontal, 16).padding(.top, 10)
-            KeyboardAwayScroll {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(shown.enumerated()), id: \.element.item.id) { n, row in
-                        Button { editing = row.item.id } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(row.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
-                                Text([row.templates.isEmpty ? "On no template" : row.templates.joined(separator: ", "),
-                                      row.item.storage].filter { !$0.isEmpty }.joined(separator: " · "))
-                                    .font(.system(size: 14)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
-                                    .lineLimit(1)
+            ScrollViewReader { proxy in
+                KeyboardAwayScroll {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        Color.clear.frame(height: 0).id(ThingsScreen.top)
+                        if !fresh.isEmpty {
+                            listHeading("Just added", id: "things-just-added")
+                            ForEach(Array(fresh.enumerated()), id: \.element.item.id) { n, row in
+                                thingRow(row, n: n)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 10).contentShape(Rectangle())
+                            if !rest.isEmpty { listHeading("A–Z", id: "things-rest") }
                         }
-                        .buttonStyle(.plain)
-                        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-                        .accessibilityIdentifier("thing-row-\(n)")
+                        ForEach(Array(rest.enumerated()), id: \.element.item.id) { n, row in
+                            thingRow(row, n: fresh.count + n)
+                        }
                     }
+                    .padding(.horizontal, 16).padding(.bottom, 24)
                 }
-                .padding(.horizontal, 16).padding(.bottom, 24)
+                // Wherever the list was scrolled to, a new thing is seen arriving.
+                .onChange(of: justAdded) { _, _ in
+                    if reduceMotion { proxy.scrollTo(ThingsScreen.top, anchor: .top) }
+                    else { withAnimation { proxy.scrollTo(ThingsScreen.top, anchor: .top) } }
+                }
             }
             HStack(spacing: 8) {
                 TextField("A new thing", text: $newName)
@@ -112,11 +124,54 @@ struct ThingsScreen: View {
         #endif
     }
 
+    private static let top = "things-top"
+
+    private func thingRow(_ row: (item: Item, templates: [String]), n: Int) -> some View {
+        Button { editing = row.item.id } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text([row.templates.isEmpty ? "On no template" : row.templates.joined(separator: ", "),
+                      row.item.storage].filter { !$0.isEmpty }.joined(separator: " · "))
+                    .font(.system(size: 14)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 10)
+            // Lit just past the text's edges, so the name does not move.
+            .background(RoundedRectangle(cornerRadius: 8)
+                .fill(lit == row.item.id ? AppSection.care.color.opacity(0.18) : Color.clear)
+                .padding(.horizontal, -8))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        .accessibilityIdentifier("thing-row-\(n)")
+    }
+
+    private func listHeading(_ title: String, id: String) -> some View {
+        Text(title.uppercased())
+            .font(.system(size: 15, weight: .heavy)).kerning(0.6).foregroundStyle(AppSection.care.color)
+            .padding(.top, 12).padding(.bottom, 2)
+            .accessibilityIdentifier(id)
+    }
+
     private func add() {
         let name = newName
         guard !jsTrim(name).isEmpty else { return }
-        model.change { _ = $0.addThing(name: name) }
+        var made: Item?
+        model.change { made = $0.addThing(name: name) }
         newName = ""
+        guard let id = made?.id else { return }
+        // A search that would hide it is emptied: the point is to SEE it arrive.
+        let q = normName(query)
+        if !q.isEmpty && !normName(name).contains(q) { query = "" }
+        justAdded.removeAll { $0 == id }
+        justAdded.insert(id, at: 0)
+        lit = id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            guard lit == id else { return }
+            if reduceMotion { lit = nil } else { withAnimation(.easeOut(duration: 0.6)) { lit = nil } }
+        }
     }
 
     private struct Editing: Identifiable { let id: String }

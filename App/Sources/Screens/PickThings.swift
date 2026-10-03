@@ -11,6 +11,10 @@ import PackingLibrary
 /// A–Z), searchable; tick as many as he likes and put them on in one press. What is
 /// already on the template shows as such and cannot be ticked twice. A name that
 /// matches nothing can be made into a new thing, straight onto the template.
+///
+/// Every group folds — his and Anna's field test (3 Oct 2026): "It is an extremely
+/// long list when adding, so we need toggles everywhere. We need the list to be
+/// collapsible and expandable. Also, an alternative: Collapse All or Expand All."
 struct PickThingsScreen: View {
     let templateId: String
     @EnvironmentObject var model: LibraryModel
@@ -18,6 +22,10 @@ struct PickThingsScreen: View {
     @State private var query = ""
     @State private var picked: Set<String> = []
     @AppStorage("ams.pick.grouping") private var groupingRaw = ThingGrouping.kind.rawValue
+    /// The groups folded away, remembered on this device as the trip's are — per way
+    /// of grouping ("Kind", "From where"…), one "grouping|heading" per line, so a fold
+    /// made under From where does not fold a group of the same name under Into.
+    @AppStorage("ams.pick.folded") private var foldedRaw = ""
 
     private static let ways: [ThingGrouping] = [.kind, .fromWhere, .into, .when, .name]
 
@@ -31,6 +39,10 @@ struct PickThingsScreen: View {
         let exact = model.library.items.contains { normName($0.name) == q }
         let numbered = PickThingsScreen.numbered(groups)
         let violet = AppSection.templates.color
+        // A search opens every group: what he typed for must never sit in a folded
+        // one. The folds come back as they were when the search is emptied.
+        let searching = !q.isEmpty
+        let allFolded = !groups.isEmpty && groups.allSatisfy { isFolded($0.title, grouping) }
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Button("Cancel") { dismiss() }
@@ -53,10 +65,10 @@ struct PickThingsScreen: View {
                 TextField("Search your things, or type a new one", text: $query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .clearButton($query, id: "pick-search")
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                    .accessibilityIdentifier("pick-search")
                 FlowRow(spacing: 6) {
                     Text("Group").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
                         .frame(minHeight: 32)
@@ -75,6 +87,30 @@ struct PickThingsScreen: View {
                                 .accessibilityAddTraits(on ? .isSelected : [])
                             }
                 }
+                // How many there are, and one press to fold every group away or open
+                // them all again. Not while searching: a search opens every group.
+                HStack(spacing: 10) {
+                    Text(things.count == 1 ? "1 thing" : "\(things.count) things")
+                        .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("pick-count")
+                    Spacer()
+                    if !searching && !groups.isEmpty {
+                        Button { setFolded(!allFolded, groups.map(\.title), grouping) } label: {
+                            HStack(spacing: 6) {
+                                FoldAllMark(folding: !allFolded).frame(width: 24, height: 24)
+                                Text(allFolded ? "Unfold all" : "Fold all").font(.system(size: 15, weight: .bold))
+                            }
+                            .foregroundStyle(violet)
+                            .padding(.leading, 8).padding(.trailing, 12).frame(minHeight: 34)
+                            .background(Capsule().fill(violet.opacity(0.10)))
+                            .overlay(Capsule().stroke(violet, lineWidth: 1.2))
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("pick-fold-all")
+                    }
+                }
+                .frame(minHeight: 34)
             }
             .padding(.horizontal, 16).padding(.bottom, 8)
             KeyboardAwayScroll {
@@ -97,12 +133,12 @@ struct PickThingsScreen: View {
                         .accessibilityIdentifier("pick-new")
                     }
                     ForEach(Array(numbered.enumerated()), id: \.offset) { g, group in
-                        Text(group.title.uppercased())
-                            .font(.system(size: 16, weight: .heavy)).kerning(0.6).foregroundStyle(violet)
-                            .padding(.top, 14)
-                            .accessibilityIdentifier("pick-heading-\(g)")
-                        ForEach(group.rows, id: \.1.id) { n, thing in
-                            row(thing, n: n, on: already.contains(thing.id), grouping: grouping)
+                        let folded = !searching && isFolded(group.title, grouping)
+                        heading(group, g: g, folded: folded, searching: searching, grouping: grouping)
+                        if !folded {
+                            ForEach(group.rows, id: \.1.id) { n, thing in
+                                row(thing, n: n, on: already.contains(thing.id), grouping: grouping)
+                            }
                         }
                     }
                     if things.isEmpty && q.isEmpty {
@@ -120,6 +156,65 @@ struct PickThingsScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 620)
         #endif
+    }
+
+    /// A group's heading: the arrow that folds it, its name, and how many things it
+    /// holds and how many of them are ticked — so a folded group loses nothing. The
+    /// arrow is its own button and the name a text of its own (the Mac folds a
+    /// button's texts into the button); the name folds too, as on a trip.
+    private func heading(_ group: (title: String, rows: [(Int, Item)]), g: Int, folded: Bool,
+                         searching: Bool, grouping: ThingGrouping) -> some View {
+        let violet = AppSection.templates.color
+        let total = group.rows.count
+        let ticked = group.rows.filter { picked.contains($0.1.id) }.count
+        let count = Text(total == 1 ? "1 thing" : "\(total) things")
+        return HStack(spacing: 6) {
+            if searching {
+                // Nothing to fold while searching; the name keeps its place.
+                Color.clear.frame(width: 30, height: 36)
+            } else {
+                Button { toggleFold(group.title, grouping) } label: {
+                    SVGPath.path("M9 6l6 6-6 6")
+                        .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                        .frame(width: 24, height: 24)
+                        .rotationEffect(.degrees(folded ? 0 : 90))
+                        .foregroundStyle(Theme.ink)
+                        .frame(width: 30, height: 36).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("pick-group-\(g)-fold")
+                .accessibilityLabel(folded ? "Open \(group.title)" : "Fold \(group.title)")
+            }
+            Text(group.title.uppercased())
+                .font(.system(size: 16, weight: .heavy)).kerning(0.6).foregroundStyle(violet)
+                .lineLimit(1)
+                .accessibilityIdentifier("pick-heading-\(g)")
+                .onTapGesture { if !searching { toggleFold(group.title, grouping) } }
+            (ticked == 0 ? count : count + Text(" \u{00B7} \(ticked) ticked").foregroundStyle(violet))
+                .font(.system(size: 14, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                .lineLimit(1)
+                .accessibilityIdentifier("pick-heading-\(g)-count")
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 10)
+    }
+
+    private func foldKey(_ title: String, _ grouping: ThingGrouping) -> String { "\(grouping.rawValue)|\(title)" }
+    private func isFolded(_ title: String, _ grouping: ThingGrouping) -> Bool {
+        foldedRaw.split(separator: "\n").contains { String($0) == foldKey(title, grouping) }
+    }
+    private func toggleFold(_ title: String, _ grouping: ThingGrouping) {
+        setFolded(!isFolded(title, grouping), [title], grouping)
+    }
+    /// Fold (or open) these groups of this grouping — one, or all of them at once.
+    private func setFolded(_ fold: Bool, _ titles: [String], _ grouping: ThingGrouping) {
+        var keys = foldedRaw.split(separator: "\n").map(String.init)
+        for title in titles {
+            let k = foldKey(title, grouping)
+            keys.removeAll { $0 == k }
+            if fold { keys.append(k) }
+        }
+        foldedRaw = keys.joined(separator: "\n")
     }
 
     private func row(_ thing: Item, n: Int, on: Bool, grouping: ThingGrouping) -> some View {
@@ -177,6 +272,20 @@ struct PickThingsScreen: View {
         guard !name.isEmpty else { return }
         model.change { _ = $0.addToTemplate(templateId: templateId, name: name) }
         query = ""
+    }
+}
+
+/// Fold all / Unfold all, drawn: the groups' own arrow, as the groups will be after
+/// the press — pointing on (folded) or down (open). Two arrows meeting read as an ✕
+/// beside the search's ✕ (seen on the screen, 3 Oct 2026).
+struct FoldAllMark: View {
+    /// true = the press folds; false = it opens.
+    let folding: Bool
+    var body: some View {
+        SVGPath.path("M9 6l6 6-6 6")
+            .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+            .rotationEffect(.degrees(folding ? 0 : 90))
+            .accessibilityHidden(true)
     }
 }
 

@@ -18,6 +18,20 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.56", date: "3 Oct 2026", title: "Your field test, part two",
+                new: ["Pack to go home: search the list; Tick everything (and Clear the ticks); the heading counts what was used up \u{2014} \u{201C}1/2 \u{00B7} 1 used up\u{201D}. Each line takes a note (\u{201C}zip broken\u{201D}), and Open changes the thing and comes straight back.",
+                      "Up to three photos of each packed bag. Tap one to see it large; Next steps through them. The way home shows them all.",
+                      "Valid until says how far away the date is \u{2014} \u{201C}in 10 days\u{201D}, \u{201C}in 4 months\u{201D}, red once it has run out \u{2014} and +1 month, +6 months, +1 year, +5 years or +10 years sets it in one tap.",
+                      "Choose from your things: every group folds with its arrow, or all at once with Fold all. A folded group still says how many things it holds and how many you ticked.",
+                      "An \u{2715} in every search field empties it in one tap.",
+                      "Settings: Your first real trip in 6 steps has its own door.",
+                      "Save as Excel has a Category column, right after Thing."],
+                changed: ["\u{201C}Shelf\u{201D} is now \u{201C}Activity area\u{201D}, the group a template lives in (GA, WET\u{2026}). Grab lists that are not on Home wait in Grab Lists.",
+                          "\u{201C}Bought there\u{201D} is now \u{201C}Bought on site\u{201D}.",
+                          "Picking trip dates: after the last day the calendar stays open and shows the range \u{2014} \u{201C}6 Oct \u{2013} 16 Oct \u{00B7} 10 nights\u{201D}. OK keeps it; Cancel puts the dates back.",
+                          "Used up is taken back with Undo.",
+                          "Your things: what you just added stays at the top, under Just added, until you leave the screen.",
+                          "Renaming a bag takes each trip's scale reading and bag photos along; deleting one moves its photos to the bag its things go to."]),
         Release(version: "0.55", date: "3 Oct 2026", title: "Fixes from your field test",
                 new: ["The Action button: a new Shortcuts action, Choose a grab list. One press opens all your grab lists as big tiles; tap the one for today.",
                       "On a trip, tap a bag: Goes in the cabin can be switched on right there \u{2014} also for a bag that was only a name on your lines. It then shows in Care \u{2192} Bags too."],

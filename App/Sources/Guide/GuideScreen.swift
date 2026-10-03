@@ -1,21 +1,26 @@
 import SwiftUI
 
-/// The two doors in Settings: What's new and How it works — his standing rule from
-/// the web apps, missing here until 0.23. They own their sheet, so Settings keeps
-/// the sheets it already has (several sheets on one view is a trap met in Search).
+/// The doors in Settings: What's new and How it works — his standing rule from the
+/// web apps, missing here until 0.23 — and the first real trip in six steps, which
+/// he and Anna asked to keep where they can read it again (field test, 3 Oct 2026:
+/// "Please save this in the app … so that we can choose to read that later as
+/// well"). They own their sheet, so Settings keeps the sheets it already has
+/// (several sheets on one view is a trap met in Search).
 struct GuideDoors: View {
-    enum Page: String, Identifiable { case whatsNew, howItWorks; var id: String { rawValue } }
+    enum Page: String, Identifiable { case whatsNew, howItWorks, firstTrip; var id: String { rawValue } }
     @State private var page: Page?
 
     var body: some View {
         VStack(spacing: 10) {
             door("What's new", Releases.all.first.map { "\($0.version) · \($0.title)" } ?? "", "settings-whatsnew") { page = .whatsNew }
             door("How it works", "The whole app in plain words, screen by screen", "settings-howitworks") { page = .howItWorks }
+            door("Your first real trip", "In 6 steps, from a backup to the review", "settings-firsttrip") { page = .firstTrip }
         }
         .sheet(item: $page) { p in
             switch p {
             case .whatsNew: WhatsNewScreen()
             case .howItWorks: HowItWorksScreen()
+            case .firstTrip: FirstTripScreen()
             }
         }
     }
@@ -131,7 +136,7 @@ struct HowItWorksScreen: View {
             "Grab and go: eight grab lists, four in a row, for a quick outing. Tap one, then tick what is in your hand. The count stays at the top while you scroll; Ready to go too early says Not yet in the middle of the screen, with what is missing.",
             "Grab Lists, at the top: the ones on Home (up to eight), in your order, and the ones waiting, each with everything on it. Make a new one at the bottom; tap a waiting one to put it on Home \u{2014} when Home is full, you pick which one steps back.",
             "Under the grab lists: the countdown to your next trip \u{2014} the days, the trip, and the next packing step with when it is due. Tap it to open the trip.",
-            "Create new trip: a name, Dates (tap the first day, then the last; Cancel under the month puts them back), Quick if only the templates you tick should come along — it says so in green while it is on.",
+            "Create new trip: a name, Dates (tap the first day, then the last; the line under the calendar says the range and the nights; OK keeps it, Cancel puts the dates back), Quick if only the templates you tick should come along — it says so in green while it is on.",
             "Create trip is always ready: if a name or a template is missing, it says so right under it.",
             "Pick the templates, then Transport, Season and Food, and Create trip. The trip gathers everything those templates hold. The workouts have their own colours (Swim blue, Bike yellow, Run green, Strength orange, Breath work lavender, Mobility pink), and picking one brings Context (Indoor, Outdoor, Race) set in under them.",
             "Laundry: wash and wear again, so per-night things count only the nights you pack for before a wash — 4 unless you pick 3, 5, 7, 10 or 14 under the switch (Trip settings has it too). It shows as \u{00D7}4 \u{00B7} laundry with a washtub.",
@@ -142,21 +147,23 @@ struct HowItWorksScreen: View {
             "The pen beside the count: Trip settings. Change the name, dates, place, templates, transport, season or food; Save rebuilds the list, and what you ticked or added yourself stays.",
             "At the bottom of Trip settings: Start a new trip from this one. The same list as it ended up, nothing ticked, no dates.",
             "Near the end of the list: Tick everything, and Clear every tick (it asks first). Lines set aside stay out of both.",
-            "Save as Excel and Share, side by side near the end of the list. Excel: the trip as a spreadsheet, by When and bag, with From where, Into, how many and what is packed. Share: the trip as a link (and a QR code when it is short enough) that opens in the web app and in this one, or as a file.",
+            "Save as Excel and Share, side by side near the end of the list. Excel: the trip as a spreadsheet, by When and bag, with From where, Into, Category, how many and what is packed. Share: the trip as a link (and a QR code when it is short enough) that opens in the web app and in this one, or as a file.",
             "The arrow before a section's name folds it away; tap it again to open. A trip remembers its folds.",
             "⊘ means not this time: it stays on the list, is not packed, and leaves the count. ↻ brings it back.",
             "Sorting: When (by the packing timeline), Into (by bag), From where (by where it is kept at home), Category.",
             "Weather: type the place; you get one line and only the rain or cold gear you have not packed yet, each with a +, and Add all when there are several.",
             "Tap a bag on a trip for Goes in the cabin: switched on, a plane trip checks that bag for liquids and things not allowed on board. A bag that was only a name on your lines becomes one of your Bags.",
-            "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over). Tap a bag to type what the luggage scale says \u{2014} from then on that is its weight; Clear takes it away \u{2014} and to take a photo of it packed, kept with the trip.",
+            "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over). Tap a bag to type what the luggage scale says \u{2014} from then on that is its weight; Clear takes it away \u{2014} and up to three photos of it packed, kept with the trip; each has its own Remove.",
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
             "Type a thing at the bottom to add it to this trip only. Bought it on site? Press Bought on site: it goes on ticked, marked so.",
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and templates stay."]),
         Topic(section: .events, title: "The way home", lines: [
             "Pack to go home appears on the trip once it has begun, or as soon as something is bought on site.",
             "It lists what went (ticked on the way out) and what you bought on site, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
-            "Used up: the thing stays on site or is finished \u{2014} off the way home. Back puts it on again.",
-            "The photos of your packed bags are at the top; tap one to see it large."]),
+            "Used up: the thing stays on site or is finished \u{2014} off the way home; the heading counts it. Undo puts it on again.",
+            "Search the list at the top; the \u{2715} empties it. Tick everything ticks all that still comes home; pressed again it clears the ticks.",
+            "Note writes a note on this trip's line (\u{201C}zip broken\u{201D}) \u{2014} the thing itself is not changed. Open opens the thing to change it; Save or Cancel brings you back where you were.",
+            "The photos of every packed bag are at the top; tap one to see it large, Next steps through them."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use; type what you missed, pick the template it goes onto, and Add it; then Save.",
             "Under a trip's name: where it stands in the loop, Plan · Pack · Review · Refine, each with the mark of the tab where it is done. Tap it for the whole picture.",
@@ -170,13 +177,15 @@ struct HowItWorksScreen: View {
             "Each template has an icon: the one its name suggests, or tap the square on its page to pick from 50 drawn ones (or Letter).",
             "+ New makes a template and asks in which activity area it should live. Open one to rename it, take a thing off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
             "Adding: Choose from your things, at the foot of a template — everything you own, grouped as you like, ticked and added in one go. Or type a new thing beside it.",
+            "In Choose from your things, the arrow before a group folds it; Fold all / Unfold all does every group. A folded group says how many things it holds and how many you ticked. A search opens them all while you type.",
             "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",
             "Delete template asks first. Your things stay.",
             "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
             "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [
             "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first). A change reaches the trips still ahead, on the lines you have not ticked yet.",
-            "On a thing's page: On a plane (Liquid, Not allowed in the cabin) and Valid until \u{2014} what a trip's Check before you go reads.",
+            "A thing you add in Your things stays at the top, under Just added, until you leave the screen. The \u{2715} in any search field empties it.",
+            "On a thing's page: On a plane (Liquid, Not allowed in the cabin) and Valid until \u{2014} what a trip's Check before you go reads. Under the date: how far away it is (red once it has run out); +1 month \u{2026} +10 years sets it in one tap.",
             "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, say whether it goes in the cabin, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month.",
@@ -189,6 +198,7 @@ struct HowItWorksScreen: View {
             "Remind me to pack: on this device, at 9 in the morning of the day each packing step is due, the trip and what is left. Each device asks for itself; under it, the next reminder and what it will say.",
             "iCloud sync: when this device last sent and received, and what is not in iCloud yet. Sync now checks in from here; the other device shows it within a minute or so \u{2014} if it does not, the card says why. Copy details for Claude gives me the full story.",
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",
+            "Your first real trip in 6 steps has its own door in Settings, to read again any time.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
             "Worth a look appears only when something in the library seems wrong.",
             "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list takes a free place on Home, or waits in Grab Lists when Home is full."]),
@@ -238,6 +248,26 @@ struct HowItWorksScreen: View {
         .background(Theme.bg)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("guide-howitworks")
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 620)
+        #endif
+    }
+}
+
+/// The six steps on a page of their own, opened from Settings — the same card as at
+/// the top of How it works, so the two can never say different things.
+struct FirstTripScreen: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            GuideHeader(title: "First real trip")
+            KeyboardAwayScroll {
+                FirstTripCard()
+                    .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+        }
+        .background(Theme.bg)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("guide-firsttrip")
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 620)
         #endif

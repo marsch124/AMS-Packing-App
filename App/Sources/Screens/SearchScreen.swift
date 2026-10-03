@@ -56,12 +56,12 @@ struct SearchScreen: View {
             TextField("Things, templates, trips, to-dos…", text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                .focused($writing)
+                .clearButton($query, id: "search-field")
                 .padding(.horizontal, 12).frame(minHeight: 44)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                .focused($writing)
                 .padding(.horizontal, 16)
-                .accessibilityIdentifier("search-field")
 
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {

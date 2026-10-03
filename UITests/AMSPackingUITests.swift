@@ -3746,4 +3746,243 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["lists-problem"].waitForExistence(timeout: 5), "a place in use was dropped without a word")
         XCTAssertTrue(waitUntil { self.find(app, "list-places-row-12") != nil }, "…and it must still be there")
     }
+
+    // MARK: - Long lists made easier (his and Anna's field test, 3 Oct 2026)
+
+    /// Choose from your things on Hiking, grouped From where — the sample's places, A–Z
+    /// (seen on the screen, 3 Oct 2026): Bathroom cabinet (Toothbrush: row 0), Chest of
+    /// drawers (Passport, Phone charger: 1–2), Garage (3–4) and Hall closet (5–6), both
+    /// already on Hiking, and No place set (Goggles, Swim cap, Towel: 7–9).
+    private func openPickerByPlace(_ app: XCUIApplication) {
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                           // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-pick")
+        XCTAssertTrue(appears(app, "pick-screen", timeout: 5), "Choose from your things did not open")
+        tap(app, id: "pick-group-fromWhere")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" },
+                      "From where did not group by place: '\(words(app.staticTexts["pick-heading-0"]))'")
+    }
+
+    private func pickRowsShown(_ app: XCUIApplication, _ rows: ClosedRange<Int>) -> Bool {
+        rows.allSatisfy { app.buttons["pick-row-\($0)"].exists }
+    }
+    private func pickRowsGone(_ app: XCUIApplication, _ rows: ClosedRange<Int>) -> Bool {
+        rows.allSatisfy { !app.buttons["pick-row-\($0)"].exists }
+    }
+
+    /// "We need the list to be collapsible and expandable": a group folds with its
+    /// arrow (or its name) and still says what it holds; it opens again.
+    func testAGroupOfThingsToChooseFoldsAndSaysWhatItHolds() {
+        let app = launch()
+        openPickerByPlace(app)
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things", "a group does not say how many it holds")
+        XCTAssertTrue(pickRowsShown(app, 1...2), "Chest of drawers' two things are not listed")
+
+        tap(app, id: "pick-group-1-fold")
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 1...2) }, "folding Chest of drawers left its things on screen")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1"]), "CHEST OF DRAWERS", "the folded group lost its name")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things", "the folded group no longer says how many it holds")
+        XCTAssertTrue(pickRowsShown(app, 0...0) && pickRowsShown(app, 3...4), "the groups around it folded as well")
+        shot(app, "pick-folded")
+
+        // The name folds too, as on a trip.
+        tapVisible(app, app.staticTexts["pick-heading-0"])
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...0) }, "tapping a group's name did not fold it")
+
+        // And it opens again.
+        tap(app, id: "pick-group-1-fold")
+        XCTAssertTrue(waitUntil { self.pickRowsShown(app, 1...2) }, "opening Chest of drawers did not bring its things back")
+    }
+
+    /// "Collapse All or Expand All": one button folds every group, then opens them all.
+    func testEveryGroupOfThingsToChooseFoldsAndOpensAtOnce() {
+        let app = launch()
+        openPickerByPlace(app)
+        XCTAssertEqual(words(app.buttons["pick-fold-all"]), "Fold all")
+        tap(app, id: "pick-fold-all")
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...9) }, "Fold all left things on screen")
+        XCTAssertTrue((0...4).allSatisfy { app.staticTexts["pick-heading-\($0)"].exists }, "a folded group lost its heading")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-4-count"]), "3 things", "a folded group does not say how many it holds")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["pick-fold-all"]) == "Unfold all" },
+                      "the button did not turn into Unfold all: '\(words(app.buttons["pick-fold-all"]))'")
+        shot(app, "pick-all-folded")
+        tap(app, id: "pick-fold-all")
+        XCTAssertTrue(waitUntil { self.pickRowsShown(app, 0...9) }, "Unfold all did not bring every thing back")
+        XCTAssertEqual(words(app.buttons["pick-fold-all"]), "Fold all")
+    }
+
+    /// The folds are remembered on the device, per way of grouping — like a trip's.
+    func testTheFoldsOfThingsToChooseAreRemembered() {
+        let app = launch()
+        openPickerByPlace(app)
+        tap(app, id: "pick-fold-all")
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) })
+        // A–Z has folds of its own (none), and From where comes back folded.
+        tap(app, id: "pick-group-name")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "A–Z" })
+        XCTAssertTrue(waitUntil { app.buttons["pick-row-0"].exists }, "From where's folds folded A–Z too")
+        tap(app, id: "pick-group-fromWhere")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" })
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "From where forgot its folds after A–Z")
+        // Closed and opened again.
+        tap(app, id: "pick-cancel")
+        XCTAssertTrue(disappears(app, "pick-screen", timeout: 5))
+        tap(app, id: "template-pick")
+        XCTAssertTrue(appears(app, "pick-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" })
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "the folds were forgotten when the picker was opened again")
+    }
+
+    /// A search opens every group — what he typed for never hides in a folded one —
+    /// and the folds come back when the search is emptied.
+    func testASearchOpensAFoldedGroupOfThingsToChoose() {
+        let app = launch()
+        openPickerByPlace(app)
+        tap(app, id: "pick-fold-all")
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) })
+        type("Tooth", into: app.textFields["pick-search"])
+        XCTAssertTrue(waitUntil { self.words(app.buttons["pick-row-0"]).contains("Toothbrush") },
+                      "the Toothbrush stayed hidden in its folded group: '\(words(app.buttons["pick-row-0"]))'")
+        XCTAssertFalse(app.buttons["pick-fold-all"].exists, "Fold all is offered while searching")
+        shot(app, "pick-searching")
+        tap(app, id: "pick-search-clear")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" })
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "the folds did not come back after the search")
+    }
+
+    /// A thing ticked in a group stays ticked while the group is folded — and the
+    /// folded group says so.
+    func testATickSurvivesFolding() {
+        let app = launch()
+        openPickerByPlace(app)
+        select(app, app.buttons["pick-row-1"])                    // the Passport, in Chest of drawers
+        XCTAssertTrue(waitUntil { self.words(app.buttons["pick-add"]) == "Add 1" })
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things · 1 ticked")
+        tap(app, id: "pick-fold-all")
+        XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) })
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things · 1 ticked", "the folded group lost its tick")
+        XCTAssertEqual(words(app.buttons["pick-add"]), "Add 1", "folding lost the tick")
+        shot(app, "pick-tick-folded")
+        tap(app, id: "pick-fold-all")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["pick-row-1"]) }, "the thing came back unticked")
+        XCTAssertEqual(words(app.buttons["pick-add"]), "Add 1")
+    }
+
+    /// "Please add an X so that it's quick to delete all typed characters": an ✕ in
+    /// every search field, there only while something is typed, emptying it in one tap.
+    func testTheCrossEmptiesASearch() {
+        let app = launch()
+        // Your things.
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let count = app.staticTexts["things-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "10 things" })
+        XCTAssertFalse(app.buttons["things-search-clear"].exists, "an ✕ with nothing to clear")
+        type("Head", into: app.textFields["things-search"])
+        XCTAssertTrue(waitUntil { self.words(count) == "1 thing" }, "the search did not narrow: '\(words(count))'")
+        shot(app, "things-search-cross")
+        tap(app, id: "things-search-clear")
+        XCTAssertTrue(waitUntil { self.words(count) == "10 things" }, "the ✕ did not empty the search: '\(words(count))'")
+        XCTAssertTrue(waitUntil { !app.buttons["things-search-clear"].exists }, "the ✕ stayed with nothing to clear")
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // The magnifier's search.
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("zzzz", into: app.textFields["search-field"])
+        XCTAssertTrue(app.staticTexts["search-none"].waitForExistence(timeout: 5))
+        tap(app, id: "search-field-clear")
+        XCTAssertTrue(waitUntil { !app.staticTexts["search-none"].exists }, "the ✕ did not empty the search")
+        XCTAssertFalse(((app.textFields["search-field"].value as? String) ?? "").contains("zzzz"), "the typed word is still there")
+        tap(app, id: "search-done")
+        XCTAssertTrue(disappears(app, "search-detail", timeout: 5))
+
+        // Choose from your things.
+        tab(app, "templates")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-pick")
+        XCTAssertTrue(appears(app, "pick-screen", timeout: 5))
+        let found = app.staticTexts["pick-count"]
+        XCTAssertTrue(waitUntil { self.words(found) == "10 things" })
+        type("Tooth", into: app.textFields["pick-search"])
+        XCTAssertTrue(waitUntil { self.words(found) == "1 thing" }, "the search did not narrow: '\(words(found))'")
+        tap(app, id: "pick-search-clear")
+        XCTAssertTrue(waitUntil { self.words(found) == "10 things" }, "the ✕ did not empty the search: '\(words(found))'")
+    }
+
+    /// The ✕ keeps the keyboard: the next word is typed straight away, without
+    /// tapping the field again.
+    func testTheCrossKeepsTheKeyboard() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let field = app.textFields["things-search"]
+        type("Head", into: field)
+        tap(app, id: "things-search-clear")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["things-count"]) == "10 things" })
+        field.typeText("Map")                                    // no tap: the field still has the keyboard
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["things-count"]) == "1 thing" },
+                      "typing after the ✕ did not reach the field: '\(words(app.staticTexts["things-count"]))'")
+        XCTAssertEqual(field.value as? String, "Map", "the field holds more than the new word")
+    }
+
+    /// "When you add an item, it needs to be on top of the list": a thing added on
+    /// this visit is first, newest on top, under Just added — until the screen is left.
+    func testANewThingShowsOnTopUnderJustAdded() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let count = app.staticTexts["things-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "10 things" })
+        XCTAssertFalse(app.staticTexts["things-just-added"].exists, "Just added with nothing added")
+
+        // Names that would sort LAST, A–Z.
+        type("Zip ties", into: app.textFields["thing-new-name"])
+        tap(app, id: "thing-new")
+        XCTAssertTrue(waitUntil { self.words(count) == "11 things" }, "the new thing was not added")
+        let heading = app.staticTexts["things-just-added"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "no Just added heading")
+        XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].label.contains("Zip ties") },
+                      "the new thing is not at the top: '\(app.buttons["thing-row-0"].label)'")
+        XCTAssertLessThanOrEqual(heading.frame.maxY, app.buttons["thing-row-0"].frame.minY + 1, "Just added is not above it")
+        shot(app, "things-just-added")
+
+        type("Yoga strap", into: app.textFields["thing-new-name"])
+        tap(app, id: "thing-new")
+        XCTAssertTrue(waitUntil { self.words(count) == "12 things" })
+        XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].label.contains("Yoga strap") },
+                      "the newest is not on top: '\(app.buttons["thing-row-0"].label)'")
+        XCTAssertTrue(app.buttons["thing-row-1"].label.contains("Zip ties"), "the first one left Just added")
+
+        // Left and opened again: back in their A–Z places.
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(count) == "12 things" })
+        XCTAssertFalse(app.staticTexts["things-just-added"].exists, "Just added outlived the visit")
+        XCTAssertFalse(app.buttons["thing-row-0"].label.contains("Yoga strap"), "the new thing is still on top after leaving")
+    }
+
+    /// "Please save this in the app … so that we can choose to read that later": the
+    /// first real trip in six steps has its own door in Settings.
+    func testTheFirstTripStepsHaveTheirOwnDoor() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-firsttrip")
+        XCTAssertTrue(appears(app, "guide-firsttrip", timeout: 5), "the six steps did not open")
+        XCTAssertNotNil(find(app, "guide-quickstart"), "the page has no first-trip card")
+        XCTAssertTrue((0..<6).allSatisfy { app.otherElements["quickstart-step-\($0)"].exists || app.staticTexts["quickstart-step-\($0)"].exists },
+                      "the page does not have six steps")
+        shot(app, "first-trip")
+        tap(app, id: "guide-done")
+        XCTAssertTrue(disappears(app, "guide-firsttrip", timeout: 5), "the six steps did not close")
+    }
 }
