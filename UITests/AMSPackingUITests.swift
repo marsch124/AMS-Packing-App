@@ -1528,6 +1528,7 @@ final class AMSPackingUITests: XCTestCase {
         type("Sun cream", into: app.textFields["trip-add-name"])
         XCTAssertTrue(waitUntil { self.words(app.buttons["trip-add-bought"]) == "Bought on site" },
                       "the button does not say Bought on site: '\(words(app.buttons["trip-add-bought"]))'")
+        shot(app, "bought-on-site-button")
         tap(app, id: "trip-add-bought")
         XCTAssertTrue(waitUntil { self.words(progress) == "1/8" }, "it is not on the list, in hand: '\(words(progress))'")
         hideKeyboard(app)
@@ -1537,6 +1538,7 @@ final class AMSPackingUITests: XCTestCase {
         }
         XCTAssertTrue(waitUntil { self.words(app.buttons["trip-line-7"]).contains("Bought on site") },
                       "the line does not say it was bought on site: '\(words(app.buttons["trip-line-7"]))'")
+        shot(app, "bought-on-site-line")
     }
 
     /// Pack to go home (his idea 13): what went and what was bought on site, with ticks of
@@ -1554,6 +1556,7 @@ final class AMSPackingUITests: XCTestCase {
         type("Sandals", into: app.textFields["trip-add-name"])
         tap(app, id: "trip-add-bought")
         XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "Sandals did not go on: '\(words(progress))'")
+        shot(app, "way-home-door")
         tap(app, id: "trip-wayhome")
         XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5), "Pack to go home did not open")
         let home = app.staticTexts["wayhome-progress"]
@@ -3233,6 +3236,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(asks.waitForExistence(timeout: 5), "no question about the activity area")
         XCTAssertEqual(words(asks).lowercased(), "in which activity area should it live?")
         XCTAssertEqual(words(app.buttons["newlist-area-none"]), "No activity area")
+        shot(app, "new-template-area")
         tap(app, id: "newlist-cancel")
         XCTAssertTrue(disappears(app, "newlist-detail", timeout: 5))
     }

@@ -515,7 +515,9 @@ struct TripScreen: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pack to go home").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
-                    Text("\(p.done)/\(p.total) \u{00B7} what went, and what you bought on site")
+                    // Short enough for one line on an iPhone: "what you bought on site" in
+                    // full ran off the card on the iPhone (Oct 2026).
+                    Text("\(p.done)/\(p.total) \u{00B7} what went, and bought on site")
                         .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
                 Spacer()
