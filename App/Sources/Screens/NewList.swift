@@ -6,8 +6,8 @@ import PackingLibrary
 ///
 /// The web app asks one question in a browser prompt — a name — and leaves the
 /// list ungrouped, which means it lands in "Other" and he has to go and file it.
-/// Here the shelf is asked for at the same time, because it is one tap and it is
-/// the difference between a list that is where he expects it and one that is not.
+/// Here the activity area is asked for at the same time, because it is one tap and
+/// it is the difference between a list that is where he expects it and one that is not.
 ///
 /// It also REFUSES a name he already has. The web app allows two lists with one
 /// name (identity is the id), but this app's own health check reads two lists
@@ -68,13 +68,15 @@ struct NewList: View {
                             .accessibilityIdentifier("newlist-taken")
                     }
 
-                    // His words (test H.6): "On which shelf should it live?"
-                    SectionTitle(title: "On which shelf should it live?")
+                    // His question (test H.6), in the word of the field test (Oct 2026):
+                    // "Please change the word 'shelf' throughout the app and call it
+                    // 'Activity area.' We understand that word much better."
+                    SectionTitle(title: "In which activity area should it live?", id: "newlist-area-title")
                         .padding(.top, 4).padding(.bottom, 6)
-                    ForEach(GROUPS, id: \.id) { shelf in
-                        shelfRow(shelf.id, "\(shelf.id) · \(shelf.label)")
+                    ForEach(GROUPS, id: \.id) { area in
+                        areaRow(area.id, "\(area.id) · \(area.label)")
                     }
-                    shelfRow("", "No shelf")
+                    areaRow("", "No activity area")
 
                     // Always ready, always in colour — his rule for a main button
                     // (2026-09-26); pressed too early, it says what is missing.
@@ -110,7 +112,7 @@ struct NewList: View {
 
     private var canMake: Bool { !jsTrim(name).isEmpty && !taken }
 
-    private func shelfRow(_ id: String, _ label: String) -> some View {
+    private func areaRow(_ id: String, _ label: String) -> some View {
         Button { group = id } label: {
             HStack {
                 Text(label)
@@ -123,7 +125,7 @@ struct NewList: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-        .accessibilityIdentifier("newlist-shelf-\(id.isEmpty ? "none" : id)")
+        .accessibilityIdentifier("newlist-area-\(id.isEmpty ? "none" : id)")
         .accessibilityAddTraits(group == id ? .isSelected : [])
     }
 

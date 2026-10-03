@@ -179,9 +179,9 @@ struct TripScreen: View {
                 BagsCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, 6).padding(.horizontal, 16)
                 // Pack to go home (his idea 13): once the trip has begun, or something
-                // was bought there.
+                // was bought on site.
                 if (isYMD(trip.startDate) && !jsStringLess(Today.local, trip.startDate))
-                    || !model.library.boughtThere(tripId: trip.id).isEmpty {
+                    || !model.library.boughtOnSite(tripId: trip.id).isEmpty {
                     wayHomeDoor(trip)
                         .padding(.top, 6).padding(.horizontal, 16)
                 }
@@ -345,10 +345,12 @@ struct TripScreen: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .disabled(jsTrim(newName).isEmpty)
                 .accessibilityIdentifier("trip-add")
-                // Bought there (his idea 12): on the list in one go, in hand already.
+                // Bought on site (his idea 12): on the list in one go, in hand already.
+                // "On site", not "there" — their word from the field test (Oct 2026).
                 if !jsTrim(newName).isEmpty {
                     Button { addBought() } label: {
-                        Text("Bought there").font(.system(size: 16, weight: .bold))
+                        Text("Bought on site").font(.system(size: 16, weight: .bold))
+                            .lineLimit(1).fixedSize()
                             .foregroundStyle(AppSection.events.color)
                             .padding(.horizontal, 12).frame(minHeight: 44)
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color, lineWidth: 1.4))
@@ -513,7 +515,9 @@ struct TripScreen: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pack to go home").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
-                    Text("\(p.done)/\(p.total) \u{00B7} what went, and what you bought there")
+                    // Short enough for one line on an iPhone: "what you bought on site" in
+                    // full ran off the card on the iPhone (Oct 2026).
+                    Text("\(p.done)/\(p.total) \u{00B7} what went, and bought on site")
                         .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
                 Spacer()
@@ -533,7 +537,7 @@ struct TripScreen: View {
     private func addBought() {
         let name = newName
         guard !jsTrim(name).isEmpty else { return }
-        model.change { _ = $0.addBoughtThere(tripId: tripId, name: name) }
+        model.change { _ = $0.addBoughtOnSite(tripId: tripId, name: name) }
         newName = ""
     }
 }
@@ -575,8 +579,8 @@ struct PackLine: View {
                     .foregroundStyle(aside ? Theme.muted : (line.checked ? Theme.muted : Theme.ink))
                     .strikethrough(aside, pattern: .solid, color: Theme.muted)
                     .lineLimit(2)
-                if Library.isBoughtThere(line) {
-                    Text("Bought there").font(.system(size: 13, weight: .bold)).foregroundStyle(AppSection.events.color)
+                if Library.isBoughtOnSite(line) {
+                    Text("Bought on site").font(.system(size: 13, weight: .bold)).foregroundStyle(AppSection.events.color)
                 }
             }
             Spacer(minLength: 8)

@@ -21,7 +21,7 @@ struct GrabListQuery: EntityQuery {
     }
     @MainActor func suggestedEntities() async throws -> [GrabListEntity] { Self.all() }
 
-    /// Home's eight first, in his order, then the rest of the shelf.
+    /// Home's eight first, in his order, then the ones waiting in Grab Lists.
     @MainActor static func all() -> [GrabListEntity] {
         let lib = LibraryModel.shared.library
         let home = lib.homeGrabLists()

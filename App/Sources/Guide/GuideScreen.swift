@@ -129,6 +129,7 @@ struct HowItWorksScreen: View {
     static let topics: [Topic] = [
         Topic(section: .home, title: "Home", lines: [
             "Grab and go: eight grab lists, four in a row, for a quick outing. Tap one, then tick what is in your hand. The count stays at the top while you scroll; Ready to go too early says Not yet in the middle of the screen, with what is missing.",
+            "Grab Lists, at the top: the ones on Home (up to eight), in your order, and the ones waiting, each with everything on it. Make a new one at the bottom; tap a waiting one to put it on Home \u{2014} when Home is full, you pick which one steps back.",
             "Under the grab lists: the countdown to your next trip \u{2014} the days, the trip, and the next packing step with when it is due. Tap it to open the trip.",
             "Create new trip: a name, Dates (tap the first day, then the last; Cancel under the month puts them back), Quick if only the templates you tick should come along — it says so in green while it is on.",
             "Create trip is always ready: if a name or a template is missing, it says so right under it.",
@@ -149,12 +150,12 @@ struct HowItWorksScreen: View {
             "Tap a bag on a trip for Goes in the cabin: switched on, a plane trip checks that bag for liquids and things not allowed on board. A bag that was only a name on your lines becomes one of your Bags.",
             "Bags: how full each bag is against its max weight; the ⓘ explains the colours (green fine, orange close, red over). Tap a bag to type what the luggage scale says \u{2014} from then on that is its weight; Clear takes it away \u{2014} and to take a photo of it packed, kept with the trip.",
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
-            "Type a thing at the bottom to add it to this trip only. Bought it there? Press Bought there: it goes on ticked, marked so.",
+            "Type a thing at the bottom to add it to this trip only. Bought it on site? Press Bought on site: it goes on ticked, marked so.",
             "At the very end of the list, Delete this trip asks first, then removes the trip. Your things and templates stay."]),
         Topic(section: .events, title: "The way home", lines: [
-            "Pack to go home appears on the trip once it has begun, or as soon as something is bought there.",
-            "It lists what went (ticked on the way out) and what you bought there, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
-            "Used up: the thing stays there or is finished \u{2014} off the way home. Back puts it on again.",
+            "Pack to go home appears on the trip once it has begun, or as soon as something is bought on site.",
+            "It lists what went (ticked on the way out) and what you bought on site, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
+            "Used up: the thing stays on site or is finished \u{2014} off the way home. Back puts it on again.",
             "The photos of your packed bags are at the top; tap one to see it large."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use; type what you missed, pick the template it goes onto, and Add it; then Save.",
@@ -165,9 +166,9 @@ struct HowItWorksScreen: View {
             "Reviewed trips fold away. Your year shows when you travel, month by month; All your trips counts everything, ever, with the map of where they went under it.",
             "The pin at the top: Where you have been. A map with a pin per place (a number when you went more than once), a line through your trips oldest first, and a card per place. A trip joins the map as soon as it has a place (in Trip settings or on its weather line), forecast or not."]),
         Topic(section: .templates, title: "Your templates", lines: [
-            "Templates are the building blocks of every trip, on their shelves (GA, WET and so on). The list you pack from is made from them.",
+            "Templates are the building blocks of every trip, in their activity areas (GA, WET and so on). The list you pack from is made from them.",
             "Each template has an icon: the one its name suggests, or tap the square on its page to pick from 50 drawn ones (or Letter).",
-            "+ New makes a template and asks on which shelf it should live. Open one to rename it, take a thing off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
+            "+ New makes a template and asks in which activity area it should live. Open one to rename it, take a thing off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
             "Adding: Choose from your things, at the foot of a template — everything you own, grouped as you like, ticked and added in one go. Or type a new thing beside it.",
             "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",
             "Delete template asks first. Your things stay.",
@@ -190,7 +191,7 @@ struct HowItWorksScreen: View {
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
             "Worth a look appears only when something in the library seems wrong.",
-            "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list takes a free place on Home, or waits on your shelf when Home is full."]),
+            "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list takes a free place on Home, or waits in Grab Lists when Home is full."]),
         Topic(section: .home, title: "Shortcuts and the Action button", lines: [
             "Packing offers three actions to Shortcuts and the Action button: Choose a grab list (a menu of them all, every time), Open a grab list (always the same one) and Open my next trip.",
             "The Action button: iPhone Settings \u{2192} Action Button \u{2192} swipe to Shortcut \u{2192} Choose a Shortcut \u{2192} Packing \u{2192} Choose a grab list. Press it: your grab lists appear; tap the one for today.",
@@ -252,7 +253,7 @@ struct FirstTripCard: View {
         ("Build your templates", "One per activity or need (Beach, Long stay…). On a template: Choose from your things, or type a new one. Tap a thing there for Only on some trips."),
         ("Create the trip", "Home → Create new trip: name, Dates, the templates, Transport, Season, Food, Laundry and its nights. Then the pen: type the Place — the map pin and the weather follow."),
         ("Pack", "Sorting: When for the timeline, From where to fetch room by room, Into to fill each bag. ⊘ is not this time. Watch the bag bars, and Check before you go when it shows. Settings \u{2192} Remind me to pack tells you when each step is due."),
-        ("Go, use, review", "There, the grab lists on Home are for each outing. Back home: Review — tap what you did not use, add what you missed. Refine learns from it."),
+        ("Go, use, review", "On site, the grab lists on Home are for each outing. Back home: Review — tap what you did not use, add what you missed. Refine learns from it."),
     ]
 
     var body: some View {

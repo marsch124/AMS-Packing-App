@@ -78,7 +78,7 @@ struct SectionMark: View {
 }
 
 /// "GA · GOAL ACTIVITY" — his own code for a group, then the words in capitals.
-/// The trip builder and the shelves on Your lists both say it this way, from here,
+/// The trip builder and the activity areas on Your templates both say it this way, from here,
 /// so the two can never drift apart.
 func groupHeading(_ id: String, _ label: String) -> String {
     let code = jsTrim(id)

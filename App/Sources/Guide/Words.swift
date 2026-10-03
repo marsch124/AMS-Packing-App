@@ -10,9 +10,11 @@ enum Words {
     static let all: [Entry] = [
         Entry(term: "Trip", meaning: "One journey: its dates, place and templates, and the list you pack from. The Trips tab.", section: .events),
         Entry(term: "Template", meaning: "A building block: the things for one activity or need — Hiking, Swim, Car. A trip is made from templates. The Templates tab.", section: .templates),
-        Entry(term: "Shelf", meaning: "The group a template lives on, with its code: GA · Goal activity, WET · Workout, exercise & training, and so on.", section: .templates),
+        // "Activity area", not "shelf" — their word from the field test (Oct 2026):
+        // "We understand that word much better."
+        Entry(term: "Activity area", meaning: "The group a template lives in, with its code: GA · Goal activity, WET · Workout, exercise & training, and so on.", section: .templates),
         Entry(term: "List", meaning: "The one list you pack from for a trip, made from its templates. (A grab list is a list too.)", section: .events),
-        Entry(term: "Grab list", meaning: "A short list for a quick outing — Swim, Bike, Run — ticked as each thing is in your hand. On Home.", section: .home),
+        Entry(term: "Grab list", meaning: "A short list for a quick outing — Swim, Bike, Run — ticked as each thing is in your hand. Up to eight are on Home; the rest wait in Grab Lists.", section: .home),
         Entry(term: "Common base", meaning: "The template that comes along on every trip: passport, phone charger and the like.", section: .templates),
         Entry(term: "Transport kit", meaning: "What a way of travelling adds to a trip: the Car, Plane or RV things.", section: .templates),
         Entry(term: "Quick", meaning: "A trip with only the templates you tick — no common base, no transport kit.", section: .home),
@@ -23,6 +25,8 @@ enum Words {
         Entry(term: "Bag", meaning: "What a thing is packed into. A bag can have a max weight, and the trip shows how full it is.", section: .care),
         Entry(term: "From where · Into", meaning: "Where a thing is kept at home · the bag it goes into.", section: .events),
         Entry(term: "When", meaning: "The step of the packing timeline a thing belongs to: a week ahead, the day before, on the day…", section: .events),
+        // Their word for the trip's own place, from the same field test: "on site", not "there".
+        Entry(term: "On site", meaning: "At the place the trip takes you, while the trip is under way. Bought on site: a thing you bought on the trip \u{2014} it goes on ticked, and comes home with you.", section: .events),
         Entry(term: "Set aside ⊘", meaning: "Not this time: the thing stays on the list but is not packed, and leaves the count. ↻ brings it back.", section: .events),
         Entry(term: "The loop", meaning: "Plan (Home) › Pack (Trips) › Review (the trip, afterwards) › Refine (Templates) — and round again.", section: .events),
         Entry(term: "Loop strip", meaning: "The four steps under a trip's name. The filled one is where this trip stands; each carries the mark of the tab where that step is done.", section: .events),

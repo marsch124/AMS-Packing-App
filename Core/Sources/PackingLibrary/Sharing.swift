@@ -98,7 +98,7 @@ extension Library {
         return templates.first { $0.role.isEmpty && normName($0.name) == want }
     }
 
-    /// A shared grab list waits on the shelf: Home is his to arrange.
+    /// A shared grab list waits in Grab Lists: Home is his to arrange.
     @discardableResult
     public mutating func importGrab(_ g: GrabShare) -> GrabDefinition? {
         addGrabList(label: g.name.isEmpty ? "Shared" : g.name, tone: g.tone.isEmpty ? "blue" : g.tone,

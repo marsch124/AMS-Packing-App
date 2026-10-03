@@ -5,8 +5,9 @@ import PackingCore
 //
 // Home has SIX slots — six big targets he can hit with his glasses off, which is
 // the whole point of the thing. So the lists themselves are unlimited: the six he
-// keeps on Home are his choice, in his order, and everything else waits on the
-// shelf with all its things. Nothing is ever deleted by making room.
+// keeps on Home are his choice, in his order, and everything else waits in Grab
+// Lists (the screen behind Home's "Grab Lists" door) with all its things. Nothing
+// is ever deleted by making room. (Called "the shelf" until the field test of Oct 2026.)
 //
 // The original six keep their ids and their storage (the `grab` rows the web app
 // reads). His own lists live in the library's own `meta` — a new shared-row kind
@@ -45,7 +46,7 @@ extension Library {
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var home = Array(chosen.compactMap { byId[$0] }.prefix(GRAB_HOME_SLOTS))
         // A free place on Home is never left empty while a list waits: the next one
-        // from the shelf, in shelf order, takes it (Home grew from 6 to 8 on 2 Oct
+        // waiting, in waiting order, takes it (Home grew from 6 to 8 on 2 Oct
         // 2026 — his arranged six were joined by the next two).
         for d in all where home.count < GRAB_HOME_SLOTS && !home.contains(where: { $0.id == d.id }) {
             home.append(d)
@@ -54,7 +55,7 @@ extension Library {
     }
 
     /// The ones waiting: everything that is not on Home, with all their things.
-    public func shelvedGrabLists() -> [GrabDefinition] {
+    public func waitingGrabLists() -> [GrabDefinition] {
         let onHome = Set(homeGrabLists().map(\.id))
         return allGrabLists().filter { !onHome.contains($0.id) }
     }
@@ -71,7 +72,7 @@ extension Library {
         return true
     }
 
-    /// A new list of his own. It goes on the shelf, not on Home: Home is full
+    /// A new list of his own. It waits in Grab Lists, not on Home: Home is full
     /// until he says what steps back.
     @discardableResult
     public mutating func addGrabList(label: String, title: String = "", tone: String = "blue",
