@@ -2635,7 +2635,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
         type("Gaiters", into: field)
         app.buttons["template-add"].tap()
-        XCTAssertTrue(waitUntil { app.buttons["template-item-4"].exists }, "the new thing is not on the list")
+        // With the keyboard up the list is short, and since the Find field (4 Oct 2026)
+        // the fifth row sits past what a lazy list builds: travel to it, as he would.
+        XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the new thing is not on the list")
 
         tap(app, id: "template-detail-done")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
@@ -2719,6 +2721,50 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-grouping-into")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "CARRY-ON / HAND LUGGAGE" },
                       "Into does not group by bag: '\(words(app.staticTexts["template-group-0"]))'")
+    }
+
+    /// His ask (4 Oct 2026): "add a search function so that the user can find a
+    /// specific item without the need to scroll." Typing narrows the template to the
+    /// rows whose name holds it, says how many of all, says so when none, and the ✕
+    /// brings every row back. A thing added while searching is seen, not hidden.
+    func testATemplateFindsAThingWithoutScrolling() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking: 4 things
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5), "expected 4 things")
+        let field = app.textFields["template-find"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to find a thing")
+        let count = app.staticTexts["template-find-count"]
+        XCTAssertFalse(count.exists, "a count with nothing searched")
+
+        type("map", into: field)                                  // small letters: the name is "Map"
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-item-0"]).hasPrefix("Map") },
+                      "the first row is not the Map: '\(words(app.buttons["template-item-0"]))'")
+        XCTAssertTrue(waitUntil { !app.buttons["template-item-1"].exists }, "the search did not narrow the template")
+        XCTAssertTrue(waitUntil { self.words(count) == "1 of 4" }, "the count says '\(words(count))'")
+        XCTAssertFalse(app.staticTexts["template-find-none"].exists, "says nothing found while the Map shows")
+        shot(app, "template-find")
+
+        type("zz", into: field)                                   // "mapzz": nothing is called that
+        XCTAssertTrue(app.staticTexts["template-find-none"].waitForExistence(timeout: 5), "no word when nothing is found")
+        XCTAssertFalse(app.buttons["template-item-0"].exists, "a row shows although nothing matches")
+        shot(app, "template-find-none")
+
+        tap(app, id: "template-find-clear")
+        XCTAssertTrue(waitUntil { app.buttons["template-item-3"].exists }, "the ✕ did not bring every row back")
+        XCTAssertTrue(waitUntil { !count.exists }, "the count stayed with nothing searched")
+        XCTAssertFalse(app.staticTexts["template-find-none"].exists, "nothing found stayed after the ✕")
+
+        // Added while a search is on: the search goes, so the new thing is seen.
+        type("map", into: field)
+        XCTAssertTrue(waitUntil { !app.buttons["template-item-1"].exists })
+        type("Gaiters", into: app.textFields["template-add-name"])
+        tap(app, id: "template-add")
+        XCTAssertTrue(waitUntil { !count.exists }, "the search stayed on after Add")
+        // The keyboard leaves the list short, and a lazy list builds only what is near.
+        XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the new thing is hidden by the search")
     }
 
     /// His decision on test I.7 (1 Oct 2026): a thing's new bag reaches a trip still
