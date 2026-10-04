@@ -338,6 +338,9 @@ struct TemplateDetail: View {
     /// template in the same way as when you pack"). "" = the template's own way:
     /// its sections, or When when it has none. Remembered on this device.
     @AppStorage("ams.template.grouping") private var groupingRaw = ""
+    /// What he is looking for on this template — his ask (4 Oct 2026): "add a search
+    /// function so that the user can find a specific item without the need to scroll."
+    @State private var finding = ""
 
     struct TakingOff: Equatable { let memId: String; let name: String }
 
@@ -348,11 +351,16 @@ struct TemplateDetail: View {
         let sectioned = list.items.contains { !$0.section.isEmpty }
         let ways: [ThingGrouping] = (sectioned ? [.section] : []) + [.when, .into, .fromWhere, .kind, .name]
         let grouping = ThingGrouping(rawValue: groupingRaw).flatMap { ways.contains($0) ? $0 : nil } ?? ways[0]
+        // Only the rows whose name holds what he typed, each still under its own
+        // heading; a heading with none of them goes. The pills above are worked out
+        // from the WHOLE template, so they stay put while he searches.
+        let q = normName(finding)
+        let found = q.isEmpty ? list.items : list.items.filter { normName($0.name).contains(q) }
         let groups: [(title: String, colour: Color?, items: [Item])] = grouping == .when
-            ? entriesByPhase(list.items)
+            ? entriesByPhase(found)
                 .filter { !$0.entries.isEmpty }
                 .map { ($0.phase.label, Color(hexString: readableHex($0.phase.color, dark: scheme == .dark)), $0.entries) }
-            : grouping.groups(list.items, sections: list.sections)
+            : grouping.groups(found, sections: list.sections)
                 .filter { !$0.items.isEmpty }
                 .map { ($0.title, nil, $0.items) }
         // Numbered as they are READ, top to bottom — what you see first is the first.
@@ -414,8 +422,37 @@ struct TemplateDetail: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.bottom, 4)
+            // Find a thing without scrolling (his ask, 4 Oct 2026). Not on a template
+            // with nothing on it yet — there is nothing to find there.
+            if !list.items.isEmpty || !finding.isEmpty {
+                HStack(spacing: 10) {
+                    TextField("Find a thing on this template", text: $finding)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 17)).foregroundStyle(Theme.ink)
+                        .clearButton($finding, id: "template-find")
+                        .padding(.horizontal, 12).frame(minHeight: 40)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    // How many of the template's rows the search shows — only while searching.
+                    if !q.isEmpty {
+                        Text("\(found.count) of \(list.items.count)")
+                            .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                            .fixedSize()
+                            .accessibilityIdentifier("template-find-count")
+                    }
+                }
+                .padding(.horizontal, 16).padding(.top, 6)
+            }
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
+                    // A search that finds nothing says so, quietly, where the rows were.
+                    if !q.isEmpty && groups.isEmpty {
+                        Text("Nothing on this template is called that.")
+                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 16)
+                            .accessibilityIdentifier("template-find-none")
+                    }
                     ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
                         Text(group.title.uppercased())
                             .font(.system(size: 18, weight: .heavy)).kerning(0.8)   // "Much larger headings" (H.13)
@@ -461,6 +498,10 @@ struct TemplateDetail: View {
                                 .accessibilityLabel("Take \(item.name) off this template")
                             }
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                            // A row whose number changes is built afresh: kept, it kept its
+                            // OLD number — the Map, the only row a search left, still said
+                            // "template-item-1" (4 Oct 2026), as the Mac did on Your things.
+                            .id("\(item.memId ?? "")#\(n)")
                         }
                     }
                 }
@@ -608,6 +649,9 @@ struct TemplateDetail: View {
         guard !jsTrim(name).isEmpty else { addNeeds = "Type a thing first."; return }
         model.change { _ = $0.addToTemplate(templateId: listId, name: name) }
         newName = ""
+        // A search left on would hide the new thing unless its name happens to match
+        // — and then Add looks as if it did nothing. So the whole template comes back.
+        finding = ""
     }
 
     private struct Editing: Identifiable { let id: String }
