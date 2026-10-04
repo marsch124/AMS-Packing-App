@@ -87,6 +87,32 @@ final class GrabSometimesTests: XCTestCase {
                        "the mark was lost between writing the library and reading it back")
     }
 
+    /// "1 in 10" on a list he made himself — refused until 4 Oct 2026 (the
+    /// original six only).
+    func testHisOwnListsTakeThingsOnlySometimesToo() {
+        var lib = Library()
+        let padel = lib.addGrabList(label: "Padel", items: ["Racket", "Balls", "Spare grip"])!
+        XCTAssertTrue(lib.setSometimes(listId: padel.id, names: ["Spare grip", "Snow shovel"]), "his own list was refused")
+        XCTAssertEqual(lib.sometimes(listId: padel.id), ["Spare grip"])
+        XCTAssertEqual(lib.openingState(listId: padel.id, held: nil).skipped, ["Spare grip"], "it does not start skipped")
+        XCTAssertEqual(Library(records: lib.records()).sometimes(listId: padel.id), ["Spare grip"], "the mark was lost in the store")
+        XCTAssertFalse(lib.setSometimes(listId: "own-no-such", names: ["Racket"]))
+    }
+
+    /// Ticks on a list of his own survive closing it and opening it again, the way
+    /// they do on the original six. They were filtered away on every opening until
+    /// 4 Oct 2026, because the opening looked for the list among the six only.
+    func testTicksOnHisOwnListSurviveClosingIt() {
+        var lib = Library()
+        let padel = lib.addGrabList(label: "Padel", items: ["Racket", "Balls"])!
+        var mine = lib.openingState(listId: padel.id, held: nil)
+        mine = mine.tapped("Racket")
+
+        let again = lib.openingState(listId: padel.id, held: mine)
+        XCTAssertEqual(again.done, ["Racket"], "his tick was thrown away on reopening")
+        XCTAssertEqual(again.at, mine.at, "the session was restarted")
+    }
+
     func testTheDefaultsTravelInABackup() {
         var lib = library()
         _ = lib.setSometimes(listId: swimId, names: ["Wetsuit", "Safety buoy"])

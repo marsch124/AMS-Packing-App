@@ -35,13 +35,17 @@ final class GrabCollectionTests: XCTestCase {
 
     /// His six as he arranged them (before Home grew) stay first, in his order; the
     /// next two waiting join them.
+    ///
+    /// That arrangement was saved by a version before 0.46, which kept no note of
+    /// the lists left off — so it is written here as THAT version wrote it. (Saved
+    /// today, an arrangement leaves the others waiting: see the test below.)
     func testHisArrangedSixAreJoinedByTheNextTwo() {
         var lib = Library()
         let padel = lib.addGrabList(label: "Padel")!
         let golf = lib.addGrabList(label: "Golf")!
         var six = GRAB_FACTORY.map(\.id)
         six.swapAt(0, 5)
-        XCTAssertTrue(lib.setHomeGrabLists(six))
+        lib.meta[GRAB_HOME_META] = JSONValue(six)
         XCTAssertEqual(lib.homeGrabLists().map(\.id), six + [padel.id, golf.id])
     }
 
@@ -56,9 +60,60 @@ final class GrabCollectionTests: XCTestCase {
         let waiting = lib.waitingGrabLists()
         XCTAssertEqual(waiting.map(\.id), [own[1].id])
         XCTAssertEqual(waiting[0].items, ["Golf thing"], "the list that stepped back lost its things")
+
+        // He takes Padel off too: Home shows SEVEN, and Padel waits beside Golf.
+        // Until 4 Oct 2026 this test expected the free place to be filled from the
+        // waiting lists in order — which put the list he had just taken off (or
+        // Golf, which he had left off) straight back, so "Off Home" seemed to do
+        // nothing. His choice now stands until he changes it.
         eight.removeLast()
         XCTAssertTrue(lib.setHomeGrabLists(eight))
-        XCTAssertEqual(lib.homeGrabLists().last?.id, own[0].id, "a free place was not filled from the waiting lists in order")
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), eight, "a list he took off came back, or one he left off was pulled in")
+        XCTAssertEqual(Set(lib.waitingGrabLists().map(\.id)), [own[0].id, own[1].id])
+    }
+
+    /// "Off Home" keeps a list off Home — it waits in Grab Lists, whole, until he
+    /// puts it back; Home simply shows one tile fewer. That holds through the
+    /// store (what syncs) and a backup. Only a list that is NEW since he arranged
+    /// Home takes a free place by itself.
+    func testAListHeTakesOffHomeStaysOff() {
+        var lib = Library()
+        let off = GRAB_FACTORY.map(\.id).filter { $0 != "swim" }
+        XCTAssertTrue(lib.setHomeGrabLists(off))
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), off, "the list he took off came straight back")
+        XCTAssertEqual(lib.waitingGrabLists().map(\.id), ["swim"])
+        XCTAssertEqual(lib.waitingGrabLists()[0].items, GRAB_FACTORY[0].items, "it lost its things on the way")
+
+        // It stays off on the other device (records) and after a restore.
+        XCTAssertEqual(Library(records: lib.records()).homeGrabLists().map(\.id), off, "it came back through the store")
+        guard let json = try? JSONValue.parse(lib.backupData()) else { return XCTFail("the backup did not parse") }
+        let (back, report) = Importer.library(from: BackupFile(json: json))
+        XCTAssertTrue(report.isFaithful)
+        XCTAssertEqual(back.homeGrabLists().map(\.id), off, "it came back through a backup")
+
+        // A list he makes now is new: it takes a free place. Swim keeps waiting.
+        let padel = lib.addGrabList(label: "Padel", items: ["Racket"])!
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), off + [padel.id], "a new list did not take the free place")
+        XCTAssertEqual(lib.waitingGrabLists().map(\.id), ["swim"])
+
+        // He puts Swim back: it is on Home again, where he put it.
+        XCTAssertTrue(lib.setHomeGrabLists(lib.homeGrabLists().map(\.id) + ["swim"]))
+        XCTAssertEqual(lib.homeGrabLists().last?.id, "swim")
+        XCTAssertTrue(lib.waitingGrabLists().isEmpty)
+        XCTAssertFalse(lib.offHomeIds().contains("swim"), "a list back on Home is still marked as off")
+    }
+
+    /// The place he frees is not handed to another list: one that was waiting
+    /// because Home was full keeps waiting too.
+    func testThePlaceHeFreesStaysFree() {
+        var lib = Library()
+        let own = ["Padel", "Golf", "Kayak"].map { lib.addGrabList(label: $0, items: ["\($0) thing"])! }
+        XCTAssertEqual(lib.waitingGrabLists().map(\.id), [own[2].id], "Home holds eight; the ninth waits")
+
+        let seven = lib.homeGrabLists().map(\.id).filter { $0 != "bike" }
+        XCTAssertTrue(lib.setHomeGrabLists(seven))
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), seven, "Kayak was pulled onto Home in the place he freed")
+        XCTAssertEqual(Set(lib.waitingGrabLists().map(\.id)), ["bike", own[2].id])
     }
 
     func testNineOnHomeIsRefused() {
@@ -88,11 +143,40 @@ final class GrabCollectionTests: XCTestCase {
         XCTAssertTrue(lib.deleteOwnGrabList(id: padel.id))
         XCTAssertTrue(lib.ownGrabLists().isEmpty)
         XCTAssertFalse(lib.homeGrabLists().contains { $0.id == padel.id }, "a deleted list is still on Home")
-        // The rest of his arrangement stands, first and in his order; the place Padel
-        // left is taken by the list that was waiting (Home never keeps a hole).
-        XCTAssertEqual(Array(lib.homeGrabLists().map(\.id).prefix(5)), Array(GRAB_FACTORY.map(\.id).prefix(5)),
-                       "the rest of his arrangement stands")
-        XCTAssertEqual(lib.homeGrabLists().count, 6)
+        // The rest of his arrangement stands, in his order. The place Padel left
+        // stays free: the list he left off Home (Outdoor run) is not pulled in.
+        // (Until 4 Oct 2026 every free place was refilled from the waiting lists.)
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), Array(GRAB_FACTORY.map(\.id).prefix(5)),
+                       "the rest of his arrangement does not stand, or a list he left off was pulled in")
+        XCTAssertEqual(lib.waitingGrabLists().map(\.id), ["run-out"])
+        // A list he makes next is new, and takes the free place.
+        let golf = lib.addGrabList(label: "Golf")!
+        XCTAssertEqual(lib.homeGrabLists().last?.id, golf.id)
+    }
+
+    /// A list he made himself is filled through the same door as the original six
+    /// (the editor's Save) — and it sticks, through the store, like theirs. Until 4
+    /// Oct 2026 that door took the original six only, so "Make" gave a list with no
+    /// things and his additions to it were silently thrown away.
+    func testAListOfHisOwnIsFilledThroughTheSameDoorAsTheOriginals() {
+        var lib = Library()
+        let padel = lib.addGrabList(label: "Padel")!
+        XCTAssertTrue(padel.items.isEmpty, "Make gives an empty list")
+
+        XCTAssertTrue(lib.saveGrabList(id: padel.id, items: ["Racket", " Balls ", "", "balls", "Grip"]),
+                      "his own list could not be saved")
+        let saved = lib.grabList(id: padel.id)
+        XCTAssertEqual(saved?.items, ["Racket", "Balls", "Grip"], "trimmed, blanks and repeats dropped")
+        XCTAssertEqual(saved?.label, "Padel", "its name changed")
+        XCTAssertEqual(saved?.title, "Padel")
+        XCTAssertEqual(lib.grabLists(), GRAB_FACTORY, "the original six were touched")
+        XCTAssertTrue(lib.records().filter { $0.table == .shared }.isEmpty, "an own list became a web-app row")
+        XCTAssertEqual(Library(records: lib.records()).grabList(id: padel.id)?.items, ["Racket", "Balls", "Grip"],
+                       "the things were lost between writing the library and reading it back")
+
+        XCTAssertFalse(lib.saveGrabList(id: padel.id, items: ["  "]), "a list emptied by blanks is refused, as for the six")
+        XCTAssertEqual(lib.grabList(id: padel.id)?.items, ["Racket", "Balls", "Grip"])
+        XCTAssertFalse(lib.saveGrabList(id: "own-no-such", items: ["Towel"]))
     }
 
     /// The backup is the one bridge between devices and between apps — a list of

@@ -42,10 +42,12 @@ extension Library {
 
     /// Say which of a list's things are "only sometimes". Names not on the list
     /// are dropped; an empty answer removes the row rather than storing nothing.
+    /// Any list — his own ones too (until 4 Oct 2026 only the original six could
+    /// have a "1 in 10", and his marks on his own lists were silently refused).
     @discardableResult
     public mutating func setSometimes(listId: String, names: [String]) -> Bool {
-        guard GRAB_FACTORY.contains(where: { $0.id == listId }) else { return false }
-        let onTheList = Set(grabLists().first { $0.id == listId }?.items.map(normName) ?? [])
+        guard let list = grabList(id: listId) else { return false }
+        let onTheList = Set(list.items.map(normName))
         var seen = Set<String>()
         let clean = names.map(jsTrim).filter {
             !$0.isEmpty && onTheList.contains(normName($0)) && seen.insert(normName($0)).inserted
@@ -74,7 +76,10 @@ extension Library {
     /// skipped. Applied when a session begins — never on top of one he is in the
     /// middle of, or a thing he brought in today would jump back out.
     public func openingState(listId: String, held: GrabState?, now: Date = Date()) -> GrabState {
-        let items = grabLists().first { $0.id == listId }?.items ?? []
+        // EVERY list, his own too. It once looked among the original six only: a
+        // list of his own came out with no things, so its ticks were filtered away
+        // on every opening — and that empty state was saved over the real one.
+        let items = grabList(id: listId)?.items ?? []
         let live = (held ?? GrabState()).current(for: items, now: now)
         // A session already under way is HIS: whatever he ticked or brought in
         // today stays exactly as it is.
