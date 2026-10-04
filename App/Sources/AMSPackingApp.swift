@@ -28,6 +28,11 @@ struct AMSPackingApp: App {
         }
         .defaultSize(width: AMSPackingApp.testing ? 760 : 1180, height: AMSPackingApp.testing ? 620 : 780)
         .windowResizability(.contentMinSize)
+        // Opened only from Care, never by itself: left open when the app quit, the
+        // Mac brought it back at the next start, in front of the app — every UI test
+        // after the first one that opened it failed on GitHub (0.58, 4 Oct 2026).
+        .restorationBehavior(.disabled)
+        .defaultLaunchBehavior(.suppressed)
         #endif
     }
 }

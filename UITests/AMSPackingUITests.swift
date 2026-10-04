@@ -1012,7 +1012,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-delete-all"), "no Delete completely")
         XCTAssertTrue(app.buttons["bag-delete-yes"].exists, "no Keep it on the list")
         tap(app, id: "bag-delete-all")
-        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        // 15 s: on GitHub's cold iPhone (the first test after the warm-up) the page
+        // took longer than 5 to close (0.58's first run, 4 Oct 2026).
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 15))
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" })
         tap(app, id: "yourbags-done")
         XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
@@ -3643,6 +3645,8 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "columns-done")
         XCTAssertTrue(waitUntil { (app.textFields["table-6-color"].value as? String) == "Teal" },
                       "the colour changed on the thing is not in its row: '\(app.textFields["table-6-color"].value as? String ?? "")'")
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5), "Done did not close the table")
     }
 
     /// The table is a spreadsheet: a heading sorts by its column and turns over
