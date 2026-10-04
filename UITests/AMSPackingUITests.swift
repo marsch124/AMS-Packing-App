@@ -839,6 +839,10 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        // A photo of a packed bag, which must go with the trip (his ask, 4 Oct 2026).
+        tap(app, id: "bag-0")
+        tap(app, id: "bag-0-photo")
+        XCTAssertTrue(app.buttons["bag-0-photo-thumb-0"].waitForExistence(timeout: 5), "no bag photo to delete with the trip")
         tap(app, id: "trip-delete")
         XCTAssertTrue(app.buttons["trip-delete-yes"].waitForExistence(timeout: 5), "it did not ask first")
         tap(app, id: "trip-delete-no")
@@ -852,6 +856,27 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "care")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") },
                       "deleting a trip must not take his things: '\(words(app.staticTexts["care-line"]))'")
+        tab(app, "settings")
+        let photos = app.staticTexts["device-count-photos"]
+        bringIntoView(app, photos)
+        XCTAssertEqual(words(photos), "0", "the deleted trip's bag photo stayed behind")
+    }
+
+    /// A photo left behind by a trip deleted before 0.59: Worth a look says so and
+    /// removes it in one press.
+    func testWorthALookRemovesAPhotoLeftBehind() {
+        let app = launch("-uiTestingOldPhoto")
+        tab(app, "settings")
+        let says = app.staticTexts["health-0"]
+        XCTAssertTrue(says.waitForExistence(timeout: 5), "Worth a look does not mention the photo")
+        XCTAssertTrue(words(says).hasPrefix("1 photo is no longer shown anywhere"), "'\(words(says))'")
+        bringIntoView(app, app.buttons["health-0-fix"])
+        shot(app, "health-photo")
+        tap(app, id: "health-0-fix")
+        XCTAssertTrue(waitUntil { !app.staticTexts["health-heading"].exists }, "Worth a look stayed after Remove it")
+        let photos = app.staticTexts["device-count-photos"]
+        bringIntoView(app, photos)
+        XCTAssertEqual(words(photos), "0", "the photo is still on the device")
     }
 
     /// His ask (2026-09-26), packing by From where: a thing under "No place set" gets
@@ -2960,6 +2985,13 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(app.buttons["thing-owner-0"].waitForExistence(timeout: 5), "no Whose it is")
+        // No owner = each has one (his words, 4 Oct 2026), not "Nobody's in particular".
+        XCTAssertEqual(words(app.buttons["thing-owner-0"]), "Both have one")
+        // Notes sit right under the name, before Kept at home (his ask, 4 Oct 2026).
+        let name = app.textFields["thing-name"].frame, storage = app.textFields["thing-storage"].frame
+        let notes = app.descendants(matching: .any).matching(identifier: "thing-notes").firstMatch.frame
+        XCTAssertTrue(name.maxY <= notes.minY && notes.maxY <= storage.minY,
+                      "Notes are not between Name and Kept at home: name \(name.maxY), notes \(notes.minY)–\(notes.maxY), kept at home \(storage.minY)")
         let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
         XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
         // His asks (2026-09-26/27, and the field test of 3 Oct 2026, "the headings …

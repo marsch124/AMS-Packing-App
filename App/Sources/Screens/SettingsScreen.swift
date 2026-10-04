@@ -66,6 +66,16 @@ struct SettingsScreen: View {
                             Text(worry.says).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityIdentifier("health-\(n)")
+                            if !worry.fix.isEmpty {
+                                Button { model.change { _ = $0.repair(worry.fix) } } label: {
+                                    Text(worry.fixSays).font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                                        .padding(.horizontal, 16).frame(minHeight: 40)
+                                        .background(Capsule().fill(AppSection.actions.color))
+                                        .contentShape(Capsule())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("health-\(n)-fix")
+                            }
                             if !worry.names.isEmpty {
                                 Text(worry.names.prefix(6).joined(separator: " · ")
                                      + (worry.names.count > 6 ? " …" : ""))

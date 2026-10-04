@@ -15,7 +15,25 @@ extension Library {
         public var says: String
         /// The names it is about, so a screen can list them.
         public var names: [String]
-        public init(says: String, names: [String] = []) { self.says = says; self.names = names }
+        /// A worry the app can put right in one press: what the button says, and
+        /// which repair it runs (`Library.repair(_:)`).
+        public var fix: String = ""
+        public var fixSays: String = ""
+        public init(says: String, names: [String] = [], fix: String = "", fixSays: String = "") {
+            self.says = says; self.names = names; self.fix = fix; self.fixSays = fixSays
+        }
+    }
+
+    /// The one-press repairs a worry can offer.
+    public static let FIX_UNUSED_PHOTOS = "unusedPhotos"
+
+    /// Run a worry's repair. How many records it changed.
+    @discardableResult
+    public mutating func repair(_ fix: String) -> Int {
+        switch fix {
+        case Library.FIX_UNUSED_PHOTOS: return removeUnusedPhotos()
+        default: return 0
+        }
     }
 
     /// What looks wrong about this library. Empty = nothing to report.
@@ -37,6 +55,14 @@ extension Library {
         let lost = memberships.filter { !ids.contains($0.templateId) }
         if !lost.isEmpty {
             out.append(Worry(says: "\(lost.count) thing\(lost.count == 1 ? " sits" : "s sit") on a list that no longer exists."))
+        }
+
+        // Photos nothing shows any more — left behind by a trip deleted before 0.59
+        // took its photos along. They travel through iCloud and every backup.
+        let unused = unusedPhotos().count
+        if unused > 0 {
+            out.append(Worry(says: "\(unused) photo\(unused == 1 ? " is" : "s are") no longer shown anywhere \u{2014} left behind by a deleted trip.",
+                             fix: Library.FIX_UNUSED_PHOTOS, fixSays: unused == 1 ? "Remove it" : "Remove them"))
         }
 
         // A thing that is on no list and in no trip is not wrong — he can keep

@@ -5,13 +5,39 @@ import PackingCore
 // lacked (the gap list, 2026-09-26). First: getting rid of one.
 
 extension Library {
-    /// Delete a trip: it and its lines go. Nothing else is touched — the things,
-    /// the lists and the to-dos stay. A trip that is not there: false.
+    /// Delete a trip: it and its lines go, and so do its photos — the packed bags'
+    /// and its lines' — unless something else still shows one (his ask, 4 Oct 2026:
+    /// the practice trip was gone, its bag photo stayed behind). The things, the
+    /// lists and the to-dos stay. A trip that is not there: false.
     @discardableResult
     public mutating func deleteTrip(id: String) -> Bool {
-        guard trips.contains(where: { $0.id == id }) else { return false }
+        guard let trip = trips.first(where: { $0.id == id }) else { return false }
+        let mine = Set(trip.entries.flatMap { photoRefs($0) }
+                       + (trip.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values.flatMap { Library.bagPhotoIds($0) })
         trips.removeAll { $0.id == id }
+        let gone = Set(mine.filter { !photoInUse($0) })
+        photos.removeAll { gone.contains($0.id) }
         return true
+    }
+
+    /// Photos nothing shows any more — no thing, no trip line, no packed bag — and
+    /// at least a day old. Never younger: a photo can arrive from the other device a
+    /// little before the trip that shows it.
+    public func unusedPhotos(now: Date = PackingEnv.now()) -> [PhotoRecord] {
+        let dayAgo = now.addingTimeInterval(-86_400)
+        return photos.filter { photo in
+            guard !photoInUse(photo.id) else { return false }
+            guard let made = isoMoment(photo.createdAt) else { return true }
+            return made < dayAgo
+        }
+    }
+
+    /// Take away the photos nothing shows any more. How many went.
+    @discardableResult
+    public mutating func removeUnusedPhotos(now: Date = PackingEnv.now()) -> Int {
+        let gone = Set(unusedPhotos(now: now).map(\.id))
+        photos.removeAll { gone.contains($0.id) }
+        return gone.count
     }
 }
 

@@ -212,6 +212,9 @@ struct ThingEditor: View {
                 // its heading, the same goes for everything").
                 VStack(alignment: .leading, spacing: 22) {
                     labelled("Name") { field($draft.name, "Name", "thing-name") }
+                    // Notes right under the name — his ask (4 Oct 2026): "please put the
+                    // notes field immediately under the name".
+                    labelled("Notes") { notesField }
                     labelled("Kept at home") { field($draft.storage, "e.g. Hall closet", "thing-storage") }
                     Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
                           id: "thing-category", tint: AppSection.care.color, heading: .band) { draft.category = $0 }
@@ -231,7 +234,9 @@ struct ThingEditor: View {
                     Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
                           id: "thing-when", tint: AppSection.care.color, heading: .band) { draft.phase = $0 }
                     if !owners.isEmpty {
-                        Pills(title: "Whose it is", options: [("", "Nobody's in particular")] + owners.map { ($0, $0) },
+                        // No owner means each has one of their own — his words (4 Oct 2026):
+                        // "Replace 'Nobody's in particular' with 'Both have one'".
+                        Pills(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
                               selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color, heading: .band) { draft.ownedBy = $0 }
                     }
                     Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
@@ -244,7 +249,6 @@ struct ThingEditor: View {
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand") }
                     labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
-                    labelled("Notes") { notesField }
                     Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
                           id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }

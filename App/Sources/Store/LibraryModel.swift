@@ -246,6 +246,9 @@ extension LibraryModel {
         if args.contains("-uiTestingOnSite") {
             return LibraryModel(store: MemoryStore(SampleLibrary.underWay().records()), usesICloud: false, sky: sky)
         }
+        if args.contains("-uiTestingOldPhoto") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.oldPhoto().records()), usesICloud: false, sky: sky)
+        }
         if args.contains("-uiTestingTwoLibraries") {
             return LibraryModel(store: MemoryStore(SampleLibrary.doubled().records()), usesICloud: false, sky: sky)
         }

@@ -207,7 +207,7 @@ struct HowItWorksScreen: View {
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",
             "Your first real trip in 6 steps has its own door in Settings, to read again any time.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
-            "Worth a look appears only when something in the library seems wrong.",
+            "Worth a look appears only when something in the library seems wrong. Where it can, it puts it right in one press \u{2014} a photo left behind by a deleted trip has Remove it.",
             "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them; a grab list takes a free place on Home, or waits in Grab Lists when Home is full."]),
         Topic(section: .home, title: "Shortcuts and the Action button", lines: [
             "Packing offers three actions to Shortcuts and the Action button: Choose a grab list (a menu of them all, every time), Open a grab list (always the same one) and Open my next trip.",

@@ -45,7 +45,8 @@ final class ThingFiltersTests: XCTestCase {
         let lib = library()
         let answers = lib.filterAnswers(column: "ownedBy", among: lib.items)
         // "kim " and "Kim" are one owner; the first spelling is the one shown.
-        XCTAssertEqual(answers.map(\.label), ["Kim", "Robin", "Blank"])
+        // No owner: each has one of their own (his words, 4 Oct 2026).
+        XCTAssertEqual(answers.map(\.label), ["Kim", "Robin", "Both have one"])
         XCTAssertEqual(answers.map(\.count), [2, 1, 2])
         XCTAssertEqual(names(lib, ["ownedBy": ["kim"]]), ["Charger", "Jacket"])
         XCTAssertEqual(names(lib, ["ownedBy": ["kim", "robin"]]), ["Charger", "Jacket", "Socks"], "two answers in one column = either")

@@ -31,6 +31,9 @@ public let FILTER_SECTION = "section:"
 public let FILTER_NO_TEMPLATE = "none"
 public let FILTER_SEVERAL = "several"
 
+/// What a thing with no owner is called: each of them has one (his words, 4 Oct 2026).
+public let OWNER_BOTH = "Both have one"
+
 /// The weight column groups weights instead of listing every gram.
 public let FILTER_WEIGHTS: [(value: String, label: String, below: Double)] = [
     ("", "No weight", 0), ("w1", "Under 100 g", 100), ("w2", "100 – 500 g", 500),
@@ -107,7 +110,7 @@ extension Library {
                 let written = shown[value] ?? value
                 return answer(value, column == "condition" ? (labels[normName(written)] ?? written) : written)
             }
-            if let blank = answer("", "Blank") { out.append(blank) }
+            if let blank = answer("", column == "ownedBy" ? OWNER_BOTH : "Blank") { out.append(blank) }
             return out
         }
         if Library.flagFields[column] != nil {

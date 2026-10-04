@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.59", date: "4 Oct 2026", title: "A deleted trip takes its photos along",
+                changed: ["Deleting a trip now removes its bag photos too \u{2014} unless something else, like a thing, still shows the same photo.",
+                          "Settings \u{2192} Worth a look: a photo left behind by a trip deleted earlier is pointed out, with Remove it to take it away. Only photos older than a day, so one still on its way from your other device is never touched.",
+                          "Whose it is: \u{201C}Nobody's in particular\u{201D} is now \u{201C}Both have one\u{201D} \u{2014} on a thing, and in the table's Owner filter.",
+                          "A thing's page: Notes sit right under its name."]),
         Release(version: "0.58", date: "4 Oct 2026", title: "The table: filter by anything, sort by levels",
                 new: ["All your things \u{00B7} table: Filter by any column \u{2014} Owner, Packed by, Storage, each template and its sections, and every other column. Tick the answers your things have; the number says how many. A pill above the table shows each filter, and its \u{2715} takes it off.",
                       "Sort by up to three levels: Sort by, then by, then by. A template can sort by its sections in its own order \u{2014} Travel, then Travel \u{00B7} section.",

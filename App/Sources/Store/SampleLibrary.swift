@@ -132,6 +132,14 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with a photo nothing shows any more, from long ago — what a
+    /// trip deleted before 0.59 left behind (`-uiTestingOldPhoto`).
+    static func oldPhoto() -> Library {
+        var lib = make()
+        lib.photos.append(PhotoRecord(id: "left-behind", data: "data:image/jpeg;base64,AQID", createdAt: "2026-01-01T09:00:00.000Z"))
+        return lib
+    }
+
     /// The sample library with every template a SECOND time, under new ids — what
     /// a device holds when two libraries have met on one account (31 August 2026,
     /// and again on 23 September). Used by `-uiTestingTwoLibraries`.
