@@ -117,37 +117,6 @@ enum TableColumns {
         return ids.compactMap { byId[$0] }
     }
 
-    /// The name of the column the rows are sorted by, for the little sort button.
-    static func sortName(_ key: String, _ library: Library) -> String {
-        if key == "name" { return "Name" }
-        return all(library).first { $0.id == key }?.title ?? "Name"
-    }
-
-    /// One comparable value per thing, so any column can be the order. Numbers are
-    /// padded so that 90 sorts under 1500 rather than over it, and a blank always
-    /// sorts last — the gaps belong at the end, not scattered through, because the
-    /// point of sorting by a column here is usually to fill it in.
-    static func sortValue(_ thing: Item, key: String, library: Library) -> String {
-        if key == "name" { return normName(thing.name) }
-        if key.hasPrefix("list:") {
-            let listId = String(key.dropFirst(5))
-            let on = library.memberships.contains { $0.itemId == thing.id && $0.templateId == listId }
-            return on ? "0" : "1"
-        }
-        guard let column = (intrinsic + perListColumns).first(where: { $0.id == key }) else { return normName(thing.name) }
-        switch column.kind {
-        case .number(let path):
-            return thing[keyPath: path] > 0 ? String(format: "%012.2f", thing[keyPath: path]) : "~"
-        case .words(let path), .choice(let path, _):
-            let text = normName(thing[keyPath: path])
-            return text.isEmpty ? "~" : text
-        case .flag(let path):
-            return thing[keyPath: path] ? "0" : "1"
-        case .onList, .perList:
-            return ""
-        }
-    }
-
     /// His Settings lists and which things are on which list, worked out ONCE per
     /// redraw and handed to every cell.
     ///
@@ -392,7 +361,7 @@ struct ColumnPicker: View {
                         .padding(.top, 4).padding(.bottom, 6)
                     ForEach(Array(shown.enumerated()), id: \.element) { n, id in
                         if let column = all.first(where: { $0.id == id }) {
-                            HStack(spacing: 10) {
+                            HStack(spacing: 4) {
                                 Text(column.title)
                                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                                 Spacer()
@@ -403,8 +372,10 @@ struct ColumnPicker: View {
                                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == shown.count - 1)
                                     .accessibilityIdentifier("columns-\(column.id)-down")
                                 Button { hide(id) } label: {
-                                    Text("Hide").font(.system(size: 14, weight: .bold))
+                                    Text("Hide").font(.system(size: 15, weight: .bold))
                                         .foregroundStyle(AppSection.actions.color)
+                                        .frame(minWidth: 52, minHeight: 44)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("columns-\(column.id)-hide")
@@ -445,10 +416,14 @@ struct ColumnPicker: View {
         #endif
     }
 
+    /// The arrow drawn at 22, pressed anywhere in a 44 × 44 square around it — his
+    /// ask (4 Oct 2026): "These arrows are rather difficult to hit."
     private func arrow(_ path: String) -> some View {
         SVGPath.path(path)
             .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
     }
 
     private func move(_ n: Int, by step: Int) {

@@ -16,6 +16,19 @@ struct AMSPackingApp: App {
         #if os(macOS)
         .defaultSize(width: 760, height: 900)
         #endif
+
+        #if os(macOS)
+        // All your things · table, in a window of its own on the Mac — his ask, 4 Oct
+        // 2026: "I would like it wider in order to see more columns". Drag it as wide
+        // as you like or make it full screen; the app stays open beside it, and both
+        // show the same library.
+        Window("All your things", id: ThingsTable.windowId) {
+            ThingsTable(inWindow: true)
+                .environmentObject(model)
+        }
+        .defaultSize(width: AMSPackingApp.testing ? 760 : 1180, height: AMSPackingApp.testing ? 620 : 780)
+        .windowResizability(.contentMinSize)
+        #endif
     }
 }
 

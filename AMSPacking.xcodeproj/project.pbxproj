@@ -46,6 +46,7 @@
 		A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33289BF160D459176D7669 /* SmallDelete.swift */; };
 		A95973A9F2025DB491456F72 /* Laundry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B594AF144EDDECFF9CF7B3 /* Laundry.swift */; };
 		A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */; };
+		ADB8FA04EBE1134791655CCD /* TableFilterSort.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6491A9AB1E25EAC20F46EB /* TableFilterSort.swift */; };
 		AEC09A016E6CEAD021B5D4C6 /* SearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */; };
 		AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */; };
 		B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878AF15AECFDDAD02F227DDD /* TripScreen.swift */; };
@@ -117,6 +118,7 @@
 		4926F40EBD71822EA9165684 /* RemindersSend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersSend.swift; sourceTree = "<group>"; };
 		4E38CAC9C9C8FFA96DF061FC /* AMSPackingUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AMSPackingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EB48F2667254D2AD3862586 /* BagsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagsScreen.swift; sourceTree = "<group>"; };
+		4F6491A9AB1E25EAC20F46EB /* TableFilterSort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableFilterSort.swift; sourceTree = "<group>"; };
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
 		56F5604CA6875D255BD93251 /* CareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareScreen.swift; sourceTree = "<group>"; };
 		5844FD1A40A106FF0878B093 /* TableColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumns.swift; sourceTree = "<group>"; };
@@ -311,6 +313,7 @@
 				6C33289BF160D459176D7669 /* SmallDelete.swift */,
 				DBCE6F6679B4724E0039268E /* SyncCard.swift */,
 				5844FD1A40A106FF0878B093 /* TableColumns.swift */,
+				4F6491A9AB1E25EAC20F46EB /* TableFilterSort.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
 				ED9B041225333263C7547689 /* ThingsScreen.swift */,
 				7B24F2617CC7D137784F66F2 /* ThingsTable.swift */,
@@ -486,6 +489,7 @@
 				FBC13904D9EB455D6F6AEDE9 /* SyncCard.swift in Sources */,
 				514EBAAF09401092026E5930 /* SyncCheck.swift in Sources */,
 				A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */,
+				ADB8FA04EBE1134791655CCD /* TableFilterSort.swift in Sources */,
 				A2EF7B9D15A856E17FB773D8 /* TemplateIcons.swift in Sources */,
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
 				E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */,
@@ -637,7 +641,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.57;
+				MARKETING_VERSION = 0.58;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -724,7 +728,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.57;
+				MARKETING_VERSION = 0.58;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

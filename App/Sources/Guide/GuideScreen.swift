@@ -191,7 +191,10 @@ struct HowItWorksScreen: View {
             "A thing you add in Your things stays at the top, under Just added, until you leave the screen. The \u{2715} in any search field empties it.",
             "On a thing's page: On a plane (Liquid, Not allowed in the cabin) and Valid until \u{2014} what a trip's Check before you go reads. Under the date: how far away it is (red once it has run out); +1 month \u{2026} +10 years sets it in one tap.",
             "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, say whether it goes in the cabin, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
-            "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo.",
+            "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all, with Undo. On the Mac it is a window of its own: drag it as wide as you like, or make it full screen.",
+            "Filter: every column filters \u{2014} Owner, Packed by, Storage, each template and its sections, and the rest. Open a column and tick the answers your things have (the number says how many). Ticks in one column mean any of them; filtered columns must all hold. A pill above the table shows each filter; its \u{2715} takes it off, Clear takes them all.",
+            "Sort: up to three levels \u{2014} Sort by, then by, then by, each \u{25B2} or \u{25BC}. A template sorts by being on it, or by its sections in the template's own order (\u{201C}Travel \u{00B7} section\u{201D}). A blank always goes last. A heading still sorts by its column in one tap.",
+            "The arrow beside a thing's name opens the thing itself; Save or Cancel brings you back to the same spot in the table.",
             "Services: List or Calendar. Done today moves a service on; Today brings the calendar back to this month.",
             "Under the services: your things in numbers — how many, the total weight, the heaviest things, where it all lives, what each template weighs, the year ahead, and what is worth knowing."]),
         Topic(section: .actions, title: "To do", lines: [

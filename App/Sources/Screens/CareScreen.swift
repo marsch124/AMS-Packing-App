@@ -15,6 +15,18 @@ struct CareScreen: View {
 
     struct ThingsRequest: Identifiable { let id = UUID(); let search: String }
     @State private var table = false
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
+    /// The table: a window of its own on the Mac, a full sheet on the iPhone.
+    private func openTable() {
+        #if os(macOS)
+        openWindow(id: ThingsTable.windowId)
+        #else
+        table = true
+        #endif
+    }
     @State private var searching = false
     @State private var bagsOpen = false
     /// "list" or "calendar", remembered on this device.
@@ -85,7 +97,7 @@ struct CareScreen: View {
                 .padding(.top, 8)
                 .accessibilityIdentifier("care-bags")
 
-                Button { table = true } label: {
+                Button { openTable() } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("All your things · table").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)

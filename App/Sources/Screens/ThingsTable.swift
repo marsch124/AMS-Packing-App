@@ -25,11 +25,29 @@ import PackingLibrary
 struct ThingsTable: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    @Environment(\.dismissWindow) private var dismissWindow
+    #endif
+    /// On the Mac the table is a window of its own (his ask, 4 Oct 2026: "I would
+    /// like it wider in order to see more columns"), so Done closes the window.
+    var inWindow = false
+    static let windowId = "things-table"
 
     /// The columns he has chosen, in his order, as ids. Empty = the sensible start.
     @AppStorage("ams.table.columns") private var chosenColumns = ""
     @AppStorage("ams.table.sort") private var sortBy = "name"
     @AppStorage("ams.table.down") private var descending = false
+    /// The sort levels under the first ("then by"), and the column filters — kept
+    /// while he works, and shown above the grid whenever any is on.
+    @AppStorage("ams.table.then") private var thenStored = ""
+    @AppStorage("ams.table.filters") private var filtersStored = ""
+    @State private var filtering = false
+    @State private var sorting = false
+    /// The thing opened from its row (his ask, 4 Oct 2026): its own page on top of
+    /// the table, and back to the very same spot when it closes — the table is not
+    /// rebuilt underneath, so it stays scrolled where it was.
+    @State private var opening: String?
+    private struct Opening: Identifiable { let id: String }
     @State private var query = ""
     /// "" = everything; otherwise only the things missing that.
     @State private var only = ""
@@ -51,7 +69,7 @@ struct ThingsTable: View {
         #if os(macOS)
         return 210
         #else
-        return 148
+        return 172      // 148 before each row had its open arrow (0.58)
         #endif
     }
     private var headHeight: CGFloat { 46 }
@@ -60,8 +78,9 @@ struct ThingsTable: View {
         let columns = TableColumns.chosen(chosenColumns, library: model.library)
         let answers = TableColumns.Answers2(model.library)
         let rows = things()
+        let filters = TableKeys.filters(filtersStored)
         VStack(spacing: 0) {
-            top(rows.count)
+            top(rows.count, filters)
             if !chosen.isEmpty || !wasBefore.isEmpty { chosenBar(rows) }
             Divider()
             // 🪤 The width is spelled out. A scroll view that goes BOTH ways asks its
@@ -79,7 +98,8 @@ struct ThingsTable: View {
                                 ticked: chosen.contains(thing.id),
                                 pick: { on in
                                     if on { chosen.insert(thing.id) } else { chosen.remove(thing.id) }
-                                })
+                                },
+                                open: { opening = thing.id })
                                 .environmentObject(model)
                         }
                     } header: {
@@ -92,7 +112,7 @@ struct ThingsTable: View {
                 across = max(0, x)
             }
             if rows.isEmpty {
-                Text(only.isEmpty ? "Nothing matches." : "Nothing missing that — all filled in.")
+                Text(!filters.isEmpty ? "Nothing matches these filters." : only.isEmpty ? "Nothing matches." : "Nothing missing that — all filled in.")
                     .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
                     .frame(maxWidth: .infinity).padding(.top, 30)
                     .accessibilityIdentifier("table-none")
@@ -102,6 +122,15 @@ struct ThingsTable: View {
         .background(Theme.bg.ignoresSafeArea())
         .sheet(isPresented: $picking) {
             ColumnPicker(chosen: $chosenColumns, library: model.library)
+        }
+        .sheet(item: Binding(get: { opening.map { Opening(id: $0) } }, set: { opening = $0?.id })) { o in
+            ThingEditor(itemId: o.id).environmentObject(model)
+        }
+        .sheet(isPresented: $filtering) {
+            FilterSheet(stored: $filtersStored, base: unfiltered()).environmentObject(model)
+        }
+        .sheet(isPresented: $sorting) {
+            SortSheet(sortBy: $sortBy, descending: $descending, thenStored: $thenStored).environmentObject(model)
         }
         .sheet(isPresented: $changing) {
             BulkChange(things: model.library.items.filter { chosen.contains($0.id) },
@@ -267,13 +296,16 @@ struct ThingsTable: View {
     }
 
     /// Pressing a heading sorts by it; pressing the same one again turns it over.
+    /// The levels under it stay — minus the one that is now on top.
     private func turn(_ key: String) {
         if sortBy == key { descending.toggle() } else { sortBy = key; descending = false }
+        let then = TableKeys.levels(thenStored).filter { $0.key != key }
+        thenStored = TableKeys.store(then)
     }
 
     // MARK: - the band above the grid
 
-    private func top(_ count: Int) -> some View {
+    private func top(_ count: Int, _ filters: ThingFilters) -> some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
                 Text("All your things").font(.system(size: 21, weight: .heavy))
@@ -282,7 +314,7 @@ struct ThingsTable: View {
                     .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("table-count")
                 Spacer()
-                Button("Done") { dismiss() }
+                Button("Done") { close() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("table-done")
@@ -297,20 +329,16 @@ struct ThingsTable: View {
                     .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.line, lineWidth: 1))
 
-                Menu {
-                    Button("Name") { sortBy = "name"; descending = false }
-                    ForEach(TableColumns.chosen(chosenColumns, library: model.library)) { column in
-                        Button(column.title) { sortBy = column.id; descending = false }
-                    }
-                } label: {
-                    chip("Sort: " + TableColumns.sortName(sortBy, model.library))
+                Button { filtering = true } label: {
+                    chip(filters.isEmpty ? "Filter" : "Filter \(filters.count)", lit: !filters.isEmpty)
                 }
-                .menuStyle(.borderlessButton)
-                .accessibilityIdentifier("table-sort")
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("table-filter")
 
-                Button { descending.toggle() } label: { chip(descending ? "▼" : "▲") }
+                let levels = 1 + TableKeys.levels(thenStored).count
+                Button { sorting = true } label: { chip(levels > 1 ? "Sort \(levels)" : "Sort", lit: levels > 1) }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("table-direction")
+                    .accessibilityIdentifier("table-sort")
 
                 Button { picking = true } label: { chip("Columns") }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -334,25 +362,80 @@ struct ThingsTable: View {
                 }
                 Spacer()
             }
+            if !filters.isEmpty { pills(filters) }
+            let then = TableKeys.levels(thenStored)
+            if !then.isEmpty {
+                // The order in words, when it is more than the arrow in a heading says.
+                Text("Sorted by " + ([SortLevel(key: sortBy, descending: descending)] + then)
+                        .map { TableKeys.title($0.key, model.library) + ($0.descending ? " ▼" : " ▲") }
+                        .joined(separator: ", then "))
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("table-sorted-by")
+            }
         }
         .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
     }
 
-    private func chip(_ text: String) -> some View {
+    private func chip(_ text: String, lit: Bool = false) -> some View {
         Text(text)
-            .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.ink)
+            .font(.system(size: 14, weight: .bold)).foregroundStyle(lit ? .white : Theme.ink)
             .lineLimit(1)
             .padding(.horizontal, 10).frame(minHeight: 34)
-            .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.line, lineWidth: 1))
+            .background(RoundedRectangle(cornerRadius: 9).fill(lit ? AppSection.care.color : Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(lit ? Color.clear : Theme.line, lineWidth: 1))
             .contentShape(Rectangle())
+    }
+
+    /// One pill per filtered column — "Owner: Kim, Robin ✕" — and Clear for all.
+    private func pills(_ filters: ThingFilters) -> some View {
+        let library = model.library
+        let keys = TableColumns.all(library).map(\.id).filter { filters[$0] != nil }
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(keys, id: \.self) { key in
+                    let words = TableKeys.title(key, library) + ": " + library.filterSummary(column: key, kept: filters[key] ?? [])
+                    Button {
+                        var all = filters
+                        all[key] = nil
+                        filtersStored = TableKeys.store(all)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(words).font(.system(size: 14, weight: .bold)).lineLimit(1)
+                            Text("✕").font(.system(size: 13, weight: .black))
+                        }
+                        .foregroundStyle(AppSection.care.color)
+                        .padding(.horizontal, 10).frame(minHeight: 30)
+                        .background(Capsule().fill(AppSection.care.color.opacity(0.14)))
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-pill-\(TableKeys.safe(key, library))")
+                    .accessibilityLabel(words)
+                }
+                Button { filtersStored = "" } label: {
+                    Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .padding(.horizontal, 8).frame(minHeight: 30).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("table-filters-clear")
+            }
+        }
+    }
+
+    private func close() {
+        #if os(macOS)
+        if inWindow { dismissWindow(id: ThingsTable.windowId); return }
+        #endif
+        dismiss()
     }
 
     // MARK: - which rows, in which order
 
-    private func things() -> [Item] {
+    /// The things the search and the quick chips keep — before any column filter.
+    private func unfiltered() -> [Item] {
         let needle = normName(query)
-        let kept = model.library.items.filter { thing in
+        return model.library.items.filter { thing in
             if !needle.isEmpty, !normName(thing.name).contains(needle) { return false }
             switch only {
             case "weight": return thing.weight <= 0
@@ -360,14 +443,14 @@ struct ThingsTable: View {
             default: return true
             }
         }
+    }
+
+    private func things() -> [Item] {
         let library = model.library
-        let sorted = kept.sorted { a, b in
-            let left = TableColumns.sortValue(a, key: sortBy, library: library)
-            let right = TableColumns.sortValue(b, key: sortBy, library: library)
-            if left == right { return normName(a.name) < normName(b.name) }
-            return left < right
-        }
-        return descending ? sorted.reversed() : sorted
+        let filters = TableKeys.filters(filtersStored)
+        let byThing = Dictionary(grouping: library.memberships, by: \.itemId)
+        let kept = filters.isEmpty ? unfiltered() : unfiltered().filter { library.passes($0, filters, memberships: byThing) }
+        return library.sortThings(kept, by: [SortLevel(key: sortBy, descending: descending)] + TableKeys.levels(thenStored))
     }
 
     // MARK: - one row
@@ -381,6 +464,7 @@ struct ThingsTable: View {
         let across: CGFloat
         let ticked: Bool
         let pick: (Bool) -> Void
+        let open: () -> Void
         @EnvironmentObject var model: LibraryModel
 
         var body: some View {
@@ -408,6 +492,20 @@ struct ThingsTable: View {
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("table-\(n)-name")
+                    // Open the thing itself. Its own button, so the name stays words
+                    // a test can read (a button folds its words in on the Mac).
+                    Button(action: open) {
+                        SVGPath.path("M9 6l6 6-6 6")
+                            .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                            .foregroundStyle(AppSection.care.color)
+                            .frame(width: 14, height: 14)
+                            .frame(width: 26, height: TableColumns.rowHeight)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-\(n)-open")
+                    .accessibilityLabel("Open \(thing.name)")
+                    .help("Open \(thing.name)")
                 }
                 .padding(.leading, 6)
                 .frame(width: nameWidth, height: TableColumns.rowHeight, alignment: .leading)

@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.58", date: "4 Oct 2026", title: "The table: filter by anything, sort by levels",
+                new: ["All your things \u{00B7} table: Filter by any column \u{2014} Owner, Packed by, Storage, each template and its sections, and every other column. Tick the answers your things have; the number says how many. A pill above the table shows each filter, and its \u{2715} takes it off.",
+                      "Sort by up to three levels: Sort by, then by, then by. A template can sort by its sections in its own order \u{2014} Travel, then Travel \u{00B7} section.",
+                      "The arrow beside a thing's name in the table opens the thing; Save or Cancel brings you back to the same spot.",
+                      "On the Mac, the table is a window of its own: drag it as wide as you like to see more columns, or make it full screen."],
+                changed: ["Choosing columns: the up and down arrows, and Hide, are each a fingertip wide \u{2014} much easier to hit.",
+                          "In the table, a blank always sorts last, whichever way round."]),
         Release(version: "0.57", date: "3 Oct 2026", title: "On site, and one bar per bag",
                 new: ["On site, the step after Pack. Once a trip has begun (or something was bought on site), its On site page holds what you bought, what you left on site, maintenance notes, and Pack to go home.",
                       "A maintenance note (\u{201C}zip broken\u{201D}), written on site or on the way home, also goes onto the thing itself, dated \u{2014} Care has it after the trip."],

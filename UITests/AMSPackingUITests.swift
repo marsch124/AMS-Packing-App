@@ -3543,6 +3543,108 @@ final class AMSPackingUITests: XCTestCase {
                       "the reviews' unused things are not counted right: \((0..<6).map { self.words(app.staticTexts["kit-tip-\($0)"]) })")
     }
 
+    /// Every column of the table filters (his ask, 4 Oct 2026: "all existing columns
+    /// to be able to be used as filter criteria"). Ticks in one column = any of
+    /// them; two columns must both hold; a pill above the grid says what is on and
+    /// its ✕ takes it off. (The sample: Kim owns five things; on Hiking, only the
+    /// Headlamp sits in the section Lights.)
+    func testTheTableFiltersByAnyColumn() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        XCTAssertEqual(words(app.staticTexts["table-count"]), "10")
+        tap(app, id: "table-filter")
+        XCTAssertTrue(appears(app, "filter-sheet", timeout: 5), "no Filter")
+        tap(app, id: "filter-col-ownedBy")
+        tap(app, id: "filter-ownedBy-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["filter-count"]) == "5 of 10" },
+                      "Owner: Kim should leave five: '\(words(app.staticTexts["filter-count"]))'")
+        tap(app, id: "filter-col-list-1")
+        tap(app, id: "filter-list-1-1")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["filter-count"]) == "1 of 10" },
+                      "Kim's and in Hiking's section Lights should leave one: '\(words(app.staticTexts["filter-count"]))'")
+        shot(app, "filter-sheet")
+        tap(app, id: "filter-done")
+        XCTAssertTrue(disappears(app, "filter-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-count"]) == "1" },
+                      "the table did not take the filters: '\(words(app.staticTexts["table-count"]))'")
+        XCTAssertEqual(words(app.staticTexts["table-0-name"]), "Headlamp")
+        XCTAssertEqual(words(app.buttons["table-pill-ownedBy"]), "Owner: Kim")
+        shot(app, "filter-pills")
+        tap(app, id: "table-pill-ownedBy")
+        XCTAssertTrue(waitUntil { !app.buttons["table-pill-ownedBy"].exists }, "the pill's ✕ kept the filter")
+        XCTAssertTrue(app.buttons["table-pill-list-1"].exists, "the other filter went too")
+        tap(app, id: "table-filters-clear")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-count"]) == "10" }, "Clear left a filter on")
+    }
+
+    /// Sort levels (his ask, 4 Oct 2026: "sorting on travel as a top sort criterion
+    /// and then sorting on section as an under criterion"). Hiking first, then
+    /// Hiking's sections turned round (▼): the ones on Hiking with no section come
+    /// before the Headlamp in Lights — which A–Z alone would put first — and
+    /// everything not on Hiking after.
+    func testTheTableSortsByLevels() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        tap(app, id: "table-sort")
+        XCTAssertTrue(appears(app, "sort-sheet", timeout: 5), "no Sort")
+        tap(app, id: "sort-level-0")
+        tap(app, id: "sort-key-list-1")
+        tap(app, id: "sort-add")
+        tap(app, id: "sort-key-section-1")
+        XCTAssertTrue(waitUntil { (app.buttons["sort-level-1"].value as? String) == "Hiking · section" },
+                      "the second level is not Hiking's sections: '\(app.buttons["sort-level-1"].value as? String ?? "")'")
+        tap(app, id: "sort-dir-1")
+        XCTAssertTrue(waitUntil { (app.buttons["sort-dir-1"].value as? String) == "down" }, "the second level did not turn round")
+        shot(app, "sort-sheet")
+        tap(app, id: "sort-done")
+        XCTAssertTrue(disappears(app, "sort-sheet", timeout: 5))
+        let order = { (0..<5).map { self.words(app.staticTexts["table-\($0)-name"]) } }
+        XCTAssertTrue(waitUntil { order() == ["Hiking boots", "Map", "Rain jacket", "Headlamp", "Goggles"] },
+                      "Hiking, then its sections ▼, should put the Headlamp (Lights) after the rest on Hiking: \(order())")
+        XCTAssertTrue(words(app.staticTexts["table-sorted-by"]).contains("then Hiking · section ▼"),
+                      "the order is not said in words: '\(words(app.staticTexts["table-sorted-by"]))'")
+        shot(app, "sort-levels")
+        // Taken away again, the second level stops counting.
+        tap(app, id: "table-sort")
+        tap(app, id: "sort-remove-1")
+        tap(app, id: "sort-done")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-0-name"]) == "Headlamp" && self.words(app.staticTexts["table-1-name"]) == "Hiking boots" },
+                      "with the second level gone, Hiking alone sorts A–Z: \(order())")
+        XCTAssertFalse(app.staticTexts["table-sorted-by"].exists, "one level left, still said in words")
+    }
+
+    /// A row opens its thing (his ask, 4 Oct 2026), and closing it comes back to
+    /// the same spot in the table: the row is where it was, and the change is in it.
+    func testARowOpensItsThingAndComesBackToTheSameSpot() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        let name = app.staticTexts["table-6-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        let before = name.frame
+        let thing = words(name)
+        tap(app, id: "table-6-open")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the arrow did not open \(thing)")
+        let colour = app.textFields["thing-colour"]
+        bringIntoView(app, colour)
+        replace("Teal", in: colour)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["table-detail"].exists || find(app, "table-detail") != nil, "the table closed with the thing")
+        XCTAssertEqual(words(app.staticTexts["table-6-name"]), thing, "another thing sits in that row now")
+        XCTAssertEqual(app.staticTexts["table-6-name"].frame, before, "the table moved while the thing was open")
+        tap(app, id: "table-columns")
+        tap(app, id: "columns-color-show")
+        tap(app, id: "columns-done")
+        XCTAssertTrue(waitUntil { (app.textFields["table-6-color"].value as? String) == "Teal" },
+                      "the colour changed on the thing is not in its row: '\(app.textFields["table-6-color"].value as? String ?? "")'")
+    }
+
     /// The table is a spreadsheet: a heading sorts by its column and turns over
     /// when pressed again, and a weight typed into a cell reaches the thing.
     func testTheTableSortsAndSaves() {
@@ -3583,6 +3685,12 @@ final class AMSPackingUITests: XCTestCase {
 
         tap(app, id: "table-columns")
         XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
+        // The arrows are a fingertip each (his ask, 4 Oct 2026: "rather difficult to
+        // hit") — and so is Hide.
+        for id in ["columns-storage-up", "columns-storage-down", "columns-storage-hide"] {
+            let f = app.buttons[id].frame
+            XCTAssertTrue(f.width >= 44 && f.height >= 44, "\(id) is only \(f.width) × \(f.height)")
+        }
         // Clear the ones he starts with, so the new column is not off to the right.
         // (Hiding is also his own ask — the web app can only reorder.)
         for gone in ["storage", "container", "ownedBy", "packer", "condition", "listQty"] {
