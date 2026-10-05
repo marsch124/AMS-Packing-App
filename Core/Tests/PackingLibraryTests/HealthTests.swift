@@ -61,3 +61,33 @@ final class HealthTests: XCTestCase {
         XCTAssertTrue(lib.worries().isEmpty, "keeping a thing loose is allowed")
     }
 }
+
+/// A photo nothing shows and whose age cannot be read: since 0.60 never offered with
+/// the old ones, it stayed for ever and nothing said so (the spec pass, 2026-10-05).
+/// It is named on its own, and only a press removes it.
+final class UndatedPhotoTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze(at: "2026-10-04T10:00:00.000Z") }
+    override func tearDown() { PackingEnv.reset() }
+
+    func testAPhotoWithNoDateIsNamedOnItsOwnAndGoesOnlyWhenAsked() {
+        var lib = Library()
+        var thing = newItem(name: "Tent")
+        thing.photos = ["shown"]
+        lib.items = [thing]
+        lib.photos = [PhotoRecord(id: "shown", data: "data:image/jpeg;base64,AQID", createdAt: ""),
+                      PhotoRecord(id: "old", data: "data:image/jpeg;base64,AQID", createdAt: "2026-10-01T09:00:00.000Z"),
+                      PhotoRecord(id: "undated", data: "data:image/jpeg;base64,AQID", createdAt: ""),
+                      PhotoRecord(id: "unreadable", data: "data:image/jpeg;base64,AQID", createdAt: "last week")]
+        XCTAssertEqual(lib.unusedPhotos().map(\.id), ["old"], "an undated photo is never offered with the old ones")
+        XCTAssertEqual(lib.undatedUnusedPhotos().map(\.id), ["undated", "unreadable"], "a photo still shown is no worry")
+        let worry = lib.worries().first { $0.fix == Library.FIX_UNDATED_PHOTOS }
+        XCTAssertEqual(worry?.says, "2 photos with no date are no longer shown anywhere.")
+        XCTAssertEqual(worry?.fixSays, "Remove them")
+        XCTAssertEqual(lib.repair(Library.FIX_UNDATED_PHOTOS), 2)
+        XCTAssertEqual(lib.photos.map(\.id), ["shown", "old"], "the repair took more than the undated ones")
+        XCTAssertNil(lib.worries().first { $0.fix == Library.FIX_UNDATED_PHOTOS })
+        lib.photos.append(PhotoRecord(id: "one", data: "", createdAt: ""))
+        XCTAssertEqual(lib.worries().first { $0.fix == Library.FIX_UNDATED_PHOTOS }?.says,
+                       "1 photo with no date is no longer shown anywhere.")
+    }
+}
