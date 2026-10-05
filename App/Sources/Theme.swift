@@ -64,4 +64,8 @@ enum Metrics {
     static let chip: CGFloat = 28
     static let header: CGFloat = 30
     #endif
+    /// The touch area of the table's column arrows and Hide, on both: his ask (4 Oct
+    /// 2026), "These arrows are rather difficult to hit. Could you please enlarge the
+    /// hotspots". The arrows themselves stay small; only the area that takes the tap is.
+    static let fingertip: CGFloat = 44
 }

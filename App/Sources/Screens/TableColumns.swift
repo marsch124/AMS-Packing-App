@@ -410,7 +410,7 @@ struct ColumnPicker: View {
                                 Button { hide(id) } label: {
                                     Text("Hide").font(.system(.subheadline, weight: .semibold))
                                         .foregroundStyle(AppSection.actions.color)
-                                        .frame(minWidth: 52, minHeight: Metrics.tap)
+                                        .frame(minWidth: 52, minHeight: Metrics.fingertip)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
@@ -458,7 +458,7 @@ struct ColumnPicker: View {
         SVGPath.path(path)
             .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-            .frame(width: Metrics.tap, height: Metrics.tap)
+            .frame(width: Metrics.fingertip, height: Metrics.fingertip)
             .contentShape(Rectangle())
     }
 

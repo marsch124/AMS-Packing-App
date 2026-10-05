@@ -207,11 +207,11 @@ struct HowItWorksScreen: View {
             "To buy: what to get, with worn-out or run-down things suggested. Removed a line by mistake? Undo under the list brings it back.",
             "Send to Reminders, at the top of To buy: the open lines go into the Reminders list \u{201C}To buy \u{00B7} Packing\u{201D}, each once, dated the day you send them (all day, no alarm). Tick them there in the shop; they are ticked here as soon as you come back to the app. Tick or remove a line here and its reminder follows; delete a reminder in Reminders and Send offers that line again."]),
         Topic(section: .settings, title: "Settings", lines: [
-            "Remind me to pack: on this device, at 9 in the morning of the day each packing step is due, the trip and what is left. Each device asks for itself; under it, the next reminder and what it will say. If the iPhone does not allow the app's notifications, it says so in red.",
+            "Remind me to pack: on this device, at 9 in the morning of the day each packing step is due, the trip and what is left. Each device asks for itself; under it, the next reminder and what it will say. If the iPhone does not allow the app's notifications, it says so in red, switch on or off \u{2014} allow them in the iPhone's Settings \u{2192} Notifications \u{2192} Packing.",
             "iCloud sync: when this device last sent and received, and what is not in iCloud yet. Sync now checks in from here; the other device shows it within a minute or so \u{2014} if it does not, the card says why. Copy details for Claude gives me the full story. \u{201C}Can't tell\u{201D} means this device cannot check right now \u{2014} not that something is wrong.",
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it. A backup holds every thing exactly as it is on this device, so Restore puts back exactly that \u{2014} cabin answers and notes included. Under Save a backup: when you last saved one on this device; This device holds says when your library came from a backup file.",
             "Your first real trip in 6 steps has its own door in Settings, to read again any time.",
-            "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps. The pen beside an entry renames it \u{2014} everything that said the old name follows \u{2014} and its arrows move it up or down; owners always stay A to Z. A name you already have is not added again, and something still in use cannot be removed: the reason appears right under it.",
+            "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps. The pen beside an entry renames it \u{2014} everything that said the old name follows \u{2014} and its arrows move it up or down; owners always stay A to Z \u{2014} and if you never made an Owners list, it shows the names your things already carry. A name you already have is not added again, and something still in use cannot be removed: the reason appears right under it.",
             "Worth a look appears only when something in the library seems wrong. Where it can, it puts it right in one press \u{2014} a photo left behind by a deleted trip has Remove it; a photo with no date that nothing shows is listed on its own and goes only when you press Remove.",
             "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them \u{2014} with a name you already have, it asks for one of its own, or Replace takes the shared things into yours and keeps your look, sections and bags (it says first what comes in and leaves); a grab list takes a free place on Home, or waits in Grab Lists when Home is full."]),
         Topic(section: .home, title: "Shortcuts and the Action button", lines: [
@@ -221,7 +221,8 @@ struct HowItWorksScreen: View {
             "Or add the Shortcut to the Home Screen, or say \u{201C}Open Swim in Packing\u{201D} to Siri."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",
-            "The magnifier at the top of most screens searches everything at once."]),
+            "The magnifier at the top of most screens searches everything at once.",
+            "On the Mac, Escape closes the window you are in, as its Cancel (or Done) does \u{2014} it never saves. The All your things window closes with Done or \u{2318}W."]),
     ]
 
     var body: some View {

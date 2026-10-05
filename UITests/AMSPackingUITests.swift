@@ -3816,15 +3816,19 @@ final class AMSPackingUITests: XCTestCase {
                       "Notes are not between Name and Kept at home: name \(name.maxY), notes \(notes.minY)–\(notes.maxY), kept at home \(storage.minY)")
         let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
         XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
-        // His asks (2026-09-26/27, and the field test of 3 Oct 2026, "the headings …
-        // dominant, and the other buttons and pills are much smaller"): the headings are
-        // the big type — a 22 pt line (26 tall), where 19 pt was 23 — and the pills under
-        // them stay easy to press, 36 tall (their words 15, which no test can read).
+        // Apple-standard and slim (his word, 5 Oct 2026): a block's heading is a Headline,
+        // and the pills under it are slim (`Metrics.chip`: 28 on the iPhone, 22 on the Mac)
+        // — never squeezed below that, never the 36 of the old look.
         let heading = app.staticTexts["thing-category-title"]
         XCTAssertTrue(heading.waitForExistence(timeout: 5), "no Kind of thing heading")
         let line = heading.frame.height, pill = app.buttons["thing-category-0"].frame.height
-        XCTAssertTrue(line >= 25 && pill >= 36,
-                      "headings must lead (a 22 pt line: got \(line) tall) over pills still easy to press (36 tall: got \(pill))")
+        #if os(macOS)
+        let chip: CGFloat = 22
+        #else
+        let chip: CGFloat = 28
+        #endif
+        XCTAssertTrue(line >= 15 && pill >= chip - 0.5 && pill < 34,
+                      "a heading line (got \(line) tall) over slim pills (\(chip) tall: got \(pill))")
     }
 
     /// A grab list is edited — renamed, one removed, one added — and stays so.
