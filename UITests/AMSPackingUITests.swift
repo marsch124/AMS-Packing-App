@@ -13,9 +13,9 @@ final class AMSPackingUITests: XCTestCase {
 
     /// `-uiTesting` = an invented library held in memory: no iCloud, no files, the
     /// same on the simulator, the Mac and GitHub. `-uiTestingEmpty` = nothing at all.
-    private func launch(_ mode: String = "-uiTesting") -> XCUIApplication {
+    private func launch(_ mode: String = "-uiTesting", _ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments += [mode]
+        app.launchArguments += [mode] + extra
         app.launch()
         // GitHub's runners are slow and shared: a launch can time out there while
         // the same launch is instant here. One more try before giving up.
@@ -628,7 +628,8 @@ final class AMSPackingUITests: XCTestCase {
     /// a month grid, tap the first day and then the last; a tap before the first
     /// starts again; and the trip made keeps the dates he picked.
     func testDatesArePickedLikeBooking() {
-        let app = launch()
+        // An American-set device writes "Oct 1, 2026" its own way — the trip row must not.
+        let app = launch("-uiTesting", ["-AppleLocale", "en_US"])
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
@@ -1330,16 +1331,29 @@ final class AMSPackingUITests: XCTestCase {
             #endif
         }
 
+        // With something changed, so only a real Cancel closes it (an iPhone closes an
+        // untouched sheet on ⌘. by itself; a changed one it keeps — see the swipe test).
         tap(app, id: "trip-settings")
         XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tapVisible(app, app.buttons["tripset-season-1"])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-season-1"]) })
         escape()
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Escape did not cancel Trip settings")
         XCTAssertNotNil(find(app, "trip-detail"), "Escape closed the trip behind Trip settings too")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertFalse(isOn(app.buttons["tripset-season-1"]), "Escape saved the change instead of cancelling it")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
 
+        app.buttons["trip-line-0"].tap()                          // something packed, for the review to ask about
         tap(app, id: "trip-review")
         XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        tap(app, id: "review-line-0")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["review-line-0"]) }, "the mark did not take")
         escape()
         XCTAssertTrue(disappears(app, "review-detail", timeout: 5), "Escape did not cancel the review")
+        XCTAssertTrue(app.buttons["trip-review"].waitForExistence(timeout: 5), "Escape saved the review")
 
         tap(app, id: "trip-loop")
         XCTAssertTrue(appears(app, "loop-screen", timeout: 5))
