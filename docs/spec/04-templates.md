@@ -136,9 +136,10 @@ sheet: template page, Search or New.
 
 ### iPhone vs Mac
 Same layout on both. On the Mac the whole app column is at most 720 wide (`RootView`), so cards are wider; sheets
-appear as Mac sheets with the minimum sizes given per screen below. No keyboard shortcuts are declared anywhere in
-this area (no `.keyboardShortcut`, no `.onExitCommand`), so Return/Escape have no app-defined meaning beyond a
-text field's `onSubmit`; on the iPhone every sheet here can be swiped down (no `interactiveDismissDisabled`).
+appear as Mac sheets with the minimum sizes given per screen below. Escape (⌘. on an iPhone keyboard) presses each
+sheet's Cancel — or its Done where it has none — and never a Save, a Make or an Add (`.keyboardShortcut(.cancelAction)`,
+0.63; spec 06 §20); Return has no app-defined meaning beyond a text field's `onSubmit` (no `.defaultAction`, no
+`.onExitCommand`). On the iPhone every sheet here can be swiped down (no `interactiveDismissDisabled`).
 
 ### Tests
 - UI: `testEveryTabOpensItsScreen`; `testEveryDoorOfTheTemplatesTabOpens` (twice in a row: a card, Done, the
@@ -288,8 +289,8 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
 ## 4. The icon picker (`IconPickerScreen`)
 
 ### How it is reached and left
-Tap the cover on a template's page (`template-cover`). Left by: "Cancel" (`icon-cancel`), by any pick (each pick
-saves and closes), or a swipe down on the iPhone.
+Tap the cover on a template's page (`template-cover`). Left by: "Cancel" (`icon-cancel`; Escape too, 0.63), by any
+pick (each pick saves and closes), or a swipe down on the iPhone.
 
 ### What is on screen
 - Top row (padding 16): the template's cover (40), its name (20 heavy ink, 1 line, shrinks to 80 %), spacer,
@@ -333,7 +334,8 @@ the same time "because it is one tap". It **refuses a name he already has** beca
 templates sharing a name as "two libraries have met on one account" (31 August 2026).
 
 ### How it is reached and left
-"+ New" on the Templates tab (`templates-new`). Left by "Cancel" (`newlist-cancel`), swipe down (iPhone), or
+"+ New" on the Templates tab (`templates-new`). Left by "Cancel" (`newlist-cancel`; Escape too, 0.63 — nothing is
+made, a typed name included), swipe down (iPhone), or
 "Make the template" succeeding (closes and the new template's page opens).
 
 ### What is on screen
@@ -394,8 +396,8 @@ search function so that the user can find a specific item without the need to sc
 
 ### How it is reached and left
 - Reached: a card on the Templates tab; a Search result; straight after "Make the template".
-- Left: "Done" (`template-detail-done`), "Delete the template", swipe down on the iPhone. A rename typed but not
-  confirmed (Rename / Return) is **discarded** on leaving.
+- Left: "Done" (`template-detail-done`; Escape too, 0.63), "Delete the template", swipe down on the iPhone. A rename
+  typed but not confirmed (Rename / Return) is **discarded** on leaving — by Escape too.
 - Sheet; container id `template-detail` (`children: .contain`). Mac: min 480 × 600.
 - If the template no longer exists while open (deleted elsewhere), it renders as an empty unnamed template
   (`?? newList()`, a fresh id on every redraw). Add, Choose and the cover then do nothing
@@ -572,8 +574,9 @@ summer-only on Beach and always on Swim"). Heading bands: field test 3 Oct 2026 
 smaller than the pills).
 
 ### How it is reached and left
-Tap a row on a template page. Left by "Cancel" (`row-cancel`, nothing saved), "Save" (`row-save`, saves then
-closes), swipe down (= Cancel). Container id `row-detail`. Mac: min 520 × 600.
+Tap a row on a template page. Left by "Cancel" (`row-cancel`, nothing saved; Escape too, 0.63 — the template's page
+behind it stays open), "Save" (`row-save`, saves then closes; no key presses it), swipe down (= Cancel). Container id
+`row-detail`. Mac: min 520 × 600.
 
 ### What is on screen
 - Top row (padding 16): "Cancel" (outlined, muted) · spacer · "Save" (filled violet).
@@ -700,7 +703,7 @@ Expand All"), shipped 0.56.
 
 ### How it is reached and left
 "Choose from your things" (`template-pick`) at the foot of a template page. Left by "Cancel" (`pick-cancel`,
-ticks lost), "Add N" (puts them on and closes), swipe down. Making a new thing from here does NOT close it.
+ticks lost; Escape too, 0.63), "Add N" (puts them on and closes), swipe down. Making a new thing from here does NOT close it.
 Container id `pick-screen`. Mac: min 520 × 620.
 
 ### What is on screen
@@ -1200,7 +1203,7 @@ two of explanations for each choice … so that this is totally clear to the use
 
 ### How it is reached and left
 Settings → "Your choices" card ("Storage places, owners, packers, conditions, \"When\" steps"; id `settings-lists`).
-Left by "Done" (`lists-done`, filled slate) or swipe down. Container `lists-detail`. Mac: min 520 × 600.
+Left by "Done" (`lists-done`, filled slate; Escape too, 0.63) or swipe down. Container `lists-detail`. Mac: min 520 × 600.
 
 ### What is on screen
 - "Your choices" (22 heavy ink, `choices-title`) · Done.
@@ -1223,8 +1226,8 @@ Left by "Done" (`lists-done`, filled slate) or swipe down. Container `lists-deta
 - Footer: "These belong to your account, so both your devices show the same." (14 muted).
 
 ### Behaviour (`PackingLibrary/SettingsLists.swift`)
-- Entries: places = his stored order, or the 12 `DEFAULT_STORAGE_LOCATIONS`; owners = his list A–Z (empty by
-  default); packers = his, or (0.62) the packers his things name, or the factory two (`DEFAULT_PEOPLE`, the
+- Entries: places = his stored order, or the 12 `DEFAULT_STORAGE_LOCATIONS`; owners = his list A–Z, or (0.63) the
+  owners his things name, A–Z (empty only when no thing names one); packers = his, or (0.62) the packers his things name, or the factory two (`DEFAULT_PEOPLE`, the
   invented Kim and Robin since 0.62); conditions = his, or New/Good/Worn/Needs replacing; When = his timeline, or the
   factory seven. The full behaviour, with rename and reorder (0.62), is spec 06 §2.
 - Uses (`usesOf`, a `ChoiceUse` since 0.62): things' storage / ownedBy / packer / condition / phase by `normName`;
@@ -1242,7 +1245,7 @@ Left by "Done" (`lists-done`, filled slate) or swipe down. Container `lists-deta
 UI `testHisOwnListsAreAddedAndProtectedWhileInUse` (title "Your choices", each hint > 80 characters, "Garage shelf"
 added as place row 12, used on a thing, then refused with `lists-problem`); `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
 (`list-places-add`); `testTheEditorsLeadWithTheirHeadings` (five headings); 0.62 `testYourChoicesSaysWhyRightWhereItWasPressed`,
-`testAChoiceIsRenamedAndMovedAndItsThingsFollow`. Model `SettingsListsTests` (13);
+`testAChoiceIsRenamedAndMovedAndItsThingsFollow`; 0.63 `testOwnersAreTheNamesHisThingsCarry`. Model `SettingsListsTests` (14);
 `TemplateFacesTests.testNoTemplateIsGivenTealOrCyan` (the eighth step's colour).
 
 ---

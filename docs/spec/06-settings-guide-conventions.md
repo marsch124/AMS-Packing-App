@@ -55,13 +55,17 @@ order in the code:
 | 10 | *Kept before a restore* list (§15) | only when a rescue copy exists on this device | `rescue-heading`, `rescue-row-<n>` |
 | 11 | *This device holds* table + footer (sync mode, version) (§16), and under it where the library came from (0.62) | always; the line only for a library brought in from a file | `device-count-<table>`, `device-import` |
 
-**Sheets and windows owned by the screen itself.** `.sheet(isPresented: lists)` → `ListsScreen`;
-`.sheet(item: pending)` → `RestoreSheet`; `.fileImporter` (open a `.json`); `.fileExporter` (save the backup).
-The guide doors and the shared-link door own their OWN sheets (`GuideDoors`, `OpenSharedDoor`) because "several
-sheets on one view is a trap met in Search" (GuideScreen.swift comment).
+**Sheets and windows owned by the screen itself.** ONE `.sheet(item: open)` with a destination (`Open` = `choices` →
+`ListsScreen`, `restore(PendingRestore)` → `RestoreSheet`; 0.63 — until then two `.sheet`s on the one view, the trap
+the Templates tab left in 0.62, spec 04 item 15); `.fileImporter` (open a `.json`); `.fileExporter` (save the
+backup) — system windows, each opened only by its own button. The guide doors and the shared-link door own their OWN
+sheets (`GuideDoors`, `OpenSharedDoor`) because "several sheets on one view is a trap met in Search" (GuideScreen.swift
+comment). The sheet's `onDismiss`: a restore offered and not answered (`unanswered`) — swiped away on the iPhone —
+sets the status line to "Nothing was replaced." (0.63, §14).
 
 **State held by the screen** (`@State`, lost when the tab is left): `exporting`, `saving` (the backup document, built when Save is pressed — 0.62), `status` (the line under Save),
-`lists`, `picking`, `pending: PendingRestore?` (a file already read and checked, waiting for his yes),
+`open: Open?` (the sheet's destination — `.restore` carries the file already read and checked, waiting for his yes),
+`unanswered` (a restore offered, neither Cancel nor Replace pressed yet — 0.63), `picking`,
 `copies: [URL]` (rescue copies, read once when the view is created and again after a restore).
 
 **iPhone vs Mac.** Identical layout. Save opens the Files picker on the iPhone and a real Save panel on the Mac;
@@ -73,6 +77,9 @@ pressing it says "Choosing…"; on the Mac a Save window opens and Escape closes
 
 **Traps.** Until 0.62 the backup JSON was built inside `body` (`BackupDocument(data: model.library.backupData())` was an
 argument of `.fileExporter`), i.e. on every redraw of Settings — including all photo data. Now it is built when Save is pressed.
+What is still asked on every drawing — `worries()`, `counts`, the reminder plan — walks the library in memory only: no
+record is built and no photo decoded (`counts` counts the arrays; since 0.63 the photos still shown are gathered in one
+walk, `photoIdsInUse`, not one walk per photo). A comment in `body` says so (0.63; spec 01 item 15).
 
 ---
 
@@ -95,7 +102,8 @@ style; `.focusEffectDisabled()`; id `settings-lists`. Tap → `lists = true` →
 
 ### 2.3 How it is reached and left
 Reached only through the door. Left with **Done** (top right, `HeaderButtonStyle(tint: settings slate, filled:
-true)`, id `lists-done`) which calls `dismiss()`; or by swiping the sheet down on the iPhone. Nothing is ever
+true)`, id `lists-done`) which calls `dismiss()` — Escape too (⌘. on an iPhone keyboard, 0.63, §20); or by swiping
+the sheet down on the iPhone. Nothing is ever
 "saved" on leaving — every Add, Remove, Rename and move is written immediately through `LibraryModel.change`.
 
 ### 2.4 What is on screen, top to bottom
@@ -125,8 +133,9 @@ true)`, id `lists-done`) which calls `dismiss()`; or by swiping the sheet down o
       `list-<kind>-edit-<n>`, VoiceOver "Change <label>" (0.62); a remove button — a drawn ✕ (`M6 6L18 18M18 6L6 18`,
       stroke 1.8, 22×22, muted) in a 40×40 hit area, id `list-<kind>-remove-<n>`, VoiceOver label
       "Remove <label>". The row is an accessibility container (`children: .contain`) with id `list-<kind>-row-<n>`
-      and a 1-pt `Theme.line` hairline at its bottom. There is no empty-state text: an empty list (e.g. Owners on
-      an account that never added one) shows no rows, only the Add field.
+      and a 1-pt `Theme.line` hairline at its bottom. There is no empty-state text: an empty list (Owners when no
+      thing names an owner and he never added one — since 0.63 an account that never added one shows the owners its
+      things name) shows no rows, only the Add field.
     - Right under the row whose ✕ was refused (0.62 — until then at the TOP of the sheet, off screen when Remove
       was pressed far down the "When" steps): the problem line (15 semibold, To-do red `#dc3d43`, wraps, id
       `lists-problem`), `ChoiceUse.refusal(label)`, e.g. **"Garage is still used by 3 things, so it stays."** or
@@ -158,7 +167,7 @@ true)`, id `lists-done`) which calls `dismiss()`; or by swiping the sheet down o
 | Part | Source | Label | Key (remove, rename, move) | Use looked up by |
 |---|---|---|---|---|
 | places | `library.storagePlaces()` (stored order, or the 12 factory places) | name | the name | `normName(name)` in `usesOf("places")` |
-| owners | `library.owners()` (stored rows only, A–Z) | name | the name | `usesOf("owners")` |
+| owners | `library.owners()` (stored rows, A–Z; none stored → the owners his THINGS name, A–Z, each once — 0.63) | name | the name | `usesOf("owners")` |
 | people | `library.people()` (stored roster; else the packers his things name; else the 2 starters — §2.6) | `name` | `name` | `usesOf("people")` |
 | conditions | `library.conditions()` (stored, or the factory 4) | `label` | `id` | `normName(id)` in `usesOf("conditions")` |
 | phases | `library.timeline()` (stored `phases`, or the factory 7) | `label` | `id` | `normName(id)` in `usesOf("phases")` |
@@ -253,8 +262,8 @@ when reminders come, which is his to decide; rename and reorder were the parts t
 | Function | Answer / effect |
 |---|---|
 | `storagePlaces()` | `orderedNamesFromRows(shared, "places")` (stored order); empty → `DEFAULT_STORAGE_LOCATIONS` |
-| `owners()` | `namesFromRows(shared, "owners")` — A–Z (`jsLocaleCompare`, en-US collation); no defaults |
-| `ownerChoices()` | what *Whose it is* on a thing offers: `owners()` then every item's trimmed `ownedBy` sorted A–Z, each normalised name ONCE, first spelling wins (fix of 2026-09-26: one name appeared once per thing he owns) |
+| `owners()` | `namesFromRows(shared, "owners")` — A–Z (`jsLocaleCompare`, en-US collation); no defaults; empty → (0.63) the owners his THINGS already name: every item's trimmed `ownedBy` sorted A–Z, each normalised name once (the first spelling in that order wins — the same names *Whose it is* offers). Things only, not trip lines, as for `people()`: every name shown is in use by a thing, so none can be removed (the ✕ says "Kim is still used by 5 things, so it stays."); a rename or an Add stores them all as his own list, still A–Z. Until 0.63 the Owners part was empty on such an account while *Whose it is* offered those very names (Open questions 14) |
+| `ownerChoices()` | what *Whose it is* on a thing offers: `owners()` then every item's trimmed `ownedBy` sorted A–Z, each normalised name ONCE, first spelling wins (fix of 2026-09-26: one name appeared once per thing he owns); on an account with no Owners of its own the two lists are now the same |
 | `people()` | `peopleFromRows(shared)`; empty → (0.62) the packers his THINGS already name (`assignedPeople(items)`, each once, A–Z, coloured `PERSON_COLORS[n % 8]`), so an account that never wrote Packers of its own keeps showing its own people now that the starters are invented; none → `DEFAULT_PEOPLE`, each made a person with a fresh random id. Things only, not trip lines: every name it offers is then in use, so none can be removed only to come back from an old trip |
 | `conditions()` | `conditionsFromRows(shared)`; empty → `DEFAULT_ITEM_CONDITIONS` |
 | `timeline()` | `phases`; empty → `DEFAULT_PHASES` |
@@ -286,7 +295,7 @@ when reminders come, which is his to decide; rename and reorder were the parts t
   `#06b6d4`; `morning` · Morning list · 0 · no · `#f59e0b`; `door` · At the front door · 0 · no · `#22c55e`;
   `wear` · Wear / carry on the day · 0 · no · `#ec4899`; `after` · After / recovery · −1 (after the trip) · no ·
   `#14b8a6`. Each also carries a one-line hint and an emoji from the web app; neither is shown in this app.
-- Owners and trip presets have no factory list.
+- Owners and trip presets have no factory list. (With none of his own, Owners shows the owners his things name — 0.63.)
 
 **The shared-row store** (`SharedRows.swift`, a port of the web app's v120 design). Every author-made list entry
 is ONE record in the `shared` table — "a row is the unit the sync merges, so a person added here and a place
@@ -345,7 +354,10 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   `testRenamingAnOwnerOrAPackerCarriesItToEveryThingAndTripLine`, `testRenamingAConditionOrAStepChangesOnlyItsWords`
   (ids, tone, lead days and timeline place stay; the live lists follow), `testMovingAnEntryChangesItsPlaceAndNothingElse`
   (first up / last down refused, owners refused, steps re-ordered live and back to factory = nothing stored),
-  `testPackersWithNoListOfHisOwnAreThePeopleHisThingsName`.
+  `testPackersWithNoListOfHisOwnAreThePeopleHisThingsName`; 0.63: `testOwnersWithNoListOfHisOwnAreTheOwnersHisThingsName`
+  (each once, A–Z, things not trip lines, the same as `ownerChoices`, nothing stored by looking; every one in use; a
+  twin name refused, a rename stores the list and both spellings on things follow; an Add keeps the names things carry;
+  owners cannot move).
 - Model — `SharedRowsTests` (26 tests): stable ids across devices; conditions keep `cid` verbatim; order ties
   broken deterministically; people keep colour and share the id; same name twice → one row; owners/places
   de-duplicate case-insensitively and sort A–Z; presets re-saved under a name replace it; kinds never mix; junk
@@ -362,6 +374,9 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   `list-places-add-needs`). `testTheEditorsLeadWithTheirHeadings` (all five `choices-heading-*`).
   `testWhoseItIsOffersEachOwnerOnce` (on a thing: `thing-owner-0` reads "Both have one", then exactly "Kim",
   "Robin"; Notes sit between Name and Kept at home; a 22-pt heading line is ≥ 25 tall, a pill ≥ 36).
+  0.63: `testOwnersAreTheNamesHisThingsCarry` (the sample stores no owners: the Owners part reads Kim, Robin and no
+  third; ✕ on Kim → "Kim is still used by 5 things, so it stays."), `testEscapeClosesSettingsWindowsAndNeverReplaces`
+  (a place typed and not added, then Escape: closed, and no 13th place).
   0.62: `testYourChoicesSaysWhyRightWhereItWasPressed` ("garage" → "You already have Garage." and no 13th row;
   Remove on "≥1 week ahead" → `lists-problem` says "on 1 trip" and sits within 60 points under the ✕ pressed),
   `testAChoiceIsRenamedAndMovedAndItsThingsFollow` (Hall closet → Hall cupboard through the pen; the editor
@@ -396,20 +411,25 @@ his iPhone and his Mac both reminding him would be the same news twice."
   Preparations a month ahead, then a week ahead, the day before and the day you leave."** (14 muted, wraps; 0.62 —
   until then it named only "a week ahead, the day before, the morning", though Preparations and every step with
   lead days ≥ 0 remind too).
-- If the system refused permission — or (0.62) the switch is on but the app's notifications are switched off in
-  the device's Settings — **"This device does not allow the app to remind you. Allow it in the device's
-  Settings, under Notifications."** (15 semibold red, id `settings-reminders-refused`).
+- If the device does not allow the app to remind him — the system's question just refused; or (0.63) the app's
+  notifications switched off in the device's Settings, whether the switch here is on or off; or (0.62) the switch on
+  while the app has no permission at all — **"This device does not allow the app to remind you. Allow it in the
+  device's Settings, under Notifications."** (15 semibold red, id `settings-reminders-refused`). Never asked yet is no
+  refusal: no line.
 - Else, if on: **"Next: <d Mon> · <trip name> — <says>"**, e.g. "Next: 14 Oct · Sunny weeks — ≥1 week ahead: 12 to
   pack", or, with nothing ahead, **"Nothing to remind you of yet: no trip with dates ahead."** (15 semibold, Settings
   slate, id `settings-reminders-next`). Off → no line. The line sits OUTSIDE the Toggle so a test can read it (§23).
 
 **Behaviour.** Turning it on runs, in a Task: `askToShow()` (under the UI tests: always yes; otherwise
 authorized/provisional → yes, denied → no, not determined → the system's permission question for alert + sound);
-then `on = want && ok`, `refused = want && !ok`, then `reschedule(library)`. Turning it off: `on = false`,
-`refused = false`, reschedule (which removes them). `refused` is not stored: leaving Settings forgets it. Since
-0.62 the card also looks up, whenever it is shown and whenever the app comes back to the front, whether the
-device allows reminders now (`PackingReminders.allowed()`, which never asks him); switched on but not allowed, it
-shows the red line instead of "Next" (Home spec, section 14).
+then `on = want && ok`, `refused = want && !ok`, the permission looked up again (below), then `reschedule(library)`.
+Turning it off: `on = false`, `refused = false`, the permission looked up again, reschedule (which removes them).
+`refused` is not stored: leaving Settings forgets it — but the card looks up, whenever it is shown, whenever the app
+comes back to the front (0.62) and after every turn of the switch (0.63), what the device says now
+(`PackingReminders.permission()`: `allowed` = authorized or provisional, `refused` = denied, `notAskedYet` = not
+determined; it never asks him), and `blocked = refused || (on && not allowed)`. The red line shows when `refused` or
+`blocked`, instead of "Next" (Home spec, section 14). Until 0.63 only a switch that was ON looked: refused while off,
+the line was gone as soon as he left Settings, and nothing said why switching on would not work (Open questions 27).
 
 `reschedule(library)` (skipped entirely under the UI tests): removes every pending notification whose id starts
 `packing-`; stops if the switch is off or permission is not authorized/provisional; otherwise adds one
@@ -436,11 +456,14 @@ The notifications live in the system's notification centre.
 iPhone-only and broke the Mac build in 0.49.
 
 **Tests.** UI `testSettingsTurnsOnPackingReminders` (`-uiTestingChecks`: off at first, no next line; on → the next
-line names "Sunny weeks" and "week ahead"; off → the line goes). Model `CountdownTests`
+line names "Sunny weeks" and "week ahead"; off → the line goes); `testRemindersSayWhenTheDeviceBlocksThem`
+(`-pretendRemindersBlocked`: on and blocked → the red line, no "Next", again after Home and back; 0.63: switched off
+→ the line stays, and after Home and back the switch is off and the line still there). Model `CountdownTests`
 (`testTheNextTripIsTheSoonestStillToLeave`, `testAStepFallsDueItsLeadDaysAheadAndGoesWhenPacked`,
 `testOneReminderPerTripPerDayFromTodayOn` — dates, merged days, limit, a reviewed trip stops reminding —
-`testDaysAreCountedOnTheCalendar`). **Not covered:** the refused line, the actual scheduling (skipped under
-tests), a tapped notification opening the trip, the 09:00 cut-off for today.
+`testDaysAreCountedOnTheCalendar`). **Not covered:** the line at the moment the system's question is refused (the
+system's own window), "not asked yet" giving no line (the tests answer yes or refused, never "not yet"), the actual
+scheduling (skipped under tests), a tapped notification opening the trip, the 09:00 cut-off for today.
 
 ---
 
@@ -493,7 +516,8 @@ bold ink, one muted 14-pt line truncated to one line, chevron, min height 60, ca
 One `.sheet(item: page)` (`Page` = `whatsNew | howItWorks | firstTrip`) shows the chosen page.
 
 **The sheet header** (`GuideHeader`, shared by all three): the title (22 heavy, Settings slate, id `guide-title`),
-Spacer, **Done** (filled `HeaderButtonStyle`, slate, id `guide-done`, calls `dismiss()`), padding 16. Each page then
+Spacer, **Done** (filled `HeaderButtonStyle`, slate, id `guide-done`, calls `dismiss()`; Escape too, ⌘. on an iPhone
+keyboard — 0.63), padding 16. Each page then
 scrolls in a `KeyboardAwayScroll` padded 16 / 24 on `Theme.bg`. Mac only: `.frame(minWidth: 520, minHeight: 620)`.
 
 ---
@@ -784,7 +808,8 @@ Shipped in 0.41.
 
 ## 11. *Open a shared link* door (`OpenSharedDoor` in `Screens/Share.swift`)
 
-The door only (the sheet `OpenSharedScreen`, container `shared-screen`, belongs to the sharing chapter). Built like
+The door only (the sheet `OpenSharedScreen`, container `shared-screen`, belongs to the sharing chapter; its Done,
+`shared-done`, is pressed by Escape too since 0.63). Built like
 the other doors: **"Open a shared link"** (18 bold), **"A trip, template or grab list someone shared"** (15 muted,
 wrapping — 14, one line, until 0.62), chevron, 8 pt above and below; id `settings-openshared`; it owns its sheet. Origin: 0.38 — the web app's "Paste a shared link".
 Tests: `testATripIsSharedAndOpenedAgain`, `testATemplateAndAGrabListAreSharedAndOpenedAgain` (both enter here).
@@ -815,8 +840,9 @@ device that looked empty merged with an older iCloud copy). Shipped 0.5; the pho
 2. Memberships pointing at a template that no longer exists: "<n> thing sits / things sit on a template that no
    longer exists." (0.62; "on a list" until then, though since 0.34 a list is only what you pack from) — no names,
    no repair.
-3. Photos nothing shows any more (`unusedPhotos(now:)` in TripEdits.swift: not in use by anything — `photoInUse`:
-   no thing, no trip line, no packed bag — and created strictly more than 86 400 s before now). `createdAt` is read
+3. Photos nothing shows any more (`unusedPhotos(now:)` in TripEdits.swift: not in use by anything — `photoInUse`'s
+   rule: no thing, no trip line, no packed bag; since 0.63 gathered in ONE walk, `photoIdsInUse()`, instead of one
+   walk per photo, as this is asked on every drawing of Settings — and created strictly more than 86 400 s before now). `createdAt` is read
    by `isoMoment` (ISO 8601, with or without fractional seconds); a photo whose `createdAt` is empty or cannot be read
    is KEPT and never offered — "a date that cannot be read is no proof of age" (0.60; until 0.59 it counted as old
    and was offered at once). Sentence: "<n> photo is / photos are no longer shown anywhere — left behind by a deleted
@@ -891,13 +917,14 @@ for `.json`. Picked → security-scoped read → `offer(data)`; unreadable → "
 the live "When" steps and conditions as they were): parse the JSON and require
 `BackupFile.looksLikeBackup`, else "That is not an AMS Packing backup file."; import it in memory with
 `Importer.library(from:)`; if the import does not round-trip faithfully, "The import did not come back the same
-(<n> rows differ), so nothing was stored."; otherwise `pending = PendingRestore(library)` → the sheet opens. Nothing
-on the device changes until he confirms.
+(<n> rows differ), so nothing was stored."; otherwise `open = .restore(PendingRestore(library))` and `unanswered =
+true` → the sheet opens. Nothing on the device changes until he confirms.
 
 **The sheet** (container id `restore-detail`; `.frame(minWidth: 420, minHeight: 520)` on the Mac only — 0.62; on the
 iPhone it was wider than the screen and its edges were cut off):
 - Header: **"Restore from a file"** (22 heavy ink) and **Cancel** (outlined `HeaderButtonStyle`, slate, id
-  `restore-cancel`) → `answer(false)` + dismiss.
+  `restore-cancel`) → `answer(false)` + dismiss. Escape presses it (⌘. on an iPhone keyboard — 0.63); Return
+  presses nothing, so no key ever replaces.
 - "Everything on this device is replaced by what the file holds." (16 medium ink).
 - Column heads **"The file"** and **"Now"** (15 heavy muted, 70 wide, right-aligned).
 - A table, one row per table that has a count on either side, `meta` always left out ("the library's own
@@ -910,21 +937,25 @@ iPhone it was wider than the screen and its edges were cut off):
 - **"Replace everything on this device"** — full width, min height 52, red fill, 17 bold white, id
   `restore-confirm` → `answer(true)` + dismiss.
 
-**After the answer** (`pending = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
+**After the answer** (`unanswered = false` and `open = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
 (1) `RescueCopies.write(current)` — BEFORE anything is replaced; (2) `commit(Importer.restoring(imported, over:
 current))` — the record difference between what was held and the file's library (with the devices' check-ins kept,
 0.62) is applied to the store (everything else not in the file is deleted); (3) `reload()`. Then `copies` is re-read
 and status = "Restored from the file: <n> template(s), <n> thing(s) and <n> trip(s). A copy of what was here is kept
-on this device." (the counts since 0.62); an error → its description. Dismissing the sheet by swiping (iPhone) does not call `answer`, so the
-status says nothing.
+on this device." (the counts since 0.62); an error → its description. Dismissing the sheet any other way — swiping it
+down on the iPhone — does not call `answer`; the sheet's `onDismiss` finds `unanswered` still true and says what
+Cancel says: "Nothing was replaced." (0.63; until then the status said nothing — Open questions 17).
 
 **Tests.** UI `testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything` (device 10 things; file 2 vs now 10;
 `restore-fewer` shown; 0.62: the sheet inside the window; Cancel changes nothing; confirm → 2 things, 0 trips, the
-counts in the status line, `device-import`). Model `RestoreTests`
+counts in the status line, `device-import`); 0.63: `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`
+(twice: Your choices then the restore, each its own window; Cancel → "Nothing was replaced."),
+`testARestoreSwipedAwaySaysNothingWasReplaced` (iPhone: swiped down → "Nothing was replaced.", still 10 things),
+`testEscapeClosesSettingsWindowsAndNeverReplaces` (Escape → closed, "Nothing was replaced.", 10 things). Model `RestoreTests`
 (`testARestoreLeavesExactlyWhatTheFileHeldAndNothingOfWhatWasThere` — items, templates, no trips, no to-dos, no old
 Settings-list entry, every table count equals the file's; `testTheFileHoldingLessThanTheDeviceIsVisibleInTheCounts`;
-`testSomethingThatIsNotABackupIsNotReadAsOne`). **Not covered:** the error lines, "Nothing was replaced.", the ", and
-more." wording, a restore onto an empty device.
+`testSomethingThatIsNotABackupIsNotReadAsOne`). **Not covered:** the error lines, the ", and more." wording, a
+restore onto an empty device.
 
 ---
 
@@ -1149,8 +1180,18 @@ OPENS the question, never deletes by itself. Uses: Delete bag (`bag-delete`), De
 template (`template-delete`), Delete thing (`thing-delete`).
 
 **Every plain button** gets `.buttonStyle(.plain)` and `.focusEffectDisabled()` (no keyboard focus ring on the Mac)
-and an explicit `.contentShape` so the whole drawn area takes the tap. There are no keyboard shortcuts anywhere
-(`.keyboardShortcut`, `onExitCommand`: none).
+and an explicit `.contentShape` so the whole drawn area takes the tap.
+
+**Escape** (the trips' windows in 0.62, every other sheet in 0.63 — "Escape everywhere"). Every sheet's **Cancel** —
+or, where it has no Cancel, its **Done** / **Close** — carries `.keyboardShortcut(.cancelAction)`: Escape on the Mac,
+⌘. on an iPhone with a keyboard. Never a Save, a Replace or an Add: no key saves anything by accident, and Return
+(`.defaultAction`) is given to no button, so it stays with the fields (`onSubmit`). Nested sheets: only the top one
+closes (each sheet is its own window on the Mac; on the iPhone the top sheet's shortcut is met first). A grab list
+being edited has no Cancel and no shortcut (its Done is hidden while editing). The Mac's own *All your things* window
+(`ThingsTable(inWindow: true)`) has none either — a window closes with ⌘W, and Escape in its search field would close
+the whole table; its sheets (Filter, Sort, Columns, Change, a thing) do have it. On the iPhone a sheet that may be
+swiped away also closes on ⌘. by itself (the system's own, shortcut or not), so there the tests pin that the right
+window closes and nothing is saved; on the Mac nothing closes without the shortcut. There is no `onExitCommand`.
 
 **Tests.** `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (Your things New + the line goes after typing, Your bags,
 To buy, Grab Lists Make, a grab list's Add, Your choices' first Add, a template's Add, Rename to another template's
@@ -1242,7 +1283,7 @@ its words, "so rewording a button can never turn the suite red".
   marker `app-version`; a failed library `library-problem`; an unbuilt section's placeholder title `screen-title`.
 - A sheet or page is a container named `<thing>-detail` or `<thing>-screen` (`lists-detail`, `restore-detail`,
   `things-detail`, `trip-detail`, `tripset-screen`, `loop-screen`, `guide-whatsnew`…); its buttons
-  `<thing>-done`, `-cancel`, `-save`, `-confirm`.
+  `<thing>-done`, `-cancel`, `-save`, `-confirm` (the `-cancel`, or else the `-done`, is the one Escape presses, §20).
 - Rows and pills by POSITION: `<prefix>-row-<n>`, `<pill id>-<n>`, `guide-release-<n>`, `guide-topic-<n>`,
   `word-<n>`, `quickstart-step-<n>`, `loop-step-<n>`, `health-<n>`, `rescue-row-<n>`.
 - Per-table numbers by table raw value: `device-count-<table>`, `restore-file-<table>`, `restore-now-<table>`.
@@ -1646,10 +1687,14 @@ UI (`AMSPackingUITests`): `testAAAWarmsUpTheSimulator`, `testStartsOnHomeAndName
 `testTheCrossKeepsTheKeyboard`, `testATripIsDeletedOnlyAfterAsking` (photo count in Settings),
 `testATripIsSharedAndOpenedAgain` and `testATemplateAndAGrabListAreSharedAndOpenedAgain` (the door); 0.62:
 `testYourChoicesSaysWhyRightWhereItWasPressed`, `testAChoiceIsRenamedAndMovedAndItsThingsFollow`,
-`testTheWayHomeIsSearched` (its ✕ is the shared one).
+`testTheWayHomeIsSearched` (its ✕ is the shared one); 0.63: `testRemindersSayWhenTheDeviceBlocksThem` (switched off
+too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`,
+`testARestoreSwipedAwaySaysNothingWasReplaced` (iPhone), and Escape everywhere:
+`testEscapeClosesSettingsWindowsAndNeverReplaces`, `testEscapeCancelsAThingAndClosesCaresWindows`,
+`testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (with the trips' `testEscapeClosesTheTripsWindows`, spec 03).
 
-Model: `SettingsListsTests` (13 since 0.62), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
-`ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (3), `BackupTests` (library, 5),
+Model: `SettingsListsTests` (14 since 0.63), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
+`ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (4 since 0.63), `BackupTests` (library, 5),
 `RestoreTests` (3), `SyncCheckInTests` (1), `CountdownTests` (4), `ContrastTests` (3); and (0.62)
 `tools/release-to-testers.py --self-check`. Not unit-tested at all (the app
 target has no unit-test target): `SVGPath`, `RescueCopies` (its naming, time and pruning are, since 0.62: `RescueNamesTests`; also `StoreTests`, `SyncCheckTests`, `UndatedPhotoTests`), `AppInfo`, `Releases`/`Words`/`HowItWorksScreen`
@@ -1695,20 +1740,35 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
     and adds nothing (§2.5).
 13. **Resolved in 0.62** — ~~The problem line appears at the TOP.~~ It appears right under the entry whose ✕ was
     pressed (§2.4; `testYourChoicesSaysWhyRightWhereItWasPressed`).
-14. [idea] **Owners are listed A–Z with no factory list**, so on an account whose things name owners but which never
-    added one, the Owners part is empty while *Whose it is* offers those names (`ownerChoices`). `ownersByUsage`
-    (the web app's most-owned-first order) is ported but unused.
+14. **Resolved in 0.63** — ~~Owners are listed A–Z with no factory list, so the Owners part is empty on an account
+    that never added one while *Whose it is* offers names.~~ With no Owners of his own, `owners()` is the owners his
+    things name — A–Z, each once, things only, as `people()` does for Packers; each is in use, so none can be
+    removed; a rename or an Add stores them as his own list, still A–Z (§2.5, §2.6). Pinned by
+    `SettingsListsTests.testOwnersWithNoListOfHisOwnAreTheOwnersHisThingsName` and UI
+    `testOwnersAreTheNamesHisThingsCarry`. `ownersByUsage` (the web app's most-owned-first order) stays ported and
+    unused: owners stay A–Z.
 15. **Resolved in 0.62** — ~~docs/colours.md is stale.~~ The workout pills are marked built (0.40), the tabs are
     Trips and To do with their code names beside them.
 16. **Resolved in 0.62** — ~~Section colours are single hexes.~~ On purpose, and now said so: Theme.swift's comment
     speaks of the page and text colours; docs/colours.md gives each section colour's contrast on the light card
     (3.2–4.8 : 1) and the dark one (3.5–5.2 : 1) — enough for headings, bands, bold words and white words on a fill.
-17. [idea] **Sheet dismissal without an answer**: swiping the restore sheet away (iPhone) leaves the status line
-    unchanged (no "Nothing was replaced."). Escape on the Mac relies on SwiftUI's default; no keyboard shortcut
-    (`.keyboardShortcut`, `onExitCommand`) exists anywhere in the app.
-18. [rule-break] **Settings keeps two `.sheet` modifiers on one view** (Your choices and the restore sheet, plus a
-    `.fileImporter` and a `.fileExporter`) although GuideScreen.swift's comment calls "several sheets on one view" a
-    trap met in Search; it works today (both sheets are opened by UI tests).
+17. **Resolved in 0.63** — ~~Sheet dismissal without an answer; no Escape.~~ A restore swiped away (iPhone) says
+    "Nothing was replaced.", as Cancel does (§14; `testARestoreSwipedAwaySaysNothingWasReplaced`). Every sheet's
+    Cancel — or Done where it has none — is pressed by Escape (⌘. on an iPhone keyboard), never a Save (§20).
+    Pinned by `testEscapeClosesSettingsWindowsAndNeverReplaces`, `testEscapeCancelsAThingAndClosesCaresWindows`,
+    `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` and (0.62) `testEscapeClosesTheTripsWindows`. Covered by
+    a test: Your choices, the restore, What's new, Open a shared link, Your things, a thing, Your bags, the table
+    (iPhone) and its Filter, Search, Grab Lists, a template, a row, New, and the trips' windows. By the code only
+    (the same one line): the other guide pages (How it works, Your first real trip — the same `GuideHeader`), the
+    swap sheet, the grab menu, a grab list, the icon picker, Choose from your things, Refine, a bag's page, Sort,
+    Columns, Change (the table's bulk change), the world map. On the iPhone ⌘. closes a sheet that may be swiped
+    away by itself, so these tests go red there only when Escape SAVES (seen: Escape planted on Save → "Escape
+    saved the thing / the row"); a missing shortcut shows on the Mac, in CI's Mac job.
+18. **Resolved in 0.63** — ~~Settings keeps two `.sheet` modifiers on one view.~~ One `.sheet(item:)` with a
+    destination (`Open`: `choices`, `restore`), as the Templates tab has since 0.62; every id and behaviour kept; the
+    `.fileImporter` and `.fileExporter` stay (system windows, each opened only by its own button) (§1). Pinned by
+    `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther` (red with the destinations crossed; the old two
+    sheets pass it too — the trap does not show every time).
 19. **Resolved in 0.62** — ~~The shot helper's comment names `tools/shots.sh`.~~ It says how pictures are taken
     (`TEST_RUNNER_SHOTS_DIR`) and that night mode is the simulator's appearance, set before running the same tests again.
 20. **Resolved in 0.62** — ~~`forThisLaunch`'s doc comment lists only three test modes.~~ It lists all six.
@@ -1724,9 +1784,10 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
     failure to set it only warns (§28).
 26. **Resolved in 0.62** — ~~The Reminders card's sub-line.~~ It names Preparations a month ahead, a week ahead, the
     day before and the day you leave (§3).
-27. [bug] **`RemindersCard.refused` is not remembered**: after leaving Settings the "not allowed" line is gone while
-    the switch is off. (Partly met in 0.62: switched ON but blocked by the device, the line now shows every time —
-    Home spec, item 13. Turning the switch on again still says why at that moment.)
+27. **Resolved in 0.63** — ~~`RemindersCard.refused` is not remembered.~~ The card asks the device whenever it shows,
+    whenever the app comes back to the front and after every turn of the switch (`PackingReminders.permission()`);
+    refused by the device, the red line shows with the switch on or off; never asked yet is no refusal (§3). Pinned
+    by `testRemindersSayWhenTheDeviceBlocksThem` (switched off, left and opened again: the line stays).
 28. Resolved in 0.62 (the templates area): a cover never shows an emoji, even one a template brought from the web app — the drawn icon or the letter instead (spec 04). Was: [idea] **Template covers can still show an emoji** (data from the web app) when a template has no icon, despite
     "no emoji" — deliberate per the comment ("His covers are his data"), noted for a rewrite.
 29. **Resolved in 0.62** — ~~The public repository holds real first names.~~ The starter packers are the invented
