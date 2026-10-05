@@ -28,6 +28,26 @@ final class TripEditsTests: XCTestCase {
         XCTAssertEqual(lib.memberships.count, rows)
         XCTAssertFalse(lib.deleteTrip(id: gone.id), "a trip that is not there: false")
     }
+
+    /// A trip's folds go with it (the spec pass, 5 Oct 2026: they were kept for ever),
+    /// and a fold made sweeps out those of trips this device no longer has.
+    func testATripsFoldsGoWithIt() {
+        let a = TripFolds.key(trip: "trip-a", view: "when", heading: "Morning list")
+        let b = TripFolds.key(trip: "trip-b", view: "container", heading: "Day pack")
+        var raw = TripFolds.toggled("", a, trips: ["trip-a", "trip-b"])
+        raw = TripFolds.toggled(raw, b, trips: ["trip-a", "trip-b"])
+        XCTAssertTrue(TripFolds.isFolded(raw, a)); XCTAssertTrue(TripFolds.isFolded(raw, b))
+        XCTAssertFalse(TripFolds.isFolded(raw, TripFolds.key(trip: "trip-a", view: "container", heading: "Morning list")),
+                       "a fold is per sorting")
+        raw = TripFolds.toggled(raw, a, trips: ["trip-a", "trip-b"])
+        XCTAssertFalse(TripFolds.isFolded(raw, a), "a second press did not open it")
+        raw = TripFolds.toggled(raw, a, trips: ["trip-a", "trip-b"])
+        XCTAssertEqual(TripFolds.without(trip: "trip-a", in: raw), b, "the deleted trip's folds stayed")
+        // trip-b is gone from this device: the next fold anywhere takes its folds away.
+        let c = TripFolds.key(trip: "trip-a", view: "when", heading: "Day before")
+        XCTAssertEqual(TripFolds.toggled(raw, c, trips: ["trip-a"]), [a, c].joined(separator: "\n"),
+                       "a gone trip's folds were kept")
+    }
 }
 
 final class SetPlaceTests: XCTestCase {
@@ -131,5 +151,67 @@ final class ChangeTripTests: XCTestCase {
         XCTAssertEqual(lines.first { $0.container == "Duffel bag" }?.checked, true, "the Duffel bag line lost its tick")
         XCTAssertEqual(lines.first { $0.container == "Swim bag" }?.checked, false, "the tick moved to the other bag's line")
         XCTAssertEqual(lines.first { $0.container == "Duffel bag" }?.id, duffel, "the ticked line did not keep its id")
+    }
+
+    /// The spec pass (5 Oct 2026, his first finding): the first Save in Trip settings on
+    /// a trip someone SENT threw its whole list away, ticks too — a shared trip travels
+    /// without the links a rebuild matches lines by — and replaced it with what his
+    /// own templates give; on a Quick one Save quietly did nothing.
+    func testATripSomeoneSentKeepsItsListOnSave() throws {
+        // The sender's library and trip.
+        var sender = Library()
+        sender.saveTemplate({ var l = newList(name: "Hike", group: "GA"); l.items = [newItem(name: "Boots"), newItem(name: "Map")]; return l }())
+        var draft = newEvent(name: "Hills", startDate: "2026-10-10", endDate: "2026-10-12")
+        draft.activities = sender.templates.map(\.id)
+        let sent = sender.createTrip(draft)
+        let link = try XCTUnwrap(sender.shareLink(tripId: sent.id))
+
+        // His library: an always-packed template, a transport kit, and a Map of his own.
+        var lib = Library()
+        lib.saveTemplate({ var l = newList(name: "Common base", role: "base"); l.items = [newItem(name: "Passport"), newItem(name: "Map")]; return l }())
+        lib.saveTemplate({ var l = newList(name: "Car kit", role: "transport"); l.transport = "Car"; l.items = [newItem(name: "Jumper cables")]; return l }())
+        lib.saveTemplate({ var l = newList(name: "Swim", group: "WET"); l.items = [newItem(name: "Goggles"), newItem(name: "Map")]; return l }())
+        guard case .trip(let got)? = Library.readShared(link) else { return XCTFail("the link does not read back") }
+        let trip = lib.importTrip(got)
+        let boots = trip.entries.first { $0.name == "Boots" }!.id
+        _ = lib.setChecked(true, tripId: trip.id, entryId: boots)
+
+        // Save with only a new name: the list stays exactly as it came, the tick too.
+        let r = lib.changeTrip(id: trip.id) { $0.name = "Hills with friends" }
+        XCTAssertEqual(r, Library.TripRebuilt(added: 0, removed: 0), "Save changed a received list")
+        XCTAssertEqual(lib.trips[0].entries.map(\.name), ["Boots", "Map"], "the received list was not kept")
+        XCTAssertTrue(lib.trips[0].entries.contains { $0.id == boots && $0.checked }, "the received line lost its tick")
+
+        // A template of his ticked: its things join — a thing of the same name in the
+        // same bag is not doubled.
+        let swim = lib.templates.first { $0.name == "Swim" }!.id
+        XCTAssertNotNil(lib.changeTrip(id: trip.id) { $0.activities.append(swim) })
+        XCTAssertEqual(lib.trips[0].entries.map(\.name).sorted(), ["Boots", "Goggles", "Map"], "the template did not add to it")
+
+        // Quick switched off: now his always-packed and transport templates come too,
+        // and the received lines still stay.
+        XCTAssertNotNil(lib.changeTrip(id: trip.id) { $0.mode = "trip" })
+        XCTAssertEqual(Set(lib.trips[0].entries.map(\.name)), ["Boots", "Map", "Goggles", "Passport", "Jumper cables"])
+        XCTAssertEqual(lib.trips[0].entries.filter { $0.name == "Map" }.count, 1, "the Map came twice")
+    }
+
+    /// Weather gear "forced on" for a trip (Trip settings, the spec pass 5 Oct 2026):
+    /// his tagged gear comes onto the list whatever the forecast says, and goes again
+    /// when the condition is switched off — unless it was ticked.
+    func testWeatherGearForcedOnComesWithTheList() {
+        var lib = Library()
+        lib.saveTemplate({ var l = newList(name: "Hike", group: "GA")
+            var shell = newItem(name: "Rain shell"); shell.weather = ["rain"]
+            var hat = newItem(name: "Sun hat"); hat.weather = ["hot"]
+            l.items = [newItem(name: "Boots"), shell, hat]; return l }())
+        var draft = newEvent(name: "Hills", mode: "quick")
+        draft.activities = lib.templates.map(\.id)
+        let trip = lib.createTrip(draft)
+        XCTAssertEqual(trip.entries.map(\.name), ["Boots"], "weather gear waits for the forecast")
+        XCTAssertEqual(lib.changeTrip(id: trip.id) { $0.weatherOn = ["rain"] }, Library.TripRebuilt(added: 1, removed: 0))
+        XCTAssertEqual(lib.trips[0].entries.map(\.name), ["Boots", "Rain shell"])
+        XCTAssertEqual(lib.trips[0].weatherOn, ["rain"])
+        XCTAssertNotNil(lib.changeTrip(id: trip.id) { $0.weatherOn = [] })
+        XCTAssertEqual(lib.trips[0].entries.map(\.name), ["Boots"], "switched off, the gear stayed")
     }
 }

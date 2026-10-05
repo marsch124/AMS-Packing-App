@@ -42,6 +42,35 @@ extension Library {
     }
 }
 
+/// The sections folded away on trips, as the trip screen remembers them on this
+/// device (his ask, 2026-09-26: "the list is extremely long"): one
+/// "<trip id>|<sorting>|<heading>" per line, per trip and per sorting.
+///
+/// The spec pass (5 Oct 2026): a deleted trip's folds were kept for ever. Now a
+/// trip's folds go with it, and every fold made sweeps out those of trips this
+/// device no longer has (deleted on the other one, too).
+public enum TripFolds {
+    public static func key(trip: String, view: String, heading: String) -> String { "\(trip)|\(view)|\(heading)" }
+
+    public static func isFolded(_ raw: String, _ key: String) -> Bool {
+        raw.split(separator: "\n").contains { String($0) == key }
+    }
+
+    /// Fold or open one section; the folds of trips not in `trips` are dropped.
+    public static func toggled(_ raw: String, _ key: String, trips: Set<String>) -> String {
+        var keys = raw.split(separator: "\n").map(String.init).filter { trips.contains(tripOf($0)) }
+        if let i = keys.firstIndex(of: key) { keys.remove(at: i) } else { keys.append(key) }
+        return keys.joined(separator: "\n")
+    }
+
+    /// Every fold of one trip taken away — the trip is gone.
+    public static func without(trip: String, in raw: String) -> String {
+        raw.split(separator: "\n").map(String.init).filter { tripOf($0) != trip }.joined(separator: "\n")
+    }
+
+    private static func tripOf(_ key: String) -> String { String(key.prefix { $0 != "|" }) }
+}
+
 // Where a thing is kept, set from the trip itself — his ask (2026-09-26), packing
 // by From where: "No place set … I want to define a place for these items with one
 // click or two", not by leaving the trip to find the thing.

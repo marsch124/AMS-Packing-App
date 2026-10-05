@@ -93,4 +93,50 @@ final class SharingTests: XCTestCase {
         XCTAssertNil(Library.readShared("hello there"), "any text read as something")
         XCTAssertNil(Library.readShared("   "))
     }
+
+    /// What the sender keeps to himself (the spec pass, 5 Oct 2026): a shared trip
+    /// carried his "not this time" marks, the way home's ticks, used up and notes, bought
+    /// on site, the luggage scale's readings and the ids of bag photos that never travel.
+    /// Now it is just the list — out of the link, out of the file, and on arrival even
+    /// from an older link that still carries them.
+    func testASharedTripIsJustTheList() throws {
+        var lib = library()
+        let t = lib.trips[0].id
+        let towel = lib.trips[0].entries[1].id
+        _ = lib.setAside(true, tripId: t, entryId: towel)
+        lib.trips[0].entries[0].extra[HOME_KEY] = .bool(true)
+        lib.trips[0].entries[0].extra[USED_UP_KEY] = .bool(true)
+        lib.trips[0].entries[0].extra[HOME_NOTE_KEY] = .string("Strap loose")
+        lib.trips[0].entries[0].extra["packedAt"] = .string("2026-10-02T18:00:00.000Z")
+        lib.trips[0].entries[0].edited = true
+        _ = lib.addBoughtOnSite(tripId: t, name: "Sandals")
+        _ = lib.setWeighed(tripId: t, bag: "Duffel bag", grams: 9500)
+        _ = lib.addBagPhoto(tripId: t, bag: "Duffel bag", jpeg: Data([1, 2, 3]))
+        let link = try XCTUnwrap(lib.shareLink(tripId: t))
+        let file = try XCTUnwrap(lib.shareFile(tripId: t))
+        let text = String(decoding: file.data, as: UTF8.self)
+        for key in ["skipped", HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt", "_edited", WEIGHED_KEY, BAG_PHOTOS_KEY] {
+            XCTAssertFalse(text.contains("\"\(key)\""), "the file carries \(key)")
+        }
+        guard case .trip(let got)? = Library.readShared(link) else { return XCTFail("the link does not read back") }
+        XCTAssertEqual(got.entries.map(\.name), ["Goggles", "Towel", "Sandals"], "the list itself must travel whole")
+        XCTAssertEqual(got.entries.first { $0.name == "Towel" }?.container, "Duffel bag", "the bag must travel")
+        XCTAssertFalse(got.entries.contains { $0.skipped }, "not this time travelled")
+        XCTAssertTrue(got.entries.allSatisfy { $0.extra.isEmpty }, "a line's own marks travelled: \(got.entries.map(\.extra))")
+        XCTAssertNil(got.extra[WEIGHED_KEY], "the scale's readings travelled")
+        XCTAssertNil(got.extra[BAG_PHOTOS_KEY], "bag photo ids travelled")
+        XCTAssertEqual(lib.weighed(tripId: t)["Duffel bag"], 9500, "sharing took the sender's own reading away")
+
+        // An older link still carries the marks: they are left at the door.
+        var old = lib.trips[0]
+        old.entries[0].extra[HOME_NOTE_KEY] = .string("Strap loose")
+        old.extra[WEIGHED_KEY] = .object(["Duffel bag": .number(9500)])
+        guard let oldFrag = encodeTripLink(old), case .trip(let carried)? = Library.readShared(oldFrag) else {
+            return XCTFail("an old-style link does not read back")
+        }
+        let arrived = lib.importTrip(carried)
+        XCTAssertNil(arrived.extra[WEIGHED_KEY], "an old link's scale reading arrived")
+        XCTAssertTrue(arrived.entries.allSatisfy { $0.extra.isEmpty && !$0.skipped }, "an old link's marks arrived")
+        XCTAssertEqual(arrived.mode, "quick", "a trip someone sent arrives Quick: his own base does not pour in on Save")
+    }
 }

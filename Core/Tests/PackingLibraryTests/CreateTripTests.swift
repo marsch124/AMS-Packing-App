@@ -45,8 +45,16 @@ final class CreateTripTests: XCTestCase {
         var hike = lib.resolvedTemplates().first { $0.name == "Hiking" }!; hike.group = "GA"
         lib.saveTemplate(swim); lib.saveTemplate(bike); lib.saveTemplate(hike)
         let choices = lib.activityChoices()
-        XCTAssertEqual(choices.map { $0.group.id }, ["GA", "WET"])
-        XCTAssertEqual(choices.last?.lists.map(\.name), ["Swim", "Bike"], "race order, not the alphabet")
+        // GA, WET, then — last — the templates with no activity area ("Night run" here),
+        // as the web app offers them (the spec pass, 5 Oct 2026: they were never offered).
+        XCTAssertEqual(choices.map { $0.group.id }, ["GA", "WET", ""])
+        XCTAssertEqual(choices[1].lists.map(\.name), ["Swim", "Bike"], "race order, not the alphabet")
+        XCTAssertEqual(choices.last?.group.label, "Other templates")
+        XCTAssertEqual(choices.last?.lists.map(\.name), ["Night run"], "a template with no activity area is never offered")
+        // The always-packed, transport and bag templates are never offered as a choice.
+        var base = newList(name: "Common base", role: "base"); base.items = [newItem(name: "Passport")]
+        lib.saveTemplate(base)
+        XCTAssertFalse(lib.activityChoices().flatMap(\.lists).contains { $0.role == "base" })
     }
 }
 
@@ -178,6 +186,58 @@ final class ReviewTests: XCTestCase {
         XCTAssertEqual(lib.trips[0].status, "done")
         XCTAssertEqual(lib.trips[0].reviewedAt, "2026-09-22T18:00:00.000Z")
         XCTAssertFalse(lib.saveReview(tripId: "no-such", unused: [], missed: [], when: "x"))
+    }
+
+    /// "Not this time" means it did not go (the spec pass, 5 Oct 2026): setting a
+    /// ticked line aside takes its tick; an older trip's line ticked AND set aside is
+    /// not asked about as packed, nor counted packed; and on a trip with no tick at all
+    /// the set-aside lines are not part of "the list is the evidence".
+    func testASetAsideLineNeverCountsAsPacked() {
+        var lib = LibraryTests.sample()
+        let trip = lib.trips[0]
+        let lamp = trip.entries.first { $0.name == "Headlamp" }!.id
+        let batteries = trip.entries.filter { $0.name == "Spare batteries" }.map(\.id)
+        // Setting aside takes the tick; taking it back leaves it unticked.
+        _ = lib.setChecked(true, tripId: trip.id, entryId: lamp)
+        _ = lib.setAside(true, tripId: trip.id, entryId: lamp)
+        XCTAssertFalse(lib.trips[0].entries.first { $0.id == lamp }!.checked, "set aside and still ticked")
+        _ = lib.setAside(false, tripId: trip.id, entryId: lamp)
+        XCTAssertFalse(lib.trips[0].entries.first { $0.id == lamp }!.checked)
+
+        // No tick at all: everything not set aside is the evidence.
+        _ = lib.setAside(true, tripId: trip.id, entryId: lamp)
+        var lines = lib.reviewLines(tripId: trip.id)
+        XCTAssertEqual(Set(lines.packed.map(\.id)), Set(batteries), "a set-aside line is asked about as packed")
+        XCTAssertEqual(lines.neverPacked.map(\.id), [lamp])
+
+        // An older trip: ticked AND set aside (before setting aside took the tick).
+        lib.trips[0].entries[lib.trips[0].entries.firstIndex { $0.id == lamp }!].checked = true
+        _ = lib.setChecked(true, tripId: trip.id, entryId: batteries[0])
+        lines = lib.reviewLines(tripId: trip.id)
+        XCTAssertEqual(lines.packed.map(\.id), [batteries[0]], "a ticked-then-set-aside line is asked about as packed")
+        XCTAssertEqual(lib.travelAllTime().packed, 1, "a set-aside line counts as a thing packed")
+        lib.trips[0].startDate = "2026-09-10"; lib.trips[0].endDate = "2026-09-12"
+        XCTAssertEqual(lib.travelYear(today: "2026-10-05").packed, 1, "Your year counts a set-aside line as packed")
+
+        XCTAssertTrue(lib.saveReview(tripId: trip.id, unused: [], missed: [], when: "2026-10-05T18:00:00.000Z"))
+        let stats = lib.items.first { $0.name == "Headlamp" }!.stats
+        XCTAssertEqual(stats.packed, 0, "the review counted a set-aside line as packed")
+        XCTAssertEqual(stats.skipped, 1, "a set-aside line is listed and never packed")
+        XCTAssertFalse(lib.trips[0].entries.first { $0.id == lamp }!.checked, "the stale tick under the set-aside stayed")
+    }
+
+    /// A trip with no tick at all and a line set aside: the set-aside line is left out
+    /// of the history altogether — not counted as packed and used.
+    func testASetAsideLineOnATripWithNoTicksIsLeftOutOfTheHistory() {
+        var lib = LibraryTests.sample()
+        let trip = lib.trips[0]
+        let lamp = trip.entries.first { $0.name == "Headlamp" }!.id
+        _ = lib.setAside(true, tripId: trip.id, entryId: lamp)
+        XCTAssertTrue(lib.saveReview(tripId: trip.id, unused: [], missed: [], when: "2026-10-05T18:00:00.000Z"))
+        let stats = lib.items.first { $0.name == "Headlamp" }!.stats
+        XCTAssertEqual(stats.packed + stats.used + stats.unused + stats.skipped, 0, "a set-aside line went into the history: \(stats)")
+        XCTAssertNil(lib.trips[0].entries.first { $0.id == lamp }!.used)
+        XCTAssertEqual(lib.items.first { $0.name == "Spare batteries" }!.stats.packed, 1, "the list as evidence stopped working")
     }
 }
 

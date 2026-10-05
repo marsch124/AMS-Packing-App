@@ -35,7 +35,7 @@ extension Library {
     /// Otherwise it is being packed — all ticked or not, until it begins.
     public func loopStep(tripId: String, today: String) -> LoopStep {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return .plan }
-        if trip.status == "done" || !trip.reviewedAt.isEmpty { return .refine }
+        if Library.isReviewed(trip) { return .refine }
         let end = trip.endDate.isEmpty ? trip.startDate : trip.endDate
         if !end.isEmpty, end < today { return .review }
         if trip.entries.isEmpty { return .plan }

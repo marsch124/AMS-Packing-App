@@ -184,14 +184,27 @@ public struct Library: Equatable, Sendable {
             taken.insert(i)
             return prev[i]
         }
-        var out = fresh.map { match($0) ?? $0 }
+        // A line with NOTHING behind it — no template, no thing — and not typed on the
+        // trip is a line someone SENT: a shared trip travels without its links (the spec
+        // pass, 5 Oct 2026: the first Save in Trip settings threw a received trip's whole
+        // list away, ticks and all). There is nothing to rebuild it from, so it stays —
+        // and a fresh line of the same name into the same bag is not added beside it.
+        func sent(_ e: Item) -> Bool { !e.custom && (e.sourceListId ?? "").isEmpty && (e.sourceItemId ?? "").isEmpty }
+        func key(_ e: Item) -> String { "\(normName(e.name))|\(e.container)" }
+        let sentKeys = Set(prev.filter(sent).map(key))
+        var out: [Item] = []
+        for f in fresh {
+            if let old = match(f) { out.append(old) } else if !sentKeys.contains(key(f)) { out.append(f) }
+        }
         let matched = Set(out.compactMap { $0.sourceItemId }.filter { !$0.isEmpty })
         for (i, e) in prev.enumerated() where !taken.contains(i) {
             if e.custom { out.append(e); continue }
             // Ticked or edited, and nothing fresh covers it: kept, as in the web app.
             if let sid = e.sourceItemId, !sid.isEmpty, !matched.contains(sid), e.checked || e.edited { out.append(e); continue }
             // Its template is gone: nothing to regenerate it from, so it stays.
-            if let source = e.sourceListId, !source.isEmpty, !known.contains(source) { out.append(e) }
+            if let source = e.sourceListId, !source.isEmpty, !known.contains(source) { out.append(e); continue }
+            // Sent to him: nothing to regenerate it from either.
+            if sent(e) { out.append(e) }
         }
         // Belt and braces: never two lines with one id.
         var seen = Set<String>()
@@ -232,13 +245,21 @@ extension Library {
     }
 
     /// The templates a trip can be built from: the tickable activities, in his
-    /// order (Swim / Bike / Run…), grouped by his activity groups.
+    /// order (Swim / Bike / Run…), grouped by his activity groups — and, last, every
+    /// template with no activity area, under "Other templates" (group id "").
+    ///
+    /// The spec pass (5 Oct 2026): a template made with "No activity area" (A new
+    /// template offers it) was shown on the Templates tab but never offered for a trip,
+    /// and Trip settings dropped it from a trip on Save. The web app offers such lists
+    /// last ("Other lists"); so does this, in the words of the Templates tab.
     public func activityChoices() -> [(group: ActivityGroup, lists: [PackList])] {
         let all = resolvedTemplates().filter { $0.role.isEmpty }
-        return GROUPS.compactMap { g in
+        let grouped: [(group: ActivityGroup, lists: [PackList])] = GROUPS.compactMap { g in
             let mine = orderActivities(g.id, all.filter { $0.group == g.id })
             return mine.isEmpty ? nil : (g, mine)
         }
+        let other = all.filter { !GROUP_IDS.contains($0.group) }
+        return other.isEmpty ? grouped : grouped + [(ActivityGroup(id: "", label: "Other templates", hint: ""), other)]
     }
 }
 
@@ -359,12 +380,18 @@ extension Library {
     /// The lines a review asks about: everything packable that is not a reminder.
     /// When anything was ticked, the unticked ones never went in the bag — they are
     /// shown apart and counted as "skipped", never as "unused" (web app v162).
+    ///
+    /// A line set aside never went either, ticked or not (the spec pass, 5 Oct 2026:
+    /// older trips hold lines ticked and THEN set aside; and on a trip with no tick at
+    /// all, "the list is the evidence" asked about the set-aside lines as packed).
     public func reviewLines(tripId: String) -> (packed: [Item], neverPacked: [Item]) {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return ([], []) }
         let items = trip.entries.filter { $0.itemType != "reminder" }
-        let anyTicked = items.contains { $0.checked }
-        guard anyTicked else { return (items, []) }
-        return (items.filter { $0.checked }, items.filter { !$0.checked })
+        let went: (Item) -> Bool = { $0.checked && !isSetAside($0) }
+        guard items.contains(where: went) else {
+            return (items.filter { !isSetAside($0) }, items.filter { isSetAside($0) })
+        }
+        return (items.filter(went), items.filter { !went($0) })
     }
 
     /// The templates a trip was built from, in the order its lines name them.
@@ -398,8 +425,14 @@ extension Library {
                 addToTemplate(templateId: m.templateId, name: name)
             }
         }
+        // A line set aside did not go, whatever an older tick under it says (see
+        // reviewLines): it is unticked first, so the model counts it as listed and never
+        // packed — and on a trip with no tick at all it is left out, not counted packed.
+        for n in trips[t].entries.indices where isSetAside(trips[t].entries[n]) { trips[t].entries[n].checked = false }
+        let anyWent = trips[t].entries.contains { $0.itemType != "reminder" && $0.checked }
         for n in trips[t].entries.indices where trips[t].entries[n].itemType != "reminder" {
-            trips[t].entries[n].used = !unused.contains(trips[t].entries[n].id)
+            let line = trips[t].entries[n]
+            trips[t].entries[n].used = !anyWent && isSetAside(line) ? nil : !unused.contains(line.id)
         }
         // The model folds the review into the rows of the templates. The new history
         // is then written straight onto each THING — not through saveTemplate: a thing

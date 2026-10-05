@@ -23,6 +23,18 @@ extension Library {
         return trip.entries.filter { ($0.checked && !isSetAside($0)) || Library.isBoughtOnSite($0) }
     }
 
+    /// The bag a way-home line is packed in, by the name the trip's Bags card uses —
+    /// a line in no bag is "Other" there ("Not in a bag" on screen). The spec pass
+    /// (5 Oct 2026): after a bag was deleted with "no bag", its lines said "" while its
+    /// photos had moved to "Other", so the way home showed none of them — and two
+    /// "Not in a bag" headings, one for "" and one for "Other".
+    public static func homeBag(_ line: Item) -> String { line.container.isEmpty ? "Other" : line.container }
+
+    /// The way home's bags, each once, in the order they first appear on the list.
+    public func homeBags(tripId: String) -> [String] {
+        homeLines(tripId: tripId).map(Library.homeBag).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+    }
+
     public static func isPackedHome(_ line: Item) -> Bool { line.extra[HOME_KEY]?.boolValue == true }
     public static func isUsedUp(_ line: Item) -> Bool { line.extra[USED_UP_KEY]?.boolValue == true }
 

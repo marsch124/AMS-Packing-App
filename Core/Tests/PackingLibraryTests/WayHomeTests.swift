@@ -83,7 +83,9 @@ final class WayHomeTests: XCTestCase {
                        "a used-up line was ticked for the way home")
         XCTAssertFalse(Library.isPackedHome(lib.trips[0].entries.first { $0.name == "Kite" }!),
                        "a line that never went was ticked for the way home")
-        XCTAssertEqual(lib.trips[0].entries.filter(\.checked).count, 4, "the way-out ticks were touched")
+        // Swimsuit, Sun cream and Sandals: the Umbrella's tick went when it was set aside
+        // (the spec pass, 5 Oct 2026 — "not this time" means it did not go).
+        XCTAssertEqual(lib.trips[0].entries.filter(\.checked).count, 3, "the way-out ticks were touched")
         XCTAssertEqual(lib.setAllPackedHome(true, tripId: trip), 0, "ticked twice")
         // Cleared: every home tick goes — also one on a line no longer on the way home.
         _ = lib.setChecked(false, tripId: trip, entryId: id(lib, "Swimsuit"))
@@ -117,5 +119,25 @@ final class WayHomeTests: XCTestCase {
         XCTAssertNil(lib.thingBehind(sandals), "something bought on site has no thing to open")
         _ = lib.deleteThing(id: lib.items.first { $0.name == "Swimsuit" }!.id)
         XCTAssertNil(lib.thingBehind(swimsuit), "a deleted thing is offered to open")
+    }
+
+    /// Loose things are ONE bag on the way home, and keep their photos (the spec pass,
+    /// 5 Oct 2026): a bag deleted with "no bag" left its lines saying "" while its
+    /// photos moved to "Other" — the way home found none of them, and gave "" and
+    /// "Other" a "Not in a bag" heading each.
+    func testLooseThingsAreOneBagAndKeepTheirPhotos() {
+        var (lib, trip) = library()
+        _ = lib.addBag(name: "Dry bag")
+        lib.trips[0].entries[0].container = "Dry bag"                         // the Swimsuit
+        lib.trips[0].entries[1].container = "Other"                           // the Sun cream, loose already
+        _ = lib.addBagPhoto(tripId: trip, bag: "Dry bag", jpeg: Data([1, 2, 3]))
+        let bag = lib.bags().first { $0.name == "Dry bag" }!.id
+        XCTAssertTrue(lib.deleteBag(id: bag, moveTo: ""))                      // its things to no bag
+        XCTAssertEqual(lib.trips[0].entries[0].container, "", "the setup: the Swimsuit is in no bag now")
+        XCTAssertEqual(lib.homeBags(tripId: trip), ["Other"], "loose things under two headings")
+        XCTAssertEqual(lib.bagPhotos(tripId: trip, bag: lib.homeBags(tripId: trip)[0]).count, 1,
+                       "the deleted bag's photo is not found on the way home")
+        XCTAssertEqual(Library.homeBag(lib.trips[0].entries[0]), "Other")
+        XCTAssertEqual(Library.homeBag(lib.trips[0].entries[1]), "Other")
     }
 }

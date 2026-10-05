@@ -49,9 +49,15 @@ extension Library {
             out.byMonth[n] += 1
             out.trips += 1
             out.nights += nightsOf(trip)
-            out.packed += trip.entries.filter { $0.checked }.count
+            out.packed += Library.packedCount(trip)
         }
         return out
+    }
+
+    /// Things that went: ticked and not set aside. An older trip can hold a line ticked
+    /// and THEN set aside (the spec pass, 5 Oct 2026) — it did not go, so it does not count.
+    static func packedCount(_ trip: TripEvent) -> Int {
+        trip.entries.filter { $0.checked && !isSetAside($0) }.count
     }
 
     /// Everything, not just the last twelve months — his test G.3 (2026-09-28): "a
@@ -68,7 +74,7 @@ extension Library {
         out.trips = trips.count
         for trip in trips {
             out.nights += nightsOf(trip)
-            out.packed += trip.entries.filter { $0.checked }.count
+            out.packed += Library.packedCount(trip)
         }
         out.places = mapPlaces().count
         return out

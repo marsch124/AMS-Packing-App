@@ -13,11 +13,16 @@ import PackingCore
 // still has it once the trip is over and the trip is forgotten.
 
 extension Library {
-    /// Has the trip's On site begun? Once its first day has come — or as soon as
-    /// something was bought on site, whatever the dates say.
+    /// Has the trip's On site begun? Once its first day has come — or, for a trip
+    /// WITHOUT dates, as soon as something was bought on site, the one sign it has begun.
+    ///
+    /// The same rule as the loop's (`loopStep`), so the door and the strip agree (the
+    /// spec pass, 5 Oct 2026): a dated trip still ahead with something marked bought on
+    /// site showed the On site door while its step still said Pack. Its dates say when
+    /// it begins; the bought line waits on the list, and on the way home, until then.
     public func onSiteBegun(tripId: String, today: String) -> Bool {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return false }
-        if isYMD(trip.startDate) && !jsStringLess(today, trip.startDate) { return true }
+        if isYMD(trip.startDate) { return !jsStringLess(today, trip.startDate) }
         return trip.entries.contains(where: Library.isBoughtOnSite)
     }
 
