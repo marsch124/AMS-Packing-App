@@ -180,6 +180,7 @@ struct HowItWorksScreen: View {
             "Templates are the building blocks of every trip, in their activity areas (GA, WET and so on). The list you pack from is made from them.",
             "Each template has an icon: the one its name suggests, or tap the square on its page to pick from 50 drawn ones (or Letter).",
             "+ New makes a template and asks in which activity area it should live. Open one to rename it, take a thing off with ✕ (it asks first; the thing stays in Your things), and set How many and Section for this template.",
+            "Find a thing on this template, above the list: type part of a name and only the things that hold those letters stay, each under its heading, with \u{201C}3 of 40\u{201D} beside the field. The \u{2715} shows everything again; adding a thing clears the search so you see it arrive.",
             "Adding: Choose from your things, at the foot of a template — everything you own, grouped as you like, ticked and added in one go. Or type a new thing beside it.",
             "In Choose from your things, the arrow before a group folds it; Fold all / Unfold all does every group. A folded group says how many things it holds and how many you ticked. A search opens them all while you type.",
             "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",

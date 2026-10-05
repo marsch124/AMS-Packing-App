@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.60", date: "4 Oct 2026", title: "Find a thing on a template",
+                new: ["An open template has a search field above its list: type part of a name and only the matching things show, with how many of all. The \u{2715} brings them all back."],
+                changed: ["Worth a look offers to remove a photo only when it can tell the photo is more than a day old."]),
         Release(version: "0.59", date: "4 Oct 2026", title: "A deleted trip takes its photos along",
                 changed: ["Deleting a trip now removes its bag photos too \u{2014} unless something else, like a thing, still shows the same photo.",
                           "Settings \u{2192} Worth a look: a photo left behind by a trip deleted earlier is pointed out, with Remove it to take it away. Only photos older than a day, so one still on its way from your other device is never touched.",

@@ -2749,6 +2749,7 @@ final class AMSPackingUITests: XCTestCase {
 
         type("zz", into: field)                                   // "mapzz": nothing is called that
         XCTAssertTrue(app.staticTexts["template-find-none"].waitForExistence(timeout: 5), "no word when nothing is found")
+        XCTAssertFalse(app.staticTexts["template-find-count"].exists, "'0 of 4' beside the line that already says nothing was found")
         XCTAssertFalse(app.buttons["template-item-0"].exists, "a row shows although nothing matches")
         shot(app, "template-find-none")
 

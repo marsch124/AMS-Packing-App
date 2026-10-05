@@ -40,14 +40,16 @@ final class PhotoTidyTests: XCTestCase {
     func testWorthALookOffersToRemoveAPhotoLeftBehind() {
         var (lib, _) = library()
         lib.photos = [PhotoRecord(id: "old", data: "data:image/jpeg;base64,AQID", createdAt: "2026-10-02T09:00:00.000Z"),
-                      PhotoRecord(id: "new", data: "data:image/jpeg;base64,AQID", createdAt: "2026-10-04T09:30:00.000Z")]
-        // The one from an hour ago may be on its way with its trip: never offered.
+                      PhotoRecord(id: "new", data: "data:image/jpeg;base64,AQID", createdAt: "2026-10-04T09:30:00.000Z"),
+                      PhotoRecord(id: "undated", data: "data:image/jpeg;base64,AQID", createdAt: "")]
+        // The one from an hour ago may be on its way with its trip, and one whose age
+        // cannot be read may be too: never offered.
         XCTAssertEqual(lib.unusedPhotos().map(\.id), ["old"])
         let worry = lib.worries().first { $0.fix == Library.FIX_UNUSED_PHOTOS }
         XCTAssertEqual(worry?.says, "1 photo is no longer shown anywhere \u{2014} left behind by a deleted trip.")
         XCTAssertEqual(worry?.fixSays, "Remove it")
         XCTAssertEqual(lib.repair(Library.FIX_UNUSED_PHOTOS), 1)
-        XCTAssertEqual(lib.photos.map(\.id), ["new"])
+        XCTAssertEqual(lib.photos.map(\.id), ["new", "undated"])
         XCTAssertNil(lib.worries().first { $0.fix == Library.FIX_UNUSED_PHOTOS }, "the worry outlived its repair")
     }
 }

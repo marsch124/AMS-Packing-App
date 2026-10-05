@@ -198,13 +198,18 @@ jobs:
 
       - name: Say what happened
         if: success()
+        # The notes come in through the environment, never pasted into the script:
+        # 0.59's notes held quotes ("Both have one") and the pasted text broke the
+        # shell — after the build had gone out, so a good release showed as failed.
+        env:
+          NOTES: ${{ github.event.inputs.notes }}
         run: |
           echo "### Sent to TestFlight — iPhone and Mac" >> $GITHUB_STEP_SUMMARY
           echo "AMS Packing $APP_VERSION, build $BUILD." >> $GITHUB_STEP_SUMMARY
           echo "Apple processes it for a few minutes, then it appears in TestFlight on both devices." >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ github.event.inputs.notes }}" ]; then
+          if [ -n "$NOTES" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "What is new: ${{ github.event.inputs.notes }}" >> $GITHUB_STEP_SUMMARY
+            printf 'What is new: %s\n' "$NOTES" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Keep the logs when something fails

@@ -433,8 +433,9 @@ struct TemplateDetail: View {
                         .padding(.horizontal, 12).frame(minHeight: 40)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                    // How many of the template's rows the search shows — only while searching.
-                    if !q.isEmpty {
+                    // How many of the template's rows the search shows — only while it finds
+                    // something; "0 of 4" would say again what the line under it says.
+                    if !q.isEmpty && !found.isEmpty {
                         Text("\(found.count) of \(list.items.count)")
                             .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
                             .fixedSize()

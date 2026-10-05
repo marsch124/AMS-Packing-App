@@ -27,7 +27,8 @@ extension Library {
         let dayAgo = now.addingTimeInterval(-86_400)
         return photos.filter { photo in
             guard !photoInUse(photo.id) else { return false }
-            guard let made = isoMoment(photo.createdAt) else { return true }
+            // A date that cannot be read is no proof of age: kept, never offered.
+            guard let made = isoMoment(photo.createdAt) else { return false }
             return made < dayAgo
         }
     }
