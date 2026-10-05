@@ -224,6 +224,13 @@ its id; an id and an unknown value untouched; a second run changes nothing; then
 choices counts it), `testHisOwnConditionIsRepairedByItsOwnLabel`. UI `testAConditionStoredTheOldWayIsRepairedOnLoad`
 (`-uiTestingOldConditions`: the sample with the Goggles' condition stored as "Needs replacing" — To buy offers them).
 
+The notes a template keeps for a thing (0.6x, `RowNotesTests`): `testATemplatesOwnNoteForAThingIsListed` (trimmed;
+a row without a note of its own is not listed), `testANoteTheThingAlreadySaysIsNotRepeated`,
+`testEveryTemplateIsListedInItsOrderAndOneNoteOnce` (Hiking before Swim; the thing twice on Hiking with one note →
+once; an unknown thing → []). UI `testAThingsPageShowsTheNotesItsTemplatesKeep` (a note typed on the Swim
+template's Goggles row shows on the Goggles page as "On the Swim template: Rinse after the sea", and is not put in
+the thing's own note).
+
 **Not covered by a test.** `setOnTemplate` order placement (bottom of the template); `deleteThing` leaving
 to-dos/buy lines that name the thing; `renameThing` to a different capitalisation of its own name.
 (`followThing`'s local day is pinned by `ThingFollowsTests.testStillAheadGoesByTheDayWhereHeIs`, 0.6x.)
@@ -746,7 +753,11 @@ apart; a field 6 pt under its heading):
    radius 10, 1 pt line), placeholder "Name".
 3. **Notes** — band "Notes" (`thing-heading-notes`); a vertically growing field (`thing-notes`), placeholder
    "Anything worth remembering", 1 to 8 lines, 18 medium, min height 46. (A note written on site lands on a line
-   of its own under the old text.)
+   of its own under the old text.) Under it (0.6x), one line per note a template keeps for this thing on its own
+   row: "On the <template> template: <note>" (15 medium muted, wraps, `thing-row-note-N`), from
+   `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
+   rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
+   twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.
 4. **Kept at home** — band (`thing-heading-kept`); free-text field (`thing-storage`), placeholder "e.g. Hall
    closet"; under it his places (`storagePlaces()`, his order) as pills (`thing-place-N`, 15 pt, 36 tall,
    orange when lit, selected trait): a tap puts that place in the field; the pill matching the field (by
@@ -1733,10 +1744,10 @@ pins · [idea] a gap worth deciding on.
     photos of a thing, price, currency, dates bought/warranty, quantity owned, charge type, "not in use" and the
     care link — nothing he has asked for, and the web app still edits them; size, model, serial, packer, runs out,
     per night and charges stay in the table, where they are edited already.
-18. [bug] **Notes: thing vs template row.** The thing page edits the thing's own `note`; on a template the
-    row's own note (membership) wins when set, and imported web-app libraries keep notes on memberships (`note`
-    is a CONTEXTUAL field, not carried onto the catalogue item) — so the thing page can show an empty Notes
-    while its templates show a note.
+18. [bug] Resolved in 0.6x: the thing page lists, under its own Notes, every note its templates keep for it
+    on their rows ("On the <template> template: <note>", `thing-row-note-N`; `Library.rowNotes`) — a row's note
+    still wins on its template, and the thing's own note stays the thing's (model `RowNotesTests`, UI
+    `testAThingsPageShowsTheNotesItsTemplatesKeep`).
 19. [idea] Resolved in 0.6x: "Usually packed in" ends with "No bag" (value ""), and a bag name not among the
     offered ones is shown as a pill of its own, lit (UI `testAThingsPageTakesDecimalsAPlaceNoBagAndCare`).
 20. [idea] Resolved in 0.6x (the gentlest version): Kept at home stays a text field, with his places as pills under

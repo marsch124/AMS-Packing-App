@@ -230,7 +230,10 @@ struct ThingEditor: View {
                     labelled("Name") { field($draft.name, "Name", "thing-name") }
                     // Notes right under the name — his ask (4 Oct 2026): "please put the
                     // notes field immediately under the name".
-                    labelled("Notes") { notesField }
+                    labelled("Notes") {
+                        notesField
+                        rowNotes
+                    }
                     labelled("Kept at home") {
                         field($draft.storage, "e.g. Hall closet", "thing-storage")
                         places
@@ -532,6 +535,25 @@ struct ThingEditor: View {
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
             .accessibilityIdentifier("thing-notes")
+    }
+
+    /// The notes its templates keep for it, under its own (spec 05, item 18): a row's
+    /// note wins on its template, and a library from the web app keeps its notes
+    /// there — Notes looked empty while a template said something. Changed on the
+    /// template, so only shown here.
+    @ViewBuilder private var rowNotes: some View {
+        let notes = model.library.rowNotes(itemId: itemId)
+        if !notes.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(notes.enumerated()), id: \.offset) { n, said in
+                    Text("On the \(said.template) template: \(said.note)")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("thing-row-note-\(n)")
+                }
+            }
+            .padding(.top, 2)
+        }
     }
 
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {

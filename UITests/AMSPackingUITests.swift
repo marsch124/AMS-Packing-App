@@ -6117,4 +6117,42 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { (app.textFields["bag-0-maxkg"].value as? String) == "7" },
                       "the row still shows the old number: '\(app.textFields["bag-0-maxkg"].value as? String ?? "")'")
     }
+
+    // MARK: - The last loose ends (5 Oct 2026)
+
+    /// A note a template keeps for a thing shows on the thing's own page (spec 05,
+    /// item 18): Notes looked empty while the template said something.
+    func testAThingsPageShowsTheNotesItsTemplatesKeep() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        XCTAssertTrue(words(app.buttons["template-row-2"]).contains("Swim"), "'\(words(app.buttons["template-row-2"]))'")
+        tap(app, id: "template-row-2")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(words(app.buttons["template-item-0"]).contains("Goggles"), "'\(words(app.buttons["template-item-0"]))'")
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        let note = app.textFields["row-note"]
+        bringIntoView(app, note)
+        type("Rinse after the sea", into: note)
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        XCTAssertTrue(words(app.buttons["thing-row-0"]).contains("Goggles"), "'\(words(app.buttons["thing-row-0"]))'")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let said = app.staticTexts["thing-row-note-0"]
+        XCTAssertTrue(said.waitForExistence(timeout: 5), "the template's note is not on the thing's page")
+        XCTAssertEqual(words(said), "On the Swim template: Rinse after the sea")
+        XCTAssertFalse(app.staticTexts["thing-row-note-1"].exists, "a template with no note of its own was listed")
+        XCTAssertFalse((app.textFields["thing-notes"].value as? String ?? "").contains("Rinse"),
+                       "the template's note was put in the thing's own note")
+        shot(app, "thing-row-notes")
+        tap(app, id: "thing-cancel")
+    }
 }
