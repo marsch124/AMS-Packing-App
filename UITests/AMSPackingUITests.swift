@@ -3537,13 +3537,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") },
                       "Home does not start with six of eight: '\(words(homeHeading))'")
 
-        // New lists take the free places…
+        // New lists take the free places — and the screen says so (it said "is
+        // waiting", in red, wherever the list went, until 4 Oct 2026)…
+        let made = app.staticTexts["grablists-made"]
         for (n, name) in ["Padel", "Golf"].enumerated() {
             type(name, into: app.textFields["grablists-new-name"])
             hideKeyboard(app)
             tap(app, id: "grablists-new")
             XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("\(7 + n) of 8") },
                           "\(name) did not take a free place: '\(words(homeHeading))'")
+            XCTAssertTrue(waitUntil { self.words(made).contains("is on Home") }, "it does not say it went onto Home: '\(words(made))'")
         }
         // …and once Home is full, the next one waits rather than shoving one off.
         type("Kayak", into: app.textFields["grablists-new-name"])
@@ -3551,6 +3554,8 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "grablists-new")
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(waiting).contains("1") }, "the new list is not waiting")
         XCTAssertTrue(waitUntil { self.words(homeHeading).contains("8 of 8") }, "it pushed something off Home by itself")
+        XCTAssertTrue(waitUntil { self.words(made).contains("Home is full") }, "it does not say why it waits: '\(words(made))'")
+        shot(app, "grablists-made")
 
         // Putting it on Home asks which of the eight steps back.
         tap(app, id: "grablists-waiting-0")
@@ -3572,6 +3577,152 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 10) {
             (0..<8).contains { self.words(app.buttons["grab-\($0)"]).contains("Kayak") }
         }, "Kayak is not on Home")
+    }
+
+    /// Make a grab list of his own in Grab Lists — with the sample's six on Home it
+    /// takes the free place `grab-6` — open it there, and put these things on it
+    /// in the editor. Leaves the editor open, NOT saved.
+    private func makeOwnGrabList(_ app: XCUIApplication, _ name: String, things: [String]) {
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        type(name, into: app.textFields["grablists-new-name"])
+        hideKeyboard(app)
+        tap(app, id: "grablists-new")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["grablists-made"]).contains("is on Home") },
+                      "the new list did not go onto Home: '\(words(app.staticTexts["grablists-made"]))'")
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+        tap(app, id: "grab-6")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10), "his new list did not open")
+        tap(app, id: "grab-edit")
+        for thing in things {
+            type(thing, into: app.textFields["grab-add-name"])
+            tap(app, id: "grab-add")
+        }
+        XCTAssertTrue(app.textFields["grab-rename-\(things.count - 1)"].waitForExistence(timeout: 5), "the things were not added")
+    }
+
+    /// A list he makes himself is filled in its editor — things, and one taken only
+    /// "1 in 10" — and it stays filled. Until 4 Oct 2026 Save threw it all away:
+    /// the list came back with nothing on it.
+    func testHisOwnGrabListIsFilledAndStaysFilled() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        makeOwnGrabList(app, "Padel", things: ["Racket", "Balls", "Spare grip"])
+        tapVisible(app, app.buttons["grab-sometimes-2"])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["grab-sometimes-2"]) }, "the 1 in 10 did not take")
+        tap(app, id: "grab-edit")                                    // Save
+
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) == "0 of 2 in hand · 1 skipped" },
+                      "three things, one only sometimes: '\(words(count))'")
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+
+        tap(app, id: "grab-6")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        XCTAssertTrue(waitUntil { self.words(app.buttons["grab-item-0"]).contains("Racket") },
+                      "his things were lost on the way out and back: '\(words(app.buttons["grab-item-0"]))'")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["grab-item-2"]).contains("only sometimes") },
+                      "the 1 in 10 was lost: '\(words(app.buttons["grab-item-2"]))'")
+        XCTAssertEqual(words(count), "0 of 2 in hand · 1 skipped")
+        shot(app, "grab-own-filled")
+    }
+
+    /// Ticks on a list of his own survive closing it and opening it again, as on
+    /// the original six (they were all gone on reopening until 4 Oct 2026).
+    func testTicksOnHisOwnGrabListSurviveClosingIt() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        makeOwnGrabList(app, "Golf", things: ["Clubs", "Balls"])
+        tap(app, id: "grab-edit")                                    // Save
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) == "0 of 2 in hand" }, "not filled: '\(words(count))'")
+
+        tap(app, id: "grab-item-0")
+        XCTAssertTrue(waitUntil { self.words(count) == "1 of 2 in hand" }, "the tick did not count: '\(words(count))'")
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+
+        tap(app, id: "grab-6")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        XCTAssertTrue(waitUntil { self.words(count) == "1 of 2 in hand" },
+                      "the tick was lost on the way out and back: '\(words(count))'")
+        XCTAssertTrue(isOn(app.buttons["grab-item-0"]), "the thing he ticked is not ticked")
+    }
+
+    /// Off Home keeps a list off Home: its tile goes, Home shows one fewer, and it
+    /// stays so when the screens are opened again — until he puts it back. Until 4
+    /// Oct 2026 the free place pulled it straight back, and the button seemed to
+    /// do nothing.
+    func testAGrabListTakenOffHomeStaysOff() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertTrue(app.buttons["grab-5"].waitForExistence(timeout: 5), "the sample's six are not on Home")
+        let first = words(app.buttons["grab-0"])
+        let tiles = { (0..<8).map { self.words(app.buttons["grab-\($0)"]) }.filter { !$0.isEmpty } }
+
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        let homeHeading = app.staticTexts["grablists-home-heading"], waiting = app.staticTexts["grablists-waiting-heading"]
+        XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") })
+        tap(app, id: "grablists-off-0")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("5 of 8") },
+                      "the list came straight back onto Home: '\(words(homeHeading))'")
+        XCTAssertTrue(waitUntil { self.words(waiting).contains("1") }, "it is not waiting: '\(words(waiting))'")
+        shot(app, "grablists-off")
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+
+        XCTAssertTrue(waitUntil { !app.buttons["grab-5"].exists }, "Home still shows six tiles")
+        XCTAssertFalse(tiles().contains(first), "\(first) is still on Home: \(tiles())")
+        shot(app, "home-off")
+
+        // Opened again, it is still off.
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(homeHeading).contains("5 of 8") }, "it came back: '\(words(homeHeading))'")
+        // …until he puts it back: there is room, so it goes straight on, at the end.
+        tap(app, id: "grablists-waiting-0")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("6 of 8") },
+                      "it could not be put back: '\(words(homeHeading))'")
+        XCTAssertNil(find(app, "swap-detail"), "it asked what steps back while Home had room")
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.buttons["grab-5"]) == first }, "it is not back on Home, last: \(tiles())")
+    }
+
+    /// A list he made himself can be deleted — in its editor, last, quietly, and
+    /// only after he says so. The original six cannot be (they can go off Home).
+    func testHisOwnGrabListIsDeletedAfterAsking() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(app.textFields["grab-rename-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["grab-delete"].waitForExistence(timeout: 2), "one of the original six can be deleted")
+        tap(app, id: "grab-edit")                                    // Save
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+
+        makeOwnGrabList(app, "Kayak", things: ["Paddle"])
+        tap(app, id: "grab-delete")
+        XCTAssertTrue(app.staticTexts["grab-delete-question"].waitForExistence(timeout: 5), "it did not ask first")
+        shot(app, "grab-delete-ask")
+        tap(app, id: "grab-delete-no")
+        XCTAssertTrue(waitUntil { !app.staticTexts["grab-delete-question"].exists }, "Keep it did not close the question")
+        XCTAssertNotNil(find(app, "grab-detail"), "Keep it closed the list")
+
+        tap(app, id: "grab-delete")
+        tap(app, id: "grab-delete-yes")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 10), "the deleted list stayed open")
+        XCTAssertTrue(waitUntil(timeout: 10) { !app.buttons["grab-6"].exists }, "the deleted list is still on Home")
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["grablists-home-heading"]).contains("6 of 8") &&
+                                  self.words(app.staticTexts["grablists-waiting-heading"]).contains("0") },
+                      "it is still in Grab Lists")
     }
 
     /// The Care tab says what the kit adds up to — and every word of it is true of
