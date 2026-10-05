@@ -20,6 +20,8 @@ struct BulkChange: View {
 
     @State private var field = ""
     @State private var typed = ""
+    /// What a press of Set was missing, said under it (never a grey button).
+    @State private var needs = ""
 
     private var column: TableColumns.Column? {
         TableColumns.intrinsic.first { $0.id == field }
@@ -48,7 +50,7 @@ struct BulkChange: View {
                 VStack(alignment: .leading, spacing: 0) {
                     heading("WHAT TO CHANGE")
                     ForEach(TableColumns.intrinsic) { one in
-                        Button { field = one.id; typed = "" } label: {
+                        Button { field = one.id; typed = ""; needs = "" } label: {
                             HStack {
                                 Text(one.title)
                                     .font(.system(size: 16, weight: field == one.id ? .heavy : .medium))
@@ -87,9 +89,11 @@ struct BulkChange: View {
         VStack(alignment: .leading, spacing: 0) {
             switch one.kind {
             case .choice(let path, let which):
+                // The condition's id is stored and its label read (the spec pass,
+                // 5 Oct 2026); for every other list the two are the same words.
                 ForEach(Array(answers.list(which).enumerated()), id: \.element) { n, answer in
-                    value(answer, id: "bulk-value-\(n)") {
-                        apply(one, { it in it[keyPath: path] = answer }, "\(one.title) → \(answer)")
+                    value(answer.label, id: "bulk-value-\(n)") {
+                        apply(one, { it in it[keyPath: path] = answer.value }, "\(one.title) → \(answer.label)")
                     }
                 }
                 value("Leave blank", id: "bulk-value-blank") {
@@ -103,20 +107,30 @@ struct BulkChange: View {
                     apply(one, { it in it[keyPath: path] = false }, "\(one.title): no")
                 }
             case .words(let path):
+                // Spaces alone are nothing: the button says "Leave blank", and does it.
+                // (It offered "Set to “”" and then cleared the field.)
                 box()
-                value(typed.isEmpty ? "Leave blank" : "Set to “\(jsTrim(typed))”", id: "bulk-apply") {
-                    let clean = jsTrim(typed)
+                let clean = jsTrim(typed)
+                value(clean.isEmpty ? "Leave blank" : "Set to “\(clean)”", id: "bulk-apply") {
                     apply(one, { it in it[keyPath: path] = clean },
                           clean.isEmpty ? "\(one.title) cleared" : "\(one.title) → \(clean)")
                 }
             case .number(let path):
+                // A weight that is not a number is REFUSED, and says why — it was written
+                // as 0 for every ticked thing ("Set to abc"), and a negative one did
+                // nothing without a word (the spec pass, 5 Oct 2026).
                 box()
-                value(typed.isEmpty ? "Leave blank" : "Set to \(jsTrim(typed))", id: "bulk-apply") {
-                    let clean = jsTrim(typed).replacingOccurrences(of: ",", with: ".")
-                    let number = Double(clean) ?? 0
-                    guard clean.isEmpty || number >= 0 else { return }
-                    apply(one, { it in it[keyPath: path] = clean.isEmpty ? 0 : number },
-                          clean.isEmpty ? "\(one.title) cleared" : "\(one.title) → \(jsTrim(typed))")
+                let amount = readAmount(typed)
+                value(jsTrim(typed).isEmpty ? "Leave blank" : "Set to \(amount.map(amountText) ?? jsTrim(typed)) g", id: "bulk-apply") {
+                    guard let amount else { needs = "Type a weight in grams, like 250 or 12,5."; return }
+                    apply(one, { it in it[keyPath: path] = amount },
+                          amount == 0 ? "\(one.title) cleared" : "\(one.title) → \(amountText(amount)) g")
+                }
+                if !needs.isEmpty {
+                    Text(needs)
+                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("bulk-needs")
                 }
             case .onList, .perList:
                 // Neither belongs to the thing itself, so neither can be set for many
@@ -143,7 +157,7 @@ struct BulkChange: View {
     }
 
     private func box() -> some View {
-        TextField("", text: $typed)
+        TextField("", text: Binding(get: { typed }, set: { typed = $0; needs = "" }))
             .textFieldStyle(.plain)
             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
             .padding(.horizontal, 10).frame(minHeight: 36)

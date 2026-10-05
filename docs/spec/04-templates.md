@@ -1293,9 +1293,8 @@ deciding before a rewrite.
    template with a default bag (`sameBagWords`; `testABlankBagNamesWhereItReallyGoes`).
 10. [bug] **"Only on:" lists contexts on a non-WET template** — Resolved in 0.6x: "Only on:" lists Context only on a
     WET template (`onlyOnWords`; `testOnlyOnSaysWhatATripReadsOnThisTemplate`).
-11. [bug] **`TableColumns` calls `containerNames(library.templates)`** — the unresolved shells — so his own
-    bags are never offered in the table's bag column (the trap `Bags.swift` warns about). Outside these
-    files; flagged because it is `containerNames`.
+11. [bug] Resolved in 0.6x (Things spec, item 1): the table and Change all offer `Library.bagNames()`, over the
+    RESOLVED bag list, so his own bags are offered.
 12. [bug] **Your choices' refusal** says "<label> is still used by <n> thing(s)", but for When steps n also
     counts trip lines and template rows.
 13. [bug] **`followThing`'s "today"** is the UTC date (`nowISO()`), while the screens use the device's local

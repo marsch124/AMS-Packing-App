@@ -8,10 +8,16 @@ struct ActionsScreen: View {
     @State private var searching = false
     @EnvironmentObject var model: LibraryModel
     @State private var text = ""
+    /// The To buy side's own field: one shared text showed a half-typed to-do on
+    /// the other side too (the spec pass, 5 Oct 2026). Kept here, so a half-typed
+    /// buy line survives a look at To do.
+    @State private var buyText = ""
     /// What Add was missing, said under the field (never a grey button).
     @State private var needs = ""
     @State private var high = false
     @State private var buying = false
+    /// The to-do last removed with ✕, for Undo.
+    @State private var removed: ActionItem?
 
     var body: some View {
         let todos = model.library.sortedActions(kind: "todo")
@@ -27,7 +33,7 @@ struct ActionsScreen: View {
             }
             .padding(.horizontal, 16).padding(.top, 12)
             if buying {
-                BuyList(text: $text).environmentObject(model)
+                BuyList(text: $buyText).environmentObject(model)
             } else {
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 4) {
@@ -65,7 +71,7 @@ struct ActionsScreen: View {
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("action-\(n)")
                             .accessibilityAddTraits(a.done ? .isSelected : [])
-                            Button { model.change { $0.deleteAction(id: a.id) } } label: {
+                            Button { remove(a) } label: {
                                 SVGPath.path("M6 6L18 18M18 6L6 18")
                                     .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
                                     .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
@@ -79,6 +85,12 @@ struct ActionsScreen: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+            if let removed {
+                LineUndoBar(text: removed.text, id: "action-undo") {
+                    model.change { _ = $0.putBackLine(removed) }
+                    self.removed = nil
+                }
             }
             HStack(spacing: 8) {
                 TextField("Add a to-do", text: $text)
@@ -128,10 +140,46 @@ struct ActionsScreen: View {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
+    /// ✕ takes the to-do away at once, and Undo under the list brings it back — the
+    /// gentle answer to his rule that things ask before they go: a quick list that
+    /// asked each time would be slow (the spec pass, 5 Oct 2026).
+    private func remove(_ a: ActionItem) {
+        var gone: ActionItem?
+        model.change { gone = $0.removeLine(id: a.id)?.line }
+        removed = gone
+    }
+
     private func add() {
         let t = text
         guard !jsTrim(t).isEmpty else { needs = "Type a to-do first."; return }
         model.change { _ = $0.addAction(text: t, priority: high ? "high" : "normal") }
         text = ""; high = false
+    }
+}
+
+/// Under a list, after ✕: what went, and Undo to bring it back.
+struct LineUndoBar: View {
+    let text: String
+    let id: String
+    let undo: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text("Removed \u{201C}\(text)\u{201D}")
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                .lineLimit(1)
+                .accessibilityIdentifier("\(id)-says")
+            Spacer(minLength: 8)
+            Button(action: undo) {
+                Text("Undo")
+                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    .padding(.horizontal, 14).frame(minHeight: 36)
+                    .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: 1.4))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier(id)
+        }
+        .padding(.horizontal, 16).padding(.top, 8)
     }
 }

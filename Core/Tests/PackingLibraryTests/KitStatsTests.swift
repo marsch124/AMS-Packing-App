@@ -58,8 +58,10 @@ final class KitStatsTests: XCTestCase {
         if let n = lib.items.firstIndex(where: { $0.name == "Tent" }) {
             lib.items[n].maintenance = Maintenance(notes: "Air it", intervalDays: 90, lastDone: "2026-01-01")
         }
+        // Due in late February: inside the twelve calendar months the bars show (a year
+        // after 1 September falls in the thirteenth, since 0.6x counts real months).
         if let n = lib.items.firstIndex(where: { $0.name == "Sleeping bag" }) {
-            lib.items[n].maintenance = Maintenance(notes: "Wash", intervalDays: 365, lastDone: "2026-09-01")
+            lib.items[n].maintenance = Maintenance(notes: "Wash", intervalDays: 180, lastDone: "2026-09-01")
         }
         let s = lib.kitStats(today: "2026-09-23")
         XCTAssertEqual(s.withCare, 2)

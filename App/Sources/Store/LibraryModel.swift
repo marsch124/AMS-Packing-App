@@ -61,6 +61,10 @@ final class LibraryModel: ObservableObject {
             if fresh != library { library = fresh }
             fresh.installLiveChoices()
             state = fresh.isEmpty ? .empty : .ready
+            // Things whose condition the table stored as its LABEL (before 0.6x) get
+            // the condition's id, which everything else reads. Written once; the
+            // same answer on every device, so two devices doing it at once agree.
+            change { _ = $0.repairConditionLabels() }
         } catch {
             state = .failed(error.localizedDescription)
         }
@@ -230,6 +234,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingOnSite") {
             return LibraryModel(store: MemoryStore(SampleLibrary.underWay().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingOldConditions") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.oldConditions().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingOldPhoto") {
             return LibraryModel(store: MemoryStore(SampleLibrary.oldPhoto().records()), usesICloud: false, sky: sky)

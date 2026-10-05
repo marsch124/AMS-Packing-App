@@ -164,6 +164,19 @@ struct BagsScreen: View {
                 litres = bag.capacityL > 0 ? BagsScreen.show(bag.capacityL) : ""
                 empty = bag.weight > 0 ? String(Int(bag.weight.rounded())) : ""
             }
+            // A number changed on the bag's own page (a sheet over this one) shows
+            // here when it closes — the row kept the old text until Your bags was
+            // opened again (the spec pass, 5 Oct 2026). Only when the field does not
+            // already say that number, so what he is typing here is never rewritten.
+            .onChange(of: bag.maxKg) { _, now in BagRow.follow(&maxKg, now) { BagsScreen.show($0) } }
+            .onChange(of: bag.capacityL) { _, now in BagRow.follow(&litres, now) { BagsScreen.show($0) } }
+            .onChange(of: bag.weight) { _, now in BagRow.follow(&empty, now) { String(Int($0.rounded())) } }
+        }
+
+        static func follow(_ text: inout String, _ now: Double, _ show: (Double) -> String) {
+            let clean = jsTrim(text).replacingOccurrences(of: ",", with: ".")
+            let says = clean.isEmpty ? 0 : (Double(clean) ?? -1)
+            if says != now { text = now > 0 ? show(now) : "" }
         }
 
         /// 🪤 Saved AS HE TYPES. It used to save only on Return, so numbers typed and

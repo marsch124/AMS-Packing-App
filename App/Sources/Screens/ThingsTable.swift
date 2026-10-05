@@ -55,9 +55,10 @@ struct ThingsTable: View {
     /// The things he has ticked, by id.
     @State private var chosen: Set<String> = []
     @State private var changing = false
-    /// What the things looked like before the last change to many at once, and what
-    /// that change was — so one press puts them all back.
+    /// What the things looked like before the last change to many at once, as that
+    /// change left them, and what it was — so one press puts back exactly that.
     @State private var wasBefore: [Item] = []
+    @State private var madeAs: [Item] = []
     @State private var didSay = ""
     /// How far the grid has travelled sideways, so the name cells can travel back.
     @State private var across: CGFloat = 0
@@ -72,13 +73,12 @@ struct ThingsTable: View {
         return 172      // 148 before each row had its open arrow (0.58)
         #endif
     }
-    private var headHeight: CGFloat { 46 }
 
     var body: some View {
         let columns = TableColumns.chosen(chosenColumns, library: model.library)
         let answers = TableColumns.Answers2(model.library)
         let rows = things()
-        let filters = TableKeys.filters(filtersStored)
+        let filters = TableKeys.filters(filtersStored, model.library)
         VStack(spacing: 0) {
             top(rows.count, filters)
             if !chosen.isEmpty || !wasBefore.isEmpty { chosenBar(rows) }
@@ -140,9 +140,27 @@ struct ThingsTable: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("table-detail")
+        // A template deleted since (here, or on his other device) takes its filter
+        // and its sort level with it.
+        .onAppear { forgetWhatIsGone() }
+        .onChange(of: model.library.templates.map(\.id)) { _, _ in forgetWhatIsGone() }
         #if os(macOS)
         .frame(minWidth: 760, minHeight: 560)
         #endif
+    }
+
+    /// Filters and sort levels naming a template that is gone are dropped from
+    /// what is kept: a filter for a deleted template went on filtering with no pill
+    /// to say so ("Nothing matches these filters." until Clear), and its sort level
+    /// sorted nothing under its raw key (the spec pass, 5 Oct 2026).
+    private func forgetWhatIsGone() {
+        let library = model.library
+        let live = TableKeys.store(TableKeys.filters(filtersStored, library))
+        if live != filtersStored { filtersStored = live }
+        if !library.tableKnows(sortBy) { sortBy = "name"; descending = false }
+        let then = TableKeys.levels(thenStored).filter { library.tableKnows($0.key) }
+        let kept = TableKeys.store(then)
+        if kept != thenStored { thenStored = kept }
     }
 
     /// The heading: the band saying which group a run of columns belongs to, then
@@ -231,67 +249,78 @@ struct ThingsTable: View {
     /// While anything is ticked: how many, one press to change them all, and — after
     /// a change — one press to put them back the way they were.
     private func chosenBar(_ rows: [Item]) -> some View {
-        HStack(spacing: 8) {
-            if !chosen.isEmpty {
-                Text("\(chosen.count) ticked")
-                    .font(.system(size: 15, weight: .heavy).monospacedDigit())
-                    .foregroundStyle(AppSection.care.color)
-                    .accessibilityIdentifier("table-chosen-count")
+        // Ticks stay while he searches and filters ("narrow with a chip, then take the
+        // lot"), so Change all can reach things not on screen — the bar says how many
+        // (the spec pass, 5 Oct 2026), rather than dropping ticks he made on purpose.
+        let hidden = chosen.subtracting(rows.map(\.id)).count
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                if !chosen.isEmpty {
+                    Text(hidden > 0 ? "\(chosen.count) ticked · \(hidden) not shown" : "\(chosen.count) ticked")
+                        .font(.system(size: 15, weight: .heavy).monospacedDigit())
+                        .foregroundStyle(AppSection.care.color)
+                        .accessibilityIdentifier("table-chosen-count")
 
-                Button { changing = true } label: {
-                    Text("Change all")
-                        .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 12).frame(minHeight: 32)
-                        .background(Capsule().fill(AppSection.care.color))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("table-change-all")
+                    Button { changing = true } label: {
+                        Text("Change all")
+                            .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                            .padding(.horizontal, 12).frame(minHeight: 32)
+                            .background(Capsule().fill(AppSection.care.color))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-change-all")
 
-                Button { chosen.removeAll() } label: {
-                    Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                    Button { chosen.removeAll() } label: {
+                        Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-clear-chosen")
                 }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("table-clear-chosen")
+                Spacer()
+                if !wasBefore.isEmpty {
+                    Button { putBack() } label: {
+                        Text("Undo")
+                            .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                            .padding(.horizontal, 10).frame(minHeight: 32)
+                            .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: 1))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("table-undo")
+                }
             }
-            Spacer()
+            // What the change WAS, on a line of its own — "2 changed: Condition → New".
+            // It used to say only "2 changed" (the spec pass, 5 Oct 2026).
             if !wasBefore.isEmpty {
-                Text(didSay).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
-                    .lineLimit(1)
+                Text(didSay).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("table-said")
-                    .accessibilityLabel(didSay)
-                Button { putBack() } label: {
-                    Text("Undo")
-                        .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
-                        .padding(.horizontal, 10).frame(minHeight: 32)
-                        .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: 1))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("table-undo")
             }
         }
         .padding(.horizontal, 16).padding(.bottom, 8)
     }
 
-    /// Change every ticked thing, keeping what they were first.
+    /// Change every ticked thing, keeping what they were first and what the change
+    /// made of them.
     private func changeThemAll(_ what: @escaping (inout Item) -> Void, _ said: String) {
         let ids = chosen
         wasBefore = model.library.items.filter { ids.contains($0.id) }
-        didSay = "\(ids.count) changed"
+        didSay = "\(ids.count) changed: \(said)"
         model.change { library in
             for id in ids { _ = library.updateThing(id: id) { thing in what(&thing) } }
         }
+        madeAs = model.library.items.filter { ids.contains($0.id) }
     }
 
-    /// Put every one of them back exactly as it was.
+    /// Put back what that change changed — and only that: a cell he edited on those
+    /// things since stays as he left it (`undoChange`).
     private func putBack() {
-        let old = wasBefore
+        let old = wasBefore, made = madeAs
         guard !old.isEmpty else { return }
-        model.change { library in
-            for thing in old { _ = library.updateThing(id: thing.id) { $0 = thing } }
-        }
+        model.change { _ = $0.undoChange(before: old, after: made) }
         wasBefore = []
+        madeAs = []
         didSay = ""
     }
 
@@ -363,7 +392,7 @@ struct ThingsTable: View {
                 Spacer()
             }
             if !filters.isEmpty { pills(filters) }
-            let then = TableKeys.levels(thenStored)
+            let then = TableKeys.levels(thenStored).filter { model.library.tableKnows($0.key) }
             if !then.isEmpty {
                 // The order in words, when it is more than the arrow in a heading says.
                 Text("Sorted by " + ([SortLevel(key: sortBy, descending: descending)] + then)
@@ -447,10 +476,12 @@ struct ThingsTable: View {
 
     private func things() -> [Item] {
         let library = model.library
-        let filters = TableKeys.filters(filtersStored)
+        let filters = TableKeys.filters(filtersStored, library)
         let byThing = Dictionary(grouping: library.memberships, by: \.itemId)
         let kept = filters.isEmpty ? unfiltered() : unfiltered().filter { library.passes($0, filters, memberships: byThing) }
-        return library.sortThings(kept, by: [SortLevel(key: sortBy, descending: descending)] + TableKeys.levels(thenStored))
+        let levels = ([SortLevel(key: sortBy, descending: descending)] + TableKeys.levels(thenStored))
+            .filter { library.tableKnows($0.key) }
+        return library.sortThings(kept, by: levels)
     }
 
     // MARK: - one row

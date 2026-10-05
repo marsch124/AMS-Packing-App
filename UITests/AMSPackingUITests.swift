@@ -1022,6 +1022,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["bag-move-none"].exists, "no way to leave its things without a bag (his ask, 2026-09-27)")
         tap(app, id: "bag-delete-yes")
         XCTAssertTrue(find(app, "bag-detail") != nil, "it deleted before a bag was chosen for its things")
+        // Full colour, and pressed too early it says what is missing (his rule).
+        XCTAssertTrue(app.staticTexts["bag-delete-needs"].waitForExistence(timeout: 5),
+                      "pressed before a bag was chosen, Delete said nothing")
+        shot(app, "bag-delete-needs")
         tap(app, id: "bag-move-0")
         tap(app, id: "bag-delete-yes")
         // 15 s: the suite's FIRST test meets GitHub's freshly started simulator, slow at
@@ -2069,6 +2073,15 @@ final class AMSPackingUITests: XCTestCase {
         app.activate()
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["buy-count"]) == "All bought." },
                       "back from the shop, the ticks did not come: '\(words(app.staticTexts["buy-count"]))'")
+        // Unticked here, it stays unticked: its reminder is unticked too, so the
+        // next read back does not tick it again (the spec pass, 5 Oct 2026).
+        tap(app, id: "buy-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" }, "the untick did not take")
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        sleep(2)
+        XCTAssertEqual(words(app.staticTexts["buy-count"]), "1 to buy", "the shop ticked again what he had unticked")
     }
     #endif
 
@@ -5298,5 +5311,349 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertTrue(app.staticTexts["choices-heading-\(kind)"].waitForExistence(timeout: 5), "Your choices lost its heading for \(kind)")
         }
         shot(app, "looks-choices")
+    }
+
+    // MARK: - The spec pass of 5 Oct 2026: Things, Care, the table, To do
+
+    /// The table and Change all offer what the thing's page offers — his OWN bags,
+    /// every owner his things name — and a condition chosen there is stored the way
+    /// the page stores it, so the page lights it and To buy offers it. Change all
+    /// then says what it changed, not just how many.
+    func testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        type("Sit bag", into: app.textFields["bag-new-name"])
+        tap(app, id: "bag-new")
+        XCTAssertTrue(waitUntil { app.buttons["bag-0-name"].exists }, "the bag was not made")
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        XCTAssertEqual(words(app.staticTexts["table-0-name"]), "Goggles")
+        tap(app, id: "table-0-pick")
+        tap(app, id: "table-change-all")
+        XCTAssertTrue(appears(app, "bulk-detail", timeout: 5), "the change sheet did not open")
+        // Packed in: the seventeen built-in bags, then his own.
+        tap(app, id: "bulk-field-container")
+        XCTAssertTrue(app.buttons["bulk-value-17"].waitForExistence(timeout: 5), "his own bag is not offered")
+        XCTAssertTrue(words(app.buttons["bulk-value-17"]).contains("Sit bag"),
+                      "the bag after the built-in ones is not his: '\(words(app.buttons["bulk-value-17"]))'")
+        // Owner: the two names his things carry, though the Settings list is empty.
+        tap(app, id: "bulk-field-ownedBy")
+        XCTAssertTrue(app.buttons["bulk-value-1"].waitForExistence(timeout: 5), "the owners his things name are not offered")
+        XCTAssertTrue(words(app.buttons["bulk-value-0"]).contains("Kim"), "'\(words(app.buttons["bulk-value-0"]))'")
+        XCTAssertTrue(words(app.buttons["bulk-value-1"]).contains("Robin"), "'\(words(app.buttons["bulk-value-1"]))'")
+        // Condition: Needs replacing, the fourth.
+        tap(app, id: "bulk-field-condition")
+        XCTAssertTrue(words(app.buttons["bulk-value-3"]).contains("Needs replacing"))
+        tap(app, id: "bulk-value-3")
+        XCTAssertTrue(disappears(app, "bulk-detail", timeout: 5), "the sheet stayed open")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-said"]).contains("Condition → Needs replacing") },
+                      "Change all does not say what it changed: '\(words(app.staticTexts["table-said"]))'")
+        XCTAssertTrue(waitUntil { self.cellSays(app, "table-0-condition") == "Needs replacing" },
+                      "the cell does not read the condition: '\(cellSays(app, "table-0-condition"))'")
+        shot(app, "table-change-said")
+
+        // The thing's own page lights it…
+        tap(app, id: "table-0-open")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let lit = app.buttons["thing-condition-4"]
+        XCTAssertTrue(lit.waitForExistence(timeout: 5))
+        bringIntoView(app, lit)
+        XCTAssertTrue(isOn(lit), "the thing's page does not light the condition set in the table")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+
+        // …and To buy offers it, first (Needs replacing, then A–Z: Goggles before Map).
+        tab(app, "actions")
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(app.buttons["buy-offer-0"].waitForExistence(timeout: 5), "nothing offered")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["buy-offer-0"]).contains("Goggles") },
+                      "the condition set in the table does not reach To buy: '\(words(app.buttons["buy-offer-0"]))'")
+    }
+
+    /// A thing stored the old way — its condition as the LABEL — is put right when
+    /// the library is read: To buy offers it like any other worn-out thing.
+    func testAConditionStoredTheOldWayIsRepairedOnLoad() {
+        let app = launch("-uiTestingOldConditions")
+        tab(app, "actions")
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(app.buttons["buy-offer-0"].waitForExistence(timeout: 5), "nothing offered")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["buy-offer-0"]).contains("Goggles") },
+                      "the old label was not repaired: '\(words(app.buttons["buy-offer-0"]))'")
+    }
+
+    /// With nobody named on any thing or in Settings, the thing's page still shows
+    /// "Whose it is", and says where the names come from.
+    func testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5))
+        tap(app, id: "table-pick-all")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-chosen-count"]) == "10 ticked" })
+        tap(app, id: "table-change-all")
+        XCTAssertTrue(appears(app, "bulk-detail", timeout: 5))
+        tap(app, id: "bulk-field-ownedBy")
+        tap(app, id: "bulk-value-blank")
+        XCTAssertTrue(disappears(app, "bulk-detail", timeout: 5))
+        tap(app, id: "table-0-open")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let none = app.staticTexts["thing-owner-none"]
+        XCTAssertTrue(none.waitForExistence(timeout: 5), "with nobody named, Whose it is just vanished")
+        XCTAssertTrue(words(none).contains("Your choices"), "'\(words(none))'")
+        bringIntoView(app, none)
+        shot(app, "thing-owner-none")
+    }
+
+    /// His bag list is no column of the table, no filter and no sort key: a tick
+    /// there made a thing a bag. (The checks sample has a bag list beside its three
+    /// templates.)
+    func testTheBagListIsNoColumnOfTheTable() {
+        let app = launch("-uiTestingChecks")
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5))
+        tap(app, id: "table-filter")
+        XCTAssertTrue(appears(app, "filter-sheet", timeout: 5))
+        XCTAssertTrue(app.buttons["filter-col-list-2"].waitForExistence(timeout: 5) || app.buttons["filter-col-list-3"].exists)
+        let columns = (0..<6).filter { app.buttons["filter-col-list-\($0)"].exists }
+        XCTAssertEqual(columns.count, 3, "the bag list is a template column: \(columns)")
+        tap(app, id: "filter-done")
+        tap(app, id: "table-columns")
+        XCTAssertTrue(appears(app, "columns-detail", timeout: 5))
+        let offered = (0..<6).filter { app.buttons["columns-list-\($0)-show"].exists }
+        XCTAssertEqual(offered.count, 3, "Columns offers the bag list: \(offered)")
+    }
+
+    /// A template deleted after the table was set up takes its filter and its column
+    /// with it: the table does not stay empty behind an invisible filter, and the
+    /// columns he had come back rather than an empty grid.
+    func testATemplateDeletedTakesItsFilterAndColumnAlong() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5))
+        tap(app, id: "table-columns")
+        XCTAssertTrue(appears(app, "columns-detail", timeout: 5))
+        tap(app, id: "columns-list-2-show")
+        for gone in ["weight", "storage", "container", "ownedBy", "packer", "condition", "listQty"] {
+            tap(app, id: "columns-\(gone)-hide")
+        }
+        tap(app, id: "columns-done")
+        XCTAssertTrue(disappears(app, "columns-detail", timeout: 5))
+        XCTAssertFalse(app.buttons["table-head-weight"].exists)
+        tap(app, id: "table-filter")
+        XCTAssertTrue(appears(app, "filter-sheet", timeout: 5))
+        XCTAssertTrue(words(app.buttons["filter-col-list-2"]).contains("Swim"), "list-2 is not Swim: '\(words(app.buttons["filter-col-list-2"]))'")
+        tap(app, id: "filter-col-list-2")
+        tap(app, id: "filter-list-2-0")
+        tap(app, id: "filter-done")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-count"]) == "3" }, "On Swim should leave three")
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+
+        // Swim goes.
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("Swim", into: app.textFields["search-field"])
+        XCTAssertTrue(app.buttons["search-lists-0"].waitForExistence(timeout: 5))
+        tapVisible(app, app.buttons["search-lists-0"])
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-delete")
+        tap(app, id: "template-delete-yes")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tap(app, id: "search-done")
+        XCTAssertTrue(disappears(app, "search-detail", timeout: 5))
+
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-count"]) == "10" },
+                      "the gone template's filter still hides things: '\(words(app.staticTexts["table-count"]))'")
+        XCTAssertEqual(words(app.buttons["table-filter"]), "Filter", "a filter is still counted")
+        XCTAssertTrue(app.buttons["table-head-weight"].waitForExistence(timeout: 5),
+                      "with its only column gone, the grid did not come back to the starting columns")
+    }
+
+    /// Change all refuses a weight that is not a number, and says why; a words
+    /// field of spaces says "Leave blank"; ticks kept while searching are counted.
+    func testChangeAllRefusesANonNumberAndCountsTicksOutOfSight() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5))
+        tap(app, id: "table-0-pick")
+        tap(app, id: "table-3-pick")
+        type("Map", into: app.textFields["table-search"])
+        hideKeyboard(app)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-chosen-count"]) == "2 ticked · 1 not shown" },
+                      "a tick out of sight is not said: '\(words(app.staticTexts["table-chosen-count"]))'")
+        shot(app, "table-ticks-hidden")
+        tap(app, id: "table-change-all")
+        XCTAssertTrue(appears(app, "bulk-detail", timeout: 5))
+        tap(app, id: "bulk-field-color")
+        type("   ", into: app.textFields["bulk-text"])
+        XCTAssertTrue(words(app.buttons["bulk-apply"]).contains("Leave blank"),
+                      "spaces alone offer to set something: '\(words(app.buttons["bulk-apply"]))'")
+        tap(app, id: "bulk-field-weight")
+        type("abc", into: app.textFields["bulk-text"])
+        tap(app, id: "bulk-apply")
+        XCTAssertTrue(app.staticTexts["bulk-needs"].waitForExistence(timeout: 5), "a weight that is no number was taken")
+        shot(app, "bulk-weight-refused")
+        XCTAssertTrue(find(app, "bulk-detail") != nil, "the sheet closed as if it had done it")
+        tap(app, id: "bulk-cancel")
+        XCTAssertTrue(disappears(app, "bulk-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.textFields["table-0-weight"].value as? String) == "60" },
+                      "the Map's weight changed: '\(app.textFields["table-0-weight"].value as? String ?? "")'")
+    }
+
+    /// Your things says so when a name is taken, and keeps what he typed.
+    func testANewThingWithANameHeHasSaysSo() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("map", into: app.textFields["thing-new-name"])
+        tap(app, id: "thing-new")
+        let says = app.staticTexts["thing-new-needs"]
+        XCTAssertTrue(says.waitForExistence(timeout: 5), "a name he has already: nothing said")
+        XCTAssertTrue(words(says).contains("already"), "'\(words(says))'")
+        XCTAssertEqual(app.textFields["thing-new-name"].value as? String, "map", "what he typed was thrown away")
+        shot(app, "things-name-taken")
+        XCTAssertEqual(words(app.staticTexts["things-count"]), "10 things")
+    }
+
+    /// A thing's page: a weight with a comma and decimals; a place picked from his
+    /// places; "No bag"; and a care schedule that puts it on Care.
+    func testAThingsPageTakesDecimalsAPlaceNoBagAndCare() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        XCTAssertTrue(words(app.buttons["thing-row-0"]).contains("Goggles"), "'\(words(app.buttons["thing-row-0"]))'")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let weight = app.textFields["thing-weight"]
+        bringIntoView(app, weight)
+        replace("abc", in: weight)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(app.staticTexts["thing-weight-problem"].waitForExistence(timeout: 5), "a weight that is no number was saved")
+        shot(app, "thing-weight-problem")
+        XCTAssertTrue(find(app, "thing-detail") != nil, "it closed as if saved")
+        replace("12,5", in: weight)
+        XCTAssertEqual(weight.value as? String, "12,5", "the comma did not survive the typing")
+        // The first of his places, a tap away.
+        let place = app.buttons["thing-place-0"]
+        bringIntoView(app, place)
+        let placeName = words(place)
+        select(app, place)
+        XCTAssertEqual(app.textFields["thing-storage"].value as? String, placeName, "the place was not put in the field")
+        shot(app, "thing-places")
+        // No bag: the last pill of Usually packed in.
+        let noBag = (0..<40).map { app.buttons["thing-bag-\($0)"] }.last { $0.exists }!
+        XCTAssertTrue(words(noBag).contains("No bag"), "'\(words(noBag))'")
+        select(app, noBag)
+        shot(app, "thing-no-bag")
+        // Looked after every month, with what to do.
+        let monthly = app.buttons["thing-care-1"]
+        bringIntoView(app, monthly)
+        select(app, monthly)
+        let notes = app.textFields["thing-care-notes"]
+        bringIntoView(app, notes)
+        type("Rinse in fresh water", into: notes)
+        shot(app, "thing-care")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Save did not close")
+
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        bringIntoView(app, app.textFields["thing-weight"])
+        XCTAssertEqual(app.textFields["thing-weight"].value as? String, "12.5", "the decimal weight did not keep")
+        XCTAssertTrue(isOn(app.buttons["thing-place-0"]), "the place is not lit")
+        XCTAssertTrue(isOn(noBag), "No bag is not lit")
+        XCTAssertTrue(isOn(app.buttons["thing-care-1"]), "the care schedule was not kept")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        // Never done → due now: on Care, due soon.
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-summary"]).contains("1 due soon") },
+                      "the care set on the page did not reach Care: '\(words(app.staticTexts["care-summary"]))'")
+    }
+
+    /// To do and To buy each keep their own half-typed line, and a line taken away
+    /// with ✕ comes back with Undo.
+    func testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval() {
+        let app = launch()
+        tab(app, "actions")
+        XCTAssertTrue(appears(app, "screen-actions"))
+        type("Half a to-do", into: app.textFields["action-add-text"])
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(app.textFields["buy-add-text"].waitForExistence(timeout: 5))
+        let buyField = (app.textFields["buy-add-text"].value as? String) ?? ""
+        XCTAssertFalse(buyField.contains("Half"), "the to-do half typed shows on To buy: '\(buyField)'")
+        type("Milk", into: app.textFields["buy-add-text"])
+        tap(app, id: "buy-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" })
+        tap(app, id: "buy-0-remove")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "Nothing to buy." }, "✕ did not take it")
+        XCTAssertTrue(words(app.staticTexts["buy-undo-says"]).contains("Milk"), "it does not say what went")
+        shot(app, "buy-undo")
+        tap(app, id: "buy-undo")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" }, "Undo did not bring it back")
+        XCTAssertFalse(app.buttons["buy-undo"].exists, "Undo stayed after it was used")
+
+        tap(app, id: "actions-tab-todo")
+        XCTAssertEqual(app.textFields["action-add-text"].value as? String, "Half a to-do", "the to-do half typed was lost")
+        tap(app, id: "action-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "1 to do" })
+        tap(app, id: "action-0-remove")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "Nothing to do." })
+        shot(app, "todo-undo")
+        tap(app, id: "action-undo")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "1 to do" }, "Undo did not bring the to-do back")
+    }
+
+    /// A line whose reminder was deleted in Reminders can be sent again — when he
+    /// presses Send. ("-pretendShopDeleted": a Reminders list he has emptied.)
+    func testALineWhoseReminderWasDeletedCanBeSentAgain() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-pretendShopDeleted"]
+        app.launch()
+        tab(app, "actions")
+        tap(app, id: "actions-tab-buy")
+        for line in ["Sun cream", "Plasters"] {
+            type(line, into: app.textFields["buy-add-text"])
+            tap(app, id: "buy-add")
+        }
+        tap(app, id: "buy-send")
+        XCTAssertTrue(app.staticTexts["buy-send-says"].waitForExistence(timeout: 5), "they were not sent")
+        tap(app, id: "actions-tab-todo")
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.buttons["buy-send"]).contains("Send 2") },
+                      "lines whose reminders were deleted stay 'sent' for ever: '\(words(app.buttons["buy-send"]))'")
+    }
+
+    /// Your bags shows a number changed on the bag's own page as soon as it closes.
+    func testYourBagsShowsANumberChangedOnTheBagsPage() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        type("Sit bag", into: app.textFields["bag-new-name"])
+        tap(app, id: "bag-new")
+        XCTAssertTrue(waitUntil { app.buttons["bag-0-name"].exists })
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+        type("7", into: app.textFields["bag-detail-maxkg"])
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.textFields["bag-0-maxkg"].value as? String) == "7" },
+                      "the row still shows the old number: '\(app.textFields["bag-0-maxkg"].value as? String ?? "")'")
     }
 }

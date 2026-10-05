@@ -48,6 +48,24 @@ extension Library {
         return resolvedTemplate(id: list.id)?.items ?? []
     }
 
+    /// Every bag a thing can be "usually packed in": the built-in names, then his own
+    /// bags that are not among them, in his bag list's order. ONE answer for the
+    /// thing's page and the table alike — the table asked `containerNames(templates)`,
+    /// the shells, and so offered only the built-in names, never one of his own (the
+    /// spec pass, 5 Oct 2026; the same trap as `bagLimits` above).
+    public func bagNames() -> [String] {
+        containerNames(templates.filter { $0.role == CONTAINER_ROLE }.map(resolved))
+    }
+
+    /// The templates a thing is put on or taken off from its own page and from the
+    /// table: every one but his bag list. A thing becomes a bag on Your bags, where a
+    /// bag's rules live — the table's "Bags" column made a bag of anything ticked in
+    /// it, and unticking a bag dropped it without asking where its things go (the
+    /// spec pass, 5 Oct 2026).
+    public func templatesForThings() -> [PackList] {
+        templates.filter { $0.role != CONTAINER_ROLE }
+    }
+
     /// Set a bag's numbers. Blank or negative is taken as "not set".
     @discardableResult
     public mutating func setBag(id: String, maxKg: Double? = nil, capacityL: Double? = nil,
@@ -177,11 +195,6 @@ extension Library {
             || trips.contains { $0.entries.contains { hit($0.container) || hit($0.ovContainer) || hit($0.tplContainer) || hit($0.defContainer) } }
     }
 
-    /// Delete a bag. Everything that names it — things, list rows and trip lines —
-    /// moves to `moveTo` first (his choice), another of his bags; or, with "", to
-    /// NO bag (his ask, 2026-09-27: "an alternative… to not choose… do not use
-    /// another bag"). The bag leaves his bag list; the THING goes too
-    /// unless it is also packed on a list of his.
     /// The lists (not his bag list) a bag also sits on AS A THING — the Day pack he
     /// packs on Travel. Deleting such a bag asks whether it goes from those too.
     public func listsHoldingBag(id: String) -> [String] {
@@ -189,6 +202,12 @@ extension Library {
             .map(\.name)
     }
 
+    /// Delete a bag. Everything that names it — things, list rows and trip lines —
+    /// moves to `moveTo` first (his choice), another of his bags; or, with "", to
+    /// NO bag (his ask, 2026-09-27: "an alternative… to not choose… do not use
+    /// another bag"). The bag leaves his bag list; the THING goes too
+    /// unless it is also packed on a list of his.
+    ///
     /// `completely`: also off every list, and the thing is gone (his choice each
     /// time, 2026-09-27 — "I thought it would just be a deleted bag").
     /// What each trip kept about the bag goes where its things go (see `moveBagNotes`):
