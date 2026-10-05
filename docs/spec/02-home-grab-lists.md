@@ -320,17 +320,19 @@ the buttons a bit so they are thinner … four on each row … two rows". They w
 (release 0.46).
 
 **What is on screen.**
-- Rows of **4** (`perRow = 4`) with 8 pt between tiles and 8 pt between rows. Home passes at most
+- Rows of **4** (`perRow = 4`) with 6 pt between tiles and 6 pt between rows (8 until 0.62). Home passes at most
   **8 lists** (`GRAB_HOME_SLOTS`), so at most two rows. It can pass fewer than 8 even when he has more
   lists: a list he took off Home leaves its place free (section 5), so Home simply shows one tile fewer.
   With every list taken off, Home shows the "Grab and go" row and, instead of tiles, the
   `home-grab-none` line that leads to Grab Lists (section 3; 0.62).
 - A short last row is padded with invisible equal-width spacers, so every tile has the same width.
 - Each tile is a plain button:
-  - the list's drawing (`GrabDoodle`) at **36 pt** in the list's tone colour;
-  - 3 pt below it, `label` at **14 pt bold** `ink`, one line, scaling to 75 %;
-  - 4 pt side padding, full width, minimum height **68**, `card` fill, corner radius 12;
-  - a 1.5-pt stroke in the tone colour at 50 % opacity.
+  - the list's drawing (`GrabDoodle`) at **24 pt** on the iPhone, **20** on the Mac (`GrabButtons.doodle`; 36
+    until 0.62 — his word, 5 Oct 2026: "You can even make the grab lists buttons smaller"), in the list's tone colour;
+  - 2 pt below it, `label` in **Caption semibold**, `ink`, one line, scaling to 80 %;
+  - 4 pt side padding, full width, minimum height **50** on the iPhone, **40** on the Mac (`GrabButtons.height`;
+    68 until 0.62), `card` fill, corner radius 10;
+  - a 1.2-pt stroke in the tone colour at 50 % opacity.
 - Identifier `grab-<n>`, where n is the **position** (0…7), never the name.
 - Accessibility label = `title` (for example "Indoor swim"); the visible word is `label` ("Swim"). The
   two Swim tiles differ on screen only by the sun in the drawing. Each tile passes its `label` to
