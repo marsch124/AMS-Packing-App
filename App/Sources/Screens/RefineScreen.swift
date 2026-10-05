@@ -66,7 +66,7 @@ struct RefineScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(s.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("refine-row-\(n)-name")
-                    Text("\(s.listName) · \(why)").font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    Text("\(s.listName) · \(why)").font(.system(size: 15)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("refine-row-\(n)-why")
                 }
                 Spacer(minLength: 8)
@@ -140,7 +140,7 @@ struct RefineDoor: View {
                     Text("Refine your templates").font(.system(size: 18, weight: .heavy)).foregroundStyle(violet)
                     Text(waiting == 0 ? "Better with every trip. Review a few trips, and what they teach waits here."
                          : "Your trip reviews found \(waiting) thing\(waiting == 1 ? "" : "s") to look at.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 4)

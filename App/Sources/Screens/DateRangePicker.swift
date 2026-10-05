@@ -53,10 +53,10 @@ struct DateRangePicker: View {
                     .foregroundStyle(tint)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(waitingForEnd ? "Now tap the last day" : "Dates")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                     Text(waitingForEnd ? DateRangePicker.pretty(start) : "\(DateRangePicker.pretty(start)) — \(DateRangePicker.pretty(end))")
                         .font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
-                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .lineLimit(1).minimumScaleFactor(0.9)       // never under 15
                         .accessibilityIdentifier("trip-dates-label")
                 }
                 Spacer(minLength: 8)
@@ -110,7 +110,7 @@ struct DateRangePicker: View {
                      : "\(DateRangePicker.short(start)) \u{2013} \(DateRangePicker.short(end)) \u{00B7} \(nightsText)")
                     .font(.system(size: 18, weight: .heavy).monospacedDigit())
                     .foregroundStyle(waitingForEnd ? Theme.muted : Theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .lineLimit(1).minimumScaleFactor(0.85)      // never under 15
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("range-summary")
             }
@@ -150,7 +150,7 @@ struct DateRangePicker: View {
             }
             HStack(spacing: 0) {
                 ForEach(DateRangePicker.weekdays, id: \.self) { d in
-                    Text(d).font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                    Text(d).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
                         .frame(maxWidth: .infinity)
                 }
             }

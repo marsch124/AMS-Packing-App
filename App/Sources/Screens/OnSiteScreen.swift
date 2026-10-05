@@ -247,7 +247,7 @@ struct OnSiteScreen: View {
             HStack(spacing: 12) {
                 Text(model.library.thingBehind(line) == nil ? "Kept with this trip."
                      : "Also goes onto the thing, for Care.")
-                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 small("Cancel", id: "onsite-note-cancel") { writingNote = false; noting = nil }
@@ -385,7 +385,8 @@ private struct LinePicker: View {
                         Text(line.name).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink).lineLimit(2)
                         Spacer(minLength: 8)
                         Text(line.container.isEmpty || line.container == "Other" ? "" : line.container)
-                            .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                            .font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(2)
+                            .multilineTextAlignment(.trailing)
                     }
                     .padding(.vertical, 10)
                     .contentShape(Rectangle())

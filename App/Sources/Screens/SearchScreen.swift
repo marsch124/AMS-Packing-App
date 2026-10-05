@@ -78,7 +78,7 @@ struct SearchScreen: View {
                             }
                             if part.total > part.rows.count {
                                 Text("…and \(part.total - part.rows.count) more. Say more of the name.")
-                                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                                     .padding(.vertical, 8)
                                     .accessibilityIdentifier("search-\(part.id)-more")
                             }
@@ -205,9 +205,9 @@ struct SearchScreen: View {
     private func heading(_ title: String, _ count: Int) -> some View {
         HStack(spacing: 6) {
             Text(title.uppercased())
-                .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
             Text("\(count)")
-                .font(.system(size: 12, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
         }
         .padding(.top, 18).padding(.bottom, 4)
     }
@@ -220,8 +220,8 @@ struct SearchScreen: View {
                     .lineLimit(1)
                 if !row.under.isEmpty {
                     Text(row.under)
-                        .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
-                        .lineLimit(1)
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .lineLimit(2)
                 }
             }
             Spacer(minLength: 8)

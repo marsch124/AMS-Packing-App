@@ -28,7 +28,7 @@ struct TripChecksCard: View {
                 HStack(spacing: 8) {
                     Text("Check before you go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.ink)
                     Text("\(cabin.count + dates.count)")
-                        .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
                         .padding(.horizontal, 8).padding(.vertical, 2)
                         .background(Capsule().fill(tint))
                         .accessibilityIdentifier("trip-checks-count")

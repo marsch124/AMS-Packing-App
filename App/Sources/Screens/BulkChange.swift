@@ -35,7 +35,7 @@ struct BulkChange: View {
                         .font(.system(size: 20, weight: .heavy)).foregroundStyle(AppSection.care.color)
                         .accessibilityIdentifier("bulk-count")
                     Text(names)
-                        .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
@@ -57,7 +57,7 @@ struct BulkChange: View {
                                     .foregroundStyle(field == one.id ? AppSection.care.color : Theme.ink)
                                 Spacer()
                                 if field == one.id {
-                                    Text("▾").font(.system(size: 14, weight: .black))
+                                    Text("▾").font(.system(size: 14, weight: .black))      // not text: the open field's arrow
                                         .foregroundStyle(AppSection.care.color)
                                 }
                             }
@@ -144,7 +144,7 @@ struct BulkChange: View {
     private func value(_ text: String, id: String, _ go: @escaping () -> Void) -> some View {
         Button(action: go) {
             HStack(spacing: 8) {
-                Text("→").font(.system(size: 13, weight: .black)).foregroundStyle(AppSection.care.color)
+                Text("→").font(.system(size: 13, weight: .black)).foregroundStyle(AppSection.care.color)      // not text: arrow mark before a value
                 Text(text).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 Spacer()
@@ -167,7 +167,7 @@ struct BulkChange: View {
     }
 
     private func heading(_ text: String) -> some View {
-        Text(text).font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+        Text(text).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
             .padding(.bottom, 6)
     }
 

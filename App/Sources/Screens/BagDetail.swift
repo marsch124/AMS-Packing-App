@@ -99,7 +99,7 @@ struct BagDetail: View {
                     .accessibilityIdentifier("bag-done")
             }
             if !problem.isEmpty {
-                Text(problem).font(.system(size: 14, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     .accessibilityIdentifier("bag-problem")
             }
         }
@@ -133,7 +133,7 @@ struct BagDetail: View {
     private func number(_ title: String, _ text: Binding<String>, now: Double, id: String,
                         commit: @escaping (Double) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased()).font(.system(size: 11, weight: .heavy)).kerning(0.4).foregroundStyle(Theme.muted)
+            Text(title.uppercased()).font(.system(size: 15, weight: .heavy)).kerning(0.4).foregroundStyle(Theme.muted)
             TextField("", text: text)
                 .textFieldStyle(.plain)
                 .font(.system(size: 17, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
@@ -158,7 +158,7 @@ struct BagDetail: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Goes in the cabin").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text("Carry-on. On a plane trip, the trip checks it for liquids and things not allowed on board.")
-                    .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 15)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -181,7 +181,7 @@ struct BagDetail: View {
                         Text(thing.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink).lineLimit(1)
                         Spacer(minLength: 8)
                         if thing.weight > 0 {
-                            Text(BagsCard.kilos(thing.weight)).font(.system(size: 14).monospacedDigit()).foregroundStyle(Theme.muted)
+                            Text(BagsCard.kilos(thing.weight)).font(.system(size: 15).monospacedDigit()).foregroundStyle(Theme.muted)
                         }
                     }
                     .frame(minHeight: 36).contentShape(Rectangle())
@@ -209,7 +209,7 @@ struct BagDetail: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(t.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink).lineLimit(1)
-                        Text(t.date).font(.system(size: 13).monospacedDigit()).foregroundStyle(Theme.muted)
+                        Text(t.date).font(.system(size: 15).monospacedDigit()).foregroundStyle(Theme.muted)
                     }
                     Spacer(minLength: 8)
                     Text(t.limitKg > 0 ? "\(BagsCard.kilos(t.grams)) / \(BagsCard.number(t.limitKg)) kg" : BagsCard.kilos(t.grams))
@@ -223,7 +223,7 @@ struct BagDetail: View {
             }
             if let top = facts.heaviest, facts.trips.count > 1 {
                 Text("Heaviest: \(BagsCard.kilos(top.grams)) on \(top.name)")
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("bag-heaviest")
             }
         }
@@ -237,7 +237,8 @@ struct BagDetail: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Its details").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
                     Text("Kept at home, condition, brand, colour, notes")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)      // wraps at 15, never cut
                 }
                 Spacer()
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -367,7 +368,7 @@ struct BagDetail: View {
 
     private func choice(_ title: String, on: Bool, id: String, _ pick: @escaping () -> Void) -> some View {
         Button(action: pick) {
-            Text(title).font(.system(size: 14, weight: on ? .bold : .semibold))
+            Text(title).font(.system(size: 15, weight: on ? .bold : .semibold))
                 .foregroundStyle(on ? Color.white : Theme.ink)
                 .padding(.horizontal, 10).frame(minHeight: 32)
                 .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
@@ -390,7 +391,7 @@ struct BagDetail: View {
     }
 
     private func quiet(_ text: String) -> some View {
-        Text(text).font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+        Text(text).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

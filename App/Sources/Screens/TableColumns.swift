@@ -6,7 +6,9 @@ import PackingLibrary
 /// it is edited. Keeping this beside the screen means a new column is one line
 /// here and nothing anywhere else.
 enum TableColumns {
-    static let rowHeight: CGFloat = 34
+    /// Room for two lines of 15-pt words (his floor: nothing under 15) — a long name
+    /// or answer wraps instead of shrinking. It was 34, for one line of 13–14.
+    static let rowHeight: CGFloat = 44
 
     /// Where a choice column gets its list of answers — his own Settings lists,
     /// never a list this app invented.
@@ -65,9 +67,10 @@ enum TableColumns {
     }
 
     /// Everything about the thing itself — changing one of these changes the thing
-    /// on every list it is on.
+    /// on every list it is on. Each column is wide enough for its name at 15 heavy
+    /// plus the sort arrow (his floor: nothing under 15; the names used to shrink).
     static let intrinsic: [Column] = [
-        Column(id: "weight", title: "Weight", width: 74, kind: .number(\Item.weight)),
+        Column(id: "weight", title: "Weight", width: 80, kind: .number(\Item.weight)),
         Column(id: "storage", title: "Storage", width: 150, kind: .choice(\Item.storage, .places)),
         Column(id: "container", title: "Packed in", width: 140, kind: .choice(\Item.container, .bags)),
         Column(id: "ownedBy", title: "Owner", width: 110, kind: .choice(\Item.ownedBy, .owners)),
@@ -79,11 +82,11 @@ enum TableColumns {
         Column(id: "model", title: "Model", width: 120, kind: .words(\Item.model)),
         Column(id: "serial", title: "Serial", width: 120, kind: .words(\Item.serial)),
         Column(id: "note", title: "Note", width: 180, kind: .words(\Item.note)),
-        Column(id: "liquid", title: "Liquid", width: 62, kind: .flag(\Item.liquid)),
-        Column(id: "charging", title: "Charges", width: 68, kind: .flag(\Item.charging)),
-        Column(id: "restricted", title: "Restricted", width: 78, kind: .flag(\Item.restricted)),
-        Column(id: "consumable", title: "Runs out", width: 72, kind: .flag(\Item.consumable)),
-        Column(id: "perNight", title: "Per night", width: 74, kind: .flag(\Item.perNight)),
+        Column(id: "liquid", title: "Liquid", width: 72, kind: .flag(\Item.liquid)),
+        Column(id: "charging", title: "Charges", width: 88, kind: .flag(\Item.charging)),
+        Column(id: "restricted", title: "Restricted", width: 104, kind: .flag(\Item.restricted)),
+        Column(id: "consumable", title: "Runs out", width: 92, kind: .flag(\Item.consumable)),
+        Column(id: "perNight", title: "Per night", width: 94, kind: .flag(\Item.perNight)),
     ]
 
     /// What belongs to the thing's PLACE on a list rather than to the thing. Kept
@@ -91,7 +94,7 @@ enum TableColumns {
     /// once has no meaning, so the batch sheet — which offers `intrinsic` — cannot
     /// offer them.
     static let perListColumns: [Column] = [
-        Column(id: "listQty", title: "How many", width: 92, kind: .perList(.qty), group: "On this template"),
+        Column(id: "listQty", title: "How many", width: 104, kind: .perList(.qty), group: "On this template"),
         Column(id: "listSection", title: "Section", width: 140, kind: .perList(.section), group: "On this template"),
     ]
 
@@ -102,7 +105,7 @@ enum TableColumns {
     /// things go (the spec pass, 5 Oct 2026) — a bag is made and deleted on Your bags.
     static func listColumns(_ library: Library) -> [Column] {
         library.templatesForThings().map { list in
-            Column(id: "list:\(list.id)", title: library.shownName(list), width: 100,
+            Column(id: "list:\(list.id)", title: library.shownName(list), width: 120,
                    kind: .onList(list.id), group: "On these templates")
         }
     }
@@ -240,7 +243,7 @@ struct Cell: View {
         let wrong = number && readAmount(typed) == nil
         return TextField("", text: $typed)
             .textFieldStyle(.plain)
-            .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
+            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
             .padding(.horizontal, 7)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(wrong ? AppSection.actions.color.opacity(0.18)
@@ -267,9 +270,9 @@ struct Cell: View {
             }
         } label: {
             Text(now.isEmpty ? "—" : now)
-                .font(.system(size: 13, weight: now.isEmpty ? .bold : .medium))
+                .font(.system(size: 15, weight: now.isEmpty ? .bold : .medium))
                 .foregroundStyle(now.isEmpty ? AppSection.care.color : Theme.ink)
-                .lineLimit(1).minimumScaleFactor(0.75)
+                .lineLimit(2)
                 .padding(.horizontal, 7)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .background(now.isEmpty ? AppSection.care.color.opacity(0.10) : Color.clear)
@@ -326,9 +329,9 @@ struct Cell: View {
                     }
                 } label: {
                     Text(now.isEmpty ? (sections.isEmpty ? "—" : "Where?") : now)
-                        .font(.system(size: 13, weight: now.isEmpty ? .bold : .medium))
+                        .font(.system(size: 15, weight: now.isEmpty ? .bold : .medium))
                         .foregroundStyle(now.isEmpty ? (sections.isEmpty ? Theme.muted : AppSection.care.color) : Theme.ink)
-                        .lineLimit(1).minimumScaleFactor(0.75)
+                        .lineLimit(2)
                         .padding(.horizontal, 7)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
@@ -339,8 +342,8 @@ struct Cell: View {
             }
         } else {
             Text(mine.isEmpty ? "—" : "\(mine.count) templates")
-                .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.muted)
-                .lineLimit(1)
+                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                .lineLimit(2)
                 .padding(.horizontal, 7)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .accessibilityIdentifier(id)
@@ -392,7 +395,7 @@ struct ColumnPicker: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("SHOWING, IN THIS ORDER")
-                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
                         .padding(.top, 4).padding(.bottom, 6)
                     ForEach(Array(shown.enumerated()), id: \.element) { n, id in
                         if let column = all.first(where: { $0.id == id }) {
@@ -421,7 +424,7 @@ struct ColumnPicker: View {
                     }
 
                     Text("NOT SHOWING")
-                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
                         .padding(.top, 18).padding(.bottom, 6)
                     ForEach(all.filter { !shown.contains($0.id) }) { column in
                         Button { show(column.id) } label: {
@@ -429,7 +432,7 @@ struct ColumnPicker: View {
                                 Text(column.title)
                                     .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
                                 Spacer()
-                                Text("Show").font(.system(size: 14, weight: .bold))
+                                Text("Show").font(.system(size: 15, weight: .bold))
                                     .foregroundStyle(AppSection.care.color)
                             }
                             .frame(minHeight: 44)

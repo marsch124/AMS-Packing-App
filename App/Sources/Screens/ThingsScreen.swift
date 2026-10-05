@@ -131,8 +131,8 @@ struct ThingsScreen: View {
                 Text(row.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text([row.templates.isEmpty ? "On no template" : row.templates.joined(separator: ", "),
                       row.item.storage].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .font(.system(size: 14)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
-                    .lineLimit(1)
+                    .font(.system(size: 15)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
+                    .lineLimit(2)      // 15 (it was 14): a long run of templates takes a second line
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 10)
@@ -304,7 +304,7 @@ struct ThingEditor: View {
                             .accessibilityIdentifier("thing-problem")
                     }
                     Text("A change here reaches every template it is on. Past trips keep what they were packed with.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
                     deleteThing
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -485,7 +485,7 @@ struct ThingEditor: View {
                 }
             }
             Text("The trip warns before it runs out \u{2014} a document (Documents & money) six months ahead.")
-                .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                .font(.system(size: 15)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -499,7 +499,7 @@ struct ThingEditor: View {
     private func flagWords(_ title: String, _ says: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
-            Text(says).font(.system(size: 14)).foregroundStyle(Theme.muted)
+            Text(says).font(.system(size: 15)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

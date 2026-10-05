@@ -83,10 +83,10 @@ struct WorldMapScreen: View {
                                 .frame(width: picked == pin.key ? 22 : 16, height: picked == pin.key ? 22 : 16)
                             if pin.events.count > 1 {
                                 Text("\(pin.events.count)")
-                                    .font(.system(size: 11, weight: .heavy)).foregroundStyle(.white)
+                                    .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
                                     .padding(.horizontal, 5).padding(.vertical, 1)
                                     .background(Capsule().fill(AppSection.care.color))
-                                    .offset(x: 10, y: -10)
+                                    .offset(x: 12, y: -12)      // a 15-pt count (it was 11) sits a little further out
                             }
                         }
                         .frame(width: 40, height: 40).contentShape(Rectangle())
@@ -125,9 +125,9 @@ struct WorldMapScreen: View {
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("map-find")
             Text("Trips that name a place but are not on the map yet.")
-                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
             if !findNote.isEmpty {
-                Text(findNote).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                Text(findNote).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("map-find-note")
             }
         }
@@ -142,7 +142,7 @@ struct WorldMapScreen: View {
                     .accessibilityIdentifier("map-place-\(n)-name")
                 Spacer()
                 Text("\(pin.events.count) trip\(pin.events.count == 1 ? "" : "s")")
-                    .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
             }
             ForEach(pin.events, id: \.id) { e in
                 Text(e.startDate.isEmpty ? e.name : "\(e.name) · \(WorldMapScreen.day(e.startDate))")
@@ -220,7 +220,7 @@ struct MiniWorldMap: View {
                     .frame(height: 210)
                     .allowsHitTesting(false)
                     Text(Library.mapSummary(pins))
-                        .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(Capsule().fill(AppSection.events.color))
                         .padding(10)
