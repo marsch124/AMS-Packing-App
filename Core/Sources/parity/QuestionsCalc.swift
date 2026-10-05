@@ -115,7 +115,7 @@ extension Parity {
 
     private func askTripBundles() {
         let incoming: [(String, String)] = [
-            ("oldBundle", #"{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}"#),
+            ("oldBundle", #"{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Robin <robin@example.com>"},{"name":"Mug","ownedBy":"  Robin   Berg  "}]}}"#),
             // the same, with an emoji in the name that was taken apart: its two halves arrive as
             // lone surrogate ESCAPES in the JSON text, which `JSON.parse` accepts
             ("oldBundleEmoji", #"{"app":"ams-packing-list","kind":"trip","version":1,"event":{"name":"Emoji trip","entries":[{"name":"Kit","sub":[{"0":"H","1":"i","2":" ","3":"\ud83d","4":"\ude00","5":"!"}]}]}}"#),
@@ -123,7 +123,7 @@ extension Parity {
             ("noEvent", #"{"kind":"trip"}"#),
         ]
         for (name, json) in incoming { ask("calc.tripBundleIncoming", name) { importedEventShape(try parseTripBundle(json)) } }
-        let outgoing = #"{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Anna Berg","sub":[],"itemType":"reminder"}]}"#
+        let outgoing = #"{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Robin Berg","sub":[],"itemType":"reminder"}]}"#
         ask("calc.tripBundleOutgoing", ALL) {
             let b = try buildTripBundle(coerceEvent(json: try JSONValue.parse(outgoing)), whenISO: self.NOW)
             return obj(["bundle": self.bundleShape(b), "leaks": self.leaksOf(b)])

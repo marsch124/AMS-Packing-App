@@ -159,9 +159,9 @@ final class TripBuildingTests: XCTestCase {
 
     // JS: 'an item default packer lands on the trip line buildTotalEntries makes'
     func testAnItemDefaultPackerLandsOnTheTripLine() {
-        let list = newList(name: "Dive", role: "base", items: [newItem(name: "Wetsuit", packer: "Anna"), newItem(name: "Fins")])
+        let list = newList(name: "Dive", role: "base", items: [newItem(name: "Wetsuit", packer: "Robin"), newItem(name: "Fins")])
         let entries = buildTotalEntries(newEvent(name: "Trip"), [list])
-        XCTAssertEqual(entries.first { $0.name == "Wetsuit" }?.packer, "Anna")
+        XCTAssertEqual(entries.first { $0.name == "Wetsuit" }?.packer, "Robin")
         XCTAssertEqual(entries.first { $0.name == "Fins" }?.packer, "")   // unassigned stays anyone's
     }
 
@@ -281,7 +281,7 @@ final class TripBuildingTests: XCTestCase {
                           container: "Duffel bag", phase: "daybefore", charging: true, chargeType: "usb-c",
                           shortList: true, seasons: ["Summer"], weather: [], sub: ["hose"], note: "serviced",
                           weight: 1200, liquid: true, restricted: true, perNight: true, consumable: true,
-                          section: "s1", kit: "Dive kit", packer: "Anna", storage: "Garage", photos: ["p1"],
+                          section: "s1", kit: "Dive kit", packer: "Robin", storage: "Garage", photos: ["p1"],
                           thumb: "data:x", stats: ItemStats(packed: 4, used: 4), manufacturer: "Apeks", keep: true)
         let list = newList(id: "dive", name: "Diving", sections: [sec], items: [src])
         let e = try XCTUnwrap(buildTotalEntries(newEvent(activities: ["dive"]), [list]).first)
@@ -291,7 +291,7 @@ final class TripBuildingTests: XCTestCase {
         XCTAssertEqual([e.name, e.swedish, e.qty, e.category, e.container, e.phase, e.chargeType, e.note],
                        ["Regulator", "Regulator", "2", "Sport gear", "Duffel bag", "daybefore", "usb-c", "serviced"])
         XCTAssertEqual([e.charging, e.shortList, e.liquid, e.restricted, e.perNight], [true, true, true, true, true])
-        XCTAssertEqual([e.section, e.kit, e.packer, e.storage], ["Rig", "Dive kit", "Anna", "Garage"])
+        XCTAssertEqual([e.section, e.kit, e.packer, e.storage], ["Rig", "Dive kit", "Robin", "Garage"])
         XCTAssertEqual(e.sub, ["hose"])
         XCTAssertEqual(e.weight, 1200)
         // …and what does NOT cross over:

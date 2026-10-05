@@ -15,7 +15,7 @@
 // on the incoming object. A typed `Item` has no undefined fields, so:
 //   • a LINK (`item.link`, JS `_link`) stands for "every intrinsic field but the name
 //     is undefined" — exactly what `linkFromResolved` builds in JS;
-//   • a partial edit (`{ packer: 'Anna' }`) goes through the `json:` form.
+//   • a partial edit (`{ packer: 'Robin' }`) goes through the `json:` form.
 // Field NAMES are walked through `item.json`, because the three lists hold JSON keys.
 
 import Foundation

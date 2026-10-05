@@ -108,7 +108,7 @@ final class TemplateEditingTests: XCTestCase {
         XCTAssertNotNil(lib.addToTemplate(templateId: run.id, name: "headlamp"))
         XCTAssertEqual(lib.items.count, things + 1, "no second headlamp")
         XCTAssertEqual(lib.resolvedTemplate(id: run.id)!.items.last?.itemId, lampId)
-        XCTAssertEqual(lib.resolvedTemplate(id: run.id)!.items.last?.packer, "Anna", "and it brings what it knows about itself")
+        XCTAssertEqual(lib.resolvedTemplate(id: run.id)!.items.last?.packer, "Robin", "and it brings what it knows about itself")
         XCTAssertNil(lib.addToTemplate(templateId: hiking.id, name: "  "))
     }
 
@@ -220,12 +220,12 @@ final class ThingEditingTests: XCTestCase {
         var lib = LibraryTests.sample()
         let lamp = lib.items.first { $0.name == "Headlamp" }!
         XCTAssertTrue(lib.updateThing(id: lamp.id) { it in
-            it.category = "Electronics"; it.ownedBy = "Anna"; it.condition = "worn"; it.weight = 95; it.phase = "morning"
+            it.category = "Electronics"; it.ownedBy = "Robin"; it.condition = "worn"; it.weight = 95; it.phase = "morning"
         })
         for t in lib.resolvedTemplates() where t.name == "Hiking" || t.name == "Night run" {
             let row = t.items.first { $0.name == "Headlamp" }!
             XCTAssertEqual(row.category, "Electronics", "\(t.name)")
-            XCTAssertEqual(row.ownedBy, "Anna")
+            XCTAssertEqual(row.ownedBy, "Robin")
             XCTAssertEqual(row.condition, "worn")
             XCTAssertEqual(row.weight, 95)
             XCTAssertEqual(row.phase, "morning", "the thing's own When, where no list overrides it")

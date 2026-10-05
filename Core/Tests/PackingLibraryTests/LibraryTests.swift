@@ -17,7 +17,7 @@ final class LibraryTests: XCTestCase {
     static func sample() -> Library {
         var lib = Library()
         let lamp = newItem(name: "Headlamp", container: "Day pack", phase: "week", consumable: true,
-                           kit: "Light kit", packer: "Anna", ownedBy: "Anna")
+                           kit: "Light kit", packer: "Robin", ownedBy: "Robin")
         var hiking = newList(name: "Hiking")
         hiking.items = [lamp,
                         newItem(name: "Spare batteries", container: "Day pack", phase: "week"),
@@ -107,7 +107,7 @@ final class LibraryTests: XCTestCase {
         hiking.items.removeAll { $0.name == "Headlamp" }
         lib.saveTemplate(hiking)
         XCTAssertEqual(lib.thingsOnNoList().map(\.name), ["Headlamp"])
-        XCTAssertEqual(lib.thingsOnNoList().first?.packer, "Anna", "and it keeps what it knew about itself")
+        XCTAssertEqual(lib.thingsOnNoList().first?.packer, "Robin", "and it keeps what it knew about itself")
     }
 
     func testRegeneratingNeverDropsTheLinesOfADeletedTemplate() {

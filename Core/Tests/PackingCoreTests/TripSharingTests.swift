@@ -76,7 +76,7 @@ final class TripSharingTests: XCTestCase {
         ev.extra["realmId"] = "someone@example.com"
         ev.entries[0].extra["owner"] = "someone@example.com"
         ev.entries[0].extra["realmId"] = "someone@example.com"
-        ev.entries[1].ownedBy = "Anna"
+        ev.entries[1].ownedBy = "Robin"
         ev.entries[2].ownedBy = "someone@example.com"
         return ev
     }
@@ -88,7 +88,7 @@ final class TripSharingTests: XCTestCase {
         XCTAssertFalse(b.text().contains("@"), "no address anywhere in the bundle")
         XCTAssertNil(b.event["owner"])
         XCTAssertNil(b.event["realmId"])
-        XCTAssertEqual(b.event["entries"]?.arrayValue?[1]["ownedBy"]?.stringValue, "Anna", "a real name still travels")
+        XCTAssertEqual(b.event["entries"]?.arrayValue?[1]["ownedBy"]?.stringValue, "Robin", "a real name still travels")
         var short = ev
         short.entries = Array(ev.entries.prefix(20))
         let link = try XCTUnwrap(encodeTripLink(short), "a short trip fits in a link")
@@ -109,7 +109,7 @@ final class TripSharingTests: XCTestCase {
             var o = e.json.objectValue ?? [:]
             o["owner"] = "someone@example.com"
             o["realmId"] = "someone@example.com"
-            o["ownedBy"] = i == 0 ? "someone@example.com" : "Anna"
+            o["ownedBy"] = i == 0 ? "someone@example.com" : "Robin"
             return .object(o)
         })
         let old: JSONValue = ["app": "ams-packing-list", "kind": "trip", "version": 1,
@@ -120,7 +120,7 @@ final class TripSharingTests: XCTestCase {
         XCTAssertNil(got.json["realmId"])
         XCTAssertTrue(got.entries.allSatisfy { $0.json["owner"] == nil && $0.json["realmId"] == nil })
         XCTAssertEqual(got.entries[0].ownedBy, "")
-        XCTAssertEqual(got.entries[1].ownedBy, "Anna")
+        XCTAssertEqual(got.entries[1].ownedBy, "Robin")
     }
 
     // JS: 'buildTripBundle/parseTripBundle: the small things under an item arrive as words'
@@ -173,11 +173,11 @@ final class TripSharingTests: XCTestCase {
 
     // JS: 'packer flows onto a trip entry and survives the share bundle'
     func testPackerFlowsOntoATripEntryAndSurvivesTheShareBundle() throws {
-        XCTAssertEqual(newItem(name: "Tent", packer: "Anna").packer, "Anna")
+        XCTAssertEqual(newItem(name: "Tent", packer: "Robin").packer, "Robin")
         var ev = newEvent(name: "Trip")
-        ev.entries = [newItem(name: "Tent", packer: "Anna")]
+        ev.entries = [newItem(name: "Tent", packer: "Robin")]
         let back = try parseTripBundle(buildTripBundle(ev))
-        XCTAssertEqual(back.entries[0].packer, "Anna")
+        XCTAssertEqual(back.entries[0].packer, "Robin")
     }
 
     // JS: 'encodeTripLink: a big trip now fits a link, and decodes back to the same trip'
@@ -285,11 +285,11 @@ final class TripSharingTests: XCTestCase {
     }
 
     func testSlimEntryDropsWhatTheReceiverNeverNeeds() {
-        var e = newItem(id: "x", name: "Tent", sub: ["", "Pegs"], ownedBy: "  Anna   Berg ",
+        var e = newItem(id: "x", name: "Tent", sub: ["", "Pegs"], ownedBy: "  Robin   Berg ",
                         sourceListId: "l", sourceItemId: "i", custom: true, checked: true, used: true, edited: true)
         e.stats.packed = 3
         XCTAssertEqual(slimEntry(e).text(),
-                       "{\"name\":\"Tent\",\"category\":\"Comfort & misc\",\"container\":\"Carry-on / hand luggage\",\"phase\":\"week\",\"sub\":[\"Pegs\"],\"ownedBy\":\"Anna Berg\",\"_edited\":true}")
+                       "{\"name\":\"Tent\",\"category\":\"Comfort & misc\",\"container\":\"Carry-on / hand luggage\",\"phase\":\"week\",\"sub\":[\"Pegs\"],\"ownedBy\":\"Robin Berg\",\"_edited\":true}")
         XCTAssertEqual(subName(["name": "Named"]), "Named")
         XCTAssertEqual(subName(["a", "b", 3, "c"]), "ab", "joined while the pieces are strings")
         XCTAssertEqual(subName(7), "")

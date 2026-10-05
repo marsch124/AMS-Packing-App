@@ -19,7 +19,7 @@ final class BackupTests: XCTestCase {
           "sections": [{ "id": "s1", "name": "Shelter" }],
           "items": [
             { "id": "i1", "name": "Tent", "category": "Sport gear", "container": "Hiking backpack", "phase": "week",
-              "section": "s1", "photos": ["p1"], "ownedBy": "Anna", "owner": "someone@example.com",
+              "section": "s1", "photos": ["p1"], "ownedBy": "Robin", "owner": "someone@example.com",
               "_itemId": "i1", "_memId": "m1", "_ovContainer": "", "_tplContainer": "Hiking backpack",
               "_defContainer": "Duffel bag", "_ovPhase": "", "_defPhase": "week" }
           ] }
@@ -64,7 +64,7 @@ final class BackupTests: XCTestCase {
         XCTAssertEqual(tent.tplContainer, "Hiking backpack")
         XCTAssertEqual(tent.defContainer, "Duffel bag")
         XCTAssertEqual(tent.defPhase, "week")
-        XCTAssertEqual(tent.ownedBy, "Anna")                  // the sync stamp in `owner` never wins
+        XCTAssertEqual(tent.ownedBy, "Robin")                  // the sync stamp in `owner` never wins
         XCTAssertNil(b.lists[0].json["owner"])
         XCTAssertNil(tent.json["owner"])
 

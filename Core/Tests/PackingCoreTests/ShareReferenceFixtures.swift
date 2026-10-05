@@ -41,10 +41,10 @@ enum ShareRef {
     static let oldTripText = "{\"app\":\"ams-packing-list\",\"kind\":\"trip\",\"version\":1,\"exportedAt\":\"2026-09-21T10:00:00.000Z\",\"event\":{\"name\":\"Old link\",\"owner\":\"someone@example.com\",\"realmId\":\"someone@example.com\",\"entries\":[{\"name\":\"Tent\",\"sub\":[{\"0\":\"P\",\"1\":\"e\",\"2\":\"g\",\"3\":\"s\"},{\"0\":\"G\",\"1\":\"u\",\"2\":\"y\",\"3\":\" \",\"4\":\"\\ud83d\",\"5\":\"\\ude00\"},{\"name\":\"Named\"},\"\",\"Plain\"],\"owner\":\"Kim\",\"realmId\":\"someone@example.com\"},{\"name\":\"Mat\",\"ownedBy\":\"someone@example.com\"}]}}"
     static let numbers: [String] = ["620", "0.5", "1e+21", "1e-7", "1.5e-7", "0.000001", "0.00001", "123456789012345680000", "58.41", "0.30000000000000004", "-2.5", "1e+300", "5e-324", "100", "0", "12345.678"]
     static let safeOwner: [(given: String, safe: String)] = [
-        ("Anna", "Anna"),
-        ("  Anna   Berg ", "Anna Berg"),
+        ("Robin", "Robin"),
+        ("  Robin   Berg ", "Robin Berg"),
         ("someone@example.com", ""),
-        ("Anna <someone@example.com>", ""),
+        ("Robin <someone@example.com>", ""),
         ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com", ""),
         ("a@b", "a@b"),
         ("a@b.c", ""),

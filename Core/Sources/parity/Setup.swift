@@ -198,7 +198,7 @@ final class Parity {
         var unknown: [String: J] = [:]
         for (k, s) in unknownKeys { unknown[k] = jset(Array(s)) }
         let info: J = obj([
-            "generator": "swift", "contract": 3, "today": .string(TODAY), "now": .string(NOW),
+            "generator": "swift", "contract": 4, "today": .string(TODAY), "now": .string(NOW),
             "locale": .string(PackingEnv.collationLocale.identifier.replacingOccurrences(of: "_", with: "-")),
             "counts": obj([
                 "lists": jint(LISTS.count), "items": jint(LISTS.reduce(0) { $0 + $1.items.count }),
