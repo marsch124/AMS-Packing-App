@@ -134,7 +134,8 @@ struct HowItWorksScreen: View {
     static let topics: [Topic] = [
         Topic(section: .home, title: "Home", lines: [
             "Grab and go: eight grab lists, four in a row, for a quick outing. Tap one, then tick what is in your hand. The count stays at the top while you scroll; Ready to go too early says Not yet in the middle of the screen, with what is missing.",
-            "Grab Lists, at the top: the ones on Home (up to eight), in your order, and the ones waiting, each with everything on it. Make a new one at the bottom; tap a waiting one to put it on Home \u{2014} when Home is full, you pick which one steps back.",
+            "Grab Lists, at the top: the ones on Home (up to eight), in your order, and the ones waiting, each with everything on it. Make a new one at the bottom: it goes onto Home if there is room; then open it and press Edit to put things on it. Off Home sends a list to wait until you put it back. Tap a waiting one to put it on Home; when Home is full, you pick which one steps back.",
+            "Your own grab lists: Edit works as on the others (things, \u{25B2}\u{25BC}, 1 in 10). At the bottom of Edit, Delete grab list removes it after asking. The six that come with the app cannot be deleted, only taken off Home.",
             "Under the grab lists: the countdown to your next trip \u{2014} the days, the trip, and the next packing step with when it is due. Tap it to open the trip.",
             "Create new trip: a name, Dates (tap the first day, then the last; the line under the calendar says the range and the nights; OK keeps it, Cancel puts the dates back), Quick if only the templates you tick should come along — it says so in green while it is on.",
             "Create trip is always ready: if a name or a template is missing, it says so right under it.",
@@ -205,7 +206,7 @@ struct HowItWorksScreen: View {
         Topic(section: .settings, title: "Settings", lines: [
             "Remind me to pack: on this device, at 9 in the morning of the day each packing step is due, the trip and what is left. Each device asks for itself; under it, the next reminder and what it will say.",
             "iCloud sync: when this device last sent and received, and what is not in iCloud yet. Sync now checks in from here; the other device shows it within a minute or so \u{2014} if it does not, the card says why. Copy details for Claude gives me the full story.",
-            "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it.",
+            "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it. A backup holds every thing exactly as it is on this device, so Restore puts back exactly that \u{2014} cabin answers and notes included.",
             "Your first real trip in 6 steps has its own door in Settings, to read again any time.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps.",
             "Worth a look appears only when something in the library seems wrong. Where it can, it puts it right in one press \u{2014} a photo left behind by a deleted trip has Remove it.",

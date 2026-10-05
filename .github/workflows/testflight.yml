@@ -38,6 +38,13 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30     # enough history to find the last What's new change
+
+      # His rule (4 Oct 2026): every nit documented. A release whose What's new
+      # changed without docs/spec changing in the same commit is not built.
+      - name: The specification moved with What's new
+        run: tools/check-spec.sh
 
       - name: Use the newest Xcode on the runner
         run: |

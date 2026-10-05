@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.61", date: "5 Oct 2026", title: "Your own grab lists, and a restore that brings back everything",
+                new: ["A grab list you made yourself can be deleted: Edit, then Delete grab list at the bottom. It asks first."],
+                changed: ["Grab lists you make yourself can now be filled: Edit, add things, mark one \u{201C}1 in 10\u{201D}, Save \u{2014} it all stays.",
+                          "Ticks on your own grab lists stay when you close the list and open it again.",
+                          "Off Home now really takes a grab list off Home: it waits in Grab Lists until you put it back, and Home shows one tile fewer.",
+                          "After Make, Grab Lists says where the new list went \u{2014} on Home, or waiting because Home is full.",
+                          "Restore from a file no longer refuses a backup once a bag is marked for the cabin, and the copy kept before a restore works too. A backup now brings back exactly what was there: every thing keeps its own note, and a thing whose only template was deleted is no longer left out."]),
         Release(version: "0.60", date: "4 Oct 2026", title: "Find a thing on a template",
                 new: ["An open template has a search field above its list: type part of a name and only the matching things show, with how many of all. The \u{2715} brings them all back."],
                 changed: ["Worth a look offers to remove a photo only when it can tell the photo is more than a day old."]),

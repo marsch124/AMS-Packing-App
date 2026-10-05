@@ -2636,7 +2636,9 @@ final class AMSPackingUITests: XCTestCase {
         type("Gaiters", into: field)
         app.buttons["template-add"].tap()
         // With the keyboard up the list is short, and since the Find field (4 Oct 2026)
-        // the fifth row sits past what a lazy list builds: travel to it, as he would.
+        // the fifth row sits past what a lazy list builds: put the keyboard away (GitHub's
+        // iPhone has one) and travel to it, as he would.
+        hideKeyboard(app)
         XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the new thing is not on the list")
 
         tap(app, id: "template-detail-done")
@@ -2754,6 +2756,9 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "template-find-none")
 
         tap(app, id: "template-find-clear")
+        // 🪤 GitHub's iPhone has the on-screen keyboard, which leaves room for two rows:
+        // the fourth was never built there (0.60, 5 Oct 2026). Put it away, as he would.
+        hideKeyboard(app)
         XCTAssertTrue(waitUntil { app.buttons["template-item-3"].exists }, "the ✕ did not bring every row back")
         XCTAssertTrue(waitUntil { !count.exists }, "the count stayed with nothing searched")
         XCTAssertFalse(app.staticTexts["template-find-none"].exists, "nothing found stayed after the ✕")
@@ -2765,6 +2770,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-add")
         XCTAssertTrue(waitUntil { !count.exists }, "the search stayed on after Add")
         // The keyboard leaves the list short, and a lazy list builds only what is near.
+        hideKeyboard(app)
         XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the new thing is hidden by the search")
     }
 
