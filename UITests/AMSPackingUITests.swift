@@ -845,7 +845,10 @@ final class AMSPackingUITests: XCTestCase {
         let top = app.staticTexts["guide-release-0-version"]
         XCTAssertTrue(top.waitForExistence(timeout: 5), "What's new lists no version")
         XCTAssertEqual(words(top), version, "What's new does not start with this version — write its line in Releases.swift")
-        XCTAssertTrue(app.staticTexts["guide-release-1-version"].exists, "only one version listed")
+        // The newest entry can be longer than the screen (0.62's is), and the list builds a
+        // card only near the screen: scroll to the second before asking for it.
+        XCTAssertTrue(scrollUntil(app, "guide-release-1", near: "guide-release-0", tries: 20), "only one version listed")
+        XCTAssertTrue(app.staticTexts["guide-release-1-version"].exists, "the second version has no number")
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-whatsnew", timeout: 5))
 
