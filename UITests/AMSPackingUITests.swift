@@ -6524,6 +6524,32 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(summary), counted, "Escape made a template")
     }
 
+    /// Owners has no factory list (the spec pass, 5 Oct 2026): on an account that never
+    /// added one, Your choices showed no owners at all while Whose it is on a thing
+    /// offered them. It shows the owners his things name — A–Z, with how many things
+    /// each — and one still in use cannot be removed.
+    func testOwnersAreTheNamesHisThingsCarry() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        let kim = app.staticTexts["list-owners-name-0"]
+        XCTAssertTrue(kim.waitForExistence(timeout: 5), "Owners is empty while his things name owners")
+        XCTAssertEqual(words(kim), "Kim")
+        XCTAssertEqual(words(app.staticTexts["list-owners-name-1"]), "Robin")
+        XCTAssertFalse(app.staticTexts["list-owners-name-2"].exists, "an owner twice, or one no thing names")
+        bringIntoView(app, kim)
+        shot(app, "choices-owners")
+        tap(app, id: "list-owners-remove-0")
+        let problem = app.staticTexts["lists-problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 5), "an owner his things name was removed")
+        XCTAssertEqual(words(problem), "Kim is still used by 5 things, so it stays.")
+        XCTAssertEqual(words(app.staticTexts["list-owners-name-0"]), "Kim")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+    }
+
     /// Settings has ONE sheet with two destinations (spec 06 item 18: two `.sheet`s on
     /// one view, the trap met in Search). Each door opens its own window, one after the
     /// other, twice — and Cancel on the restore says so under Save.
