@@ -97,9 +97,11 @@ enum TableColumns {
 
     /// One tick column per list of his, so a thing joins or leaves a list here.
     /// Taking it off a list drops only that list's own answers for it — the thing,
-    /// its weight, its care and its photos stay.
+    /// its weight, its care and its photos stay. Never his bag list: a tick there
+    /// made the thing a bag, and an untick dropped a bag without asking where its
+    /// things go (the spec pass, 5 Oct 2026) — a bag is made and deleted on Your bags.
     static func listColumns(_ library: Library) -> [Column] {
-        library.templates.map { list in
+        library.templatesForThings().map { list in
             Column(id: "list:\(list.id)", title: library.shownName(list), width: 100,
                    kind: .onList(list.id), group: "On these templates")
         }
@@ -110,11 +112,20 @@ enum TableColumns {
     /// What he sees before he has chosen anything: the gaps he actually has.
     static let startingColumns = ["weight", "storage", "container", "ownedBy", "packer", "condition", "listQty"]
 
-    /// His chosen columns, in his order; unknown ids (a list he deleted) fall away.
+    /// His chosen columns' ids, in his order. Ids that are no longer columns (a
+    /// template he deleted) fall away HERE, before anything counts them: they kept
+    /// invisible places in the Columns order, so an arrow could move a ghost and every
+    /// real column could be hidden (the spec pass, 5 Oct 2026). None left = the start.
+    static func ids(_ stored: String, library: Library) -> [String] {
+        let known = Set(all(library).map(\.id))
+        let mine = stored.split(separator: ",").map(String.init).filter { known.contains($0) }
+        return mine.isEmpty ? startingColumns : mine
+    }
+
+    /// His chosen columns, in his order.
     static func chosen(_ stored: String, library: Library) -> [Column] {
-        let ids = stored.isEmpty ? startingColumns : stored.split(separator: ",").map(String.init)
         let byId = Dictionary(all(library).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return ids.compactMap { byId[$0] }
+        return ids(stored, library: library).compactMap { byId[$0] }
     }
 
     /// His Settings lists and which things are on which list, worked out ONCE per
@@ -125,11 +136,18 @@ enum TableColumns {
     /// and a tick column meant twenty rescans of all 538 memberships. One test went
     /// from 21 seconds to 151. Working it out once costs nothing.
     struct Answers2: Equatable {
+        /// One answer in a menu: what is STORED, and what he reads. The same for
+        /// every list but the conditions, whose id is stored and label read.
+        struct Choice: Equatable, Hashable { let value: String; let label: String }
+
         var places: [String] = []
         var bags: [String] = []
         var owners: [String] = []
         var people: [String] = []
-        var conditions: [String] = []
+        var conditions: [Choice] = []
+        /// A stored condition → its label: by id, and by label (compared as names
+        /// are) for a thing still holding one the old way.
+        var conditionShown: [String: String] = [:]
         /// "itemId|listId" for every membership there is.
         var onLists: Set<String> = []
         /// Every membership a thing has, so a per-list answer knows whether there is
@@ -143,10 +161,20 @@ enum TableColumns {
         init() {}
         init(_ library: Library) {
             places = library.storagePlaces()
-            bags = containerNames(library.templates)
-            owners = library.owners()
+            // His own bags too — `containerNames(library.templates)` saw only the
+            // shells and offered the built-in names alone (the spec pass, 5 Oct 2026).
+            bags = library.bagNames()
+            // Every owner he uses, as the thing's page offers them — the Settings list
+            // alone can be empty while things already name owners (same pass).
+            owners = library.ownerChoices()
             people = library.people().map(\.name)
-            conditions = library.conditions().map(\.label)
+            // The condition's ID is stored, its label is read: the menu stored the
+            // label, which To buy, the thing's page and Your choices never recognised.
+            for c in library.conditions() {
+                conditions.append(Choice(value: c.id, label: c.label))
+                conditionShown[c.id] = c.label
+                if conditionShown[normName(c.label)] == nil { conditionShown[normName(c.label)] = c.label }
+            }
             onLists = Set(library.memberships.map { "\($0.itemId)|\($0.templateId)" })
             byThing = Dictionary(grouping: library.memberships, by: \.itemId)
             for list in library.templates {
@@ -155,14 +183,20 @@ enum TableColumns {
             }
         }
 
-        func list(_ which: Answers) -> [String] {
+        func list(_ which: Answers) -> [Choice] {
             switch which {
-            case .places: return places
-            case .bags: return bags
-            case .owners: return owners
-            case .people: return people
+            case .places: return places.map { Choice(value: $0, label: $0) }
+            case .bags: return bags.map { Choice(value: $0, label: $0) }
+            case .owners: return owners.map { Choice(value: $0, label: $0) }
+            case .people: return people.map { Choice(value: $0, label: $0) }
             case .conditions: return conditions
             }
+        }
+
+        /// What a cell shows for what is stored.
+        func shown(_ which: Answers, _ stored: String) -> String {
+            guard which == .conditions, !stored.isEmpty else { return stored }
+            return conditionShown[stored] ?? conditionShown[normName(stored)] ?? stored
         }
     }
 }
@@ -182,8 +216,8 @@ struct Cell: View {
     var body: some View {
         Group {
             switch column.kind {
-            case .number(let path): box(text: thing[keyPath: path] > 0 ? String(Int(thing[keyPath: path].rounded())) : "",
-                                        blank: thing[keyPath: path] <= 0) { commitNumber($0, path) }
+            case .number(let path): box(text: amountText(thing[keyPath: path]),
+                                        blank: thing[keyPath: path] <= 0, number: true) { commitNumber($0, path) }
             case .words(let path): box(text: thing[keyPath: path], blank: false) { commitWords($0, path) }
             case .choice(let path, let which): choice(path, which)
             case .flag(let path): tick(thing[keyPath: path]) { on in
@@ -200,13 +234,17 @@ struct Cell: View {
     }
 
     // A box he types in. It takes the change when he presses Return or leaves it.
-    private func box(text: String, blank: Bool, commit: @escaping (String) -> Void) -> some View {
-        TextField("", text: $typed)
+    // A number box that holds no number turns red: what he typed is not taken, and
+    // the colour says so (it used to be dropped without a word).
+    private func box(text: String, blank: Bool, number: Bool = false, commit: @escaping (String) -> Void) -> some View {
+        let wrong = number && readAmount(typed) == nil
+        return TextField("", text: $typed)
             .textFieldStyle(.plain)
             .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
             .padding(.horizontal, 7)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(blank && !writing ? AppSection.care.color.opacity(0.10) : Color.clear)
+            .background(wrong ? AppSection.actions.color.opacity(0.18)
+                        : blank && !writing ? AppSection.care.color.opacity(0.10) : Color.clear)
             .focused($writing)
             .onSubmit { commit(typed) }
             .onChange(of: writing) { _, nowWriting in if !nowWriting { commit(typed) } }
@@ -216,11 +254,11 @@ struct Cell: View {
     }
 
     private func choice(_ path: WritableKeyPath<Item, String>, _ which: TableColumns.Answers) -> some View {
-        let now = jsTrim(thing[keyPath: path])
+        let now = answers.shown(which, jsTrim(thing[keyPath: path]))
         return Menu {
             ForEach(answers.list(which), id: \.self) { answer in
-                Button(answer) {
-                    model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = answer } }
+                Button(answer.label) {
+                    model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = answer.value } }
                 }
             }
             Divider()
@@ -315,13 +353,10 @@ struct Cell: View {
         answers.onLists.contains("\(thing.id)|\(listId)")
     }
 
+    /// Only a real change is written: leaving the box used to write its rounded
+    /// text back, so tapping into 88.7 g and out again made it 89.
     private func commitNumber(_ text: String, _ path: WritableKeyPath<Item, Double>) {
-        let clean = jsTrim(text).replacingOccurrences(of: ",", with: ".")
-        if clean.isEmpty {
-            model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = 0 } }
-            return
-        }
-        guard let value = Double(clean), value >= 0 else { return }
+        guard let value = readAmount(text), value != thing[keyPath: path] else { return }
         model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = value } }
     }
 
@@ -338,7 +373,7 @@ struct ColumnPicker: View {
     let library: Library
     @Environment(\.dismiss) private var dismiss
 
-    private var ids: [String] { chosen.isEmpty ? TableColumns.startingColumns : chosen.split(separator: ",").map(String.init) }
+    private var ids: [String] { TableColumns.ids(chosen, library: library) }
 
     var body: some View {
         let all = TableColumns.all(library)
@@ -367,10 +402,10 @@ struct ColumnPicker: View {
                                 Spacer()
                                 Button { move(n, by: -1) } label: { arrow("M18 15l-6-6-6 6") }
                                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == 0)
-                                    .accessibilityIdentifier("columns-\(column.id)-up")
+                                    .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-up")
                                 Button { move(n, by: 1) } label: { arrow("M6 9l6 6 6-6") }
                                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == shown.count - 1)
-                                    .accessibilityIdentifier("columns-\(column.id)-down")
+                                    .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-down")
                                 Button { hide(id) } label: {
                                     Text("Hide").font(.system(size: 15, weight: .bold))
                                         .foregroundStyle(AppSection.actions.color)
@@ -378,7 +413,7 @@ struct ColumnPicker: View {
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
-                                .accessibilityIdentifier("columns-\(column.id)-hide")
+                                .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-hide")
                             }
                             .frame(minHeight: 44)
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
@@ -402,7 +437,7 @@ struct ColumnPicker: View {
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-                        .accessibilityIdentifier("columns-\(column.id)-show")
+                        .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-show")
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)

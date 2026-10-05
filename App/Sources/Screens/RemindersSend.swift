@@ -9,9 +9,14 @@ struct RemindersSend: View {
     @EnvironmentObject var model: LibraryModel
     @State private var says = ""
     @State private var trouble = false
+    /// Sent lines whose reminder is no longer in Reminders (deleted there): offered
+    /// for sending again — only when he presses Send, so one that has merely not
+    /// reached this device yet is never doubled behind his back (the spec pass,
+    /// 5 Oct 2026; they used to stay "sent" for ever).
+    @State private var gone: Set<String> = []
 
     var body: some View {
-        let toSend = model.library.buyLinesToSend()
+        let toSend = model.library.buyLinesToSend(gone: gone)
         VStack(alignment: .leading, spacing: 6) {
             if !toSend.isEmpty {
                 Button { Task { await send(toSend) } } label: {
@@ -57,5 +62,6 @@ struct RemindersSend: View {
     /// the front — RootView). Never asks for access: only reads when the app already may.
     private func readBack() async {
         await ShopReminders.shared.readBack(into: model)
+        gone = await ShopReminders.shared.gone(model.library.sentBuyLines().filter { !$0.line.done }.map(\.reminderId))
     }
 }

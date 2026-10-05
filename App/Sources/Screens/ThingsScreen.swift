@@ -159,8 +159,14 @@ struct ThingsScreen: View {
         guard !jsTrim(name).isEmpty else { newNeeds = "Type a name first."; return }
         var made: Item?
         model.change { made = $0.addThing(name: name) }
+        guard let id = made?.id else {
+            // Refused because he has one by that name: say so and keep what he typed,
+            // as Your bags does. (It emptied the field without a word — his rule is
+            // that a press says what went wrong; the spec pass, 5 Oct 2026.)
+            newNeeds = "You already have a thing called that."
+            return
+        }
         newName = ""
-        guard let id = made?.id else { return }
         // A search that would hide it is emptied: the point is to SEE it arrive.
         let q = normName(query)
         if !q.isEmpty && !normName(name).contains(q) { query = "" }
@@ -188,11 +194,21 @@ struct ThingEditor: View {
     @State private var onLists: Set<String> = []
     @State private var problem = ""
     @State private var askingToDelete = false
+    /// The weight as he types it: "12,5" and "12." must survive the typing, so the
+    /// field is not rewritten from the number on every keystroke (it was: decimals
+    /// and the comma were lost, 88.7 showed as 88 — the spec pass, 5 Oct 2026).
+    @State private var weightText = ""
+    /// What was wrong with the weight when Save was pressed, said under the field.
+    @State private var weightProblem = ""
+    /// The care schedule (days, 0 = none) and care notes, edited here since 0.6x.
+    @State private var careEvery = 0
+    @State private var careNotes = ""
 
     var body: some View {
-        let templates = model.library.templates.filter { $0.role != CONTAINER_ROLE }
+        let templates = model.library.templatesForThings()
             .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
         let owners = model.library.ownerChoices()          // each once (his screenshot, 2026-09-26)
+        let bag = ThingEditor.bagChoices(model.library.bagNames(), current: draft.container)
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
@@ -215,11 +231,14 @@ struct ThingEditor: View {
                     // Notes right under the name — his ask (4 Oct 2026): "please put the
                     // notes field immediately under the name".
                     labelled("Notes") { notesField }
-                    labelled("Kept at home") { field($draft.storage, "e.g. Hall closet", "thing-storage") }
+                    labelled("Kept at home") {
+                        field($draft.storage, "e.g. Hall closet", "thing-storage")
+                        places
+                    }
                     Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
                           id: "thing-category", tint: AppSection.care.color, heading: .band) { draft.category = $0 }
-                    Pills(title: "Usually packed in", options: containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
-                          selected: [draft.container], id: "thing-bag", tint: AppSection.care.color, heading: .band) { draft.container = $0 }
+                    Pills(title: "Usually packed in", options: bag.options,
+                          selected: [bag.selected], id: "thing-bag", tint: AppSection.care.color, heading: .band) { draft.container = $0 }
                     // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
                     VStack(alignment: .leading, spacing: 8) {
                         HeadingBand(title: "On a plane", id: "thing-heading-plane")
@@ -238,12 +257,31 @@ struct ThingEditor: View {
                         // "Replace 'Nobody's in particular' with 'Both have one'".
                         Pills(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
                               selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color, heading: .band) { draft.ownedBy = $0 }
+                    } else {
+                        // Nobody named anywhere yet: the heading stays, and says where the
+                        // names come from (it vanished, so the first owner could not be
+                        // found from here — the spec pass, 5 Oct 2026).
+                        VStack(alignment: .leading, spacing: 6) {
+                            HeadingBand(title: "Whose it is", id: "thing-owner-title")
+                            Text("Nobody is named yet. Add the names in Settings, under Your choices.")
+                                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("thing-owner-none")
+                        }
                     }
+                    // The condition's ID is what is stored; a thing still holding a label
+                    // (stored by the table before 0.6x) lights its pill all the same.
                     Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
-                          selected: [draft.condition], id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }
+                          selected: [model.library.conditionId(for: draft.condition) ?? draft.condition],
+                          id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }
+                    careFields
                     labelled("Weight, in grams (0 = not known)") {
-                        field(Binding(get: { draft.weight == 0 ? "" : String(Int(draft.weight)) },
-                                      set: { draft.weight = Double(jsTrim($0)) ?? 0 }), "0", "thing-weight")
+                        field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight")
+                        if !weightProblem.isEmpty {
+                            Text(weightProblem).font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(AppSection.actions.color)
+                                .accessibilityIdentifier("thing-weight-problem")
+                        }
                     }
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
@@ -271,7 +309,12 @@ struct ThingEditor: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .onAppear {
-            if let it = model.library.items.first(where: { $0.id == itemId }) { draft = it }
+            if let it = model.library.items.first(where: { $0.id == itemId }) {
+                draft = it
+                weightText = amountText(it.weight)
+                careEvery = it.maintenance?.intervalDays ?? 0
+                careNotes = it.maintenance?.notes ?? ""
+            }
             onLists = Set(model.library.memberships.filter { $0.itemId == itemId }.map(\.templateId))
         }
         .accessibilityElement(children: .contain)
@@ -323,6 +366,64 @@ struct ThingEditor: View {
                 SmallDeleteButton(title: "Delete thing", id: "thing-delete") { askingToDelete = true }
             }
         }
+    }
+
+    /// His places under the field, a tap away (the table offers them as a menu).
+    /// Typing stays free — a new place is just typed — but a tap spells a known one
+    /// the same way every time, so Kept at home and the table's Storage agree (the
+    /// spec pass, 5 Oct 2026). The one the field holds is lit.
+    private var places: some View {
+        FlowRow(spacing: 6) {
+            ForEach(Array(model.library.storagePlaces().enumerated()), id: \.offset) { n, place in
+                let on = normName(place) == normName(draft.storage)
+                Button { draft.storage = place } label: {
+                    Text(place)
+                        .font(.system(size: 15, weight: on ? .bold : .medium))
+                        .foregroundStyle(on ? Color.white : Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: 36)
+                        .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
+                        .overlay(Capsule().stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("thing-place-\(n)")
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(.top, 2)
+    }
+
+    /// Care: how often the thing is looked after, and what to do. Care listed only
+    /// records that came from the web app — nothing in this app could make one (the
+    /// spec pass, 5 Oct 2026). "Done today" on Care moves the next date on.
+    @ViewBuilder private var careFields: some View {
+        let standard = MAINTENANCE_INTERVALS.map { ($0.days, $0.days == 0 ? "None" : $0.label) }
+        let options = standard + (standard.contains { $0.0 == careEvery } ? [] : [(careEvery, "Every \(careEvery) days")])
+        VStack(alignment: .leading, spacing: 6) {
+            Pills(title: "Care", options: options.map { (String($0.0), $0.1) }, selected: [String(careEvery)],
+                  id: "thing-care", tint: AppSection.care.color, heading: .band) { careEvery = Int($0) ?? 0 }
+            TextField("What to do, e.g. Wax the leather", text: $careNotes, axis: .vertical)
+                .lineLimit(1...6)
+                .textFieldStyle(.plain)
+                .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)
+                .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: 46)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                .accessibilityIdentifier("thing-care-notes")
+        }
+    }
+
+    /// "Usually packed in": every bag name, then the bag the thing names if it is
+    /// none of those (so it is seen, lit), then "No bag" — LAST, so the built-in
+    /// bags keep their places. It could not be set back to no bag at all (the spec
+    /// pass, 5 Oct 2026). A bag named in other capitals is lit as the bag it is.
+    static func bagChoices(_ names: [String], current: String) -> (options: [(id: String, label: String)], selected: String) {
+        let now = jsTrim(current)
+        let same = names.first { $0.lowercased() == now.lowercased() }
+        var options = names.map { (id: $0, label: $0) }
+        if !now.isEmpty, same == nil { options.append((id: current, label: now)) }
+        options.append((id: "", label: "No bag"))
+        return (options, now.isEmpty ? "" : (same ?? current))
     }
 
     /// A passport, an ID card, sun cream, medicine: the trip warns before it runs out.
@@ -445,6 +546,13 @@ struct ThingEditor: View {
 
     private func save() {
         guard let it = model.library.items.first(where: { $0.id == itemId }) else { dismiss(); return }
+        // The weight first, so a typo saves nothing (and says so). Untouched, the
+        // stored weight stays exactly as it is, however many decimals it has.
+        let weight = weightText == amountText(it.weight) ? it.weight : readAmount(weightText)
+        guard let grams = weight else {
+            weightProblem = "The weight must be a number of grams, like 250 or 12,5."
+            return
+        }
         if jsTrim(draft.name) != it.name {
             var ok = false
             model.change { ok = $0.renameThing(id: itemId, to: draft.name) }
@@ -452,6 +560,7 @@ struct ThingEditor: View {
         }
         let d = draft
         let lists = onLists
+        let every = careEvery, notes = jsTrim(careNotes)
         model.change { lib in
             _ = lib.updateThing(id: itemId) { thing in
                 thing.storage = jsTrim(d.storage)
@@ -460,15 +569,24 @@ struct ThingEditor: View {
                 thing.phase = d.phase
                 thing.ownedBy = d.ownedBy
                 thing.condition = d.condition
-                thing.weight = d.weight
+                thing.weight = grams
                 thing.manufacturer = jsTrim(d.manufacturer)
                 thing.color = jsTrim(d.color)
                 thing.note = jsTrim(d.note)
                 thing.liquid = d.liquid
                 thing.restricted = d.restricted
                 thing.expiry = d.expiry
+                // The care record changes only when what is said here changed: its log
+                // and last service stay as they were.
+                let had = thing.maintenance
+                if (had?.intervalDays ?? 0) != every || jsTrim(had?.notes ?? "") != notes {
+                    var care = had ?? Maintenance()
+                    care.intervalDays = every
+                    care.notes = notes
+                    thing.maintenance = normalizeMaintenance(care)
+                }
             }
-            for t in lib.templates where t.role != CONTAINER_ROLE {
+            for t in lib.templatesForThings() {
                 _ = lib.setOnTemplate(itemId: itemId, templateId: t.id, on: lists.contains(t.id))
             }
         }

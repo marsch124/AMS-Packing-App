@@ -35,7 +35,7 @@ enum TableKeys {
         var out: [(String, [String])] = [("The thing itself", ["name"] + TableColumns.intrinsic.map(\.id))]
         out.append(("On this template", TableColumns.perListColumns.map(\.id)))
         out.append(("On these templates", all.filter { $0.id.hasPrefix("list:") }.map(\.id)))
-        let sectioned = library.templates.filter { !$0.sections.isEmpty }.map { "section:\($0.id)" }
+        let sectioned = library.templatesForThings().filter { !$0.sections.isEmpty }.map { "section:\($0.id)" }
         if !sectioned.isEmpty { out.append(("By a template's sections", sectioned)) }
         return out
     }
@@ -46,6 +46,12 @@ enum TableKeys {
         guard let data = stored.data(using: .utf8),
               let raw = try? JSONDecoder().decode([String: [String]].self, from: data) else { return [:] }
         return raw.mapValues(Set.init).filter { !$0.value.isEmpty }
+    }
+
+    /// The kept filters that still mean something — never one for a template that
+    /// is gone (`Library.liveFilters`).
+    static func filters(_ stored: String, _ library: Library) -> ThingFilters {
+        library.liveFilters(filters(stored))
     }
 
     static func store(_ filters: ThingFilters) -> String {
@@ -94,7 +100,7 @@ struct FilterSheet: View {
 
     var body: some View {
         let library = model.library
-        let filters = TableKeys.filters(stored)
+        let filters = TableKeys.filters(stored, library)
         let byThing = Dictionary(grouping: library.memberships, by: \.itemId)
         let shown = base.filter { library.passes($0, filters, memberships: byThing) }.count
         VStack(spacing: 0) {
@@ -244,13 +250,13 @@ struct FilterSheet: View {
     }
 
     private func toggle(_ key: String, _ value: String) {
-        var kept = TableKeys.filters(stored)[key] ?? []
+        var kept = TableKeys.filters(stored, model.library)[key] ?? []
         if kept.contains(value) { kept.remove(value) } else { kept.insert(value) }
         set(key, kept)
     }
 
     private func set(_ key: String, _ kept: Set<String>) {
-        var all = TableKeys.filters(stored)
+        var all = TableKeys.filters(stored, model.library)
         all[key] = kept.isEmpty ? nil : kept
         stored = TableKeys.store(all)
     }

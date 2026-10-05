@@ -113,6 +113,15 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library as the table left it before 0.6x (`-uiTestingOldConditions`):
+    /// the Goggles' condition stored as the LABEL "Needs replacing", not its id — the
+    /// app must repair it when it reads the library, so To buy offers them.
+    static func oldConditions() -> Library {
+        var lib = make()
+        if let n = lib.items.firstIndex(where: { $0.name == "Goggles" }) { lib.items[n].condition = "Needs replacing" }
+        return lib
+    }
+
     /// The sample library with its trip under way (`-uiTestingOnSite`): it began
     /// yesterday and ends in two days, so it stands at On site in the loop and its On
     /// site page is open without anything bought.

@@ -47,9 +47,11 @@ final class ShopReminders {
     /// Put these lines into Reminders. Returns which reminder each became.
     func send(_ lines: [ActionItem]) async throws -> [(actionId: String, reminderId: String)] {
         if AMSPackingApp.testing {
+            // "-pretendShopTicks" plays a shop where everything sent gets ticked.
+            let shopTicks = ProcessInfo.processInfo.arguments.contains("-pretendShopTicks")
             return lines.map { a in
-                let id = "pretend-\(a.id)"
-                pretend[id] = false
+                let id = "pretend-\(a.id)-\(pretend.count)"
+                pretend[id] = shopTicks
                 return (a.id, id)
             }
         }
@@ -87,17 +89,51 @@ final class ShopReminders {
     }
 
     /// Which of these reminders have been ticked. (Under the tests "-pretendShopTicks"
-    /// plays a shop where everything sent has been ticked.)
+    /// plays a shop where everything sent was ticked — see `send`.)
     func ticked(_ ids: [String]) async -> Set<String> {
-        if AMSPackingApp.testing {
-            if ProcessInfo.processInfo.arguments.contains("-pretendShopTicks") { return Set(ids.filter { pretend[$0] != nil }) }
-            return Set(ids.filter { pretend[$0] == true })
-        }
+        if AMSPackingApp.testing { return Set(ids.filter { pretend[$0] == true }) }
         var out = Set<String>()
         for id in ids {
             let items = store.calendarItems(withExternalIdentifier: id)
             if items.contains(where: { ($0 as? EKReminder)?.isCompleted == true }) { out.insert(id) }
         }
         return out
+    }
+
+    // MARK: Keeping both sides in step (the spec pass, 5 Oct 2026)
+
+    /// The reminder of a line deleted here goes from Reminders too. Never asks for
+    /// access; without it nothing happens.
+    func remove(_ id: String) async {
+        if AMSPackingApp.testing { pretend[id] = nil; return }
+        guard mayRead else { return }
+        for item in store.calendarItems(withExternalIdentifier: id) {
+            if let r = item as? EKReminder { try? store.remove(r, commit: false) }
+        }
+        try? store.commit()
+    }
+
+    /// A line ticked or unticked here ticks or unticks its reminder, so the next
+    /// read back agrees with him instead of ticking the line again.
+    func setDone(_ id: String, _ done: Bool) async {
+        if AMSPackingApp.testing { if pretend[id] != nil { pretend[id] = done }; return }
+        guard mayRead else { return }
+        for item in store.calendarItems(withExternalIdentifier: id) {
+            guard let r = item as? EKReminder, r.isCompleted != done else { continue }
+            r.isCompleted = done
+            try? store.save(r, commit: false)
+        }
+        try? store.commit()
+    }
+
+    /// Which of these reminders are no longer in Reminders at all (deleted there).
+    /// (Under the tests "-pretendShopDeleted" plays a shop list he has emptied.)
+    func gone(_ ids: [String]) async -> Set<String> {
+        if AMSPackingApp.testing {
+            if ProcessInfo.processInfo.arguments.contains("-pretendShopDeleted") { return Set(ids) }
+            return Set(ids.filter { pretend[$0] == nil })
+        }
+        guard mayRead else { return [] }
+        return Set(ids.filter { store.calendarItems(withExternalIdentifier: $0).isEmpty })
     }
 }

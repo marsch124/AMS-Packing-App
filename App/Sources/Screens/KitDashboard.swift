@@ -2,13 +2,14 @@ import SwiftUI
 import PackingCore
 import PackingLibrary
 
-/// The top of the Care tab: what his kit adds up to, drawn from what his library
+/// The foot of the Care tab (what needs doing comes first): what his kit adds up to, drawn from what his library
 /// actually holds — weight, where things live, what is due — with the tips saying
 /// only things that are true of HIS library. Every mark here is data: bars and
 /// rings, never art.
 struct KitDashboard: View {
     let stats: Library.KitStats
-    /// Tapping a place or a list opens Your things, already searched.
+    /// Tapping a heavy thing or a place opens Your things, already searched. (The
+    /// template bars are not buttons: Your things searches names, not templates.)
     var look: (String) -> Void = { _ in }
 
     var body: some View {
@@ -139,7 +140,8 @@ struct KitDashboard: View {
         return String(format: "%.1f kg", grams / 1000)
     }
 
-    /// The month n months from now, as three letters.
+    /// The month n months from now, as three letters — the calendar month whose
+    /// services the bar counts (`KitStats.dueByMonth`, by calendar month since 0.6x).
     static func month(_ ahead: Int) -> String {
         let now = Calendar(identifier: .gregorian).date(byAdding: .month, value: ahead, to: Date()) ?? Date()
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("MMM")

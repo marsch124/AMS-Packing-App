@@ -19,7 +19,7 @@ struct CareScreen: View {
     @Environment(\.openWindow) private var openWindow
     #endif
 
-    /// The table: a window of its own on the Mac, a full sheet on the iPhone.
+    /// The table: a window of its own on the Mac, a sheet on the iPhone.
     private func openTable() {
         #if os(macOS)
         openWindow(id: ThingsTable.windowId)

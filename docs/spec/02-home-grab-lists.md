@@ -158,7 +158,8 @@ marks "On this device".
   release in What's new (`guide-release-0-version`); a second release is listed; How it works opens with at
   least two topics.
 - UI `testWhatWasTickedInTheShopIsTickedOnReturn` (iPhone only, `-pretendShopTicks`): Home button,
-  `app.activate()`, and the To buy count reads "All bought." with no tab change.
+  `app.activate()`, and the To buy count reads "All bought." with no tab change; one line unticked then stays
+  unticked after Home and back (0.6x, its reminder is unticked too).
 - **Not covered:** the `.failed` screen (`library-problem`); the placeholder for `.loading` or `.empty`
   tabs; the 2-s debounce; tab colours, sizes and the selected trait; several Mac windows.
 

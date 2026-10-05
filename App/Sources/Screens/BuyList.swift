@@ -11,6 +11,8 @@ struct BuyList: View {
     @Binding var text: String
     /// What Add was missing, said under the field (never a grey button).
     @State private var needs = ""
+    /// The line last removed with ✕, for Undo.
+    @State private var removed: ActionItem?
 
     var body: some View {
         let lines = model.library.buyList()
@@ -28,7 +30,7 @@ struct BuyList: View {
 
                     ForEach(Array(lines.enumerated()), id: \.element.id) { n, line in
                         HStack(spacing: 4) {
-                            Button { model.change { _ = $0.setActionDone(!line.done, id: line.id) } } label: {
+                            Button { tick(line) } label: {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         Circle().stroke(AppSection.actions.color, lineWidth: 2).frame(width: 26, height: 26)
@@ -50,7 +52,7 @@ struct BuyList: View {
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("buy-\(n)")
                             .accessibilityAddTraits(line.done ? .isSelected : [])
-                            Button { model.change { $0.deleteAction(id: line.id) } } label: {
+                            Button { remove(line) } label: {
                                 SVGPath.path("M6 6L18 18M18 6L6 18")
                                     .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
                                     .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
@@ -93,6 +95,12 @@ struct BuyList: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
+            if let removed {
+                LineUndoBar(text: removed.text, id: "buy-undo") {
+                    model.change { _ = $0.putBackLine(removed) }
+                    self.removed = nil
+                }
+            }
             HStack(spacing: 8) {
                 TextField("Add something to buy", text: $text)
                     .textFieldStyle(.plain)
@@ -109,6 +117,23 @@ struct BuyList: View {
             .needsLine($needs, typed: text, id: "buy-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
+    }
+
+    /// Ticked or unticked here, its reminder follows: unticked here after the shop
+    /// ticked it, the next read back ticked it again (the spec pass, 5 Oct 2026).
+    private func tick(_ line: ActionItem) {
+        let rid = model.library.reminderOf(actionId: line.id)
+        model.change { _ = $0.setActionDone(!line.done, id: line.id) }
+        if let rid { Task { await ShopReminders.shared.setDone(rid, !line.done) } }
+    }
+
+    /// Gone from here = gone from Reminders too (its reminder stayed behind until
+    /// 0.6x). Undo brings the line back, to be sent again.
+    private func remove(_ line: ActionItem) {
+        var gone: (line: ActionItem, reminderId: String?)?
+        model.change { gone = $0.removeLine(id: line.id) }
+        removed = gone?.line
+        if let rid = gone?.reminderId { Task { await ShopReminders.shared.remove(rid) } }
     }
 
     private func add() {

@@ -20,6 +20,8 @@ struct BagDetail: View {
     @State private var askingToDelete = false
     /// Where the bag's things go on a delete: nil = not chosen yet, "" = no bag.
     @State private var moveTo: String?
+    /// What Delete was missing when pressed too early, said under it.
+    @State private var deleteNeeds = ""
     @State private var opened: Opened?
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
@@ -280,9 +282,9 @@ struct BagDetail: View {
                         .accessibilityIdentifier("bag-delete-explain")
                     FlowRow(spacing: 6) {
                         ForEach(Array(others.enumerated()), id: \.element.id) { i, other in
-                            choice(other.name, on: moveTo == other.name, id: "bag-move-\(i)") { moveTo = other.name }
+                            choice(other.name, on: moveTo == other.name, id: "bag-move-\(i)") { moveTo = other.name; deleteNeeds = "" }
                         }
-                        choice("No bag", on: moveTo == "", id: "bag-move-none") { moveTo = "" }
+                        choice("No bag", on: moveTo == "", id: "bag-move-none") { moveTo = ""; deleteNeeds = "" }
                     }
                 }
                 if !lists.isEmpty {
@@ -293,24 +295,36 @@ struct BagDetail: View {
                 }
                 let ready = !used || moveTo != nil
                 HStack(spacing: 10) {
-                    Button("Keep it") { askingToDelete = false; moveTo = nil }
+                    Button("Keep it") { askingToDelete = false; moveTo = nil; deleteNeeds = "" }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("bag-delete-no")
                     Spacer()
                     if !ready {
-                        deleteButton("Choose first", id: "bag-delete-yes", filled: true, ready: false) {}
+                        // Full colour like every main button (his rule); pressed before a
+                        // bag is chosen, it says so under it. It was a faded "Choose
+                        // first" that did nothing (the spec pass, 5 Oct 2026).
+                        deleteButton("Delete", id: "bag-delete-yes", filled: true) {
+                            deleteNeeds = "Choose where its things go first \u{2014} another bag, or No bag."
+                        }
                     } else if lists.isEmpty {
                         deleteButton(!used ? "Delete the bag" : moveTo == "" ? "Delete, no bag" : "Move and delete",
-                                     id: "bag-delete-yes", filled: true, ready: true) { delete(bag, completely: false, used: used) }
+                                     id: "bag-delete-yes", filled: true) { delete(bag, completely: false, used: used) }
                     }
+                }
+                if !deleteNeeds.isEmpty {
+                    Text(deleteNeeds)
+                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("bag-delete-needs")
                 }
                 if ready && !lists.isEmpty {
                     HStack(spacing: 8) {
                         Spacer(minLength: 0)
                         deleteButton(lists.count == 1 ? "Keep it on \(lists[0])" : "Keep it on my templates",
-                                     id: "bag-delete-yes", filled: false, ready: true) { delete(bag, completely: false, used: used) }
-                        deleteButton("Delete completely", id: "bag-delete-all", filled: true, ready: true) {
+                                     id: "bag-delete-yes", filled: false) { delete(bag, completely: false, used: used) }
+                        deleteButton("Delete completely", id: "bag-delete-all", filled: true) {
                             delete(bag, completely: true, used: used)
                         }
                     }
@@ -330,14 +344,14 @@ struct BagDetail: View {
         model.change { _ = $0.deleteBag(id: id, moveTo: target, completely: completely) }
     }
 
-    private func deleteButton(_ title: String, id: String, filled: Bool, ready: Bool,
+    private func deleteButton(_ title: String, id: String, filled: Bool,
                               _ act: @escaping () -> Void) -> some View {
-        Button { if ready { act() } } label: {
+        Button(action: act) {
             Text(title)
                 .font(.system(size: 15, weight: .heavy))
                 .foregroundStyle(filled ? Color.white : AppSection.actions.color)
                 .padding(.horizontal, 14).frame(minHeight: 40)
-                .background(Capsule().fill(filled ? AppSection.actions.color.opacity(ready ? 1 : 0.55) : Color.clear))
+                .background(Capsule().fill(filled ? AppSection.actions.color : Color.clear))
                 .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: filled ? 0 : 1.5))
                 .contentShape(Capsule())
         }
