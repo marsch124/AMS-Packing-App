@@ -45,7 +45,8 @@ struct WayHomeScreen: View {
         // line to a test (and to the eye) whatever is typed.
         let number = Dictionary(lines.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
         let bags = Self.bags(shown)
-        let shots = bagShots(Self.bags(lines))
+        // Every bag of the way home, by the name the Bags card keeps its photos under.
+        let shots = bagShots(model.library.homeBags(tripId: tripId))
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -59,6 +60,7 @@ struct WayHomeScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold))
+                    .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("wayhome-done")
             }
             .padding(16)
@@ -82,10 +84,10 @@ struct WayHomeScreen: View {
                             .accessibilityIdentifier("wayhome-search-none")
                     }
                     ForEach(bags, id: \.self) { bag in
-                        Text(bag.isEmpty || bag == "Other" ? "Not in a bag" : bag)
+                        Text(bag == "Other" ? "Not in a bag" : bag)
                             .font(.system(size: 15, weight: .heavy)).foregroundStyle(AppSection.events.color)
                             .padding(.top, 12)
-                        ForEach(shown.filter { $0.container == bag }, id: \.id) { line in
+                        ForEach(shown.filter { Library.homeBag($0) == bag }, id: \.id) { line in
                             row(line, number[line.id] ?? 0)
                         }
                     }
@@ -113,9 +115,10 @@ struct WayHomeScreen: View {
         #endif
     }
 
-    /// The bags in the list's order, each once.
+    /// The bags in the list's order, each once — a line in no bag under "Other", one
+    /// heading however it came to be loose (`Library.homeBag`).
     private static func bags(_ lines: [Item]) -> [String] {
-        lines.reduce(into: [String]()) { if !$0.contains($1.container) { $0.append($1.container) } }
+        lines.map(Library.homeBag).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
     }
 
     /// "I would like a search function in the 'Pack to go home'" (their field test,
@@ -150,7 +153,7 @@ struct WayHomeScreen: View {
     private func bagShots(_ bags: [String]) -> [Shot] {
         bags.flatMap { bag in
             model.library.bagPhotos(tripId: tripId, bag: bag).compactMap { JPEG.image(dataURL: $0.data) }
-                .map { Shot(bag: bag.isEmpty || bag == "Other" ? "Not in a bag" : bag, image: $0) }
+                .map { Shot(bag: bag == "Other" ? "Not in a bag" : bag, image: $0) }
         }
     }
 

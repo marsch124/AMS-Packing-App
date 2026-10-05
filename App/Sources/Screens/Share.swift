@@ -103,6 +103,7 @@ struct ShareScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("share-done")
             }
             .padding(16)
@@ -274,13 +275,13 @@ struct OpenSharedScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             switch thing {
             case .trip(let t):
-                line("A trip", t.name.isEmpty ? "Untitled trip" : t.name, "\(t.entries.count) things")
+                line("A trip", t.name.isEmpty ? "Untitled trip" : t.name, OpenSharedScreen.things(t.entries.count))
                 bigButton("Add this trip", id: "shared-add") {
                     model.change { _ = $0.importTrip(t) }
                     finish("Added. It is under Trips, nothing ticked.")
                 }
             case .template(let l):
-                line("A template", l.name, "\(l.items.count) things")
+                line("A template", l.name, OpenSharedScreen.things(l.items.count))
                 bigButton("Add as a new template", id: "shared-add") {
                     model.change { _ = $0.importTemplate(l) }
                     finish("Added. It is under Templates. Things you already had keep your details.")
@@ -314,7 +315,7 @@ struct OpenSharedScreen: View {
                     }
                 }
             case .grab(let g):
-                line("A grab list", g.name, "\(g.items.count) things")
+                line("A grab list", g.name, OpenSharedScreen.things(g.items.count))
                 bigButton("Add it to your grab lists", id: "shared-add") {
                     var made: GrabDefinition?
                     model.change { made = $0.importGrab(g) }
@@ -338,9 +339,13 @@ struct OpenSharedScreen: View {
                 .accessibilityIdentifier("shared-kind")
             Text(name).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                 .accessibilityIdentifier("shared-name")
-            Text(count).font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+            Text(count).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                .accessibilityIdentifier("shared-count")
         }
     }
+
+    /// "1 thing", "7 things" — the card said "1 things" (the spec pass, 5 Oct 2026).
+    static func things(_ n: Int) -> String { n == 1 ? "1 thing" : "\(n) things" }
 
     private func bigButton(_ title: String, id: String, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {

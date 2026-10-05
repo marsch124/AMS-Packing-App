@@ -234,13 +234,10 @@ struct TripRow: View {
         return parts.isEmpty ? "No dates" : parts.joined(separator: " · ")
     }
 
-    /// "2026-10-03" → "3 Oct 2026" in his locale's words.
-    static func day(_ ymd: String) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
-        guard let d = f.date(from: ymd) else { return ymd }
-        let out = DateFormatter(); out.setLocalizedDateFormatFromTemplate("d MMM yyyy")
-        return out.string(from: d)
-    }
+    /// "2026-10-03" → "3 Oct 2026", the same words on every device — as the date grid,
+    /// Check before you go and the map write a day (the spec pass, 5 Oct 2026: this one
+    /// alone followed the device, "Oct 3, 2026" on an American-set phone).
+    static func day(_ ymd: String) -> String { TripChecksCard.day(ymd) }
 }
 
 

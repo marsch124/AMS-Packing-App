@@ -28,12 +28,15 @@ struct WeatherCard: View {
                 HStack(spacing: 10) {
                     Text(sky.place).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
                     Spacer()
+                    // In colour while it looks, too — the word says it is looking (his rule:
+                    // nothing grey and switched off; the spec pass, 5 Oct 2026). A press
+                    // meanwhile does nothing more: one look at a time (`lookUpWeather`).
                     Button { Task { await model.lookUpWeather(tripId: tripId) } } label: {
                         Text(busy ? "Looking…" : "Look again")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(busy ? Theme.muted : AppSection.events.color)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(AppSection.events.color)
                     }
-                    .buttonStyle(.plain).focusEffectDisabled().disabled(busy)
+                    .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("weather-again")
                 }
                 ForEach(Array(missing.enumerated()), id: \.element.name) { n, gear in

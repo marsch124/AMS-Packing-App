@@ -43,6 +43,7 @@ struct OnSiteScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold))
+                    .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("onsite-done")
             }
             .padding(16)

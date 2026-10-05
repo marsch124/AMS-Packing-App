@@ -15,14 +15,21 @@ struct ReviewScreen: View {
     /// So the keyboard goes away once a missed thing has been added — it covered
     /// Save on a phone with no hardware keyboard.
     @FocusState private var typingMissed: Bool
-    @State private var missWhere = ""
+    /// The template a missed thing goes onto: nil = not picked yet (the first of the
+    /// trip's templates), "" = No template. The spec pass (5 Oct 2026): "" meant both,
+    /// so tapping No template fell straight back to the first template — it could never
+    /// be chosen.
+    @State private var missWhere: String?
+    /// What Add was missing, said under it (his rule: a main button never just does
+    /// nothing — the spec pass, 5 Oct 2026).
+    @State private var missNeeds = ""
     /// The thing he is fixing mid-review, if any.
     @State private var fixing: String?
 
     var body: some View {
         let lines = model.library.reviewLines(tripId: tripId)
         let lists = model.library.tripTemplates(tripId: tripId)
-        let target = missWhere.isEmpty ? (lists.first?.id ?? "") : missWhere
+        let target = missWhere ?? (lists.first?.id ?? "")
         VStack(spacing: 0) {
             HStack {
                 Text("Trip review").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
@@ -30,6 +37,7 @@ struct ReviewScreen: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("review-cancel")
             }
             .padding(16)
@@ -60,7 +68,7 @@ struct ReviewScreen: View {
                                   selected: [target], id: "review-miss-where", tint: AppSection.templates.color, heading: .question) { missWhere = $0 }
                         }
                         // Always in full colour (his rule for a main button); with nothing
-                        // typed it adds nothing.
+                        // typed it adds nothing and says so under it.
                         Button { addMissed(target) } label: {
                             Text(target.isEmpty ? "Add it, on no template"
                                  : "Add it to \(lists.first { $0.id == target }?.name ?? "the template")")
@@ -72,12 +80,14 @@ struct ReviewScreen: View {
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("review-miss-add")
+                        .needsLine($missNeeds, typed: missName, id: "review-miss-add-needs")
                     }
                     ForEach(Array(missed.enumerated()), id: \.offset) { n, m in
                         HStack {
                             Text(m.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                             Text(lists.first { $0.id == m.templateId }?.name ?? "no template")
                                 .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                                .accessibilityIdentifier("review-missed-\(n)-where")
                             Spacer()
                             Button { missed.remove(at: n) } label: {
                                 SVGPath.path("M6 6L18 18M18 6L6 18").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
@@ -164,6 +174,9 @@ struct ReviewScreen: View {
             .accessibilityIdentifier("review-save")
         }
         .background(Theme.bg.ignoresSafeArea())
+        // A swipe down must not throw marks away without a word (the spec pass, 5 Oct
+        // 2026): once something is marked, added or typed, only Cancel or Save closes it.
+        .interactiveDismissDisabled(!unused.isEmpty || !missed.isEmpty || !jsTrim(missName).isEmpty)
         .accessibilityElement(children: .contain)
         .sheet(item: Binding(get: { fixing.map { Fixing(id: $0) } }, set: { fixing = $0?.id })) { it in
             ThingEditor(itemId: it.id).environmentObject(model)
@@ -185,7 +198,8 @@ struct ReviewScreen: View {
 
     private func addMissed(_ target: String) {
         let name = jsTrim(missName)
-        guard !name.isEmpty, !missed.contains(where: { normName($0.name) == normName(name) }) else { missName = ""; return }
+        guard !name.isEmpty else { missNeeds = "Type what you wished you'd had first."; return }
+        guard !missed.contains(where: { normName($0.name) == normName(name) }) else { missName = ""; return }
         missed.append(Library.Missed(name: name, templateId: target))
         missName = ""
         typingMissed = false
