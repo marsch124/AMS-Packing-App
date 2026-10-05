@@ -130,8 +130,8 @@ true)`, id `lists-done`) which calls `dismiss()`; or by swiping the sheet down o
     - Right under the row whose ✕ was refused (0.6x — until then at the TOP of the sheet, off screen when Remove
       was pressed far down the "When" steps): the problem line (15 semibold, To-do red `#dc3d43`, wraps, id
       `lists-problem`), `ChoiceUse.refusal(label)`, e.g. **"Garage is still used by 3 things, so it stays."** or
-      **"≥1 week ahead is still used by 10 things and on 1 trip, so it stays."** One at a time; any Add, pen or
-      successful remove clears it.
+      **"≥1 week ahead is still used by 10 things and on 1 trip, so it stays."** One at a time; an Add that adds, a press
+      on a pen or a remove that removes clears it.
     - Under the row whose pen is open (one at a time, followed by the entry's KEY so it stays on the entry as it
       moves; the pen again closes it), the editor (0.6x): a card (padding 12, card fill, radius 12, 1.4-pt Settings
       slate border, container id `list-<kind>-editor`) holding a field **"New name"** pre-filled with the entry's
