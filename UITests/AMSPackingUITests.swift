@@ -718,6 +718,7 @@ final class AMSPackingUITests: XCTestCase {
             let startsRight = first.range(of: "\\b\(startDay) \(startMonth) \(startYear)\\b", options: .regularExpression) != nil
             XCTAssertTrue(startsRight, "the trip lost its first day, or wrote it the device's way (\(startDay) \(startMonth) \(startYear)): '\(said)'")
         }
+        shot(app, "trips-row-dates")
     }
 
     /// Bug B1 (his screenshot, 2026-09-26): a row showed NOT ticked while its section
@@ -1410,6 +1411,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-rebuilt"]) == "Saved. The list is the same." },
                       "Save changed the received list: '\(words(app.staticTexts["trip-rebuilt"]))'")
         XCTAssertEqual(words(progress), "1/7", "the received list, or its tick, was lost on Save")
+        shot(app, "received-trip-saved")
     }
 
     /// "Not this time" means it did not go (the spec pass, 5 Oct 2026): setting a
@@ -1442,6 +1444,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress) == "0/0 · 7 set aside" }, "not all set aside: '\(words(progress))'")
         XCTAssertTrue(waitUntil { !app.buttons["trip-group-0-all"].exists },
                       "a section with nothing to tick still offers its tick (a grey, switched-off one)")
+        shot(app, "trip-all-set-aside")
     }
 
     /// His rule (2026-09-26), the spec pass (5 Oct 2026): Set place's Save sat grey and
@@ -1464,11 +1467,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-place-panel", timeout: 5))
         bringIntoView(app, app.buttons["trip-place-save"])
         var misses = [saysWhatIsMissing(app, "trip-place-save")]
+        shot(app, "trip-place-needs")
         tap(app, id: "trip-place-close")
 
         tap(app, id: "trip-review")
         XCTAssertTrue(appears(app, "review-detail", timeout: 5))
         misses.append(saysWhatIsMissing(app, "review-miss-add"))
+        shot(app, "review-add-needs")
         misses.removeAll { $0.isEmpty }
         XCTAssertTrue(misses.isEmpty, "buttons that are not ready, or do not say what is missing:\n" + misses.joined(separator: "\n"))
 
@@ -1486,6 +1491,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "review-miss-add")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["review-missed-0-where"]) == "no template" },
                       "the missed thing did not go on no template: '\(words(app.staticTexts["review-missed-0-where"]))'")
+        shot(app, "review-no-template")
         tap(app, id: "review-cancel")
         XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
     }
@@ -1507,6 +1513,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-dates-field")
         XCTAssertTrue(app.staticTexts["range-needs"].waitForExistence(timeout: 5), "the field closed the grid with only the first day")
         XCTAssertTrue(grid.exists, "the grid closed with only the first day")
+        shot(app, "date-field-needs")
         pickDay(app, dayFromToday(5))
         tap(app, id: "trip-dates-field")
         XCTAssertTrue(waitUntil { !grid.exists }, "the field did not close the grid on a whole range")
@@ -1537,6 +1544,7 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertEqual(gap(), start, accuracy: 1, "OK moved with the month (\(words(grid)))")
         }
         XCTAssertGreaterThan(rows.count, 1, "the months seen all have as many weeks — this proves nothing")
+        shot(app, "date-six-rows")
         tap(app, id: "range-cancel")
     }
 
@@ -1570,7 +1578,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         XCTAssertTrue(app.buttons["bag-0"].waitForExistence(timeout: 5), "no Bags card")
         let unweighed = (0..<4).map { app.buttons["bag-\($0)"] }.first { $0.exists && ($0.value as? String) == "not weighed" }
-        XCTAssertNotNil(unweighed, "the bag with nothing weighed is not on the trip: \((0..<4).map { app.buttons["bag-\($0)"].value as? String ?? "-" })")
+        let said = (0..<4).map { n -> String in
+            let e = app.buttons["bag-\(n)"]
+            return e.exists ? (e.value as? String ?? "") : "-"
+        }
+        XCTAssertNotNil(unweighed, "the bag with nothing weighed is not on the trip: \(said)")
         guard let unweighed else { return }
         let n = unweighed.identifier
         tapVisible(app, unweighed)
@@ -1593,6 +1605,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(rain), "Rain")
         XCTAssertFalse(isOn(rain), "rain gear is forced on from the start")
         select(app, rain)
+        shot(app, "tripset-weather")
         tap(app, id: "tripset-save")
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
         tap(app, id: "trip-settings")
@@ -1628,6 +1641,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(scrollUntil(app, "trip-activity-2"), "a template with no activity area is not offered")
         let picnic = app.buttons["trip-activity-2"]
         XCTAssertEqual(words(picnic), "Picnic")
+        bringIntoView(app, picnic)
+        shot(app, "home-other-templates")
         type("Lunch out", into: app.textFields["trip-name"])
         hideKeyboard(app)
         setSwitch(app, "trip-quick", on: true)
@@ -1638,6 +1653,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
         XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-activity-2"))
         XCTAssertTrue(isOn(app.buttons["tripset-activity-2"]), "Trip settings does not show the template on the trip")
+        bringIntoView(app, app.buttons["tripset-activity-2"])
+        shot(app, "tripset-other-templates")
         tap(app, id: "tripset-cancel")
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
         tap(app, id: "trip-done")
@@ -1687,6 +1704,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "shared-paste")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A GRAB LIST" }, "not read as a grab list")
         XCTAssertEqual(words(app.staticTexts["shared-count"]), "1 thing")
+        shot(app, "shared-one-thing")
         tap(app, id: "shared-done")
     }
 

@@ -231,26 +231,26 @@ struct TripScreen: View {
                                 if mine.isEmpty {
                                     Color.clear.frame(width: 40, height: 36)
                                 } else {
-                                Button {
-                                    model.change { lib in
-                                        for line in mine { _ = lib.setChecked(!sectionDone, tripId: tripId, entryId: line.id) }
-                                    }
-                                } label: {
-                                    ZStack {
-                                        Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 2)
-                                            .frame(width: 24, height: 24)
-                                        if sectionDone {
-                                            Circle().fill(AppSection.events.color).frame(width: 24, height: 24)
-                                            Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                                                .frame(width: 24, height: 24)
+                                    Button {
+                                        model.change { lib in
+                                            for line in mine { _ = lib.setChecked(!sectionDone, tripId: tripId, entryId: line.id) }
                                         }
+                                    } label: {
+                                        ZStack {
+                                            Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 2)
+                                                .frame(width: 24, height: 24)
+                                            if sectionDone {
+                                                Circle().fill(AppSection.events.color).frame(width: 24, height: 24)
+                                                Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                                                    .frame(width: 24, height: 24)
+                                            }
+                                        }
+                                        .frame(width: 40, height: 36).contentShape(Rectangle())
                                     }
-                                    .frame(width: 40, height: 36).contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain).focusEffectDisabled()
-                                .accessibilityIdentifier("trip-group-\(g)-all")
-                                .accessibilityLabel(sectionDone ? "Untick \(group.label)" : "Tick all of \(group.label)")
-                                .accessibilityAddTraits(sectionDone ? .isSelected : [])
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("trip-group-\(g)-all")
+                                    .accessibilityLabel(sectionDone ? "Untick \(group.label)" : "Tick all of \(group.label)")
+                                    .accessibilityAddTraits(sectionDone ? .isSelected : [])
                                 }
                             }
                             .padding(.top, 12)
