@@ -1,7 +1,7 @@
 # Templates — the building blocks, and how things sit on them
 
 > Verified against the code on 5 Oct 2026 (app 0.60); the spec pass's fixes of spec 04 (the same day,
-> release 0.62) are written in.
+> release 0.62) are written in, and Arrange (§6a, his layout "C", 0.62) with its model (§13a).
 
 **What this part is for, in the owner's terms.** A *template* is a building block: the things for one activity
 or need — Hiking, Swim, Car, the Common base. A trip's packing list is *made from* templates: the always-packed
@@ -32,7 +32,8 @@ deleting a template **never deletes a thing**.
 `CoverDoor`, `IconPickerScreen`, `TemplateDetail`, `RowEditor`, `Color(hexString:)`), `App/Sources/TemplateIcons.swift`,
 `App/Sources/Screens/NewList.swift`, `App/Sources/Screens/PickThings.swift`, `App/Sources/Screens/ListsScreen.swift`;
 model: `PackingCore/Lists.swift`, `Memberships.swift`, `Resolve.swift`, `Grouping.swift`, `Kits.swift`,
-`ListSharing.swift`; `PackingLibrary/Library.swift` (template parts), `EditLists.swift`, `Bags.swift` (list role and
+`ListSharing.swift`; `PackingLibrary/Library.swift` (template parts, and arranging a template's headings and
+rows — §13a), `EditLists.swift`, `Bags.swift` (list role and
 `shownName`), `TemplateIcon.swift`, `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
 `Sharing.swift` (template parts), `TemplateRows.swift` (a row's own answers, the row editor's Save, covers'
 letter and colours, which templates are shown and what they add up to, free names — the spec pass). Storage and
@@ -386,7 +387,8 @@ renaming to it is allowed and is no worry; two bag lists still are).
 itself survives)." Grew through: rename/delete (0.16), headings in capitals (0.40, H.13), ✕ asks first (0.40,
 H.5), Group pills (0.42, H.3: "group and sort the items in a template in the same way as when you pack"), Choose
 from your things (0.42, H.9), icon (0.46), "Only on:" line (0.55, field test 4.4), Find (0.60, 4 Oct 2026: "add a
-search function so that the user can find a specific item without the need to scroll").
+search function so that the user can find a specific item without the need to scroll"), Arrange (0.62, §6a: his
+pick "C" of three pictured layouts, 5 Oct 2026).
 
 ### How it is reached and left
 - Reached: a card on the Templates tab; a Search result; straight after "Make the template".
@@ -420,15 +422,24 @@ stroke; min height 36; ids `template-grouping-<raw>` (`section`, `when`, `into`,
 trait `isSelected` on the chosen one. Labels: Section · When · Into · From where · Kind · A–Z.
 - "Section" is offered **only when at least one row has a non-empty section** (even an id that belongs to another
   template). His lists are built in sections ("511 of his 538 rows sit in one").
+- A tap on any Group pill also ends Arrange (§6a). While arranging, only Section can be lit (on a template with no
+  headings no pill is lit: the page then shows his own order, not a grouping).
 
-**Find** (shown when the template has at least one row, or while something is typed; side 16, top 6):
+**Arrange** (§6a) — a pill on its own row under the Group pills, offered while the page reads by Section, or on a
+template with no section in use, and only when the template has a row or a heading.
+
+**Find** is not shown while arranging (§6a).
+
+**Find** (shown when the template has at least one row, or while something is typed — and not while arranging;
+side 16, top 6):
 - TextField "Find a thing on this template" — 17 regular ink, min height 40, card fill, 10-radius hairline border;
   with the shared ✕ (`clearButton`): field id `template-find`, ✕ id `template-find-clear` ("Clear the search"),
   the ✕ shown only while the field holds text; one tap empties it and keeps the keyboard.
 - Beside it, **"<found> of <all>"** — 15 bold monospaced muted, id `template-find-count` — only while the query is
   not blank AND finds something ("'0 of 4' would say again what the line under it says").
 
-**The rows** (`KeyboardAwayScroll` + `LazyVStack(spacing: 6)`, side 16, bottom 24):
+**The rows** (`KeyboardAwayScroll` + `LazyVStack(spacing: 6)`, side 16, bottom 24) — while arranging, the
+arranging list (§6a) stands in their place:
 - A query that finds nothing: "Nothing on this template is called that." — 16 medium muted, 16 above, id
   `template-find-none`.
 - For each group, its **heading**: the title in capitals, 18 heavy, kerning 0.8, 16 above; colour = the phase's
@@ -444,6 +455,10 @@ trait `isSelected` on the chosen one. Labels: Section · When · Into · From wh
     label "Take <name> off this template". Tap → the take-off question (below), with a 0.15 s ease-out.
   - n = the row's position **as read**, top to bottom across all shown groups (keyed by membership id).
   - Each row view is given the identity `"<memId>#<n>"` (see Traps).
+
+The foot below — Choose from your things, Type a new thing, Activity area and Delete — steps aside while a
+heading's name is being changed in Arrange (the keyboard is up; seen on the screen, 5 Oct 2026: the list was left
+a sliver and Remove heading was out of sight). It stays while arranging otherwise, as his picture had it.
 
 **Choose from your things** — `PickThingsDoor` (side 16, top 10): wide outlined button (drawn list mark 22,
 "Choose from your things" 17 bold violet, min height 48, 8 % violet fill, 1.4 stroke, radius 12); id
@@ -517,9 +532,11 @@ violet, radius 10, min height 44; id `template-add`). `needsLine` id `template-a
   their lines.
 
 ### Data
-Reads `resolvedTemplate(id:)`, `templateNameTaken`, `isOnTemplate`, `shareLink(templateId:)`. Writes through
-`renameTemplate`, `removeFromTemplate`, `addToTemplate`, `deleteTemplate`, `setTemplateArea`, `setTemplateIcon`
-(cover), and through the sheets. AppStorage: `ams.template.grouping`.
+Reads `resolvedTemplate(id:)`, `templateNameTaken`, `isOnTemplate`, `shareLink(templateId:)`, and while arranging
+`arrangeLines(templateId:)` and `sectionNameTaken`. Writes through `renameTemplate`, `removeFromTemplate`,
+`addToTemplate`, `deleteTemplate`, `setTemplateArea`, `setTemplateIcon` (cover), while arranging `dropLine`
+(→ `moveSection` / `moveRow`), `renameSection` and `removeSection` (§13a), and through the sheets. AppStorage:
+`ams.template.grouping` (Arrange itself is not remembered: the page always opens with it off).
 
 ### iPhone vs Mac
 Same content; Mac min size 480 × 600. The header holds cover, name field, Rename, Share and Done in one row on
@@ -540,8 +557,8 @@ both.
   result opens `template-detail`); `testATemplateAndAGrabListAreSharedAndOpenedAgain` (`template-share`);
   `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
   row); `testATemplateMovesToAnotherActivityArea` (Common base offers no `template-area`; Hiking's reads "GA",
-  `template-area-OE` → "OE", and on the tab OE appears and GA goes).
-- Model: `TemplateEditingTests`, `EditListsTests`, `RowEditingTests` (§13–14);
+  `template-area-OE` → "OE", and on the tab OE appears and GA goes); Arrange — §6a.
+- Model: `TemplateEditingTests`, `EditListsTests`, `RowEditingTests` (§13–14), `ArrangeTests` (§13a);
   `TemplateRowsTests.testTypingAThingAlreadyOnTheTemplateDoesNotAddItTwice`,
   `testOnlyOnSaysWhatATripReadsOnThisTemplate`; `TemplateFacesTests.testATemplateMovesToAnotherActivityArea`.
 - **Not covered:** the device-wide grouping memory; When's colours; Delete's "Keep it"; a rename discarded by Done;
@@ -555,6 +572,123 @@ both.
   sheets on one view is a trap met in Search").
 - 🪤 The rows are in a lazy stack: rows far down are not built until scrolled near — the UI tests scroll to reach
   `template-item-4` ("since the Find field … the fifth row sits past what a lazy list builds").
+
+## 6a. Arrange — a template's headings and the order of its things (on `TemplateDetail`)
+
+### Purpose and origin
+Open item 19 left "renaming, reordering or deleting a section and reordering rows" for him to decide, "worth a
+picture first". On 5 Oct 2026 he was shown three layouts on the real page (today's, A: arrow buttons on every line,
+B: a pen on each heading and a heading card, C: grips to hold and drag) and chose **C** ("Hold ≡ and drag a heading
+or a thing to its place"). Built in 0.62 with Apple's text styles and the slim heights of the new look.
+
+### How it is reached and left
+- Reached: the **Arrange** pill on a template's page (`template-arrange`).
+- Offered (`canArrange`) while the page is grouped by **Section**, or when the template has **no section in use**
+  (Section is not among the Group pills: such a template is arranged as one list, the order a trip reads) — and only
+  when the template has at least one row or one heading.
+- Left: a second tap on Arrange; a tap on any Group pill; the pill ceasing to be offered (`onChange(of:
+  canArrange)`); closing the page (Arrange is not remembered — the page always opens with it off). Leaving also
+  drops a heading rename not saved.
+
+### What is on screen
+- **The pill** — on its own row under the Group pills (side 16, bottom 4): "Arrange", Subheadline semibold, side
+  padding 12, height `Metrics.chip`; off = violet words on 10 % violet with a 1-pt violet stroke (a button, not a
+  grouping choice); on = white on filled violet, trait `isSelected`. id `template-arrange`.
+- While on, under it (4 apart): **"Hold ≡ and drag a heading or a thing to its place."** — Footnote, muted, wraps;
+  id `template-arrange-hint`. (≡ is the character U+2261 in the words; the marks on the lines are drawn.)
+- Find (`template-find`) is hidden and emptied when Arrange starts: every heading and thing is in view, in its place.
+- In place of the rows, **one list** (`List`, plain, no separators, row insets side 16, rows on `Theme.bg`, minimum
+  row height 1; id `arrange-list`), top to bottom (`Library.arrangeLines`, §13a):
+  - each **heading** of the template in its order — even one with nothing under it, so a thing can be dragged into
+    it: its name (Headline, violet; a button, id `arrange-heading-<k>` with k = the heading's position, label = the
+    name, hint "Rename or remove this heading"; height `Metrics.tap`; 10 above) and at the right the **grip** in
+    violet (`arrange-heading-<k>-grip`, label "Move the heading <name>");
+  - under it its **things**, in the template's order: the name (Body, ink, one line; a text, id `arrange-item-<n>`
+    with n = position as read across the whole list, 0 first) and the grip in muted (`arrange-item-<n>-grip`, label
+    "Move <name>"); height `Metrics.row`, a hairline under each. The bag, the "×qty · note" line, "Only on:" and
+    the ✕ are not shown while arranging (his picture: name and grip only);
+  - when the template has headings: **"Everything else"** (Headline, muted — not his heading, so not violet; id
+    `arrange-heading-rest`; no grip, cannot be moved or renamed), then the things under no heading (a section id
+    the template does not have counts as none, as on the page). A template with no headings shows only its things.
+- **The grip** (`GripMark`): three strokes `M5 8h14M5 12h14M5 16h14`, stroke 1.8, round caps, drawn 20 × 20 in a
+  36 × `Metrics.compact` area; an accessibility element with trait image. Drawn by hand with `SVGPath` — no SF
+  Symbol, no emoji, and not the system's edit-mode grip.
+- **Renaming a heading** — a tap on its name puts, in place of that heading line, a card (padding 10, `Theme.card`,
+  radius 12, 1-pt violet stroke, 6 above and below):
+  - a field holding the name (Body, ink; `Theme.bg` fill, radius 10, hairline — red while a problem is said; height
+    `Metrics.tap`; focused at once; Return = Save; placeholder "Heading"; id `arrange-heading-field`) and **Save**
+    (`FieldButtonLabel`, violet, always in colour; id `arrange-heading-save`);
+  - under them, when Save could not take it (`needsLine`, Subheadline semibold red, id `arrange-heading-needs`,
+    gone as he types): "Type a name first." (blank) or **"This template already has a heading called that."**
+    (another heading of this template has the name, by `normName`; a change of case of its own name is allowed);
+  - **"Remove heading"** — Subheadline semibold red words, no frame (quiet), height `Metrics.compact`; id
+    `arrange-heading-remove` — with "Its things stay, under no heading." (Footnote, muted) beside it. It asks
+    nothing: nothing is lost.
+  - Only one heading is renamed at a time (tapping another moves the card there; the typed name is dropped); while
+    the card is open that heading cannot be dragged, and the page's foot steps aside (§6).
+
+### Behaviour
+- **Why `List` with `onMove`.** It is SwiftUI's own way of carrying rows, and it works the same with a finger on
+  the iPhone (hold, then drag — no edit mode needed) and with the mouse on the Mac (press and drag), scrolls the
+  list while a row is carried, and animates the gap. Edit mode was not used: its grips and red delete circles are
+  Apple's drawings, not the app's (his rule: no stock icons). `.draggable` / `.dropDestination` were not used:
+  they carry text between apps (any dragged text would land on the page) and leave working out "above or below
+  this row" to the app. The grip is the app's mark of where to hold; the list itself lifts the line, so a hold
+  elsewhere on a line lifts it too (the grip is the sure place: a heading's name is a button).
+- **All headings and things are lines of ONE list**, so a single drag can carry a thing from under one heading to
+  under another. SwiftUI hands over "line `from` dropped at `to`" (`to` counted before the move); the model reads it
+  (`Library.dropLine`, §13a, model-tested) and the page redraws from the library:
+  - a **heading** takes all its things along and lands before the next heading below where it was dropped (or as
+    the last heading when there is none) — dropped among another heading's things, it comes after them and takes
+    none of them;
+  - a **thing** goes under the nearest heading above where it was dropped (the "Everything else" line = under no
+    heading), just before the thing that follows it there, else last under that heading; dropped above every
+    heading, it goes to the top of the first one;
+  - "Everything else" never moves (`moveDisabled`), nor a heading whose name is being changed.
+- **Saved like every template edit**: each drop, rename and removal is one `model.change { … }` — only the records
+  that changed are written (the template's `sections` and `updatedAt`; the memberships whose `section` or `order`
+  changed), so it syncs to the other device and is in the next backup. A drop that changes nothing writes nothing.
+- **Rename** → `renameSection` (trimmed). **Remove heading** → `removeSection`: the heading goes, its things stay on
+  the template under no heading — together, in their order, first among the things there.
+- **Trips.** A trip already made is not touched by arranging (its lines are copies; their heading words too). A NEW
+  trip, or one rebuilt (Trip settings → Save, `Library.regenerated`), takes the template's rows in the new order
+  and so lists its headings in the new order — see §13a for why every move renumbers the rows. A rebuilt trip keeps
+  each existing line as it was (its tick, and the heading NAME it was made with: a thing moved under another
+  heading keeps its old heading on a trip already made until a fresh line is made for it); only the line order is
+  new. Nothing in Arrange calls `followThing`.
+
+### Data
+Reads `arrangeLines(templateId:)`, the resolved template (names), `sectionNameTaken`. Writes `dropLine` (→
+`moveSection` / `moveRow`), `renameSection`, `removeSection`. No AppStorage.
+
+### iPhone vs Mac
+The same list on both; the heights follow `Metrics` (iPhone: row 40, tap 36, compact 32, chip 28; Mac: 30, 26, 24,
+22). iPhone: hold a line, then drag. Mac: press and drag with the mouse (List rows on the Mac carry with a plain
+press-and-drag). The UI tests drive both with `press(forDuration: 1.0, thenDragTo:, withVelocity: .slow,
+thenHoldForDuration: 0.8)` on the grips; they were run on the iPhone simulator only (the Mac UI tests run in CI).
+
+### Tests
+- UI (`-uiTestingSections`: the sample with Hiking under Lights (Headlamp, Spare batteries) and Clothes (Hiking
+  boots, Rain jacket, Wool socks), the Map under no heading — `SampleLibrary.sectioned()`):
+  `testArrangeTurnsOnAndOff` (offered by Section and off; on = selected, the hint, headings "Lights"/"Clothes",
+  "Everything else", the six things in order, grips on headings and things, no ✕, no Find; a second tap ends it and
+  the ✕ comes back; When hides Arrange, Section brings it back; Swim, with no headings, is arranged as one list of
+  three with no heading lines); `testAThingIsDraggedUnderAnotherHeading` (the Map's grip dragged onto the
+  Headlamp's: the Map is among the first three — under Lights; ended, the page has no third group, and it is kept
+  after closing and opening the template); `testAHeadingIsDraggedWithItsThings` (Clothes' grip onto Lights': Clothes
+  first with its three things, then Lights; the page reads Clothes first); `testAHeadingIsRenamed` (the field holds
+  "Clothes"; "lights" → the needs line says "already"; it goes as he types; "Clothing" saved; the page reads
+  "Clothing"); `testAHeadingIsRemovedAndItsThingsStay` (Lights removed: Clothes is heading 0, no heading 1, the six
+  things in order with Headlamp and Spare batteries under no heading; the page reads Clothes, Everything else).
+- Model: `ArrangeTests` (§13a).
+- **Not covered:** a drag on the Mac (built, not run here; CI runs the Mac UI tests); the heading editor's focus;
+  a drag that scrolls a long list.
+
+### Traps
+- 🪤 Edit mode would have shown Apple's grips and delete circles; it is not used — `onMove` alone lets a List carry
+  rows on the iPhone (hold first) and the Mac.
+- 🪤 The headings' and things' lines are numbered as READ (`arrange-item-<n>` across headings), like the page's rows.
+- 🪤 With the keyboard up the list is short: the foot steps aside while a heading's name is being changed.
 
 ---
 
@@ -991,8 +1125,8 @@ Takes an edited **resolved** template apart:
   own that says something else is kept). Run by `LibraryModel.reload()` on every load, after duplicate records are
   settled; only the changed membership records are written, so it is idempotent and both devices agree.
 - `setTemplateArea(id:area:)` — §14. The cover's icon: `setTemplateIcon` (§3).
-- There are **no** operations for renaming, reordering or deleting a section, reordering rows, or changing a
-  template's role/transport/colour/emoji/default bag (see open question 19).
+- Renaming, moving and removing a section and moving a row: §13a (Arrange, 0.62). There are still **no**
+  operations for changing a template's role/transport/colour/emoji/default bag (see open question 19).
 
 ### Tests
 `TemplateRowsTests.testAThingsNoteIsNeverFrozenOntoItsRows` (picked, typed, saved again: the membership's note and
@@ -1012,6 +1146,63 @@ back to "", his own note kept, nothing a row says changes, a second run changes 
   place that decides whether an exception is needed.
 - 🪤 A thing twice on one template: each save applies both rows' intrinsic fields to the one thing; the review
   therefore writes history straight onto things, not through `saveTemplate` (Library.swift, found 2026-09-22).
+
+---
+
+## 13a. Model: arranging a template's headings and rows (`PackingLibrary/Library.swift`, after `addSection`)
+
+His layout "C" (5 Oct 2026; the screen is §6a). Where the order lives: a template's **headings** are its `sections`
+(an ordered list on the template record); its **rows** are memberships, read in `order` (a Double; resolving
+stable-sorts by it, §12). How a **trip** reads them (`buildTotalEntries`, `PackingCore/TripBuilding.swift`): the
+templates in priority order (always-packed, the matching transport, then the ticked activities in the order
+ticked), and inside each its rows **in `order`**, skipping a name+bag already taken; each line carries its heading's
+NAME (`sectionName`), and the trip's By-section view (`groupBySection`) lists the headings by the **first line under
+each** — it never reads `sections`' own order. So a heading moved in `sections` alone would not move on a trip:
+**every move renumbers the template's rows 0, 1, 2… in the order the page reads by Section** — each heading's rows
+in turn, then the rows under no heading — and a new or rebuilt trip then reads as he arranged it. Numbers stay small
+whole numbers however often he drags (as `saveTemplate` keeps them, §13), and only memberships whose number or
+heading really changes are touched, so the store writes only those records.
+
+- `sectionNameTaken(templateId:name:except:) -> Bool` — another heading of this template (not `except`) has this
+  `normName`; a blank name is never taken; an unknown template → false.
+- `renameSection(templateId:sectionId:to:) -> Bool` — trims; refuses (false) blank, an unknown template or heading,
+  or a name another heading has (`sectionNameTaken`); a change of case of its own name is allowed; the same name →
+  true, nothing written; else the name and the template's `updatedAt`. Rows untouched; trips already made keep the
+  old words on their lines.
+- `moveSection(templateId:sectionId:before:) -> Bool` — the heading goes just before `before` (nil = after the last
+  heading) with all its rows; false for an unknown template, heading or `before`; `before` = itself → true, no
+  change. Then the rows are renumbered; `updatedAt` is set only when the headings' order or a number changed.
+- `removeSection(templateId:sectionId:) -> Bool` — false for an unknown template or heading. The rows are first
+  renumbered as the page reads; the heading leaves `sections`; every membership of this template with that section
+  id gets `section = ""`; renumbered again — so its rows sit together, in their order, first under no heading. No
+  thing and no membership is deleted. `updatedAt` set.
+- `moveRow(templateId:memId:section:before:) -> Bool` — the row goes under `section` ("" = no heading), just before
+  the row `before` when that row is under the same heading, else last there; its other answers (bag, When, how
+  many, note, conditions) are untouched. A row whose stored section id the template does not have, moved, is filed
+  under `section` for real. False for an unknown template or row (a row of another template counts as unknown) or
+  a `section` the template does not have. `updatedAt` only when its heading or a number changed.
+- `arrangedRows(templateId:) -> [(sectionId, rows)]` — the membership ids as the page reads them: per heading, then
+  a last group "" (no heading or an unknown id); rows in `order`, ties as stored. Includes rows whose thing is gone
+  (they are numbered where they sit, never shown).
+- `ArrangeLine` (`.heading(id)`, `.rest`, `.row(memId)`) and `arrangeLines(templateId:)` — the page while arranging
+  as one list: every heading (even empty), its rows; `.rest` and the rows under no heading when the template has
+  headings; a template with none is just its rows; rows whose thing is gone left out; unknown template → [].
+- `dropLine(templateId:from:to:) -> Bool` — a drag on that list, with SwiftUI's `onMove` counting (`to` is a place
+  in the list before the move; the line lands at `to - 1` when moving down): a heading → `moveSection(before:` the
+  next heading below the drop, or nil when the next non-row line is `.rest` or there is none`)`; a row → `moveRow`
+  under the nearest heading line above (`.rest` = "", none above = the first heading, at its top), `before` = the
+  row right after it. `.rest` and out-of-range offsets → false, nothing changes.
+
+Tests: `ArrangeTests` — `testAHeadingIsRenamedButNeverToANameItAlreadyHas`, `testAHeadingMovesWithAllItsThings`
+(rows renumbered 0–4 in the page's order; nil = last; unknown ids refused), `testARemovedHeadingLeavesItsThingsOnTheTemplate`,
+`testAThingMovesUnderItsOwnHeadingOrAnother` (its own note and bag go with it; whole numbers from 0),
+`testThePageWhileArrangingIsOneListOfHeadingsAndRows`, `testADropMovesWhatWasDraggedToWhereItWasDropped` (eight drops
+read the way SwiftUI hands them over, and four refusals), `testATemplateWithNoHeadingsIsOneList`,
+`testArrangingIsSavedLikeAnyTemplateEditAndOnlyWhatChanged` (one row moved one place: two membership records and the
+template written; the same move again, a day later: nothing written; the arrangement survives the records and a
+backup), `testANewOrRebuiltTripFollowsTheNewOrderAndAnOldOneIsUntouched` (the jumbled template made a trip read
+Clothes before Lights; after arranging a new trip reads Lights, Clothes, Everything else; a rebuild takes the new
+order and keeps every line's id; the old trip is unchanged).
 
 ---
 
@@ -1095,7 +1286,7 @@ His decision on test I.7 (1 Oct 2026), released 0.45.
   changed. `today` defaults to `Library.localToday()`, the device's own date (0.62; it was the UTC date).
 - A row saved in the row editor calls this too (`saveRow`, §7 — the spec pass, 5 Oct 2026), so a row's own bag,
   When, how many, note or conditions reach the open lines of trips still ahead. Other changes to a template's rows
-  (typed on, picked on, taken off, the table's per-template columns, `setOnTemplate`) do not.
+  (typed on, picked on, taken off, the table's per-template columns, `setOnTemplate`, Arrange §6a) do not.
 
 Tests: `ThingFollowsTests` — `testAChangeToAThingReachesOnlyWhatIsStillUndecided` (ahead and undated trips follow;
 ticked line, over trip, reviewed trip keep theirs; ids and line count kept),
@@ -1250,6 +1441,7 @@ added as place row 12, used on a thing, then refused with `lists-problem`); `tes
 | Template page: type a name / Choose from your things / ✕ | `addToTemplate`, `putOnTemplate`, `removeFromTemplate` | here |
 | Row editor (Save) | `saveRow` → `updateMembership`, `addSection`, `followThing` | here |
 | Template page: activity area | `setTemplateArea` | here |
+| Template page: Arrange (a heading moved, renamed or removed; a thing moved) | `dropLine` → `moveSection` / `moveRow`, `renameSection`, `removeSection` | §6a, §13a |
 | Every load of the library | `letCopiedAnswersFollowTheirThings` (`LibraryModel.reload`) | §13 |
 | Thing editor "On these templates" (all templates but the bag list) | `setOnTemplate` on save | Things spec |
 | Care table: "On these templates" columns; "How many" / "Section" per template (editable only when the thing is on exactly one template) | `setOnTemplate`, `updateMembership` | Table spec |
@@ -1324,11 +1516,14 @@ deciding before a rewrite.
     "templates".
 19. [idea] **Row editor's Add-a-section** — Partly resolved in 0.62: a section typed in the row editor is made only
     on Save (UI `testASectionTypedInARowIsMadeOnlyOnSave`), and a template's activity area can be changed on its
-    page (`setTemplateArea`, UI `testATemplateMovesToAnotherActivityArea`). Left, for him to decide: renaming,
-    reordering or deleting a section and reordering rows need a way of working he has not seen (drag, edit modes) —
-    worth a picture first; changing a template's role or transport changes what EVERY trip packs; colour, emoji and
-    default bag are web-app data he has never asked to set here (no emoji in this app); a row's weather tags, kit
-    and reminder type have no use on any screen of this app.
+    page (`setTemplateArea`, UI `testATemplateMovesToAnotherActivityArea`). Resolved in 0.62 for renaming,
+    reordering and deleting a section and reordering rows: he was shown three layouts and chose "C" — Arrange on
+    the template's page, hold ≡ and drag a heading or a thing; a heading's name tapped to rename or remove it
+    (§6a, model §13a; `ArrangeTests`, UI `testArrangeTurnsOnAndOff`, `testAThingIsDraggedUnderAnotherHeading`,
+    `testAHeadingIsDraggedWithItsThings`, `testAHeadingIsRenamed`, `testAHeadingIsRemovedAndItsThingsStay`).
+    Still left, for him to decide: changing a template's role or transport changes what EVERY trip packs; colour,
+    emoji and default bag are web-app data he has never asked to set here (no emoji in this app); a row's weather
+    tags, kit and reminder type have no use on any screen of this app.
 20. [idea] **A row change does not reach trips already made** — Resolved in 0.62: a row saved in the row editor
     reaches the open lines of trips still ahead, as a change to the thing does (`saveRow` → `followThing`;
     `testARowChangeReachesATripStillAhead`). Rows typed on, picked on or taken off still reach a trip only through

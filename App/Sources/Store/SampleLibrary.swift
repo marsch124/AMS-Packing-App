@@ -165,6 +165,28 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with Hiking under TWO headings and a thing under none
+    /// (`-uiTestingSections`), for arranging a template: Lights (Headlamp, Spare
+    /// batteries), Clothes (Hiking boots, Rain jacket, Wool socks), and the Map
+    /// under no heading. Two things are new here, so the other tests' counts stay.
+    static func sectioned() -> Library {
+        var lib = make()
+        guard let hiking = lib.templates.first(where: { $0.name == "Hiking" }),
+              var list = lib.resolvedTemplate(id: hiking.id) else { return lib }
+        list.items += ["Spare batteries", "Wool socks"].map { newItem(name: $0) }
+        lib.saveTemplate(list)
+        for (name, things) in [("Lights", ["Headlamp", "Spare batteries"]),
+                               ("Clothes", ["Hiking boots", "Rain jacket", "Wool socks"])] {
+            guard let section = lib.addSection(templateId: hiking.id, name: name) else { continue }
+            for thing in things {
+                if let row = lib.resolvedTemplate(id: hiking.id)?.items.first(where: { $0.name == thing })?.memId {
+                    lib.updateMembership(memId: row) { $0.section = section.id }
+                }
+            }
+        }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that
