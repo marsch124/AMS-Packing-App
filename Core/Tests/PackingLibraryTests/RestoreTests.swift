@@ -73,6 +73,41 @@ final class RestoreTests: XCTestCase {
         XCTAssertTrue(fewer.contains(.trips), "a trip that would be lost was not visible")
     }
 
+    /// The way back. Once a bag had a cabin answer, the copy kept before a restore was
+    /// REFUSED ("did not come back the same") — the way back was shut exactly when it
+    /// was needed (the spec pass, 2026-10-05). Played here as the app plays it: the copy
+    /// is written (`RescueCopies.write` writes `backupData`), a file replaces everything,
+    /// then "Kept before a restore" → Replace reads the copy through the same check and
+    /// puts it back. Both the copies written from now on and the ones already on his
+    /// devices (written before the things travelled as stored).
+    func testTheCopyKeptBeforeARestoreBringsBackEverythingCabinAnswersIncluded() throws {
+        var old = before()
+        _ = old.setBagCabin(id: old.addBag(name: "Rolling case")!.id, true)
+        let keys = old.items.first { $0.name == "Keys" }!.id
+        _ = old.updateThing(id: keys) { $0.extra["inventedKey"] = "kept" }
+        old.trips[0].entries[0].extra["inventedLineKey"] = true
+
+        let copies = ["written now": old.backupData(exportedAt: "2026-10-05T07:00:00.000Z"),
+                      "already on his devices": BackupTests.olderFile(old, exportedAt: "2026-10-05T07:00:00.000Z")]
+        for (kind, copy) in copies.sorted(by: { $0.key < $1.key }) {
+            let store = MemoryStore(old.records())
+            let (file, _) = read(fileLibrary().backupData())
+            try store.apply(recordChanges(from: old.records(), to: file.records()))
+            let replaced = Library(records: try store.loadAll())
+
+            let (back, report) = read(copy)
+            XCTAssertTrue(report.isFaithful, "\(kind): the way back was refused: " + report.mismatches.joined(separator: "; "))
+            try store.apply(recordChanges(from: replaced.records(), to: back.records()))
+            let after = Library(records: try store.loadAll())
+
+            XCTAssertTrue(Library.isCabinBag(after.items.first { $0.name == "Rolling case" }!), "\(kind): the cabin answer")
+            XCTAssertEqual(after.items.first { $0.id == keys }?.extra["inventedKey"], "kept", "\(kind): a key this build does not know")
+            XCTAssertEqual(after.trips.first?.entries.first { $0.id == old.trips[0].entries[0].id }?.extra["inventedLineKey"], true,
+                           "\(kind): a key on a trip line")
+            XCTAssertEqual(BackupTests.differences(old, after), [], "\(kind): the device does not hold what it held before")
+        }
+    }
+
     /// A file that is not a backup is refused before anything is touched.
     func testSomethingThatIsNotABackupIsNotReadAsOne() {
         XCTAssertFalse(BackupFile.looksLikeBackup(try! JSONValue.parse(Data("{\"hello\":1}".utf8))))

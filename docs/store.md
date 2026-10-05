@@ -73,7 +73,13 @@ which is how the web app works too.
    of his real trips names three templates deleted long ago.
 10. **Backups are files he can see.** Save window on the Mac, Files on the iPhone
     (`.fileExporter`), the same JSON the web app writes, so either app can read
-    the other's file during the change-over.
+    the other's file during the change-over. Ours also carries two keys only this
+    app reads, `items` and `memberships` (every thing and every place on a template
+    that exists, as stored): a resolved row cannot say whether a note is the
+    thing's or its place's, and an answer only this app keeps (a bag's cabin
+    answer, in `extra`) must come back exactly. A file without them (the web app's,
+    or an older one of ours) is rebuilt from its rows, each row's `extra` carried
+    onto its thing (2026-10-05).
 
 ## Layers
 

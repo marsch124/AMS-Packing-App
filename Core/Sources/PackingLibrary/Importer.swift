@@ -9,6 +9,12 @@ import PackingCore
 /// everyday SAVE does it — which carries everything — and then the import CHECKS
 /// ITSELF: each template is put back together and compared, row by row, with the
 /// file it came from.
+///
+/// A file THIS app wrote also holds its things and their places on templates as
+/// stored (`Library.backupFile`); those are taken as they are instead — a row cannot
+/// say whether a note is the thing's or its place's — and the same row-by-row check
+/// then holds them to the file's templates. Either way it is the same import: the
+/// first-run door, Restore from a file, and the copy kept before a restore.
 public enum Importer {
 
     /// What came across, in numbers — and what did not come back the same.
@@ -23,6 +29,9 @@ public enum Importer {
         /// "template 3, row 17: container, phase" — positions and field names only,
         /// never his words, so a report can be shown anywhere.
         public var mismatches: [String] = []
+        /// The file was written by this app and carried its things and their places
+        /// on templates as stored, so they were taken as they are (not rebuilt).
+        public var asStored = false
         public var isFaithful: Bool { mismatches.isEmpty && fragile == fragileAfter }
         public init() {}
     }
@@ -42,6 +51,56 @@ public enum Importer {
             if r.keep { n["keep", default: 0] += 1 }
         }
         return n
+    }
+
+    /// The things and their places on templates as THIS app stored them — only in a
+    /// file this app wrote (`Library.backupItemsKey` / `backupPlacesKey`). nil for the
+    /// web app's file, and for ours from before the two keys existed.
+    static func asStored(_ backup: BackupFile) -> (items: [Item], places: [Membership])? {
+        guard let items = backup.extra[Library.backupItemsKey]?.arrayValue,
+              let places = backup.extra[Library.backupPlacesKey]?.arrayValue else { return nil }
+        return (items.compactMap { coerceItem(json: $0) }, places.compactMap { coerceMembership(json: $0) })
+    }
+
+    /// Take the templates, the things and their places as they are. Only what can be
+    /// shown comes in: a thing needs an id, a place needs its template and its thing
+    /// (a place on a gone template is what Worth a look complains about — a restore
+    /// is its cure, so it does not bring it back). A repeated id is taken once.
+    static func take(_ stored: (items: [Item], places: [Membership]), lists: [PackList], into lib: inout Library) {
+        var listIds = Set<String>()
+        for list in lists where listIds.insert(list.id).inserted {
+            var t = list
+            t.items = []
+            lib.templates.append(coerceList(t))
+        }
+        var thingIds = Set<String>()
+        for item in stored.items where !item.id.isEmpty && thingIds.insert(item.id).inserted {
+            lib.items.append(item)
+        }
+        var placeIds = Set<String>()
+        for m in stored.places where !m.id.isEmpty && listIds.contains(m.templateId) && thingIds.contains(m.itemId)
+            && placeIds.insert(m.id).inserted {
+            lib.memberships.append(m)
+        }
+    }
+
+    /// A row carries its thing's `extra` — the answers only this app keeps (a bag's
+    /// cabin answer) and the keys the web app knows and this build does not. The
+    /// everyday save leaves a row's `extra` behind (`catalogItemFromResolved` copies
+    /// only the named fields), so the check below said "did not come back the same"
+    /// and refused the WHOLE file — the copy kept before a restore too — once any bag
+    /// had a cabin answer (the spec pass, 2026-10-05). Carried here, onto the thing
+    /// each row was saved into (rows and the template's places run in the same order).
+    static func carryRowExtras(_ lists: [PackList], into lib: inout Library) {
+        for list in lists {
+            let wanted = list.items.filter { !jsTrim($0.name).isEmpty }
+            guard wanted.contains(where: { !$0.extra.isEmpty }),
+                  let got = lib.resolvedTemplate(id: list.id)?.items, got.count == wanted.count else { continue }
+            for (row, made) in zip(wanted, got) where !row.link && !row.extra.isEmpty {
+                guard let id = made.itemId, let n = lib.items.firstIndex(where: { $0.id == id }) else { continue }
+                lib.items[n].extra.merge(row.extra) { _, inFile in inFile }
+            }
+        }
     }
 
     public static func library(from backup: BackupFile, now: Date = PackingEnv.now()) -> (Library, Report) {
@@ -92,14 +151,39 @@ public enum Importer {
         if let conditions = backup.prefsConditions, !conditions.isEmpty { _ = setItemConditions(conditions) }
         report.sharedRows = lib.shared.count
 
-        // The templates, each taken apart as a SAVE would.
-        for list in backup.lists { lib.saveTemplate(list) }
+        if let stored = asStored(backup) {
+            // A file THIS app wrote: its things and their places on templates are
+            // taken exactly as they were stored. The rows below still check them.
+            report.asStored = true
+            take(stored, lists: backup.lists, into: &lib)
+        } else {
+            // The web app's file (or an older one of ours): each template
+            // taken apart as a SAVE would…
+            for list in backup.lists {
+                lib.saveTemplate(list)
+                // …keeping the moment it was last changed: a restore is not an edit.
+                if !list.updatedAt.isEmpty, let n = lib.templates.firstIndex(where: { $0.id == list.id }) {
+                    lib.templates[n].updatedAt = list.updatedAt
+                }
+            }
+            carryRowExtras(backup.lists, into: &lib)
+        }
         // Things on no list have no other home (missing from backups until web v178).
         for thing in backup.things where !jsTrim(thing.name).isEmpty {
             let id = thing.itemId ?? thing.id
-            if lib.items.contains(where: { $0.id == id }) { continue }
+            if lib.items.contains(where: { $0.id == id }) {
+                if report.asStored { report.things += 1 }   // it came across with the others
+                continue
+            }
             var cat = catalogItemFromResolved(thing)
             if !id.isEmpty { cat.id = id }
+            // `catalogItemFromResolved` is written for a row on a template, whose note
+            // and qty belong to its PLACE. A thing on no list was resolved against no
+            // place at all, so these are its own — and its own answers in `extra` too
+            // (a bag's cabin answer, a key the web app knows and this build does not).
+            cat.note = thing.note
+            cat.qty = thing.qty
+            cat.extra.merge(thing.extra) { _, inFile in inFile }
             lib.items.append(cat)
             report.things += 1
         }
