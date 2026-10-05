@@ -34,13 +34,20 @@ final class PackingReminders: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().delegate = self
     }
 
+    /// What the device says about reminders from this app NOW.
+    enum Permission { case allowed, refused, notAskedYet }
+
     /// May reminders be shown on this device NOW? Asks the system, never him: no
-    /// question appears. False once they are switched off for the app in the
-    /// device's Settings — while the switch here may still say on.
-    func allowed() async -> Bool {
-        if AMSPackingApp.testing { return !Self.pretendBlocked }
-        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
-        return status == .authorized || status == .provisional
+    /// question appears. `refused` once they are switched off for the app in the
+    /// device's Settings (or he said no when asked) — while the switch here may say
+    /// either. `notAskedYet` is no refusal: the question comes when he switches on.
+    func permission() async -> Permission {
+        if AMSPackingApp.testing { return Self.pretendBlocked ? .refused : .allowed }
+        switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
+        case .authorized, .provisional: return .allowed
+        case .denied: return .refused
+        default: return .notAskedYet
+        }
     }
 
     /// Ask once. True when reminders may be shown.

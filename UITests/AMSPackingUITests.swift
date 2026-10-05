@@ -4800,7 +4800,10 @@ final class AMSPackingUITests: XCTestCase {
 
     /// Remind me to pack, switched on here but blocked in the device's Settings: the
     /// card says so — every time it is shown — and names no reminder that will never
-    /// come. (`-pretendRemindersBlocked`: on earlier, then blocked.)
+    /// come. Switched off, it still says so, and still after Settings is left and
+    /// opened again (spec 06 item 27: the line was forgotten, so nothing said why
+    /// switching on would not work). (`-pretendRemindersBlocked`: on earlier, then
+    /// blocked.)
     func testRemindersSayWhenTheDeviceBlocksThem() {
         let app = XCUIApplication()
         app.launchArguments += ["-uiTestingChecks", "-pretendRemindersBlocked"]
@@ -4816,6 +4819,19 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         XCTAssertTrue(app.staticTexts["settings-reminders-refused"].waitForExistence(timeout: 5),
                       "the card forgot that the device blocks reminders")
+
+        setSwitch(app, "settings-reminders", on: false)
+        sleep(1)                                                   // the card looks the permission up again
+        XCTAssertTrue(app.staticTexts["settings-reminders-refused"].exists,
+                      "switched off, the card no longer says the device does not allow reminders")
+        shot(app, "settings-reminders-blocked-off")
+        tab(app, "home")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        XCTAssertFalse(isSwitchOn(app, "settings-reminders"), "the switch came back on by itself")
+        XCTAssertTrue(app.staticTexts["settings-reminders-refused"].waitForExistence(timeout: 5),
+                      "Settings left and opened again: the card forgot that the device does not allow reminders")
+        XCTAssertFalse(app.staticTexts["settings-reminders-next"].exists)
     }
 
     #if os(iOS)
