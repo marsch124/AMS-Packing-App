@@ -1124,7 +1124,8 @@ web app for anyone, and in this app under Settings → Open a shared link.
 - Settings → "Open a shared link" → paste or type → `Library.readShared(text)`. It tries a grab list
   first, then a template, then a trip.
 - A grab list shows "A GRAB LIST" (`shared-kind`, 12 pt heavy `muted`, kerning 0.6), its name
-  (`shared-name`, 18 pt bold) and "<n> things" (14 pt medium `muted`; always "things", also for 1).
+  (`shared-name`, 18 pt bold) and "1 thing" / "<n> things" (15 pt medium `muted`, `shared-count`; "1 things"
+  until 0.6x — the trips spec pass).
   `decodeGrabShare` refuses a code with no items ("The shared list is empty."), and `readShared` then tries
   a template and a trip, so such a code ends as `shared-bad`.
 - **"Add it to your grab lists"** (`shared-add`, Trips-green fill, 48 tall) runs `importGrab`, which is

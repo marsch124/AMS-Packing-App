@@ -12,7 +12,10 @@ public let HOME_KEY = "packedHome"
 public let USED_UP_KEY = "usedUp"
 /// A line's extra key: a note made while packing to go home — "zip broken", "wash
 /// before next trip" (their field test, 3 Oct 2026: "a button for each item to write
-/// maintenance in the comment"). It stays on the trip's line; the thing is untouched.
+/// maintenance in the comment"). It is kept on the trip's line. The way home and On
+/// site save it through `noteOnSite`, which ALSO writes it onto the thing behind the
+/// line, dated, for Care (his choice, 3 Oct 2026); only `setHomeNote` alone leaves the
+/// thing untouched. (The spec pass, 5 Oct 2026: this said the thing was never touched.)
 public let HOME_NOTE_KEY = "homeNote"
 
 extension Library {
@@ -89,8 +92,8 @@ extension Library {
         return ids.count
     }
 
-    /// The line's note for the way home; an empty one removes it. The thing itself is
-    /// not touched — the note belongs to this trip.
+    /// The line's note for the way home; an empty one removes it. This alone does not
+    /// touch the thing — `noteOnSite`, which the screens call, carries it there too.
     @discardableResult
     public mutating func setHomeNote(_ text: String, tripId: String, entryId: String) -> Bool {
         let note = jsTrim(text)

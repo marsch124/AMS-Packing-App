@@ -197,7 +197,7 @@ negative price/qtyOwned clamped, unknown retire reason dropped), `testConsumable
 | `people()` | His packers roster (kind "people") or the two factory packers `DEFAULT_PEOPLE` (`SharedRows.swift`). |
 | `conditions()` | His conditions (kind "conditions") or `DEFAULT_ITEM_CONDITIONS`. |
 | `usesOf(kind)` | How many items name each place / owner / packer / condition / phase (by `normName`), so Settings can refuse to remove one in use. |
-| `followThing(id:today:) -> Int` | His decision on test I.7 (1 Oct 2026, release 0.45): a change to a thing reaches trips still ahead — status not "done", not reviewed, and either no start date or an end date (or the start, when there is no end) ≥ today — and on them only lines of that thing (`sourceItemId == id`) that are not ticked, not custom and not edited on the trip. Each such line is rebuilt as a new trip would build it (`buildTotalEntries` over the resolved templates, so a template's own bag still wins; the fresh line from the same `sourceListId` first), keeping ONLY its id, tick, set-aside and `used` — the line's other data, its `extra` marks included, are the fresh line's. Without `today` it uses the UTC date (`nowISO().prefix(10)`); `updateThing` and `renameThing` never pass one. Returns the number of lines changed. |
+| `followThing(id:today:) -> Int` | His decision on test I.7 (1 Oct 2026, release 0.45): a change to a thing reaches trips still ahead — status not "done", not reviewed, and either no start date or an end date (or the start, when there is no end) ≥ today — and on them only lines of that thing (`sourceItemId == id`) that are not ticked, not custom and not edited on the trip. Each such line is rebuilt as a new trip would build it (`buildTotalEntries` over the resolved templates, so a template's own bag still wins; the fresh line from the same `sourceListId` first), keeping its id, tick, set-aside, `used` and its own `extra` marks (way home, used up, maintenance note — 0.6x) — the line's other data are the fresh line's. Without `today` it uses `Library.localToday()`, the device's own date (0.6x; it was the UTC date); `updateThing` and `renameThing` never pass one. Returns the number of lines changed. |
 
 **Data.** Items → `items` records; memberships → `memberships` records (parent = template id); kits → `kits`
 records; shared rows (owners/places/people/conditions) → `shared` records (`places:garage`-style keys).
@@ -216,8 +216,8 @@ list's own A–Z then one not on the list; empty library → []); `ThingFollowsT
 `testABagChosenForOneTemplateStillWins`; `HealthTests.testThingsOnNoListAreNotAWorry`.
 
 **Not covered by a test.** `setOnTemplate` order placement (bottom of the template); `deleteThing` leaving
-to-dos/buy lines that name the thing; `renameThing` to a different capitalisation of its own name;
-`followThing` using the UTC date when called from `updateThing`.
+to-dos/buy lines that name the thing; `renameThing` to a different capitalisation of its own name.
+(`followThing`'s local day is pinned by `ThingFollowsTests.testStillAheadGoesByTheDayWhereHeIs`, 0.6x.)
 
 ---
 
@@ -1637,9 +1637,8 @@ pins · [idea] a gap worth deciding on.
 24. [bug] **Bag rows in Your bags fill their fields only when first shown** (`onAppear`): a number changed on
     the bag's page (a sheet over Your bags) is likely still shown with the old text in the row until Your bags
     is reopened. Untested.
-25. [bug] **`followThing` uses the UTC date** when called from `updateThing`/`renameThing` (no `today` passed),
-    unlike the screens, which use the local day; just after midnight in a time zone ahead of UTC a trip that
-    ended yesterday still counts as ahead.
+25. [bug] **`followThing` used the UTC date.** Resolved in 0.6x (the trips area, F036): it goes by
+    `Library.localToday()`, the device's own date.
 26. [bug] **Sorting vs A–Z elsewhere:** the table compares normalised strings by code point (`<`), while Your
     things and the template lists use locale-aware `jsLocaleCompare`; accented names (å, ä, ö, é) sort
     differently in the table.

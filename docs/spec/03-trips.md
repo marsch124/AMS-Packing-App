@@ -1,6 +1,7 @@
 # Trips — from creating one to after it
 
-> Verified against the code on 5 Oct 2026 (app 0.60).
+> Verified against the code on 5 Oct 2026 (app 0.60). Every open question of this area was then
+> settled on branch `work/trips` (release 0.6x); the sections below say what the code does now.
 
 A **trip** (the code and the web app call it an *event*, Swift type `TripEvent`) is one journey: a
 name, optional dates and place, the templates it is built from, and the **list he packs from** — a
@@ -56,7 +57,7 @@ trip *Weekend in the hills* (Hiking + base, always 30–32 days from the day the
 | `transport` | "Car" (default) \| "Plane" \| "RV" (`TRANSPORTS`) | |
 | `season` | "Summer" (default) \| "Winter" (`SEASONS`) | |
 | `contexts` | [String] ⊆ "Indoor","Outdoor","Race" (`CONTEXTS`) | narrows WET templates only |
-| `weatherOn` | [String] ⊆ rain/cold/hot/wind/snow | conditions "forced on": weather-tagged gear is packed regardless of forecast. Filtered to `WEATHER_CONDITION_IDS` by `coerceEvent`. **No native screen sets it** (see Open questions) |
+| `weatherOn` | [String] ⊆ rain/cold/hot/wind/snow | conditions "forced on": weather-tagged gear is packed regardless of forecast. Filtered to `WEATHER_CONDITION_IDS` by `coerceEvent`. Set in Trip settings, "Pack weather gear anyway" (0.6x) |
 | `catering` | "mixed" (default) \| "self" \| "eatout" (`CATERING`) | the "Food" pills |
 | `startDate`, `endDate` | "YYYY-MM-DD" or "" | |
 | `nights` | Int ≥ 0 | derived from the dates on create / settings save (`nightsBetween`); 0 when undated |
@@ -96,7 +97,7 @@ unit), `liquid`, `restricted`, `perNight`, `section` (the section's DISPLAY NAME
 | `packedHome` | `HOME_KEY` | ticked for the way home |
 | `usedUp` | `USED_UP_KEY` | used up / left on site |
 | `homeNote` | `HOME_NOTE_KEY` | maintenance note on this line |
-| `packedAt` | — | the web app's packing time; only removed by Start again |
+| `packedAt` | — | the web app's packing time; removed by Start again, left out of a share |
 
 **Extra key on a bag (a thing on the bag list):** `cabin` (`CABIN_KEY`, Bool) — "Goes in the cabin".
 
@@ -158,7 +159,8 @@ Above the card: heading **"Create new trip"** (`HeadingSize.band` 22 heavy, ink)
    test C.7. The last sentence: field test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off.)
 4. **Date range picker** (only while Dates is on) — see the next section. On Home it opens its month
    grid immediately.
-5. **One block of pills per activity group** that has templates, in `GROUPS` order (GA, WET, OE).
+5. **One block of pills per activity group** that has templates, in `GROUPS` order (GA, WET, OE) — and,
+   last, **"OTHER TEMPLATES"** for templates with no activity area (0.6x; see "Templates offered").
    Heading: `groupHeading(id, label)` = "GA · GOAL ACTIVITY", "WET · WORKOUT, EXERCISE & TRAINING",
    "OE · OTHER EVENTS" (code, " · ", label upper-cased) as `HeadingTitle` (20 heavy violet with a
    4×18 violet capsule mark). Every group heading has the SAME id `trip-activity-title`.
@@ -215,9 +217,11 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   updatedAt = now`, appended to `trips`.
 - After creating: name, templates, contexts, Dates, Quick, Laundry and laundry nights are reset;
   **Transport, Season, Food and the two dates are NOT reset** (they stay as last chosen until the
-  view is rebuilt). The new trip opens as a sheet.
-- There is **no Place field** on Create new trip: a place is given later in Trip settings or the
-  weather card.
+  view is rebuilt). The new trip opens as a sheet. Kept so on purpose (the spec pass, 5 Oct 2026):
+  the next trip is usually the same car and the same season, and the pills show the answers before
+  Create is pressed.
+- There is **no Place field** on Create new trip, on purpose (same decision): the trip opens at once
+  and its weather card asks "Where is this trip?" first thing; Trip settings has Place too.
 - Date strings: `HomeScreen.ymd` formats in the device's time zone, Gregorian, en_US_POSIX — the
   picker's dates are local midnights, so the day picked is the day stored.
 - Initial dates (before any pick): start = now, end = now + 2 × 86 400 s (both carry the current
@@ -229,8 +233,12 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
 no ticked template still gets the base and transport templates. The screen always requires one.
 
 **Templates offered** (`Library.activityChoices()`): resolved templates with `role == ""` whose
-`group` is one of GA, WET, OE, grouped and ordered as above. A template with an empty or unknown
-`group`, the base, transport, container ("Bags") and loose roles are never offered.
+`group` is one of GA, WET, OE, grouped and ordered as above — then, last, every `role == ""` template
+whose group is empty or unknown, A–Z, as a group with id "" and label "Other templates" (heading
+"OTHER TEMPLATES", violet; pills numbered on from the others). The web app offers such lists last
+("Other lists"); until 0.6x they were never offered here although A new template offers "No activity
+area" (the spec pass, 5 Oct 2026). The base, transport, container ("Bags") and loose roles are never
+offered.
 
 ### Data
 Writes one `trips` record and one `entries` record per line. AppStorage: none.
@@ -247,8 +255,9 @@ with lines; it is listed as `trip-row-1`), `testDatesArePickedLikeBooking`,
 Transport, pills set in > 24 pt), `testTheDateGridCanBeLeftAndQuickSaysSo` (Quick note only while
 on), `testABagOnTheTripSaysWhetherItGoesInTheCabin` (Quick note contains "Transport still counts"),
 `testLaundryCountsPerNightThingsFourNightsAtMost`, `testTheEditorsLeadWithTheirHeadings` (heading ids
-exist). Model: `CreateTripTests.testATripIsBuiltFromItsTemplatesAndTheBase`,
-`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder`.
+exist), `testATemplateWithNoActivityAreaGoesOnATrip` (a "No activity area" template is `trip-activity-2`,
+a Quick trip is made of it). Model: `CreateTripTests.testATripIsBuiltFromItsTemplatesAndTheBase`,
+`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder` (GA, WET, then "Other templates").
 **Not covered:** that Transport/Season/Food survive a create; context kept with no WET ticked;
 the 2-night default; the red name border.
 
@@ -289,8 +298,9 @@ and in Trip settings (grid CLOSED, `open: false`). The field toggles the grid; O
      › (id `range-next`); arrows are drawn chevrons 22 pt in 40×36.
    - Weekday row "Mon Tue Wed Thu Fri Sat Sun" (12 heavy muted).
    - Day cells (min height 40), Monday first: blanks before the 1st; the month's days only (no days
-     of the neighbouring months; the last week is padded with empty space, so a month draws 4–6 rows
-     and the grid height changes between months). Day number 16 pt mono, bold when it is an end, in
+     of the neighbouring months). Every month is drawn as **six rows** (`DateRangePicker.sixWeeks`: the
+     blanks after the last day fill the rest), so the grid keeps one height from month to month and OK
+     and Cancel never move under his finger (0.6x; until then 4–6 rows, and the panel jumped). Day number 16 pt mono, bold when it is an end, in
      the range, or today. First and last day: filled tint rounded rectangle (corner 8), white
      number. Days between: a 14 % tint band edge to edge (the ends carry half-bands so the range
      reads as one stretch). Today (not an end): a 1.5 pt tint ring. Past days: muted number but
@@ -315,8 +325,9 @@ and in Trip settings (grid CLOSED, `open: false`). The field toggles the grid; O
   dates.
 - **Cancel**: puts back the dates from when the grid opened (even after a whole new range), stops
   waiting, closes.
-- **Field tap while open**: just closes the grid (no validation, `waitingForEnd` is not reset — see
-  Open questions).
+- **Field tap while open**: the same as **OK** (0.6x) — with only the first day picked the grid stays
+  open and shows `range-needs`; with a whole range it closes, keeping it. (Until then it closed at once,
+  leaving a one-day trip and "Now tap the last day" on the field.)
 - **Arrows**: shift the shown month by ±1 from the shown month (or the first day's month).
 - Nights: whole calendar days between the local midnights of start and end (DST-safe), never below 0;
   "1 night" singular.
@@ -339,9 +350,12 @@ before the first becomes the first, OK closes, the trip keeps the dates — the 
 the device's locale, so either "27 Sep" or "Sep 27"), `testTheDateGridCanBeLeftAndQuickSaysSo` (OK
 before the last day keeps the grid and shows `range-needs`; Cancel restores the value),
 `testTheDateGridWaitsForOK` (after the last day the grid stays, summary "3 Nov – 13 Nov · 10 nights"
-form, OK keeps), `testTheDateGridStartsOverAndCancelPutsItBack`. The model's `monthGrid`,
-`rangeCellState`, `orderRange` are tested in `DatesTests` but **the app does not use them** (see Open
-questions). **Not covered:** two-month layout, past-day tapping, field-tap-to-close while waiting.
+form, OK keeps), `testTheDateGridStartsOverAndCancelPutsItBack`, `testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill`
+(the field with only the first day keeps the grid and shows `range-needs`; with a whole range it closes;
+OK keeps its distance from the month title over six months of different week counts). The model's
+`monthGrid`, `rangeCellState`, `orderRange` are tested in `DatesTests` but **the app does not use them**
+— they are the web app's, held to it by the parity checker; the app draws its own steady six rows.
+**Not covered:** two-month layout, past-day tapping.
 
 ### Traps and history
 - Plain rows, not a lazy grid: a lazy grid builds only what is on screen (the care calendar's lesson
@@ -462,7 +476,7 @@ the thing's. Section and kit: the row's. Everything else is the thing's.
 
 ### Kits
 A line keeps its kit NAME (`kit`), and its `packer`, but the native trip screen does not show either
-(no kit clusters; `clusterByKit` is ported but unused — see Open questions).
+(no kit clusters; `clusterByKit` is ported but unused — decided so, see Open questions 16).
 
 ### Tests
 `TripBuildingTests` (all): empty constraints, season, transport + catering, context only on WET,
@@ -481,6 +495,13 @@ built line carries, regenerate keeps checked/custom/edited. `RowTagsTests.testAT
 - `progress(lines)` → `done` = packable lines checked, `total` = packable lines (reminders INCLUDED),
   `aside` = lines set aside, `pct` = round(done/total×100) (0 when total 0). Set aside leaves the
   total, so a trip can reach 100 % with things set aside (his choice 2026-09-23).
+- **Reminder lines** (`itemType == "reminder"`, a thing to DO — "book the ferry") count in the trip's
+  progress, because they must be done before leaving; they are NOT in the bag loads (nothing to weigh),
+  the cabin check (nothing to carry) or the review (nothing to use). Written down by the spec pass,
+  5 Oct 2026, and kept so.
+- **Set aside means not packed** (0.6x): `setAside(true)` also takes the line's tick away, so a line is
+  never ticked and set aside at once. (Older data can still hold both; the review, Your year and All
+  your trips count such a line as not packed.)
 - A trip is **all packed** when `total > 0 && done == total`.
 - `bagLoads(lines, nights, limits)`: per bag (empty container → "Other"), set-aside lines and
   reminders skipped; `items` = count of lines; `grams` = Σ weight × effectiveQty; `kg` = grams rounded
@@ -579,9 +600,9 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
 - Left: name (18 semibold ink, one line; "Untitled event" when empty); under it the when-line (15
   medium muted, up to 2 lines) = parts joined " · ": the dates (a single day, or "start – end"), the
   countdown label for the start ("in 12 days", "Today", "3 days ago"…), the place (`destination`), the
-  forecast's temperature range ("4–11°C") — or "No dates" when there is nothing. Dates are formatted
-  with the device locale's "d MMM yyyy" template ("3 Oct 2026" or "Oct 3, 2026" depending on the
-  device).
+  forecast's temperature range ("4–11°C") — or "No dates" when there is nothing. Dates are written
+  "3 Oct 2026" — fixed English words on every device (`TripChecksCard.day`, 0.6x), as the date grid,
+  Check before you go and the map write them; until then they followed the device ("Oct 3, 2026").
 - Right: the state badge (13 heavy, capsule, min height 22, id `trip-state`): **Planned** (muted on
   `Theme.line`), **Packing** (white on orange), **Ready** (white on green), **Reviewed** (muted on
   `Theme.line`); under it "done/total" or "done/total · N set aside" (15 bold mono; green when Ready,
@@ -594,7 +615,8 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
 - Order: `sortEventsForList(trips, today)`: rank 0 = start today or later (soonest first); rank 1 =
   undated or unreadable start (newest `createdAt` first); rank 2 = start before today (most recent
   first). A trip under way therefore sorts with the past ones.
-- **State**: `status == "done"` or `reviewedAt` set → reviewed; else total > 0 and done == total →
+- **State**: `Library.isReviewed(trip)` (`status == "done"` or `reviewedAt` set — ONE rule for every
+  screen since 0.6x) → reviewed; else total > 0 and done == total →
   packed ("Ready"); else done > 0 or anything set aside → packing; else planned.
 - **Pile** (string comparison of YYYY-MM-DD with today): start > today → Coming up; start ≤ today ≤ end
   (end = start when empty) → Now; no start → Coming up; else → Done.
@@ -610,8 +632,8 @@ accessibility element, id `events-year`, label "Trips month by month over the la
 figure tiles: trips ("trip"/"trips", id `year-trips`), nights ("night away"/"nights away", `year-nights`),
 packed ("things packed", `year-packed`) — 20 heavy green numbers over 12 bold muted words.
 A trip counts when its start's YYYY-MM is one of those months; nights = days between start and end
-(both ≥ 10 characters; same day or no end = 0); packed = its checked lines (set-aside ticked lines
-included).
+(both ≥ 10 characters; same day or no end = 0); packed = its ticked lines that are not set aside
+(`Library.packedCount`, 0.6x — before, a line ticked and then set aside counted).
 
 ### All your trips (`AllTimeBand`, `Library.travelAllTime()`)
 
@@ -663,9 +685,11 @@ screen shows an empty placeholder trip ("Untitled event", 0/0).
   all packed, else muted; id `trip-progress`; accessibility value "all packed" when all packed, else
   ""), and the **pen** (Trip settings door: drawn pen 24 pt green in a 36×34 target, id
   `trip-settings`, label "Trip settings").
-- Right: "Reviewed" (15 bold muted, id `trip-reviewed`) when `status == "done"`; otherwise, if the trip
+- Right: "Reviewed" (15 bold muted, id `trip-reviewed`) when `Library.isReviewed(trip)` (0.6x: a trip with
+  only a review time, from the web app, offered Review again here); otherwise, if the trip
   has lines, **Review** (outlined green, id `trip-review`) — offered at ANY time, before the trip too.
-  Then **Done** (filled green, id `trip-done`). Both use `HeaderButtonStyle`, whose own 16 pt bold
+  Then **Done** (filled green, id `trip-done`; **Escape** presses it — `.keyboardShortcut(.cancelAction)`,
+  ⌘. on an iPhone keyboard — 0.6x). Both use `HeaderButtonStyle`, whose own 16 pt bold
   wins over the 17 pt the call site sets (the same everywhere in this area: Done, Cancel, Next, Close).
 
 **Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
@@ -697,8 +721,9 @@ outline; `.isSelected` on the chosen one); if they do not fit, the same with 14 
      muted, set-aside lines excluded); and at the right the **whole-section tick**: a 24 pt circle
      (2 pt `Theme.line` outline, or filled green with a white tick when every packable line of the
      section is ticked) in a 40×36 target, id `trip-group-<g>-all`, label "Tick all of <heading>" /
-     "Untick <heading>", `.isSelected` when done; `.disabled` (drawn faded by the system) when every line
-     of the section is set aside. A press sets EVERY packable line of the section to "ticked" — or, when
+     "Untick <heading>", `.isSelected` when done. When every line of the section is set aside there is
+     nothing to tick: the button is not drawn (an empty 40×36 keeps the heading still) — 0.6x; until
+     then it sat there switched off and faded, against his rule. A press sets EVERY packable line of the section to "ticked" — or, when
      all were ticked, to "unticked" — in one `model.change`, one `setChecked` per line.
    - When not folded, its lines (see "A line" below).
 6. **Tick everything / Clear every tick** (`TickAllRow`) — own section.
@@ -735,7 +760,7 @@ blink; skipped with Reduce Motion. The progress text turns green and carries the
   Tap: toggles `checked` (`Library.setChecked`) — **a set-aside line does not tick**.
 - **⊘ / ↻** (`AsideMark`, 24 pt drawn, muted, 40×40 target), id `trip-line-<n>-aside`, label
   "Not this time" / "Take it this time": one tap toggles `skipped` (`Library.setAside`), no
-  confirmation (his call).
+  confirmation (his call). Setting aside also takes the line's tick (0.6x); taken back, it is unticked.
 - Sorted **From where**, under each line of the group **"No place set"**: **Set place** (13 bold green
   capsule outline, indented 44), id `trip-line-<n>-place` — see "Set place".
 
@@ -746,7 +771,8 @@ tick while the trip had it; and a moved lazy row kept "Set place").
 ### Sorting and grouping (`groupBy`, `Grouping.swift`)
 
 The chosen sorting is remembered on the device in AppStorage **`ams.view`** (default "when"), the same
-for every trip. Within every group the lines keep the trip's list order (no inner sorting).
+for every trip — kept so (the spec pass, 5 Oct 2026): it is a way of looking, not part of a trip, and
+each device keeps its own. Within every group the lines keep the trip's list order (no inner sorting).
 
 | Button | `ams.view` | Groups | Group order | Heading |
 |---|---|---|---|---|
@@ -761,8 +787,10 @@ does not offer it.
 ### Folding
 
 Folded headings are remembered on the device in AppStorage **`ams.trip.folded`**: newline-separated keys
-`"<tripId>|<view>|<heading>"` — per trip and per sorting. A folded group keeps its heading, count and
-whole-section tick. Keys are never cleaned up (deleted trips leave theirs).
+`"<tripId>|<view>|<heading>"` — per trip and per sorting (`TripFolds`, PackingLibrary/TripEdits.swift).
+A folded group keeps its heading, count and whole-section tick. Since 0.6x the keys are cleaned up:
+deleting a trip removes its folds (`TripFolds.without`), and every fold made drops the folds of trips this
+device no longer has (deleted on the other one too, `TripFolds.toggled`).
 
 ### Set place (From where)
 
@@ -774,9 +802,10 @@ and empties the field); one pill per storage place (`Library.storagePlaces()`: h
 from Settings, or the 12 `DEFAULT_STORAGE_LOCATIONS` "Bedroom wardrobe" … "RV / camper" while he has
 none; 14 semibold ink on a `Theme.bg` capsule with a 1 pt line, min height 32, wrapping, id
 `trip-place-<i>`) — one tap sets it; a field "A new place" (15 medium, min height 36, id
-`trip-place-new`, Return saves — Return on a blank field does nothing) and **Save** (14 bold, id
-`trip-place-save`) — white on green when something is typed, muted words on a `Theme.line` fill AND
-`.disabled` while the field is blank (see Open questions). Opening Set place on another line moves
+`trip-place-new`, Return saves — Return on a blank field does nothing) and **Save** (15 bold white on
+green, id `trip-place-save`) — always in colour, never switched off (0.6x); pressed with the field
+blank it says "Type a place first, or tap one above." under the row (15 bold red, id
+`trip-place-save-needs`), gone as soon as something is typed. Opening Set place on another line moves
 the one panel there and empties the field.
 `Library.setPlace(place, tripId:, entryId:)`: trims; refuses blank; if the line comes from a template
 row that still exists (`thingId(of:)`), the THING's `storage` is set (`updateThing`, so other trips
@@ -800,13 +829,16 @@ tick), `testASectionFoldsAndStaysFolded`, `testAPlaceIsSetFromTheTrip`, `testThe
 (words When/Into/From where/Category, one line, When first, Into re-sorts, From where headings are the
 sample's places), `testAWholeSectionIsTickedInOnePress`, `testTheScreenSaysSoWhenEverythingIsPacked`,
 `testAThingTypedWhilePackingJoinsTheTrip` (Add never disabled, `trip-add-needs`), `testSomethingBoughtOnSiteGoesOnTheList`
-(the button appears only after typing, "1/8", "Bought on site" on line 7), `testAChangeToAThingReachesATripStillAhead`.
+(the button appears only after typing, "1/8", "Bought on site" on line 7), `testAChangeToAThingReachesATripStillAhead`,
+`testASetAsideLineIsNotPacked` (⊘ takes the tick, a set-aside line does not tick, ↻ brings it back unticked,
+a section with every line set aside has no `trip-group-0-all`), `testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen`
+(`trip-place-save-needs`), `testEscapeClosesTheTripsWindows`.
 Model: `CustomLineTests.testATypedThingJoinsTheTripAndSurvivesARegenerate`, `SetPlaceTests.testAPlaceSetOnTheTripReachesTheThingAndItsTwin`,
 `TripCardsTests.testEverythingDecidedIsPacked`, `OnTheTripTests.testABoughtOnSiteLineIsInHandMarkedAndKept`,
 `testTheStoredMarkKeepsItsFirstName`, `CountingTests.testProgress*`, `GroupingTests` (groupBy, container, category, storage).
-**Not covered by any test:** the ⊘ set-aside button in the UI; that a set-aside line cannot be ticked;
-the gradient sweep/Reduce Motion; the place panel's Close; fold keys per sorting; the `ViewThatFits`
-fall-backs; the placeholder for a vanished trip.
+Model: `TripEditsTests.testATripsFoldsGoWithIt`, `ReviewTests.testASetAsideLineNeverCountsAsPacked`.
+**Not covered by any test:** the gradient sweep/Reduce Motion; the `ViewThatFits` fall-backs; the
+placeholder for a vanished trip.
 
 ### iPhone vs Mac
 Same view. Mac minimum 520 × 640. The sorting row's fall-backs matter on narrow iPhones.
@@ -840,7 +872,8 @@ as the web app does, because it throws away the packing so far."
 ### Behaviour
 `Library.setAllChecked(checked, tripId:)`: every line NOT set aside whose tick differs is set, one
 `setChecked` (one record) per line; returns how many changed. Set-aside lines are untouched both ways
-(a set-aside line that was ticked stays ticked in the data).
+(setting a line aside takes its tick, so none is ticked underneath since 0.6x; one from older data
+counts nowhere — see Counting).
 
 ### Tests
 UI `testEverythingIsTickedAndClearedAtOnce` (value "6" after one tick, 7/7, Tick everything disappears,
@@ -858,8 +891,11 @@ cloud test lost it" 2026-09-27).
 
 **How it is reached and left.** The pen beside the trip's count (`trip-settings`) opens it as a sheet
 (`TripSettingsDoor` owns the sheet because the trip screen already has one for the review). Left with
-**Cancel** (no change), **Save changes** (when nothing is missing), **Start it** (Start again), or a
-swipe down on the iPhone (= Cancel). Screen id `tripset-screen`; Mac minimum 540 × 600.
+**Cancel** (no change; **Escape** too, ⌘. on an iPhone keyboard — 0.6x), **Save changes** (when nothing
+is missing), **Start it** (Start again), or a swipe down on the iPhone (= Cancel) — but only while
+nothing has been changed: once anything differs from what the sheet opened with, the swipe no longer
+closes it (`interactiveDismissDisabled`, 0.6x) and Cancel or Save must be pressed. Screen id
+`tripset-screen`; Mac minimum 540 × 600.
 
 ### What is on screen
 - Header: **Cancel** (outlined muted, id `tripset-cancel`), title "Trip settings" (22 heavy ink), an
@@ -869,12 +905,15 @@ swipe down on the iPhone (= Cancel). Screen id `tripset-screen`; Mac minimum 540
   placeholder ("Where the trip goes, e.g. <a town>", 18 medium), id `tripset-place`.
 - **Dates** (id `tripset-dates`) and **Quick** (id `tripset-quick`) switches; Quick note (id
   `tripset-quick-note`); the date picker with its grid CLOSED (same ids `trip-dates-field`, `range-*`).
-- The template pill groups (ids `tripset-activity-<n>`, same numbering as Create new trip; heading id
-  `tripset-activity-title`), Context (`tripset-context-*`), Transport, Season, Food
-  (`tripset-transport-*`, `tripset-season-*`, `tripset-catering-*`, headings `…-title`), Laundry
-  (`tripset-laundry`, `-says`, `-nights-*`).
-- "Save rebuilds the list: what you ticked or added yourself stays; new things arrive; things no longer
-  asked for go." (14 muted), a divider, and **Start a new trip from this one** (next section).
+- The template pill groups (ids `tripset-activity-<n>`, same numbering as Create new trip, "OTHER
+  TEMPLATES" last; heading id `tripset-activity-title`), Context (`tripset-context-*`), Transport,
+  Season, **Pack weather gear anyway** (0.6x: pills Rain, Cold, Heat, Wind, Snow — `WEATHER_CONDITIONS`,
+  ids `tripset-weather-0…4`, heading `tripset-weather-title`, blue, several at once — the trip's
+  `weatherOn`: his gear tagged for a picked condition comes onto the list whatever the forecast; the
+  web app's "pack anyway"), Food (`tripset-transport-*`, `tripset-season-*`, `tripset-catering-*`,
+  headings `…-title`), Laundry (`tripset-laundry`, `-says`, `-nights-*`).
+- "Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things
+  no longer asked for go." (14 muted), a divider, and **Start a new trip from this one** (next section).
 - Bottom bar (top hairline, `Theme.bg`): the still-needed line (15 bold red, id `tripset-needs`) and
   **Save changes** (18 bold white on green, min height 52, id `tripset-save`), never disabled.
 
@@ -882,14 +921,18 @@ swipe down on the iPhone (= Cancel). Screen id `tripset-screen`; Mac minimum 540
 - **Load** (once, on appear): name, place = `destination`, Dates on iff `startDate` non-empty, start =
   start date (or today), end = end date (or the start), Quick iff mode "quick", laundry, laundry nights
   (`laundryNights(trip)`), templates = `trip.activities`, contexts, transport/season/food (empty →
-  "Car"/"Summer"/"mixed"). Switching Dates on for an undated trip shows today — today, 0 nights.
+  "Car"/"Summer"/"mixed"), weather anyway = `trip.weatherOn`; the trip's template ids this screen does
+  not offer (a template deleted since, or the sender's templates on a trip someone sent) are noted
+  (`unshown`). Switching Dates on for an undated trip shows today — today, 0 nights.
 - **Still needed** (same words as Create new trip) is computed on Save; after that it follows the
   template pills (not the name field).
 - **Save**: nothing missing → `Library.changeTrip(id:)` with: name, place (trimmed; **a NEW place
   — compared trimmed — sets `destination` and clears `weather` and `geo`**, so the weather line looks
   the new place up), mode, `activities` = the ticked ids that are offered templates, in the order
-  offered (ids of templates not offered any more are dropped), contexts (CONTEXTS order), transport,
-  season, catering, laundry, `extra.laundryNights`, dates (Dates off → both "").
+  offered, THEN the trip's ids this screen does not show, as they were (0.6x: they were dropped — a Quick
+  trip whose template was deleted lost its Save without a word, `changeTrip` refusing a Quick trip with
+  no template), contexts (CONTEXTS order), transport, season, catering, `weatherOn` (`WEATHER_CONDITION_IDS`
+  order), laundry, `extra.laundryNights`, dates (Dates off → both "").
   `changeTrip`: trims the name; refuses (nil, nothing changed) a blank name, or a QUICK trip with no
   templates; `nights = nightsBetween ?? 0`; `entries = regenerated(trip)`; `updatedAt = now`; returns
   `TripRebuilt(added:removed:)` = line ids new / gone. The sheet then closes and the trip says what
@@ -902,8 +945,11 @@ swipe down on the iPhone (= Cancel). Screen id `tripset-screen`; Mac minimum 540
      ticks). Unmatched fresh lines are new.
   3. Old lines not taken are KEPT when: custom (typed, Bought on site, weather gear); or ticked or
      edited and no fresh line has their `sourceItemId`; or their template no longer exists
-     (docs/store.md rule 9 — one of his real trips would have gone from 88 lines to none).
-     Everything else goes (unticked lines no longer asked for).
+     (docs/store.md rule 9 — one of his real trips would have gone from 88 lines to none); or they have
+     NOTHING behind them — no `sourceListId`, no `sourceItemId`, not custom: a line someone SENT (a
+     share travels without those links). 0.6x: the first Save threw a received trip's whole list away,
+     ticks too. A fresh line with the same `normName(name)|container` as such a sent line is not added
+     beside it. Everything else goes (unticked lines no longer asked for).
   4. Any id seen twice gets a new id ("belt and braces").
   Order: fresh lines in build order, then kept old lines in their old order.
 - Effects of what is kept: a line's own tick, set-aside, notes and marks survive with its id; a line
@@ -913,17 +959,22 @@ swipe down on the iPhone (= Cancel). Screen id `tripset-screen`; Mac minimum 540
 Rewrites the trip head and the changed/new lines; deleted line records are removed.
 
 ### Tests
-UI: `testATripsSettingsAreChangedAfterItIsMade` (starts from the trip; rename to "Hills and lake",
+UI: `testATripSomeoneSentKeepsItsListOnSave` (a trip sent and received, ticked, saved: "Saved. The list
+is the same.", still 1/7), `testWeatherGearCanBePackedAnyway` (Rain picked, saved, still picked),
+`testATemplateWithNoActivityAreaGoesOnATrip` (its template deleted, a Quick trip's rename is still saved),
+`testASwipeDownKeepsWhatIsNotSavedYet` (iPhone), `testEscapeClosesTheTripsWindows`,
+`testATripsSettingsAreChangedAfterItIsMade` (starts from the trip; rename to "Hills and lake",
 place kept, adding Swim → "1/10" with the tick kept and "Saved: 3 new"; blank name refused under Save
 with "name" in the message; Cancel changes nothing), `testLaundryCountsPerNightThingsFourNightsAtMost`,
 `testATripChecksTheCabinAndTheDatesBeforeYouGo` (Car via Trip settings removes cabin checks).
 Model: `ChangeTripTests.testAChangedTripRebuildsAndKeepsWhatHeDid` ((2 added, 1 removed), ticked and
 typed lines stay, name trimmed, nights 3, refusals),
-`testAThingOnTheTripTwiceKeepsBothLinesAndTheirTicks`, `LibraryTests.testRegeneratingNeverDropsTheLinesOfADeletedTemplate`,
+`testAThingOnTheTripTwiceKeepsBothLinesAndTheirTicks`, `testATripSomeoneSentKeepsItsListOnSave` (kept, not
+doubled, his templates join only when ticked or Quick goes off), `testWeatherGearForcedOnComesWithTheList`,
+`LibraryTests.testRegeneratingNeverDropsTheLinesOfADeletedTemplate`,
 `testRegeneratingStillDropsWhatALivingTemplateNoLongerHas`, `OnTheTripTests.testABoughtOnSiteLineIsInHandMarkedAndKept`
 (a rebuild keeps bought-on-site lines), `TripChecksTests.testABagNameOnTheTripCanBeSaidToGoInTheCabin`.
-**Not covered:** a new place clearing weather/geo; dropping un-offered template ids; Quick/Season/Food
-changes through the screen.
+**Not covered:** a new place clearing weather/geo; Quick/Food changes through the screen.
 
 ### Traps and history
 - 0.39 crash fix (E.6): see regenerated step 2/4.
@@ -950,16 +1001,19 @@ ended up, after a week of corrections."
 ### Behaviour
 `Library.startAgain(from:name:)`: trims the name (blank → nil); copies mode, activities, transport,
 season, contexts, weatherOn, catering, laundry, destination and `extra.laundryNights`; NOT the dates,
-weather, map point, status or review. Every line copied with a new id, `checked = false`, `used = nil`,
-`extra.packedAt` removed — set-aside, custom, edited and all other line marks stay (see Open
-questions). The new trip is appended (not via `createTrip`: no `generatedAt`, nights 0). Trip settings
+weather, map point, status or review. Every line copied with a new id, `checked = false`,
+`skipped = false`, `used = nil`, and its marks `packedAt`, `boughtThere`, `packedHome`, `usedUp`,
+`homeNote` removed (0.6x: a copied bought-on-site mark made the new trip stand at On site at once);
+`custom` and `_edited` stay — what the line IS comes along, what happened on the old trip does not.
+The new trip is appended (not via `createTrip`: no `generatedAt`, nights 0). Trip settings
 closes WITHOUT saving any other edits made in the sheet, and the trip screen switches to the new trip
 with "New trip from “<old name>”: N things, nothing ticked. Its dates are under the pen."
 
 ### Tests
 UI `testANewTripStartsFromThisOne` (name offered "Weekend in the hills (again)", the screen switches,
 0/7, "New trip from" note; blank name refused; Cancel starts nothing; the old trip keeps 1/7). Model
-`TripAgainTests.testANewTripStartsFromThisOnesList`, `LaundryNightsTests.testAStartedAgainTripAndTheStoredRecordsKeepTheChoice`.
+`TripAgainTests.testANewTripStartsFromThisOnesList`, `testANewTripLeavesWhatHappenedOnTheOldOneBehind`,
+`LaundryNightsTests.testAStartedAgainTripAndTheStoredRecordsKeepTheChoice`.
 
 ---
 
@@ -971,13 +1025,15 @@ weight, place, name — reaches the trips already made, but only where nothing h
 ### Behaviour
 `Library.followThing(id:today:)` runs after every `updateThing`, `renameThing` (and so after setPlace,
 Keep in Refine, cabin changes):
-- A trip is still ahead when not done/reviewed AND (undated, or its end — the start when no end — ≥
-  today). `today` defaults to the UTC date of the clock.
+- A trip is still ahead when not reviewed (`Library.isReviewed`) AND (undated, or its end — the start
+  when no end — ≥ today). `today` defaults to `Library.localToday()`, the date in the device's time zone
+  as every screen goes by (0.6x; it was the UTC date, so just after midnight in Sweden a trip that
+  ended yesterday still took a change).
 - Only lines with that `sourceItemId` that are not ticked, not custom and not edited.
 - Each such line is rebuilt as a new trip would build it (`buildTotalEntries` for that trip, the
   fresh line from the same `sourceListId` first, else any unused fresh line of that thing), keeping
-  ONLY its id, `checked`, `skipped`, `used`; everything else — including the line's `extra` marks
-  (`packedHome`, `usedUp`, `homeNote`, `packedAt`) — is the fresh line's (see Open questions). A bag
+  its id, `checked`, `skipped`, `used` AND its own `extra` marks (`packedHome`, `usedUp`, `homeNote`,
+  `packedAt` — 0.6x: they were wiped); everything else is the fresh line's. A bag
   chosen on a template row still wins. A line no fresh build produces any more (e.g. its row's tags no
   longer match the trip) is left as it is. Only lines that actually differ are written; changed lines
   bump the trip's `updatedAt`. `resolvedTemplates()` is computed once per call, only when some trip
@@ -985,7 +1041,8 @@ Keep in Refine, cabin changes):
 - Ticked lines, edited lines, typed lines and finished or reviewed trips keep what they were packed with.
 
 ### Tests
-Model `ThingFollowsTests` (3 tests), `ThingsTests.testYourThingsListsEverythingAndARenameReachesEveryList`
+Model `ThingFollowsTests` (5 tests, with `testStillAheadGoesByTheDayWhereHeIs` and
+`testALineKeepsItsOwnMarksWhenItsThingChanges`), `ThingsTests.testYourThingsListsEverythingAndARenameReachesEveryList`
 (a past trip keeps the old name). UI `testAChangeToAThingReachesATripStillAhead`.
 
 ---
@@ -1062,7 +1119,8 @@ while busy), id `weather-look`, never disabled; after a press with a blank field
   cold"; three or more: "Rain, Cold and wind" (later words lower-cased only for the last) — then ",
   2–8°C" unless the range contains "NaN".
 - The place as the service named it (14 semibold muted, e.g. "Testville, SE") and **Look again** /
-  "Looking…" (14 bold green / muted, disabled while busy), id `weather-again`.
+  "Looking…" (15 bold green both ways, never switched off — 0.6x, his rule; a press while it looks does
+  nothing more, one look at a time), id `weather-again`.
 - One row per missing piece of gear (id `weather-gear-<n>`): "+" (22 heavy green), the name (16 medium),
   why (13 semibold muted): "for the <condition word lower-cased>" — "for the rain", "for the snow",
   "for the cold", "for the heat", "for the wind" — plus " · yours" for his own gear. A tap adds it.
@@ -1103,15 +1161,18 @@ while busy), id `weather-look`, never disabled; after a press with a blank field
   snow), snow, cold (lowest min ≤ 5 °C, or a Summer trip whose lowest max < 14 °C), hot (highest max ≥
   27 °C), wind (a rounded max wind ≥ 35 km/h). A day without a temperature makes the range "NaN–NaN°C"
   and trips no temperature condition.
-- **What it asks for** (`weatherSuggestions` via `Library.weatherMissing`): (1) his own weather-tagged
-  rows of the trip's TICKED templates (`activities` only — not the base or transport templates) whose
-  tags meet a condition, that match the trip (season/transport/food/context) and whose name is not on
-  the trip; (2) the curated add-ons per condition — rain: Rain jacket, Waterproof / pack cover; cold:
-  Warm mid-layer, Beanie + gloves, Long tights; hot: Sun hat / cap, Sunscreen (liquid), Extra water
-  bottle; wind: Windbreaker; snow: Warm gloves, Traction spikes — each unless its name is on the trip or
-  already suggested. Own gear: the FIRST of a row's weather tags that is an active condition is its
-  reason; a row is NOT skipped for being retired ("Not in use"), unlike `buildTotalEntries` (see Open
-  questions); of two templates with one id the last is used. All names compared with normName.
+- **What it asks for** (`Library.weatherMissing`, which hands the web app's `weatherSuggestions` its
+  input — the parity-checked function itself is unchanged): (1) his own weather-tagged rows of EVERY
+  template the trip is built from — the always-packed and transport ones too, not only those he ticked
+  (`listsForEvent`; a Quick trip: only the ticked) — whose tags meet a condition, that match the trip
+  (season/transport/food/context), whose thing is not "Not in use", and whose name is not on the trip;
+  (2) the curated add-ons for EVERY active condition (not only for conditions his own gear left open) —
+  rain: Rain jacket, Waterproof / pack cover; cold: Warm mid-layer, Beanie + gloves, Long tights; hot:
+  Sun hat / cap, Sunscreen (liquid), Extra water bottle; wind: Windbreaker; snow: Warm gloves, Traction
+  spikes — each unless its name is on the trip or already suggested. Own gear: the FIRST of a row's
+  weather tags that is an active condition is its reason; of two templates with one id the last is used.
+  All names compared with normName. (0.6x, the spec pass: a retired rain jacket was offered and Add all
+  put it on; tagged gear on the base was held back from the list AND never offered.)
 - **Taking one** (`addWeatherGear`): a custom line (survives rebuilds) with the gear's bag and When
   (else the defaults), and for his own gear its `sourceListId`/`sourceItemId` (so the review credits the
   thing), category, Swedish name, kind, liquid flag, weight. **Add all** (`addAllWeatherGear`) adds each
@@ -1119,7 +1180,8 @@ while busy), id `weather-look`, never disabled; after a press with a blank field
 
 ### Data
 `trip.destination`, `trip.weather`, `trip.geo`; new lines. `LibraryModel.lookingUpWeather` (per trip),
-`weatherTrouble[tripId]` — memory only.
+`weatherTrouble[tripId]` — memory only. The card reads its trip through `Library.trip(_:)` — the FIRST
+trip with that id, as everywhere else (0.6x; it took the last).
 
 ### iPhone vs Mac
 Identical. Under the UI tests the forecast is invented (`InventedForecast`): any place → "Testville,
@@ -1129,8 +1191,9 @@ SE" with rain (code 61), 2–8 °C, 90 %, wind 24 for days 0…max(1, nights); a
 ### Tests
 UI `testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing`, `testWeatherAddAllTakesEverything`,
 `testTheMapShowsWhereTheTripsWent` (no-forecast place still on the map), `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
-(`weather-look`). Model `TripWeatherTests` (4: kept and read back, missing gear, staleness incl. a
-different place, survives a backup), `TripBulkTests.testAddAllTakesEveryWeatherSuggestionOnce`,
+(`weather-look`). Model `TripWeatherTests` (6: kept and read back, missing gear, staleness incl. a
+different place, survives a backup, `testRetiredGearIsNeverOfferedAndTheBasesOwnGearIs`,
+`testTwoTripsWithOneIdAreReadAsTheFirst`), `TripBulkTests.testAddAllTakesEveryWeatherSuggestionOnce`,
 `testHisOwnWeatherGearKeepsItsSource`, `WeatherTests` (all 19).
 **Not covered:** the automatic look-up rules; "Look again"; the trouble words for offline.
 
@@ -1182,10 +1245,12 @@ angles").
 
 ### Behaviour
 - Bags shown: `Library.weighedBags(tripId:)` = `bagLoads(lines, qtyNights, bagLimits())` with each bag's
-  scale reading (`weighed`, only finite readings > 0). The Bags CARD then keeps only bags with at least
-  one line AND (sum > 0 g or a scale reading), and is not drawn at all when none is left. So a bag
-  whose things weigh nothing is not shown (see Open questions). Order: CONTAINERS order, then his own
-  in first-appearance order. `bag-<n>` numbers the shown bags.
+  scale reading (`weighed`, only finite readings > 0). The Bags CARD keeps every bag with at least one
+  line, weighed or not (0.6x: a bag whose things weigh nothing was left off, and its scale, cabin switch
+  and photos could not be reached), and is not drawn at all when there is none. A bag with nothing
+  weighed (0 g, no scale reading) says **"Tap to weigh"** where the weight goes, draws no bar, and its
+  value is "not weighed". Order: CONTAINERS order, then his own in first-appearance order. `bag-<n>`
+  numbers the shown bags.
 - Weight that counts: the scale reading when there is one (`WeighedBag.grams`), else the things' sum.
   `over` = max > 0 and kg > max; **close** = max > 0 and kg ≥ 0.9 × max; gauge "fine, 25% of its max" /
   "close, 94% of its max" / "over, 119% of its max" (percentage rounded) / "no max".
@@ -1208,7 +1273,8 @@ angles").
   things).
 
 ### Tests
-UI `testABagIsWeighedOnTheLuggageScale` (25 % fine → 7.5 kg close 94 % → 9.5 kg over 119 % with
+UI `testABagWithNothingWeighedIsOnTheTrip` (a thing moved to another bag with no weight: that bag is on the
+card, "not weighed", and its scale opens), `testABagIsWeighedOnTheLuggageScale` (25 % fine → 7.5 kg close 94 % → 9.5 kg over 119 % with
 "9.5 kg weighed" and "N over" → Clear), `testABagsLimitReachesTheTrip` (his own limit reaches the trip;
 the ⓘ opens and closes the key), `testAPackedBagKeepsItsPhoto` (three photos, no fourth, "2 of 3", Next
 → "3 of 3", Remove → add again, the way home shows two), `testABagOnTheTripSaysWhetherItGoesInTheCabin`,
@@ -1239,7 +1305,8 @@ Checked in this order:
 2. `status == "done"` or `reviewedAt` set → **Refine**;
 3. its end (end date, else start) is before today → **Review**;
 4. no lines → **Plan**;
-5. a valid start date ≤ today → **On site**; an undated trip with something bought on site → **On site**;
+5. a valid start date ≤ today → **On site**; an undated trip with something bought on site → **On site**
+   (the On site door follows exactly this rule, 0.6x);
 6. otherwise → **Pack** (ticked or not, until it begins).
 
 | Step | rawValue | Name | About | Tab mark | Short words | Explained |
@@ -1288,8 +1355,9 @@ Pack to go home. Nothing new is stored on the trip; a maintenance note ALSO land
 for Care.
 
 **How it is reached and left.** The **On site door** on the trip screen (after the Bags card): shown
-when `onSiteBegun` — the trip has a valid start date and today ≥ start (it then stays for good, also
-after the trip), OR any line is bought on site. The door: "On site" (17 heavy) over the summary (14
+when `onSiteBegun` — a DATED trip once today ≥ its start (it then stays for good, also after the trip);
+a trip WITHOUT dates once any line is bought on site. The same rule as the loop's On site step (0.6x: a
+dated trip still ahead with something bought on site showed the door while the loop said Pack). The door: "On site" (17 heavy) over the summary (14
 medium mono muted, one line, scales to 0.85) and a chevron; card with a 1.2 pt green border, min height
 58; id `trip-onsite`, accessibility value = the summary. It opens the page as a sheet; **Done** (filled
 green, id `onsite-done`) closes it. Screen id `onsite-screen`; Mac minimum 520 × 640.
@@ -1356,7 +1424,8 @@ The typed search is lost when the picker closes.
   the note is removed.
 
 ### Tests
-Model `OnSiteTests` (6: the door's beginning incl. after the trip and bought on site; summary words;
+Model `OnSiteTests` (6: the door's beginning incl. after the trip, and bought on site — only an undated
+trip, agreeing with `loopStep`; summary words;
 note on the line and the thing, once, new lines appended; his own words not repeated; no thing → trip
 only, clearing keeps the thing's; the dated line). UI `testOnSiteHoldsBoughtLeftNotesAndTheWayHome`,
 `testANoteMadeOnSiteReachesTheThing` (the thing's Notes become "Keep it dry\nOn site <today>: Zip
@@ -1373,7 +1442,7 @@ ticks (the way-out ticks stay as they were, for the review)." Field test 3 Oct 2
 since 0.57.
 
 **How it is reached and left.** On site → **Pack to go home**. Sheet; **Done** (filled green,
-`wayhome-done`). Screen id `wayhome-screen`; Mac minimum 520 × 640. ONE sheet with a destination
+`wayhome-done`; Escape too, 0.6x). Screen id `wayhome-screen`; Mac minimum 520 × 640. ONE sheet with a destination
 (photos or a thing) — SwiftUI does not reliably present a second sheet while the first closes; closing it
 leaves the search as it was.
 
@@ -1381,15 +1450,17 @@ leaves the search as it was.
 - Header "Way home" (24 heavy green); "D/T" or "D/T · N used up" (15 bold mono muted, `wayhome-progress`).
 - Search field "Search the way home" (17 medium, ✕ at its end only when typed: `wayhome-search-clear`,
   label "Clear the search"), id `wayhome-search` — only when the way home has lines.
-- Photos of the packed bags (only when not searching): every photo of every bag that has way-home lines,
-  bag by bag, each bag's in the order taken: 120×90 thumbnails (corner 10) with the bag name (13 semibold
-  muted; "Not in a bag" for "" or "Other") in a horizontal strip, ids `wayhome-photo-<n>`; a tap opens
-  BigPhoto at that photo with captions.
+- Photos of the packed bags (only when not searching): every photo of every bag that has way-home lines
+  (`Library.homeBags`), bag by bag, each bag's in the order taken: 120×90 thumbnails (corner 10) with the
+  bag name (13 semibold muted; "Not in a bag" for "Other") in a horizontal strip, ids `wayhome-photo-<n>`;
+  a tap opens BigPhoto at that photo with captions. A bag is named as the Bags card names it
+  (`Library.homeBag`: a line in no bag — "" — is "Other"), so the photos of a bag deleted with "no bag",
+  which moved to "Other", show here (0.6x: they were looked up under "" and never found).
 - Empty: "Nothing to bring home yet: tick what you pack on the way out, and add what you buy on site with
   Bought on site." (`wayhome-empty`). No match: "Nothing on the way home is called “<q>”."
   (`wayhome-search-none`).
-- Bag headings (15 heavy green; "Not in a bag" for "" or "Other"), bags in the order they first appear
-  in the list; under each its lines.
+- Bag headings (15 heavy green; "Not in a bag" for "Other"), bags in the order they first appear in the
+  list; "" and "Other" are ONE bag, one heading (0.6x: two "Not in a bag" headings); under each its lines.
 - A line: the tick button (id **`wayhome-line-<n>` — n = index in the UNFILTERED way home**, so a line
   keeps its number while searching; `.isSelected` when packed): a 26 pt circle (green stroke, `Theme.line`
   when used up; filled green with a white tick when packed), the name (17; muted when used up or packed;
@@ -1416,8 +1487,8 @@ leaves the search as it was.
 - **Tick everything** → `setAllPackedHome(true)`: every home line not used up and not packed.
   **Clear the ticks** (no confirmation) → `setAllPackedHome(false)`: EVERY home tick on the trip, also on
   a line no longer on the way home.
-- **Note Save** → `noteOnSite` (as On site: it also reaches the thing); an empty note removes it (no
-  needs line here).
+- **Note Save** → `noteOnSite` (as On site: it also reaches the thing — his choice of 3 Oct 2026, now
+  also what the code comment on `HOME_NOTE_KEY` says); an empty note removes it (no needs line here).
 - **Open** → the thing's editor; Save or Cancel returns to the way home as it was.
 - The way-out ticks are never touched.
 
@@ -1426,11 +1497,12 @@ Line extra keys `packedHome`, `usedUp`, `homeNote`; every mark also bumps the tr
 record rewritten).
 
 ### Tests
-Model `WayHomeTests` (6). UI `testTheWayHomeIsPackedFromWhatWent`, `testTheWayHomeIsSearched`,
+Model `WayHomeTests` (7, with `testLooseThingsAreOneBagAndKeepTheirPhotos`). UI `testTheWayHomeIsPackedFromWhatWent`, `testTheWayHomeIsSearched`,
 `testUsedUpIsCountedInTheHeadingAndUndone`, `testEverythingIsTickedForTheWayHomeAtOnce`,
 `testALineKeepsANoteForTheWayHome` (also listed under On site's notes), `testAThingOpensFromTheWayHomeAndComesBack`,
 `testAPackedBagKeepsItsPhoto` (photos on the way home).
-**Not covered:** the "Clear the ticks" state of the button; photos of loose things on the way home.
+**Not covered:** the "Clear the ticks" state of the button; the screen's heading for loose things (the
+model's `homeBags` is tested).
 
 ---
 
@@ -1442,8 +1514,10 @@ Since the web app's v162 only what went in the bag counts as packed. The order o
 test F.3, 0.41); WHERE a thing went, and fixing a thing mid-review (his asks).
 
 **How it is reached and left.** The trip's **Review** button (while not reviewed and with lines; at any
-date). Sheet; **Cancel** (outlined muted, `review-cancel`) closes without saving; **Save review**
-saves and closes. Screen id `review-detail`; Mac minimum 520 × 600.
+date). Sheet; **Cancel** (outlined muted, `review-cancel`; Escape too, 0.6x) closes without saving;
+**Save review** saves and closes. A swipe down on the iPhone closes it only while nothing is marked,
+added or typed (0.6x: marks made in an unsaved review were lost to a swipe). Screen id `review-detail`;
+Mac minimum 520 × 600.
 
 ### What is on screen
 - Header "Trip review" (22 heavy) and Cancel; the loop strip at Review (`review-loop`).
@@ -1452,9 +1526,11 @@ saves and closes. Screen id `review-detail`; Mac minimum 520 × 600.
   id `review-miss-where-title`) — one per template the trip's lines came from (`tripTemplates`: in the
   order the lines first name them, existing templates only — the base and transport templates included),
   plus "No template" (`review-miss-where-<n>`, violet; default = the first). The button (16 bold white on
-  green, `review-miss-add`): "Add it to <template>" or "Add it, on no template".
-- The missed things listed: name (16 semibold), its template or "no template" (14 muted), ✕
-  (`review-missed-<n>-remove`); row id `review-missed-<n>`.
+  green, `review-miss-add`): "Add it to <template>" or "Add it, on no template"; pressed with nothing
+  typed it says "Type what you wished you'd had first." under it (15 bold red, `review-miss-add-needs`,
+  gone when typing — 0.6x; it did nothing and said nothing).
+- The missed things listed: name (16 semibold), its template or "no template" (14 muted,
+  `review-missed-<n>-where`), ✕ (`review-missed-<n>-remove`); row id `review-missed-<n>`.
 - "Tap anything you didn't use." or "N marked “didn't use”" (20 heavy, `review-summary`).
 - One row per PACKED line (`review-line-<n>`, `.isSelected` when marked): name (17 medium; muted and
   struck through when marked), where it went "Bag · When label" (13 semibold muted,
@@ -1465,20 +1541,23 @@ saves and closes. Screen id `review-detail`; Mac minimum 520 × 600.
 - Bottom: **Save review** (18 bold white on green, min height 52, `review-save`).
 
 ### Behaviour
-- `reviewLines`: lines that are not reminders; if ANY is ticked, packed = ticked ones and never packed =
-  the rest; if none is ticked, every line counts as packed (the list itself is the evidence).
-- Which template: `target` = the picked pill, or — while `missWhere` is "" — the FIRST template. "No
-  template" is the pill with value "", so tapping it sets `missWhere = ""` and the target falls straight back
-  to the first template: on a trip with templates "No template" can never be chosen (its pill never lights,
-  the button keeps saying "Add it to <first>"). Only a trip with no template behind any line files a missed
-  thing on no template (see Open questions).
-- Adding a missed thing: trimmed; blank or already in the missed list (normName) → nothing (the field
-  empties, no message). The keyboard goes away after adding.
+- `reviewLines`: lines that are not reminders; a line WENT when it is ticked and not set aside. If any
+  went, packed = those and never packed = the rest; if none went, every line NOT set aside counts as
+  packed (the list itself is the evidence) and the set-aside ones are "never packed" (0.6x: set-aside
+  lines were asked about as packed).
+- Which template: `target` = the picked pill; while nothing is picked (`missWhere == nil`) the FIRST
+  template. "No template" is the pill with value "" and can really be chosen (0.6x: "" also meant
+  "nothing picked", so the target fell straight back to the first template and its pill never lit).
+- Adding a missed thing: trimmed; blank → the needs line; already in the missed list (normName) → nothing
+  (the field empties). The keyboard goes away after adding.
 - **Save** → `saveReview(tripId:, unused:, missed:, when: now)`:
   1. each missed thing: "no template" → a new thing on no list, unless a thing of that name exists;
      a template → `addToTemplate` unless the template already has that name (an existing thing of that
      name is put on, not duplicated);
-  2. every non-reminder line gets `used = !unused.contains(id)` (never-packed lines get `true`);
+  2. a set-aside line is unticked first (it did not go, whatever an older tick says); then every
+     non-reminder line gets `used = !unused.contains(id)` (never-packed lines get `true`) — except that on
+     a trip where nothing went, a set-aside line gets `used = nil`, so it is left out of the history
+     rather than counted packed (0.6x);
   3. `applyReview` over the resolved templates: for each line with `used`, `sourceListId` and
      `sourceItemId` whose template and row exist: if any line was ticked and this one was not →
      `stats.skipped += 1`; else `packed += 1` and `used` or `unused += 1`; `lastReviewed = when`;
@@ -1489,12 +1568,15 @@ saves and closes. Screen id `review-detail`; Mac minimum 520 × 600.
   once its dates are past.
 
 ### Tests
-UI `testATripReviewIsSavedAndTheMissedThingIsFiled` (only the ticked line asked; marked; "Add it to …";
+UI `testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen` (`review-miss-add-needs`; "No template"
+picked, the missed thing says "no template"), `testASwipeDownKeepsWhatIsNotSavedYet`,
+`testATripReviewIsSavedAndTheMissedThingIsFiled` (only the ticked line asked; marked; "Add it to …";
 saved → "Reviewed", no Review button; the base template gets a 5th thing), `testTheReviewSaysWhereAThingWentAndLetsHimFixIt`,
 `testTheLoopShowsWhereATripStands`, `testTheEditorsLeadWithTheirHeadings`. Model
-`ReviewTests.testAReviewTeachesTheThingsAndFilesWhatWasMissed`, `CountingTests.testApplyReview*` (4),
-`TripCardsTests.testAReviewedTripSaysSoWhateverItsTicks`.
-**Not covered:** "No template", removing a missed thing, the no-ticks-at-all case in the UI.
+`ReviewTests.testAReviewTeachesTheThingsAndFilesWhatWasMissed`, `testASetAsideLineNeverCountsAsPacked`,
+`testASetAsideLineOnATripWithNoTicksIsLeftOutOfTheHistory`, `CountingTests.testApplyReview*` (4),
+`TripCardsTests.testAReviewedTripSaysSoWhateverItsTicks`, `testReviewedIsOneRuleEverywhere`.
+**Not covered:** removing a missed thing, the no-ticks-at-all case in the UI.
 
 ---
 
@@ -1571,7 +1653,7 @@ the link is short enough; a trip also as a file."
 ### What is on screen
 **Share** — wide outlined green with a drawn box-and-arrow, id `trip-share`, label "Share" — opens the
 share sheet (id `share-screen`, Mac minimum 480 × 560): title "Share “<name>”", **Done**
-(`share-done`); the QR code (white card, max 260 pt, id `share-qr`) or "Too long for a QR code. Send the
+(`share-done`; Escape too, 0.6x); the QR code (white card, max 260 pt, id `share-qr`) or "Too long for a QR code. Send the
 link instead." (`share-qr-toolong`); the link (13 monospaced, 3 lines, middle-truncated, selectable,
 `share-link`); **Send…** (system share, `share-send`) and **Copy link** → "Copied" (`share-copy`, value
 "copied"); without a link "This is too big for a link. Share it as a file instead." (`share-toolong`);
@@ -1579,6 +1661,10 @@ link instead." (`share-qr-toolong`); the link (13 monospaced, 3 lines, middle-tr
 a shared link."
 
 ### Behaviour
+- What travels is **just the list** (`Library.justTheList`, 0.6x): the trip's luggage-scale readings
+  (`weighed`) and bag photo ids (`bagPhotos` — the photos never travel) are left out, and so is every
+  line's "not this time" (`skipped`), "changed on the trip" (`_edited`), way-home tick, used up,
+  maintenance note, bought on site and packing time. The sender's own trip keeps them all.
 - Link = `SHARE_WEB_BASE` (the web app's address) + `#/t/` + the bundle squeezed by `packShare`; nil when
   the fragment exceeds **30 000** UTF-16 units (`TRIP_LINK_MAX`).
 - Bundle (`buildTripBundle`): `{app: "ams-packing-list", kind: "trip", version: 1, exportedAt, event}`,
@@ -1589,16 +1675,22 @@ a shared link."
   temporary folder when the sheet appears.
 - Receiving (Settings → Open a shared link, Settings spec): `parseTripBundle` gives a new trip id,
   status active, no review, new timestamps, new line ids, nothing ticked, `used` cleared;
-  `Library.importTrip` appends it (only `updatedAt` re-set; no duplicate check — adding the same link
-  twice gives two trips). A pasted text is tried as a grab list, then a template, then a trip (a
+  `Library.importTrip` takes `justTheList` again (a link made before 0.6x still carries the marks) and
+  appends it **Quick** (0.6x) — its list is what was sent: Trip settings' Save keeps it as it came (see
+  `regenerated`), his own always-packed and transport templates do not pour in on top, a template he ticks
+  adds to it, and switching Quick off brings in the rest. Only `updatedAt` is re-set; no duplicate check —
+  adding the same link twice gives two trips. A pasted text is tried as a grab list, then a template, then a trip (a
   `#/t/<code>` found anywhere in the text, else the whole text as the code). The card reads "A TRIP"
   (12 heavy muted, `shared-kind`), the name ("Untitled trip" when empty; 18 bold, `shared-name`),
-  "N things" (14 medium muted — also "1 things" for one line), **Add this trip** (17 bold white on
+  "1 thing" / "N things" (15 medium muted, `shared-count`; "1 things" until 0.6x — the same words for a
+  template and a grab list), **Add this trip** (17 bold white on
   green, `shared-add`) → "Added. It is under Trips, nothing ticked." (15 bold green, `shared-result`).
 
 ### Tests
-UI `testATripIsSharedAndOpenedAgain`. Model `SharingTests.testATripTravelsAsALink` (link prefix, read
-from a message, no ticks, new ids, file name "Swim week trip.json"), `TripSharingTests` (all 17).
+UI `testATripIsSharedAndOpenedAgain`, `testATripSomeoneSentKeepsItsListOnSave` ("7 things"),
+`testASharedListOfOneSaysOneThing` ("1 thing"). Model `SharingTests.testATripTravelsAsALink` (link prefix,
+read from a message, no ticks, new ids, file name "Swim week trip.json"), `testASharedTripIsJustTheList`,
+`TripSharingTests` (all 17).
 
 ---
 
@@ -1620,7 +1712,7 @@ muted), **Keep it** (16 bold ink, `trip-delete-no`) and **Delete the trip** (red
 
 ### Behaviour
 Delete: the sheet closes first, then `Library.deleteTrip(id:)`: the trip and all its lines go (their
-records are deleted on every device); every photo the trip showed — photo ids on its lines and all its
+records are deleted on every device), and its folds on this device with it (`TripFolds.without`, 0.6x); every photo the trip showed — photo ids on its lines and all its
 bag photos — is deleted unless a thing, another trip line or another bag still shows it. Things,
 templates, to-dos and other trips are untouched. Unknown id → false.
 Photos left behind by trips deleted before 0.59: Settings → Worth a look ("1 photo is no longer shown
@@ -1688,7 +1780,12 @@ testTheTripSaysSortingBesideItsThreeButtons, testATripReviewIsSavedAndTheMissedT
 testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing, testTheScreenSaysSoWhenEverythingIsPacked,
 testEachTripSaysWhereItHasGotTo, testAWholeSectionIsTickedInOnePress, testTheReviewSaysWhereAThingWentAndLetsHimFixIt,
 testABagsLimitReachesTheTrip, testEveryAddButtonIsReadyAndSaysWhatIsMissing (weather-look),
-testTheEditorsLeadWithTheirHeadings (Create new trip, Trip settings, review headings).
+testTheEditorsLeadWithTheirHeadings (Create new trip, Trip settings, review headings) — and from the
+spec pass (0.6x, section "Trips: the spec pass" in the file): testEscapeClosesTheTripsWindows,
+testATripSomeoneSentKeepsItsListOnSave, testASetAsideLineIsNotPacked,
+testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen, testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill,
+testABagWithNothingWeighedIsOnTheTrip, testWeatherGearCanBePackedAnyway, testATemplateWithNoActivityAreaGoesOnATrip,
+testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only).
 UI launch modes used: `-uiTesting` (sample), `-uiTestingChecks` (a plane trip "Sunny weeks" 20–34 days
 out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passport day 180),
 `-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-openNextTrip`. Under the
@@ -1710,110 +1807,78 @@ Tags: [bug] the code does something wrong · [rule-break] against one of his sta
 comment, doc or guide text disagrees with the code, or code that is dead · [untested] behaviour no test
 pins · [idea] a gap worth deciding on.
 
-1. [bug] **Imported trips lose their lines on the first Trip settings save (untested).** A shared trip's
-   lines arrive WITHOUT `sourceListId`, `sourceItemId` and `custom` (all dropped by `slimEntry`).
-   `regenerated()` keeps an old line only if it is custom, or matched/ticked/edited by `sourceItemId`, or
-   its `sourceListId` names a deleted template — none applies, so every imported line is dropped and only
-   the receiver's own base/transport (and any matching template ids) are built. Worse: the imported
-   `activities` are the SENDER's template ids; Trip settings counts them as "a template is picked" (no
-   pill lit) but saves only offered ids, so a Quick imported trip silently does nothing on Save
-   (`changeTrip` returns nil, the sheet closes anyway) and a full one is rebuilt from base + transport
-   only.
-2. [bug] **Start again copies line marks it should probably not**: only `checked`, `used` and
-   `extra.packedAt` are reset, so `skipped`, `custom`, `_edited`, `boughtThere`, `packedHome`, `usedUp`
-   and `homeNote` travel into the new trip. A copied bought-on-site line makes the new (undated) trip
-   stand at **On site** at once and shows its On site door; way-home ticks and notes reappear. Untested.
-3. [bug] **Shares carry trip-private extras**: `weighed`, `bagPhotos` (photo ids whose photos do NOT
-   travel), and line marks (`skipped`, `packedHome`, `usedUp`, `homeNote`, `boughtThere`, `_edited`) all
-   travel in links and files (`slimEvent` keeps every trip key; `slimEntry` keeps every non-default line
-   key except `TRIP_DROP_KEYS`).
-4. [bug] **On site door vs loop step disagree** for a DATED trip still ahead with something bought on
-   site: `onSiteBegun` = true (door shown), `loopStep` = Pack (test
-   `testSomethingBoughtOnSiteBeginsATripWithoutDates` pins the loop side,
-   `testOnSiteBeginsOnTheFirstDayOrWithSomethingBought` the door side).
-5. [bug] **Way-home photos of loose things are invisible** after a bag is deleted with "no bag": the
-   lines get container "" (`renameBagEverywhere(to: "")`) while the photos move to "Other"; the way home
-   looks photos up by the RAW container (""), so finds none (the comment in `Bags.swift` says they show
-   as "Not in a bag" on the way home — they do not). Lines with "" and lines with "Other" also give two
-   separate "Not in a bag" headings there (the trip screen merges them, `groupByKey`).
-6. [bug] **A bag whose things have no weight never appears on the Bags card**, so its luggage scale,
-   cabin switch and photos cannot be reached from the trip (filter `grams > 0 || scale != nil`).
-7. [doc] **Comment vs code in TripScreen**: "The web app's nesting: When → by bag inside; Where /
-   Category → by When inside" — the code groups ONE level only; inside a group lines keep list order.
-8. [doc] **Comment vs code — WayHome.swift**: `HOME_NOTE_KEY` says "It stays on the trip's line; the
-   thing is untouched", but the way home saves through `noteOnSite`, which also writes the thing.
-9. [doc] **Comment above `TickAllRow`** ("Last on the screen, quiet and red, and it asks first") describes
-   the Delete button; Tick everything is neither last nor red.
-10. [doc] **Comment vs code — Weather.swift**: "Curated generic add-ons cover any condition your lists
-    didn't" — the code adds them for EVERY condition (only de-duplicated by name). Also own gear comes
-    only from the ticked templates, never from the base or transport templates.
-11. [bug] **Retired weather gear is suggested**: `weatherSuggestions` does not skip a row whose thing is
-    "Not in use" (`retired`), while `buildTotalEntries` does — a retired rain jacket tagged "rain" is
-    offered on a rainy trip and "Add all" puts it on. Untested.
-12. [idea] **`weatherOn` (force weather gear on) has no native control**; only data from the web app, a
-    backup or Start again can set it.
-13. [rule-break] **Grey/disabled or silent buttons against his rule**: the Set place panel's **Save** is
-    grey and disabled while blank; the whole-section tick is disabled when all lines are set aside; Look
-    again is grey and disabled while looking. The review's **Add it…** with nothing typed does nothing
-    and says nothing (no needs line).
-14. [bug] **Field tap closes the date grid without OK**: tapping the date field while waiting for the last
-    day closes the grid keeping start = end (a day trip) and leaves `waitingForEnd` set; the field then
-    reads "Now tap the last day" with no nights, and Create/Save stores a day trip. Untested.
-15. [doc] **Date picker vs model calendar**: the app's grid uses `Calendar` in the device time zone with
-    variable 4–6 rows and no neighbouring-month days; PackingCore's `monthGrid` (fixed 6×7 "so the panel
-    never jumps"), `rangeCellState`, `orderRange` are tested but unused.
-16. [doc] **Ported but unused in the app**: `tripsAwaitingReview` (no "review this trip" prompt anywhere),
-    `tripNudge`, `packSteps`, `regenerateEntries` (the library's `regenerated` is used), `packingFlags`,
-    `weatherGear`/`pendingWeatherItems`, `groupBySection` (no Section sorting), `clusterByKit`/`kitEmoji`
-    (kit names on lines are never shown), `endFromNights`. The line's `note`, `packer`, `kit`, `section`,
-    `swedish`, `charging` are carried but not shown on the trip screen.
-17. [bug] **Two "first" rules for duplicate trip ids** (latent — ids should be unique): `Library.trip(_:)`
-    — used by the weather card, `lookUpWeather`, `placeOnMap`, `forecastWorthFetching`,
-    `weatherMissing`, `forecastIsStale` — returns the LAST trip with an id; everything else
-    (`trips.first`) the first.
-18. [bug] **Reviewed state is read two ways**: the trip screen shows "Reviewed" (and hides Review) only
-    for `status == "done"`; trip cards, the loop, the countdown and `followThing` also accept
-    `reviewedAt` alone. A trip with `reviewedAt` but status "active" (web app data) offers Review again.
-19. [bug] **A set-aside line that was ticked stays ticked** in the data (`setAside` does not clear
-    `checked`, Clear every tick skips it); the review then asks about it as packed, Your year and All your
-    trips count it as packed. And on a trip with NO tick at all, `reviewLines` asks about every
-    non-reminder line as packed, set-aside lines included.
-20. [doc] **Reminder lines** (`itemType == "reminder"`) count in a trip's progress but not in bags, the
-    cabin check or the review.
-21. [bug] **`followThing` uses the UTC date** (`nowISO()`) for "still ahead", while the screens use
-    `Today.local`; in a time zone ahead of UTC, just after midnight, a trip that ended yesterday still
-    counts as ahead (and the reverse behind UTC).
-22. [bug] **`followThing` wipes a line's own marks**: an open line (not ticked, not custom, not edited)
-    is replaced by the fresh build keeping only id, `checked`, `skipped`, `used` — so a `homeNote`,
-    `packedHome` or `usedUp` left on a line that was ticked, marked and then unticked is lost as soon as
-    its thing changes. Corner case; untested.
-23. [doc] **Locale**: the Trips row formats dates with the device locale ("3 Oct 2026" / "Oct 3, 2026");
-    everything else in the area uses fixed English words.
+1. [bug] **Imported trips lose their lines on the first Trip settings save.** Resolved in 0.6x: a line
+   with nothing behind it (a sent one) is kept by `regenerated` and not doubled; a received trip arrives
+   Quick, and Trip settings keeps template ids it does not show, so Save keeps the list as it came.
+2. [bug] **Start again copies line marks.** Resolved in 0.6x: set-aside, bought on site, the way home's
+   ticks, used up and notes stay with the old trip; the new one stands at Pack.
+3. [bug] **Shares carry trip-private extras.** Resolved in 0.6x: `Library.justTheList` leaves the scale
+   readings, bag photo ids and every line's own marks out of the link and the file, and off an arriving trip.
+4. [bug] **On site door vs loop step disagree.** Resolved in 0.6x: a dated trip goes by its dates for both;
+   bought on site begins only a trip without dates, for both.
+5. [bug] **Way-home photos of loose things are invisible.** Resolved in 0.6x: the way home names bags as the
+   Bags card does (`homeBag`: "" is "Other") — one heading, and the photos are found.
+6. [bug] **A bag whose things have no weight never appears on the Bags card.** Resolved in 0.6x: every bag
+   with a line is shown; one with nothing weighed says "Tap to weigh".
+7. [doc] **Comment vs code in TripScreen (nesting).** Resolved in 0.6x: the comment now says one level of
+   groups, lines in list order.
+8. [doc] **Comment vs code — WayHome.swift.** Resolved in 0.6x: kept as it works — a way-home note also
+   reaches the thing (his choice, 3 Oct 2026); the comment on `HOME_NOTE_KEY` now says so.
+9. [doc] **Comment above `TickAllRow`.** Resolved in 0.6x: the "last, quiet and red" words now sit above
+   the Delete button they describe.
+10. [doc] **Comment vs code — Weather.swift.** Resolved in 0.6x: the comments say the add-ons come for every
+    condition; his own gear now comes from every template the trip is built from (`weatherMissing`).
+11. [bug] **Retired weather gear is suggested.** Resolved in 0.6x: `weatherMissing` leaves things "Not in
+    use" out, so neither a row nor Add all offers them.
+12. [idea] **`weatherOn` has no native control.** Resolved in 0.6x: Trip settings shows "Pack weather gear
+    anyway" (Rain, Cold, Heat, Wind, Snow); Create new trip stays as it was (the gentlest version).
+13. [rule-break] **Grey/disabled or silent buttons.** Resolved in 0.6x: Set place's Save and Look again stay
+    green, the review's Add says what is missing, and a section with nothing to tick has no tick at all.
+14. [bug] **Field tap closes the date grid without OK.** Resolved in 0.6x: the field tap is OK — it waits
+    for the last day and says so, and closes only on a whole range.
+15. [doc] **Date picker vs model calendar.** Resolved in 0.6x: the grid now draws six rows every month itself
+    (steady, as `monthGrid` meant); the model's calendar functions stay the web app's, parity-checked, unused.
+16. [doc] **Ported but unused in the app.** Resolved in 0.6x (decided, nothing changes): they stay in
+    PackingCore, held to the web app by the parity checker; not shown because he chose the four sortings
+    (When, Into, From where, Category — 2026-09-25), the loop strip already says Review once a trip is over,
+    and a line's note, packer and kit would crowd a line he reads without glasses.
+17. [bug] **Two "first" rules for duplicate trip ids.** Resolved in 0.6x: `Library.trip(_:)` takes the
+    first, as everything else does.
+18. [bug] **Reviewed state is read two ways.** Resolved in 0.6x: `Library.isReviewed` (done, or a review
+    time) everywhere, the trip screen included.
+19. [bug] **A set-aside line that was ticked stays ticked.** Resolved in 0.6x: setting aside takes the tick;
+    the review, Your year and All your trips never count a set-aside line as packed.
+20. [doc] **Reminder lines** count in progress but not in bags, the cabin check or the review. Resolved in
+    0.6x: written down under Counting, and kept so (a reminder is something to do before leaving).
+21. [bug] **`followThing` uses the UTC date.** Resolved in 0.6x: it goes by `Library.localToday()`, the
+    device's own date.
+22. [bug] **`followThing` wipes a line's own marks.** Resolved in 0.6x: the line keeps its `extra` marks
+    when its thing changes.
+23. [doc] **Locale** of the Trips row's dates. Resolved in 0.6x: fixed English words, "3 Oct 2026", on
+    every device.
 24. [rule-break] **Small type** (his floor is 15 pt): Your year's labels (10 pt counts and months, 12 pt
     words) and the All-time words (12 pt); "Delete trip" 13 pt (`SmallDeleteButton` default — only the
     grab list's delete passes 15); "Set place" 13; the On site door summary, the Bags key, captions and
     the section counts 13–14 pt; the date grid's weekday row 12 pt; "Dates" caption 13 pt.
-25. [bug] **Trip settings drops templates not offered** (an empty or unknown group, or a template deleted
-    since) from `activities` on Save; the lines of a still-existing but no-longer-offered template are
-    then dropped too unless ticked or edited. Create new trip never offers templates without a
-    GA/WET/OE group.
-26. [idea] **Create new trip keeps Transport, Season and Food** from the previous trip made in the same
-    session; there is no Place field on Create new trip.
-27. [idea] **Fold keys** in `ams.trip.folded` are never removed when a trip is deleted; the sorting
-    (`ams.view`) is one setting for all trips, per device, not synced.
-28. [doc] **Docs**: `docs/colours.md` says the workout pill colours are "decided 28 September 2026, not
-    built yet" — they are built (`WorkoutTone`). Release 0.24 and How it works say "Delete this trip"; the
-    button says "Delete trip". The guide line for Trip settings omits Quick, Context and Laundry. A UI
-    test message still calls the pen "the gear". `HeaderButtonStyle` silently overrides the 17 pt the
-    call sites set (16 pt shown).
-29. [untested] **Escape on the Mac**: no keyboard shortcut (`.cancelAction`/`.defaultAction`) or
-    `onExitCommand` is attached to any Done/Cancel/OK in this area; only `testATripIsSavedAsExcel` presses
-    Escape (to close the system Save window). Whether Escape closes the trip sheets is left to the system
-    and untested.
-30. [idea] **Swipe-down on the iPhone** dismisses Trip settings and the review without saving and without
-    asking (no `interactiveDismissDisabled`); marks made in an unsaved review are lost.
-31. [bug] **"1 things"**: the shared-link card says "\(n) things" with no singular.
-32. [bug] **The review's "No template" cannot be chosen** on a trip that has templates: its pill's value ""
-    is also the "nothing picked yet" value, so a tap leaves the first template picked (`target` falls back to
-    `lists.first`). A missed thing can only ever go onto one of the trip's templates there. Untested (the
-    "Not covered" list above already names "No template").
+25. [bug] **Trip settings drops templates not offered.** Resolved in 0.6x: templates with no activity area
+    are offered (last, "Other templates") on Create new trip and in Trip settings, and Save keeps the ids
+    it does not show.
+26. [idea] **Create new trip keeps Transport, Season and Food; no Place field.** Resolved in 0.6x
+    (decided, nothing changes): the next trip is usually the same car and season and the pills show it;
+    the weather card asks for the place as soon as the trip opens.
+27. [idea] **Fold keys never removed; one sorting per device.** Resolved in 0.6x: a trip's folds go with
+    it, and a fold made sweeps out those of trips no longer here; the sorting stays one per device (a way
+    of looking, not part of a trip).
+28. [doc] **Docs.** Resolved in 0.6x: `docs/colours.md` says the workout pills are built; the UI test calls
+    the pen a pen; the guide's "Delete this trip" and its Trip settings line are proposed for How it works at
+    release (the guide is not edited on this branch); the 16 vs 17 pt of `HeaderButtonStyle` is the
+    Look-and-feel area's (file 06).
+29. [untested] **Escape on the Mac.** Resolved in 0.6x: every window a trip opens has Escape as Cancel or
+    Done (⌘. on an iPhone keyboard), tested by `testEscapeClosesTheTripsWindows`. Return is left to the
+    fields: it never saves a trip's settings or a review by accident.
+30. [idea] **Swipe-down on the iPhone.** Resolved in 0.6x: Trip settings and the review refuse the swipe
+    while something is changed or marked; Cancel or Save closes them.
+31. [bug] **"1 things".** Resolved in 0.6x: "1 thing" on the shared card, for a trip, a template and a grab
+    list.
+32. [bug] **The review's "No template" cannot be chosen.** Resolved in 0.6x: nothing picked and No template
+    are two different values now; its pill lights and the thing goes on no template.
