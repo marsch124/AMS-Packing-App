@@ -346,8 +346,7 @@ Two months when ≥ 600 pt wide (Mac windows), one on the iPhone. Otherwise iden
 
 ### Tests
 UI: `testDatesArePickedLikeBooking` (first then last day, value strings, "2 nights", "1 night", a day
-before the first becomes the first, OK closes, the trip keeps the dates — the row's date words are in
-the device's locale, so either "27 Sep" or "Sep 27"), `testTheDateGridCanBeLeftAndQuickSaysSo` (OK
+before the first becomes the first, OK closes, the trip keeps the dates — its row writes them "27 Sep 2026" although the app runs American-set (`-AppleLocale en_US`), `testTheDateGridCanBeLeftAndQuickSaysSo` (OK
 before the last day keeps the grid and shows `range-needs`; Cancel restores the value),
 `testTheDateGridWaitsForOK` (after the last day the grid stays, summary "3 Nov – 13 Nov · 10 nights"
 form, OK keeps), `testTheDateGridStartsOverAndCancelPutsItBack`, `testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill`
