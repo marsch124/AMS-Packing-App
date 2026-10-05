@@ -134,6 +134,58 @@ final class ArrangeTests: XCTestCase {
         XCTAssertFalse(lib.moveRow(templateId: "no-such", memId: mem(lib, "Map"), section: ""))
     }
 
+    /// The page while he arranges is one list: every heading (even an empty one),
+    /// its rows, then "Everything else" and the rows under no heading.
+    func testThePageWhileArrangingIsOneListOfHeadingsAndRows() {
+        var lib = library()
+        let t = tpl(lib), lights = section(lib, "Lights"), clothes = section(lib, "Clothes")
+        XCTAssertEqual(lib.arrangeLines(templateId: t), [
+            .heading(lights), .row(mem(lib, "Headlamp")), .row(mem(lib, "Spare batteries")),
+            .heading(clothes), .row(mem(lib, "Boots")), .row(mem(lib, "Rain jacket")),
+            .rest, .row(mem(lib, "Map"))])
+        // An emptied heading stays, so something can be dragged into it again.
+        lib.moveRow(templateId: t, memId: mem(lib, "Boots"), section: "")
+        lib.moveRow(templateId: t, memId: mem(lib, "Rain jacket"), section: "")
+        XCTAssertEqual(lib.arrangeLines(templateId: t).filter { if case .row = $0 { return false }; return true },
+                       [.heading(lights), .heading(clothes), .rest])
+        XCTAssertEqual(lib.arrangeLines(templateId: "no-such"), [])
+    }
+
+    /// A drag on the page, read the way SwiftUI's list hands it over (`to` counted
+    /// before the move). The page: 0 Lights · 1 Headlamp · 2 Spare batteries ·
+    /// 3 Clothes · 4 Boots · 5 Rain jacket · 6 Everything else · 7 Map.
+    func testADropMovesWhatWasDraggedToWhereItWasDropped() {
+        func dropped(_ from: Int, _ to: Int) -> [String] {
+            var lib = library()
+            XCTAssertTrue(lib.dropLine(templateId: tpl(lib), from: from, to: to), "\(from) → \(to) did nothing")
+            return page(lib)
+        }
+        XCTAssertEqual(dropped(7, 1), ["Lights: Map, Headlamp, Spare batteries", "Clothes: Boots, Rain jacket"],
+                       "a thing dragged up under another heading")
+        XCTAssertEqual(dropped(1, 3), ["Lights: Spare batteries, Headlamp", "Clothes: Boots, Rain jacket", "Everything else: Map"],
+                       "a thing dragged down one place under its own heading")
+        XCTAssertEqual(dropped(5, 3), ["Lights: Headlamp, Spare batteries, Rain jacket", "Clothes: Boots", "Everything else: Map"],
+                       "a thing dropped just above the next heading ends the heading above")
+        XCTAssertEqual(dropped(4, 0), ["Lights: Boots, Headlamp, Spare batteries", "Clothes: Rain jacket", "Everything else: Map"],
+                       "above every heading = the top of the first")
+        XCTAssertEqual(dropped(1, 8), ["Lights: Spare batteries", "Clothes: Boots, Rain jacket", "Everything else: Map, Headlamp"],
+                       "dropped at the very end = under no heading")
+        XCTAssertEqual(dropped(3, 0), ["Clothes: Boots, Rain jacket", "Lights: Headlamp, Spare batteries", "Everything else: Map"],
+                       "a heading takes its things along")
+        XCTAssertEqual(dropped(0, 8), ["Clothes: Boots, Rain jacket", "Lights: Headlamp, Spare batteries", "Everything else: Map"],
+                       "a heading dropped at the end is the last heading")
+        XCTAssertEqual(dropped(0, 5), ["Clothes: Boots, Rain jacket", "Lights: Headlamp, Spare batteries", "Everything else: Map"],
+                       "a heading dropped among another's things lands after them, and takes none of them")
+
+        var lib = library()
+        let before = page(lib)
+        XCTAssertFalse(lib.dropLine(templateId: tpl(lib), from: 6, to: 0), "Everything else never moves")
+        XCTAssertFalse(lib.dropLine(templateId: tpl(lib), from: 9, to: 0))
+        XCTAssertFalse(lib.dropLine(templateId: tpl(lib), from: 0, to: 10))
+        XCTAssertFalse(lib.dropLine(templateId: "no-such", from: 0, to: 1))
+        XCTAssertEqual(page(lib), before)
+    }
+
     /// A template with no headings is arranged as one list.
     func testATemplateWithNoHeadingsIsOneList() {
         var lib = Library()
@@ -144,6 +196,9 @@ final class ArrangeTests: XCTestCase {
         let goggles = lib.resolvedTemplate(id: swim.id)!.items.first!.memId!
         XCTAssertTrue(lib.moveRow(templateId: swim.id, memId: towel, section: "", before: goggles))
         XCTAssertEqual(lib.resolvedTemplate(id: swim.id)!.items.map(\.name), ["Towel", "Goggles", "Swim cap"])
+        XCTAssertEqual(lib.arrangeLines(templateId: swim.id).count, 3, "no heading lines at all")
+        XCTAssertTrue(lib.dropLine(templateId: swim.id, from: 0, to: 3), "dragged to the end")
+        XCTAssertEqual(lib.resolvedTemplate(id: swim.id)!.items.map(\.name), ["Goggles", "Swim cap", "Towel"])
     }
 
     /// Only what changed is written, the way every other edit is stored and synced;

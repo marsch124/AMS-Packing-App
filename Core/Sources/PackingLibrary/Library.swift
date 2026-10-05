@@ -765,6 +765,70 @@ extension Library {
         return out
     }
 
+    /// One line of the page while he arranges: a heading (a section id), the line
+    /// that heads the rows under no heading, or a row (a membership id).
+    public enum ArrangeLine: Hashable, Sendable { case heading(String), rest, row(String) }
+
+    /// The page while he arranges, top to bottom, as ONE list — so a single drag can
+    /// carry a thing from under one heading to under another: every heading, even an
+    /// empty one (something can be dragged into it), with its rows; then, when the
+    /// template has headings, the "Everything else" line and the rows under no
+    /// heading. A template with no headings is just its rows. Rows whose thing is
+    /// gone are not shown, as everywhere.
+    public func arrangeLines(templateId: String) -> [ArrangeLine] {
+        guard let t = templates.first(where: { $0.id == templateId }) else { return [] }
+        let things = Set(items.map(\.id))
+        let shown = Set(memberships.filter { $0.templateId == templateId && things.contains($0.itemId) }.map(\.id))
+        var lines: [ArrangeLine] = []
+        for group in arrangedRows(templateId: templateId) {
+            if !group.sectionId.isEmpty { lines.append(.heading(group.sectionId)) }
+            else if !t.sections.isEmpty { lines.append(.rest) }
+            lines += group.rows.filter { shown.contains($0) }.map { .row($0) }
+        }
+        return lines
+    }
+
+    /// A drag on that list: the line at `from` dropped at `to`, counted the way
+    /// SwiftUI's `onMove` counts (`to` is a place in the list BEFORE the move). A
+    /// heading takes its rows along and lands before the next heading below where
+    /// it was dropped (or last); a row goes under the nearest heading above where it
+    /// was dropped, before the row that follows it there — dropped above every
+    /// heading, it goes to the top of the first. The "Everything else" line never
+    /// moves. False when nothing could be done.
+    @discardableResult
+    public mutating func dropLine(templateId: String, from: Int, to: Int) -> Bool {
+        var lines = arrangeLines(templateId: templateId)
+        guard lines.indices.contains(from), (0...lines.count).contains(to),
+              let t = templates.first(where: { $0.id == templateId }) else { return false }
+        let moving = lines.remove(at: from)
+        let at = to > from ? to - 1 : to
+        lines.insert(moving, at: at)
+        let below = lines[(at + 1)...]
+        switch moving {
+        case .rest:
+            return false
+        case .heading(let id):
+            let next = below.first { if case .row = $0 { return false }; return true }
+            if case .heading(let before)? = next { return moveSection(templateId: templateId, sectionId: id, before: before) }
+            return moveSection(templateId: templateId, sectionId: id)
+        case .row(let id):
+            var section: String? = nil
+            for line in lines[..<at].reversed() {
+                if case .heading(let s) = line { section = s; break }
+                if case .rest = line { section = ""; break }
+            }
+            var before: String? = nil
+            if case .row(let b)? = below.first { before = b }
+            if section == nil, let first = t.sections.first {
+                // Above every heading: the top of the first one.
+                section = first.id
+                before = nil
+                if let h = lines.firstIndex(of: .heading(first.id)), h + 1 < lines.count, case .row(let b) = lines[h + 1] { before = b }
+            }
+            return moveRow(templateId: templateId, memId: id, section: section ?? "", before: before)
+        }
+    }
+
     /// Number this template's rows 0, 1, 2… in the order its page reads. True when
     /// a number changed.
     private mutating func renumberRows(templateId: String) -> Bool {
