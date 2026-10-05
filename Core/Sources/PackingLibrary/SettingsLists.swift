@@ -39,17 +39,32 @@ extension Library {
         let mine = orderedNamesFromRows(shared, "places")
         return mine.isEmpty ? DEFAULT_STORAGE_LOCATIONS : mine
     }
-    /// A–Z, as every Owner dropdown has always offered them.
-    public func owners() -> [String] { namesFromRows(shared, "owners") }
+    /// His Owners, A–Z, as every Owner dropdown has always offered them. With no
+    /// list of his own yet: the owners his things already name, A–Z.
+    ///
+    /// Why (the spec pass, 5 Oct 2026): Owners has no factory list, so on an account
+    /// that never added one, Your choices showed an empty Owners part while "Whose it
+    /// is" on a thing offered those very names — as Packers did before `people()` got
+    /// the same step. Things only, not trip lines: every name shown is then in use by a
+    /// thing, so none can be removed only to come straight back from an old trip.
+    public func owners() -> [String] {
+        let mine = namesFromRows(shared, "owners")
+        return mine.isEmpty ? Library.eachNameOnce(then: items.map(\.ownedBy)) : mine
+    }
     /// What "Whose it is" offers on a thing: his owners list, plus anyone a thing
     /// already names who is not on it — EACH ONCE. (The editor used to add every
     /// thing's owner as it came, so one name appeared once per thing he owns: a
     /// screenful of the same name, all lit up. His screenshot, 2026-09-26.)
     public func ownerChoices() -> [String] {
+        Library.eachNameOnce(owners(), then: items.map(\.ownedBy))
+    }
+    /// `first` as it is, then `then` A–Z — trimmed, empties dropped, each normalised
+    /// name once (the first spelling met wins).
+    private static func eachNameOnce(_ first: [String] = [], then: [String]) -> [String] {
         var seen: Set<String> = []
         var out: [String] = []
-        for name in owners() + items.map(\.ownedBy).map(jsTrim).filter({ !$0.isEmpty })
-                                    .stableSorted(compare: { a, b in jsLocaleCompare(a, b) }) {
+        for name in first + then.map(jsTrim).filter({ !$0.isEmpty })
+                                .stableSorted(compare: { a, b in jsLocaleCompare(a, b) }) {
             let key = normName(name)
             if key.isEmpty || seen.contains(key) { continue }
             seen.insert(key)
