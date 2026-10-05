@@ -42,7 +42,11 @@ jobs:
 
   iphone:
     name: UI tests — iPhone
-    runs-on: macos-15
+    # macos-26 with the newest Xcode, like the Mac job and like the build that ships:
+    # on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator — a pairing no
+    # TestFlight build ever has — and the template search's ✕ failed there twice
+    # (0.60, 0.61; 5 Oct 2026) while it passes on iOS 26/27 and on the Mac.
+    runs-on: macos-26
     # 30 was outgrown on 2026-09-26 (0.25): an 11-minute build plus 48 tests —
     # cancelled at test 41 of 48 with nothing wrong. 55 was nearly outgrown on
     # 2026-10-02 (0.46: 67 tests, ~50 minutes). Room to grow again.
@@ -51,6 +55,13 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode on the runner
+        run: |
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $newest"
+          sudo xcode-select -s "$newest"
+          xcodebuild -version
 
       - name: Show what we are building with
         run: |
