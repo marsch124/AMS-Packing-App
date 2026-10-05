@@ -32,6 +32,8 @@ struct HomeScreen: View {
     @State private var grab: GrabDefinition?
     @State private var searching = false
     @State private var showingGrabLists = false
+    /// "Which grab list?" — the Action button's menu, asked for through the model.
+    @State private var menuShown = false
     /// What Create said was missing, after a press with something missing.
     @State private var stillNeeded = ""
     @FocusState private var naming: Bool
@@ -50,16 +52,35 @@ struct HomeScreen: View {
                         .accessibilityIdentifier("home-grab-heading")
                     Spacer()
                     SearchButton { searching = true }
-                    // "Your lists" is the name of the TEMPLATES screen; this door
-                    // opens the grab lists. His note on the Mac: "Your Grab Lists".
+                    // This door opens the grab lists — not the templates (whose screen
+                    // is "Your templates"). His note on the Mac: "Your Grab Lists".
                     Button("Grab Lists") { showingGrabLists = true }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.home.color)
                         .accessibilityIdentifier("grab-lists")
                 }
                 .padding(.top, 14)
-                // Home holds eight (4 × 2) — HIS, in his order; free places fill from the waiting ones (GrabCollection.swift).
-                GrabButtons(lists: model.library.homeGrabLists()) { grab = $0 }
+                // Home holds eight (4 × 2) — HIS, in his order; a free place takes only a
+                // list new since he last arranged Home (GrabCollection.swift).
+                let onHome = model.library.homeGrabLists()
+                GrabButtons(lists: onHome) { grab = $0 }
+                if onHome.isEmpty {
+                    // Every list taken off Home: the heading is not left over nothing —
+                    // it says where they are, and the line itself leads there (5 Oct 2026).
+                    Button { showingGrabLists = true } label: {
+                        Text("No grab lists on Home. They wait in Grab Lists \u{2014} tap here to put one back.")
+                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(AppSection.home.color)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.home.color.opacity(0.5), lineWidth: 1.5))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("home-grab-none")
+                }
 
                 // The trip he leaves on next, counted down (his idea 6) — under the grab
                 // lists, which keep their place at the top.
@@ -165,7 +186,10 @@ struct HomeScreen: View {
                         .accessibilityIdentifier("device-heading")
                     CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
                     CountTile(number: model.library.items.count, label: "Things", id: "count-things", color: AppSection.care.color)
-                    CountTile(number: model.library.templates.count, label: "Templates", id: "count-templates", color: AppSection.templates.color)
+                    // The templates Your templates shows — not the hidden bags list or the
+                    // web app's old bin, which made this number the higher one (5 Oct 2026).
+                    CountTile(number: TemplatesScreen.activityAreas(model.library.templates).reduce(0) { $0 + $1.lists.count },
+                              label: "Templates", id: "count-templates", color: AppSection.templates.color)
                 }
                 .padding(.top, 8)
             }
@@ -177,20 +201,23 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $showingGrabLists) { GrabCollectionScreen().environmentObject(model) }
         // The Action button's "Choose a grab list" (field test 2.3): the menu of them all.
-        .sheet(isPresented: Binding(get: { model.grabMenuOpen }, set: { model.grabMenuOpen = $0 })) {
-            GrabMenuScreen().environmentObject(model)
+        .sheet(isPresented: $menuShown) { GrabMenuScreen().environmentObject(model) }
+        .onChange(of: model.grabMenuOpen, initial: true) { _, open in
+            guard open else { return }
+            model.grabMenuOpen = false
+            if !menuShown { whenFree { menuShown = true } }
         }
         // A Shortcut (the Action button): its grab list.
         .onChange(of: model.grabToOpen, initial: true) { _, id in
             guard let id else { return }
             model.grabToOpen = nil
-            if let list = model.library.allGrabLists().first(where: { $0.id == id }) { grab = list }
+            if let list = model.library.allGrabLists().first(where: { $0.id == id }) { whenFree { grab = list } }
         }
         // A tapped packing reminder, or a Shortcut: its trip.
         .onChange(of: model.tripToOpen, initial: true) { _, id in
             guard let id else { return }
             model.tripToOpen = nil
-            if model.library.trips.contains(where: { $0.id == id }) { opened = id }
+            if model.library.trips.contains(where: { $0.id == id }) { whenFree { opened = id } }
         }
         .sheet(item: Binding(get: { grab.map { GrabOpened(list: $0) } }, set: { grab = $0?.list })) { g in
             GrabScreen(listId: g.list.id).environmentObject(model)
@@ -198,6 +225,18 @@ struct HomeScreen: View {
     }
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
+
+    /// Something asked from outside — a Shortcut, the Action button, a tapped packing
+    /// reminder — while one of Home's own windows is up (Grab Lists, Search, a trip,
+    /// a grab list): that one closes first, then the asked-for one opens. SwiftUI does
+    /// not present a second window from a view while another is up or still closing,
+    /// so until 5 Oct 2026 such a request could open nothing.
+    private func whenFree(_ open: @escaping () -> Void) {
+        let busy = searching || showingGrabLists || opened != nil || grab != nil || menuShown
+        guard busy else { open(); return }
+        searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
+    }
 
     private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty }
 
@@ -368,9 +407,11 @@ struct PillTone {
     let ink: Color
 }
 
-/// The workout colours he chose (2026-09-28), the same in the grab lists and AMS
-/// Workout Sync — written down in docs/colours.md. Yellow and the light ones carry
-/// dark words: white is unreadable on them. He does not like teal.
+/// The workout colours he chose (2026-09-28), the same in AMS Workout Sync — and
+/// the same family in the grab lists, which draw them as mid-tones (`GrabTone`: a
+/// bright fill would not read as a line on the light card). Written down in
+/// docs/colours.md. Yellow and the light ones carry dark words: white is
+/// unreadable on them. He does not like teal.
 enum WorkoutTone {
     static func of(_ name: String) -> PillTone? {
         switch normName(name).filter({ !$0.isWhitespace }) {

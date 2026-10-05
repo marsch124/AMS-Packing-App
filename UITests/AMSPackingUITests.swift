@@ -3565,11 +3565,14 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "grablists-made")
 
         // Putting it on Home asks which of the eight steps back.
-        tap(app, id: "grablists-waiting-0")
+        tap(app, id: "grablists-on-0")
         XCTAssertTrue(appears(app, "swap-detail", timeout: 5), "it did not ask what steps back")
         let steppingBack = words(app.buttons["swap-0"])
         tap(app, id: "swap-0")
         XCTAssertTrue(disappears(app, "swap-detail", timeout: 5))
+        // Kayak is on Home now, so "Kayak waits below" has gone (it stayed until 5 Oct 2026).
+        XCTAssertTrue(waitUntil { !app.staticTexts["grablists-made"].exists },
+                      "the line still says the list waits: '\(words(app.staticTexts["grablists-made"]))'")
 
         // Home still holds eight, and the one that stepped back is waiting, whole.
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("8 of 8") })
@@ -3689,8 +3692,16 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "grab-lists")
         XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(homeHeading).contains("5 of 8") }, "it came back: '\(words(homeHeading))'")
-        // …until he puts it back: there is room, so it goes straight on, at the end.
+        // A waiting list opens on a tap, ready to tick or fill — and stays waiting (5 Oct
+        // 2026: the whole row put it on Home, and nothing here could open it).
+        shot(app, "grablists-waiting-row")
         tap(app, id: "grablists-waiting-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10), "the waiting list did not open")
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(homeHeading).contains("5 of 8") }, "opening it put it on Home: '\(words(homeHeading))'")
+        // …until he puts it back: there is room, so it goes straight on, at the end.
+        tap(app, id: "grablists-on-0")
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("6 of 8") },
                       "it could not be put back: '\(words(homeHeading))'")
         XCTAssertNil(find(app, "swap-detail"), "it asked what steps back while Home had room")
@@ -3731,6 +3742,240 @@ final class AMSPackingUITests: XCTestCase {
                                   self.words(app.staticTexts["grablists-waiting-heading"]).contains("0") },
                       "it is still in Grab Lists")
     }
+
+    // MARK: - Grab lists, Home and Search: the fixes of 5 Oct 2026
+
+    /// Save in a grab list's editor keeps what is already in his hand (every Save
+    /// emptied the list, even with nothing changed), and a thing just marked "1 in 10"
+    /// is set aside at once. Start over goes back to how the list opens — with that
+    /// thing set aside again (it came back into the count until the list was reopened).
+    func testSaveKeepsTodaysTicksAndStartOverSetsAsideWhatIsTakenOnlySometimes() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "0 of 7 in hand" }, "'\(words(count))'")
+        tap(app, id: "grab-item-0")
+        XCTAssertTrue(waitUntil { self.words(count) == "1 of 7 in hand" }, "the tick did not count: '\(words(count))'")
+
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(app.buttons["grab-sometimes-1"].waitForExistence(timeout: 5))
+        tapVisible(app, app.buttons["grab-sometimes-1"])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["grab-sometimes-1"]) }, "the mark did not take")
+        tap(app, id: "grab-edit")                                    // Save
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) == "1 of 6 in hand · 1 skipped" },
+                      "Save lost the tick, or did not set the marked thing aside: '\(words(count))'")
+        XCTAssertTrue(isOn(app.buttons["grab-item-0"]), "the thing in his hand is no longer ticked")
+        shot(app, "grab-saved-kept-ticks")
+
+        tap(app, id: "grab-reset")                                   // Start over
+        XCTAssertTrue(waitUntil { self.words(count) == "0 of 6 in hand · 1 skipped" },
+                      "Start over brought the 1-in-10 thing back into the count: '\(words(count))'")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["grab-item-1"]).contains("only sometimes") },
+                      "'\(words(app.buttons["grab-item-1"]))'")
+        XCTAssertTrue(waitUntil { !app.buttons["grab-reset"].exists }, "Start over is offered on a list just as it opens")
+    }
+
+    /// A list just made has nothing on it, and every screen says so plainly: the list
+    /// itself, Ready to go (it said "everything is skipped"), Share (it said "too big —
+    /// share it as a file", and there is no file), and Save with nothing on it (it
+    /// closed the editor and said nothing). Make refuses a name a list already has.
+    func testAnEmptyGrabListSaysHowToFillIt() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        let homeHeading = app.staticTexts["grablists-home-heading"]
+        XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") })
+        let field = app.textFields["grablists-new-name"]
+        type("swim", into: field)
+        hideKeyboard(app)
+        tap(app, id: "grablists-new")
+        XCTAssertTrue(app.staticTexts["grablists-new-needs"].waitForExistence(timeout: 5), "a second Swim was made, silently")
+        XCTAssertTrue(words(homeHeading).contains("6 of 8"), "a list was made under a name already in use")
+        shot(app, "grablists-name-taken")
+
+        replace("Kite", in: field)
+        hideKeyboard(app)
+        tap(app, id: "grablists-new")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("7 of 8") }, "Kite was not made")
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+        tap(app, id: "grab-6")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        XCTAssertTrue(app.staticTexts["grab-empty"].waitForExistence(timeout: 5), "an empty list does not say how to fill it")
+        shot(app, "grab-empty")
+
+        tap(app, id: "grab-ready")
+        let message = app.staticTexts["grab-message"]
+        XCTAssertTrue(message.waitForExistence(timeout: 5))
+        XCTAssertFalse(words(message).contains("skipped"), "an empty list says everything is skipped: '\(words(message))'")
+        shot(app, "grab-empty-notyet")
+        tap(app, id: "grab-message-ok")
+        XCTAssertTrue(waitUntil { !app.staticTexts["grab-message"].exists })
+
+        tap(app, id: "grab-share")
+        XCTAssertTrue(appears(app, "share-screen", timeout: 10))
+        XCTAssertTrue(app.staticTexts["share-empty"].waitForExistence(timeout: 5), "it does not say there is nothing to share")
+        XCTAssertFalse(app.staticTexts["share-toolong"].exists, "it says the empty list is too big")
+        shot(app, "share-empty")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
+
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(app.textFields["grab-add-name"].waitForExistence(timeout: 5))
+        tap(app, id: "grab-edit")                                    // Save, nothing on it
+        XCTAssertTrue(app.staticTexts["grab-save-needs"].waitForExistence(timeout: 5), "Save with nothing on the list said nothing")
+        XCTAssertTrue(app.textFields["grab-add-name"].exists, "the editor closed on a list that was not saved")
+        shot(app, "grab-save-needs")
+        type("Board", into: app.textFields["grab-add-name"])
+        tap(app, id: "grab-add")
+        XCTAssertTrue(waitUntil { !app.staticTexts["grab-save-needs"].exists }, "the line stayed once a thing was added")
+        tap(app, id: "grab-edit")                                    // Save
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["grab-count"]) == "0 of 1 in hand" },
+                      "'\(words(app.staticTexts["grab-count"]))'")
+        XCTAssertFalse(app.staticTexts["grab-empty"].exists)
+    }
+
+    /// Every grab list taken off Home: Home does not show a heading over nothing — it
+    /// says where they are, and that line opens Grab Lists.
+    func testHomeWithEveryGrabListOffSaysWhereTheyAre() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        let homeHeading = app.staticTexts["grablists-home-heading"]
+        for left in stride(from: 5, through: 0, by: -1) {
+            tap(app, id: "grablists-off-0")
+            XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("\(left) of 8") }, "'\(words(homeHeading))'")
+        }
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { !app.buttons["grab-0"].exists }, "a list is still on Home")
+        XCTAssertTrue(app.buttons["home-grab-none"].waitForExistence(timeout: 5), "Home shows nothing under Grab and go")
+        shot(app, "home-no-grab-lists")
+        tap(app, id: "home-grab-none")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5), "the line does not lead to Grab Lists")
+    }
+
+    /// A to-do found by Search opens the To do tab, whichever tab Search was opened
+    /// from (it only closed Search until 5 Oct 2026).
+    func testASearchedToDoOpensTheToDoTab() {
+        let app = launch()
+        tab(app, "actions")
+        XCTAssertTrue(appears(app, "screen-actions"))
+        type("Book the ferry", into: app.textFields["action-add-text"])
+        tap(app, id: "action-add")
+        XCTAssertTrue(app.buttons["action-0"].waitForExistence(timeout: 5), "the to-do is not listed")
+        tab(app, "home")
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("ferry", into: app.textFields["search-field"])
+        XCTAssertTrue(app.buttons["search-todos-0"].waitForExistence(timeout: 5), "the to-do was not found")
+        tapVisible(app, app.buttons["search-todos-0"])
+        XCTAssertTrue(disappears(app, "search-detail", timeout: 5), "Search stayed open")
+        XCTAssertTrue(appears(app, "screen-actions", timeout: 5), "the to-do did not open the To do tab")
+        XCTAssertTrue(app.buttons["action-0"].waitForExistence(timeout: 5))
+    }
+
+    /// Home's Templates number is the number Your templates shows — not one more for
+    /// the hidden bags list (the checks sample has a bag, so it has that list).
+    func testHomeCountsTheTemplatesYourTemplatesShows() {
+        let app = launch("-uiTestingChecks")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let tile = app.staticTexts["count-templates"]
+        XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        let onHome = words(tile)
+        tab(app, "templates")
+        let summary = app.staticTexts["templates-summary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        let shown = String(words(summary).prefix { $0.isNumber })
+        XCTAssertFalse(shown.isEmpty, "'\(words(summary))'")
+        XCTAssertEqual(onHome, shown, "Home counts \(onHome) templates, Your templates shows \(shown)")
+        tab(app, "home")
+        bringIntoView(app, app.staticTexts["count-templates"])
+        shot(app, "home-device-counts")
+    }
+
+    /// Remind me to pack, switched on here but blocked in the device's Settings: the
+    /// card says so — every time it is shown — and names no reminder that will never
+    /// come. (`-pretendRemindersBlocked`: on earlier, then blocked.)
+    func testRemindersSayWhenTheDeviceBlocksThem() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTestingChecks", "-pretendRemindersBlocked"]
+        app.launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "settings-reminders") }, "the switch is not on")
+        XCTAssertTrue(app.staticTexts["settings-reminders-refused"].waitForExistence(timeout: 5),
+                      "blocked by the device, and the card does not say so")
+        XCTAssertFalse(app.staticTexts["settings-reminders-next"].exists, "it names a reminder that will never come")
+        shot(app, "settings-reminders-blocked")
+        tab(app, "home")
+        tab(app, "settings")
+        XCTAssertTrue(app.staticTexts["settings-reminders-refused"].waitForExistence(timeout: 5),
+                      "the card forgot that the device blocks reminders")
+    }
+
+    #if os(iOS)
+    /// A Shortcut (the Action button) or a tapped packing reminder arrives while one of
+    /// Home's windows is up: that window makes way, and what was asked for opens.
+    /// (`-openGrabOnReturn`, `-openNextTripOnReturn`: what reaches the app while it is
+    /// in the background, played when it comes back to the front.)
+    func testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-openGrabOnReturn", "Bike"]
+        app.launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 15), "the Shortcut's grab list did not open over Grab Lists")
+        XCTAssertNil(find(app, "grablists-detail"), "Grab Lists is still up")
+        app.terminate()
+
+        let trip = XCUIApplication()
+        trip.launchArguments += ["-uiTestingChecks", "-openNextTripOnReturn"]
+        trip.launch()
+        XCTAssertTrue(appears(trip, "screen-home", timeout: 20))
+        tap(trip, id: "search-open")
+        XCTAssertTrue(appears(trip, "search-detail", timeout: 5))
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        trip.activate()
+        XCTAssertTrue(appears(trip, "trip-detail", timeout: 15), "the reminder's trip did not open over Search")
+        XCTAssertTrue(waitUntil { self.words(trip.staticTexts["trip-name"]) == "Sunny weeks" },
+                      "it opened another trip: '\(words(trip.staticTexts["trip-name"]))'")
+    }
+
+    /// A list of his own that goes while it is open — deleted on his other device, or
+    /// lost to a later write from there — closes, instead of turning into Indoor swim
+    /// and taking his next tick onto the swim list.
+    func testAGrabListGoneWhileOpenClosesInsteadOfBecomingAnother() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-dropOwnGrabListsOnReturn"]
+        app.launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        makeOwnGrabList(app, "Kayak", things: ["Paddle", "Spray deck"])
+        tap(app, id: "grab-edit")                                    // Save
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(count) == "0 of 2 in hand" }, "'\(words(count))'")
+        tap(app, id: "grab-item-0")
+        XCTAssertTrue(waitUntil { self.words(count) == "1 of 2 in hand" }, "'\(words(count))'")
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 10), "the list stayed open after it was gone")
+        XCTAssertTrue(waitUntil { !app.buttons["grab-6"].exists }, "the list is still on Home")
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["grab-count"]) == "0 of 7 in hand" },
+                      "a tick reached the swim list: '\(words(app.staticTexts["grab-count"]))'")
+    }
+    #endif
 
     /// The Care tab says what the kit adds up to — and every word of it is true of
     /// the library in front of it: the counts, the weights, and the tips, which

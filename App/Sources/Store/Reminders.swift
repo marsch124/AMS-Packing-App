@@ -22,14 +22,30 @@ final class PackingReminders: NSObject, UNUserNotificationCenterDelegate {
 
     static var isOn: Bool { UserDefaults.standard.bool(forKey: onKey) }
 
+    /// UI tests only (`-pretendRemindersBlocked`): switched on here earlier, then
+    /// switched off for the app in the device's Settings.
+    private static var pretendBlocked: Bool { ProcessInfo.processInfo.arguments.contains("-pretendRemindersBlocked") }
+
     func start() {
-        guard !AMSPackingApp.testing else { return }
+        guard !AMSPackingApp.testing else {
+            if Self.pretendBlocked { UserDefaults.standard.set(true, forKey: Self.onKey) }
+            return
+        }
         UNUserNotificationCenter.current().delegate = self
+    }
+
+    /// May reminders be shown on this device NOW? Asks the system, never him: no
+    /// question appears. False once they are switched off for the app in the
+    /// device's Settings — while the switch here may still say on.
+    func allowed() async -> Bool {
+        if AMSPackingApp.testing { return !Self.pretendBlocked }
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        return status == .authorized || status == .provisional
     }
 
     /// Ask once. True when reminders may be shown.
     func askToShow() async -> Bool {
-        if AMSPackingApp.testing { return true }
+        if AMSPackingApp.testing { return !Self.pretendBlocked }
         let center = UNUserNotificationCenter.current()
         switch await center.notificationSettings().authorizationStatus {
         // (Not .ephemeral: that is the iPhone's App Clips only, and the Mac has no such

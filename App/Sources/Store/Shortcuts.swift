@@ -12,7 +12,14 @@ struct GrabListEntity: AppEntity {
     static var defaultQuery = GrabListQuery()
     let id: String
     let title: String
-    var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(title)") }
+    /// The word on its tile ("Swim"), which is what he says to Siri: the guide's
+    /// example asked for "Swim", and no list is CALLED that — the two are "Indoor
+    /// swim" and "Outdoor swim" (5 Oct 2026). Siri can now find either by its word,
+    /// and asks which when two share it.
+    var word: String = ""
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(title)", synonyms: word.isEmpty || word == title ? [] : ["\(word)"])
+    }
 }
 
 struct GrabListQuery: EntityQuery {
@@ -26,7 +33,7 @@ struct GrabListQuery: EntityQuery {
         let lib = LibraryModel.shared.library
         let home = lib.homeGrabLists()
         let rest = lib.allGrabLists().filter { g in !home.contains { $0.id == g.id } }
-        return (home + rest).map { GrabListEntity(id: $0.id, title: $0.title.isEmpty ? $0.label : $0.title) }
+        return (home + rest).map { GrabListEntity(id: $0.id, title: $0.title.isEmpty ? $0.label : $0.title, word: $0.label) }
     }
 }
 

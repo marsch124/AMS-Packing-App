@@ -11,8 +11,11 @@ struct GrabCollectionScreen: View {
     @State private var newName = ""
     /// What Make was missing, said under the field (never a grey button).
     @State private var newNeeds = ""
-    /// When Home is full and he wants another one on it: which one steps back?
-    @State private var swappingIn: String?
+    /// The one window this screen opens over itself: "Which one steps back?" when
+    /// Home is full and he wants another one on it, or a waiting list opened to tick
+    /// or fill it. ONE sheet with a destination — SwiftUI does not reliably present a
+    /// second sheet from a view while the first is still closing.
+    @State private var window: Window?
     /// Where the list he just made went — said plainly, not as a problem. It used
     /// to say "<name> is waiting", in red, even when the list had gone straight onto
     /// Home (4 Oct 2026).
@@ -86,9 +89,14 @@ struct GrabCollectionScreen: View {
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
-        // Home is full: he says which one steps back, never the app.
-        .sheet(item: Binding(get: { swappingIn.map { Swapping(id: $0) } }, set: { swappingIn = $0?.id })) { coming in
-            SwapScreen(comingIn: coming.id).environmentObject(model)
+        .sheet(item: $window) { window in
+            switch window {
+            // Home is full: he says which one steps back, never the app. Once it has,
+            // the list he made is on Home, and "waits below" would no longer be true
+            // (it stayed until 5 Oct 2026).
+            case .swap(let id): SwapScreen(comingIn: id, picked: { made = "" }).environmentObject(model)
+            case .open(let id): GrabScreen(listId: id).environmentObject(model)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("grablists-detail")
@@ -102,26 +110,35 @@ struct GrabCollectionScreen: View {
         if onHome {
             homeRow(list, n: n, count: count)
         } else {
-            // The whole row is the button: tap a waiting list to put it on Home.
-            Button { bringOn(list.id) } label: {
-                HStack(spacing: 10) {
-                    GrabDoodle(icon: list.icon, size: 30, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(list.label).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
-                        Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
-                            .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+            // A waiting list opens on a tap, like a tile on Home — to tick it, fill it
+            // or delete it without first sending another list off Home (5 Oct 2026:
+            // the whole row was the On Home button, and only the Action button's menu
+            // or a Shortcut could open a waiting list). On Home is its own button.
+            HStack(spacing: 8) {
+                Button { window = .open(list.id) } label: {
+                    HStack(spacing: 10) {
+                        GrabDoodle(icon: list.icon, size: 30, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(list.label).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                            Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
+                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                        }
+                        Spacer(minLength: 8)
                     }
-                    Spacer(minLength: 8)
-                    pill("On Home", filled: true)
+                    .frame(minHeight: 54)
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 12).frame(minHeight: 54)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                .contentShape(Rectangle())
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("grablists-waiting-\(n)")
+                .accessibilityLabel("\(list.label), \(list.items.count) things. Open it")
+                Button { bringOn(list.id) } label: { pill("On Home", filled: true) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("grablists-on-\(n)")
+                    .accessibilityLabel("Put \(list.label) on Home")
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("grablists-waiting-\(n)")
-            .accessibilityLabel("\(list.label), \(list.items.count) things. Put it on Home")
+            .padding(.horizontal, 12).frame(minHeight: 54)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         }
     }
 
@@ -174,13 +191,19 @@ struct GrabCollectionScreen: View {
     private func add() {
         let name = jsTrim(newName)
         guard !name.isEmpty else { newNeeds = "Type a name first."; return }
+        // Two tiles with the same word cannot be told apart (5 Oct 2026: Make took any
+        // name, a second "Swim" too).
+        guard !model.library.grabListNameTaken(name) else {
+            newNeeds = "You have a grab list called \(name) already. Give this one another name."
+            return
+        }
         var list: GrabDefinition?
         model.change { list = $0.addGrabList(label: name) }
         newName = ""
         // A new list takes a free place on Home; only a full Home makes it wait.
         let onHome = list.map { l in model.library.homeGrabLists().contains { $0.id == l.id } } ?? false
         made = onHome ? "\(name) is on Home now. Open it there and press Edit to put things on it."
-                      : "\(name) waits below, as Home is full. Tap it to put it on Home."
+                      : "\(name) waits below, as Home is full. Tap it to put things on it, or press On Home."
     }
 
     private func move(_ id: String, by step: Int) {
@@ -205,16 +228,26 @@ struct GrabCollectionScreen: View {
             model.change { _ = $0.setHomeGrabLists(ids + [id]) }
             made = ""
         } else {
-            swappingIn = id            // full: he says which one steps back
+            window = .swap(id)         // full: he says which one steps back
         }
     }
 
-    private struct Swapping: Identifiable { let id: String }
+    enum Window: Identifiable {
+        case swap(String), open(String)
+        var id: String {
+            switch self {
+            case .swap(let x): return "swap:\(x)"
+            case .open(let x): return "open:\(x)"
+            }
+        }
+    }
 }
 
 /// Home is full. Which of the eight steps back, to wait in Grab Lists?
 struct SwapScreen: View {
     let comingIn: String
+    /// Told when he has picked (not on Cancel): the list coming in is on Home now.
+    var picked: () -> Void = {}
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
 
@@ -241,6 +274,7 @@ struct SwapScreen: View {
                             var ids = home.map(\.id)
                             ids[n] = comingIn
                             model.change { _ = $0.setHomeGrabLists(ids) }
+                            picked()
                             dismiss()
                         } label: {
                             HStack(spacing: 10) {

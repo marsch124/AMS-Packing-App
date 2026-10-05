@@ -66,6 +66,13 @@ struct RemindersCard: View {
     @EnvironmentObject var model: LibraryModel
     @AppStorage(PackingReminders.onKey) private var on = false
     @State private var refused = false
+    /// On here, but switched off for the app in the device's Settings: nothing will
+    /// come. Looked up whenever the card shows and whenever the app comes back to the
+    /// front (he may just have been to the device's Settings). Until 5 Oct 2026 the
+    /// card went on naming the next reminder, and the "not allowed" line showed only
+    /// at the moment he switched on.
+    @State private var blocked = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         let next = PackingReminders.upcoming(model.library).first
@@ -75,6 +82,7 @@ struct RemindersCard: View {
                     let ok = want ? await PackingReminders.shared.askToShow() : false
                     on = want && ok
                     refused = want && !ok
+                    blocked = false
                     await PackingReminders.shared.reschedule(model.library)
                 }
             })) {
@@ -88,7 +96,7 @@ struct RemindersCard: View {
             // Green when on, like every switch he knows: the Settings slate read as "off".
             .tint(AppSection.events.color)
             .accessibilityIdentifier("settings-reminders")
-            if refused {
+            if refused || (on && blocked) {
                 Text("This device does not allow the app to remind you. Allow it in the device's Settings, under Notifications.")
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     .fixedSize(horizontal: false, vertical: true)
@@ -107,5 +115,12 @@ struct RemindersCard: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("settings-reminders-card")
+        .task { await lookUp() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await lookUp() } } }
+    }
+
+    private func lookUp() async {
+        let ok = await PackingReminders.shared.allowed()
+        blocked = on && !ok
     }
 }

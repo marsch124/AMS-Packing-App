@@ -15,8 +15,6 @@ import PackingLibrary
 struct SearchScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
-    /// Send him to a tab (a to-do lives on Actions, not in a sheet of its own).
-    var go: (AppSection) -> Void = { _ in }
 
     @State private var query = ""
     @FocusState private var writing: Bool
@@ -194,9 +192,11 @@ struct SearchScreen: View {
         case .list: opened = .list(row.id)
         case .trip: opened = .trip(row.id)
         case .todo:
-            // A to-do is not a thing to open; it lives on Actions.
+            // A to-do is not a thing to open; it lives on the To do tab, which the
+            // frame opens. (Until 5 Oct 2026 it asked a screen that was never told
+            // where to send him, so Search only closed.)
             dismiss()
-            go(.actions)
+            model.tabToOpen = .actions
         }
     }
 
