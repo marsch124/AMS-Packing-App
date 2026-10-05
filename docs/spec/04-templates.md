@@ -545,8 +545,8 @@ both.
 ### Tests
 - UI: `testATemplateOpensAndCloses`; `testAThingAddedToATemplateStays` (Hiking has 4 rows; "Gaiters" added →
   `template-item-4`, survives close/reopen; ✕ asks first, Keep it keeps, Take it off removes, the other rows stay);
-  `testATemplatesThingsGroupTheWaysATripSorts` (a sectioned template starts on Section, first heading "LIGHTS";
-  A–Z is one group "A–Z"; Into's first heading "CARRY-ON / HAND LUGGAGE");
+  `testATemplatesThingsGroupTheWaysATripSorts` (a sectioned template starts on Section, first heading "Lights";
+  A–Z is one group "A–Z"; Into's first heading "Carry-on / hand luggage" — headings in Headline, not capitals, since 0.62);
   `testATemplateFindsAThingWithoutScrolling` ("map" → the Map first and alone, "1 of 4", no none-line; "mapzz" →
   none-line, no count, no rows; ✕ brings all back and hides count and none-line; Add while searching clears the
   search and shows the new row); `testAListIsRenamedAndAnotherIsDeleted` (rename via `template-rename`, reread from
@@ -795,7 +795,7 @@ sections, group), `resolvedTemplates()` (bag names), `sameBagWords`. Writes thro
   and the row says "Only on: Summer"; Context not offered on Hiking; the thing's own bag unchanged in Your things);
   `testTheEditorsLeadWithTheirHeadings` (all ten heading ids exist); `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
   (`row-section-add` → `row-section-add-needs`); `testASectionTypedInARowIsMadeOnlyOnSave` ("Rig" typed and Added
-  → `row-section-2` chosen; Cancel → gone on reopening; typed again and Saved → a "RIG" heading, and the row in
+  → `row-section-2` chosen; Cancel → gone on reopening; typed again and Saved → a "Rig" heading, and the row in
   it); `testAThingsNoteIsNotCopiedOntoATemplate` (-uiTestingOnSite: the Passport, with the note "Keep it dry",
   picked onto Hiking → the row shows the note, its `row-note` is empty with the grey words "Same as the thing: Keep
   it dry").

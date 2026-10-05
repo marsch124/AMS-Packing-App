@@ -3282,13 +3282,13 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["template-row-1"].tap()                       // Hiking, which has a section
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         XCTAssertTrue(isOn(app.buttons["template-grouping-section"]), "a sectioned template does not start by its sections")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "LIGHTS" })
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Lights" })
         tap(app, id: "template-grouping-name")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "A–Z" },
                       "A–Z did not regroup: '\(words(app.staticTexts["template-group-0"]))'")
         XCTAssertFalse(app.staticTexts["template-group-1"].exists, "A–Z is one group")
         tap(app, id: "template-grouping-into")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "CARRY-ON / HAND LUGGAGE" },
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Carry-on / hand luggage" },
                       "Into does not group by bag: '\(words(app.staticTexts["template-group-0"]))'")
     }
 
@@ -3393,7 +3393,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-arrange")
 
         // Read by its headings: Lights holds the Map, and nothing is left under no heading.
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "LIGHTS" })
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Lights" })
         XCTAssertFalse(app.staticTexts["template-group-2"].exists, "Everything else is still there")
         let lights = (0..<3).map { words(app.buttons["template-item-\($0)"]) }
         XCTAssertTrue(lights.contains { $0.hasPrefix("Map") }, "the Map is not under Lights: \(lights)")
@@ -3648,7 +3648,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "row-save")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
         // Lights is empty now, so Rig is the first heading (a section with nothing in it is not shown).
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "RIG" },
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Rig" },
                       "the row is not under its new section: '\(words(app.staticTexts["template-group-0"]))'")
         openFirstRow()
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["row-section-2"]) }, "the saved section is not the row's")
@@ -4067,12 +4067,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-templates"))
         app.buttons["template-row-1"].tap()                       // Hiking, which has a section
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        // Its section headings, in capitals since 0.40 (his "much larger headings", H.13).
+        // Its section headings — in capitals from 0.40 (his "much larger headings", H.13), in
+        // Apple's Headline as he named them since 0.62 ("Apple-standard", 5 Oct 2026).
         let headings = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH 'template-group-'"))
         XCTAssertTrue(headings.firstMatch.waitForExistence(timeout: 5), "the list has no headings")
         // words(): the iPhone reports a text's words as its label, the Mac as its value
         // (0.40's first CI run read "" on the Mac).
-        XCTAssertTrue(headings.allElementsBoundByIndex.contains { self.words($0) == "LIGHTS" },
+        XCTAssertTrue(headings.allElementsBoundByIndex.contains { self.words($0) == "Lights" },
                       "the list does not read in its sections: \(headings.allElementsBoundByIndex.map { self.words($0) })")
 
         let row = app.buttons["template-item-0"]
@@ -5617,7 +5618,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-pick")
         XCTAssertTrue(appears(app, "pick-screen", timeout: 5), "Choose from your things did not open")
         tap(app, id: "pick-group-fromWhere")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" },
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "Bathroom cabinet" },
                       "From where did not group by place: '\(words(app.staticTexts["pick-heading-0"]))'")
     }
 
@@ -5638,7 +5639,7 @@ final class AMSPackingUITests: XCTestCase {
 
         tap(app, id: "pick-group-1-fold")
         XCTAssertTrue(waitUntil { self.pickRowsGone(app, 1...2) }, "folding Chest of drawers left its things on screen")
-        XCTAssertEqual(words(app.staticTexts["pick-heading-1"]), "CHEST OF DRAWERS", "the folded group lost its name")
+        XCTAssertEqual(words(app.staticTexts["pick-heading-1"]), "Chest of drawers", "the folded group lost its name")
         XCTAssertEqual(words(app.staticTexts["pick-heading-1-count"]), "2 things", "the folded group no longer says how many it holds")
         XCTAssertTrue(pickRowsShown(app, 0...0) && pickRowsShown(app, 3...4), "the groups around it folded as well")
         shot(app, "pick-folded")
@@ -5680,14 +5681,14 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "A–Z" })
         XCTAssertTrue(waitUntil { app.buttons["pick-row-0"].exists }, "From where's folds folded A–Z too")
         tap(app, id: "pick-group-fromWhere")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" })
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "Bathroom cabinet" })
         XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "From where forgot its folds after A–Z")
         // Closed and opened again.
         tap(app, id: "pick-cancel")
         XCTAssertTrue(disappears(app, "pick-screen", timeout: 5))
         tap(app, id: "template-pick")
         XCTAssertTrue(appears(app, "pick-screen", timeout: 5))
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" })
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "Bathroom cabinet" })
         XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "the folds were forgotten when the picker was opened again")
     }
 
@@ -5704,7 +5705,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["pick-fold-all"].exists, "Fold all is offered while searching")
         shot(app, "pick-searching")
         tap(app, id: "pick-search-clear")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "BATHROOM CABINET" })
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "Bathroom cabinet" })
         XCTAssertTrue(waitUntil { self.pickRowsGone(app, 0...2) }, "the folds did not come back after the search")
     }
 
