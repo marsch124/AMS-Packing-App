@@ -67,19 +67,19 @@ struct TemplatesScreen: View {
             LazyVStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Your templates").font(.system(size: 28, weight: .heavy))
+                        Text("Your templates").font(.system(.title2, weight: .bold))
                             .foregroundStyle(AppSection.templates.color)
                             .accessibilityIdentifier("templates-heading")
                         Text(TemplatesScreen.summary(flat, model.library))
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .accessibilityIdentifier("templates-summary")
                     }
                     Spacer(minLength: 8)
                     SearchButton { opened = .search }
                     Button { opened = .new } label: {
                         Text("+ New")
-                            .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
-                            .padding(.horizontal, 14).frame(minHeight: 36)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                             .background(Capsule().fill(AppSection.templates.color))
                             .contentShape(Capsule())
                     }
@@ -94,10 +94,9 @@ struct TemplatesScreen: View {
                     // His own code beside the name, as the web app has it:
                     // "GA · GOAL ACTIVITY".
                     Text(TemplatesScreen.areaHeading(area))
-                        .font(.system(size: 18, weight: .heavy))       // "Much larger headings" (H.13)
+                        .font(.headline)
                         .foregroundStyle(Theme.ink)
-                        .kerning(0.8)
-                        .padding(.top, 20)
+                        .padding(.top, 16)
                         .accessibilityIdentifier("templates-area-\(area.id)")
                     // Two across: more of his lists at a glance, as the web app shows them.
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
@@ -145,14 +144,14 @@ struct TemplateCard: View {
                 Cover(list: list, size: 34)
                 Spacer(minLength: 0)
                 Text("\(list.items.count)")
-                    .font(.system(size: 15, weight: .heavy).monospacedDigit())
+                    .font(.system(.subheadline, weight: .semibold).monospacedDigit())
                     .foregroundStyle(Theme.muted)
             }
             Text(list.name)
-                .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             Text(Library.TemplateUse.line(use, today: Today.local))
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(.caption))
                 // Quiet, not invisible: the divider colour could not be read on
                 // either a white or a black background.
                 .foregroundStyle(use == nil ? Theme.muted.opacity(0.65) : Theme.muted)
@@ -243,7 +242,7 @@ struct IconPickerScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Cover(list: list, size: 40)
-                Text(list.name).font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text(list.name).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.8)
                 Spacer(minLength: 4)
                 Button("Cancel") { dismiss() }
@@ -257,10 +256,10 @@ struct IconPickerScreen: View {
                         choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint) {
                             if let s = Library.suggestedIcon(for: list), let icon = TemplateIcons.icon(s) {
                                 IconMark(path: icon.path, size: 30)
-                            } else { Text(Library.coverLetter(list)).font(.system(size: 22, weight: .heavy)) }
+                            } else { Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold)) }
                         } pick: { pick(nil) }
                         choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint) {
-                            Text(Library.coverLetter(list)).font(.system(size: 22, weight: .heavy))
+                            Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold))
                         } pick: { pick(Library.letterIcon) }
                     }
                     SectionTitle(title: "All icons")
@@ -292,7 +291,7 @@ struct IconPickerScreen: View {
         Button(action: pick) {
             VStack(spacing: 6) {
                 mark().foregroundStyle(on ? Color.white : Theme.ink).frame(height: 32)
-                Text(title).font(.system(size: 12, weight: .bold))
+                Text(title).font(.system(.caption, weight: .semibold))
                     .foregroundStyle(on ? Color.white : Theme.muted)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
@@ -376,14 +375,14 @@ struct TemplateDetail: View {
                     get: { renaming ?? list.name },
                     set: { renaming = $0 }))
                     .textFieldStyle(.plain)
-                    .font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                     .focused($writingName)
                     .onSubmit { saveName(list) }
                     .accessibilityIdentifier("template-name")
                 // Always in colour; a name that cannot be taken is said under the row.
                 if let wanted = renaming, jsTrim(wanted) != jsTrim(list.name) {
                     Button { saveName(list) } label: {
-                        Text("Rename").font(.system(size: 15, weight: .bold))
+                        Text("Rename").font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(AppSection.templates.color)
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -396,7 +395,7 @@ struct TemplateDetail: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true))
                     .focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(.body, weight: .semibold))
                     .foregroundStyle(AppSection.templates.color)
                     .accessibilityIdentifier("template-detail-done")
             }
@@ -404,14 +403,14 @@ struct TemplateDetail: View {
             .padding(16)
             // Group the things the ways a trip sorts (his H.3), in sight above the list.
             FlowRow(spacing: 6) {
-                Text("Group").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
-                    .frame(minHeight: 36)
+                Text("Group").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .frame(minHeight: Metrics.chip)
                         ForEach(ways, id: \.self) { way in
                             let on = way == grouping
                             Button { groupingRaw = way.rawValue } label: {
-                                Text(way.label).font(.system(size: 15, weight: on ? .heavy : .medium))
+                                Text(way.label).font(.system(.subheadline, weight: on ? .semibold : .regular))
                                     .foregroundStyle(on ? Color.white : Theme.ink)
-                                    .padding(.horizontal, 12).frame(minHeight: 36)
+                                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                                     .background(Capsule().fill(on ? AppSection.templates.color : Theme.card))
                                     .overlay(Capsule().stroke(on ? AppSection.templates.color : Theme.line, lineWidth: 1))
                                     .contentShape(Capsule())
@@ -429,16 +428,16 @@ struct TemplateDetail: View {
                 HStack(spacing: 10) {
                     TextField("Find a thing on this template", text: $finding)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 17)).foregroundStyle(Theme.ink)
+                        .font(.system(.body)).foregroundStyle(Theme.ink)
                         .clearButton($finding, id: "template-find")
-                        .padding(.horizontal, 12).frame(minHeight: 40)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     // How many of the template's rows the search shows — only while it finds
                     // something; "0 of 4" would say again what the line under it says.
                     if !q.isEmpty && !found.isEmpty {
                         Text("\(found.count) of \(list.items.count)")
-                            .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                             .fixedSize()
                             .accessibilityIdentifier("template-find-count")
                     }
@@ -450,14 +449,14 @@ struct TemplateDetail: View {
                     // A search that finds nothing says so, quietly, where the rows were.
                     if !q.isEmpty && groups.isEmpty {
                         Text("Nothing on this template is called that.")
-                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.callout)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 16)
                             .accessibilityIdentifier("template-find-none")
                     }
                     ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
-                        Text(group.title.uppercased())
-                            .font(.system(size: 18, weight: .heavy)).kerning(0.8)   // "Much larger headings" (H.13)
+                        Text(group.title)
+                            .font(.headline)
                             .foregroundStyle(group.colour ?? AppSection.templates.color)
                             .padding(.top, 16)
                             .accessibilityIdentifier("template-group-\(g)")
@@ -467,22 +466,22 @@ struct TemplateDetail: View {
                                 Button { editingRow = item.memId } label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(item.name).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                                            Text(item.name).font(.system(.body)).foregroundStyle(Theme.ink)
                                             if !item.qty.isEmpty || !item.note.isEmpty {
                                                 Text([item.qty.isEmpty ? "" : "×\(item.qty)", item.note]
                                                         .filter { !$0.isEmpty }.joined(separator: " · "))
-                                                    .font(.system(size: 13)).foregroundStyle(Theme.muted).lineLimit(1)
+                                                    .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                                             }
                                             // Only on some trips, said on the row (field test 4.4, 3 Oct 2026)
                                             // — only what a trip reads on this template.
                                             let tags = Library.onlyOnWords(item, on: list)
                                             if !tags.isEmpty {
-                                                Text(tags).font(.system(size: 13, weight: .semibold))
+                                                Text(tags).font(.system(.footnote, weight: .semibold))
                                                     .foregroundStyle(AppSection.templates.color).lineLimit(1)
                                             }
                                         }
                                         Spacer(minLength: 8)
-                                        Text(item.container).font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(1)
+                                        Text(item.container).font(.system(.subheadline)).foregroundStyle(Theme.muted).lineLimit(1)
                                     }
                                     .padding(.vertical, 6).contentShape(Rectangle())
                                 }
@@ -518,8 +517,8 @@ struct TemplateDetail: View {
             HStack(spacing: 8) {
                 TextField("Or type a new thing", text: $newName)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
@@ -534,14 +533,14 @@ struct TemplateDetail: View {
             if askingToDelete {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Delete “\(list.name)”?")
-                        .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text("The template and its \(list.items.count) row\(list.items.count == 1 ? "" : "s") go. The THINGS stay — they are still in Your things and on any other template.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 10) {
                         Button("Keep it") { askingToDelete = false }
                             .buttonStyle(.plain).focusEffectDisabled()
-                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                             .accessibilityIdentifier("template-delete-no")
                         Spacer()
                         Button {
@@ -549,8 +548,8 @@ struct TemplateDetail: View {
                             dismiss()
                         } label: {
                             Text("Delete the template")
-                                .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
-                                .padding(.horizontal, 14).frame(minHeight: 40)
+                                .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                                 .background(Capsule().fill(AppSection.actions.color))
                                 .contentShape(Capsule())
                         }
@@ -607,9 +606,9 @@ struct TemplateDetail: View {
     private func areaDoor(_ list: PackList) -> some View {
         Button { withAnimation(.easeOut(duration: 0.15)) { choosingArea = true } } label: {
             Text("Activity area: \(list.group.isEmpty ? "none" : list.group)")
-                .font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.templates.color)
+                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.templates.color)
                 .lineLimit(1)
-                .frame(minHeight: 36).contentShape(Rectangle())
+                .frame(minHeight: Metrics.chip).contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("template-area")
@@ -621,7 +620,7 @@ struct TemplateDetail: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("In which activity area should it live?")
-                    .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Button("Cancel") { choosingArea = false }
@@ -637,11 +636,11 @@ struct TemplateDetail: View {
                 } label: {
                     HStack {
                         Text(label)
-                            .font(.system(size: 16, weight: on ? .heavy : .medium))
+                            .font(.system(.callout, weight: on ? .semibold : .regular))
                             .foregroundStyle(on ? AppSection.templates.color : Theme.ink)
                         Spacer()
                     }
-                    .frame(minHeight: 44).contentShape(Rectangle())
+                    .frame(minHeight: Metrics.tap).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
@@ -670,12 +669,12 @@ struct TemplateDetail: View {
                     .frame(width: 48, height: 48)
                     .background(Circle().fill(AppSection.actions.color.opacity(0.14)))
                 Text("Take \u{201C}\(t.name)\u{201D} off \u{201C}\(list.name)\u{201D}?")
-                    .font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("template-remove-question")
                 Text("It stays in Your things and on your other templates.")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 12) {
@@ -761,12 +760,12 @@ struct RowEditor: View {
             HStack {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("row-cancel")
                 Spacer()
                 Button("Save") { save() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.templates.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.templates.color)
                     .accessibilityIdentifier("row-save")
             }
             .padding(16)
@@ -775,12 +774,12 @@ struct RowEditor: View {
                 // 2026-09-28). Each heading a band in the template colour, as in the thing
                 // editor — their field test (3 Oct 2026) tapped a thing here and
                 // found the headings (14, grey) smaller than the pills under them.
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(thing.name).font(.system(size: 26, weight: .heavy)).foregroundStyle(Theme.ink)
+                        Text(thing.name).font(.system(.title2, weight: .bold)).foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("row-thing-name")
-                        Text("On \(list.name)").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                        Text("On \(list.name)").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
                     // The first pill says where a blank bag REALLY goes: the template's own
                     // bag when it came with one, else the thing's (the spec pass).
@@ -817,7 +816,7 @@ struct RowEditor: View {
                         field($note, RowEditor.sameAs(thing.note, else: "e.g. with the red filter"), "row-note")
                     }
                     Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
 
                     // Only on some trips — per template, as the web app keeps it: a towel
                     // can be summer-only on Beach and always on Swim (his ask, 2 Oct 2026).
@@ -825,7 +824,7 @@ struct RowEditor: View {
                     VStack(alignment: .leading, spacing: 14) {
                         HeadingBand(title: "Only on some trips", tint: AppSection.templates.color, id: "row-heading-some")
                         Text("Leave these off and it always comes along. Pick one or more and it comes only on trips that match — on this template.")
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, -6)
                         // A word the app does not know (a web-app "summer") is a pill of its
@@ -865,8 +864,8 @@ struct RowEditor: View {
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {
         TextField(prompt, text: text)
             .textFieldStyle(.plain)
-            .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-            .padding(.horizontal, 12).frame(minHeight: 44)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
             .accessibilityIdentifier(id)

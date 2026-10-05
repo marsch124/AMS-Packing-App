@@ -45,15 +45,15 @@ struct WordsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text("Aa").font(.system(size: 17, weight: .heavy)).foregroundStyle(AppSection.settings.color)
+                Text("Aa").font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .frame(width: 24, height: 24)
-                Text("Words").font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Words").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
             }
             ForEach(Array(Words.all.enumerated()), id: \.offset) { n, e in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(e.term).font(.system(size: 17, weight: .heavy)).foregroundStyle(e.section.color)
+                    Text(e.term).font(.system(.body, weight: .semibold)).foregroundStyle(e.section.color)
                         .accessibilityIdentifier("word-\(n)")
-                    Text(e.meaning).font(.system(size: 16)).foregroundStyle(Theme.ink)
+                    Text(e.meaning).font(.system(.callout)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

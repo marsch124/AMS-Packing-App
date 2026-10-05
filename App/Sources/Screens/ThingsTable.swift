@@ -113,7 +113,7 @@ struct ThingsTable: View {
             }
             if rows.isEmpty {
                 Text(!filters.isEmpty ? "Nothing matches these filters." : only.isEmpty ? "Nothing matches." : "Nothing missing that — all filled in.")
-                    .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.callout)).foregroundStyle(Theme.muted)
                     .frame(maxWidth: .infinity).padding(.top, 30)
                     .accessibilityIdentifier("table-none")
                 Spacer()
@@ -174,7 +174,7 @@ struct ThingsTable: View {
                     // The title holds still inside its own run of columns instead of
                     // sliding away, so it still says which group you are looking at.
                     Text(band.title)
-                        .font(.system(size: 11, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                        .font(.system(.caption2, weight: .semibold)).foregroundStyle(AppSection.care.color)
                         .kerning(0.4).lineLimit(1)
                         .padding(.horizontal, 7)
                         .frame(width: band.width, height: 20, alignment: .leading)
@@ -206,9 +206,9 @@ struct ThingsTable: View {
 
                 Button { turn("name") } label: {
                     HStack(spacing: 4) {
-                        Text("Thing").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                        Text("Thing").font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
                         if sortBy == "name" {
-                            Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
+                            Text(descending ? "▼" : "▲").font(.system(.caption2, weight: .semibold))
                                 .foregroundStyle(AppSection.care.color)
                         }
                         Spacer(minLength: 0)
@@ -225,10 +225,10 @@ struct ThingsTable: View {
                     Button { turn(column.id) } label: {
                         HStack(spacing: 3) {
                             Text(column.title)
-                                .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                                .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
                                 .lineLimit(1).minimumScaleFactor(0.7)
                             if sortBy == column.id {
-                                Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
+                                Text(descending ? "▼" : "▲").font(.system(.caption2, weight: .semibold))
                                     .foregroundStyle(AppSection.care.color)
                             }
                         }
@@ -257,13 +257,13 @@ struct ThingsTable: View {
             HStack(spacing: 8) {
                 if !chosen.isEmpty {
                     Text(hidden > 0 ? "\(chosen.count) ticked · \(hidden) not shown" : "\(chosen.count) ticked")
-                        .font(.system(size: 15, weight: .heavy).monospacedDigit())
+                        .font(.system(.subheadline, weight: .semibold).monospacedDigit())
                         .foregroundStyle(AppSection.care.color)
                         .accessibilityIdentifier("table-chosen-count")
 
                     Button { changing = true } label: {
                         Text("Change all")
-                            .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                            .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                             .padding(.horizontal, 12).frame(minHeight: 32)
                             .background(Capsule().fill(AppSection.care.color))
                             .contentShape(Capsule())
@@ -272,7 +272,7 @@ struct ThingsTable: View {
                     .accessibilityIdentifier("table-change-all")
 
                     Button { chosen.removeAll() } label: {
-                        Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                        Text("Clear").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("table-clear-chosen")
@@ -281,7 +281,7 @@ struct ThingsTable: View {
                 if !wasBefore.isEmpty {
                     Button { putBack() } label: {
                         Text("Undo")
-                            .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                            .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .padding(.horizontal, 10).frame(minHeight: 32)
                             .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: 1))
                             .contentShape(Capsule())
@@ -293,7 +293,7 @@ struct ThingsTable: View {
             // What the change WAS, on a line of its own — "2 changed: Condition → New".
             // It used to say only "2 changed" (the spec pass, 5 Oct 2026).
             if !wasBefore.isEmpty {
-                Text(didSay).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                Text(didSay).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("table-said")
             }
@@ -337,22 +337,22 @@ struct ThingsTable: View {
     private func top(_ count: Int, _ filters: ThingFilters) -> some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
-                Text("All your things").font(.system(size: 21, weight: .heavy))
+                Text("All your things").font(.system(.title3, weight: .bold))
                     .foregroundStyle(AppSection.care.color)
                 Text("\(count)")
-                    .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("table-count")
                 Spacer()
                 Button("Done") { close() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("table-done")
             }
 
             HStack(spacing: 8) {
                 TextField("Search", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                     .clearButton($query, id: "table-search")
                     .padding(.horizontal, 10).frame(minHeight: 34)
                     .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
@@ -378,7 +378,7 @@ struct ThingsTable: View {
                 ForEach(ThingsTable.filters, id: \.id) { filter in
                     Button { only = filter.id } label: {
                         Text(filter.label)
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(.footnote, weight: .semibold))
                             .foregroundStyle(only == filter.id ? .white : Theme.muted)
                             .padding(.horizontal, 12).frame(minHeight: 30)
                             .background(Capsule().fill(only == filter.id ? AppSection.care.color : Theme.card))
@@ -398,7 +398,7 @@ struct ThingsTable: View {
                 Text("Sorted by " + ([SortLevel(key: sortBy, descending: descending)] + then)
                         .map { TableKeys.title($0.key, model.library) + ($0.descending ? " ▼" : " ▲") }
                         .joined(separator: ", then "))
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("table-sorted-by")
             }
@@ -408,7 +408,7 @@ struct ThingsTable: View {
 
     private func chip(_ text: String, lit: Bool = false) -> some View {
         Text(text)
-            .font(.system(size: 14, weight: .bold)).foregroundStyle(lit ? .white : Theme.ink)
+            .font(.system(.footnote, weight: .semibold)).foregroundStyle(lit ? .white : Theme.ink)
             .lineLimit(1)
             .padding(.horizontal, 10).frame(minHeight: 34)
             .background(RoundedRectangle(cornerRadius: 9).fill(lit ? AppSection.care.color : Theme.card))
@@ -430,8 +430,8 @@ struct ThingsTable: View {
                         filtersStored = TableKeys.store(all)
                     } label: {
                         HStack(spacing: 6) {
-                            Text(words).font(.system(size: 14, weight: .bold)).lineLimit(1)
-                            Text("✕").font(.system(size: 13, weight: .black))
+                            Text(words).font(.system(.footnote, weight: .semibold)).lineLimit(1)
+                            Text("✕").font(.system(.footnote, weight: .semibold))
                         }
                         .foregroundStyle(AppSection.care.color)
                         .padding(.horizontal, 10).frame(minHeight: 30)
@@ -443,7 +443,7 @@ struct ThingsTable: View {
                     .accessibilityLabel(words)
                 }
                 Button { filtersStored = "" } label: {
-                    Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    Text("Clear").font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                         .padding(.horizontal, 8).frame(minHeight: 30).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
@@ -519,7 +519,7 @@ struct ThingsTable: View {
                     .accessibilityAddTraits(ticked ? .isSelected : [])
 
                     Text(thing.name)
-                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.ink)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("table-\(n)-name")

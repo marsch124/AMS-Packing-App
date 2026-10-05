@@ -32,16 +32,16 @@ struct BulkChange: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Change \(things.count) thing\(things.count == 1 ? "" : "s")")
-                        .font(.system(size: 20, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                        .font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
                         .accessibilityIdentifier("bulk-count")
                     Text(names)
-                        .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.muted)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("bulk-cancel")
             }
             .padding(16)
@@ -53,11 +53,11 @@ struct BulkChange: View {
                         Button { field = one.id; typed = ""; needs = "" } label: {
                             HStack {
                                 Text(one.title)
-                                    .font(.system(size: 16, weight: field == one.id ? .heavy : .medium))
+                                    .font(.system(.callout, weight: field == one.id ? .semibold : .regular))
                                     .foregroundStyle(field == one.id ? AppSection.care.color : Theme.ink)
                                 Spacer()
                                 if field == one.id {
-                                    Text("▾").font(.system(size: 14, weight: .black))
+                                    Text("▾").font(.system(.footnote, weight: .semibold))
                                         .foregroundStyle(AppSection.care.color)
                                 }
                             }
@@ -128,7 +128,7 @@ struct BulkChange: View {
                 }
                 if !needs.isEmpty {
                     Text(needs)
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("bulk-needs")
                 }
@@ -144,12 +144,12 @@ struct BulkChange: View {
     private func value(_ text: String, id: String, _ go: @escaping () -> Void) -> some View {
         Button(action: go) {
             HStack(spacing: 8) {
-                Text("→").font(.system(size: 13, weight: .black)).foregroundStyle(AppSection.care.color)
-                Text(text).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("→").font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                Text(text).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 Spacer()
             }
-            .frame(minHeight: 40)
+            .frame(minHeight: Metrics.compact)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
@@ -159,15 +159,15 @@ struct BulkChange: View {
     private func box() -> some View {
         TextField("", text: Binding(get: { typed }, set: { typed = $0; needs = "" }))
             .textFieldStyle(.plain)
-            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
-            .padding(.horizontal, 10).frame(minHeight: 36)
+            .font(.system(.subheadline)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
             .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.line, lineWidth: 1))
             .accessibilityIdentifier("bulk-text")
     }
 
     private func heading(_ text: String) -> some View {
-        Text(text).font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+        Text(text).font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted).kerning(0.6)
             .padding(.bottom, 6)
     }
 

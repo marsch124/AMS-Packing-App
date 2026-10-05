@@ -44,10 +44,10 @@ struct CareScreen: View {
             LazyVStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Care").font(.system(size: 28, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                    Text("Care").font(.system(.title2, weight: .bold)).foregroundStyle(AppSection.care.color)
                         .accessibilityIdentifier("care-heading")
                     Text(CareScreen.line(stats))
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("care-line")
                 }
                     Spacer()
@@ -58,13 +58,13 @@ struct CareScreen: View {
                 // Everything he owns, on a list or not — the web app's "Your things".
                 Button { opening = ThingsRequest(search: "") } label: {
                     HStack {
-                        Text("Your things").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
-                        Text("\(model.library.items.count)").font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        Text("Your things").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                        Text("\(model.library.items.count)").font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 52)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.row)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
@@ -77,18 +77,18 @@ struct CareScreen: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 6) {
-                                Text("Bags").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                                Text("Bags").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                                 Text("\(model.library.bags().count)")
-                                    .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                             }
                             Text("How much each may carry, and what goes in it")
-                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
+                                .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                         }
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 52)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.row)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
@@ -100,15 +100,15 @@ struct CareScreen: View {
                 Button { openTable() } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("All your things · table").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                            Text("All your things · table").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                             Text("Weight and where each one lives, filled in row by row")
-                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
+                                .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                         }
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 52)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.row)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
@@ -118,7 +118,7 @@ struct CareScreen: View {
                 .accessibilityIdentifier("care-table")
 
                 Text(CareScreen.summary(rows: rows.count, overdue: overdue, soon: soon))
-                    .font(.system(size: 17, weight: .heavy))
+                    .font(.system(.body, weight: .semibold))
                     .foregroundStyle(overdue > 0 ? AppSection.actions.color : (soon > 0 ? AppSection.care.color : AppSection.events.color))
                     .padding(.top, 10)
                     .accessibilityIdentifier("care-summary")
@@ -128,7 +128,7 @@ struct CareScreen: View {
                     ForEach(["list", "calendar"], id: \.self) { view in
                         Button { careView = view } label: {
                             Text(view == "list" ? "List" : "Calendar")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(.footnote, weight: .semibold))
                                 .foregroundStyle(careView == view ? .white : Theme.muted)
                                 .padding(.horizontal, 14).frame(minHeight: 32)
                                 .background(Capsule().fill(careView == view ? AppSection.care.color : Theme.card))
@@ -152,9 +152,9 @@ struct CareScreen: View {
                         if section.fold { if open.contains(section.key) { open.remove(section.key) } else { open.insert(section.key) } }
                     } label: {
                         HStack {
-                            Text(section.label.uppercased()).font(.system(size: 18, weight: .heavy)).kerning(0.8)
+                            Text(section.label).font(.headline)
                                 .foregroundStyle(CareScreen.tone(section.state))
-                            Text("\(section.rows.count)").font(.system(size: 18, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                            Text("\(section.rows.count)").font(.system(.body, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                             Spacer()
                             if section.fold {
                                 SVGPath.path(shown ? "M6 9l6 6 6-6" : "M9 6l6 6-6 6")
@@ -227,19 +227,19 @@ struct CareRow: View {
         let s = row.status
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(row.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text(row.item.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text(CareRow.when(s, notes: row.item.maintenance?.notes ?? ""))
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(CareScreen.tone(s.state))
+                    .font(.system(.subheadline)).foregroundStyle(CareScreen.tone(s.state))
                     .lineLimit(2)
                 if !row.listName.isEmpty {
-                    Text(row.listName).font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                    Text(row.listName).font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
             if s.scheduled {
                 Button(action: done) {
-                    Text("Done today").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 12).frame(minHeight: 36)
+                    Text("Done today").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                         .background(Capsule().fill(AppSection.care.color))
                         .contentShape(Capsule())
                 }

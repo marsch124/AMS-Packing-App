@@ -42,21 +42,21 @@ struct SearchScreen: View {
         let found = look()
         VStack(spacing: 0) {
             HStack {
-                Text("Search").font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Search").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.home.color)
                     .accessibilityIdentifier("search-done")
             }
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
 
             TextField("Things, templates, trips, to-dos…", text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                .font(.system(.body)).foregroundStyle(Theme.ink)
                 .focused($writing)
                 .clearButton($query, id: "search-field")
-                .padding(.horizontal, 12).frame(minHeight: 44)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 .padding(.horizontal, 16)
@@ -78,7 +78,7 @@ struct SearchScreen: View {
                             }
                             if part.total > part.rows.count {
                                 Text("…and \(part.total - part.rows.count) more. Say more of the name.")
-                                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
                                     .padding(.vertical, 8)
                                     .accessibilityIdentifier("search-\(part.id)-more")
                             }
@@ -205,9 +205,9 @@ struct SearchScreen: View {
     private func heading(_ title: String, _ count: Int) -> some View {
         HStack(spacing: 6) {
             Text(title.uppercased())
-                .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted).kerning(0.6)
             Text("\(count)")
-                .font(.system(size: 12, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                .font(.system(.caption, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
         }
         .padding(.top, 18).padding(.bottom, 4)
     }
@@ -216,11 +216,11 @@ struct SearchScreen: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.name)
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 if !row.under.isEmpty {
                     Text(row.under)
-                        .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .lineLimit(1)
                 }
             }
@@ -229,14 +229,14 @@ struct SearchScreen: View {
                 .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                 .frame(width: 20, height: 20).foregroundStyle(Theme.muted)
         }
-        .frame(minHeight: 48)
+        .frame(minHeight: Metrics.tap)
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
         .contentShape(Rectangle())
     }
 
     private func note(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 24)
     }

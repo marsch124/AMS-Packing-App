@@ -16,14 +16,14 @@ struct RefineScreen: View {
         let offers = model.library.refineSuggestions()
         VStack(spacing: 0) {
             HStack {
-                Text("Refine").font(.system(size: 22, weight: .heavy)).foregroundStyle(AppSection.templates.color)
-                Text("\(offers.count)").font(.system(size: 15, weight: .heavy).monospacedDigit())
+                Text("Refine").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.templates.color)
+                Text("\(offers.count)").font(.system(.subheadline, weight: .semibold).monospacedDigit())
                     .foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("refine-count")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.templates.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.templates.color)
                     .accessibilityIdentifier("refine-done")
             }
             .padding(16)
@@ -34,12 +34,12 @@ struct RefineScreen: View {
                 VStack(alignment: .leading, spacing: 12) {
                     if offers.isEmpty {
                         Text("Nothing to trim yet. After two trip reviews, anything you keep packing and never use — or keep listing and never pack — shows up here. One trip is not enough to judge by.")
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("refine-empty")
                     } else {
                         Text("Each of these has earned its place here over at least two trips. Keep settles it for good. Drop takes it off that one template — it stays your thing, and on your other templates.")
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                         ForEach(Array(offers.enumerated()), id: \.offset) { n, s in row(s, n) }
                     }
@@ -64,9 +64,9 @@ struct RefineScreen: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(s.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text(s.item.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("refine-row-\(n)-name")
-                    Text("\(s.listName) · \(why)").font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    Text("\(s.listName) · \(why)").font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("refine-row-\(n)-why")
                 }
                 Spacer(minLength: 8)
@@ -79,19 +79,19 @@ struct RefineScreen: View {
             }
             if dropping == key {
                 HStack(spacing: 10) {
-                    Text("Drop it from \(s.listName)?").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink)
+                    Text("Drop it from \(s.listName)?").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                     Spacer(minLength: 6)
                     Button("Keep it") { dropping = nil }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("refine-row-\(n)-drop-no")
                     Button {
                         dropping = nil
                         let list = s.listId
                         model.change { _ = $0.dropFromList(itemId: thing, listId: list) }
                     } label: {
-                        Text("Drop").font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
-                            .padding(.horizontal, 14).frame(minHeight: 36)
+                        Text("Drop").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                             .background(Capsule().fill(AppSection.actions.color))
                             .contentShape(Capsule())
                     }
@@ -109,7 +109,7 @@ struct RefineScreen: View {
 
     private func small(_ title: String, tint: Color, id: String, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
-            Text(title).font(.system(size: 15, weight: .bold)).foregroundStyle(tint)
+            Text(title).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint)
                 .padding(.horizontal, 12).frame(minHeight: 34)
                 .overlay(Capsule().stroke(tint, lineWidth: 1.4))
                 .contentShape(Capsule())
@@ -134,18 +134,18 @@ struct RefineDoor: View {
             HStack(spacing: 12) {
                 ImprovingMark().frame(width: 28, height: 28)
                     .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
+                    .frame(width: Metrics.tap, height: Metrics.tap)
                     .background(Circle().fill(violet))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Refine your templates").font(.system(size: 18, weight: .heavy)).foregroundStyle(violet)
+                    Text("Refine your templates").font(.system(.body, weight: .semibold)).foregroundStyle(violet)
                     Text(waiting == 0 ? "Better with every trip. Review a few trips, and what they teach waits here."
                          : "Your trip reviews found \(waiting) thing\(waiting == 1 ? "" : "s") to look at.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
+                        .font(.system(.footnote)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 4)
                 if waiting > 0 {
-                    Text("\(waiting)").font(.system(size: 16, weight: .heavy).monospacedDigit()).foregroundStyle(.white)
+                    Text("\(waiting)").font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(.white)
                         .frame(minWidth: 30, minHeight: 30)
                         .background(Capsule().fill(AppSection.care.color))
                 }

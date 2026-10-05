@@ -21,8 +21,8 @@ struct RemindersSend: View {
             if !toSend.isEmpty {
                 Button { Task { await send(toSend) } } label: {
                     Text(toSend.count == 1 ? "Send 1 to Reminders" : "Send \(toSend.count) to Reminders")
-                        .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(Capsule().fill(AppSection.actions.color))
                         .contentShape(Capsule())
                 }
@@ -31,7 +31,7 @@ struct RemindersSend: View {
             }
             if !says.isEmpty {
                 Text(says)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(trouble ? AppSection.actions.color : Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("buy-send-says")

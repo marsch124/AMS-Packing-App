@@ -70,7 +70,7 @@ struct KitDashboard: View {
                                 .fill(count > 0 ? AppSection.care.color : Theme.line)
                                 .frame(height: max(3, 44 * (tallest > 0 ? Double(count) / Double(tallest) : 0)))
                             Text(KitDashboard.month(n))
-                                .font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.muted)
+                                .font(.system(.caption2, weight: .semibold)).foregroundStyle(Theme.muted)
                         }
                     }
                 }
@@ -84,7 +84,7 @@ struct KitDashboard: View {
                 ForEach(Array(stats.tips.prefix(4).enumerated()), id: \.offset) { n, tip in
                     HStack(alignment: .top, spacing: 8) {
                         Circle().fill(AppSection.care.color).frame(width: 6, height: 6).padding(.top, 7)
-                        Text(tip).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        Text(tip).font(.system(.subheadline)).foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .accessibilityIdentifier("kit-tip-\(n)")
@@ -100,9 +100,9 @@ struct KitDashboard: View {
     /// One big number with its word under it.
     private func figure(_ number: String, _ word: String, _ tint: Color, _ id: String) -> some View {
         VStack(spacing: 2) {
-            Text(number).font(.system(size: 22, weight: .heavy).monospacedDigit()).foregroundStyle(tint)
+            Text(number).font(.system(.title3, weight: .bold).monospacedDigit()).foregroundStyle(tint)
                 .lineLimit(1).minimumScaleFactor(0.6)
-            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted).lineLimit(1)
+            Text(word).font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
         }
         .frame(maxWidth: .infinity, minHeight: 58)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
@@ -116,9 +116,9 @@ struct KitDashboard: View {
     private func bar(label: String, right: String, part: Double, tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
-                Text(label).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(label).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
-                Text(right).font(.system(size: 14, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                Text(right).font(.system(.footnote, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
             }
             GeometryReader { space in
                 ZStack(alignment: .leading) {

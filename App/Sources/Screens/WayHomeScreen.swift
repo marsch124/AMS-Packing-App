@@ -50,16 +50,16 @@ struct WayHomeScreen: View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Way home").font(.system(size: 24, weight: .heavy)).foregroundStyle(AppSection.events.color)
+                    Text("Way home").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.events.color)
                     // "I think there should be '1 used up' in the heading counting" (3 Oct 2026).
                     Text(usedUp > 0 ? "\(p.done)/\(p.total) · \(usedUp) used up" : "\(p.done)/\(p.total)")
-                        .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("wayhome-progress")
                 }
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("wayhome-done")
             }
@@ -73,19 +73,19 @@ struct WayHomeScreen: View {
                     if needle.isEmpty { photos(shots) }
                     if lines.isEmpty {
                         Text("Nothing to bring home yet: tick what you pack on the way out, and add what you buy on site with Bought on site.")
-                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.callout)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("wayhome-empty")
                     } else if shown.isEmpty {
                         Text("Nothing on the way home is called \u{201C}\(jsTrim(query))\u{201D}.")
-                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.callout)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 12)
                             .accessibilityIdentifier("wayhome-search-none")
                     }
                     ForEach(bags, id: \.self) { bag in
                         Text(bag == "Other" ? "Not in a bag" : bag)
-                            .font(.system(size: 15, weight: .heavy)).foregroundStyle(AppSection.events.color)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
                             .padding(.top, 12)
                         ForEach(shown.filter { Library.homeBag($0) == bag }, id: \.id) { line in
                             row(line, number[line.id] ?? 0)
@@ -128,9 +128,9 @@ struct WayHomeScreen: View {
     private var searchField: some View {
         TextField("Search the way home", text: $query)
             .textFieldStyle(.plain)
-            .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
             .clearButton($query, id: "wayhome-search")
-            .padding(.horizontal, 12).frame(minHeight: 44)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
     }
@@ -156,7 +156,7 @@ struct WayHomeScreen: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Image(decorative: shot.image, scale: 1).resizable().scaledToFill()
                                     .frame(width: 120, height: 90).clipShape(RoundedRectangle(cornerRadius: 10))
-                                Text(shot.bag).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
+                                Text(shot.bag).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
                             }
                             .frame(width: 120)
                         }
@@ -193,14 +193,14 @@ struct WayHomeScreen: View {
                         .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(line.name)
-                                .font(.system(size: 17, weight: packed ? .regular : .medium))
+                                .font(.system(.body))
                                 .foregroundStyle(used || packed ? Theme.muted : Theme.ink)
                                 .strikethrough(used, pattern: .solid, color: Theme.muted)
                                 .lineLimit(2)
                             if used {
-                                Text("Used up").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.muted)
+                                Text("Used up").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                             } else if Library.isBoughtOnSite(line) {
-                                Text("Bought on site").font(.system(size: 13, weight: .bold)).foregroundStyle(tint)
+                                Text("Bought on site").font(.system(.footnote, weight: .semibold)).foregroundStyle(tint)
                             }
                         }
                         Spacer(minLength: 4)
@@ -233,7 +233,7 @@ struct WayHomeScreen: View {
             // its words into itself on the Mac, and the note is read on its own.
             if !note.isEmpty && noting != line.id {
                 Text(note)
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 38).padding(.top, -6).padding(.bottom, 9)
                     .accessibilityIdentifier("wayhome-line-\(n)-notetext")
@@ -250,8 +250,8 @@ struct WayHomeScreen: View {
         HStack(spacing: 8) {
             TextField("e.g. Zip broken", text: $noteDraft)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                .padding(.horizontal, 12).frame(minHeight: 44)
+                .font(.system(.body)).foregroundStyle(Theme.ink)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 .focused($writingNote)
@@ -259,8 +259,8 @@ struct WayHomeScreen: View {
                 .onAppear { writingNote = true }
                 .accessibilityIdentifier("wayhome-note-field")
             Button { saveNote(line) } label: {
-                Text("Save").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                    .padding(.horizontal, 16).frame(minHeight: 44)
+                Text("Save").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color))
                     .contentShape(Rectangle())
             }
@@ -289,17 +289,17 @@ struct WayHomeScreen: View {
                 Group {
                     if all {
                         Text("Clear the ticks")
-                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
-                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1.4))
                     } else {
                         HStack(spacing: 6) {
                             Tick().stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
                                 .frame(width: 22, height: 22)
-                            Text("Tick everything").font(.system(size: 16, weight: .bold))
+                            Text("Tick everything").font(.system(.callout, weight: .semibold))
                         }
                         .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .frame(maxWidth: .infinity, minHeight: Metrics.row)
                         .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
                     }
                 }
@@ -313,8 +313,8 @@ struct WayHomeScreen: View {
 
     private func smallWords(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
-            .padding(.horizontal, 7).frame(minHeight: 40)
+            .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+            .padding(.horizontal, 7).frame(minHeight: Metrics.compact)
     }
 
     /// A small, quiet word-button at the side of a line. `keepsRoomFor`: the widest

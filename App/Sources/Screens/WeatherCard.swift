@@ -23,17 +23,17 @@ struct WeatherCard: View {
         VStack(alignment: .leading, spacing: 8) {
             if let sky {
                 Text(WeatherCard.line(sky))
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("weather-line")
                 HStack(spacing: 10) {
-                    Text(sky.place).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                    Text(sky.place).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     Spacer()
                     // In colour while it looks, too — the word says it is looking (his rule:
                     // nothing grey and switched off; the spec pass, 5 Oct 2026). A press
                     // meanwhile does nothing more: one look at a time (`lookUpWeather`).
                     Button { Task { await model.lookUpWeather(tripId: tripId) } } label: {
                         Text(busy ? "Looking…" : "Look again")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(AppSection.events.color)
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -42,11 +42,11 @@ struct WeatherCard: View {
                 ForEach(Array(missing.enumerated()), id: \.element.name) { n, gear in
                     Button { model.change { _ = $0.addWeatherGear(tripId: tripId, gear) } } label: {
                         HStack(spacing: 12) {
-                            Text("+").font(.system(size: 22, weight: .heavy))
+                            Text("+").font(.system(.title3, weight: .bold))
                                 .foregroundStyle(AppSection.events.color).frame(width: 22)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(gear.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
-                                Text(WeatherCard.why(gear)).font(.system(size: 13, weight: .semibold))
+                                Text(gear.name).font(.system(.callout)).foregroundStyle(Theme.ink)
+                                Text(WeatherCard.why(gear)).font(.system(.footnote, weight: .semibold))
                                     .foregroundStyle(Theme.muted)
                             }
                             Spacer(minLength: 8)
@@ -60,7 +60,7 @@ struct WeatherCard: View {
                 if missing.count >= 2 {
                     Button { model.change { _ = $0.addAllWeatherGear(tripId: tripId) } } label: {
                         Text("Add all \(missing.count)")
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
                             .padding(.horizontal, 16).frame(minHeight: 38)
                             .background(Capsule().fill(AppSection.events.color))
                             .contentShape(Capsule())
@@ -71,15 +71,15 @@ struct WeatherCard: View {
                 }
                 if missing.isEmpty {
                     Text("You have what this weather asks for.")
-                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("weather-nothing-missing")
                 }
             } else {
                 HStack(spacing: 8) {
                     TextField("Where is this trip?", text: $place)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: 40)
+                        .font(.system(.callout)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .onSubmit { look() }
@@ -88,9 +88,9 @@ struct WeatherCard: View {
                     // says so under the field, and while it looks it says "Looking…".
                     Button { look() } label: {
                         Text(busy ? "Looking…" : "Weather")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(Color.white)
-                            .padding(.horizontal, 14).frame(minHeight: 40)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                             .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color))
                             .contentShape(Rectangle())
                     }
@@ -100,7 +100,7 @@ struct WeatherCard: View {
                 .needsLine($needs, typed: place, id: "weather-look-needs")
             }
             if let trouble = model.weatherTrouble[tripId], !trouble.isEmpty {
-                Text(trouble).font(.system(size: 14, weight: .semibold))
+                Text(trouble).font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(AppSection.actions.color)
                     .accessibilityIdentifier("weather-trouble")
             }

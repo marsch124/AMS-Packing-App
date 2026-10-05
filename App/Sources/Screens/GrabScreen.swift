@@ -122,7 +122,7 @@ struct GrabButtons: View {
                         Button { open(d) } label: {
                             VStack(spacing: 3) {
                                 GrabDoodle(icon: d.icon, size: 36, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
-                                Text(d.label).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.ink)
+                                Text(d.label).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.ink)
                                     .lineLimit(1).minimumScaleFactor(0.75)
                             }
                             .padding(.horizontal, 4)
@@ -188,12 +188,12 @@ struct GrabScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
-                Text(list.title).font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 4)
                 Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: editing)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(tint)
                     .accessibilityIdentifier("grab-edit")
                 if !editing {
                     ShareDoor(id: "grab-share", tint: tint, markOnly: true) {
@@ -201,7 +201,7 @@ struct GrabScreen: View {
                     }
                     Button("Done") { dismiss() }
                         .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(tint)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(tint)
                         .accessibilityIdentifier("grab-done")
                 }
             }
@@ -217,7 +217,7 @@ struct GrabScreen: View {
                     if items.isEmpty {
                         // A list just made has nothing on it yet: say how to fill it.
                         Text("Nothing on this list yet. Press Edit to put things on it.")
-                            .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                            .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.vertical, 12)
                             .accessibilityIdentifier("grab-empty")
@@ -236,13 +236,13 @@ struct GrabScreen: View {
                                         }
                                     }
                                     Text(name)
-                                        .font(.system(size: 18, weight: ticked ? .regular : .semibold))
+                                        .font(.system(.body, weight: ticked ? .regular : .semibold))
                                         .foregroundStyle(skipped || ticked ? Theme.muted : Theme.ink)
                                         .strikethrough(skipped, pattern: .solid, color: Theme.muted)
                                     Spacer(minLength: 8)
                                     if skipped {
                                         Text(onlySometimes.contains(normName(name)) ? "only sometimes" : "not this time")
-                                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                                            .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                                     }
                                 }
                                 .padding(.vertical, 11).contentShape(Rectangle())
@@ -269,8 +269,8 @@ struct GrabScreen: View {
                         else { message = "\(missing.count) things still missing." }
                     } label: {
                         Text("Ready to go")
-                            .font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
                             .background(RoundedRectangle(cornerRadius: 12).fill(tint))
                             .contentShape(Rectangle())
                     }
@@ -283,8 +283,8 @@ struct GrabScreen: View {
                     // only when the list differs from that.
                     if !state.done.isEmpty || Set(state.skipped) != Set(fresh.skipped) {
                         Button { change { _ in fresh } } label: {
-                            Text("Start over").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.muted)
-                                .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
+                            Text("Start over").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.muted)
+                                .frame(maxWidth: .infinity, minHeight: Metrics.tap).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("grab-reset")
@@ -292,7 +292,7 @@ struct GrabScreen: View {
                     // The six hours run from the LAST tap — a list he is still ticking is
                     // still the same outing — and the words now say so (5 Oct 2026).
                     Text("Tap each thing as you pick it up — or tap ⊘ to leave something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted).padding(.top, 8)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted).padding(.top, 8)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             } }
@@ -331,14 +331,14 @@ struct GrabScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Tap a name to change it · ▲▼ move · ✕ remove. Saved for both your devices.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     ForEach(draft.indices, id: \.self) { n in
                         HStack(spacing: 2) {
                             TextField("Name", text: Binding(get: { n < draft.count ? draft[n] : "" },
                                                             set: { if n < draft.count { draft[n] = $0 } }))
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                                .padding(.horizontal, 10).frame(minHeight: 44)
+                                .font(.system(.body)).foregroundStyle(Theme.ink)
+                                .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
                                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                                 .accessibilityIdentifier("grab-rename-\(n)")
                             mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { draft.swapAt(n, n - 1) }
@@ -349,7 +349,7 @@ struct GrabScreen: View {
                                 if !jsTrim(name).isEmpty { draftSometimes.formSymmetricDifference([normName(name)]) }
                             } label: {
                                 Text("1 in 10")
-                                    .font(.system(size: 12, weight: .heavy))
+                                    .font(.system(.caption, weight: .semibold))
                                     .foregroundStyle(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? .white : Theme.muted)
                                     .padding(.horizontal, 8).frame(minHeight: 30)
                                     .background(Capsule().fill(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? tint : Theme.card))
@@ -369,8 +369,8 @@ struct GrabScreen: View {
             HStack(spacing: 8) {
                 TextField("Add a thing", text: $newThing)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { addToDraft() }
@@ -392,20 +392,20 @@ struct GrabScreen: View {
         if askingToDelete {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Delete \u{201C}\(list.label)\u{201D}?")
-                    .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("grab-delete-question")
                 Text("It goes from Home and from Grab Lists, with everything on it. Your templates, things and trips stay as they are.")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     Button("Keep it") { askingToDelete = false }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("grab-delete-no")
                     Spacer()
                     Button { deleteIt() } label: {
-                        Text("Delete the grab list").font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
-                            .padding(.horizontal, 14).frame(minHeight: 40)
+                        Text("Delete the grab list").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                             .background(Capsule().fill(AppSection.actions.color))
                             .contentShape(Capsule())
                     }
@@ -417,7 +417,7 @@ struct GrabScreen: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
         } else {
-            SmallDeleteButton(title: "Delete grab list", id: "grab-delete", size: 15) { askingToDelete = true }
+            SmallDeleteButton(title: "Delete grab list", id: "grab-delete") { askingToDelete = true }
         }
     }
 
@@ -494,13 +494,13 @@ struct GrabScreen: View {
         VStack(alignment: .leading, spacing: 6) {
             if complete {
                 Text("All there — go!")
-                    .font(.system(size: 20, weight: .heavy)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .font(.system(.title3, weight: .bold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: Metrics.row)
                     .background(RoundedRectangle(cornerRadius: 12).fill(tint))
                     .accessibilityIdentifier("grab-allthere")
             } else {
                 Text("\(inHand) of \(active) in hand" + (skipped == 0 ? "" : " · \(skipped) skipped"))
-                    .font(.system(size: 18, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("grab-count")
                 GeometryReader { g in
                     ZStack(alignment: .leading) {
@@ -524,15 +524,15 @@ struct GrabScreen: View {
                 .onTapGesture { message = "" }
             VStack(spacing: 12) {
                 Text("!")
-                    .font(.system(size: 30, weight: .black)).foregroundStyle(.white)
+                    .font(.system(.title, weight: .bold)).foregroundStyle(.white)
                     .frame(width: 56, height: 56)
                     .background(Circle().fill(red))
                     .accessibilityHidden(true)
                 Text("Not yet")
-                    .font(.system(size: 28, weight: .heavy)).foregroundStyle(red)
+                    .font(.system(.title2, weight: .bold)).foregroundStyle(red)
                     .accessibilityIdentifier("grab-notyet")
                 Text(message)
-                    .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("grab-message")

@@ -83,7 +83,7 @@ struct BagPhotoRow: View {
                                 model.change { _ = $0.removeBagPhoto(tripId: t, bag: b, photoId: id) }
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                             .frame(minWidth: 80, minHeight: 34).contentShape(Rectangle())
                             .accessibilityIdentifier("bag-\(n)-photo-remove-\(k)")
                         }
@@ -94,7 +94,7 @@ struct BagPhotoRow: View {
             if full {
                 // No fourth: one has to go first, and it says so rather than hiding the way silently.
                 Text("Three photos \u{2014} remove one to add another")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("bag-\(n)-photo-full")
             } else {
@@ -150,7 +150,7 @@ struct BagPhotoRow: View {
     }
 
     private func pillLabel(_ title: String) -> some View {
-        Text(title).font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.events.color)
+        Text(title).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
             .padding(.horizontal, 12).frame(minHeight: 38)
             .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.4))
             .contentShape(Capsule())
@@ -177,13 +177,13 @@ struct BigPhoto: View {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     if captions.indices.contains(at), !captions[at].isEmpty {
-                        Text(captions[at]).font(.system(size: 17, weight: .heavy)).foregroundStyle(AppSection.events.color)
+                        Text(captions[at]).font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                             .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("bag-photo-caption")
                     }
                     if images.count > 1 {
                         Text("\(at + 1) of \(images.count)")
-                            .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                             .accessibilityIdentifier("bag-photo-count")
                     }
                 }
@@ -191,12 +191,12 @@ struct BigPhoto: View {
                 if images.count > 1 {
                     Button("Next") { step(1) }
                         .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: false)).focusEffectDisabled()
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(.body, weight: .semibold))
                         .accessibilityIdentifier("bag-photo-next")
                 }
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("bag-photo-done")
             }

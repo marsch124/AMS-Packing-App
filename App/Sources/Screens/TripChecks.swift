@@ -26,9 +26,9 @@ struct TripChecksCard: View {
         if !cabin.isEmpty || !dates.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    Text("Check before you go").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("Check before you go").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text("\(cabin.count + dates.count)")
-                        .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                         .padding(.horizontal, 8).padding(.vertical, 2)
                         .background(Capsule().fill(tint))
                         .accessibilityIdentifier("trip-checks-count")
@@ -60,8 +60,8 @@ struct TripChecksCard: View {
             HStack(spacing: 10) {
                 IconMark(path: mark, size: 22).foregroundStyle(tint)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(name).font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
-                    Text(says).font(.system(size: 15, weight: .medium)).foregroundStyle(tint)
+                    Text(name).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text(says).font(.system(.subheadline)).foregroundStyle(tint)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 6)
@@ -70,7 +70,7 @@ struct TripChecksCard: View {
                         .frame(width: 18, height: 18).foregroundStyle(Theme.muted)
                 }
             }
-            .frame(minHeight: 44).contentShape(Rectangle())
+            .frame(minHeight: Metrics.tap).contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
     }

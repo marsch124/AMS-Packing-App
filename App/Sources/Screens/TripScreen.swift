@@ -69,7 +69,7 @@ struct TripScreen: View {
 
     private var sortingLabel: some View {
         Text("Sorting")
-            .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
             .lineLimit(1).fixedSize()
             .accessibilityIdentifier("trip-view-label")
     }
@@ -80,10 +80,10 @@ struct TripScreen: View {
             let on = view == o.id
             Button { view = o.id } label: {
                 Text(o.label)
-                    .font(.system(size: compact ? 14 : 15, weight: on ? .bold : .semibold))
+                    .font(.system(compact ? .footnote : .subheadline, weight: .semibold))
                     .foregroundStyle(on ? Color.white : Theme.ink)
                     .lineLimit(1).fixedSize()
-                    .padding(.horizontal, compact ? 8 : 14).frame(minHeight: 36)
+                    .padding(.horizontal, compact ? 8 : 14).frame(minHeight: Metrics.chip)
                     .background(Capsule().fill(on ? AppSection.events.color : Theme.bg))
                     .overlay(Capsule().stroke(on ? AppSection.events.color : Theme.line, lineWidth: 1))
                     .contentShape(Capsule())
@@ -106,12 +106,12 @@ struct TripScreen: View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(trip.name.isEmpty ? "Untitled event" : trip.name)
-                        .font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                         .lineLimit(2).minimumScaleFactor(0.85)          // the whole name, not "Weekend in the…"
                         .accessibilityIdentifier("trip-name")
                     HStack(spacing: 10) {
                         Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
-                            .font(.system(size: 16, weight: .bold).monospacedDigit())
+                            .font(.system(.callout, weight: .semibold).monospacedDigit())
                             .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
                             .accessibilityIdentifier("trip-progress")
                             .accessibilityValue(allPacked ? "all packed" : "")
@@ -131,17 +131,17 @@ struct TripScreen: View {
                 // by the one rule every screen uses (the spec pass, 5 Oct 2026: a trip with
                 // only a review time looked reviewed on its card and offered Review here).
                 if Library.isReviewed(trip) {
-                    Text("Reviewed").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
+                    Text("Reviewed").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("trip-reviewed")
                 } else if !trip.entries.isEmpty {
                     Button("Review") { reviewing = true }
                         .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: false)).focusEffectDisabled()
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                         .accessibilityIdentifier("trip-review")
                 }
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     // Escape closes it, as Done does (the spec pass, 5 Oct 2026 — on the Mac,
                     // and on an iPhone with a keyboard).
                     .keyboardShortcut(.cancelAction)
@@ -154,7 +154,7 @@ struct TripScreen: View {
                 .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
             if !rebuiltNote.isEmpty {
                 Text(rebuiltNote)
-                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16).padding(.bottom, 8)
                     .accessibilityIdentifier("trip-rebuilt")
@@ -216,12 +216,12 @@ struct TripScreen: View {
                                 .accessibilityIdentifier("trip-group-\(g)-fold")
                                 .accessibilityLabel(folded ? "Open \(group.label)" : "Fold \(group.label)")
                                 Text(group.label)
-                                    .font(.system(size: 15, weight: .heavy))
+                                    .font(.system(.subheadline, weight: .semibold))
                                     .foregroundStyle(view == "when" ? Color(hexString: readableHex(phaseColor(group.entries[0].phase), dark: scheme == .dark)) : AppSection.events.color)
                                     .accessibilityIdentifier("trip-group-\(g)-label")
                                     .onTapGesture { toggleFold(group.label) }
                                 Text("\(mine.filter { $0.checked }.count)/\(mine.count)")
-                                    .font(.system(size: 13, weight: .bold).monospacedDigit())
+                                    .font(.system(.footnote, weight: .semibold).monospacedDigit())
                                     .foregroundStyle(Theme.muted)
                                 Spacer()
                                 // Only while the section has something to tick: with every line set
@@ -237,12 +237,12 @@ struct TripScreen: View {
                                         }
                                     } label: {
                                         ZStack {
-                                            Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 2)
-                                                .frame(width: 24, height: 24)
+                                            Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 1.6)
+                                                .frame(width: 20, height: 20)
                                             if sectionDone {
-                                                Circle().fill(AppSection.events.color).frame(width: 24, height: 24)
-                                                Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                                                    .frame(width: 24, height: 24)
+                                                Circle().fill(AppSection.events.color).frame(width: 20, height: 20)
+                                                Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                                                    .frame(width: 20, height: 20)
                                             }
                                         }
                                         .frame(width: 40, height: 36).contentShape(Rectangle())
@@ -288,7 +288,7 @@ struct TripScreen: View {
                                     if placing == line.id { placePanel(line) }
                                     else {
                                         Button { placing = line.id; newPlace = ""; placeNeeds = "" } label: {
-                                            Text("Set place").font(.system(size: 13, weight: .bold))
+                                            Text("Set place").font(.system(.footnote, weight: .semibold))
                                                 .foregroundStyle(AppSection.events.color)
                                                 .padding(.horizontal, 10).frame(minHeight: 30)
                                                 .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
@@ -342,8 +342,8 @@ struct TripScreen: View {
             HStack(spacing: 8) {
                 TextField("Add a thing to this trip", text: $newName)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
@@ -359,10 +359,10 @@ struct TripScreen: View {
                 // "On site", not "there" — their word from the field test (Oct 2026).
                 if !jsTrim(newName).isEmpty {
                     Button { addBought() } label: {
-                        Text("Bought on site").font(.system(size: 16, weight: .bold))
+                        Text("Bought on site").font(.system(.callout, weight: .semibold))
                             .lineLimit(1).fixedSize()
                             .foregroundStyle(AppSection.events.color)
-                            .padding(.horizontal, 12).frame(minHeight: 44)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color, lineWidth: 1.4))
                             .contentShape(Rectangle())
                     }
@@ -418,18 +418,18 @@ struct TripScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Where is \(line.name) kept?")
-                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Button("Close") { placing = nil; newPlace = ""; placeNeeds = "" }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("trip-place-close")
             }
             FlowRow(spacing: 6) {
                 ForEach(Array(model.library.storagePlaces().enumerated()), id: \.offset) { i, place in
                     Button { putAway(line, place) } label: {
-                        Text(place).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                        Text(place).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.ink)
                             .padding(.horizontal, 10).frame(minHeight: 32)
                             .background(Capsule().fill(Theme.bg))
                             .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
@@ -442,8 +442,8 @@ struct TripScreen: View {
             HStack(spacing: 8) {
                 TextField("A new place", text: $newPlace)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 10).frame(minHeight: 36)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Theme.bg))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { putAway(line, newPlace) }
@@ -454,9 +454,9 @@ struct TripScreen: View {
                 Button {
                     if jsTrim(newPlace).isEmpty { placeNeeds = "Type a place first, or tap one above." } else { putAway(line, newPlace) }
                 } label: {
-                    Text("Save").font(.system(size: 15, weight: .bold))
+                    Text("Save").font(.system(.subheadline, weight: .semibold))
                         .foregroundStyle(Color.white)
-                        .padding(.horizontal, 14).frame(minHeight: 36)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                         .background(RoundedRectangle(cornerRadius: 8).fill(AppSection.events.color))
                         .contentShape(Rectangle())
                 }
@@ -485,14 +485,14 @@ struct TripScreen: View {
         if askingToDelete {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Delete \u{201C}\(trip.name)\u{201D}?")
-                    .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text("The trip and its \(trip.entries.count) line\(trip.entries.count == 1 ? "" : "s") go. Your things and your templates stay.")
-                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
                     Button("Keep it") { askingToDelete = false }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("trip-delete-no")
                     Spacer()
                     Button {
@@ -502,8 +502,8 @@ struct TripScreen: View {
                         foldedRaw = TripFolds.without(trip: id, in: foldedRaw)     // its folds go with it
                     } label: {
                         Text("Delete the trip")
-                            .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
-                            .padding(.horizontal, 14).frame(minHeight: 40)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                             .background(Capsule().fill(AppSection.actions.color))
                             .contentShape(Capsule())
                     }
@@ -534,9 +534,9 @@ struct TripScreen: View {
         return Button { onSite = true } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("On site").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("On site").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text(says)
-                        .font(.system(size: 14, weight: .medium).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote).monospacedDigit()).foregroundStyle(Theme.muted)
                         .lineLimit(1).minimumScaleFactor(0.85)
                 }
                 Spacer()
@@ -583,41 +583,43 @@ struct PackLine: View {
     var body: some View {
         let aside = isSetAside(line)
         let qty = effectiveQty(line, nights)
-        HStack(spacing: 12) {
+        // Slim rows, a small tick circle (his word, 5 Oct 2026: "slimmer rows in the
+        // trip, smaller tick circles and less space between lines").
+        HStack(spacing: 10) {
             ZStack {
-                Circle().stroke(aside ? Theme.line : tint, lineWidth: 2).frame(width: 26, height: 26)
+                Circle().stroke(aside ? Theme.line : tint, lineWidth: 1.6).frame(width: 20, height: 20)
                 if line.checked && !aside {
-                    Circle().fill(tint).frame(width: 26, height: 26)
-                    Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                        .frame(width: 26, height: 26)
+                    Circle().fill(tint).frame(width: 20, height: 20)
+                    Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        .frame(width: 20, height: 20)
                 }
             }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text(line.name)
-                    .font(.system(size: 17, weight: line.checked ? .regular : .medium))
+                    .font(.system(.body))
                     .foregroundStyle(aside ? Theme.muted : (line.checked ? Theme.muted : Theme.ink))
                     .strikethrough(aside, pattern: .solid, color: Theme.muted)
                     .lineLimit(2)
                 if Library.isBoughtOnSite(line) {
-                    Text("Bought on site").font(.system(size: 13, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    Text("Bought on site").font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.events.color)
                 }
             }
             Spacer(minLength: 8)
             if qty > 1 {
                 Text("×\(qty.rounded() == qty ? String(Int(qty)) : String(qty))")
-                    .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                 if washed && line.perNight {
                     LaundryMark().frame(width: 18, height: 18).foregroundStyle(Theme.muted)
                 }
             }
             if showBag {
                 Text(line.container)
-                    .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                     .frame(maxWidth: 150, alignment: .trailing)
             }
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, 5)
         .contentShape(Rectangle())
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }

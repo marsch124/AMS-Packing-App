@@ -98,11 +98,11 @@ struct ShareScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(offer.title).font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(offer.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("share-done")
             }
@@ -121,28 +121,28 @@ struct ShareScreen: View {
                                 .accessibilityIdentifier("share-qr")
                         } else {
                             Text("Too long for a QR code. Send the link instead.")
-                                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                                 .accessibilityIdentifier("share-qr-toolong")
                         }
                         Text(link)
-                            .font(.system(size: 13, design: .monospaced)).foregroundStyle(Theme.muted)
+                            .font(.system(.footnote, design: .monospaced)).foregroundStyle(Theme.muted)
                             .lineLimit(3).truncationMode(.middle)
                             .textSelection(.enabled)
                             .accessibilityIdentifier("share-link")
                         HStack(spacing: 10) {
                             if let url = URL(string: link) {
                                 ShareLink(item: url) {
-                                    Text("Send…").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
-                                        .frame(maxWidth: .infinity, minHeight: 48)
+                                    Text("Send…").font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                                        .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                                         .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("share-send")
                             }
                             Button { Clipboard.put(link); copied = true } label: {
-                                Text(copied ? "Copied" : "Copy link").font(.system(size: 17, weight: .bold))
+                                Text(copied ? "Copied" : "Copy link").font(.system(.body, weight: .semibold))
                                     .foregroundStyle(AppSection.events.color)
-                                    .frame(maxWidth: .infinity, minHeight: 48)
+                                    .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.4))
                                     .contentShape(Rectangle())
                             }
@@ -152,28 +152,28 @@ struct ShareScreen: View {
                         }
                     } else if offer.file != nil {
                         Text("This is too big for a link. Share it as a file instead.")
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .accessibilityIdentifier("share-toolong")
                     } else {
                         // No link and no file: a template or a grab list with nothing on
                         // it. It said "too big … share it as a file" until 5 Oct 2026 —
                         // the wrong reason, and there is no file for these.
                         Text("There is nothing on it to share yet.")
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .accessibilityIdentifier("share-empty")
                     }
                     if let url = fileURL {
                         ShareLink(item: url) {
-                            Text("Share as a file").font(.system(size: 17, weight: .bold))
+                            Text("Share as a file").font(.system(.body, weight: .semibold))
                                 .foregroundStyle(AppSection.events.color)
-                                .frame(maxWidth: .infinity, minHeight: 48)
+                                .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.4))
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("share-file")
                     }
                     Text("The link opens in the web app, and in this app under Settings → Open a shared link.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -214,38 +214,38 @@ struct OpenSharedScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Open a shared link").font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Open a shared link").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .accessibilityIdentifier("shared-done")
             }
             .padding(16)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("A trip, a template or a grab list someone shared, from the web app or this one.")
-                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     TextField("Paste the link or code", text: $text, axis: .vertical)
                         .textFieldStyle(.plain).lineLimit(1...4)
-                        .font(.system(size: 15, design: .monospaced)).foregroundStyle(Theme.ink)
+                        .font(.system(.subheadline, design: .monospaced)).foregroundStyle(Theme.ink)
                         .padding(12)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .accessibilityIdentifier("shared-input")
                     HStack(spacing: 10) {
                         Button { text = Clipboard.read(); open() } label: {
-                            Text("Paste and open").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                                .frame(maxWidth: .infinity, minHeight: 46)
+                            Text("Paste and open").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                                .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                                 .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.settings.color))
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("shared-paste")
                         Button { open() } label: {
-                            Text("Open").font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.settings.color)
-                                .frame(maxWidth: .infinity, minHeight: 46)
+                            Text("Open").font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                                .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.settings.color, lineWidth: 1.4))
                                 .contentShape(Rectangle())
                         }
@@ -254,12 +254,12 @@ struct OpenSharedScreen: View {
                     }
                     if tried && found == nil {
                         Text("This is not an AMS Packing link or code.")
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("shared-bad")
                     }
                     if let found { preview(found) }
                     if !done.isEmpty {
-                        Text(done).font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.events.color)
+                        Text(done).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("shared-result")
                     }
@@ -299,13 +299,13 @@ struct OpenSharedScreen: View {
                      l.name, OpenSharedScreen.things(l.items.count))
                 if model.library.templateNameTaken(l.name) {
                     Text("You already have a template called \u{201C}\(l.name)\u{201D}. This one needs a name of its own:")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("shared-name-taken")
                     TextField("A name you do not have yet", text: $templateName)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: 44)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .accessibilityIdentifier("shared-new-name")
@@ -315,19 +315,19 @@ struct OpenSharedScreen: View {
                 if let mine = model.library.templateNamed(l.name) {
                     if askingToReplace {
                         HStack(spacing: 10) {
-                            Text("Replace your \(mine.name)?").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink)
+                            Text("Replace your \(mine.name)?").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                             Spacer()
                             Button("Keep mine") { askingToReplace = false }
                                 .buttonStyle(.plain).focusEffectDisabled()
-                                .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink)
+                                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                                 .accessibilityIdentifier("shared-replace-no")
                             Button {
                                 let id = mine.id
                                 model.change { _ = $0.replaceTemplate(id: id, with: l) }
                                 finish("Replaced your \(mine.name). Trips that use it keep working.")
                             } label: {
-                                Text("Replace").font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
-                                    .padding(.horizontal, 14).frame(minHeight: 36)
+                                Text("Replace").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                                     .background(Capsule().fill(AppSection.actions.color))
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
@@ -336,13 +336,13 @@ struct OpenSharedScreen: View {
                         // What Replace does, before he says yes (the spec pass, 2026-10-05:
                         // it used to take his icon, sections, bags and answers without a word).
                         Text(model.library.replaceWords(id: mine.id, with: l))
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("shared-replace-says")
                     } else {
                         Button("Replace your \(mine.name) instead") { askingToReplace = true }
                             .buttonStyle(.plain).focusEffectDisabled()
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.templates.color)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.templates.color)
                             .accessibilityIdentifier("shared-replace")
                     }
                 }
@@ -384,11 +384,11 @@ struct OpenSharedScreen: View {
 
     private func line(_ kind: String, _ name: String, _ count: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(kind.uppercased()).font(.system(size: 12, weight: .heavy)).kerning(0.6).foregroundStyle(Theme.muted)
+            Text(kind.uppercased()).font(.system(.caption, weight: .semibold)).kerning(0.6).foregroundStyle(Theme.muted)
                 .accessibilityIdentifier("shared-kind")
-            Text(name).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+            Text(name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 .accessibilityIdentifier("shared-name")
-            Text(count).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+            Text(count).font(.system(.subheadline)).foregroundStyle(Theme.muted)
                 .accessibilityIdentifier("shared-count")
         }
     }
@@ -398,8 +398,8 @@ struct OpenSharedScreen: View {
 
     private func bigButton(_ title: String, id: String, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
-            Text(title).font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 48)
+            Text(title).font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
                 .contentShape(Rectangle())
         }
@@ -424,8 +424,8 @@ struct OpenSharedDoor: View {
         Button { open = true } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Open a shared link").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
-                    Text("A trip, template or grab list someone shared").font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                    Text("Open a shared link").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text("A trip, template or grab list someone shared").font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
                 Spacer()
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))

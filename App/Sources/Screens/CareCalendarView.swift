@@ -28,7 +28,7 @@ struct CareCalendarView: View {
             // the right. Today = his ask (2026-09-26): "a button to return to today".
             HStack(spacing: 4) {
                 Text(CareCalendarView.title(showing))
-                    .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .accessibilityIdentifier("care-cal-title")
                 Spacer(minLength: 8)
@@ -37,7 +37,7 @@ struct CareCalendarView: View {
                     chosen = today
                 } label: {
                     Text("Today")
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.care.color)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
                         .padding(.horizontal, 12).frame(minHeight: 32)
                         .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.5))
                         .contentShape(Capsule())
@@ -51,7 +51,7 @@ struct CareCalendarView: View {
             if cal.overdue > 0 {
                 Button(action: showList) {
                     Text("\(cal.overdue) overdue · show in List ›")
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                         .frame(minHeight: 32).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
@@ -66,7 +66,7 @@ struct CareCalendarView: View {
             VStack(spacing: 4) {
                 HStack(spacing: 4) {
                     ForEach(CareCalendarView.weekdays, id: \.self) { d in
-                        Text(d).font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.muted)
+                        Text(d).font(.system(.caption2, weight: .semibold)).foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -79,7 +79,7 @@ struct CareCalendarView: View {
                                     .accessibilityIdentifier("care-cal-\(day.day)")
                                     .accessibilityValue(day.count > 0 ? "\(day.count) due" : "")
                             } else {
-                                Color.clear.frame(maxWidth: .infinity, minHeight: 40)
+                                Color.clear.frame(maxWidth: .infinity, minHeight: Metrics.compact)
                             }
                         }
                     }
@@ -88,7 +88,7 @@ struct CareCalendarView: View {
 
             if !picked.isEmpty {
                 Text("\(CareCalendarView.pretty(picked)) · \(due.count)")
-                    .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     .padding(.top, 4)
                     .accessibilityIdentifier("care-cal-day")
                 ForEach(Array(due.enumerated()), id: \.element.item.id) { n, row in
@@ -98,12 +98,12 @@ struct CareCalendarView: View {
                     }
                 }
                 if due.isEmpty {
-                    Text("Nothing due that day.").font(.system(size: 14, weight: .medium))
+                    Text("Nothing due that day.").font(.system(.footnote))
                         .foregroundStyle(Theme.muted)
                 }
             } else {
                 Text("Nothing due this month. A thing shows here once it has a service interval.")
-                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 6)
                     .accessibilityIdentifier("care-cal-empty")
@@ -120,14 +120,14 @@ struct CareCalendarView: View {
             : day.state == "ok" ? AppSection.events.color : .clear
         return VStack(spacing: 2) {
             Text("\(day.day)")
-                .font(.system(size: 14, weight: day.ymd == today ? .heavy : .medium).monospacedDigit())
+                .font(.system(.footnote, weight: day.ymd == today ? .semibold : .regular).monospacedDigit())
                 .foregroundStyle(day.count > 0 ? .white : Theme.ink)
             if day.count > 0 {
-                Text("\(day.count)").font(.system(size: 10, weight: .heavy).monospacedDigit())
+                Text("\(day.count)").font(.system(.caption2, weight: .semibold).monospacedDigit())
                     .foregroundStyle(.white.opacity(0.9))
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 40)
+        .frame(maxWidth: .infinity, minHeight: Metrics.compact)
         .background(RoundedRectangle(cornerRadius: 8).fill(day.count > 0 ? tint : Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 8)
             .stroke(day.ymd == picked ? Theme.ink : (day.ymd == today ? AppSection.care.color : Theme.line),

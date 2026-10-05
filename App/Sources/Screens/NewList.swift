@@ -32,13 +32,13 @@ struct NewList: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("A new template").font(.system(size: 20, weight: .heavy))
+                Text("A new template").font(.system(.title3, weight: .bold))
                     .foregroundStyle(AppSection.templates.color)
                     .accessibilityIdentifier("newlist-title")
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.muted)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("newlist-cancel")
             }
             .padding(16)
@@ -46,12 +46,12 @@ struct NewList: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("WHAT IS IT CALLED")
-                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                        .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted).kerning(0.6)
                         .padding(.bottom, 6)
                     TextField("", text: $name)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: 44)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10)
                             .stroke(taken ? AppSection.actions.color : Theme.line, lineWidth: 1))
@@ -61,7 +61,7 @@ struct NewList: View {
 
                     if taken {
                         Text("You already have a template called that.")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(.footnote, weight: .semibold))
                             .foregroundStyle(AppSection.actions.color)
                             .padding(.top, 6)
                             .accessibilityIdentifier("newlist-taken")
@@ -81,7 +81,7 @@ struct NewList: View {
                     // (2026-09-26); pressed too early, it says what is missing.
                     Button { make() } label: {
                         Text("Make the template")
-                            .font(.system(size: 17, weight: .heavy))
+                            .font(.system(.body, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(minHeight: 50)
                             .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.templates.color))
@@ -110,11 +110,11 @@ struct NewList: View {
         Button { group = id } label: {
             HStack {
                 Text(label)
-                    .font(.system(size: 16, weight: group == id ? .heavy : .medium))
+                    .font(.system(.callout, weight: group == id ? .semibold : .regular))
                     .foregroundStyle(group == id ? AppSection.templates.color : Theme.ink)
                 Spacer()
             }
-            .frame(minHeight: 44)
+            .frame(minHeight: Metrics.tap)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()

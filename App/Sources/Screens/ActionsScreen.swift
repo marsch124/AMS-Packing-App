@@ -38,7 +38,7 @@ struct ActionsScreen: View {
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     Text(todos.isEmpty ? "Nothing to do." : (open == 0 ? "All done." : "\(open) to do"))
-                        .font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .padding(.top, 14)
                         .accessibilityIdentifier("actions-count")
                     ForEach(Array(todos.enumerated()), id: \.element.id) { n, a in
@@ -54,13 +54,13 @@ struct ActionsScreen: View {
                                     }
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(a.text)
-                                            .font(.system(size: 17, weight: a.done ? .regular : .medium))
+                                            .font(.system(.body))
                                             .foregroundStyle(a.done ? Theme.muted : Theme.ink)
                                             .strikethrough(a.done, pattern: .solid, color: Theme.muted)
                                         if !a.itemName.isEmpty || a.priority == "high" || !a.whenPhase.isEmpty {
                                             Text([a.priority == "high" ? "High" : "", a.itemName, a.whenPhase.isEmpty ? "" : phaseLabel(a.whenPhase)]
                                                     .filter { !$0.isEmpty }.joined(separator: " · "))
-                                                .font(.system(size: 13, weight: .semibold))
+                                                .font(.system(.footnote, weight: .semibold))
                                                 .foregroundStyle(a.priority == "high" && !a.done ? AppSection.actions.color : Theme.muted)
                                         }
                                     }
@@ -95,16 +95,16 @@ struct ActionsScreen: View {
             HStack(spacing: 8) {
                 TextField("Add a to-do", text: $text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
                     .accessibilityIdentifier("action-add-text")
                 Button { high.toggle() } label: {
-                    Text("!").font(.system(size: 18, weight: .heavy))
+                    Text("!").font(.system(.body, weight: .semibold))
                         .foregroundStyle(high ? Color.white : AppSection.actions.color)
-                        .frame(width: 44, height: 44)
+                        .frame(width: Metrics.tap, height: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 10).fill(high ? AppSection.actions.color : Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.actions.color.opacity(0.5), lineWidth: 1))
                         .contentShape(Rectangle())
@@ -128,9 +128,9 @@ struct ActionsScreen: View {
     /// by the selected trait, never by its words alone.
     private func sideButton(_ title: String, on: Bool, id: String, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            Text(title).font(.system(size: 17, weight: .bold))
+            Text(title).font(.system(.body, weight: .semibold))
                 .foregroundStyle(on ? Color.white : Theme.ink)
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(on ? AppSection.actions.color : Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: on ? 0 : 1))
                 .contentShape(Rectangle())
@@ -166,14 +166,14 @@ struct LineUndoBar: View {
     var body: some View {
         HStack(spacing: 10) {
             Text("Removed \u{201C}\(text)\u{201D}")
-                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                 .lineLimit(1)
                 .accessibilityIdentifier("\(id)-says")
             Spacer(minLength: 8)
             Button(action: undo) {
                 Text("Undo")
-                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
-                    .padding(.horizontal, 14).frame(minHeight: 36)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                     .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: 1.4))
                     .contentShape(Capsule())
             }

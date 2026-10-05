@@ -105,20 +105,20 @@ struct FilterSheet: View {
         let shown = base.filter { library.passes($0, filters, memberships: byThing) }.count
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text("Filter").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                Text("Filter").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
                 Text("\(shown) of \(base.count)")
-                    .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("filter-count")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("filter-done")
             }
             .padding(16)
             if !filters.isEmpty {
                 Button { stored = "" } label: {
-                    Text("Clear all filters").font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    Text("Clear all filters").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
@@ -167,15 +167,15 @@ struct FilterSheet: View {
             } label: {
                 HStack(spacing: 10) {
                     Text(TableKeys.title(key, library))
-                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     Spacer(minLength: 8)
                     Text(kept.isEmpty ? "Any" : library.filterSummary(column: key, kept: kept))
-                        .font(.system(size: 15, weight: kept.isEmpty ? .medium : .bold))
+                        .font(.system(.subheadline, weight: kept.isEmpty ? .regular : .semibold))
                         .foregroundStyle(kept.isEmpty ? Theme.muted : AppSection.care.color)
                         .lineLimit(1)
-                    Text(isOpen ? "▴" : "▾").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
+                    Text(isOpen ? "▴" : "▾").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                 }
-                .frame(minHeight: 46)
+                .frame(minHeight: Metrics.tap)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
@@ -204,7 +204,7 @@ struct FilterSheet: View {
             if all.count > 12 {
                 TextField("Narrow the answers", text: $narrow)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                    .font(.system(.callout)).foregroundStyle(Theme.ink)
                     .clearButton($narrow, id: "filter-narrow")
                     .padding(.horizontal, 10).frame(minHeight: 38)
                     .background(RoundedRectangle(cornerRadius: 9).fill(Theme.card))
@@ -213,7 +213,7 @@ struct FilterSheet: View {
             }
             if all.isEmpty {
                 Text("None of the things in view has an answer here.")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .padding(.vertical, 8)
             }
             ForEach(Array(all.enumerated()), id: \.element.value) { n, answer in
@@ -223,13 +223,13 @@ struct FilterSheet: View {
                         HStack(spacing: 12) {
                             TickBox(on: on)
                             Text(answer.label)
-                                .font(.system(size: 16, weight: on ? .bold : .medium)).foregroundStyle(Theme.ink)
+                                .font(.system(.callout, weight: on ? .semibold : .regular)).foregroundStyle(Theme.ink)
                                 .lineLimit(2)
                             Spacer(minLength: 8)
                             Text("\(answer.count)")
-                                .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                                .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         }
-                        .frame(minHeight: 40)
+                        .frame(minHeight: Metrics.compact)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -239,7 +239,7 @@ struct FilterSheet: View {
             }
             if !kept.isEmpty {
                 Button { set(key, []) } label: {
-                    Text("Any — clear this one").font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    Text("Any — clear this one").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .padding(.vertical, 8)
@@ -283,11 +283,11 @@ struct SortSheet: View {
         let now = levels
         VStack(spacing: 0) {
             HStack {
-                Text("Sort").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                Text("Sort").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("sort-done")
             }
             .padding(16)
@@ -299,8 +299,8 @@ struct SortSheet: View {
                     }
                     if now.count < SORT_LEVELS_MAX {
                         Button { add() } label: {
-                            Text("+ Then by").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
-                                .padding(.horizontal, 18).frame(minHeight: 44)
+                            Text("+ Then by").font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                                .padding(.horizontal, 18).frame(minHeight: Metrics.tap)
                                 .background(Capsule().fill(AppSection.care.color))
                                 .contentShape(Capsule())
                         }
@@ -309,7 +309,7 @@ struct SortSheet: View {
                         .accessibilityIdentifier("sort-add")
                     }
                     Text("Each level only orders the things the levels above it find equal. A blank always goes last.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 14)
                 }
@@ -327,16 +327,16 @@ struct SortSheet: View {
     private func levelRow(_ n: Int, _ level: SortLevel, _ library: Library) -> some View {
         HStack(spacing: 12) {
             Text(n == 0 ? "Sort by" : "then by")
-                .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                 .frame(width: 64, alignment: .leading)
             Button { choosing = choosing == n ? nil : n } label: {
                 HStack {
                     Text(TableKeys.title(level.key, library))
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink).lineLimit(1)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                     Spacer(minLength: 6)
-                    Text(choosing == n ? "▴" : "▾").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
+                    Text(choosing == n ? "▴" : "▾").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                 }
-                .padding(.horizontal, 12).frame(minHeight: 44)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(choosing == n ? AppSection.care.color : Theme.line, lineWidth: 1))
                 .contentShape(Rectangle())
@@ -346,8 +346,8 @@ struct SortSheet: View {
             .accessibilityValue(TableKeys.title(level.key, library))
             Button { turn(n) } label: {
                 Text(level.descending ? "▼" : "▲")
-                    .font(.system(size: 20, weight: .black)).foregroundStyle(AppSection.care.color)
-                    .frame(width: 44, height: 44)
+                    .font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .frame(width: Metrics.tap, height: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
@@ -357,7 +357,7 @@ struct SortSheet: View {
             .accessibilityValue(level.descending ? "down" : "up")
             if n > 0 {
                 Button { remove(n) } label: {
-                    Text("✕").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.muted)
+                    Text("✕").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
                         .frame(width: 36, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
@@ -372,18 +372,18 @@ struct SortSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(TableKeys.sortGroups(library), id: \.title) { group in
                 Text(group.title.uppercased())
-                    .font(.system(size: 13, weight: .heavy)).kerning(0.5).foregroundStyle(AppSection.care.color)
+                    .font(.system(.footnote, weight: .semibold)).kerning(0.5).foregroundStyle(AppSection.care.color)
                     .padding(.top, 12).padding(.bottom, 2)
                 ForEach(group.keys, id: \.self) { key in
                     let on = levels[n].key == key
                     Button { pick(n, key) } label: {
                         HStack {
                             Text(TableKeys.title(key, library))
-                                .font(.system(size: 16, weight: on ? .bold : .medium))
+                                .font(.system(.callout, weight: on ? .semibold : .regular))
                                 .foregroundStyle(on ? AppSection.care.color : Theme.ink)
                             Spacer()
                         }
-                        .frame(minHeight: 40).contentShape(Rectangle())
+                        .frame(minHeight: Metrics.compact).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }

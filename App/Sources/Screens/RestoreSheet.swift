@@ -30,25 +30,25 @@ struct RestoreSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Restore from a file").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Restore from a file").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Cancel") { answer(false); dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .accessibilityIdentifier("restore-cancel")
             }
             .padding(16)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Everything on this device is replaced by what the file holds.")
-                        .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout)).foregroundStyle(Theme.ink)
 
                     HStack {
-                        Text(" ").font(.system(size: 15, weight: .heavy))
+                        Text(" ").font(.system(.subheadline, weight: .semibold))
                         Spacer()
-                        Text("The file").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                        Text("The file").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                             .frame(width: 70, alignment: .trailing)
-                        Text("Now").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                        Text("Now").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                             .frame(width: 70, alignment: .trailing)
                     }
                     .padding(.top, 6)
@@ -56,19 +56,19 @@ struct RestoreSheet: View {
                         ForEach(rows, id: \.table) { row in
                             HStack {
                                 Text(SettingsScreen.label(row.table))
-                                    .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                                    .font(.system(.callout)).foregroundStyle(Theme.ink)
                                 Spacer()
                                 Text("\(row.file)")
-                                    .font(.system(size: 16, weight: .bold).monospacedDigit())
+                                    .font(.system(.callout, weight: .semibold).monospacedDigit())
                                     .foregroundStyle(row.file < row.device ? AppSection.actions.color : Theme.ink)
                                     .frame(width: 70, alignment: .trailing)
                                     .accessibilityIdentifier("restore-file-\(row.table.rawValue)")
                                 Text("\(row.device)")
-                                    .font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                                    .font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                                     .frame(width: 70, alignment: .trailing)
                                     .accessibilityIdentifier("restore-now-\(row.table.rawValue)")
                             }
-                            .padding(.horizontal, 14).frame(minHeight: 40)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                         }
                     }
@@ -83,18 +83,18 @@ struct RestoreSheet: View {
                                     .map { "\(SettingsScreen.label($0.table).lowercased()) \($0.file) against \($0.device)" }
                                     .joined(separator: ", ")
                              + (fewer.count > 3 ? ", and more." : "."))
-                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("restore-fewer")
                     }
 
                     Text("A copy of what is on this device now is written first, so there is a way back.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .padding(.top, 4)
 
                     Button { answer(true); dismiss() } label: {
                         Text("Replace everything on this device")
-                            .font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
                             .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.actions.color))
                             .contentShape(Rectangle())
                     }

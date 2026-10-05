@@ -6,8 +6,6 @@ import SwiftUI
 struct SmallDeleteButton: View {
     let title: String
     let id: String
-    /// The words' size (13 by default).
-    var size: Double = 13
     let action: () -> Void
 
     var body: some View {
@@ -15,7 +13,7 @@ struct SmallDeleteButton: View {
             Spacer(minLength: 0)
             Button(action: action) {
                 Text(title)
-                    .font(.system(size: size, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     .padding(.horizontal, 12).frame(minHeight: 30)
                     .overlay(Capsule().stroke(AppSection.actions.color.opacity(0.6), lineWidth: 1))
                     .contentShape(Capsule())

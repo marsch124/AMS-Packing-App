@@ -37,11 +37,11 @@ struct BagsCard: View {
         if !bags.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
-                    Text("Bags").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("Bags").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                     Button { showKey.toggle() } label: {
                         ZStack {
                             Circle().stroke(Theme.muted, lineWidth: 1.4).frame(width: 18, height: 18)
-                            Text("i").font(.system(size: 12, weight: .heavy, design: .serif)).foregroundStyle(Theme.muted)
+                            Text("i").font(.system(.caption, design: .serif, weight: .semibold)).foregroundStyle(Theme.muted)
                         }
                         .frame(width: 32, height: 28).contentShape(Rectangle())
                     }
@@ -51,14 +51,14 @@ struct BagsCard: View {
                     let over = bags.filter(\.over).count
                     if over > 0 {
                         Text("\(over) over")
-                            .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                            .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                             .padding(.horizontal, 8).padding(.vertical, 2)
                             .background(Capsule().fill(AppSection.actions.color))
                             .accessibilityIdentifier("bags-over")
                     }
                     Spacer()
                     Text(BagsCard.kilos(bags.reduce(0) { $0 + $1.grams }))
-                        .font(.system(size: 14, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("bags-total")
                 }
                 if showKey { key }
@@ -95,7 +95,7 @@ struct BagsCard: View {
             keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
             keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
             Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag for the luggage scale, and a photo of it packed.")
-                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(10)
@@ -107,8 +107,8 @@ struct BagsCard: View {
     private func keyLine(_ tint: Color, _ name: String, _ meaning: String) -> some View {
         HStack(spacing: 8) {
             Capsule().fill(tint).frame(width: 22, height: 8)
-            Text(name).font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.ink)
-            Text(meaning).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+            Text(name).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.ink)
+            Text(meaning).font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -121,14 +121,14 @@ struct BagsCard: View {
         let weight = bag.scaleGrams != nil ? "\(BagsCard.kilos(bag.grams)) weighed" : BagsCard.kilos(bag.grams)
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(name).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
                 // Every bag says its maximum — or that it has none (his ask, 2026-09-26).
                 // A bag with nothing weighed says what to do instead of "0 g".
                 Text(bag.grams == 0 ? "Tap to weigh"
                      : limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
                      : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
-                    .font(.system(size: 14, weight: .bold).monospacedDigit())
+                    .font(.system(.footnote, weight: .semibold).monospacedDigit())
                     .foregroundStyle(bag.over ? AppSection.actions.color : Theme.muted)
             }
             // Only a bag that HAS a limit gets a bar — a bar with no end says nothing —
@@ -145,7 +145,7 @@ struct BagsCard: View {
             }
             if bag.scaleGrams != nil {
                 Text("The things in it add up to \(BagsCard.kilos(bag.load.grams))")
-                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
             }
         }
         .contentShape(Rectangle())
@@ -156,7 +156,7 @@ struct BagsCard: View {
         HStack(spacing: 8) {
             TextField("kg on the scale", text: $scaleText)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
+                .font(.system(.body, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
                 .padding(.horizontal, 10).frame(height: 40)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.bg))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
@@ -167,8 +167,8 @@ struct BagsCard: View {
                 .onSubmit { save(bag) }
                 .accessibilityIdentifier("bag-\(n)-scale")
             Button { save(bag) } label: {
-                Text("Save").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                    .padding(.horizontal, 14).frame(minHeight: 40)
+                Text("Save").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                     .background(Capsule().fill(AppSection.events.color))
                     .contentShape(Capsule())
             }
@@ -181,7 +181,7 @@ struct BagsCard: View {
                     weighing = nil
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                 .accessibilityIdentifier("bag-\(n)-scale-clear")
             }
         }

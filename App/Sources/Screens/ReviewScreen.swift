@@ -32,11 +32,11 @@ struct ReviewScreen: View {
         let target = missWhere ?? (lists.first?.id ?? "")
         VStack(spacing: 0) {
             HStack {
-                Text("Trip review").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Trip review").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("review-cancel")
             }
@@ -48,7 +48,7 @@ struct ReviewScreen: View {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     // The two parts' headings above the question asked inside them (17) and
                     // the pills (15) — field test, 3 Oct 2026: headings "dominant".
-                    Text("Anything you wished you'd had?").font(.system(size: HeadingSize.title, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("Anything you wished you'd had?").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     // In the order it is done (his test F.3: "I have forgotten how to pick
                     // where it goes"): the thing, the template it goes onto, then one
@@ -56,8 +56,8 @@ struct ReviewScreen: View {
                     VStack(alignment: .leading, spacing: 10) {
                         TextField("e.g. Power bank", text: $missName)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                            .padding(.horizontal, 12).frame(minHeight: 44)
+                            .font(.system(.body)).foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                             .onSubmit { addMissed(target) }
@@ -72,9 +72,9 @@ struct ReviewScreen: View {
                         Button { addMissed(target) } label: {
                             Text(target.isEmpty ? "Add it, on no template"
                                  : "Add it to \(lists.first { $0.id == target }?.name ?? "the template")")
-                                .font(.system(size: 16, weight: .bold)).foregroundStyle(Color.white)
+                                .font(.system(.callout, weight: .semibold)).foregroundStyle(Color.white)
                                 .lineLimit(1).minimumScaleFactor(0.8)
-                                .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 44)
+                                .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: Metrics.tap)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color))
                                 .contentShape(Rectangle())
                         }
@@ -84,9 +84,9 @@ struct ReviewScreen: View {
                     }
                     ForEach(Array(missed.enumerated()), id: \.offset) { n, m in
                         HStack {
-                            Text(m.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                            Text(m.name).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                             Text(lists.first { $0.id == m.templateId }?.name ?? "no template")
-                                .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                                .font(.system(.footnote)).foregroundStyle(Theme.muted)
                                 .accessibilityIdentifier("review-missed-\(n)-where")
                             Spacer()
                             Button { missed.remove(at: n) } label: {
@@ -102,7 +102,7 @@ struct ReviewScreen: View {
                     }
 
                     Text(unused.isEmpty ? "Tap anything you didn't use." : "\(unused.count) marked \u{201C}didn't use\u{201D}")
-                        .font(.system(size: HeadingSize.title, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                         .padding(.top, 18)
                         .accessibilityIdentifier("review-summary")
                     ForEach(Array(lines.packed.enumerated()), id: \.element.id) { n, line in
@@ -113,18 +113,18 @@ struct ReviewScreen: View {
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(line.name).font(.system(size: 17, weight: .medium))
+                                    Text(line.name).font(.system(.body))
                                         .foregroundStyle(off ? Theme.muted : Theme.ink)
                                         .strikethrough(off, pattern: .solid, color: Theme.muted)
                                     // WHERE it went: the same words as packing mode,
                                     // so "did I use it" is asked in context.
                                     Text(ReviewScreen.where(line))
-                                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                                         .lineLimit(1)
                                         .accessibilityIdentifier("review-line-\(n)-where")
                                 }
                                 Spacer(minLength: 8)
-                                Text(off ? "Didn't use" : "Used").font(.system(size: 14, weight: .bold))
+                                Text(off ? "Didn't use" : "Used").font(.system(.footnote, weight: .semibold))
                                     .foregroundStyle(off ? AppSection.actions.color : AppSection.events.color)
                             }
                             .padding(.vertical, 10).contentShape(Rectangle())
@@ -152,10 +152,10 @@ struct ReviewScreen: View {
                     }
                     if !lines.neverPacked.isEmpty {
                         Text("Never went in the bag: \(lines.neverPacked.count)")
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                             .padding(.top, 14)
                         Text(lines.neverPacked.map(\.name).joined(separator: " · "))
-                            .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                            .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -164,8 +164,8 @@ struct ReviewScreen: View {
                 model.change { _ = $0.saveReview(tripId: tripId, unused: unused, missed: missed, when: nowISO()) }
                 dismiss()
             } label: {
-                Text("Save review").font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                Text("Save review").font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: Metrics.row)
                     .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
                     .contentShape(Rectangle())
             }

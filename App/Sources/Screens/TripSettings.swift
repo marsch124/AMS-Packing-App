@@ -55,21 +55,21 @@ struct TripSettingsScreen: View {
             HStack {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("tripset-cancel")
                 Spacer()
-                Text("Trip settings").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Trip settings").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Color.clear.frame(width: 56, height: 1)
             }
             .padding(16)
             KeyboardAwayScroll {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: 48)
+                        .font(.system(.title3, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .accessibilityIdentifier("tripset-name")
@@ -78,21 +78,21 @@ struct TripSettingsScreen: View {
                         HeadingTitle(title: "Place", tint: AppSection.events.color, id: "tripset-heading-place")
                         TextField("Where the trip goes, e.g. Kalmar", text: $place)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)
-                            .padding(.horizontal, 12).frame(minHeight: 46)
+                            .font(.system(.body)).foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                             .accessibilityIdentifier("tripset-place")
                     }
                     HStack(spacing: 12) {
                         Toggle(isOn: $hasDates) {
-                            Text("Dates").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                            Text("Dates").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         }
                         .fixedSize()
                         .accessibilityIdentifier("tripset-dates")
                         Spacer(minLength: 8)
                         Toggle(isOn: $quick) {
-                            Text("Quick").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                            Text("Quick").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         }
                         .fixedSize()
                         .accessibilityIdentifier("tripset-quick")
@@ -127,7 +127,7 @@ struct TripSettingsScreen: View {
                     LaundrySwitch(on: $laundry, nights: $laundryNights, id: "tripset-laundry")
 
                     Text("Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things no longer asked for go.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     Rectangle().fill(Theme.line).frame(height: 1).padding(.vertical, 8)
                     startAgain
@@ -140,14 +140,14 @@ struct TripSettingsScreen: View {
             VStack(spacing: 8) {
                 if !stillNeeded.isEmpty {
                     Text(stillNeeded)
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                         .frame(maxWidth: .infinity)
                         .accessibilityIdentifier("tripset-needs")
                 }
                 Button { save(flat) } label: {
                     Text("Save changes")
-                        .font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: Metrics.row)
                         .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
                         .contentShape(Rectangle())
                 }
@@ -173,27 +173,27 @@ struct TripSettingsScreen: View {
     @ViewBuilder private var startAgain: some View {
         if let draft = againName {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Name the new trip").font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Name the new trip").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 TextField("Name the new trip", text: Binding(get: { draft }, set: { againName = $0 }))
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 46)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { startIt(againName ?? "") }
                     .accessibilityIdentifier("tripset-again-name")
                 Text("The same list as this trip, nothing ticked, no dates.")
-                    .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 HStack(spacing: 10) {
                     Button("Not now") { againName = nil; againNeeds = "" }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("tripset-again-no")
                     Spacer()
                     // Always ready, always in colour; a missing name is said under it.
                     Button { startIt(draft) } label: {
                         Text("Start it")
-                            .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
                             .padding(.horizontal, 18).frame(minHeight: 42)
                             .background(Capsule().fill(AppSection.events.color))
                             .contentShape(Capsule())
@@ -203,7 +203,7 @@ struct TripSettingsScreen: View {
                 }
                 if !againNeeds.isEmpty {
                     Text(againNeeds)
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                         .accessibilityIdentifier("tripset-again-needs")
                 }
             }
@@ -217,9 +217,9 @@ struct TripSettingsScreen: View {
             } label: {
                 VStack(spacing: 2) {
                     Text("Start a new trip from this one")
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     Text("Same list, nothing ticked")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 }
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.4))

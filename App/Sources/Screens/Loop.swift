@@ -97,18 +97,18 @@ struct LoopPicture: View {
         let on = here == step
         return VStack(spacing: 4) {
             Text("\(step.rawValue + 1) · \(step.name)")
-                .font(.system(size: 18, weight: .heavy)).foregroundStyle(step.words(scheme))
+                .font(.system(.body, weight: .semibold)).foregroundStyle(step.words(scheme))
             Text(step.short)
-                .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
+                .font(.system(.footnote)).foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 4) {
                 SectionMark(section: step.tab, size: 15, weight: 1.8).foregroundStyle(step.tab.color)
-                Text("on \(step.tabName)").font(.system(size: 13, weight: .bold)).foregroundStyle(step.tab.color)
+                Text("on \(step.tabName)").font(.system(.footnote, weight: .semibold)).foregroundStyle(step.tab.color)
             }
             if on {
                 Text("You are here")
-                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 10).padding(.vertical, 3)
                     .background(Capsule().fill(step.tint))
                     .padding(.top, 2)
@@ -130,7 +130,7 @@ struct LoopPicture: View {
             RoundedRectangle(cornerRadius: 3).fill(step.tint.opacity(0.24))
                 .overlay(RoundedRectangle(cornerRadius: 3).stroke(step.tint, lineWidth: 1.2))
                 .frame(width: 14, height: 14)
-            Text(label).font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+            Text(label).font(.system(.footnote)).foregroundStyle(Theme.muted)
         }
     }
 }
@@ -168,14 +168,14 @@ struct LoopWords: View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(Library.LoopStep.allCases, id: \.self) { step in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(step.name).font(.system(size: 16, weight: .heavy)).foregroundStyle(step.words(scheme))
+                    Text(step.name).font(.system(.callout, weight: .semibold)).foregroundStyle(step.words(scheme))
                         .frame(width: 72, alignment: .leading)
-                    Text(step.explained).font(.system(size: 16)).foregroundStyle(Theme.ink)
+                    Text(step.explained).font(.system(.callout)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Text("Review looks back at one trip. Refine uses several reviews to make your templates better.")
-                .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 4)
         }
@@ -233,7 +233,7 @@ struct LoopDoor: View {
                     // Slimmed down, the step it is at keeps its mark.
                     if fit.marks || on { SectionMark(section: step.tab, size: 13, weight: 1.9) }
                     Text(step.name)
-                        .font(.system(size: fit.size, weight: on ? .heavy : .semibold))
+                        .font(.system(fit.size < 14 ? .caption : .footnote, weight: .semibold))
                         .lineLimit(1).fixedSize()
                 }
                     .foregroundStyle(on ? Color.white : step.words(scheme))
@@ -258,11 +258,11 @@ struct LoopScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("The loop").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("The loop").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("loop-done")
             }
@@ -288,9 +288,9 @@ struct LoopScreen: View {
 struct LoopGuideCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("The loop").font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
+            Text("The loop").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
             Text("Every trip goes round the same five steps, and each time round your templates get a little better.")
-                .font(.system(size: 16)).foregroundStyle(Theme.ink)
+                .font(.system(.callout)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             LoopPicture()
             LoopWords()

@@ -46,3 +46,22 @@ struct KeyboardAwayScroll<Content: View>: View {
         ScrollView { content() }.scrollDismissesKeyboard(.immediately)
     }
 }
+
+/// Heights of buttons, fields, pills and rows — Apple's standard sizes, slim (his
+/// words, 5 Oct 2026: "efficient, fluid, and Apple-standard … make the buttons even
+/// slimmer, smaller when possible"). The Mac's are smaller again, as its own are.
+enum Metrics {
+    #if os(macOS)
+    static let row: CGFloat = 30      // a door or a card's row
+    static let tap: CGFloat = 26      // a button or a field
+    static let compact: CGFloat = 24  // a smaller button
+    static let chip: CGFloat = 22     // a pill
+    static let header: CGFloat = 24   // Done, Cancel, Share … at the top of a page
+    #else
+    static let row: CGFloat = 40
+    static let tap: CGFloat = 36
+    static let compact: CGFloat = 32
+    static let chip: CGFloat = 28
+    static let header: CGFloat = 30
+    #endif
+}

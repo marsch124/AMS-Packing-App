@@ -43,12 +43,12 @@ struct HomeScreen: View {
         let flat = choices.flatMap(\.lists)
         let anyWorkout = flat.contains { $0.group == "WET" && activities.contains($0.id) }
         KeyboardAwayScroll {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Home's two parts lead with real headings (field test, 3 Oct 2026: "the
                 // headings … dominant"); they were small and grey, smaller than the
                 // headings inside Create new trip.
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Grab and go").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("Grab and go").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("home-grab-heading")
                     Spacer()
                     SearchButton { searching = true }
@@ -56,7 +56,7 @@ struct HomeScreen: View {
                     // is "Your templates"). His note on the Mac: "Your Grab Lists".
                     Button("Grab Lists") { showingGrabLists = true }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.home.color)
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
                         .accessibilityIdentifier("grab-lists")
                 }
                 .padding(.top, 14)
@@ -69,7 +69,7 @@ struct HomeScreen: View {
                     // it says where they are, and the line itself leads there (5 Oct 2026).
                     Button { showingGrabLists = true } label: {
                         Text("No grab lists on Home. They wait in Grab Lists \u{2014} tap here to put one back.")
-                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(AppSection.home.color)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.home.color)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(14)
@@ -89,13 +89,13 @@ struct HomeScreen: View {
                         .padding(.top, 4)
                 }
 
-                Text("Create new trip").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(Theme.ink).padding(.top, 8)
+                Text("Create new trip").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink).padding(.top, 8)
                     .accessibilityIdentifier("home-create-heading")
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: 48)
+                        .font(.system(.title3, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                         .overlay(RoundedRectangle(cornerRadius: 10)
                             .stroke(stillNeeded.contains("name") ? AppSection.actions.color : Color.clear, lineWidth: 2))
@@ -106,13 +106,13 @@ struct HomeScreen: View {
                     // Two answers about the SHAPE of the trip, on one line: his ask.
                     HStack(spacing: 12) {
                         Toggle(isOn: $hasDates) {
-                            Text("Dates").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                            Text("Dates").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         }
                         .fixedSize()
                         .accessibilityIdentifier("trip-dates")
                         Spacer(minLength: 8)
                         Toggle(isOn: $quick) {
-                            Text("Quick").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                            Text("Quick").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         }
                         .fixedSize()
                         .accessibilityIdentifier("trip-quick")
@@ -155,9 +155,9 @@ struct HomeScreen: View {
                     // creates nothing and says what is missing, right under it.
                     Button { create(flat) } label: {
                         Text("Create trip")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(.body, weight: .semibold))
                             .foregroundStyle(Color.white)
-                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
                             .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.home.color))
                             .contentShape(Rectangle())
                     }
@@ -165,7 +165,7 @@ struct HomeScreen: View {
                     .accessibilityIdentifier("trip-create")
                     if !stillNeeded.isEmpty {
                         Text(stillNeeded)
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .frame(maxWidth: .infinity)
                             .accessibilityIdentifier("trip-create-needs")
                     }
@@ -178,7 +178,7 @@ struct HomeScreen: View {
                 // SIDE instead, and Trips and Templates swapped over.
                 HStack(spacing: 10) {
                     Text("This Device")
-                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                        .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
                         .kerning(0.5)
                         .fixedSize()
                         .rotationEffect(.degrees(-90))
@@ -320,9 +320,9 @@ struct Pills: View {
                     let tone = tones?(o.label)
                     Button { choose(o.id) } label: {
                         Text(o.label)
-                            .font(.system(size: 15, weight: on ? .bold : .medium))
+                            .font(.system(.subheadline, weight: on ? .semibold : .regular))
                             .foregroundStyle(on ? (tone?.ink ?? Color.white) : Theme.ink)
-                            .padding(.horizontal, 12).frame(minHeight: 36)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                             .background(Capsule().fill(on ? (tone?.fill ?? tint) : Theme.bg))
                             .overlay(Capsule().stroke(on ? (tone?.fill ?? tint) : (tone?.fill ?? Theme.line),
                                                       lineWidth: tone == nil || on ? 1 : 1.8))
@@ -372,9 +372,9 @@ struct CountTile: View {
     let color: Color
     var body: some View {
         VStack(spacing: 2) {
-            Text("\(number)").font(.system(size: 30, weight: .heavy).monospacedDigit()).foregroundStyle(color)
+            Text("\(number)").font(.system(.title, weight: .bold).monospacedDigit()).foregroundStyle(color)
                 .accessibilityIdentifier(id)
-            Text(label).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+            Text(label).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
         }
         .frame(maxWidth: .infinity, minHeight: 76)
         .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
@@ -390,7 +390,7 @@ struct QuickNote: View {
         // Field test 5.1/6.1 (3 Oct 2026): the old words made Transport look switched
         // off, the trip stayed "Car", and the plane's cabin check never ran.
         Text("Quick: only the templates you tick \u{2014} no common base, no transport kit. Transport still counts: pick Plane and the cabin is checked.")
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(.subheadline, weight: .semibold))
             .foregroundStyle(AppSection.events.color)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 12).padding(.vertical, 9)

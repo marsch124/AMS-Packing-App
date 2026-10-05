@@ -54,7 +54,7 @@ struct PickThingsScreen: View {
                     .accessibilityIdentifier("pick-cancel")
                 Spacer(minLength: 4)
                 Text(list.map { "Add to \($0.name)" } ?? "Add things")
-                    .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .accessibilityIdentifier("pick-title")
                 Spacer(minLength: 4)
@@ -69,18 +69,18 @@ struct PickThingsScreen: View {
             VStack(alignment: .leading, spacing: 10) {
                 TextField("Search your things, or type a new one", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
                     .clearButton($query, id: "pick-search")
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 FlowRow(spacing: 6) {
-                    Text("Group").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    Text("Group").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                         .frame(minHeight: 32)
                             ForEach(PickThingsScreen.ways, id: \.self) { way in
                                 let on = way == grouping
                                 Button { groupingRaw = way.rawValue } label: {
-                                    Text(way.label).font(.system(size: 14, weight: on ? .heavy : .semibold))
+                                    Text(way.label).font(.system(.footnote, weight: .semibold))
                                         .foregroundStyle(on ? Color.white : Theme.ink)
                                         .padding(.horizontal, 12).frame(minHeight: 32)
                                         .background(Capsule().fill(on ? violet : Theme.card))
@@ -96,14 +96,14 @@ struct PickThingsScreen: View {
                 // them all again. Not while searching: a search opens every group.
                 HStack(spacing: 10) {
                     Text(things.count == 1 ? "1 thing" : "\(things.count) things")
-                        .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("pick-count")
                     Spacer()
                     if !searching && !groups.isEmpty {
                         Button { setFolded(!allFolded, groups.map(\.title), grouping) } label: {
                             HStack(spacing: 6) {
                                 FoldAllMark(folding: !allFolded).frame(width: 24, height: 24)
-                                Text(allFolded ? "Unfold all" : "Fold all").font(.system(size: 15, weight: .bold))
+                                Text(allFolded ? "Unfold all" : "Fold all").font(.system(.subheadline, weight: .semibold))
                             }
                             .foregroundStyle(violet)
                             .padding(.leading, 8).padding(.trailing, 12).frame(minHeight: 34)
@@ -124,9 +124,9 @@ struct PickThingsScreen: View {
                     if !q.isEmpty && !exact {
                         Button { makeNew() } label: {
                             HStack(spacing: 10) {
-                                Text("+").font(.system(size: 22, weight: .heavy)).foregroundStyle(violet).frame(width: 26)
+                                Text("+").font(.system(.title3, weight: .bold)).foregroundStyle(violet).frame(width: 26)
                                 Text("A new thing: \u{201C}\(jsTrim(query))\u{201D}")
-                                    .font(.system(size: 17, weight: .bold)).foregroundStyle(violet)
+                                    .font(.system(.body, weight: .semibold)).foregroundStyle(violet)
                                 Spacer()
                             }
                             .padding(.vertical, 10).padding(.horizontal, 12)
@@ -148,7 +148,7 @@ struct PickThingsScreen: View {
                     }
                     if things.isEmpty && q.isEmpty {
                         Text("You have no things yet. Type a name above to make one.")
-                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.callout)).foregroundStyle(Theme.muted)
                             .padding(.top, 20)
                     }
                 }
@@ -190,13 +190,13 @@ struct PickThingsScreen: View {
                 .accessibilityIdentifier("pick-group-\(g)-fold")
                 .accessibilityLabel(folded ? "Open \(group.title)" : "Fold \(group.title)")
             }
-            Text(group.title.uppercased())
-                .font(.system(size: 16, weight: .heavy)).kerning(0.6).foregroundStyle(violet)
+            Text(group.title)
+                .font(.headline).foregroundStyle(violet)
                 .lineLimit(1)
                 .accessibilityIdentifier("pick-heading-\(g)")
                 .onTapGesture { if !searching { toggleFold(group.title, grouping) } }
             (ticked == 0 ? count : count + Text(" \u{00B7} \(ticked) ticked").foregroundStyle(violet))
-                .font(.system(size: 14, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                .font(.system(.footnote, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                 .lineLimit(1)
                 .accessibilityIdentifier("pick-heading-\(g)-count")
             Spacer(minLength: 0)
@@ -243,11 +243,11 @@ struct PickThingsScreen: View {
                             .frame(width: 24, height: 24)
                     }
                 }
-                Text(thing.name).font(.system(size: 17, weight: .medium))
+                Text(thing.name).font(.system(.body))
                     .foregroundStyle(on ? Theme.muted : Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
                 Text(on ? "already on it" : aside)
-                    .font(.system(size: 14, weight: on ? .semibold : .regular)).foregroundStyle(Theme.muted).lineLimit(1)
+                    .font(.system(.footnote, weight: on ? .semibold : .regular)).foregroundStyle(Theme.muted).lineLimit(1)
             }
             .padding(.vertical, 9).contentShape(Rectangle())
         }

@@ -49,12 +49,12 @@ struct ListsScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Your choices").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Your choices").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("choices-title")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .accessibilityIdentifier("lists-done")
             }
             .padding(16)
@@ -62,7 +62,7 @@ struct ListsScreen: View {
                 VStack(alignment: .leading, spacing: 8) {
                     // What this page is, once, at the top (K.3).
                     Text("The words the app offers you as buttons. Add your own with the field under each part; the pen renames one or moves it up or down; one that is still in use somewhere cannot be removed.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("choices-intro")
                     ForEach(Kind.allCases, id: \.rawValue) { kind in
@@ -71,17 +71,17 @@ struct ListsScreen: View {
                         // it (field test, 3 Oct 2026: the headings "dominant").
                         HeadingBand(title: kind.title, tint: AppSection.settings.color, id: "choices-heading-\(kind.rawValue)")
                             .padding(.top, 16)
-                        Text(kind.hint).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink.opacity(0.85))
+                        Text(kind.hint).font(.system(.subheadline)).foregroundStyle(Theme.ink.opacity(0.85))
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("choices-hint-\(kind.rawValue)")
                         ForEach(Array(entries.enumerated()), id: \.offset) { n, entry in
                             HStack {
-                                Text(entry.label).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                                Text(entry.label).font(.system(.body)).foregroundStyle(Theme.ink)
                                     .accessibilityIdentifier("list-\(kind.rawValue)-name-\(n)")
                                 // The THINGS that use it — for a "When" step its trips and
                                 // templates are said when Remove is refused (the spec pass).
                                 if entry.uses.things > 0 {
-                                    Text("\(entry.uses.things)").font(.system(size: 14, weight: .bold).monospacedDigit())
+                                    Text("\(entry.uses.things)").font(.system(.footnote, weight: .semibold).monospacedDigit())
                                         .foregroundStyle(Theme.muted)
                                 }
                                 Spacer()
@@ -93,7 +93,7 @@ struct ListsScreen: View {
                                     // editor under it belongs to (colour as the message).
                                     PenMark().frame(width: 22, height: 22)
                                         .foregroundStyle(isEditing(kind, entry.key) ? AppSection.settings.color : Theme.muted)
-                                        .frame(width: 44, height: 44)
+                                        .frame(width: Metrics.tap, height: Metrics.tap)
                                         .background(RoundedRectangle(cornerRadius: 10)
                                             .fill(isEditing(kind, entry.key) ? AppSection.settings.color.opacity(0.16) : Color.clear))
                                         .contentShape(Rectangle())
@@ -115,7 +115,7 @@ struct ListsScreen: View {
                             .accessibilityIdentifier("list-\(kind.rawValue)-row-\(n)")
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                             if let p = problem, p.kind == kind.rawValue, p.key == entry.key {
-                                Text(p.says).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                                Text(p.says).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .accessibilityIdentifier("lists-problem")
                             }
@@ -125,8 +125,8 @@ struct ListsScreen: View {
                             TextField("Add to \(kind.title.lowercased())", text: Binding(
                                 get: { adding[kind.rawValue] ?? "" }, set: { adding[kind.rawValue] = $0 }))
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                                .padding(.horizontal, 12).frame(minHeight: 44)
+                                .font(.system(.body)).foregroundStyle(Theme.ink)
+                                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                                 .onSubmit { add(kind) }
@@ -139,7 +139,7 @@ struct ListsScreen: View {
                                    typed: adding[kind.rawValue] ?? "", id: "list-\(kind.rawValue)-add-needs")
                     }
                     Text("These belong to your account, so both your devices show the same.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted).padding(.top, 14)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted).padding(.top, 14)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -159,8 +159,8 @@ struct ListsScreen: View {
             HStack(spacing: 8) {
                 TextField("New name", text: $renaming)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { rename(kind, entry) }
@@ -174,12 +174,12 @@ struct ListsScreen: View {
                     moveButton(kind, entry, by: -1, mark: "M6 15l6-6 6 6", id: "list-\(kind.rawValue)-up", says: "Move \(entry.label) up")
                     moveButton(kind, entry, by: 1, mark: "M6 9l6 6 6-6", id: "list-\(kind.rawValue)-down", says: "Move \(entry.label) down")
                     Text(kind == .phases ? "Up or down the timeline: every trip follows this order." : "Up or down the list.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             } else {
                 Text("Owners are always in A\u{2013}Z order.")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
             }
         }
         .needsLine($editSays, typed: renaming, id: "list-\(kind.rawValue)-edit-needs")
@@ -196,7 +196,7 @@ struct ListsScreen: View {
             SVGPath.path(mark)
                 .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
                 .frame(width: 24, height: 24).foregroundStyle(AppSection.settings.color)
-                .frame(width: 44, height: 44)
+                .frame(width: Metrics.tap, height: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.settings.color.opacity(0.10)))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.settings.color, lineWidth: 1.4))
                 .contentShape(Rectangle())

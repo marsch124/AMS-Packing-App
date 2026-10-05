@@ -32,10 +32,10 @@ struct SyncCard: View {
         let stuck = state == .stuck
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Text("iCloud sync").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+                Text("iCloud sync").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Text(state.word)
-                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 10).padding(.vertical, 3)
                     .background(Capsule().fill(state == .working ? AppSection.events.color
                                                : stuck ? AppSection.actions.color : Theme.muted))
@@ -63,8 +63,8 @@ struct SyncCard: View {
                   ?? "This \(SyncCard.device) has not checked in yet.", id: "sync-self")
             HStack(spacing: 10) {
                 Button { syncNow() } label: {
-                    Text("Sync now").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
+                    Text("Sync now").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(Capsule().fill(AppSection.events.color))
                         .contentShape(Capsule())
                 }
@@ -72,7 +72,7 @@ struct SyncCard: View {
                 .accessibilityIdentifier("sync-now")
                 Button("Copy details for Claude") { copyDetails() }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .accessibilityIdentifier("sync-copy")
             }
             if !said.isEmpty { quiet(said, id: "sync-said") }
@@ -88,13 +88,13 @@ struct SyncCard: View {
     }
 
     private func quiet(_ text: String, id: String) -> some View {
-        Text(text).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+        Text(text).font(.system(.subheadline)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier(id)
     }
 
     private func loud(_ text: String, id: String) -> some View {
-        Text(text).font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+        Text(text).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier(id)
     }

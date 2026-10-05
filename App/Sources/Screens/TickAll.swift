@@ -19,13 +19,13 @@ struct TickAllRow: View {
             if askingToClear {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Clear all \(done) tick\(done == 1 ? "" : "s")?")
-                        .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text("The list stays as it is. Only the ticks go.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     HStack(spacing: 10) {
                         Button("Keep them") { askingToClear = false }
                             .buttonStyle(.plain).focusEffectDisabled()
-                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                             .accessibilityIdentifier("trip-clearall-no")
                         Spacer()
                         Button {
@@ -34,8 +34,8 @@ struct TickAllRow: View {
                             model.change { _ = $0.setAllChecked(false, tripId: id) }
                         } label: {
                             Text("Clear the ticks")
-                                .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
-                                .padding(.horizontal, 14).frame(minHeight: 40)
+                                .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                                 .background(Capsule().fill(AppSection.actions.color))
                                 .contentShape(Capsule())
                         }
@@ -57,12 +57,12 @@ struct TickAllRow: View {
                                 HStack(spacing: 6) {
                                     Tick().stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
                                         .frame(width: 22, height: 22)
-                                    Text("Tick everything").font(.system(size: 16, weight: .bold))
+                                    Text("Tick everything").font(.system(.callout, weight: .semibold))
                                 }
-                                Text("\(left) still unticked").font(.system(size: 13, weight: .semibold)).opacity(0.85)
+                                Text("\(left) still unticked").font(.system(.footnote, weight: .semibold)).opacity(0.85)
                             }
                             .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
                             .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
                             .contentShape(Rectangle())
                         }
@@ -73,8 +73,8 @@ struct TickAllRow: View {
                     if done > 0 {
                         Button { askingToClear = true } label: {
                             Text("Clear every tick")
-                                .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
-                                .frame(maxWidth: .infinity, minHeight: 52)
+                                .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                                .frame(maxWidth: .infinity, minHeight: Metrics.row)
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1.4))
                                 .contentShape(Rectangle())
                         }

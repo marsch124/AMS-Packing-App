@@ -29,8 +29,8 @@ struct GuideDoors: View {
         Button(action: open) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
-                    Text(line).font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                    Text(title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text(line).font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
                 Spacer()
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -52,12 +52,12 @@ private struct GuideHeader: View {
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         HStack {
-            Text(title).font(.system(size: 22, weight: .heavy)).foregroundStyle(AppSection.settings.color)
+            Text(title).font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.settings.color)
                 .accessibilityIdentifier("guide-title")
             Spacer()
             Button("Done") { dismiss() }
                 .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
-                .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
+                .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                 .accessibilityIdentifier("guide-done")
         }
         .padding(16)
@@ -75,19 +75,19 @@ struct WhatsNewScreen: View {
                     ForEach(Array(Releases.all.enumerated()), id: \.element.id) { n, r in
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                                Text(r.version).font(.system(size: 20, weight: .heavy).monospacedDigit())
+                                Text(r.version).font(.system(.title3, weight: .bold).monospacedDigit())
                                     .foregroundStyle(AppSection.settings.color)
                                     .accessibilityIdentifier("guide-release-\(n)-version")
-                                Text(r.title).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                                Text(r.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                                 Spacer(minLength: 6)
                                 if r.version == here {
-                                    Text("On this device").font(.system(size: 12, weight: .heavy))
+                                    Text("On this device").font(.system(.caption, weight: .semibold))
                                         .foregroundStyle(AppSection.events.color)
                                         .padding(.horizontal, 8).padding(.vertical, 3)
                                         .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
                                 }
                             }
-                            Text(r.date).font(.system(size: 14)).foregroundStyle(Theme.muted)
+                            Text(r.date).font(.system(.footnote)).foregroundStyle(Theme.muted)
                             kind("New", r.new, AppSection.events.color)
                             kind("Changed", r.changed, AppSection.home.color)
                             kind("Fixed", r.fixed, AppSection.care.color)
@@ -114,11 +114,11 @@ struct WhatsNewScreen: View {
     @ViewBuilder private func kind(_ label: String, _ lines: [String], _ tint: Color) -> some View {
         if !lines.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                Text(label.uppercased()).font(.system(size: 12, weight: .heavy)).kerning(0.6).foregroundStyle(tint)
+                Text(label.uppercased()).font(.system(.caption, weight: .semibold)).kerning(0.6).foregroundStyle(tint)
                 ForEach(lines, id: \.self) { line in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Circle().fill(tint).frame(width: 6, height: 6).offset(y: -2)
-                        Text(line).font(.system(size: 16)).foregroundStyle(Theme.ink)
+                        Text(line).font(.system(.callout)).foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -235,12 +235,12 @@ struct HowItWorksScreen: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 10) {
                                 SectionMark(section: t.section, size: 24, weight: 1.9).foregroundStyle(t.section.color)
-                                Text(t.title).font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
+                                Text(t.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                             }
                             ForEach(t.lines, id: \.self) { line in
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     Circle().fill(t.section.color).frame(width: 6, height: 6).offset(y: -2)
-                                    Text(line).font(.system(size: 16)).foregroundStyle(Theme.ink)
+                                    Text(line).font(.system(.callout)).foregroundStyle(Theme.ink)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
@@ -299,16 +299,16 @@ struct FirstTripCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Your first real trip in 6 steps").font(.system(size: 19, weight: .heavy)).foregroundStyle(Theme.ink)
+            Text("Your first real trip in 6 steps").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 .accessibilityIdentifier("quickstart-title")
             ForEach(Array(FirstTripCard.steps.enumerated()), id: \.offset) { n, step in
                 HStack(alignment: .top, spacing: 12) {
-                    Text("\(n + 1)").font(.system(size: 17, weight: .heavy)).foregroundStyle(.white)
+                    Text("\(n + 1)").font(.system(.body, weight: .semibold)).foregroundStyle(.white)
                         .frame(width: 30, height: 30)
                         .background(Circle().fill(AppSection.home.color))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(step.title).font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
-                        Text(step.says).font(.system(size: 16)).foregroundStyle(Theme.ink)
+                        Text(step.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                        Text(step.says).font(.system(.callout)).foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }

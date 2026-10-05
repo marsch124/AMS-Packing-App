@@ -14,19 +14,19 @@ struct CountdownCard: View {
             HStack(alignment: .center, spacing: 14) {
                 VStack(spacing: -2) {
                     Text(next.days == 0 ? "Today" : "\(next.days)")
-                        .font(.system(size: next.days == 0 ? 26 : 44, weight: .heavy).monospacedDigit())
+                        .font(.system(next.days == 0 ? .title2 : .largeTitle, weight: .bold).monospacedDigit())
                         .foregroundStyle(AppSection.events.color)
                         .lineLimit(1).minimumScaleFactor(0.6)
                     if next.days > 0 {
                         Text(next.days == 1 ? "day" : "days")
-                            .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                            .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
                 }
                 .frame(minWidth: 72)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(next.name).font(.system(size: 18, weight: .heavy)).foregroundStyle(Theme.ink).lineLimit(1)
+                    Text(next.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                     Text(CountdownCard.stepLine(next, today: Today.local))
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 4)
@@ -87,9 +87,9 @@ struct RemindersCard: View {
                 }
             })) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Remind me to pack").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+                    Text("Remind me to pack").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text("On this device, at 9 in the morning of each day a packing step is due \u{2014} Preparations a month ahead, then a week ahead, the day before and the day you leave.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -98,13 +98,13 @@ struct RemindersCard: View {
             .accessibilityIdentifier("settings-reminders")
             if refused || (on && blocked) {
                 Text("This device does not allow the app to remind you. Allow it in the device's Settings, under Notifications.")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("settings-reminders-refused")
             } else if on {
                 Text(next.map { "Next: \(CountdownCard.shortDay($0.date)) \u{00B7} \($0.tripName) \u{2014} \($0.says)" }
                      ?? "Nothing to remind you of yet: no trip with dates ahead.")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("settings-reminders-next")
             }

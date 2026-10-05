@@ -53,16 +53,16 @@ struct DateRangePicker: View {
                     .foregroundStyle(tint)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(waitingForEnd ? "Now tap the last day" : "Dates")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     Text(waitingForEnd ? DateRangePicker.pretty(start) : "\(DateRangePicker.pretty(start)) — \(DateRangePicker.pretty(end))")
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .accessibilityIdentifier("trip-dates-label")
                 }
                 Spacer(minLength: 8)
                 if !waitingForEnd {
                     Text(nightsText)
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("trip-dates-nights")
                 }
             }
@@ -101,14 +101,14 @@ struct DateRangePicker: View {
             // one more line).
             if okTooSoon && waitingForEnd {
                 Text("Tap the last day first \u{2014} the same day again for a day trip.")
-                    .font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("range-needs")
             } else {
                 Text(waitingForEnd ? "Now tap the last day"
                      : "\(DateRangePicker.short(start)) \u{2013} \(DateRangePicker.short(end)) \u{00B7} \(nightsText)")
-                    .font(.system(size: 18, weight: .heavy).monospacedDigit())
+                    .font(.system(.body, weight: .semibold).monospacedDigit())
                     .foregroundStyle(waitingForEnd ? Theme.muted : Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -143,14 +143,14 @@ struct DateRangePicker: View {
                 if showPrev { arrow(-1, "M15 6l-6 6 6 6", "range-prev") } else { Color.clear.frame(width: 40, height: 36) }
                 Spacer()
                 Text(DateRangePicker.title(ym))
-                    .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("range-title-\(index)")
                 Spacer()
                 if showNext { arrow(1, "M9 6l6 6-6 6", "range-next") } else { Color.clear.frame(width: 40, height: 36) }
             }
             HStack(spacing: 0) {
                 ForEach(DateRangePicker.weekdays, id: \.self) { d in
-                    Text(d).font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                    Text(d).font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -160,7 +160,7 @@ struct DateRangePicker: View {
                 HStack(spacing: 0) {
                     ForEach(0..<7, id: \.self) { i in
                         if i < weeks[w].count, let day = weeks[w][i] { dayCell(day) }
-                        else { Color.clear.frame(maxWidth: .infinity, minHeight: 40) }
+                        else { Color.clear.frame(maxWidth: .infinity, minHeight: Metrics.compact) }
                     }
                 }
             }
@@ -180,9 +180,9 @@ struct DateRangePicker: View {
         let key = DateRangePicker.ymd(day)
         return Button { pick(d) } label: {
             Text("\(c.component(.day, from: day))")
-                .font(.system(size: 16, weight: isStart || isEnd || between || today ? .bold : .medium).monospacedDigit())
+                .font(.system(.callout, weight: isStart || isEnd || between || today ? .semibold : .regular).monospacedDigit())
                 .foregroundStyle(isStart || isEnd ? Color.white : (past ? Theme.muted : Theme.ink))
-                .frame(maxWidth: .infinity, minHeight: 40)
+                .frame(maxWidth: .infinity, minHeight: Metrics.compact)
                 .background {
                     ZStack {
                         // The shaded band runs edge to edge, so the nights read as one stretch.

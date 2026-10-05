@@ -33,32 +33,32 @@ struct ThingsScreen: View {
         let rest = fresh.isEmpty ? shown : shown.filter { !justAdded.contains($0.item.id) }
         VStack(spacing: 0) {
             HStack {
-                Text("Your things").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Your things").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("things-done")
             }
             .padding(16)
             TextField("Search your things…", text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17)).foregroundStyle(Theme.ink)
+                .font(.system(.body)).foregroundStyle(Theme.ink)
                 .clearButton($query, id: "things-search")
-                .padding(.horizontal, 12).frame(minHeight: 40)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 .padding(.horizontal, 16)
             HStack(spacing: 10) {
                 Text(shown.count == 1 ? "1 thing" : "\(shown.count) things")
-                    .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("things-count")
                 Spacer()
                 if homeless > 0 {
                     Button { noListOnly.toggle() } label: {
-                        Text("On no template \(homeless)").font(.system(size: 15, weight: .bold))
+                        Text("On no template \(homeless)").font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(noListOnly ? Color.white : AppSection.care.color)
-                            .padding(.horizontal, 12).frame(minHeight: 36)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                             .background(Capsule().fill(noListOnly ? AppSection.care.color : Theme.card))
                             .overlay(Capsule().stroke(AppSection.care.color.opacity(0.6), lineWidth: 1))
                             .contentShape(Capsule())
@@ -98,8 +98,8 @@ struct ThingsScreen: View {
             HStack(spacing: 8) {
                 TextField("A new thing", text: $newName)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
@@ -128,10 +128,10 @@ struct ThingsScreen: View {
     private func thingRow(_ row: (item: Item, templates: [String]), n: Int) -> some View {
         Button { editing = row.item.id } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.item.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text(row.item.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text([row.templates.isEmpty ? "On no template" : row.templates.joined(separator: ", "),
                       row.item.storage].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .font(.system(size: 14)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -148,8 +148,8 @@ struct ThingsScreen: View {
     }
 
     private func listHeading(_ title: String, id: String) -> some View {
-        Text(title.uppercased())
-            .font(.system(size: 15, weight: .heavy)).kerning(0.6).foregroundStyle(AppSection.care.color)
+        Text(title)
+            .font(.headline).foregroundStyle(AppSection.care.color)
             .padding(.top, 12).padding(.bottom, 2)
             .accessibilityIdentifier(id)
     }
@@ -213,12 +213,12 @@ struct ThingEditor: View {
             HStack {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("thing-cancel")
                 Spacer()
                 Button("Save") { save() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("thing-save")
             }
             .padding(16)
@@ -226,7 +226,7 @@ struct ThingEditor: View {
                 // A field sits right under its heading, and the space goes BETWEEN the
                 // headings (his screenshot, 2026-09-28: "put the Bike field much nearer
                 // its heading, the same goes for everything").
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 12) {
                     labelled("Name") { field($draft.name, "Name", "thing-name") }
                     // Notes right under the name — his ask (4 Oct 2026): "please put the
                     // notes field immediately under the name".
@@ -267,7 +267,7 @@ struct ThingEditor: View {
                         VStack(alignment: .leading, spacing: 6) {
                             HeadingBand(title: "Whose it is", id: "thing-owner-title")
                             Text("Nobody is named yet. Add the names in Settings, under Your choices.")
-                                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityIdentifier("thing-owner-none")
                         }
@@ -281,7 +281,7 @@ struct ThingEditor: View {
                     labelled("Weight, in grams (0 = not known)") {
                         field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight")
                         if !weightProblem.isEmpty {
-                            Text(weightProblem).font(.system(size: 15, weight: .semibold))
+                            Text(weightProblem).font(.system(.subheadline, weight: .semibold))
                                 .foregroundStyle(AppSection.actions.color)
                                 .accessibilityIdentifier("thing-weight-problem")
                         }
@@ -296,15 +296,15 @@ struct ThingEditor: View {
                     }
                     // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
                     Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("thing-tags-hint")
                     if !problem.isEmpty {
-                        Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                        Text(problem).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("thing-problem")
                     }
                     Text("A change here reaches every template it is on. Past trips keep what they were packed with.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     deleteThing
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -337,15 +337,15 @@ struct ThingEditor: View {
                 let lists = model.library.listsOf(itemId: itemId)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Delete \u{201C}\(draft.name)\u{201D}?")
-                        .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text(lists.isEmpty ? "It is on none of your templates. Trips you already packed keep it."
                          : "It leaves your \(BagDetail.names(lists)) template\(lists.count == 1 ? "" : "s"). Trips you already packed keep it.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack {
                         Button("Keep it") { askingToDelete = false }
                             .buttonStyle(.plain).focusEffectDisabled()
-                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                             .accessibilityIdentifier("thing-delete-no")
                         Spacer()
                         Button {
@@ -353,8 +353,8 @@ struct ThingEditor: View {
                             dismiss()
                             model.change { _ = $0.deleteThing(id: id) }
                         } label: {
-                            Text("Delete the thing").font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
-                                .padding(.horizontal, 14).frame(minHeight: 40)
+                            Text("Delete the thing").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                                 .background(Capsule().fill(AppSection.actions.color))
                                 .contentShape(Capsule())
                         }
@@ -381,9 +381,9 @@ struct ThingEditor: View {
                 let on = normName(place) == normName(draft.storage)
                 Button { draft.storage = place } label: {
                     Text(place)
-                        .font(.system(size: 15, weight: on ? .bold : .medium))
+                        .font(.system(.subheadline, weight: on ? .semibold : .regular))
                         .foregroundStyle(on ? Color.white : Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: 36)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                         .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
                         .overlay(Capsule().stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
                         .contentShape(Capsule())
@@ -408,8 +408,8 @@ struct ThingEditor: View {
             TextField("What to do, e.g. Wax the leather", text: $careNotes, axis: .vertical)
                 .lineLimit(1...6)
                 .textFieldStyle(.plain)
-                .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)
-                .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: 46)
+                .font(.system(.body)).foregroundStyle(Theme.ink)
+                .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 .accessibilityIdentifier("thing-care-notes")
@@ -435,8 +435,8 @@ struct ThingEditor: View {
             if draft.expiry.isEmpty {
                 // Pill-sized, under a heading that is bigger (field test, 3 Oct 2026).
                 Button { draft.expiry = Today.local } label: {
-                    Text("Add a date").font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.care.color)
-                        .padding(.horizontal, 12).frame(minHeight: 36)
+                    Text("Add a date").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                         .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
                         .contentShape(Capsule())
                 }
@@ -453,7 +453,7 @@ struct ThingEditor: View {
                     Spacer(minLength: 8)
                     Button("Remove the date") { draft.expiry = "" }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("thing-expiry-clear")
                 }
                 // How far away it is, in words, as the date changes — their
@@ -461,7 +461,7 @@ struct ThingEditor: View {
                 // that yourself." Large, and red once it has run out. A text of its own,
                 // outside any button, so the Mac does not fold it away.
                 Text(distanceWords(from: today, to: draft.expiry))
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.system(.title3, weight: .bold))
                     .foregroundStyle((daysBetween(today, draft.expiry) ?? 0) < 0 ? AppSection.actions.color : Theme.ink)
                     .accessibilityIdentifier("thing-expiry-distance")
                 // The usual spans in one tap, counted from today; the date above still
@@ -471,9 +471,9 @@ struct ThingEditor: View {
                         let on = draft.expiry == addMonths(today, span.months)
                         Button { draft.expiry = addMonths(today, span.months) } label: {
                             Text(span.label)
-                                .font(.system(size: 15, weight: on ? .bold : .medium).monospacedDigit())
+                                .font(.system(.subheadline, weight: on ? .semibold : .regular).monospacedDigit())
                                 .foregroundStyle(on ? Color.white : AppSection.care.color)
-                                .padding(.horizontal, 12).frame(minHeight: 36)
+                                .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                                 .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
                                 .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
                                 .contentShape(Capsule())
@@ -485,7 +485,7 @@ struct ThingEditor: View {
                 }
             }
             Text("The trip warns before it runs out \u{2014} a document (Documents & money) six months ahead.")
-                .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -498,8 +498,8 @@ struct ThingEditor: View {
 
     private func flagWords(_ title: String, _ says: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
-            Text(says).font(.system(size: 14)).foregroundStyle(Theme.muted)
+            Text(title).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+            Text(says).font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -530,8 +530,8 @@ struct ThingEditor: View {
         TextField("Anything worth remembering", text: $draft.note, axis: .vertical)
             .lineLimit(1...8)
             .textFieldStyle(.plain)
-            .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)
-            .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: 46)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
             .accessibilityIdentifier("thing-notes")
@@ -547,7 +547,7 @@ struct ThingEditor: View {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(notes.enumerated()), id: \.offset) { n, said in
                     Text("On the \(said.template) template: \(said.note)")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("thing-row-note-\(n)")
                 }
@@ -559,8 +559,8 @@ struct ThingEditor: View {
     private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {
         TextField(prompt, text: text)
             .textFieldStyle(.plain)
-            .font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.ink)
-            .padding(.horizontal, 12).frame(minHeight: 46)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
             .accessibilityIdentifier(id)

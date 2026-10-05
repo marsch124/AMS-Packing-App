@@ -7,10 +7,8 @@ import SwiftUI
 // (Cancel, Share, Edit, Close) are outlined in it. Never grey — his rule for
 // buttons.
 //
-// The words are 17 bold: what the screens ask for (most of them attach
-// `.font(17 bold)`), drawn here so every header is alike. Until the spec pass
-// (5 Oct 2026) the style drew 16 and silently overrode them; a caller's own font
-// is still overridden, by design.
+// The words are Apple's Body, semibold (5 Oct 2026: "Apple-standard"), drawn here so
+// every header is alike; a caller's own font is overridden, by design.
 
 struct HeaderButtonStyle: ButtonStyle {
     var tint: Color
@@ -20,13 +18,13 @@ struct HeaderButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 17, weight: .bold))
+            .font(.system(.body, weight: .semibold))
             .foregroundStyle(filled ? Color.white : tint)
             .lineLimit(1)
             .fixedSize()                    // a button's word is never cut ("D…", 0.40's photos)
             .frame(maxWidth: stretch ? .infinity : nil)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 36)
+            .padding(.horizontal, 12)
+            .frame(minHeight: Metrics.header)
             .background(Capsule().fill(filled ? tint : tint.opacity(0.10)))
             .overlay(Capsule().stroke(tint, lineWidth: filled ? 0 : 1.4))
             .contentShape(Capsule())
@@ -43,11 +41,11 @@ struct FieldButtonLabel: View {
     let tint: Color
 
     var body: some View {
-        Text(title).font(.system(size: 16, weight: .bold))
+        Text(title).font(.system(.callout, weight: .semibold))
             .foregroundStyle(Color.white)
             .lineLimit(1).fixedSize()
-            .padding(.horizontal, 16).frame(minHeight: 44)
-            .background(RoundedRectangle(cornerRadius: 10).fill(tint))
+            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+            .background(RoundedRectangle(cornerRadius: 8).fill(tint))
             .contentShape(Rectangle())
     }
 }
@@ -65,7 +63,7 @@ struct NeedsLine<Typed: Equatable>: ViewModifier {
             content
             if !says.isEmpty {
                 Text(says)
-                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier(id)
             }
@@ -91,10 +89,10 @@ struct WideButtonLabel<Mark: View>: View {
     var body: some View {
         HStack(spacing: 10) {
             mark().frame(width: 22, height: 22)
-            Text(title).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+            Text(title).font(.system(.body, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
         }
         .foregroundStyle(tint)
-        .frame(maxWidth: .infinity, minHeight: 48)
+        .frame(maxWidth: .infinity, minHeight: Metrics.tap)
         .background(RoundedRectangle(cornerRadius: 12).fill(tint.opacity(0.08)))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.4))
         .contentShape(Rectangle())

@@ -89,7 +89,7 @@ private struct SectionScreen: View {
         Group {
             switch (model.state, section) {
             case (.failed(let why), _):
-                Text(why).font(.system(size: 17, weight: .semibold)).foregroundStyle(Color(hex: 0xdc3d43))
+                Text(why).font(.system(.body, weight: .semibold)).foregroundStyle(Color(hex: 0xdc3d43))
                     .multilineTextAlignment(.center).padding(24)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("library-problem")
@@ -116,7 +116,7 @@ private struct SectionScreen: View {
             SectionMark(section: section, size: 96, weight: 1.6)
                 .foregroundStyle(section.color)
             Text(section.label)
-                .font(.system(size: 34, weight: .heavy))
+                .font(.system(.title, weight: .bold))
                 .foregroundStyle(Theme.ink)
                 .accessibilityIdentifier("screen-title")
             Spacer()
@@ -143,7 +143,7 @@ private struct TabBar: View {
             // A quiet build marker in its own thin row, so it can never sit on
             // top of a tab's label.
             Text(AppInfo.version)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(.caption2, weight: .semibold))
                 .foregroundStyle(Theme.muted.opacity(0.7))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.trailing, 8)
@@ -170,7 +170,7 @@ private struct TabButtonLabel: View {
                 .frame(width: 46, height: 30)
                 .background(Capsule().fill(active ? section.color : section.color.opacity(0.14)))
             Text(section.label)
-                .font(.system(size: 12.5, weight: active ? .heavy : .semibold))
+                .font(.system(.caption, weight: .semibold))
                 .foregroundStyle(active ? Theme.ink : Theme.muted)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)

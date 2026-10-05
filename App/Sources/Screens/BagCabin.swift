@@ -15,7 +15,7 @@ struct BagCabinRow: View {
         if bag != "Other" {
             Toggle(isOn: Binding(get: { model.library.isCabin(container: bag) },
                                  set: { on in model.change { _ = $0.setCabin(container: bag, on) } })) {
-                Text("Goes in the cabin").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("Goes in the cabin").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
             }
             .tint(AppSection.events.color)
             .accessibilityIdentifier("bag-\(n)-cabin")

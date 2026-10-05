@@ -22,7 +22,7 @@ struct BuyList: View {
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     Text(lines.isEmpty ? "Nothing to buy." : (open == 0 ? "All bought." : "\(open) to buy"))
-                        .font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .padding(.top, 14)
                         .accessibilityIdentifier("buy-count")
                     // To buy → Apple Reminders (his idea 9), to take to the shop.
@@ -41,7 +41,7 @@ struct BuyList: View {
                                         }
                                     }
                                     Text(line.text)
-                                        .font(.system(size: 17, weight: line.done ? .regular : .medium))
+                                        .font(.system(.body))
                                         .foregroundStyle(line.done ? Theme.muted : Theme.ink)
                                         .strikethrough(line.done, pattern: .solid, color: Theme.muted)
                                         .accessibilityIdentifier("buy-\(n)-name")
@@ -66,19 +66,19 @@ struct BuyList: View {
                     }
 
                     if !offers.isEmpty {
-                        Text("Worth buying").font(.system(size: 15, weight: .heavy))
+                        Text("Worth buying").font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(Theme.muted).padding(.top, 18)
                             .accessibilityIdentifier("buy-offers")
                         ForEach(Array(offers.enumerated()), id: \.element.item.id) { n, offer in
                             Button { model.change { _ = $0.addToBuyList(offer) } } label: {
                                 HStack(spacing: 12) {
-                                    Text("+").font(.system(size: 22, weight: .heavy))
+                                    Text("+").font(.system(.title3, weight: .bold))
                                         .foregroundStyle(AppSection.actions.color).frame(width: 26)
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(offer.item.name).font(.system(size: 17, weight: .medium))
+                                        Text(offer.item.name).font(.system(.body))
                                             .foregroundStyle(Theme.ink)
                                             .accessibilityIdentifier("buy-offer-\(n)-name")
-                                        Text(offer.reason).font(.system(size: 14, weight: .semibold))
+                                        Text(offer.reason).font(.system(.footnote, weight: .semibold))
                                             .foregroundStyle(offer.reason == "Needs replacing" || offer.reason == "Expired"
                                                              ? AppSection.actions.color : Theme.muted)
                                             .accessibilityIdentifier("buy-offer-\(n)-why")
@@ -104,8 +104,8 @@ struct BuyList: View {
             HStack(spacing: 8) {
                 TextField("Add something to buy", text: $text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }

@@ -25,10 +25,10 @@ struct EventsScreen: View {
             LazyVStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Trips").font(.system(size: 28, weight: .heavy)).foregroundStyle(AppSection.events.color)
+                        Text("Trips").font(.system(.title2, weight: .bold)).foregroundStyle(AppSection.events.color)
                             .accessibilityIdentifier("events-heading")
                         Text(EventsScreen.summary(cards))
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .accessibilityIdentifier("events-summary")
                     }
                     Spacer()
@@ -37,8 +37,8 @@ struct EventsScreen: View {
                     if toDos > 0 {
                         Button(action: goToActions) {
                             HStack(spacing: 6) {
-                                Text("\(toDos)").font(.system(size: 16, weight: .heavy).monospacedDigit())
-                                Text(toDos == 1 ? "to do" : "to do").font(.system(size: 14, weight: .bold))
+                                Text("\(toDos)").font(.system(.callout, weight: .semibold).monospacedDigit())
+                                Text(toDos == 1 ? "to do" : "to do").font(.system(.footnote, weight: .semibold))
                             }
                             .foregroundStyle(.white)
                             .padding(.horizontal, 12).frame(minHeight: 34)
@@ -54,7 +54,7 @@ struct EventsScreen: View {
 
                 if cards.isEmpty {
                     Text("No trips yet. Build one on the Home tab.")
-                        .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.body)).foregroundStyle(Theme.muted)
                         .padding(.top, 24)
                         .accessibilityIdentifier("events-none")
                 }
@@ -72,14 +72,14 @@ struct EventsScreen: View {
                             SectionTitle(title: title, tint: pile == .now ? AppSection.events.color : Theme.ink,
                                          id: "events-pile-\(pile.rawValue)")
                             Text("\(mine.count + done.count)")
-                                .font(.system(size: 18, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                                .font(.system(.body, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                                 .accessibilityIdentifier("events-pile-\(pile.rawValue)-count")
                         }
                     }
                     if pile == .now && mine.isEmpty && !cards.isEmpty {
                         Text("No trip under way today.")
-                            .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
-                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .font(.system(.callout)).foregroundStyle(Theme.muted)
+                            .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                             .overlay(RoundedRectangle(cornerRadius: 12)
                                 .stroke(AppSection.events.color.opacity(0.6), style: StrokeStyle(lineWidth: 1.4, dash: [5, 4])))
                             .accessibilityIdentifier("events-now-empty")
@@ -103,13 +103,13 @@ struct EventsScreen: View {
                                     .foregroundStyle(AppSection.events.color)
                                     .frame(width: 38, height: 38)
                                     .background(Circle().fill(AppSection.events.color.opacity(0.14)))
-                                Text("Reviewed").font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                                Text("Reviewed").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                                 Text("\(done.count)")
-                                    .font(.system(size: 17, weight: .heavy).monospacedDigit())
+                                    .font(.system(.body, weight: .semibold).monospacedDigit())
                                     .foregroundStyle(Theme.muted)
                                 Spacer()
                             }
-                            .padding(.top, 6).frame(minHeight: 44)
+                            .padding(.top, 6).frame(minHeight: Metrics.tap)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
@@ -183,16 +183,16 @@ struct TripRow: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(card.name.isEmpty ? "Untitled event" : card.name)
-                        .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                     Text(TripRow.when(card))
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 3) {
                     // Narrow on purpose: the trip's own words matter more.
                     Text(badge)
-                        .font(.system(size: 13, weight: .heavy))
+                        .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(card.state == .planned || card.state == .reviewed ? Theme.muted : .white)
                         .padding(.horizontal, 10).frame(minHeight: 22)
                         .background(Capsule().fill(card.state == .planned || card.state == .reviewed
@@ -200,7 +200,7 @@ struct TripRow: View {
                         .accessibilityIdentifier("trip-state")
                     Text(card.aside > 0 ? "\(card.done)/\(card.total) · \(card.aside) set aside"
                                         : "\(card.done)/\(card.total)")
-                        .font(.system(size: 15, weight: .bold).monospacedDigit())
+                        .font(.system(.subheadline, weight: .semibold).monospacedDigit())
                         .foregroundStyle(card.state == .packed ? AppSection.events.color : Theme.muted)
                 }
             }
@@ -256,13 +256,13 @@ struct TravelYearBand: View {
                 ForEach(Array(year.byMonth.enumerated()), id: \.offset) { n, count in
                     VStack(spacing: 5) {
                         Text(count > 0 ? "\(count)" : " ")
-                            .font(.system(size: 10, weight: .heavy).monospacedDigit())
+                            .font(.system(.caption2, weight: .semibold).monospacedDigit())
                             .foregroundStyle(AppSection.events.color)
                         RoundedRectangle(cornerRadius: 3)
                             .fill(count > 0 ? AppSection.events.color : Theme.line)
                             .frame(height: max(4, 54 * (year.most > 0 ? Double(count) / Double(year.most) : 0)))
                         Text(TravelYearBand.month(n < year.months.count ? year.months[n] : ""))
-                            .font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.muted)
+                            .font(.system(.caption2, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
                 }
             }
@@ -281,10 +281,10 @@ struct TravelYearBand: View {
 
     private func figure(_ number: String, _ word: String, _ id: String) -> some View {
         VStack(spacing: 2) {
-            Text(number).font(.system(size: 20, weight: .heavy).monospacedDigit())
+            Text(number).font(.system(.title3, weight: .bold).monospacedDigit())
                 .foregroundStyle(AppSection.events.color)
                 .lineLimit(1).minimumScaleFactor(0.6)
-            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted)
+            Text(word).font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
                 .lineLimit(1).minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, minHeight: 56)
@@ -322,10 +322,10 @@ struct AllTimeBand: View {
 
     private func figure(_ number: String, _ word: String, _ id: String) -> some View {
         VStack(spacing: 2) {
-            Text(number).font(.system(size: 20, weight: .heavy).monospacedDigit())
+            Text(number).font(.system(.title3, weight: .bold).monospacedDigit())
                 .foregroundStyle(AppSection.events.color)
                 .lineLimit(1).minimumScaleFactor(0.6)
-            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted)
+            Text(word).font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
                 .lineLimit(1).minimumScaleFactor(0.6)
         }
         .frame(maxWidth: .infinity, minHeight: 56)

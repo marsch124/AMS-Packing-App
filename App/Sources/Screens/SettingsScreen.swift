@@ -24,13 +24,13 @@ struct SettingsScreen: View {
 
     var body: some View {
         KeyboardAwayScroll {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
                 Button { lists = true } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Your choices").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
+                            Text("Your choices").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                             Text("Storage places, owners, packers, conditions, \"When\" steps")
-                                .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                                .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                         }
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -63,17 +63,17 @@ struct SettingsScreen: View {
                 let worries = model.library.worries()
                 if !worries.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Worth a look").font(.system(size: 15, weight: .heavy))
+                        Text("Worth a look").font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("health-heading")
                         ForEach(Array(worries.enumerated()), id: \.offset) { n, worry in
-                            Text(worry.says).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                            Text(worry.says).font(.system(.callout)).foregroundStyle(Theme.ink)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityIdentifier("health-\(n)")
                             if !worry.fix.isEmpty {
                                 Button { model.change { _ = $0.repair(worry.fix) } } label: {
-                                    Text(worry.fixSays).font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                                        .padding(.horizontal, 16).frame(minHeight: 40)
+                                    Text(worry.fixSays).font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                                        .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                                         .background(Capsule().fill(AppSection.actions.color))
                                         .contentShape(Capsule())
                                 }
@@ -83,13 +83,13 @@ struct SettingsScreen: View {
                             if !worry.names.isEmpty {
                                 Text(worry.names.prefix(6).joined(separator: " · ")
                                      + (worry.names.count > 6 ? " …" : ""))
-                                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .accessibilityIdentifier("health-\(n)-names")
                             }
                         }
                         Text("A backup and then \"Restore from a file…\" puts a library back exactly as the file has it.")
-                            .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.footnote)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)
@@ -109,18 +109,18 @@ struct SettingsScreen: View {
                     exporting = true
                 } label: {
                     Text("Save a backup…")
-                        .font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: Metrics.row)
                         .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.settings.color))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("backup-save")
                 Text(status.isEmpty ? "The same file the web app writes, so either app can read it." : status)
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("backup-status")
                 if let last = Library.lastSavedWords(savedAt, device: SyncCard.device) {
-                    Text(last).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    Text(last).font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("backup-last")
                 }
 
@@ -131,8 +131,8 @@ struct SettingsScreen: View {
                     if AMSPackingApp.testing { offer(SampleLibrary.fileToRestore()) } else { picking = true }
                 } label: {
                     Text("Restore from a file…")
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.settings.color)
-                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                        .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                         .contentShape(Rectangle())
@@ -143,7 +143,7 @@ struct SettingsScreen: View {
                 // The copies the app wrote for itself before a restore. A way back
                 // that he cannot reach is no way back, so they are listed here.
                 if !copies.isEmpty {
-                    Text("Kept before a restore").font(.system(size: 15, weight: .heavy))
+                    Text("Kept before a restore").font(.system(.subheadline, weight: .semibold))
                         .foregroundStyle(Theme.muted).padding(.top, 10)
                         .accessibilityIdentifier("rescue-heading")
                     VStack(spacing: 0) {
@@ -151,12 +151,12 @@ struct SettingsScreen: View {
                             Button { offer(RescueCopies.read(copy) ?? Data()) } label: {
                                 HStack {
                                     Text(RescueCopies.when(copy))
-                                        .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                                        .font(.system(.callout)).foregroundStyle(Theme.ink)
                                     Spacer()
-                                    Text("Look at it").font(.system(size: 15, weight: .bold))
+                                    Text("Look at it").font(.system(.subheadline, weight: .semibold))
                                         .foregroundStyle(AppSection.settings.color)
                                 }
-                                .padding(.horizontal, 14).frame(minHeight: 44)
+                                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
@@ -168,32 +168,32 @@ struct SettingsScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                 }
 
-                Text("This device holds").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).padding(.top, 14)
+                Text("This device holds").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted).padding(.top, 14)
                 VStack(spacing: 0) {
                     ForEach(model.library.counts, id: \.table) { row in
                         HStack {
-                            Text(SettingsScreen.label(row.table)).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
+                            Text(SettingsScreen.label(row.table)).font(.system(.callout)).foregroundStyle(Theme.ink)
                             Spacer()
-                            Text("\(row.count)").font(.system(size: 16, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                            Text("\(row.count)").font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                                 .accessibilityIdentifier("device-count-\(row.table.rawValue)")
                         }
-                        .padding(.horizontal, 14).frame(minHeight: 40)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                     }
                     HStack {
                         Text(model.usesICloud ? "Synced through iCloud" : "On this device only")
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                         Spacer()
-                        Text(AppInfo.version).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                        Text(AppInfo.version).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 40)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                 }
                 .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                 // Where this library came from, when it came from a file — the import's
                 // own marker (the spec pass, 2026-10-05: no screen showed the import).
                 if let came = model.library.broughtInWords() {
-                    Text(came).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    Text(came).font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("device-import")
                 }

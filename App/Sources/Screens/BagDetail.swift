@@ -37,7 +37,7 @@ struct BagDetail: View {
                 let facts = model.library.bagFacts(name: bag.name)
                 header(bag)
                 KeyboardAwayScroll {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 12) {
                         numbers(bag)
                         cabinSwitch(bag)
                         thingsInIt(facts)
@@ -79,12 +79,12 @@ struct BagDetail: View {
                 // The name is the field — press it, type, Rename.
                 TextField("", text: Binding(get: { renaming ?? bag.name }, set: { renaming = $0; problem = "" }))
                     .textFieldStyle(.plain)
-                    .font(.system(size: 22, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .onSubmit { rename(bag) }
                     .accessibilityIdentifier("bag-name")
                 if let wanted = renaming, jsTrim(wanted) != bag.name {
                     Button { rename(bag) } label: {
-                        Text("Rename").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                        Text("Rename").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
                             .padding(.horizontal, 12).frame(minHeight: 34)
                             .background(Capsule().fill(AppSection.care.color))
                             .contentShape(Capsule())
@@ -95,11 +95,11 @@ struct BagDetail: View {
                 Spacer(minLength: 4)
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("bag-done")
             }
             if !problem.isEmpty {
-                Text(problem).font(.system(size: 14, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                Text(problem).font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     .accessibilityIdentifier("bag-problem")
             }
         }
@@ -133,10 +133,10 @@ struct BagDetail: View {
     private func number(_ title: String, _ text: Binding<String>, now: Double, id: String,
                         commit: @escaping (Double) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased()).font(.system(size: 11, weight: .heavy)).kerning(0.4).foregroundStyle(Theme.muted)
+            Text(title.uppercased()).font(.system(.caption2, weight: .semibold)).kerning(0.4).foregroundStyle(Theme.muted)
             TextField("", text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
+                .font(.system(.body, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
                 .padding(.horizontal, 10).frame(height: 40)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
@@ -156,9 +156,9 @@ struct BagDetail: View {
         return Toggle(isOn: Binding(get: { Library.isCabinBag(thing) },
                                     set: { on in model.change { _ = $0.setBagCabin(id: bag.id, on) } })) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Goes in the cabin").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("Goes in the cabin").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text("Carry-on. On a plane trip, the trip checks it for liquids and things not allowed on board.")
-                    .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -178,13 +178,13 @@ struct BagDetail: View {
             ForEach(Array(shown.enumerated()), id: \.element.id) { i, thing in
                 Button { opened = .thing(thing.id) } label: {
                     HStack {
-                        Text(thing.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink).lineLimit(1)
+                        Text(thing.name).font(.system(.callout)).foregroundStyle(Theme.ink).lineLimit(1)
                         Spacer(minLength: 8)
                         if thing.weight > 0 {
-                            Text(BagsCard.kilos(thing.weight)).font(.system(size: 14).monospacedDigit()).foregroundStyle(Theme.muted)
+                            Text(BagsCard.kilos(thing.weight)).font(.system(.footnote).monospacedDigit()).foregroundStyle(Theme.muted)
                         }
                     }
-                    .frame(minHeight: 36).contentShape(Rectangle())
+                    .frame(minHeight: Metrics.chip).contentShape(Rectangle())
                     .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
@@ -193,7 +193,7 @@ struct BagDetail: View {
             if facts.things.count > 12 {
                 Button(allThings ? "Show fewer" : "Show all \(facts.things.count)") { allThings.toggle() }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("bag-things-all")
             }
         }
@@ -208,22 +208,22 @@ struct BagDetail: View {
             ForEach(Array(facts.trips.prefix(8).enumerated()), id: \.offset) { i, t in
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(t.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink).lineLimit(1)
-                        Text(t.date).font(.system(size: 13).monospacedDigit()).foregroundStyle(Theme.muted)
+                        Text(t.name).font(.system(.callout)).foregroundStyle(Theme.ink).lineLimit(1)
+                        Text(t.date).font(.system(.footnote).monospacedDigit()).foregroundStyle(Theme.muted)
                     }
                     Spacer(minLength: 8)
                     Text(t.limitKg > 0 ? "\(BagsCard.kilos(t.grams)) / \(BagsCard.number(t.limitKg)) kg" : BagsCard.kilos(t.grams))
-                        .font(.system(size: 15, weight: .bold).monospacedDigit())
+                        .font(.system(.subheadline, weight: .semibold).monospacedDigit())
                         .foregroundStyle(t.over ? AppSection.actions.color : Theme.muted)
                 }
-                .frame(minHeight: 40)
+                .frame(minHeight: Metrics.compact)
                 .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("bag-trip-\(i)")
             }
             if let top = facts.heaviest, facts.trips.count > 1 {
                 Text("Heaviest: \(BagsCard.kilos(top.grams)) on \(top.name)")
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("bag-heaviest")
             }
         }
@@ -235,9 +235,9 @@ struct BagDetail: View {
         Button { opened = .thing(bag.id) } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Its details").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                    Text("Its details").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text("Kept at home, condition, brand, colour, notes")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
                 Spacer()
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -265,10 +265,10 @@ struct BagDetail: View {
         if askingToDelete {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Delete \u{201C}\(bag.name)\u{201D}?")
-                    .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 if !used {
                     Text("Nothing is packed in the \(bag.name), so nothing needs to move.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("bag-delete-empty")
                 } else {
@@ -277,7 +277,7 @@ struct BagDetail: View {
                     Text(facts.things.isEmpty
                          ? "Anything packed in the \(bag.name) will be packed in another bag instead. Choose which one, or no bag:"
                          : "The \(facts.things.count) thing\(facts.things.count == 1 ? "" : "s") packed in the \(bag.name) will be packed in another bag instead. Choose which one, or no bag:")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("bag-delete-explain")
                     FlowRow(spacing: 6) {
@@ -289,7 +289,7 @@ struct BagDetail: View {
                 }
                 if !lists.isEmpty {
                     Text("The \(bag.name) is also on your \(BagDetail.names(lists)) template\(lists.count == 1 ? "" : "s"), as something you pack.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("bag-delete-lists")
                 }
@@ -297,7 +297,7 @@ struct BagDetail: View {
                 HStack(spacing: 10) {
                     Button("Keep it") { askingToDelete = false; moveTo = nil; deleteNeeds = "" }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("bag-delete-no")
                     Spacer()
                     if !ready {
@@ -314,7 +314,7 @@ struct BagDetail: View {
                 }
                 if !deleteNeeds.isEmpty {
                     Text(deleteNeeds)
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("bag-delete-needs")
@@ -348,9 +348,9 @@ struct BagDetail: View {
                               _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
             Text(title)
-                .font(.system(size: 15, weight: .heavy))
+                .font(.system(.subheadline, weight: .semibold))
                 .foregroundStyle(filled ? Color.white : AppSection.actions.color)
-                .padding(.horizontal, 14).frame(minHeight: 40)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                 .background(Capsule().fill(filled ? AppSection.actions.color : Color.clear))
                 .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: filled ? 0 : 1.5))
                 .contentShape(Capsule())
@@ -367,7 +367,7 @@ struct BagDetail: View {
 
     private func choice(_ title: String, on: Bool, id: String, _ pick: @escaping () -> Void) -> some View {
         Button(action: pick) {
-            Text(title).font(.system(size: 14, weight: on ? .bold : .semibold))
+            Text(title).font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(on ? Color.white : Theme.ink)
                 .padding(.horizontal, 10).frame(minHeight: 32)
                 .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
@@ -383,14 +383,14 @@ struct BagDetail: View {
 
     private func heading(_ title: String, count: Int, id: String) -> some View {
         HStack(spacing: 8) {
-            Text(title).font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
-            Text("\(count)").font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+            Text(title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+            Text("\(count)").font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                 .accessibilityIdentifier(id)
         }
     }
 
     private func quiet(_ text: String) -> some View {
-        Text(text).font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+        Text(text).font(.system(.footnote)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

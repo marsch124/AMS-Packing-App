@@ -34,15 +34,15 @@ struct OnSiteScreen: View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("On site").font(.system(size: 24, weight: .heavy)).foregroundStyle(tint)
+                    Text("On site").font(.system(.title3, weight: .bold)).foregroundStyle(tint)
                     Text(lib.onSiteSummary(tripId: tripId))
-                        .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("onsite-summary")
                 }
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("onsite-done")
             }
@@ -83,17 +83,17 @@ struct OnSiteScreen: View {
             HStack(spacing: 8) {
                 TextField("What did you buy?", text: $boughtName)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { addBought() }
                     .onChange(of: boughtName) { _, _ in boughtTooSoon = false }
                     .accessibilityIdentifier("onsite-bought-name")
                 Button { addBought() } label: {
-                    Text("Bought on site").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("Bought on site").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
                         .lineLimit(1).fixedSize()
-                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 10).fill(tint))
                         .contentShape(Rectangle())
                 }
@@ -168,12 +168,12 @@ struct OnSiteScreen: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 8) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(line.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                            Text(line.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                                 .lineLimit(2)
                                 .accessibilityIdentifier("onsite-note-\(n)")
                             if noting != line.id {
                                 Text(Library.homeNote(line))
-                                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(care)
+                                    .font(.system(.callout, weight: .semibold)).foregroundStyle(care)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .accessibilityIdentifier("onsite-note-\(n)-text")
                             }
@@ -192,7 +192,7 @@ struct OnSiteScreen: View {
             if let id = noting, !lines.contains(where: { $0.id == id }),
                let line = candidates.first(where: { $0.id == id }) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(line.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text(line.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("onsite-note-for")
                     noteEditor(line)
                 }
@@ -225,8 +225,8 @@ struct OnSiteScreen: View {
             HStack(spacing: 8) {
                 TextField("e.g. Zip broken", text: $noteDraft)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .focused($writingNote)
@@ -235,8 +235,8 @@ struct OnSiteScreen: View {
                     .onChange(of: noteDraft) { _, _ in noteTooSoon = false }
                     .accessibilityIdentifier("onsite-note-field")
                 Button { saveNote(line) } label: {
-                    Text("Save").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44)
+                    Text("Save").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                         .background(RoundedRectangle(cornerRadius: 10).fill(care))
                         .contentShape(Rectangle())
                 }
@@ -247,7 +247,7 @@ struct OnSiteScreen: View {
             HStack(spacing: 12) {
                 Text(model.library.thingBehind(line) == nil ? "Kept with this trip."
                      : "Also goes onto the thing, for Care.")
-                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 small("Cancel", id: "onsite-note-cancel") { writingNote = false; noting = nil }
@@ -272,17 +272,17 @@ struct OnSiteScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionTitle(title: "Pack to go home", tint: tint, id: "onsite-wayhome-title")
             Text(p.total == 0 ? "Nothing to bring home yet." : "\(p.done) of \(p.total) packed")
-                .font(.system(size: 17, weight: .bold).monospacedDigit())
+                .font(.system(.body, weight: .semibold).monospacedDigit())
                 .foregroundStyle(p.total > 0 && p.done == p.total ? tint : Theme.ink)
                 .accessibilityIdentifier("onsite-wayhome-progress")
             Button { goingHome = true } label: {
                 HStack(spacing: 8) {
-                    Text("Pack to go home").font(.system(size: 17, weight: .bold))
+                    Text("Pack to go home").font(.system(.body, weight: .semibold))
                     SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                         .frame(width: 20, height: 20)
                 }
                 .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 52)
+                .frame(maxWidth: .infinity, minHeight: Metrics.row)
                 .background(RoundedRectangle(cornerRadius: 12).fill(tint))
                 .contentShape(Rectangle())
             }
@@ -303,20 +303,20 @@ struct OnSiteScreen: View {
     }
 
     private func name(_ text: String, id: String) -> some View {
-        Text(text).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+        Text(text).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
             .lineLimit(2)
             .accessibilityIdentifier(id)
     }
 
     private func quiet(_ text: String, id: String) -> some View {
-        Text(text).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+        Text(text).font(.system(.callout)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 4)
             .accessibilityIdentifier(id)
     }
 
     private func needs(_ text: String, id: String) -> some View {
-        Text(text).font(.system(size: 16, weight: .bold)).foregroundStyle(AppSection.actions.color)
+        Text(text).font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.actions.color)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier(id)
     }
@@ -324,8 +324,8 @@ struct OnSiteScreen: View {
     /// A small, quiet word-button at the side of a line, as on the way home.
     private func small(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
-                .padding(.horizontal, 8).frame(minHeight: 40).contentShape(Rectangle())
+            Text(title).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                .padding(.horizontal, 8).frame(minHeight: Metrics.compact).contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier(id)
@@ -334,8 +334,8 @@ struct OnSiteScreen: View {
     /// A section's own button, across the width, framed in its colour — never grey.
     private func wide(_ title: String, id: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 16, weight: .bold)).foregroundStyle(tint)
-                .frame(maxWidth: .infinity, minHeight: 48)
+            Text(title).font(.system(.callout, weight: .semibold)).foregroundStyle(tint)
+                .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.4))
                 .contentShape(Rectangle())
         }
@@ -364,7 +364,7 @@ private struct LinePicker: View {
         let matches = needle.isEmpty ? lines : lines.filter { normName($0.name).contains(needle) }
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text(title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
                 Button("Close") { close() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
@@ -373,19 +373,19 @@ private struct LinePicker: View {
             if !lines.isEmpty {
                 TextField("Search what went", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
                     .clearButton($query, id: "\(prefix)-search")
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
             }
             ForEach(Array(matches.prefix(LinePicker.most).enumerated()), id: \.element.id) { n, line in
                 Button { pick(line) } label: {
                     HStack(spacing: 8) {
-                        Text(line.name).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink).lineLimit(2)
+                        Text(line.name).font(.system(.body)).foregroundStyle(Theme.ink).lineLimit(2)
                         Spacer(minLength: 8)
                         Text(line.container.isEmpty || line.container == "Other" ? "" : line.container)
-                            .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                            .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                     }
                     .padding(.vertical, 10)
                     .contentShape(Rectangle())
@@ -396,12 +396,12 @@ private struct LinePicker: View {
             }
             if matches.isEmpty {
                 Text(lines.isEmpty ? emptyWords : "Nothing that went is called \u{201C}\(jsTrim(query))\u{201D}.")
-                    .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.callout)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("\(prefix)-none")
             } else if matches.count > LinePicker.most {
                 Text("\(matches.count - LinePicker.most) more \u{2014} type a word to find them")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("\(prefix)-more")
             }
         }

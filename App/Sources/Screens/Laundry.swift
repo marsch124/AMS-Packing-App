@@ -18,7 +18,7 @@ struct LaundrySwitch: View {
             Toggle(isOn: $on) {
                 HStack(alignment: .center, spacing: 10) {
                     LaundryMark().frame(width: 24, height: 24).foregroundStyle(AppSection.events.color)
-                    Text("Laundry").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text("Laundry").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 }
             }
             .accessibilityIdentifier(id)
@@ -26,7 +26,7 @@ struct LaundrySwitch: View {
             // the switch, and nothing could read them there (0.47, GitHub's Mac).
             Text(on ? "Wash and wear again: per-night things count \(nights) nights at most."
                     : "Wash and wear again, so you pack fewer per-night things.")
-                .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.leading, 34)
                 .accessibilityIdentifier("\(id)-says")
@@ -92,7 +92,7 @@ struct TripExcelButton: View {
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("trip-excel")
             if !status.isEmpty {
-                Text(status).font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                Text(status).font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("trip-excel-status")
             }
         }

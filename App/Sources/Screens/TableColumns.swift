@@ -240,7 +240,7 @@ struct Cell: View {
         let wrong = number && readAmount(typed) == nil
         return TextField("", text: $typed)
             .textFieldStyle(.plain)
-            .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
+            .font(.system(.footnote)).foregroundStyle(Theme.ink)
             .padding(.horizontal, 7)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(wrong ? AppSection.actions.color.opacity(0.18)
@@ -267,7 +267,7 @@ struct Cell: View {
             }
         } label: {
             Text(now.isEmpty ? "—" : now)
-                .font(.system(size: 13, weight: now.isEmpty ? .bold : .medium))
+                .font(.system(.footnote, weight: now.isEmpty ? .semibold : .regular))
                 .foregroundStyle(now.isEmpty ? AppSection.care.color : Theme.ink)
                 .lineLimit(1).minimumScaleFactor(0.75)
                 .padding(.horizontal, 7)
@@ -326,7 +326,7 @@ struct Cell: View {
                     }
                 } label: {
                     Text(now.isEmpty ? (sections.isEmpty ? "—" : "Where?") : now)
-                        .font(.system(size: 13, weight: now.isEmpty ? .bold : .medium))
+                        .font(.system(.footnote, weight: now.isEmpty ? .semibold : .regular))
                         .foregroundStyle(now.isEmpty ? (sections.isEmpty ? Theme.muted : AppSection.care.color) : Theme.ink)
                         .lineLimit(1).minimumScaleFactor(0.75)
                         .padding(.horizontal, 7)
@@ -339,7 +339,7 @@ struct Cell: View {
             }
         } else {
             Text(mine.isEmpty ? "—" : "\(mine.count) templates")
-                .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.muted)
+                .font(.system(.caption)).foregroundStyle(Theme.muted)
                 .lineLimit(1)
                 .padding(.horizontal, 7)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -380,11 +380,11 @@ struct ColumnPicker: View {
         let shown = ids
         VStack(spacing: 0) {
             HStack {
-                Text("Columns").font(.system(size: 20, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                Text("Columns").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("columns-done")
             }
             .padding(16)
@@ -392,13 +392,13 @@ struct ColumnPicker: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("SHOWING, IN THIS ORDER")
-                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                        .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted).kerning(0.6)
                         .padding(.top, 4).padding(.bottom, 6)
                     ForEach(Array(shown.enumerated()), id: \.element) { n, id in
                         if let column = all.first(where: { $0.id == id }) {
                             HStack(spacing: 4) {
                                 Text(column.title)
-                                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                                 Spacer()
                                 Button { move(n, by: -1) } label: { arrow("M18 15l-6-6-6 6") }
                                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == 0)
@@ -407,32 +407,32 @@ struct ColumnPicker: View {
                                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == shown.count - 1)
                                     .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-down")
                                 Button { hide(id) } label: {
-                                    Text("Hide").font(.system(size: 15, weight: .bold))
+                                    Text("Hide").font(.system(.subheadline, weight: .semibold))
                                         .foregroundStyle(AppSection.actions.color)
-                                        .frame(minWidth: 52, minHeight: 44)
+                                        .frame(minWidth: 52, minHeight: Metrics.tap)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-hide")
                             }
-                            .frame(minHeight: 44)
+                            .frame(minHeight: Metrics.tap)
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                         }
                     }
 
                     Text("NOT SHOWING")
-                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                        .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted).kerning(0.6)
                         .padding(.top, 18).padding(.bottom, 6)
                     ForEach(all.filter { !shown.contains($0.id) }) { column in
                         Button { show(column.id) } label: {
                             HStack {
                                 Text(column.title)
-                                    .font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.muted)
+                                    .font(.system(.callout)).foregroundStyle(Theme.muted)
                                 Spacer()
-                                Text("Show").font(.system(size: 14, weight: .bold))
+                                Text("Show").font(.system(.footnote, weight: .semibold))
                                     .foregroundStyle(AppSection.care.color)
                             }
-                            .frame(minHeight: 44)
+                            .frame(minHeight: Metrics.tap)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
@@ -457,7 +457,7 @@ struct ColumnPicker: View {
         SVGPath.path(path)
             .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-            .frame(width: 44, height: 44)
+            .frame(width: Metrics.tap, height: Metrics.tap)
             .contentShape(Rectangle())
     }
 

@@ -15,7 +15,7 @@ struct FirstRunView: View {
             Spacer()
             SectionMark(section: .home, size: 84, weight: 1.6).foregroundStyle(AppSection.home.color)
             Text("No templates on this device yet")
-                .font(.system(size: 26, weight: .heavy)).foregroundStyle(Theme.ink)
+                .font(.system(.title2, weight: .bold)).foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
 
             VStack(spacing: 12) {
@@ -33,7 +33,7 @@ struct FirstRunView: View {
             .frame(maxWidth: 420)
 
             if let problem {
-                Text(problem).font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(hex: 0xdc3d43))
+                Text(problem).font(.system(.callout, weight: .semibold)).foregroundStyle(Color(hex: 0xdc3d43))
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("first-run-problem")
             }
@@ -61,8 +61,8 @@ private struct Door: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(size: 19, weight: .heavy))
-            Text(detail).font(.system(size: 16, weight: .medium)).opacity(0.85)
+            Text(title).font(.system(.body, weight: .semibold))
+            Text(detail).font(.system(.callout)).opacity(0.85)
         }
         .foregroundStyle(filled ? Color.white : Theme.ink)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -23,14 +23,14 @@ struct BagsScreen: View {
         let bags = model.library.bags()
         VStack(spacing: 0) {
             HStack {
-                Text("Your bags").font(.system(size: 22, weight: .heavy)).foregroundStyle(AppSection.care.color)
-                Text("\(bags.count)").font(.system(size: 15, weight: .heavy).monospacedDigit())
+                Text("Your bags").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
+                Text("\(bags.count)").font(.system(.subheadline, weight: .semibold).monospacedDigit())
                     .foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("yourbags-count")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("yourbags-done")
             }
             .padding(16)
@@ -39,7 +39,7 @@ struct BagsScreen: View {
             // them — his ask (2026-09-26): "keep the header row visible".
             VStack(alignment: .leading, spacing: 0) {
                 Text("Give a bag its max weight and every trip shows how full it is.")
-                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 10)
 
@@ -49,7 +49,7 @@ struct BagsScreen: View {
                     Text("LITRES").frame(width: 64)
                     Text("EMPTY G").frame(width: 70)
                 }
-                .font(.system(size: 10, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.4)
+                .font(.system(.caption2, weight: .semibold)).foregroundStyle(Theme.muted).kerning(0.4)
                 .padding(.bottom, 4)
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("yourbags-columns")
@@ -63,7 +63,7 @@ struct BagsScreen: View {
                         BagRow(bag: bag, n: n, open: { openBag = OpenBag(id: bag.id) }).environmentObject(model)
                     }
                     if bags.isEmpty {
-                        Text("No bags yet.").font(.system(size: 15, weight: .medium))
+                        Text("No bags yet.").font(.system(.subheadline))
                             .foregroundStyle(Theme.muted).padding(.vertical, 20)
                     }
                 }
@@ -74,8 +74,8 @@ struct BagsScreen: View {
             HStack(spacing: 8) {
                 TextField("A new bag", text: $newName)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
@@ -131,10 +131,10 @@ struct BagsScreen: View {
                     HStack(spacing: 4) {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(bag.name)
-                                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
+                                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                                 .lineLimit(1).minimumScaleFactor(0.8)
                             if !line.isEmpty {
-                                Text(line).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.muted)
+                                Text(line).font(.system(.caption)).foregroundStyle(Theme.muted)
                                     .lineLimit(1).minimumScaleFactor(0.85)
                             }
                         }
@@ -157,7 +157,7 @@ struct BagsScreen: View {
                     model.change { _ = $0.setBag(id: bag.id, emptyGrams: v) }
                 }
             }
-            .frame(minHeight: 46)
+            .frame(minHeight: Metrics.tap)
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
             .onAppear {
                 maxKg = bag.maxKg > 0 ? BagsScreen.show(bag.maxKg) : ""
@@ -194,7 +194,7 @@ struct BagsScreen: View {
                            commit: @escaping (Double) -> Void) -> some View {
             TextField("", text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 15, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
+                .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.trailing)
                 .padding(.horizontal, 6)
                 .frame(width: width, height: 34)

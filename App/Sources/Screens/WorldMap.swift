@@ -21,11 +21,11 @@ struct WorldMapScreen: View {
         let toFind = model.library.placesToFind()
         VStack(spacing: 0) {
             HStack {
-                Text("Where you have been").font(.system(size: 22, weight: .heavy)).foregroundStyle(AppSection.events.color)
+                Text("Where you have been").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.events.color)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .accessibilityIdentifier("map-done")
             }
             .padding(16)
@@ -33,16 +33,16 @@ struct WorldMapScreen: View {
                 KeyboardAwayScroll {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(Library.mapSummary(pins))
-                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                             .accessibilityIdentifier("map-summary")
                         if let top = mostVisited(pins) {
                             Text("Most visited: \(top.place), \(top.events.count) trips")
-                                .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                                 .accessibilityIdentifier("map-most")
                         }
                         if pins.isEmpty {
                             Text("No places yet. A trip joins the map when it has a place: type it in Trip settings (the pen) or on its weather line.")
-                                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityIdentifier("map-empty")
                         } else {
@@ -83,7 +83,7 @@ struct WorldMapScreen: View {
                                 .frame(width: picked == pin.key ? 22 : 16, height: picked == pin.key ? 22 : 16)
                             if pin.events.count > 1 {
                                 Text("\(pin.events.count)")
-                                    .font(.system(size: 11, weight: .heavy)).foregroundStyle(.white)
+                                    .font(.system(.caption2, weight: .semibold)).foregroundStyle(.white)
                                     .padding(.horizontal, 5).padding(.vertical, 1)
                                     .background(Capsule().fill(AppSection.care.color))
                                     .offset(x: 10, y: -10)
@@ -117,17 +117,17 @@ struct WorldMapScreen: View {
                 }
             } label: {
                 Text(model.findingPlaces ? "Looking…" : "Find \(count) place\(count == 1 ? "" : "s") on the map")
-                    .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("map-find")
             Text("Trips that name a place but are not on the map yet.")
-                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                .font(.system(.footnote)).foregroundStyle(Theme.muted)
             if !findNote.isEmpty {
-                Text(findNote).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                Text(findNote).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("map-find-note")
             }
         }
@@ -138,15 +138,15 @@ struct WorldMapScreen: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 Text(pin.place.isEmpty ? "A place" : pin.place)
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("map-place-\(n)-name")
                 Spacer()
                 Text("\(pin.events.count) trip\(pin.events.count == 1 ? "" : "s")")
-                    .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
             }
             ForEach(pin.events, id: \.id) { e in
                 Text(e.startDate.isEmpty ? e.name : "\(e.name) · \(WorldMapScreen.day(e.startDate))")
-                    .font(.system(size: 15)).foregroundStyle(Theme.ink)
+                    .font(.system(.subheadline)).foregroundStyle(Theme.ink)
             }
         }
         .padding(12)
@@ -177,7 +177,7 @@ struct WorldMapDoor: View {
                 .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round, lineJoin: .round))
                 .frame(width: 26, height: 26)
                 .foregroundStyle(AppSection.events.color)
-                .frame(width: 44, height: 44).contentShape(Rectangle())
+                .frame(width: Metrics.tap, height: Metrics.tap).contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("events-map")
@@ -198,7 +198,7 @@ struct MiniWorldMap: View {
             ZStack(alignment: .bottomLeading) {
                 if pins.isEmpty {
                     Text("Your trips appear here once they have a place.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .frame(maxWidth: .infinity, minHeight: 90)
                         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                 } else {
@@ -220,7 +220,7 @@ struct MiniWorldMap: View {
                     .frame(height: 210)
                     .allowsHitTesting(false)
                     Text(Library.mapSummary(pins))
-                        .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(Capsule().fill(AppSection.events.color))
                         .padding(10)

@@ -19,11 +19,11 @@ struct GrabMenuScreen: View {
             let rest = model.library.allGrabLists().filter { g in !home.contains { $0.id == g.id } }
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text("Which grab list?").font(.system(size: 24, weight: .heavy)).foregroundStyle(AppSection.home.color)
+                    Text("Which grab list?").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.home.color)
                     Spacer()
                     Button("Close") { dismiss() }
                         .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .accessibilityIdentifier("grab-menu-close")
                 }
                 ScrollView {

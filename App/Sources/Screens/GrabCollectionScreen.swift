@@ -26,11 +26,11 @@ struct GrabCollectionScreen: View {
         let waiting = model.library.waitingGrabLists()
         VStack(spacing: 0) {
             HStack {
-                Text("Your grab lists").font(.system(size: 22, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Your grab lists").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: true)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.home.color)
                     .accessibilityIdentifier("grablists-done")
             }
             .padding(16)
@@ -38,35 +38,35 @@ struct GrabCollectionScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 8) {
                     if !made.isEmpty {
-                        Text(made).font(.system(size: 15, weight: .semibold))
+                        Text(made).font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("grablists-made")
                     }
 
                     Text("On Home · \(home.count) of \(GRAB_HOME_SLOTS)")
-                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("grablists-home-heading")
                     ForEach(Array(home.enumerated()), id: \.element.id) { n, list in
                         row(list, n: n, onHome: true, count: home.count)
                     }
 
                     Text("Waiting · \(waiting.count)")
-                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                         .padding(.top, 14)
                         .accessibilityIdentifier("grablists-waiting-heading")
                     if waiting.isEmpty {
                         // Where a new list goes depends on whether Home has room.
                         Text(home.count < GRAB_HOME_SLOTS ? "Nothing waiting. A new list goes straight onto Home."
                                                           : "Nothing waiting. A new list waits here while Home is full.")
-                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     }
                     ForEach(Array(waiting.enumerated()), id: \.element.id) { n, list in
                         row(list, n: n, onHome: false, count: home.count)
                     }
 
                     Text("A list that steps back off Home keeps everything on it — nothing here throws a list away.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .padding(.top, 14)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -75,8 +75,8 @@ struct GrabCollectionScreen: View {
             HStack(spacing: 8) {
                 TextField("A new grab list", text: $newName)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add() }
@@ -119,9 +119,9 @@ struct GrabCollectionScreen: View {
                     HStack(spacing: 10) {
                         GrabDoodle(icon: list.icon, size: 30, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(list.label).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                            Text(list.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                             Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
-                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                                .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         }
                         Spacer(minLength: 8)
                     }
@@ -147,9 +147,9 @@ struct GrabCollectionScreen: View {
         HStack(spacing: 10) {
             GrabDoodle(icon: list.icon, size: 30, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
             VStack(alignment: .leading, spacing: 1) {
-                Text(list.label).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(list.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
-                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
             }
             Spacer(minLength: 8)
             Group {
@@ -173,7 +173,7 @@ struct GrabCollectionScreen: View {
     }
 
     private func pill(_ words: String, filled: Bool) -> some View {
-        Text(words).font(.system(size: 13, weight: .heavy))
+        Text(words).font(.system(.footnote, weight: .semibold))
             .foregroundStyle(filled ? .white : Theme.muted)
             .padding(.horizontal, 10).frame(minHeight: 28)
             .background(Capsule().fill(filled ? AppSection.home.color : Theme.bg))
@@ -256,16 +256,16 @@ struct SwapScreen: View {
         let coming = model.library.allGrabLists().first { $0.id == comingIn }
         VStack(spacing: 0) {
             HStack {
-                Text("Which one steps back?").font(.system(size: 20, weight: .heavy)).foregroundStyle(Theme.ink)
+                Text("Which one steps back?").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: false)).focusEffectDisabled()
-                    .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.home.color)
                     .accessibilityIdentifier("swap-cancel")
             }
             .padding(16)
             Text("Home holds eight. \(coming?.label ?? "The new list") takes the place of the one you pick — and the one that steps back keeps everything on it.")
-                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                 .padding(.horizontal, 16).padding(.bottom, 8)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 8) {
@@ -279,12 +279,12 @@ struct SwapScreen: View {
                         } label: {
                             HStack(spacing: 10) {
                                 GrabDoodle(icon: list.icon, size: 28, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
-                                Text(list.label).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                                Text(list.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                                 Spacer()
-                                Text("\(list.items.count)").font(.system(size: 15, weight: .bold).monospacedDigit())
+                                Text("\(list.items.count)").font(.system(.subheadline, weight: .semibold).monospacedDigit())
                                     .foregroundStyle(Theme.muted)
                             }
-                            .padding(.horizontal, 12).frame(minHeight: 52)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.row)
                             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                             .contentShape(Rectangle())
