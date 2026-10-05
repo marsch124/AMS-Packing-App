@@ -9,6 +9,10 @@ import PackingLibrary
 struct SettingsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var exporting = false
+    /// The file being saved — built when Save is pressed, never on a redraw.
+    @State private var saving: BackupDocument?
+    /// When a backup was last saved from this device (`savedKey`).
+    @AppStorage(SettingsScreen.savedKey) private var savedAt = ""
     @State private var status = ""
     @State private var lists = false
     @State private var picking = false
@@ -99,6 +103,9 @@ struct SettingsScreen: View {
                 SectionTitle(title: "Backup", id: "backup-heading")
                 Button {
                     status = "Choosing where to save…"
+                    // The whole library written out — built now, for this save only. It
+                    // used to be built on EVERY drawing of Settings (the spec pass, 2026-10-05).
+                    saving = BackupDocument(data: model.library.backupData())
                     exporting = true
                 } label: {
                     Text("Save a backup…")
@@ -112,6 +119,10 @@ struct SettingsScreen: View {
                 Text(status.isEmpty ? "The same file the web app writes, so either app can read it." : status)
                     .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("backup-status")
+                if let last = Library.lastSavedWords(savedAt, device: SyncCard.device) {
+                    Text(last).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("backup-last")
+                }
 
                 Button {
                     status = ""
@@ -179,6 +190,13 @@ struct SettingsScreen: View {
                 }
                 .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                // Where this library came from, when it came from a file — the import's
+                // own marker (the spec pass, 2026-10-05: no screen showed the import).
+                if let came = model.library.broughtInWords() {
+                    Text(came).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("device-import")
+                }
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
@@ -190,7 +208,7 @@ struct SettingsScreen: View {
                 do {
                     try model.restore(waiting.library)
                     copies = RescueCopies.all()
-                    status = "Restored from the file. A copy of what was here is kept on this device."
+                    status = "Restored from the file: \(waiting.library.holdsWords). A copy of what was here is kept on this device."
                 } catch {
                     status = error.localizedDescription
                 }
@@ -205,10 +223,13 @@ struct SettingsScreen: View {
             case .failure: status = "Nothing chosen."
             }
         }
-        .fileExporter(isPresented: $exporting, document: BackupDocument(data: model.library.backupData()),
+        .fileExporter(isPresented: $exporting, document: saving,
                       contentType: .json, defaultFilename: Library.backupFileName(on: Today.local)) { result in
+            saving = nil
             switch result {
-            case .success(let url): status = "Saved: \(url.lastPathComponent)"
+            case .success(let url):
+                status = "Saved: \(url.lastPathComponent)"
+                savedAt = nowISO()
             case .failure: status = "Not saved."
             }
         }
@@ -224,6 +245,10 @@ struct SettingsScreen: View {
             status = error.localizedDescription
         }
     }
+
+    /// When a backup was last saved from this device (ISO). Per device, like the
+    /// web app's: the other device keeps its own.
+    static let savedKey = "ams.backup.savedAt"
 
     static func label(_ t: PackingLibrary.Table) -> String {
         switch t {

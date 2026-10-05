@@ -103,9 +103,47 @@ public enum Importer {
         }
     }
 
+    /// A resolved row shows a place's own note OR the thing's, never which — so a file
+    /// rebuilt from its rows (the web app's, or one of ours from before 0.61: the
+    /// copies kept before a restore on his devices) put a thing's own note and qty on
+    /// EACH of its places and left the thing's empty. A later change to the note in
+    /// Your things then no longer reached those templates (the spec pass, 2026-10-05).
+    /// So: when every place of a rebuilt thing carries the same note, it was the
+    /// thing's — it goes back onto the thing and the places hold none; the same for
+    /// qty. Places that differ keep their own. The templates read exactly the same
+    /// either way (an empty place falls back to the thing), so the check below holds.
+    static func settleOwnNotes(_ lib: inout Library) {
+        var placesOf: [String: [Int]] = [:]
+        for (n, m) in lib.memberships.enumerated() { placesOf[m.itemId, default: []].append(n) }
+        for t in lib.items.indices {
+            guard let mine = placesOf[lib.items[t].id], let first = mine.first else { continue }
+            let note = lib.memberships[first].note
+            if lib.items[t].note.isEmpty, !note.isEmpty, mine.allSatisfy({ lib.memberships[$0].note == note }) {
+                lib.items[t].note = note
+                for n in mine { lib.memberships[n].note = "" }
+            }
+            let qty = lib.memberships[first].qty
+            if lib.items[t].qty.isEmpty, !qty.isEmpty, mine.allSatisfy({ lib.memberships[$0].qty == qty }) {
+                lib.items[t].qty = qty
+                for n in mine { lib.memberships[n].qty = "" }
+            }
+        }
+    }
+
     public static func library(from backup: BackupFile, now: Date = PackingEnv.now()) -> (Library, Report) {
         var lib = Library()
         var report = Report()
+
+        // Reading a file changes nothing that is live (the spec pass, 2026-10-05): the
+        // restore preview — of a rescue copy too — reads the file through here, and the
+        // file's "When" steps and conditions stayed installed after Cancel, until the
+        // next reload. They are installed below only for the reading itself, then put
+        // back; whoever STORES the result installs it (`Library.installLiveChoices`).
+        let livePhases = PHASES, liveConditions = ITEM_CONDITIONS
+        defer {
+            _ = setPhases(livePhases)
+            _ = setItemConditions(liveConditions)
+        }
 
         // The "When" timeline FIRST, so everything below has a "When" to point at.
         // Stored only when it is his own: the factory seven live in the code.
@@ -167,6 +205,7 @@ public enum Importer {
                 }
             }
             carryRowExtras(backup.lists, into: &lib)
+            settleOwnNotes(&lib)
         }
         // Things on no list have no other home (missing from backups until web v178).
         for thing in backup.things where !jsTrim(thing.name).isEmpty {
@@ -245,5 +284,68 @@ public enum Importer {
             "lines": .number(Double(report.lines)),
         ]
         return (lib, report)
+    }
+}
+
+// The doors a backup file comes in through — the first-run import, the restore
+// preview, and what a restore stores. Here rather than in the app so the model tests
+// reach them (the spec pass, 2026-10-05: the import door's refusals had no test).
+
+extension Importer {
+    /// Why a file is not taken. The words are shown to him as they are.
+    public enum Refusal: LocalizedError, Equatable {
+        case notABackup, alreadyImported, notFaithful(Int)
+        public var errorDescription: String? {
+            switch self {
+            case .notABackup: return "That is not an AMS Packing backup file."
+            case .alreadyImported: return "This library has already been imported into."
+            case .notFaithful(let n): return "The import did not come back the same (\(n) rows differ), so nothing was stored."
+            }
+        }
+    }
+
+    static func backup(in data: Data) throws -> BackupFile {
+        guard let json = try? JSONValue.parse(data), BackupFile.looksLikeBackup(json) else { throw Refusal.notABackup }
+        return BackupFile(json: json)
+    }
+
+    static func faithful(_ backup: BackupFile, now: Date) throws -> (library: Library, report: Report) {
+        let (lib, report) = library(from: backup, now: now)
+        // It checks itself. If a row did not come back the same, NOTHING is taken.
+        guard report.isFaithful else { throw Refusal.notFaithful(report.mismatches.count) }
+        return (lib, report)
+    }
+
+    /// Read a file and change NOTHING: what it holds, so a restore can be looked at
+    /// before it replaces the lot. A file that does not come back the same is refused
+    /// here, before he is ever offered the button.
+    public static func read(_ data: Data, now: Date = PackingEnv.now()) throws -> (library: Library, report: Report) {
+        try faithful(try backup(in: data), now: now)
+    }
+
+    /// The one-time import of a backup into a library that holds nothing of his
+    /// (docs/store.md, rules 3 and 4) — the devices' check-ins carried across.
+    public static func firstImport(_ data: Data, onto current: Library,
+                                   now: Date = PackingEnv.now()) throws -> (library: Library, report: Report) {
+        let file = try backup(in: data)
+        guard current.isEmpty else { throw Refusal.alreadyImported }
+        let (lib, report) = try faithful(file, now: now)
+        return (lib.keepingDeviceNotes(of: current), report)
+    }
+
+    /// What a restore stores: exactly what the file holds — and the devices' check-ins
+    /// of the library it replaces, which are about the devices, not about his things.
+    public static func restoring(_ file: Library, over current: Library) -> Library {
+        file.keepingDeviceNotes(of: current)
+    }
+}
+
+extension Library {
+    /// Install this library's own "When" steps and conditions as the live ones (none =
+    /// the factory ones). Whoever STORES a library does this; reading one never does.
+    public func installLiveChoices() {
+        _ = setPhases(phases)                            // [] → the factory timeline
+        let conditions = conditionsFromRows(shared)
+        _ = setItemConditions(conditions.isEmpty ? DEFAULT_ITEM_CONDITIONS : conditions)
     }
 }

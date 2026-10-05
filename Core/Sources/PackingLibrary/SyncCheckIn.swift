@@ -22,3 +22,24 @@ extension Library {
         return at
     }
 }
+
+extension Library {
+    /// A note about a DEVICE, not about his things: a device's check-in (Sync now).
+    ///
+    /// Such a note is no sign that this library holds anything (the spec pass,
+    /// 2026-10-05): one press of Sync now on a new, empty device — or the other
+    /// device's check-in arriving through iCloud — made the library "not empty", so
+    /// the two first-run doors went away and the backup was refused as "already
+    /// imported into".
+    public static func isDeviceNote(_ key: String) -> Bool { key.hasPrefix(syncCheckKey("")) }
+
+    /// This library, with the devices' check-ins of `other` laid over it. An import
+    /// or a restore replaces his LIBRARY; the check-ins say when each device last
+    /// came by, and a restore that deleted them told the other device, through
+    /// iCloud, that it had never checked in.
+    public func keepingDeviceNotes(of other: Library) -> Library {
+        var lib = self
+        for (key, value) in other.meta where Library.isDeviceNote(key) { lib.meta[key] = value }
+        return lib
+    }
+}

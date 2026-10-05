@@ -93,7 +93,13 @@ extension Library {
         return BackupFile(json: .object(o))
     }
 
-    /// The file's bytes, laid out the way the web app lays them out.
+    /// The file's bytes: pretty-printed JSON with its keys SORTED (Foundation's
+    /// printer) — not the web app's own key order, so the two apps' files are not the
+    /// same byte for byte; each reads the other's all the same.
+    ///
+    /// ⚠️ A full resolve of every template and every photo written out: build it when
+    /// a file is wanted (Save, a rescue copy), never on a screen's redraw (the spec
+    /// pass, 2026-10-05: Settings built it every time it was drawn).
     public func backupData(exportedAt: String = nowISO()) -> Data {
         Data(backupFile(exportedAt: exportedAt).json.text(pretty: true).utf8)
     }
@@ -112,8 +118,26 @@ extension Library {
     }
 
     /// What this device holds, table by table — so two devices can be compared by eye.
+    /// The number of records `records()` writes per table, counted WITHOUT writing
+    /// them (the spec pass, 2026-10-05): Settings asks on every redraw, and building
+    /// the records decodes every photo. A record with an empty key is never written,
+    /// so it is not counted; a trip line's key ("<trip>|<line>") is never empty.
     public var counts: [(table: Table, count: Int)] {
-        let r = records()
-        return Table.allCases.map { t in (t, r.filter { $0.table == t }.count) }
+        func n(_ keys: [String]) -> Int { keys.reduce(0) { $0 + ($1.isEmpty ? 0 : 1) } }
+        return Table.allCases.map { t in
+            switch t {
+            case .items: return (t, n(items.map(\.id)))
+            case .memberships: return (t, n(memberships.map(\.id)))
+            case .templates: return (t, n(templates.map(\.id)))
+            case .trips: return (t, n(trips.map(\.id)))
+            case .entries: return (t, trips.reduce(0) { $0 + $1.entries.count })
+            case .actions: return (t, n(actions.map(\.id)))
+            case .kits: return (t, n(kits.map(\.id)))
+            case .phases: return (t, n(phases.map(\.id)))
+            case .shared: return (t, n(shared.map(\.id)))
+            case .photos: return (t, n(photos.map(\.id)))
+            case .meta: return (t, n(Array(meta.keys)))
+            }
+        }
     }
 }

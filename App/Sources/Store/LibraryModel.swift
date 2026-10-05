@@ -18,7 +18,6 @@ final class LibraryModel: ObservableObject {
 
     @Published private(set) var library = Library()
     @Published private(set) var state: State = .loading
-    @Published private(set) var lastImport: Importer.Report?
 
     /// Trips whose forecast is being looked up right now, and what went wrong.
     @Published private(set) var lookingUpWeather: Set<String> = []
@@ -50,21 +49,14 @@ final class LibraryModel: ObservableObject {
     }
 
     /// Read everything the store holds. Duplicate keys are settled by rule, and the
-    /// losers are deleted so both devices end up holding the same records.
+    /// losers are deleted so both devices end up holding the same records
+    /// (`StoreSession.load`, where the model tests reach it).
     func reload() {
         do {
-            let all = try store.loadAll()
-            let settled = settleDuplicates(all)
-            if !settled.dropped.isEmpty {
-                // Re-write the survivors; twins of a key go together in the store.
-                try store.apply(RecordChanges(puts: settled.kept.filter { k in settled.dropped.contains { $0.id == k.id } }))
-            }
-            let fresh = Library(records: settled.kept)
-            held = fresh.records()
+            let (fresh, records) = try StoreSession.load(store)
+            held = records
             if fresh != library { library = fresh }
-            _ = setPhases(fresh.phases)                      // [] → the factory timeline
-            let conditions = conditionsFromRows(fresh.shared)
-            _ = setItemConditions(conditions.isEmpty ? DEFAULT_ITEM_CONDITIONS : conditions)
+            fresh.installLiveChoices()
             state = fresh.isEmpty ? .empty : .ready
         } catch {
             state = .failed(error.localizedDescription)
@@ -79,11 +71,8 @@ final class LibraryModel: ObservableObject {
     }
 
     private func commit(_ next: Library) {
-        let records = next.records()
-        let changes = recordChanges(from: held, to: records)
-        guard !changes.isEmpty else { return }
         do {
-            try store.apply(changes)
+            guard let records = try StoreSession.save(next, held: held, to: store) else { return }
             held = records
             library = next
             state = next.isEmpty ? .empty : .ready
@@ -93,28 +82,14 @@ final class LibraryModel: ObservableObject {
     }
 
     /// The one-time import of a web-app backup file (docs/store.md, rules 3 and 4).
-    /// Refused when this account has been imported into already.
-    enum ImportError: LocalizedError {
-        case notABackup, alreadyImported, notFaithful(Int)
-        var errorDescription: String? {
-            switch self {
-            case .notABackup: return "That is not an AMS Packing backup file."
-            case .alreadyImported: return "This library has already been imported into."
-            case .notFaithful(let n): return "The import did not come back the same (\(n) rows differ), so nothing was stored."
-            }
-        }
-    }
+    /// Refused when this library holds anything of his already (`Importer.firstImport`).
+    typealias ImportError = Importer.Refusal
 
     @discardableResult
     func importBackup(_ data: Data) throws -> Importer.Report {
-        guard let json = try? JSONValue.parse(data), BackupFile.looksLikeBackup(json) else { throw ImportError.notABackup }
-        guard library.isEmpty else { throw ImportError.alreadyImported }
-        let (imported, report) = Importer.library(from: BackupFile(json: json))
-        // It checks itself. If a row did not come back the same, store NOTHING.
-        guard report.isFaithful else { throw ImportError.notFaithful(report.mismatches.count) }
+        let (imported, report) = try Importer.firstImport(data, onto: library)
         commit(imported)
-        _ = setPhases(imported.phases)
-        lastImport = report
+        imported.installLiveChoices()
         return report
     }
 
@@ -184,21 +159,20 @@ final class LibraryModel: ObservableObject {
         return library.forecastIsStale(tripId: tripId)
     }
 
-    /// Read a backup file and change NOTHING: what it holds, so a restore can be
-    /// looked at before it replaces the lot. A file that does not come back the
-    /// same is refused here, before he is ever offered the button.
+    /// Read a backup file and change NOTHING — not even the live "When" steps and
+    /// conditions (`Importer.read`): what it holds, so a restore can be looked at before
+    /// it replaces the lot. A file that does not come back the same is refused here,
+    /// before he is ever offered the button.
     func inspectBackup(_ data: Data) throws -> (library: Library, report: Importer.Report) {
-        guard let json = try? JSONValue.parse(data), BackupFile.looksLikeBackup(json) else { throw ImportError.notABackup }
-        let (imported, report) = Importer.library(from: BackupFile(json: json))
-        guard report.isFaithful else { throw ImportError.notFaithful(report.mismatches.count) }
-        return (imported, report)
+        try Importer.read(data)
     }
 
     /// Replace everything on this device with what the file held. What was here is
-    /// written to a rescue copy FIRST — the write that destroys comes last.
+    /// written to a rescue copy FIRST — the write that destroys comes last. The
+    /// devices' check-ins stay (`Importer.restoring`).
     func restore(_ imported: Library) throws {
         try RescueCopies.write(library)
-        commit(imported)
+        commit(Importer.restoring(imported, over: library))
         reload()
     }
 }
@@ -221,12 +195,20 @@ extension LibraryModel {
         return model
     }()
 
-    /// Which store this launch uses.
-    ///  -uiTesting            → memory, holding the invented sample library
-    ///  -uiTestingEmpty       → memory, holding nothing (the first-run screen)
-    ///  -uiTestingOnSite      → memory, the sample with its trip under way (On site)
-    ///  PackingUsesICloud=YES → SwiftData + iCloud (TestFlight and release builds)
-    ///  otherwise             → SwiftData on this device only (a plain debug build)
+    /// Which store this launch uses — the first that matches, in this order:
+    ///  -uiTestingEmpty        → memory, holding nothing (the first-run screen)
+    ///  -uiTestingChecks       → memory, the sample + a carry-on bag, a knife, sun cream
+    ///                           and a passport running out, and a plane trip (the checks)
+    ///  -uiTestingOnSite       → memory, the sample with its trip under way (On site)
+    ///  -uiTestingOldPhoto     → memory, the sample + a photo nothing shows, from January
+    ///                           and one with no date (Worth a look)
+    ///  -uiTestingTwoLibraries → memory, every template of the sample twice (Worth a look)
+    ///  -uiTesting             → memory, holding the invented sample library
+    ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
+    ///  otherwise              → SwiftData on this device only (a plain debug build)
+    /// Under any `-uiTesting…` the library is in memory, but the copies kept before a
+    /// restore are real files — so they are deleted at launch, with the remembered
+    /// screen choices below.
     static func forThisLaunch() -> LibraryModel {
         let args = ProcessInfo.processInfo.arguments
         if AMSPackingApp.testing {
@@ -234,7 +216,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", "ams.care.view", "ams.view", "ams.trip.folded", "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey] {
+            for key in ["ams.table.columns", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", "ams.care.view", "ams.view", "ams.trip.folded", "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, SettingsScreen.savedKey] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
         }

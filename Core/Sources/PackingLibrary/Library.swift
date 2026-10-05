@@ -28,10 +28,12 @@ public struct Library: Equatable, Sendable {
 
     public init() {}
 
+    /// Nothing of his here. A device's check-in does not count (`isDeviceNote`): it
+    /// is about the device, and it must not shut the first-run doors.
     public var isEmpty: Bool {
         items.isEmpty && memberships.isEmpty && templates.isEmpty && trips.isEmpty
             && actions.isEmpty && kits.isEmpty && phases.isEmpty && shared.isEmpty
-            && photos.isEmpty && meta.isEmpty
+            && photos.isEmpty && meta.keys.allSatisfy(Library.isDeviceNote)
     }
 
     // MARK: - Resolved views
