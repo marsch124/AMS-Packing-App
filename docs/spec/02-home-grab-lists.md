@@ -1,6 +1,6 @@
 # Home, grab lists, Shortcuts, packing reminders and Search
 
-> Verified against the code on 5 Oct 2026 (app 0.61).
+> Verified against the code on 5 Oct 2026 (app 0.61), and brought up to date with the fixes marked 0.6x.
 
 Home is the first tab and the screen the app always opens on. In the owner's terms it has two jobs:
 **"Grab and go"**, a grid of up to eight *grab lists* (short lists for a quick outing such as a swim,
@@ -903,7 +903,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 - The `grab` shared row (factory lists); `meta["grabOwnLists"]` (his own lists, edited and deleted here).
 - `meta["grabSometimes"]` = `{listId: [names]}`, carried in the backup as `prefs.grab.sometimes`.
 - `meta["grabHome"]` and `meta["grabOff"]` (a deleted list's id is removed from both).
-- `UserDefaults ams.grab.<id>` for the restarted session, removed by Delete.
+- `UserDefaults ams.grab.<id>` for the session after a Save (kept, 0.6x), removed by Delete.
 
 **iPhone vs Mac.** The same. The add field's Return submits on both.
 
