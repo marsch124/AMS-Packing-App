@@ -2432,6 +2432,17 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["shared-name"]), "Hiking")
         shot(app, "shared-template")
         XCTAssertTrue(app.buttons["shared-replace"].exists, "his own template of that name is not offered to replace")
+        // He has a Hiking: as a NEW one it needs a name of its own (the spec pass, 5 Oct
+        // 2026 — a second Hiking reads as two libraries meeting). A free one is offered.
+        XCTAssertTrue(app.staticTexts["shared-name-taken"].waitForExistence(timeout: 5), "a name he has is not said")
+        let newName = app.textFields["shared-new-name"]
+        XCTAssertEqual(newName.value as? String, "Hiking 2", "no free name offered")
+        replace("Hiking", in: newName)
+        tap(app, id: "shared-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-add-needs"]).contains("do not have") },
+                      "a second Hiking was not refused out loud")
+        XCTAssertFalse(app.staticTexts["shared-result"].exists, "a second Hiking was added")
+        replace("Hiking club", in: newName)
         tap(app, id: "shared-add")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).hasPrefix("Added") })
         tap(app, id: "shared-done")
@@ -2772,6 +2783,199 @@ final class AMSPackingUITests: XCTestCase {
         // The keyboard leaves the list short, and a lazy list builds only what is near.
         hideKeyboard(app)
         XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the new thing is hidden by the search")
+    }
+
+    // MARK: - Templates: the spec pass (5 Oct 2026)
+
+    /// Things chosen from his own land on the template in the order he ticked them
+    /// (a set put them on in no particular order), and Add pressed with nothing
+    /// ticked says what is missing instead of doing nothing (his rule for a main button).
+    func testThingsPickedLandInTheOrderTicked() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking: 4 things
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-pick")
+        XCTAssertTrue(appears(app, "pick-screen", timeout: 5))
+
+        tap(app, id: "pick-add")
+        let needs = app.staticTexts["pick-add-needs"]
+        XCTAssertTrue(needs.waitForExistence(timeout: 5), "Add with nothing ticked said nothing")
+        XCTAssertNotNil(find(app, "pick-screen"), "Add with nothing ticked closed the picker")
+
+        // Three things he owns, ticked neither A–Z nor as listed.
+        tap(app, id: "pick-group-name")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["pick-heading-0"]) == "A–Z" })
+        func rowOf(_ name: String) -> XCUIElement? {
+            (0..<14).map { app.buttons["pick-row-\($0)"] }.first { $0.exists && self.words($0).contains(name) }
+        }
+        let order = ["Towel", "Goggles", "Passport"]
+        for name in order {
+            guard let row = rowOf(name) else { return XCTFail("no \(name) to choose") }
+            select(app, row)
+        }
+        XCTAssertTrue(waitUntil { !needs.exists }, "the line stayed once something was ticked")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["pick-add"]) == "Add 3" })
+        tap(app, id: "pick-add")
+        XCTAssertTrue(disappears(app, "pick-screen", timeout: 5), "Add did not close the picker")
+        // After its four, in the order he ticked them.
+        for (n, name) in order.enumerated() {
+            let id = "template-item-\(4 + n)"
+            XCTAssertTrue(scrollUntil(app, id, near: "template-item-\(3 + n)"), "\(id) never came")
+            XCTAssertTrue(words(app.buttons[id]).contains(name), "\(id) should be \(name): '\(words(app.buttons[id]))'")
+        }
+    }
+
+    /// Typing a thing already on the template does not put it on twice: it says so.
+    func testTypingAThingAlreadyOnTheTemplateSaysSo() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking: 4 things, the Map among them
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5), "expected 4 things")
+        type("map", into: app.textFields["template-add-name"])
+        tap(app, id: "template-add")
+        let says = app.staticTexts["template-add-needs"]
+        XCTAssertTrue(says.waitForExistence(timeout: 5), "a second Map was added without a word")
+        XCTAssertTrue(words(says).contains("already"), "'\(words(says))'")
+        hideKeyboard(app)
+        XCTAssertFalse(scrollUntil(app, "template-item-4", near: "template-item-3", tries: 3), "the Map is on the template twice")
+    }
+
+    /// A thing's note is the THING's: put on a template, the row shows it, and the
+    /// row's own Note stays blank — saying in grey that it is the thing's — so a
+    /// later change to the note reaches the row (the spec pass: it was copied in).
+    /// -uiTestingOnSite: the sample whose Passport has the note "Keep it dry".
+    func testAThingsNoteIsNotCopiedOntoATemplate() {
+        let app = launch("-uiTestingOnSite")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking: 4 things, no Passport
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-pick")
+        XCTAssertTrue(appears(app, "pick-screen", timeout: 5))
+        type("Passport", into: app.textFields["pick-search"])
+        let passport = app.buttons["pick-row-0"]
+        XCTAssertTrue(waitUntil { self.words(passport).contains("Passport") }, "no Passport to choose")
+        select(app, passport)
+        tap(app, id: "pick-add")
+        XCTAssertTrue(disappears(app, "pick-screen", timeout: 5))
+        XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the Passport did not arrive")
+        let row = app.buttons["template-item-4"]
+        XCTAssertTrue(words(row).contains("Keep it dry"), "the row does not show the thing's note: '\(words(row))'")
+        tapVisible(app, row)
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        let note = app.textFields["row-note"]
+        bringIntoView(app, note)
+        XCTAssertTrue(note.waitForExistence(timeout: 5))
+        XCTAssertNotEqual(note.value as? String, "Keep it dry", "the thing's note was copied onto the row")
+        XCTAssertEqual(note.placeholderValue, "Same as the thing: Keep it dry", "the blank note does not say whose it is")
+        shot(app, "row-note-same-as-thing")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+    }
+
+    /// A section typed in a row's editor is made when the row is SAVED — Cancel
+    /// leaves the template as it was (the spec pass: it stayed behind, empty).
+    func testASectionTypedInARowIsMadeOnlyOnSave() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking: one section, Lights
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        func openFirstRow() {
+            tap(app, id: "template-item-0")
+            XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        }
+        func addSection(_ name: String) {
+            let field = app.textFields["row-section-new"]
+            bringIntoView(app, field)
+            type(name, into: field)
+            tap(app, id: "row-section-add")
+        }
+        openFirstRow()
+        XCTAssertTrue(app.buttons["row-section-1"].waitForExistence(timeout: 5), "Lights is not offered")
+        XCTAssertFalse(app.buttons["row-section-2"].exists)
+        addSection("Rig")
+        let rig = app.buttons["row-section-2"]
+        XCTAssertTrue(rig.waitForExistence(timeout: 5), "the typed section is not offered")
+        XCTAssertTrue(waitUntil { self.isOn(rig) }, "the typed section is not chosen")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+
+        openFirstRow()
+        XCTAssertTrue(app.buttons["row-section-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["row-section-2"].exists, "Cancel left the section on the template")
+        addSection("Rig")
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        let headings = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH 'template-group-'"))
+        XCTAssertTrue(waitUntil { headings.allElementsBoundByIndex.contains { self.words($0) == "RIG" } },
+                      "the row is not under its new section: \(headings.allElementsBoundByIndex.map { self.words($0) })")
+        openFirstRow()
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["row-section-2"]) }, "the saved section is not the row's")
+        tap(app, id: "row-cancel")
+    }
+
+    /// New asks for the activity area; the template page puts a wrong answer right
+    /// (the spec pass, 5 Oct 2026). An always-packed template has no area to change.
+    func testATemplateMovesToAnotherActivityArea() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["templates-area-OE"].exists)
+        tap(app, id: "template-row-0")                            // Common base: always packed
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-delete"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["template-area"].exists, "an always-packed template offers an area")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        tap(app, id: "template-row-1")                            // Hiking, in GA
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        let door = app.buttons["template-area"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "no way to change the activity area")
+        XCTAssertEqual(door.value as? String, "GA")
+        tap(app, id: "template-area")
+        XCTAssertTrue(isOn(app.buttons["template-area-GA"]) || waitUntil { self.isOn(app.buttons["template-area-GA"]) },
+                      "the area it lives in is not marked")
+        shot(app, "template-area")
+        tap(app, id: "template-area-OE")
+        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "OE" }, "the area did not change")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["templates-area-OE"].waitForExistence(timeout: 5), "Hiking is not under OE")
+        XCTAssertFalse(app.staticTexts["templates-area-GA"].exists, "Hiking is still under GA")
+    }
+
+    /// The Templates tab opens a template, Search and New one after another, each
+    /// the moment the one before has closed — one sheet with a destination, not
+    /// three (the trap met in Search; the spec pass, 5 Oct 2026). Its cards say when
+    /// a template goes NEXT when its only trip is still ahead.
+    func testEveryDoorOfTheTemplatesTabOpens() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        // The sample trip is a month ahead: Hiking has never been out, it goes next.
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-row-1"]).contains("Next: in 30 days") },
+                      "the card does not say when it goes next: '\(words(app.buttons["template-row-1"]))'")
+        for _ in 0..<2 {
+            tap(app, id: "template-row-1")
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the template did not open")
+            tap(app, id: "template-detail-done")
+            XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+            tap(app, id: "search-open")
+            XCTAssertTrue(appears(app, "search-detail", timeout: 5), "Search did not open after a template")
+            tap(app, id: "search-done")
+            XCTAssertTrue(disappears(app, "search-detail", timeout: 5))
+            tap(app, id: "templates-new")
+            XCTAssertTrue(appears(app, "newlist-detail", timeout: 5), "New did not open after Search")
+            tap(app, id: "newlist-cancel")
+            XCTAssertTrue(disappears(app, "newlist-detail", timeout: 5))
+        }
     }
 
     /// His decision on test I.7 (1 Oct 2026): a thing's new bag reaches a trip still
@@ -4103,8 +4307,10 @@ final class AMSPackingUITests: XCTestCase {
                       "pressed without a name, it did not say so")
         XCTAssertNotNil(find(app, "newlist-detail"), "a template without a name was made")
 
-        // A name he already has is refused, and nothing can be made from it.
+        // A name he already has is refused, and nothing can be made from it. (Typing
+        // takes the old line away, as under every other field — the spec pass.)
         type("Hiking", into: app.textFields["newlist-name"])
+        XCTAssertTrue(waitUntil { !app.staticTexts["newlist-needs"].exists }, "the line stayed once a name was typed")
         // 🪤 Asked for by EXISTENCE, not by `appears`: a warning is a plain Text, and
         // XCUITest does not call a Text hittable, so the on-screen helper says it is
         // missing while it is perfectly visible.

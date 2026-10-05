@@ -198,6 +198,10 @@ struct OpenSharedScreen: View {
     @State private var tried = false
     @State private var askingToReplace = false
     @State private var done = ""
+    /// A shared template whose name he already has is added under another name —
+    /// what New and Rename ask too (the spec pass, 5 Oct 2026).
+    @State private var templateName = ""
+    @State private var addNeeds = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -268,6 +272,8 @@ struct OpenSharedScreen: View {
         tried = true
         done = ""
         askingToReplace = false
+        addNeeds = ""
+        if case .template(let l)? = found { templateName = model.library.freeTemplateName(l.name) }
     }
 
     @ViewBuilder private func preview(_ thing: SharedThing) -> some View {
@@ -280,11 +286,24 @@ struct OpenSharedScreen: View {
                     finish("Added. It is under Trips, nothing ticked.")
                 }
             case .template(let l):
-                line("A template", l.name, "\(l.items.count) things")
-                bigButton("Add as a new template", id: "shared-add") {
-                    model.change { _ = $0.importTemplate(l) }
-                    finish("Added. It is under Templates. Things you already had keep your details.")
+                // An always-packed or transport template stays one: said before he adds it.
+                line(l.role == "base" ? "An always-packed template" : (l.role == "transport" ? "A transport template" : "A template"),
+                     l.name, "\(l.items.count) things")
+                if model.library.templateNameTaken(l.name) {
+                    Text("You already have a template called \u{201C}\(l.name)\u{201D}. This one needs a name of its own:")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("shared-name-taken")
+                    TextField("A name you do not have yet", text: $templateName)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: 44)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                        .accessibilityIdentifier("shared-new-name")
                 }
+                bigButton("Add as a new template", id: "shared-add") { addTemplate(l) }
+                    .needsLine($addNeeds, typed: templateName, id: "shared-add-needs")
                 if let mine = model.library.templateNamed(l.name) {
                     if askingToReplace {
                         HStack(spacing: 10) {
@@ -330,6 +349,23 @@ struct OpenSharedScreen: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("shared-preview")
+    }
+
+    /// A shared template as a new one of his — under its own name, or the one he
+    /// gave it when he has a template of that name already.
+    private func addTemplate(_ l: SharedList) {
+        let taken = model.library.templateNameTaken(l.name)
+        let name = jsTrim(templateName)
+        if taken && name.isEmpty { addNeeds = "Give the template a name."; return }
+        if taken && model.library.templateNameTaken(name) { addNeeds = "Pick a name you do not have yet."; return }
+        var made: PackList?
+        model.change { made = $0.importTemplate(l, named: taken ? name : nil) }
+        guard let made else { addNeeds = "Pick a name you do not have yet."; return }
+        switch made.role {
+        case "base": finish("Added. It is under Templates, Always packed: every new trip packs it. Things you already had keep your details.")
+        case "transport": finish("Added. It is under Templates, By transport: every new \(made.transport.isEmpty ? "" : made.transport + " ")trip packs it. Things you already had keep your details.")
+        default: finish("Added. It is under Templates. Things you already had keep your details.")
+        }
     }
 
     private func line(_ kind: String, _ name: String, _ count: String) -> some View {

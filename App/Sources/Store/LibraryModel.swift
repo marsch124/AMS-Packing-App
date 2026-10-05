@@ -59,7 +59,14 @@ final class LibraryModel: ObservableObject {
                 // Re-write the survivors; twins of a key go together in the store.
                 try store.apply(RecordChanges(puts: settled.kept.filter { k in settled.dropped.contains { $0.id == k.id } }))
             }
-            let fresh = Library(records: settled.kept)
+            var fresh = Library(records: settled.kept)
+            // Rows whose note or "How many" an older build froze from their thing
+            // follow the thing again (spec 04, the spec pass of 5 Oct 2026). Nothing
+            // on screen changes; only the places that held a copy are written, once.
+            let loaded = fresh.records()
+            if fresh.letCopiedAnswersFollowTheirThings() > 0 {
+                try store.apply(recordChanges(from: loaded, to: fresh.records()))
+            }
             held = fresh.records()
             if fresh != library { library = fresh }
             _ = setPhases(fresh.phases)                      // [] → the factory timeline

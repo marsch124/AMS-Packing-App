@@ -149,10 +149,10 @@ struct SearchScreen: View {
             out.append(Part(id: "things", title: "Things", rows: Array(rows), total: things.count))
         }
 
-        // His lists. His bags are a screen of their own (Care → Bags).
-        let lists = library.resolvedTemplates().filter {
-            $0.role != CONTAINER_ROLE && normName($0.name).contains(needle)
-        }
+        // His templates — the ones the Templates tab shows: his bags are a screen of
+        // their own (Care → Bags), and the web app's retired "Loose items" bin is no
+        // template of his (the spec pass, 5 Oct 2026).
+        let lists = library.shownTemplates().filter { normName($0.name).contains(needle) }
         if !lists.isEmpty {
             out.append(Part(id: "lists", title: "Templates",
                             rows: lists.map { Row(id: $0.id, name: $0.name,
