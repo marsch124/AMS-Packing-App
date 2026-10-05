@@ -681,9 +681,11 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
      when other rows follow — the heading "A–Z" (`things-rest`).
    - Then every other shown thing, A–Z (`thingRows()` order).
    - A row (`thing-row-N`, N = its position on screen counting the Just added rows first): a full-width button;
-     the name (17 semibold ink); under it one line (14) joining with " · " the template names (", "-joined) or
-     "On no template", and the storage place when set — orange when on no template, muted otherwise; 10 pt
-     vertical padding; a 1 pt line under it. A just-added row is lit for a moment: a rounded (8) orange 18 %
+     ONE line (0.62, his word: "set the item name and the info on the same line"): the name at the left (Body, ink,
+     one line, keeps its room first) and at the right (Footnote, one line, cut in the middle when long) the template
+     names (", "-joined) or "On no template", joined with " · " to the storage place when set — orange when on no
+     template, muted otherwise; 5 pt vertical padding (until 0.62: the details on a second line, 10 pt padding); a
+     1 pt line under it. A just-added row is lit for a moment: a rounded (8) orange 18 %
      background reaching 8 pt past the text on each side.
 5. The add row at the BOTTOM (his rule): "A new thing" field (`thing-new-name`, 17 medium, min height 44) and
    "New" (`thing-new`, `FieldButtonLabel`, orange); its needs line `thing-new-needs`.

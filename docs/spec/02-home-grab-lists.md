@@ -1577,8 +1577,9 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
    - **No match:** "Nothing matches “<typed, trimmed>”." (`search-none`, same style).
    - **Otherwise** up to four parts, always in this order, each with a heading in capitals (12 pt heavy
      `muted`, kerning 0.6; 18 pt above, 4 below) followed by its total (12 pt heavy monospaced digits):
-     - each row: name (16 pt semibold, one line), an under-line (13 pt medium `muted`, one line, only
-       when non-empty), a chevron, minimum 48 tall, a hairline under it;
+     - each row, on ONE line (0.62): the name at the left (Body, one line, keeps its room first), its details at the
+       right (Footnote `muted`, one line, cut in the middle; only when non-empty), a chevron, minimum
+       `Metrics.compact` tall, a hairline under it (until 0.62: the details on a second line, 48 tall);
      - row identifiers `search-<part>-<n>`, with part = `things`, `lists`, `trips`, `todos`.
 
 **Matching.** `needle = normName(query)` (trimmed, lower-cased, whitespace runs collapsed). A hit is a

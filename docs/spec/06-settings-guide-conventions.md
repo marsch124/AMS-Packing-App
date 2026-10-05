@@ -1242,7 +1242,10 @@ row when the next one would pass the right edge; row height = tallest child; rep
 **Spacing.** The thing editor, the row editor and a bag's page: blocks 12 apart (22, 20 and 18 before). Create new
 trip, Trip settings and Settings' cards: 10 (14 before). A trip's lines: a 20-pt tick circle (26 before; 1.6-pt
 ring, 2-pt tick), 10 pt between circle and words, 5 pt above and below a line (9 before); a section's tick-all
-circle 20 (24 before).
+circle 20 (24 before). Every list's rows — to-dos and buy lines, Care, grab lists, Your choices, On site and the way
+home, the picker, Search, the table's filter and sort lists, a template's rows, Your things, the weather lines — 5 pt
+above and below (10–12 before; 3 where it was 6, 4 where it was 8): "less air between the lines". Your things and
+Search show a thing's name and its details on one line.
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
 trip, Trip settings, the review and Your choices exists; photographs each), `testWhoseItIsOffersEachOwnerOnce` (a
