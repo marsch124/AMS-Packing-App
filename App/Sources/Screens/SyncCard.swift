@@ -35,7 +35,7 @@ struct SyncCard: View {
                 Text("iCloud sync").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Text(state.word)
-                    .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
                     .padding(.horizontal, 10).padding(.vertical, 3)
                     .background(Capsule().fill(state == .working ? AppSection.events.color
                                                : stuck ? AppSection.actions.color : Theme.muted))

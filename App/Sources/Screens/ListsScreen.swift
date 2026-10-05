@@ -81,7 +81,7 @@ struct ListsScreen: View {
                                 // The THINGS that use it — for a "When" step its trips and
                                 // templates are said when Remove is refused (the spec pass).
                                 if entry.uses.things > 0 {
-                                    Text("\(entry.uses.things)").font(.system(size: 15, weight: .bold).monospacedDigit())
+                                    Text("\(entry.uses.things)").font(.system(size: 14, weight: .bold).monospacedDigit())
                                         .foregroundStyle(Theme.muted)
                                 }
                                 Spacer()
@@ -139,7 +139,7 @@ struct ListsScreen: View {
                                    typed: adding[kind.rawValue] ?? "", id: "list-\(kind.rawValue)-add-needs")
                     }
                     Text("These belong to your account, so both your devices show the same.")
-                        .font(.system(size: 15)).foregroundStyle(Theme.muted).padding(.top, 14)
+                        .font(.system(size: 14)).foregroundStyle(Theme.muted).padding(.top, 14)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
