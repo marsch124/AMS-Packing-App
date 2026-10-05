@@ -105,7 +105,12 @@ struct RestoreSheet: View {
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
         }
+        // A Mac sheet takes its size from what it holds; an iPhone sheet is the screen.
+        // On the iPhone this minimum was WIDER than most screens (375–430 points),
+        // so the sheet's edges were cut off (the spec pass, 2026-10-05).
+        #if os(macOS)
         .frame(minWidth: 420, minHeight: 520)
+        #endif
         .background(Theme.bg)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("restore-detail")
