@@ -80,7 +80,7 @@ public struct Library: Equatable, Sendable {
     /// A place on a template that no longer exists does not count (the spec pass,
     /// 2026-10-05): such a thing shows on no template, so a backup that left it out
     /// of `things` too lost it — and "a backup, then Restore" is exactly what Worth
-    /// a look suggests for "a thing sits on a list that no longer exists".
+    /// a look suggests for "a thing sits on a template that no longer exists".
     public func thingsOnNoList() -> [Item] {
         let used = Set(placesOnTemplates().map(\.itemId))
         return items.filter { !used.contains($0.id) }.map { resolveItemAlone($0) }

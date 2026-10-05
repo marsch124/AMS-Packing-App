@@ -6,6 +6,11 @@ import SwiftUI
 // that finishes (Done, Save) is filled with the screen's colour, the others
 // (Cancel, Share, Edit, Close) are outlined in it. Never grey — his rule for
 // buttons.
+//
+// The words are 17 bold: what the screens ask for (most of them attach
+// `.font(17 bold)`), drawn here so every header is alike. Until the spec pass
+// (5 Oct 2026) the style drew 16 and silently overrode them; a caller's own font
+// is still overridden, by design.
 
 struct HeaderButtonStyle: ButtonStyle {
     var tint: Color
@@ -15,7 +20,7 @@ struct HeaderButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, weight: .bold))
+            .font(.system(size: 17, weight: .bold))
             .foregroundStyle(filled ? Color.white : tint)
             .lineLimit(1)
             .fixedSize()                    // a button's word is never cut ("D…", 0.40's photos)

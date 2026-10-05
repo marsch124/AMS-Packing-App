@@ -1,7 +1,9 @@
 import SwiftUI
 
 // The web app's colours, light and dark. He runs everything in DARK mode, so
-// every colour here is a pair — never a single hex.
+// every page and text colour here is a pair — never a single hex. (The six
+// section colours, Sections.swift, are ONE mid-tone each on purpose: each reads at
+// 3.2 : 1 or better on the light card and the dark one alike — docs/colours.md.)
 
 extension Color {
     init(hex: UInt32) {

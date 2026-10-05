@@ -131,7 +131,7 @@ final class BackupTests: XCTestCase {
                        "a restore is not an edit: each template keeps when it was last changed")
     }
 
-    /// Worth a look says "a thing sits on a list that no longer exists" and suggests a
+    /// Worth a look says "a thing sits on a template that no longer exists" and suggests a
     /// backup and a restore. That thing was in neither `lists` nor `things`, so the cure
     /// lost it. Now it comes back on no list, and the broken place does not.
     func testAThingWhoseOnlyListIsGoneSurvivesABackup() throws {

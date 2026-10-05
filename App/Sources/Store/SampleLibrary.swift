@@ -22,15 +22,16 @@ enum SampleLibrary {
         if let n = lib.items.firstIndex(where: { $0.name == "Rain jacket" }) {
             lib.items[n].maintenance = Maintenance(notes: "Wash with tech wash, no softener")
         }
-        // Weights and places, because his own library has them on almost everything
-        // (514 of 431 things weigh something) — and the Care dashboard is built on
-        // exactly that.
-        let grams: [String: Double] = ["Hiking boots": 1250, "Rain jacket": 420, "Headlamp": 88,
-                                       "Map": 60, "Towel": 340, "Goggles": 45, "Swim cap": 20,
+        // Weights and places, because his own library has them on almost every thing
+        // — and the Care dashboard is built on exactly that. Only the seven things that
+        // exist so far get them: Goggles, Swim cap and Towel come later, with Swim, and
+        // have NO weight and NO place on purpose — the UI tests count on those three
+        // under "No place set". (The tables once named them too, with weights never
+        // applied; the spec pass, 5 Oct 2026.)
+        let grams: [String: Double] = ["Hiking boots": 1250, "Rain jacket": 420, "Headlamp": 88, "Map": 60,
                                        "Passport": 35, "Phone charger": 120, "Toothbrush": 18]
         let places: [String: String] = ["Hiking boots": "Hall closet", "Rain jacket": "Hall closet",
-                                        "Headlamp": "Garage", "Map": "Garage", "Towel": "Bathroom cabinet",
-                                        "Goggles": "Bathroom cabinet", "Passport": "Chest of drawers",
+                                        "Headlamp": "Garage", "Map": "Garage", "Passport": "Chest of drawers",
                                         "Phone charger": "Chest of drawers", "Toothbrush": "Bathroom cabinet"]
         // Owners the way his things carry them: one name on most things, another on
         // a few — and neither on the owners list (the "Whose it is" bug, 2026-09-26).

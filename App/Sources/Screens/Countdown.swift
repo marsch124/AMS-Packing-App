@@ -88,7 +88,7 @@ struct RemindersCard: View {
             })) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Remind me to pack").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
-                    Text("On this device, at 9 in the morning of the day each packing step is due \u{2014} a week ahead, the day before, the morning.")
+                    Text("On this device, at 9 in the morning of each day a packing step is due \u{2014} Preparations a month ahead, then a week ahead, the day before and the day you leave.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }

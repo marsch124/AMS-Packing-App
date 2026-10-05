@@ -92,9 +92,11 @@ final class AMSPackingUITests: XCTestCase {
     /// Selected — and there to ask. Same reason as `words`.
     private func isOn(_ e: XCUIElement) -> Bool { e.exists && e.isSelected }
 
-    /// Keeps a picture of the screen when asked to (tools/shots.sh sets
-    /// TEST_RUNNER_SHOTS_DIR) — how a build is LOOKED at on both devices, in
-    /// dark mode, before anyone is told it is done.
+    /// Keeps a picture of the screen when asked to: the folder in SHOTS_DIR, which
+    /// xcodebuild hands the runner when the line starts `TEST_RUNNER_SHOTS_DIR=<folder>`.
+    /// No test switches to night mode: put the simulator in dark mode first
+    /// (`xcrun simctl ui <device> appearance dark`) and run the same tests again — how a
+    /// build is LOOKED at, day and night, before anyone is told it is done.
     private func shot(_ app: XCUIApplication, _ name: String) {
         guard let dir = ProcessInfo.processInfo.environment["SHOTS_DIR"], !dir.isEmpty else { return }
         #if os(macOS)
@@ -1728,6 +1730,10 @@ final class AMSPackingUITests: XCTestCase {
         type("q", into: app.textFields["wayhome-search"])
         XCTAssertTrue(app.staticTexts["wayhome-search-none"].waitForExistence(timeout: 5), "nothing matches, and it does not say so")
         shot(app, "way-home-search-none")
+        // The same round ✕ as every other search field — 36 points, not the plain
+        // 44-point cross it drew on its own until the spec pass (5 Oct 2026).
+        let cross = app.buttons["wayhome-search-clear"]
+        XCTAssertEqual(cross.frame.width, 36, accuracy: 1, "not the shared ✕: \(cross.frame)")
         tap(app, id: "wayhome-search-clear")
         XCTAssertTrue(waitUntil { app.buttons["wayhome-line-0"].exists && app.buttons["wayhome-line-1"].exists
                                   && app.buttons["wayhome-line-2"].exists }, "the cross did not bring the whole way home back")

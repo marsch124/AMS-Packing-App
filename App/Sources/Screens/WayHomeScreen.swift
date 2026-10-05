@@ -119,28 +119,17 @@ struct WayHomeScreen: View {
     }
 
     /// "I would like a search function in the 'Pack to go home'" (their field test,
-    /// 3 Oct 2026). It narrows the list by name as he types; the cross empties it.
+    /// 3 Oct 2026). It narrows the list by name as he types; the cross empties it —
+    /// the SAME round ✕ as every other search field (`.clearButton`), not the plain
+    /// cross of its own it drew until the spec pass (5 Oct 2026).
     private var searchField: some View {
         TextField("Search the way home", text: $query)
             .textFieldStyle(.plain)
             .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-            .padding(.leading, 12).padding(.trailing, 44).frame(minHeight: 44)
+            .clearButton($query, id: "wayhome-search")
+            .padding(.horizontal, 12).frame(minHeight: 44)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-            .accessibilityIdentifier("wayhome-search")
-            .overlay(alignment: .trailing) {
-                if !query.isEmpty {
-                    Button { query = "" } label: {
-                        SVGPath.path("M6 6L18 18M18 6L6 18")
-                            .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                            .frame(width: 44, height: 44).contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("wayhome-search-clear")
-                    .accessibilityLabel("Clear the search")
-                }
-            }
     }
 
     /// The packed bags' photos, to repack from.
