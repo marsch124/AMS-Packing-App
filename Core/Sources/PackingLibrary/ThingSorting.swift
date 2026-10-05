@@ -68,6 +68,10 @@ extension Library {
         let keyed = things.map { thing in
             (thing, levels.prefix(SORT_LEVELS_MAX).map { sortValue(thing, key: $0.key, memberships: byThing) }, normName(thing.name))
         }
+        // Compared the way Your things and the templates compare names (å, ä, ö, é
+        // in their proper places), not by code point: the table put "Éclair" after
+        // "Zip" while every other screen put it after "Apple" (the spec pass, 5 Oct
+        // 2026). Numbers are zero-padded, so they compare the same either way.
         let sorted = keyed.sorted { a, b in
             for (n, level) in levels.prefix(SORT_LEVELS_MAX).enumerated() {
                 let x = a.1[n], y = b.1[n]
@@ -76,11 +80,13 @@ extension Library {
                 case (nil, _): return false
                 case (_, nil): return true
                 case let (x?, y?):
-                    if x == y { continue }
-                    return level.descending ? x > y : x < y
+                    let c = jsLocaleCompare(x, y, sensitivity: .base)
+                    if c == 0 { continue }
+                    return level.descending ? c > 0 : c < 0
                 }
             }
-            return a.2 < b.2
+            let byName = jsLocaleCompare(a.2, b.2, sensitivity: .base)
+            return byName != 0 ? byName < 0 : a.2 < b.2      // "a" and "á": one fixed order
         }
         return sorted.map(\.0)
     }

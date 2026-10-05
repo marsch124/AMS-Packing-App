@@ -331,8 +331,27 @@ extension Library {
     /// Everything with a care schedule or care notes, most urgent first — the
     /// model's own list over the resolved templates (one row per thing, however
     /// many templates it sits on).
+    ///
+    /// Also the things on NO template — a thing with a schedule is looked after
+    /// whether or not it is packed, and the web app keeps such things since v175 —
+    /// and never a thing "not in use" (retired), which the kit no longer counts
+    /// either. Until 0.6x a loose thing never showed on Care or its calendar, while
+    /// a retired one still counted as needing care (the spec pass, 5 Oct 2026).
+    /// Each template is named as he sees it: his bag list is "Bags", never the
+    /// stored "Containers" (his words rule, 27 Sep 2026).
     public func careRows(today: String) -> [MaintenanceRow] {
-        maintenanceList(resolvedTemplates(), today)
+        var lists = resolvedTemplates().map { list -> PackList in
+            var shown = list
+            shown.name = shownName(list)
+            return shown
+        }
+        let loose = thingsOnNoList()
+        if !loose.isEmpty {
+            // A list with no name and no id: its things get a row, but no template
+            // to name. (An explicit id, so reading Care never draws a fresh one.)
+            lists.append(PackList(id: "", name: "", items: loose, createdAt: "", updatedAt: ""))
+        }
+        return maintenanceList(lists, today).filter { !$0.item.retired }
     }
 
     /// "Done today": log a service on the THING (care is intrinsic — it describes

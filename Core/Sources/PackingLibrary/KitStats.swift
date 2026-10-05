@@ -48,6 +48,14 @@ extension Library {
         /// What is worth telling him, in his words. Only true things.
         public var tips: [String] = []
 
+        /// "2026-10-05" → the month counted from year 0 (year × 12 + month), so two
+        /// dates' months can be subtracted. nil for anything that is not a date.
+        static func monthNumber(_ ymd: String) -> Int? {
+            let parts = ymd.split(separator: "-")
+            guard parts.count == 3, let y = Int(parts[0]), let m = Int(parts[1]), (1...12).contains(m) else { return nil }
+            return y * 12 + (m - 1)
+        }
+
         public var unweighed: Int { max(0, things - weighed) }
         public var withoutPlace: Int { max(0, things - withPlace) }
         /// The kit's total weight in kilos, to one decimal.
@@ -69,16 +77,22 @@ extension Library {
             if thing.stats.packed > 0 && thing.stats.used == 0 { out.neverUsed.append(thing.name) }
         }
 
-        // What needs looking after, and when the rest falls due.
+        // What needs looking after, and when the rest falls due — by CALENDAR month,
+        // this month first, as the bars are labelled. (They were 30-day blocks from
+        // today under month names, the last one holding everything from day 330 on —
+        // the spec pass, 5 Oct 2026.) A service due after the twelfth month is not
+        // on the year ahead.
+        let thisMonth = KitStats.monthNumber(day)
         for row in careRows(today: day) {
             switch row.status.state {
             case "overdue": out.overdue += 1
             case "soon": out.soon += 1
             default: break
             }
-            if let days = row.status.days, days >= 0 {
-                let month = min(11, days / 30)
-                out.dueByMonth[month] += 1
+            if let days = row.status.days, days >= 0,
+               let now = thisMonth, let due = KitStats.monthNumber(row.status.nextDue) {
+                let ahead = due - now
+                if (0..<12).contains(ahead) { out.dueByMonth[ahead] += 1 }
             }
         }
 
@@ -98,9 +112,10 @@ extension Library {
         }
         out.places = byPlace.values.sorted { $0.count == $1.count ? $0.label < $1.label : $0.count > $1.count }
 
-        // What each list weighs.
+        // What each list weighs — his bag list under the name he knows it by, "Bags"
+        // (it said the stored "Containers"; his words rule, 27 Sep 2026).
         out.lists = resolvedTemplates().map { list in
-            KitStats.Slice(label: list.name, count: list.items.count,
+            KitStats.Slice(label: shownName(list), count: list.items.count,
                            grams: list.items.reduce(0) { $0 + max(0, $1.weight) })
         }.sorted { $0.grams > $1.grams }
 

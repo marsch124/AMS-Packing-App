@@ -144,7 +144,7 @@ extension Library {
         }
     }
 
-    /// A condition's key or label → its label ("retire" → "Retire / replace").
+    /// A condition's key or label → its label ("retire" → "Needs replacing").
     func conditionLabels() -> [String: String] {
         var out: [String: String] = [:]
         for c in conditions() { out[normName(c.id)] = c.label; out[normName(c.label)] = c.label }
