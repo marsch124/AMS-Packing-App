@@ -1160,35 +1160,89 @@ failures are listed in one message). `testHomeBuildsATrip` (Create trip enabled,
 `testABagIsRenamedAndDeletedFromItsPage`. **Colour cannot be tested**: "A colour cannot be read by a test; being
 pressable and answering can."
 
-## 21. Headings, pills and type sizes (`Headings.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`)
+## 21. Type, headings, pills and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `Pills`/`FlowRow` in `HomeScreen.swift`)
 
-**Origin.** Field test 3 Oct 2026 (mission 4.4): "adjust the headings so that they are dominant, and the other buttons
-and pills are much smaller than the heading … throughout the app". Earlier: his sketch 2026-09-27 ("make the headings
-pop"), 2026-09-28 ("should be larger or in capitals, as should all headings on the Care tab"; "Much larger headings,
-please", H.13).
+**Origin.** His word, 5 Oct 2026: "make things smaller so that the app is efficient, fluid, and Apple-standard",
+and "make the buttons even slimmer, smaller when possible"; "less space between blocks on the forms and slimmer
+rows in the trip, smaller tick circles and less space between lines". Until 0.62 the app set every size by hand
+(641 places, nearly all 15–18 pt, mostly heavy or bold), drew a block's heading as a coloured band, wrote part
+headings in capitals with letter-spacing, and made buttons 44–52 tall. There is **no minimum size of its own**:
+the app follows Apple's.
 
-**Sizes** (`enum HeadingSize`): `band` 22, `title` 20, `question` 17 — all heavy.
+**Type.** Every word is set in one of Apple's text styles — `Font.system(_ style:, design:, weight:)` — never a
+point size. A text style follows the device: on the iPhone (at the default text size) Large Title 34, Title 28,
+Title 2 22, Title 3 20, Headline 17 semibold, Body 17, Callout 16, Subheadline 15, Footnote 13, Caption 12, Caption 2
+11; on the Mac the same styles are the Mac's own, smaller sizes (Body 13). The iPhone's text-size setting is
+followed. The one exception is a letter drawn inside an icon tile (a grab list's or a cover's letter), which keeps its
+size in proportion to the tile (`size × 0.5`, `size × 0.46`).
 
-- **`HeadingBand(title:, tint = Care orange, id:)`** — a block's heading: a 5×26 solid capsule mark, the words (22
-  heavy, tint, wrap — never cut), on a full-width strip of the tint at 13 %, padding 10×9, radius 10. Used by Your
-  choices, the thing and row editors, `Pills(heading: .band)`.
-- **`HeadingTitle(title:, tint = ink, id:, question = false)`** — a heading inside a block: a 4×18 capsule mark aligned
-  to the baseline and the words (20 heavy, tint); as a `question` (Laundry nights, Context, the review): no mark, 17
-  heavy, ink.
-- **`SectionTitle(title:, tint = ink, id:)`** — a heading that starts a part of a screen: the words UPPER-CASED, 18
-  heavy, letter-spaced 0.8, 16 pt above (Care, Templates, Settings' BACKUP).
-- **`Pills(title:, options:, selected:, id:, tint = Home blue, startIndex = 0, heading = .title, tones:, choose:)`** —
-  a heading (band / title / question, id `<id>-title`) over pills in a `FlowRow(spacing: 6)`. Each pill: its words 15,
-  bold when picked, medium when not; padding 12, min height 36 ("still 36 tall to press"); picked = filled with its
-  tone or the tint, white (or the tone's dark) words; not picked = `Theme.bg` fill, ink words, outlined in `line`
-  (1 pt) or, for a toned pill, in its tone (1.8 pt). Id `<id>-<startIndex + position>` — "its position — never its
-  words"; picked pills carry the `.isSelected` trait (what tests read). `ContextPills` puts Context (Indoor, Outdoor,
-  Race) as a `.question` row indented 18 with a 3-pt grey line down its side, in the Settings slate.
-- **`FlowRow(spacing = 8)`** — a `Layout` that places children left to right at their natural size and wraps to a new
-  row when the next one would pass the right edge; row height = tallest child; reported width = the proposed width
-  (10 000 if none).
+**The conversion of 0.62** (one rule for every screen; the chapters of this specification still give many sizes in
+the old points — read them through this table):
 
-**Type.** Being replaced in 0.62 by Apple's standard text styles (his word, 5 Oct 2026: "efficient, fluid, and Apple-standard"); this section is rewritten with that change.
+| Old size (pt) | Text style |
+|---|---|
+| under 12 | Caption 2 |
+| 12 | Caption |
+| 13–14 | Footnote |
+| 15 | Subheadline |
+| 16 | Callout |
+| 17–19 | Body |
+| 20–25 | Title 3 |
+| 26–29 | Title 2 |
+| 30–36 | Title |
+| 37 and up (the countdown's 44) | Large Title |
+
+| Old weight | New weight |
+|---|---|
+| heavy, black | bold on Title 3 and larger; semibold below |
+| bold | bold on Title 3 and larger; semibold below |
+| semibold | semibold |
+| medium, regular | regular (none written) |
+
+A size or weight that depended on a state (`on ? 17 : 15`, `on ? .heavy : .medium`) is converted on both sides. The
+loop strip's words: Footnote, or Caption where the narrowest fit needs it; the Delete buttons' words: Footnote
+semibold (the `size` parameter of `SmallDeleteButton` is gone).
+
+**Heights** (`enum Metrics`, Theme.swift) — every button, field, pill and door row takes its height from here:
+
+| Name | iPhone | Mac | Used for (old height) |
+|---|---|---|---|
+| `row` | 40 | 30 | doors and cards' rows (52) |
+| `tap` | 36 | 26 | buttons and fields (44, 46, 48); also the 44×44 arrow boxes (now `tap`×`tap`) |
+| `compact` | 32 | 24 | smaller buttons (40) |
+| `chip` | 28 | 22 | pills (36) |
+| `header` | 30 | 24 | Done, Cancel, Share … at the top of a page (`HeaderButtonStyle`, 36) |
+
+Buttons have 12 pt side padding (14–16 before); the field button (Add, New, Make) a corner radius of 8.
+
+**Headings.**
+- **`HeadingBand(title:, tint = Care orange, id:)`** — a block's heading: Headline in the tint, full width, wraps,
+  never cut. No strip, no mark (0.62; until then a 22-heavy title on a tinted strip with a capsule mark).
+- **`HeadingTitle(title:, tint = ink, id:, question = false)`** — a heading inside a block: Subheadline semibold in
+  the tint; as a `question` (Laundry nights, Context, the review) in ink.
+- **`SectionTitle(title:, tint = ink, id:)`** — a heading that starts a part of a screen: Headline in the tint, 12 pt
+  above. Not in capitals (0.62). The template's section headings, the Care parts, the picker's groups and Your
+  things' list headings are Headlines the same way; the activity areas keep his code in capitals ("GA · GOAL
+  ACTIVITY", `groupHeading`) at Headline.
+- Small capitals stay where Apple uses them: column titles over a table or the bag numbers, the kind of a shared
+  thing ("A TEMPLATE"), What's new's part names — Caption or Caption 2, semibold.
+
+**`Pills(title:, options:, selected:, id:, tint = Home blue, startIndex = 0, heading = .title, tones:, choose:)`** —
+a heading (band / title / question, id `<id>-title`) over pills in a `FlowRow(spacing: 6)`. Each pill: Subheadline,
+semibold when picked, regular when not; padding 12 sideways, min height `Metrics.chip`; picked = filled with its tone
+or the tint, white (or the tone's dark) words; not picked = `Theme.bg` fill, ink words, outlined in `line` (1 pt) or,
+for a toned pill, in its tone (1.8 pt). Id `<id>-<startIndex + position>` — "its position — never its words";
+picked pills carry the `.isSelected` trait (what tests read). `ContextPills` puts Context (Indoor, Outdoor, Race) as a
+`.question` row indented 18 with a 3-pt grey line down its side, in the Settings slate.
+
+**`FlowRow(spacing = 8)`** — a `Layout` that places children left to right at their natural size and wraps to a new
+row when the next one would pass the right edge; row height = tallest child; reported width = the proposed width
+(10 000 if none).
+
+**Spacing.** The thing editor, the row editor and a bag's page: blocks 12 apart (22, 20 and 18 before). Create new
+trip, Trip settings and Settings' cards: 10 (14 before). A trip's lines: a 20-pt tick circle (26 before; 1.6-pt
+ring, 2-pt tick), 10 pt between circle and words, 5 pt above and below a line (9 before); a section's tick-all
+circle 20 (24 before).
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
 trip, Trip settings, the review and Your choices exists; photographs each), `testWhoseItIsOffersEachOwnerOnce` (a

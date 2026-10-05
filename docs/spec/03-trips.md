@@ -146,7 +146,7 @@ sheet; *Create trip* makes the trip and opens it at once as a sheet (`opened = m
 
 ### What is on screen (top to bottom, inside one card: padding 14, corner 14, `Theme.card`, 1 pt `Theme.line` stroke)
 
-Above the card: heading **"Create new trip"** (`HeadingSize.band` 22 heavy, ink), id `home-create-heading`.
+Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy before 0.62), id `home-create-heading`.
 
 1. **Name field** — placeholder "Name your trip", 20 semibold ink, min height 48, `Theme.bg` fill,
    corner 10; a 2 pt red border only while the "still needed" message mentions "name". Id `trip-name`.

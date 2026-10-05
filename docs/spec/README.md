@@ -94,7 +94,7 @@ Search (02, reached from several tabs). Read both where it matters.
 
 Words as the app uses them: a **template** is a building block (Hiking, Swim, the Common base); a **list**
 is what he packs from — a trip's list or a grab list; a **thing** is one object he owns; a **place** is a
-thing's row on one template. Font sizes are in points; colours are named by token, never by hex alone.
+thing's row on one template. Sizes: since 0.62 the app uses Apple's text styles and the `Metrics` heights (spec 06, §21); where a chapter still gives a size in points, it is the size before 0.62, and §21's table says which style replaced it. Colours are named by token, never by hex alone.
 
 ## Tags in the open questions
 

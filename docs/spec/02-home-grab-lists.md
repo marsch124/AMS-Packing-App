@@ -255,7 +255,7 @@ spacing, 16 pt side padding and 24 pt bottom padding.
 
 **What is on screen** (top to bottom):
 1. A row, aligned on the first text baseline, 14 pt top padding:
-   - "Grab and go": **22 pt heavy** (`HeadingSize.band`), `ink`; id `home-grab-heading`.
+   - "Grab and go": **Title 3 bold** (22 heavy before 0.62), `ink`; id `home-grab-heading`.
    - A spacer.
    - The magnifier `SearchButton` (`search-open`; section 15).
    - "Grab Lists": a plain button, 14 pt bold, Home blue, no focus ring; id `grab-lists`. It opens the
