@@ -31,6 +31,7 @@ struct GrabCollectionScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
+                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("grablists-done")
             }
             .padding(16)
@@ -261,6 +262,7 @@ struct SwapScreen: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.home.color)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("swap-cancel")
             }
             .padding(16)

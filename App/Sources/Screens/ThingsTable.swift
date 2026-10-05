@@ -361,6 +361,10 @@ struct ThingsTable: View {
                 Button("Done") { close() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.care.color)
+                    // Escape closes it as a sheet, as Done does (Escape everywhere, 5 Oct 2026) — but
+                    // not the Mac's own "All your things" window: a window closes with ⌘W, and
+                    // Escape pressed in its search field would close the whole table.
+                    .keyboardShortcut(inWindow ? nil : .cancelAction)
                     .accessibilityIdentifier("table-done")
             }
 

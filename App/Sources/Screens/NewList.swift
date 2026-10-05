@@ -39,6 +39,7 @@ struct NewList: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.muted)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("newlist-cancel")
             }
             .padding(16)

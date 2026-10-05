@@ -255,6 +255,7 @@ struct IconPickerScreen: View {
                 Spacer(minLength: 4)
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("icon-cancel")
             }
             .padding(16)
@@ -409,6 +410,7 @@ struct TemplateDetail: View {
                     .focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(AppSection.templates.color)
+                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("template-detail-done")
             }
             .needsLine($renameNeeds, typed: renaming ?? "", id: "template-rename-needs")
@@ -773,6 +775,7 @@ struct RowEditor: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("row-cancel")
                 Spacer()
                 Button("Save") { save() }
