@@ -26,7 +26,7 @@ enum Releases {
                       "Trip settings: Pack weather gear anyway \u{2014} Rain, Cold, Heat, Wind or Snow.",
                       "Settings says when you last saved a backup on this device, and where your library came from.",
                       "To do and To buy: a line taken off with \u{2715} can be brought back with Undo."],
-                changed: ["Nothing in the app is smaller than 15 points any more \u{2014} the table, the Care calendar, the tabs, Your year, the bag pages and the rest. Done and Cancel are a little larger too.",
+                changed: ["A new look: Apple's standard text sizes throughout \u{2014} calmer and more compact, more fits on every screen, and on the Mac everything is Mac-sized.",
                           "A thing's note stays the thing's: on a template it shows on every row and follows the thing when you change it.",
                           "Changes saved on a template's row \u{2014} bag, When, how many, note, \u{201C}Only on\u{201D} \u{2014} reach your trips still ahead, as changes to the thing do.",
                           "Choose from your things: what you tick arrives in the order you ticked it.",

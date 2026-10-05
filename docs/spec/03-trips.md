@@ -653,7 +653,6 @@ packed; reviewed → been; today and the last day → now, the day after → bee
 ### Traps and history
 - 🪤 Read a row's words through the ROW button: the Mac folds children into the button's label, the
   iPhone keeps them separate.
-- The Your-year labels are 10 and 12 pt, below his 15 pt floor (see Open questions).
 
 ---
 
@@ -1709,7 +1708,7 @@ gone, its bag photo stayed behind").
 Last on the trip's list: **Delete trip** — `SmallDeleteButton(title: "Delete trip", id: "trip-delete")`,
 a small red outlined capsule at the right (red words, 1 pt outline in red at 60 %, min height 30,
 padding 12). Since 40be106 `SmallDeleteButton` takes a `size` parameter, 13 by default; the trip's
-button passes none, so it stays **13 semibold** (below his 15 pt floor; only "Delete grab list" passes
+button passes none, so it stays **13 semibold** (only "Delete grab list" passes
 15). It only opens the question: a card with a red border, "Delete
 “<name>”?" (16 heavy), "The trip and its N line(s) go. Your things and your templates stay." (14 medium
 muted), **Keep it** (16 bold ink, `trip-delete-no`) and **Delete the trip** (red capsule, white 16 heavy,
@@ -1846,7 +1845,7 @@ pins · [idea] a gap worth deciding on.
 16. [doc] **Ported but unused in the app.** Resolved in 0.62 (decided, nothing changes): they stay in
     PackingCore, held to the web app by the parity checker; not shown because he chose the four sortings
     (When, Into, From where, Category — 2026-09-25), the loop strip already says Review once a trip is over,
-    and a line's note, packer and kit would crowd a line he reads without glasses.
+    and a line's note, packer and kit would crowd a line.
 17. [bug] **Two "first" rules for duplicate trip ids.** Resolved in 0.62: `Library.trip(_:)` takes the
     first, as everything else does.
 18. [bug] **Reviewed state is read two ways.** Resolved in 0.62: `Library.isReviewed` (done, or a review
@@ -1861,7 +1860,7 @@ pins · [idea] a gap worth deciding on.
     when its thing changes.
 23. [doc] **Locale** of the Trips row's dates. Resolved in 0.62: fixed English words, "3 Oct 2026", on
     every device.
-24. [rule-break] **Small type** (his floor is 15 pt): Your year's labels (10 pt counts and months, 12 pt
+24. Withdrawn (his word, 5 Oct 2026): there is no 15-pt floor in this app — it uses Apple's standard text styles (spec 06, "Type"). Was: [rule-break] **Small type**: Your year's labels (10 pt counts and months, 12 pt
     words) and the All-time words (12 pt); "Delete trip" 13 pt (`SmallDeleteButton` default — only the
     grab list's delete passes 15); "Set place" 13; the On site door summary, the Bags key, captions and
     the section counts 13–14 pt; the date grid's weekday row 12 pt; "Dates" caption 13 pt.

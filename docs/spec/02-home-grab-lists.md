@@ -315,8 +315,7 @@ GitHub's runner. Requests from outside therefore go through `whenFree` (above).
 
 ## 4. The grab tiles on Home (`GrabButtons`) and how a list is drawn
 
-**Purpose and origin.** The grab lists are "his most-used thing on the iPhone". They are big targets he
-can hit with his glasses off. The tiles are four in a row in two rows, his ask of 2 Oct 2026: "compress
+**Purpose and origin.** The grab lists are "his most-used thing on the iPhone". The tiles are four in a row in two rows, his ask of 2 Oct 2026: "compress
 the buttons a bit so they are thinner … four on each row … two rows". They were 3 × 2 before
 (release 0.46).
 
@@ -808,7 +807,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 4. **Only on one of his own lists** (`isOwn` = the id is among `ownGrabLists()`, so a list received by
    sharing counts too), last on the screen, under the bar, with 16 pt side and 10 pt bottom padding:
    - **"Delete grab list"** (`grab-delete`): the shared `SmallDeleteButton` at **15 pt** (its `size`
-     parameter, added in 0.61: "13 where it began; a new one is read at 15 (his floor: nothing under 15)";
+     parameter, added in 0.61);
      Delete trip, template, thing and bag still use the default 13): semibold text in To do red, 12 pt
      side padding, minimum 30 tall, a 1-pt capsule outline in red at 60 % opacity, pushed to the right
      edge. "Quiet until wanted; it only ever
@@ -1264,8 +1263,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
 ## 11. The countdown card (`CountdownCard`) and the packing steps behind it
 
 **Purpose and origin.** Pre-trip idea 6 (2 Oct 2026, release 0.49): the trip he leaves on next, counted
-down on Home **under** the grab lists, which keep their place at the top. It shows the days in big figures
-("readable without glasses"), the trip's name, and the next packing step with when it falls due. A tap
+down on Home **under** the grab lists, which keep their place at the top. It shows the days in figures, the trip's name, and the next packing step with when it falls due. A tap
 opens the trip.
 
 **How it is reached and left.** It is part of Home. It shows only when `library.nextTrip(today:
@@ -1780,7 +1778,7 @@ keep their tag and say why they were left.
 
 **His standing rules.**
 
-31. Resolved in 0.62 (F073): every one of these is 15 pt or more, and `tools/check-type-floor.sh` fails a push that brings a smaller size back (spec 06 §21). Was: [rule-break] **Text sizes under the 15-pt reading floor** stated in `Headings.swift` ("Nothing under 15"):
+31. Withdrawn (his word, 5 Oct 2026): there is no 15-pt floor in this app — it uses Apple's standard text styles (spec 06, "Type"). Was: [rule-break] **Text sizes under the 15-pt reading floor** stated in `Headings.swift` ("Nothing under 15"):
     - "1 in 10" 12;
     - "only sometimes" / "not this time" 13;
     - the Grab Lists pills 13, and "<k> things" 13;

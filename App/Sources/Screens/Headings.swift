@@ -5,7 +5,7 @@ import SwiftUI
 /// and the other buttons and pills are much smaller than the heading … throughout
 /// the app". So: a block's heading 22 heavy, a heading inside a block 20 heavy, a
 /// question inside a block 17 heavy — and the pills under them 15, lighter, closer
-/// together (`Pills`). Nothing under 15, so it still reads without glasses.
+/// together (`Pills`).
 enum HeadingSize {
     static let band: CGFloat = 22
     static let title: CGFloat = 20

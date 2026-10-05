@@ -7,7 +7,7 @@ import PackingLibrary
 /// discarded there (not more needed); maintenance or other actions." He chose that it
 /// holds all four, each under its own heading:
 ///   Bought on site · Left on site · Maintenance notes · Pack to go home.
-/// Calm and readable without glasses: four headings, short lines, colour as the
+/// Calm: four headings, short lines, colour as the
 /// message — green for the trip, orange for what goes on to Care.
 struct OnSiteScreen: View {
     let tripId: String

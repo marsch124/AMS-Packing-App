@@ -3,8 +3,7 @@ import PackingCore
 
 // More grab lists than Home can hold.
 //
-// Home has EIGHT places (4 × 2 since 2 Oct 2026; six before) — big targets he can
-// hit with his glasses off, which is the whole point of the thing. So the lists
+// Home has EIGHT places (4 × 2 since 2 Oct 2026; six before). So the lists
 // themselves are unlimited: the ones he keeps on Home are his choice, in his order,
 // and everything else waits in Grab Lists (the screen behind Home's "Grab Lists"
 // door) with all its things. Nothing is ever deleted by making room. (Called "the
@@ -100,8 +99,7 @@ extension Library {
 
     /// Is this name taken already — by any grab list's word on its tile or its title,
     /// ignoring case and spaces? Make refuses a second list of the same name: two
-    /// tiles saying the same thing cannot be told apart with his glasses off (5 Oct
-    /// 2026). A list received by sharing is not refused; it is his to rename.
+    /// tiles saying the same thing cannot be told apart (5 Oct 2026). A list received by sharing is not refused; it is his to rename.
     public func grabListNameTaken(_ name: String) -> Bool {
         let key = normName(name)
         guard !key.isEmpty else { return false }

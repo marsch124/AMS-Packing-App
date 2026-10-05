@@ -311,7 +311,7 @@ struct Pills: View {
             case .title: HeadingTitle(title: title, tint: tint, id: "\(id)-title")
             case .question: HeadingTitle(title: title, tint: tint, id: "\(id)-title", question: true)
             }
-            // The pills: 15 (his floor for reading without glasses), medium until
+            // The pills: medium until
             // picked, a little less padding — smaller than any heading over them, and
             // still 36 tall to press.
             FlowRow(spacing: 6) {

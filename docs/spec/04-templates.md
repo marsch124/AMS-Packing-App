@@ -1368,10 +1368,9 @@ deciding before a rewrite.
     web app's ten with cyan → orange and teal → indigo (`testNoTemplateIsGivenTealOrCyan`); `TEMPLATE_COLORS` itself
     stays for the parity check. Not changed: the factory "When" steps' own colours (Day before is cyan, After /
     recovery teal — his familiar steps, used across the trip screens).
-32. Resolved in 0.62 (F073): every one of these is 15 pt or more, and `tools/check-type-floor.sh` fails a push that brings a smaller size back (spec 06 §21). Was: [rule-break] **Text under 15 pt** in this area — card "used" line 12, icon labels 12, "WHAT IS IT CALLED"
+32. Withdrawn (his word, 5 Oct 2026): there is no 15-pt floor in this app — it uses Apple's standard text styles (spec 06, "Type"). Was: [rule-break] **Text under 15 pt** in this area — card "used" line 12, icon labels 12, "WHAT IS IT CALLED"
     12, row qty/note and tags 13, Delete template 13, "You already have a template called that." 14, the
     delete question's text 14, the row editor's "Blank means…" 14, picker pills/aside/counts 14, Your
-    choices counts and footer 14 — while `Headings.swift` says "Nothing under 15, so it still reads without
-    glasses".
+    choices counts and footer 14.
 33. **Resolved in 0.62** — ~~`DEFAULT_PEOPLE` holds two real first names in a public repository.~~ They are the
     invented Kim and Robin (spec 06, item 29).

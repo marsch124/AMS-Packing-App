@@ -101,7 +101,7 @@ thing's row on one template. Font sizes are in points; colours are named by toke
 | Tag | Meaning |
 |---|---|
 | **[bug]** | the code does something wrong or surprising for the owner |
-| **[rule-break]** | it breaks one of his standing rules (a main button is never grey; nothing under 15 pt; no stock icons or emoji as icons …) |
+| **[rule-break]** | it breaks one of his standing rules (a main button is never grey; no stock icons or emoji as icons …) |
 | **[doc]** | a comment, a document or the in-app guide disagrees with the code |
 | **[untested]** | behaviour that matters and that no test pins |
 | **[idea]** | worth deciding before a rewrite: a design question, a possible improvement, ported but unused code |

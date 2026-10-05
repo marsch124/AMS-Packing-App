@@ -3,7 +3,7 @@ import PackingCore
 import PackingLibrary
 
 /// The trip he leaves on next, counted down on Home — his pre-trip idea 6 (2 Oct
-/// 2026). The days in big figures, readable without glasses; the trip's name; the
+/// 2026). The days in figures; the trip's name; the
 /// next packing step and when it falls due. A tap opens the trip.
 struct CountdownCard: View {
     let next: Library.NextTrip

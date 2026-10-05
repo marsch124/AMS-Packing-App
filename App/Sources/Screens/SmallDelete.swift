@@ -6,7 +6,7 @@ import SwiftUI
 struct SmallDeleteButton: View {
     let title: String
     let id: String
-    /// 13 where it began; a new one is read at 15 (his floor: nothing under 15).
+    /// The words' size (13 by default).
     var size: Double = 13
     let action: () -> Void
 

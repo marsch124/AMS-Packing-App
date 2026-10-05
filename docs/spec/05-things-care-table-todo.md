@@ -1781,7 +1781,7 @@ pins · [idea] a gap worth deciding on.
 31. **Resolved in 0.62** — ~~A to-do found by the search goes nowhere.~~ `SearchScreen.chose` closes the
     search and sets `model.tabToOpen = .actions`; the frame opens the To do tab. Pinned by
     `testASearchedToDoOpensTheToDoTab` (Home spec).
-32. [rule-break] **Small type** (his floor is 15 pt): "Delete thing" / "Delete bag" 13 (`SmallDeleteButton`'s
+32. Withdrawn (his word, 5 Oct 2026): there is no 15-pt floor in this app — it uses Apple's standard text styles (spec 06, "Type"). Was: [rule-break] **Small type**: "Delete thing" / "Delete bag" 13 (`SmallDeleteButton`'s
     default; only the grab list's delete passes 15), the bag glance line 12, Your bags' column names 10, the
     bag page's number titles 11, the table's cells 13–14, headings 12 and bands 11, the kit figures' words 12
     and the year-ahead months 10, the calendar's weekday row 11 and counts 10, the Care doors' second lines 13.

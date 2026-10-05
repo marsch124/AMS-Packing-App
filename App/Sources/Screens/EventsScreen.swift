@@ -156,7 +156,7 @@ struct EventsScreen: View {
 }
 
 /// One trip: its name, when and where, how far the packing has got — and a bar
-/// along the bottom whose colour IS the state, so it reads with his glasses off.
+/// along the bottom whose colour IS the state.
 struct TripRow: View {
     let card: Library.TripCard
 

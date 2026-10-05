@@ -524,7 +524,7 @@ against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
-| 0.62 | 5 Oct 2026 | The big check-up: everything we found, put right | N7 C22 F12 | the fix-everything program: every finding of specs 01–06 dealt with (each chapter's open questions say how); nothing under 15 pt; rename and reorder in Your choices; template notes on a thing's page; Care schedules; Pack weather gear anyway; 0.59's Worth a look line moved from Changed to New |
+| 0.62 | 5 Oct 2026 | The big check-up: everything we found, put right | N7 C22 F12 | the fix-everything program: every finding of specs 01–06 dealt with (each chapter's open questions say how); Apple's standard text styles throughout; rename and reorder in Your choices; template notes on a thing's page; Care schedules; Pack weather gear anyway; 0.59's Worth a look line moved from Changed to New |
 | 0.61 | 5 Oct 2026 | Your own grab lists, and a restore that brings back everything | N1 C5 | own grab lists can be filled, keep their ticks and be deleted; Off Home really takes a list off Home; Make says where the list went; restore accepts a cabin bag and brings back every note |
 | 0.60 | 4 Oct 2026 | Find a thing on a template | N1 C1 | search field above a template's list, "how many of all", ✕; Worth a look offers a photo only when it can tell the photo is more than a day old |
 | 0.59 | 4 Oct 2026 | A deleted trip takes its photos along | N1 C3 | trip delete removes its bag photos unless shown elsewhere; Worth a look offers to remove left-behind photos older than a day; "Nobody's in particular" → "Both have one"; Notes under the name |
@@ -1167,8 +1167,7 @@ and pills are much smaller than the heading … throughout the app". Earlier: hi
 pop"), 2026-09-28 ("should be larger or in capitals, as should all headings on the Care tab"; "Much larger headings,
 please", H.13).
 
-**Sizes** (`enum HeadingSize`): `band` 22, `title` 20, `question` 17 — all heavy. "Nothing under 15, so it still
-reads without glasses."
+**Sizes** (`enum HeadingSize`): `band` 22, `title` 20, `question` 17 — all heavy.
 
 - **`HeadingBand(title:, tint = Care orange, id:)`** — a block's heading: a 5×26 solid capsule mark, the words (22
   heavy, tint, wrap — never cut), on a full-width strip of the tint at 13 %, padding 10×9, radius 10. Used by Your
@@ -1189,12 +1188,7 @@ reads without glasses."
   row when the next one would pass the right edge; row height = tallest child; reported width = the proposed width
   (10 000 if none).
 
-**The font floor in fact.** The floor of 15 holds for headings, pills, buttons and the main lines. Secondary lines are
-smaller in many places: in this chapter's screens the door sub-lines and Reminders sub-line (14), *Your choices*' use
-counts and footer (14), Worth a look's names and closing line (14), the sync pill (13), What's new dates (14), part
-names and "On this device" (12), the loop's short lines (14), "on <tab>" and "You are here" (13), `SmallDeleteButton`
-(13), the tab labels (12.5) and the version marker (11). Across the app 166 `.system(size:)` values below 15 appear in 42 (of 67)
-files. See Open questions.
+**Type.** Being replaced in 0.62 by Apple's standard text styles (his word, 5 Oct 2026: "efficient, fluid, and Apple-standard"); this section is rewritten with that change.
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
 trip, Trip settings, the review and Your choices exists; photographs each), `testWhoseItIsOffersEachOwnerOnce` (a
@@ -1640,10 +1634,7 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
 2. **Resolved in 0.62** — ~~Rescue-copy times are UTC.~~ They are said in the device's time zone (`RescueNames.when`, §15).
 3. **Resolved in 0.62** — ~~RestoreSheet's minimum size applies on the iPhone too.~~ It is the Mac's only; the restore UI test checks the sheet lies inside the window.
 4. **Resolved in 0.62** — ~~The backup JSON is rebuilt on every redraw of Settings.~~ It is built when Save is pressed (§1, §13).
-5. [rule-break] **The font floor of 15 is not universal**: 166 `.system(size:)` values below 15 in 42 of the 67 app
-   source files (11–14 for secondary lines, the tab labels 12.5, the version marker 11, `SmallDeleteButton` 13). The
-   code comments state the floor ("Nothing under 15, so it still reads without glasses") for headings and pills only.
-   Left in 0.62 on purpose: one careful sweep through every screen once all areas are merged (finding F073).
+5. Withdrawn (his word, 5 Oct 2026): there is no 15-pt floor in this app — it uses Apple's standard text styles (spec 06, "Type"). Was: [rule-break] The font floor of 15 is not universal (finding F073).
 6. **Resolved in 0.62** — ~~`HeaderButtonStyle` callers' fonts are dead.~~ The style draws the 17 bold the screens ask
    for (it drew 16); a caller's own font is still overridden, by design, so every header is alike (§20).
 7. **Resolved in 0.62** — ~~The way-home search does not use `.clearButton`.~~ It does: the shared round ✕, 36 points
