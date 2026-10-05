@@ -1,4 +1,4 @@
-# The parity questions — contract version 3
+# The parity questions — contract version 4
 
 **Needs the web app's model v186 or later** (`shareSafeOwner`, `SYNC_RESERVED_KEYS`);
 the JS side refuses to run on an older one. What changed from version to version is
@@ -200,7 +200,7 @@ array, else `setItemConditions([])` (the factory four).
 
 **4.4 The Settings lists in force**
 - `CONDITIONS_IN` = `prefs.conditions` if a non-empty array, else a copy of `DEFAULT_ITEM_CONDITIONS`
-- `PEOPLE_IN` = `prefs.people` …, else a copy of `DEFAULT_PEOPLE`
+- `PEOPLE_IN` = `prefs.people` …, else a copy of `DEFAULT_PEOPLE` — on the JS side with the native app's two invented names in place of the web app's, by position (§16 N8)
 - `PLACES_IN` = `prefs.storageLocations` …, else `DEFAULT_STORAGE_LOCATIONS`
 - `OWNERS_IN` = `prefs.owners` …, else `[]`
 - `PEOPLE` = `peopleFromRows(peopleToRows(PEOPLE_IN))`; `PEOPLE_NAMES` = their names.
@@ -462,7 +462,7 @@ Inputs by kind: `conditions` → CONDITIONS_IN · `people` → PEOPLE_IN · `pla
 |---|---|---|
 | `settings.rows` | kind | `sharedRowsFrom(kind, input)` → ROW shapes |
 | `settings.rowsOfKind` | kind | `sharedRowsOfKind(ALLROWS reversed, kind)` → ids |
-| `settings.isFactoryList` | kind | `{ inForce: isFactoryList(kind, input), factory: isFactoryList(kind, defaultListFor(kind)), defaultList: defaultListFor(kind) }` |
+| `settings.isFactoryList` | kind | `{ inForce: isFactoryList(kind, input), factory: isFactoryList(kind, defaultListFor(kind)), defaultList: defaultListFor(kind) }` — for `people`, the JS side writes `defaultList` with the native starter names and hands `inForce` a list naming them back under its own (§16 N8) |
 | `settings.back` | kind | from `ALLROWS reversed`: `conditions` → `conditionsFromRows` as CONDITIONs · `people` → `peopleFromRows` as PERSONs · `places`, `owners` → `{ ordered: orderedNamesFromRows(rows, kind), az: namesFromRows(rows, kind) }` · `presets` → `presetsFromRows` · `grab` → `grabFromRows`, as returned |
 | `settings.ownersByUsage` | `*` | `counts` = Map `normName(ownedBy)` → number of distinct `(_itemId \|\| id)` over all LISTS items (blank owners skipped); `names` = OWNERS_IN's names, or when that is empty the first-seen trimmed spelling of each owner → `{ counts, order: ownersByUsage(names, counts) }` |
 | `settings.grabShare` | gid | `code = encodeGrabShare({ name: label \|\| gid, icon, tone, items })` → `{ code` (compared byte for byte; key order `k v n x i c`)`, decoded: decodeGrabShare("Try this: https://example.invalid/#/g/" + code + ".") }` |
@@ -488,8 +488,8 @@ each action's `text`, `itemName`; kit names; thing names; PLACES_IN and OWNERS_I
 | `strings.share` | each of FIXED ∪ list names ∪ section names | `{ b64: toBase64Url(s), back: fromBase64Url(b64) == s, packed: packShare(s), unpacked: unpackShare(packed) == s }` |
 | `strings.newPhase` | each of: list names, PHASES labels, `"!!!"`, `"Ärlig Test 2"` | `newPhase(label, copy of PHASE_IDS, { leadDays: 3 })` → PHASE. When the trimmed, lower-cased label holds no `a–z` or `0–9`, the id is clock-made and is written `"<time-id>"`. |
 | `strings.newCondition` | the same labels | `newCondition(label, copy of ITEM_CONDITION_IDS)`, same `"<time-id>"` rule |
-| `strings.email` | `anna.berg@example.com` · `m.s@example.org` · `x@y.z` · `first_last+tag@example.com` · `"  spaced.name@example.com "` · `UPPER.case@example.com` · `élan.vital@example.com` · `-lead@example.com` · `noatsign` · `two@@example.com` · `a b@example.com` · `""` · PEOPLE_NAMES | `{ looksLikeEmail, ownerName: ownerNameFromEmail }` |
-| `strings.shareSafeOwner` | the `strings.email` addresses, PEOPLE_NAMES, every `ownedBy` of every item and entry, and: `Anna Berg` · `Anna <anna.berg@example.com>` · `"  Two   Spaces  "` · `name@host` · `mailto:someone@example.com` · `at @ sign alone` · `A very long owner name that runs well past forty characters` · thirty-eight `x` then `" late@example.com"` | `[shareSafeOwner(v), shareSafeOwner(v, 10)]` |
+| `strings.email` | `robin.berg@example.com` · `k.r@example.org` · `x@y.z` · `first_last+tag@example.com` · `"  spaced.name@example.com "` · `UPPER.case@example.com` · `élan.vital@example.com` · `-lead@example.com` · `noatsign` · `two@@example.com` · `a b@example.com` · `""` · PEOPLE_NAMES | `{ looksLikeEmail, ownerName: ownerNameFromEmail }` |
+| `strings.shareSafeOwner` | the `strings.email` addresses, PEOPLE_NAMES, every `ownedBy` of every item and entry, and: `Robin Berg` · `Robin <robin.berg@example.com>` · `"  Two   Spaces  "` · `name@host` · `mailto:someone@example.com` · `at @ sign alone` · `A very long owner name that runs well past forty characters` · thirty-eight `x` then `" late@example.com"` | `[shareSafeOwner(v), shareSafeOwner(v, 10)]` |
 | `strings.personColor` | PEOPLE_NAMES, `Zed Guest`, `amy guest`, `Åsa`, `""`, and every `packer` and `ownedBy` of every item and entry | `{ roster: personColor(name, PEOPLE), hashed: personColor(name, []) }` |
 | `strings.qty` | `""` `2` `0` `-1` `2.5` `abc` `" 3 "` `1e2` `0x10` `Infinity` `3 pairs` `١٢` (Arabic-Indic one-two), and every `qty` of every item and entry | `[effectiveQty({qty}, 0), effectiveQty({qty, perNight: true}, 0), effectiveQty({qty, perNight: true}, 5)]` |
 | `ids.phase` | `""`, `no-such-phase`, DEFAULT_PHASES ids, PHASE_IDS, every `phase` of every item and entry, every action's `whenPhase` | `{ known: phase(id) != null, label, emoji, color, leadDays, order, fallback: phaseOrFallback(id) as PHASE }` |
@@ -546,19 +546,19 @@ both reserved keys at every level, an address as the owner, sub-items taken apar
 
 | Case | JSON text |
 |---|---|
-| `oldBundle` | `{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}` |
+| `oldBundle` | `{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Robin <robin@example.com>"},{"name":"Mug","ownedBy":"  Robin   Berg  "}]}}` |
 | `oldBundleEmoji` | `{"app":"ams-packing-list","kind":"trip","version":1,"event":{"name":"Emoji trip","entries":[{"name":"Kit","sub":[{"0":"H","1":"i","2":" ","3":"\ud83d","4":"\ude00","5":"!"}]}]}}` — the two `\u…` are ESCAPES in the JSON text: each is half of an emoji, a lone surrogate, which `JSON.parse` accepts and Foundation's parser refuses (H16). Expected `sub`: `["Hi 😀!"]`. |
 | `notATrip` | `{"app":"ams-packing-list","kind":"grab","event":{"name":"x"}}` — throws (D7) |
 | `noEvent` | `{"kind":"trip"}` — throws (D7) |
 
 Expected of `oldBundle`, entry by entry — `ownedBy`, `sub`: Tent `""`, `["Pegs","Guy lines","Mallet"]` ·
 Stove `"Legacy Name"` (a legacy `owner` that is a name is adopted; one that is an address is not), `[]` ·
-Lamp `""`, `[]` · Mug `"Anna Berg"`, `[]`. Every entry unchecked with no `used`; the event `active`, never reviewed.
+Lamp `""`, `[]` · Mug `"Robin Berg"`, `[]`. Every entry unchecked with no `used`; the event `active`, never reviewed.
 
 **`calc.tripBundleOutgoing` input:**
-`{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Anna Berg","sub":[],"itemType":"reminder"}]}`
+`{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Robin Berg","sub":[],"itemType":"reminder"}]}`
 Expected slim entries: Rope = `{ category, name, phase, sub: ["Sling","Carabiner"], weight: 120 }` — no `ownedBy`;
-Helmet = `{ category, itemType: "reminder", name, ownedBy: "Anna Berg", phase }`. (`phase` is
+Helmet = `{ category, itemType: "reminder", name, ownedBy: "Robin Berg", phase }`. (`phase` is
 `defaultPhaseId()` of the §4 phases.) `leaks` = `[]`, `[]`, `0`, `false`.
 
 A few answers worth knowing in advance, because each is a JS rule a typed decoder
@@ -591,6 +591,7 @@ the §4 lists back afterwards.
 | N5 | `Date.parse` of an impossible day (`2026-02-30`), and of the short forms `2026` / `2026-07` | V8 (Node) rolls the day into March and reads the short forms as the 1st; JavaScriptCore (Safari, where the app really runs) says invalid. There is no single JS truth to match, so it is not asked. The port follows **V8** — the engine this reference and the model's own tests run on — through its ONE date parser (`JSDay` in `JSSemantics.swift`), so care dates and trip dates can never disagree with each other; `isYMD` keeps such text out of stored dates either way. |
 | N6 | Keys outside the shapes | §3. |
 | N7 | `photos` in the backup, and everything in `db.js` / `app.js` | Not the model. |
+| N8 | The NAMES of the two starter packers (`DEFAULT_PEOPLE`) | The web app's model names the owner's household; the native model, whose repository is public, names two invented people (Kim, Robin — the practice library's). Everything else about them IS compared: how many, their colours, that `isFactoryList` calls them the factory list, and every answer built from them. The JS half puts the native names in by position wherever the roster itself is an answer (`calc.constants`, `settings.isFactoryList` `defaultList`) or an input (`PEOPLE_IN` when the backup has no `prefs.people`), and names them back under its own for `settings.isFactoryList` `inForce`; a wrong or missing native name turns both red. One difference is EXPECTED on a backup whose own `prefs.people` is exactly the web app's starter roster: that list is the web app's factory list but not the native app's, which keeps it as his own (`settings.isFactoryList` people `inForce`: JS true, Swift false). |
 
 ## 17. What the contract requires for `sub`, `ownedBy`, `u` and the reserved keys
 
@@ -724,6 +725,14 @@ a mistake will show.
   the invented backup's long name therefore has no space in front of the emoji.
 
 ## 19. Contract history
+
+**Version 4** (5 Oct 2026). No question was added or removed.
+
+| Key | Change |
+|---|---|
+| `calc.constants`, `settings.isFactoryList` (people), setup `PEOPLE_IN` | §16 N8: the starter packers' names are the native app's invented ones on both sides. |
+| `strings.email`, `strings.shareSafeOwner`, `calc.tripBundleIncoming` (`oldBundle`), `calc.tripBundleOutgoing` | the example people in the inputs are invented names now (a real first name and a pair of real initials were there); same shapes, same lengths of trouble. |
+
 
 **Version 3** (the Swift half exists). No key was renamed or redefined, and on the
 owner's backup no version-2 answer changed.

@@ -217,7 +217,7 @@ final class ShareEncodingTests: XCTestCase {
 
     func testShareSafeOwnerIsTheWebApps() {
         for (given, safe) in ShareRef.safeOwner { XCTAssertEqual(shareSafeOwner(given), safe, "shareSafeOwner(\(given))") }
-        XCTAssertEqual(shareSafeOwner("Anna Berg", max: 4), "Anna")
+        XCTAssertEqual(shareSafeOwner("Robin Berg", max: 5), "Robin")
         XCTAssertEqual(shareSafeOwner(nil), "")
         XCTAssertEqual(SYNC_RESERVED_KEYS, ["owner", "realmId"])
         XCTAssertEqual(Set(SYNC_RESERVED_KEYS), RESERVED_SYNC_KEYS, "the foundation's set holds the same two keys")

@@ -177,7 +177,7 @@ public func looksLikeEmail(_ v: String?) -> Bool {
 }
 
 /// Turn a sign-in address into the name a person would actually use:
-/// "anna.berg@example.com" → "Anna". Takes the part before the @, then its first
+/// "robin.berg@example.com" → "Robin". Takes the part before the @, then its first
 /// word (splitting on . _ + -), and capitalises it. Falls back to the whole local
 /// part when that first word is too short to be a name ("a.b@…").
 public func ownerNameFromEmail(_ addr: String?) -> String {

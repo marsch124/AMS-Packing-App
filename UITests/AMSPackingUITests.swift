@@ -92,9 +92,11 @@ final class AMSPackingUITests: XCTestCase {
     /// Selected — and there to ask. Same reason as `words`.
     private func isOn(_ e: XCUIElement) -> Bool { e.exists && e.isSelected }
 
-    /// Keeps a picture of the screen when asked to (tools/shots.sh sets
-    /// TEST_RUNNER_SHOTS_DIR) — how a build is LOOKED at on both devices, in
-    /// dark mode, before anyone is told it is done.
+    /// Keeps a picture of the screen when asked to: the folder in SHOTS_DIR, which
+    /// xcodebuild hands the runner when the line starts `TEST_RUNNER_SHOTS_DIR=<folder>`.
+    /// No test switches to night mode: put the simulator in dark mode first
+    /// (`xcrun simctl ui <device> appearance dark`) and run the same tests again — how a
+    /// build is LOOKED at, day and night, before anyone is told it is done.
     private func shot(_ app: XCUIApplication, _ name: String) {
         guard let dir = ProcessInfo.processInfo.environment["SHOTS_DIR"], !dir.isEmpty else { return }
         #if os(macOS)
@@ -603,6 +605,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(save.waitForExistence(timeout: 5), "no way to save a backup")
         // Further down than the everyday doors (his K.2, 1 Oct 2026).
         XCTAssertGreaterThan(save.frame.minY, app.buttons["settings-lists"].frame.maxY, "Save a backup is still above Your choices")
+        // What this device holds, for the day-and-night look (the web app's kits are
+        // counted as "Groups of things" since the spec pass, 5 Oct 2026).
+        bringIntoView(app, app.staticTexts["device-count-kits"])
+        shot(app, "settings-device-holds")
         tapVisible(app, save)
         let status = app.staticTexts["backup-status"]
         XCTAssertTrue(waitUntil { self.words(status).hasPrefix("Choosing") }, "the save was not started: '\(words(status))'")
@@ -2193,6 +2199,10 @@ final class AMSPackingUITests: XCTestCase {
         type("q", into: app.textFields["wayhome-search"])
         XCTAssertTrue(app.staticTexts["wayhome-search-none"].waitForExistence(timeout: 5), "nothing matches, and it does not say so")
         shot(app, "way-home-search-none")
+        // The same round ✕ as every other search field — 36 points, not the plain
+        // 44-point cross it drew on its own until the spec pass (5 Oct 2026).
+        let cross = app.buttons["wayhome-search-clear"]
+        XCTAssertEqual(cross.frame.width, 36, accuracy: 1, "not the shared ✕: \(cross.frame)")
         tap(app, id: "wayhome-search-clear")
         XCTAssertTrue(waitUntil { app.buttons["wayhome-line-0"].exists && app.buttons["wayhome-line-1"].exists
                                   && app.buttons["wayhome-line-2"].exists }, "the cross did not bring the whole way home back")
@@ -5335,6 +5345,86 @@ final class AMSPackingUITests: XCTestCase {
         tapVisible(app, remove)
         XCTAssertTrue(app.staticTexts["lists-problem"].waitForExistence(timeout: 5), "a place in use was dropped without a word")
         XCTAssertTrue(waitUntil { self.find(app, "list-places-row-12") != nil }, "…and it must still be there")
+    }
+
+    /// The spec pass (5 Oct 2026): a place he already had was dropped without a word,
+    /// and the reason an entry stays was said at the TOP of the long sheet — off screen
+    /// when Remove was pressed far down the "When" steps, "so it looks as if nothing
+    /// happened". Both are said now, right where he pressed; and a step's reason names
+    /// its trips instead of calling trip lines "things".
+    func testYourChoicesSaysWhyRightWhereItWasPressed() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+
+        type("garage", into: app.textFields["list-places-add-name"])
+        tap(app, id: "list-places-add")
+        let twin = app.staticTexts["list-places-add-needs"]
+        XCTAssertTrue(twin.waitForExistence(timeout: 5), "a place he already has was taken without a word")
+        XCTAssertEqual(words(twin), "You already have Garage.")
+        XCTAssertNil(find(app, "list-places-row-12"), "…or added a second time")
+        hideKeyboard(app)
+
+        // Far down the sheet: "≥1 week ahead" holds the sample's things and its trip.
+        let remove = app.buttons["list-phases-remove-1"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 5))
+        tapVisible(app, remove)
+        let why = app.staticTexts["lists-problem"]
+        XCTAssertTrue(why.waitForExistence(timeout: 5), "a step in use was refused without a word")
+        XCTAssertTrue(words(why).contains("on 1 trip"), "it says what holds the step: '\(words(why))'")
+        XCTAssertTrue(words(why).hasSuffix("so it stays."), "'\(words(why))'")
+        // Right under the ✕ he pressed, so it is on screen with it.
+        XCTAssertGreaterThan(why.frame.minY, remove.frame.minY, "the reason is above what was pressed")
+        XCTAssertLessThan(why.frame.minY - remove.frame.maxY, 60, "the reason is far from what was pressed: \(why.frame) vs \(remove.frame)")
+        XCTAssertTrue(waitUntil { self.find(app, "list-phases-row-1") != nil }, "…and the step is still there")
+        shot(app, "choices-refused")
+    }
+
+    /// The spec pass (5 Oct 2026): Your choices "can only add and remove, not rename or
+    /// reorder". The pen opens an entry: a new name — which every thing that says the
+    /// old one follows — and ▲ ▼ for its place in the list.
+    func testAChoiceIsRenamedAndMovedAndItsThingsFollow() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["list-places-name-2"]), "Hall closet")
+
+        tap(app, id: "list-places-edit-2")
+        let field = app.textFields["list-places-rename-name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the pen opened nothing")
+        XCTAssertEqual(field.value as? String, "Hall closet", "the new name starts from the old one")
+        replace("Hall cupboard", in: field)
+        tap(app, id: "list-places-rename")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-places-name-2"]) == "Hall cupboard" },
+                      "not renamed: '\(words(app.staticTexts["list-places-name-2"]))'")
+        XCTAssertTrue(waitUntil { !app.textFields["list-places-rename-name"].exists }, "the editor stays open after a rename")
+
+        tap(app, id: "list-places-edit-2")
+        hideKeyboard(app)
+        tap(app, id: "list-places-up")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-places-name-1"]) == "Hall cupboard" }, "it did not move up")
+        XCTAssertEqual(words(app.staticTexts["list-places-name-2"]), "Chest of drawers")
+        XCTAssertTrue(app.buttons["list-places-up"].exists, "the editor follows the entry as it moves")
+        shot(app, "choices-editing")
+        tap(app, id: "list-places-up")
+        tap(app, id: "list-places-up")
+        let top = app.staticTexts["list-places-edit-needs"]
+        XCTAssertTrue(top.waitForExistence(timeout: 5), "pressed at the top, it said nothing")
+        XCTAssertEqual(words(top), "Hall cupboard is already at the top.")
+
+        // Every thing that was in the hall closet is in the hall cupboard now.
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Rain jacket", into: app.textFields["things-search"])
+        XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].exists })
+        app.buttons["thing-row-0"].tap()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(app.textFields["thing-storage"].value as? String, "Hall cupboard", "the thing kept the old name")
     }
 
     // MARK: - Long lists made easier (their field test, 3 Oct 2026)

@@ -52,7 +52,7 @@ final class ImporterTests: XCTestCase {
         let (got, report) = Importer.library(from: file)
         let lamp = got.items.first { $0.name == "Headlamp" }!
         XCTAssertTrue(lamp.consumable)
-        XCTAssertEqual(lamp.packer, "Anna")
+        XCTAssertEqual(lamp.packer, "Robin")
         XCTAssertTrue(lamp.retired)
         XCTAssertEqual(lamp.retiredReason, "sold")
         XCTAssertEqual(lamp.stats.packed, 4)
@@ -64,7 +64,7 @@ final class ImporterTests: XCTestCase {
         // The web app's own rebuild lost the packer until v188; the importer never
         // went through it and still does not. Since v188 both agree:
         let rebuilt = buildCatalog(file.lists)
-        XCTAssertEqual(rebuilt.items.first { $0.name == "Headlamp" }?.packer, "Anna")
+        XCTAssertEqual(rebuilt.items.first { $0.name == "Headlamp" }?.packer, "Robin")
     }
 
     func testATripsLinesStillPointAtTheirThings() {
@@ -95,11 +95,11 @@ final class ImporterTests: XCTestCase {
         let lib = LibraryTests.sample()
         var own = DEFAULT_PHASES
         own.append(newPhase("Load the van", own.map(\.id)))
-        let prefs: JSONValue = ["storageLocations": ["Garage shelf", "Loft"], "owners": ["Anna", "Jonas"]]
+        let prefs: JSONValue = ["storageLocations": ["Garage shelf", "Loft"], "owners": ["Robin", "Jonas"]]
         let (got, _) = Importer.library(from: ImporterTests.backup(of: lib, phases: own, prefs: prefs))
         XCTAssertEqual(got.phases.count, 8)
         XCTAssertEqual(orderedNamesFromRows(got.shared, "places"), ["Garage shelf", "Loft"])
-        XCTAssertEqual(namesFromRows(got.shared, "owners"), ["Anna", "Jonas"])
+        XCTAssertEqual(namesFromRows(got.shared, "owners"), ["Jonas", "Robin"])
     }
 
     func testTheImportLeavesItsMark() {

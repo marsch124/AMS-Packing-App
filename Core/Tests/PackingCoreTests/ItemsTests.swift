@@ -155,10 +155,10 @@ final class ItemsTests: XCTestCase {
     // JS: 'looksLikeEmail: tells a sign-in address from a person’s name'
     // (The JS test uses a real address; this repository is public, so an invented one stands in.)
     func testLooksLikeEmailTellsASignInAddressFromAName() {
-        XCTAssertEqual(looksLikeEmail("anna.berg@example.com"), true)
+        XCTAssertEqual(looksLikeEmail("robin.berg@example.com"), true)
         XCTAssertEqual(looksLikeEmail("  a@b.co  "), true)
-        XCTAssertEqual(looksLikeEmail("Martin"), false)
-        XCTAssertEqual(looksLikeEmail("Anna & Martin"), false)
+        XCTAssertEqual(looksLikeEmail("Kim"), false)
+        XCTAssertEqual(looksLikeEmail("Robin & Kim"), false)
         XCTAssertEqual(looksLikeEmail("Shared"), false)
         XCTAssertEqual(looksLikeEmail(""), false)
         XCTAssertEqual(looksLikeEmail(nil), false)
@@ -175,9 +175,9 @@ final class ItemsTests: XCTestCase {
     // JS: 'ownerNameFromEmail: an address becomes the name a person would use'
     // (Invented addresses of the same shapes as the JS test's.)
     func testOwnerNameFromEmailAnAddressBecomesAName() {
-        XCTAssertEqual(ownerNameFromEmail("anna.berg@example.com"), "Anna")
-        XCTAssertEqual(ownerNameFromEmail("anna@example.com"), "Anna")
-        XCTAssertEqual(ownerNameFromEmail("anna_b+tag@example.com"), "Anna")
+        XCTAssertEqual(ownerNameFromEmail("robin.berg@example.com"), "Robin")
+        XCTAssertEqual(ownerNameFromEmail("robin@example.com"), "Robin")
+        XCTAssertEqual(ownerNameFromEmail("robin_b+tag@example.com"), "Robin")
         // Too short to be a name on its own — keep the whole local part rather than "A".
         XCTAssertEqual(ownerNameFromEmail("a.berg@example.com"), "A.berg")
         XCTAssertEqual(ownerNameFromEmail(""), "")
@@ -186,12 +186,12 @@ final class ItemsTests: XCTestCase {
     // JS: 'coerceItem: adopts a legacy owner name, but never the address sync stamped there'
     func testCoerceItemAdoptsALegacyOwnerNameButNeverTheSyncAddress() {
         // A real name typed before v117 is carried across.
-        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "Anna"])?.ownedBy, "Anna")
+        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "Robin"])?.ownedBy, "Robin")
         // The sync addon's own stamp is not a name and must not become one here.
-        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "anna.berg@example.com"])?.ownedBy, "")
+        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "robin.berg@example.com"])?.ownedBy, "")
         // Once ownedBy exists it wins, including when deliberately empty.
-        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "Anna", "ownedBy": "Martin"])?.ownedBy, "Martin")
-        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "Anna", "ownedBy": ""])?.ownedBy, "")
+        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "Robin", "ownedBy": "Kim"])?.ownedBy, "Kim")
+        XCTAssertEqual(coerceItem(json: ["name": "Tent", "owner": "Robin", "ownedBy": ""])?.ownedBy, "")
     }
 
     // JS: 'coerceItem: keeps a phase this device does not know (it syncs, so it is real)'
@@ -207,7 +207,7 @@ final class ItemsTests: XCTestCase {
     // --- not in the JS suite: what the Swift shape adds ---
 
     func testTheReservedSyncKeysAreNeverKeptOrWritten() throws {
-        let it = try XCTUnwrap(coerceItem(json: ["name": "Tent", "owner": "anna.berg@example.com", "realmId": "rlm-1", "futureField": 7]))
+        let it = try XCTUnwrap(coerceItem(json: ["name": "Tent", "owner": "robin.berg@example.com", "realmId": "rlm-1", "futureField": 7]))
         XCTAssertNil(it.json["owner"])
         XCTAssertNil(it.json["realmId"])
         XCTAssertEqual(it.extra, ["futureField": 7])       // an unknown key is carried, not lost
@@ -220,7 +220,7 @@ final class ItemsTests: XCTestCase {
             seasons: ["Summer"], weather: ["rain"], sub: ["Hood"], weight: 320.5,
             maintenance: Maintenance(notes: "Re-proof", intervalDays: 365, log: [MaintenanceLogEntry(date: "2026-03-01", note: "done")]),
             stats: ItemStats(packed: 3, used: 2, unused: 1, skipped: 1, lastReviewed: "2026-05-01T00:00:00.000Z"),
-            ownedBy: "Anna", price: 1299, qtyOwned: 2, keep: true,
+            ownedBy: "Robin", price: 1299, qtyOwned: 2, keep: true,
             sourceListId: "l1", sourceItemId: "src1", custom: true, checked: true, skipped: true, used: false, edited: true,
             itemId: "cat1", memId: "", link: true, ovContainer: "", tplContainer: "Hiking backpack",
             defContainer: "Day pack", ovPhase: "door", defPhase: "week")
@@ -269,7 +269,7 @@ final class ItemsTests: XCTestCase {
     }
 
     func testNewItemFromARawPartialLaysItOverTheDefaultsAsTheJSSpreadDoes() {
-        let it = newItem(json: ["name": "Tent", "weather": ["rain", "sunshine"], "owner": "Anna"])
+        let it = newItem(json: ["name": "Tent", "weather": ["rain", "sunshine"], "owner": "Robin"])
         XCTAssertEqual(it.container, "Carry-on / hand luggage")
         XCTAssertEqual(it.phase, "week")
         XCTAssertEqual(it.weather, ["rain"])

@@ -13,8 +13,12 @@ After that, a new version is one click: **Actions → TestFlight → Run workflo
 5. Create. Nothing else on that page matters for TestFlight.
 
 Then, still in App Store Connect: **TestFlight → Internal Testing → "+"** → make a
-group called **Martin** and add yourself to it. (The other apps have this group
-already; this app needs its own.)
+tester group and add yourself to it. (The other apps have such a group already;
+this app needs its own.) Its name goes into GitHub as the repository variable
+**`TESTER_GROUP`** (Settings → Secrets and variables → Actions → **Variables** →
+New repository variable) — or, to keep it out of the run's log as well, as a
+repository **secret** of the same name. It is not written in this repository,
+which is public; without it the TestFlight run stops before it builds anything.
 
 ## 2. Give the workflow the issuer ID (browser, once)
 
@@ -28,8 +32,9 @@ page — a long code with dashes. Copy it, then in GitHub:
 
 **Actions → TestFlight → Run workflow.** It runs the whole test suite first (a
 red suite ships nothing), then builds for the iPhone and for the Mac, sends both
-to TestFlight and releases them to the Martin group. Apple takes a few minutes;
-then the TestFlight app on each device offers it.
+to TestFlight and releases them to the tester group. Apple takes a few minutes;
+then the TestFlight app on each device offers it. Whatever is typed into **notes**
+when the run is started becomes the build's **What to Test** in TestFlight.
 
 ## The first sync
 

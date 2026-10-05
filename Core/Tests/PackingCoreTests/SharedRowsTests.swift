@@ -23,7 +23,7 @@ final class SharedRowsTests: XCTestCase {
     func testConditionsARoundTripKeepsTheIdItemsAreStampedWithVerbatim() {
         let list = [
             ItemCondition(id: "good", label: "Good", tone: "", replace: false),
-            ItemCondition(id: "borrowed-from-anna", label: "Borrowed", tone: "warn", replace: false),
+            ItemCondition(id: "borrowed-from-robin", label: "Borrowed", tone: "warn", replace: false),
             ItemCondition(id: "failing", label: "Failing", tone: "danger", replace: true),
         ]
         let back = conditionsFromRows(conditionsToRows(list))
@@ -49,16 +49,16 @@ final class SharedRowsTests: XCTestCase {
 
     // JS: 'people: a round trip keeps the colour, and the id is the same on both devices'
     func testPeopleARoundTripKeepsTheColourAndTheIdIsTheSameOnBothDevices() {
-        let people = [Person(id: "whatever-local-id", name: "Anna", color: "#a855f7")]
+        let people = [Person(id: "whatever-local-id", name: "Robin", color: "#a855f7")]
         let back = peopleFromRows(peopleToRows(people))
-        XCTAssertEqual(back[0].name, "Anna")
+        XCTAssertEqual(back[0].name, "Robin")
         XCTAssertEqual(back[0].color, "#a855f7")
-        XCTAssertEqual(back[0].id, "people:anna")   // derived from the name, not generated
+        XCTAssertEqual(back[0].id, "people:robin")   // derived from the name, not generated
     }
 
     // JS: 'people: the same name twice collapses to one row rather than doubling'
     func testPeopleTheSameNameTwiceCollapsesToOneRowRatherThanDoubling() {
-        let rows = peopleToRows(json: [["name": "Anna", "color": "#a855f7"], ["name": " anna ", "color": "#22c55e"]])
+        let rows = peopleToRows(json: [["name": "Robin", "color": "#a855f7"], ["name": " robin ", "color": "#22c55e"]])
         XCTAssertEqual(rows.count, 1)
         XCTAssertEqual(rows[0].data["color"], "#a855f7")   // first spelling and first colour win
     }
@@ -69,7 +69,7 @@ final class SharedRowsTests: XCTestCase {
         XCTAssertEqual(rows.count, 3)
         XCTAssertEqual(namesFromRows(rows, "places"), ["Attic", "Garage", "RV / camper"])
         // Rows of another kind are never picked up by mistake.
-        XCTAssertEqual(namesFromRows(rows + namesToRows("owners", ["Martin"]), "owners"), ["Martin"])
+        XCTAssertEqual(namesFromRows(rows + namesToRows("owners", ["Kim"]), "owners"), ["Kim"])
     }
 
     // JS: 'presets: re-saving under a name you already used replaces it, never doubles it'
@@ -86,10 +86,10 @@ final class SharedRowsTests: XCTestCase {
 
     // JS: 'sharedRowsOfKind: rows of other lists are never mixed in'
     func testSharedRowsOfKindRowsOfOtherListsAreNeverMixedIn() {
-        let rows = namesToRows("places", ["Attic"]) + namesToRows("owners", ["Martin"])
-            + peopleToRows(json: [["name": "Anna"]])
+        let rows = namesToRows("places", ["Attic"]) + namesToRows("owners", ["Kim"])
+            + peopleToRows(json: [["name": "Robin"]])
         XCTAssertEqual(sharedRowsOfKind(rows, "places").map { $0.name }, ["Attic"])
-        XCTAssertEqual(sharedRowsOfKind(rows, "people").map { $0.name }, ["Anna"])
+        XCTAssertEqual(sharedRowsOfKind(rows, "people").map { $0.name }, ["Robin"])
         XCTAssertEqual(sharedRowsOfKind(rows, "presets"), [])
     }
 
@@ -109,7 +109,7 @@ final class SharedRowsTests: XCTestCase {
         }
         XCTAssertEqual(isFactoryList("places", json: JSONValue(DEFAULT_STORAGE_LOCATIONS + ["Boat locker"])), false)
         XCTAssertEqual(isFactoryList("people", DEFAULT_PEOPLE.map { ["name": .string($0.name), "color": "#123456"] }), false)
-        XCTAssertEqual(isFactoryList("people", json: [["name": "Martin"], ["name": "Bengt"]]), false)
+        XCTAssertEqual(isFactoryList("people", json: [["name": "Kim"], ["name": "Bengt"]]), false)
         XCTAssertEqual(isFactoryList("conditions", DEFAULT_ITEM_CONDITIONS.map { c -> JSONValue in
             var o = c.json
             o["label"] = .string(c.label.uppercased())
@@ -117,7 +117,7 @@ final class SharedRowsTests: XCTestCase {
         }), false)
         // Presets and owners have no factory version, so nothing is ever "just default".
         XCTAssertEqual(isFactoryList("presets", json: []), false)
-        XCTAssertEqual(isFactoryList("owners", json: ["Martin"]), false)
+        XCTAssertEqual(isFactoryList("owners", json: ["Kim"]), false)
     }
 
     // JS: 'sharedRowsFrom: every kind builds rows, and an unknown kind builds none'
@@ -168,21 +168,21 @@ final class SharedRowsTests: XCTestCase {
 
     // JS: 'ownersByUsage: the biggest owner comes first, ties settle A–Z'
     func testOwnersByUsageTheBiggestOwnerComesFirstTiesSettleAZ() {
-        let counts = ["martin": 300, "anna": 120, "shared": 120, "the kids": 0]
+        let counts = ["kim": 300, "robin": 120, "shared": 120, "the kids": 0]
         XCTAssertEqual(
-            ownersByUsage(["The kids", "Shared", "Anna", "Martin"], counts),
-            ["Martin", "Anna", "Shared", "The kids"]
+            ownersByUsage(["The kids", "Shared", "Robin", "Kim"], counts),
+            ["Kim", "Robin", "Shared", "The kids"]
         )
         // A name nobody owns anything under still appears — it just sinks.
-        XCTAssertEqual(ownersByUsage(["Bengt", "Martin"], counts), ["Martin", "Bengt"])
+        XCTAssertEqual(ownersByUsage(["Bengt", "Kim"], counts), ["Kim", "Bengt"])
         // Counts are matched case-insensitively, the same way the roster de-duplicates.
-        XCTAssertEqual(ownersByUsage(["anna", "MARTIN"], counts), ["MARTIN", "anna"])
+        XCTAssertEqual(ownersByUsage(["robin", "KIM"], counts), ["KIM", "robin"])
         // No counts at all is simply A–Z, so an empty catalogue reads sensibly.
-        XCTAssertEqual(ownersByUsage(["Shared", "Anna"], [:]), ["Anna", "Shared"])
+        XCTAssertEqual(ownersByUsage(["Shared", "Robin"], [:]), ["Robin", "Shared"])
         XCTAssertEqual(ownersByUsage([], counts), [])
         // A plain object works as well as a Map — the helper shouldn't care.
         // (Both are the same dictionary here.)
-        XCTAssertEqual(ownersByUsage(["Anna", "Martin"], ["martin": 5, "anna": 1]), ["Martin", "Anna"])
+        XCTAssertEqual(ownersByUsage(["Robin", "Kim"], ["kim": 5, "robin": 1]), ["Kim", "Robin"])
     }
 
     // JS: 'grabToRows/grabFromRows: a list survives the round trip, hyphen and all'
@@ -277,9 +277,9 @@ final class SharedRowsTests: XCTestCase {
     }
 
     func testPeopleToRowsStepsOverJunkAndFillsAMissingColour() {
-        // node: peopleToRows([{name:'Anna'}, null, 'Bo', {name:' '}, {name:'Bo', color:'#fff'}])
-        let rows = peopleToRows(json: [["name": "Anna"], nil, "Bo", ["name": " "], ["name": "Bo", "color": "#fff"]])
-        XCTAssertEqual(rows.map { $0.id }, ["people:anna", "people:bo"])
+        // node: peopleToRows([{name:'Robin'}, null, 'Bo', {name:' '}, {name:'Bo', color:'#fff'}])
+        let rows = peopleToRows(json: [["name": "Robin"], nil, "Bo", ["name": " "], ["name": "Bo", "color": "#fff"]])
+        XCTAssertEqual(rows.map { $0.id }, ["people:robin", "people:bo"])
         XCTAssertEqual(rows.map { $0.order }, [0, 1])
         XCTAssertEqual(rows.map { $0.data }, [["color": "#3b82f6"], ["color": "#fff"]])
     }
@@ -304,10 +304,10 @@ final class SharedRowsTests: XCTestCase {
     }
 
     func testIsFactoryListComparesTheSpellingAndFillsAMissingColour() {
-        // node: a lower-case 'martin' is NOT the factory roster; a missing colour IS
+        // node: a lower-case 'kim' is NOT the factory roster; a missing colour IS
         // (coercePerson fills in the first palette colour, which is the factory one).
-        XCTAssertEqual(isFactoryList("people", json: [["name": "martin", "color": "#3b82f6"], ["name": "Anna", "color": "#a855f7"]]), false)
-        XCTAssertEqual(isFactoryList("people", json: [["name": "Martin"], ["name": "Anna", "color": "#a855f7"]]), true)
+        XCTAssertEqual(isFactoryList("people", json: [["name": "kim", "color": "#3b82f6"], ["name": "Robin", "color": "#a855f7"]]), false)
+        XCTAssertEqual(isFactoryList("people", json: [["name": "Kim"], ["name": "Robin", "color": "#a855f7"]]), true)
         XCTAssertEqual(isFactoryList("places", DEFAULT_STORAGE_LOCATIONS.map { ["name": .string($0)] }), true)
         // The typed lists get there through `.json`.
         XCTAssertEqual(isFactoryList("conditions", DEFAULT_ITEM_CONDITIONS.map { $0.json }), true)
@@ -315,9 +315,9 @@ final class SharedRowsTests: XCTestCase {
     }
 
     func testNameSortingMatchesNodeOnSwedishLetters() {
-        // node (ICU, 'en'): ["anna","Anna B","ärlig","Åsa","Bo","Örjan","Zoe"]
-        let rows = namesToRows("owners", ["Örjan", "anna", "Zoe", "Åsa", "Bo", "Anna B", "ärlig"])
-        XCTAssertEqual(namesFromRows(rows, "owners"), ["anna", "Anna B", "ärlig", "Åsa", "Bo", "Örjan", "Zoe"])
+        // node (ICU, 'en'): ["alex","Alex B","ärlig","Åsa","Bo","Örjan","Zoe"]
+        let rows = namesToRows("owners", ["Örjan", "alex", "Zoe", "Åsa", "Bo", "Alex B", "ärlig"])
+        XCTAssertEqual(namesFromRows(rows, "owners"), ["alex", "Alex B", "ärlig", "Åsa", "Bo", "Örjan", "Zoe"])
         // node: ownersByUsage(['b','A','a','B'], {}) → ["a","A","b","B"]
         XCTAssertEqual(ownersByUsage(["b", "A", "a", "B"]), ["a", "A", "b", "B"])
     }

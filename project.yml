@@ -100,5 +100,8 @@ schemes:
     test:
       targets:
         - AMSPackingUITests
-        # The model's own tests live in the Core package and run with the app's.
+        # The model's own tests live in the Core package and run with the app's —
+        # BOTH bundles, on the iPhone and on the Mac (until 0.6x the library's ran
+        # only in the "core" job's `swift test`; the spec pass, 5 Oct 2026).
         - package: PackingCore/PackingCoreTests
+        - package: PackingCore/PackingLibraryTests

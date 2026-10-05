@@ -71,7 +71,7 @@ final class ThingsAndCareFixesTests: XCTestCase {
         // …and with that, everything that reads the id sees it.
         XCTAssertTrue(lib.buySuggestions(today: "2026-10-05").contains { $0.item.name == "Boots" && $0.reason == "Needs replacing" },
                       "the repaired thing is not offered on To buy")
-        XCTAssertEqual(lib.usesOf("conditions")[normName("retire")], 1, "Your choices does not see it in use")
+        XCTAssertEqual(lib.usesOf("conditions")[normName("retire")]?.things, 1, "Your choices does not see it in use")
     }
 
     func testHisOwnConditionIsRepairedByItsOwnLabel() {

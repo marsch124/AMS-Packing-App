@@ -39,7 +39,7 @@
 // people and the standard storage places live in the CODE; a kind with no rows
 // means “use the defaults”, and your first real edit is what writes rows. v118
 // seeded factory phases into shared data using stable ids and they landed exactly
-// on top of Martin's customised rows and replaced them — stable ids prevent
+// on top of his customised rows and replaced them — stable ids prevent
 // duplication precisely BY overwriting. Same mechanism, so: never seed.
 //
 // 🚨 'grab' (v163) is a SIXTH KIND IN THIS EXISTING TABLE, and that is the whole
@@ -58,9 +58,15 @@ public let SHARED_KINDS: [String] = ["conditions", "presets", "people", "owners"
 /// stores no rows at all, and both devices show these two straight from here.
 /// (In JS these are `{ name, color }` with NO id; here the id is "" — give each one
 /// `sharedRowId("people", name)` before showing it, as the web app's `loadPeople` does.)
+///
+/// 🚨 INVENTED names, unlike the web app's, which are the owner's household: this
+/// repository is public (the spec pass, 5 Oct 2026: "two real first names are visible in
+/// the app's public code"). The same two the practice library uses. Only their names
+/// differ from the JS — how many, their colours and the rule that they are the factory
+/// list are still compared by the parity check (tools/parity/QUESTIONS.md §16, N8).
 public let DEFAULT_PEOPLE: [Person] = [
-    Person(id: "", name: "Martin", color: PERSON_COLORS[0]),
-    Person(id: "", name: "Anna", color: PERSON_COLORS[1]),
+    Person(id: "", name: "Kim", color: PERSON_COLORS[0]),
+    Person(id: "", name: "Robin", color: PERSON_COLORS[1]),
 ]
 
 public func sharedRowId(_ kind: String, _ key: String?) -> String { "\(kind):\(normName(key))" }

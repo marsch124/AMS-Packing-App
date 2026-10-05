@@ -10,8 +10,8 @@ final class PeopleTests: XCTestCase {
 
     // JS: 'coercePerson: trims name, validates colour, ensures id'
     func testCoercePersonTrimsNameValidatesColourEnsuresId() throws {
-        let p = try XCTUnwrap(coercePerson(json: ["name": "  Anna ", "color": "nope"]))
-        XCTAssertEqual(p.name, "Anna")
+        let p = try XCTUnwrap(coercePerson(json: ["name": "  Robin ", "color": "nope"]))
+        XCTAssertEqual(p.name, "Robin")
         XCTAssertEqual(p.color, PERSON_COLORS[0])
         XCTAssertFalse(p.id.isEmpty)
         XCTAssertEqual(coercePerson(json: ["name": "X", "color": "#a855f7"])?.color, "#a855f7")
@@ -19,8 +19,8 @@ final class PeopleTests: XCTestCase {
 
     // JS: 'personColor: roster colour when known, stable hash otherwise, blank for empty'
     func testPersonColorRosterColourWhenKnownStableHashOtherwiseBlankForEmpty() {
-        let people = [newPerson(name: "Martin", color: "#3b82f6"), newPerson(name: "Anna", color: "#a855f7")]
-        XCTAssertEqual(personColor("martin", people), "#3b82f6") // case-insensitive
+        let people = [newPerson(name: "Kim", color: "#3b82f6"), newPerson(name: "Robin", color: "#a855f7")]
+        XCTAssertEqual(personColor("kim", people), "#3b82f6") // case-insensitive
         XCTAssertEqual(personColor("", people), "")
         let emil = personColor("Emil", people)
         XCTAssertTrue(PERSON_COLORS.contains(emil))
@@ -29,18 +29,18 @@ final class PeopleTests: XCTestCase {
 
     // JS: 'assignedPeople: distinct packer names, first-seen order, case-folded'
     func testAssignedPeopleDistinctPackerNamesFirstSeenOrderCaseFolded() {
-        let entries = [Item(packer: "Anna"), Item(packer: ""), Item(packer: "Martin"), Item(packer: "anna"), Item(packer: "  ")]
-        XCTAssertEqual(assignedPeople(entries), ["Anna", "Martin"])
+        let entries = [Item(packer: "Robin"), Item(packer: ""), Item(packer: "Kim"), Item(packer: "robin"), Item(packer: "  ")]
+        XCTAssertEqual(assignedPeople(entries), ["Robin", "Kim"])
     }
 
     // JS: 'groupByPacker: roster order first, strays A–Z, unassigned always last'
     func testGroupByPackerRosterOrderFirstStraysAZUnassignedAlwaysLast() {
         func e(_ name: String, _ packer: String) -> Item { Item(name: name, packer: packer) }
         let out = groupByPacker(
-            [e("Tent", "Anna"), e("Map", ""), e("Boots", "Zoe"), e("Fins", "Martin"), e("Rope", "Bo"), e("Torch", "anna")],
-            ["Martin", "Anna"]
+            [e("Tent", "Robin"), e("Map", ""), e("Boots", "Zoe"), e("Fins", "Kim"), e("Rope", "Bo"), e("Torch", "robin")],
+            ["Kim", "Robin"]
         )
-        XCTAssertEqual(out.map { $0.packer }, ["Martin", "Anna", "Bo", "Zoe", ""])
+        XCTAssertEqual(out.map { $0.packer }, ["Kim", "Robin", "Bo", "Zoe", ""])
         // Case-folded into one block, keeping the spelling of the first entry seen.
         XCTAssertEqual(out[1].entries.map { $0.name }, ["Tent", "Torch"])
         XCTAssertEqual(out[4].entries.map { $0.name }, ["Map"])
@@ -55,13 +55,13 @@ final class PeopleTests: XCTestCase {
     // JS: 'groupByPacker: nobody assigned is one unassigned block, and nothing is dropped'
     func testGroupByPackerNobodyAssignedIsOneUnassignedBlockAndNothingIsDropped() {
         let rows = [Item(name: "A"), Item(name: "B", packer: "  ")]
-        let out = groupByPacker(rows, ["Martin"])
+        let out = groupByPacker(rows, ["Kim"])
         XCTAssertEqual(out.count, 1)
         XCTAssertEqual(out[0].packer, "")
         XCTAssertEqual(out[0].entries.count, 2)
-        XCTAssertEqual(groupByPacker([], ["Martin"]), [])
+        XCTAssertEqual(groupByPacker([], ["Kim"]), [])
         // Every entry lands in exactly one block, whatever the roster says.
-        let many = [Item(packer: "X"), Item(packer: ""), Item(packer: "Martin")]
+        let many = [Item(packer: "X"), Item(packer: ""), Item(packer: "Kim")]
         XCTAssertEqual(groupByPacker(many, []).reduce(0) { $0 + $1.entries.count }, many.count)
     }
 
@@ -90,7 +90,7 @@ final class PeopleTests: XCTestCase {
         XCTAssertEqual(c.color, "#22c55e")
         XCTAssertEqual(c.extra, ["nickname": "E"])                             // unknown keys kept, `owner` never
         XCTAssertEqual(Person(json: c.json), c)
-        XCTAssertNil(coercePerson(json: "Anna"))                               // not an object: JS hands it back
+        XCTAssertNil(coercePerson(json: "Robin"))                               // not an object: JS hands it back
         XCTAssertNil(coercePerson(json: nil))
         // A name that is not a string reads as ''; an id that is not a string is replaced.
         let d = Person(json: ["id": 7, "name": 42])

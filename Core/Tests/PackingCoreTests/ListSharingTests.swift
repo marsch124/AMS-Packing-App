@@ -138,13 +138,13 @@ final class ListSharingTests: XCTestCase {
 
     // JS: 'encodeListShare: whose-it-is comes from ownedBy, and the sync address stays home'
     func testWhoseItIsComesFromOwnedByAndTheSyncAddressStaysHome() throws {
-        var tent = newItem(name: "Tent", ownedBy: "Anna")
+        var tent = newItem(name: "Tent", ownedBy: "Robin")
         tent.extra["owner"] = "someone@example.com"
         let code = try encodeListShare(ownedList([tent]))
         let text = try unpackShare(code)
         XCTAssertFalse(text.contains("@"), "no address anywhere in the shared text")
         XCTAssertFalse(text.contains("example.com"))
-        XCTAssertEqual(try decodeListShare(code).items[0].ownedBy, "Anna")
+        XCTAssertEqual(try decodeListShare(code).items[0].ownedBy, "Robin")
     }
 
     // JS: 'encodeListShare: an item with only a sync-stamped address shares with no owner at all'
@@ -161,7 +161,7 @@ final class ListSharingTests: XCTestCase {
     // JS: 'encodeListShare: an address that reached ownedBy is refused too — whole, cut short, or inside other words'
     func testAnAddressThatReachedOwnedByIsRefusedToo() throws {
         let long = String(repeating: "a", count: 38) + "@example.com"   // cut at 40 characters it no longer LOOKS like an address
-        for bad in ["someone@example.com", "  someone@example.com ", long, "Anna <someone@example.com>"] {
+        for bad in ["someone@example.com", "  someone@example.com ", long, "Robin <someone@example.com>"] {
             let it = newItem(name: "Lamp", ownedBy: bad)
             let text = try unpackShare(encodeListShare(ownedList([it])))
             XCTAssertFalse(text.contains("@"), "refused: \(bad)")
@@ -172,10 +172,10 @@ final class ListSharingTests: XCTestCase {
     // JS: 'decodeListShare: an OLD code carrying an address in `u` cannot plant it'
     func testAnOldCodeCarryingAnAddressInUCannotPlantIt() throws {
         // exactly what a pre-v186 app wrote
-        let old = packShare("{\"k\":\"tpl\",\"v\":1,\"n\":\"Camping\",\"x\":[{\"n\":\"Tent\",\"u\":\"someone@example.com\"},{\"n\":\"Mat\",\"u\":\"Anna\"}]}")
+        let old = packShare("{\"k\":\"tpl\",\"v\":1,\"n\":\"Camping\",\"x\":[{\"n\":\"Tent\",\"u\":\"someone@example.com\"},{\"n\":\"Mat\",\"u\":\"Robin\"}]}")
         let shared = try decodeListShare(old)
         XCTAssertEqual(shared.items[0].ownedBy, "")
-        XCTAssertEqual(shared.items[1].ownedBy, "Anna")
+        XCTAssertEqual(shared.items[1].ownedBy, "Robin")
         XCTAssertTrue(shared.items.allSatisfy { $0.json["owner"] == nil }, "the reserved field is never written")
         let rebuilt = listFromShare(shared)
         XCTAssertFalse(rebuilt.json.text().contains("@"), "nothing of the address survives into the saved template")
@@ -184,9 +184,9 @@ final class ListSharingTests: XCTestCase {
 
     // JS: 'encodeListShare → listFromShare: a real owner name survives the round trip'
     func testARealOwnerNameSurvivesTheRoundTrip() throws {
-        let original = ownedList([newItem(name: "Tent", ownedBy: "Anna"), newItem(name: "Stove")])
+        let original = ownedList([newItem(name: "Tent", ownedBy: "Robin"), newItem(name: "Stove")])
         let rebuilt = listFromShare(try decodeListShare(encodeListShare(original)))
-        XCTAssertEqual(rebuilt.items[0].ownedBy, "Anna")
+        XCTAssertEqual(rebuilt.items[0].ownedBy, "Robin")
         XCTAssertEqual(rebuilt.items[1].ownedBy, "")
     }
 

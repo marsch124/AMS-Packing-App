@@ -52,7 +52,8 @@ final class HealthTests: XCTestCase {
         lib.templates.removeAll { $0.id == sailing.id }      // the list goes, its memberships stay
         let worries = lib.worries()
         XCTAssertEqual(worries.count, 1)
-        XCTAssertTrue(worries[0].says.contains("no longer exists"), "'\(worries[0].says)'")
+        // "Template", not "list": since 0.34 a list is only what you pack from (the spec pass, 5 Oct 2026).
+        XCTAssertEqual(worries[0].says.hasSuffix("on a template that no longer exists."), true, "'\(worries[0].says)'")
     }
 
     func testThingsOnNoListAreNotAWorry() {

@@ -25,9 +25,9 @@ final class DeviceAuditTests: XCTestCase {
 
     // JS: 'referencedListValues sees a packer set on a catalog item, not only on a trip'
     func testReferencedListValuesSeesAPackerSetOnACatalogItemNotOnlyOnATrip() {
-        let lists = [newList(name: "Dive", items: [newItem(name: "Wetsuit", packer: "Anna")])]
-        XCTAssertTrue(referencedListValues(lists: lists).has("people", "anna"))
-        XCTAssertTrue(referencedListValues(lists: lists).people.contains("anna"))
+        let lists = [newList(name: "Dive", items: [newItem(name: "Wetsuit", packer: "Robin")])]
+        XCTAssertTrue(referencedListValues(lists: lists).has("people", "robin"))
+        XCTAssertTrue(referencedListValues(lists: lists).people.contains("robin"))
     }
 
     // JS: 'referencedListValues: gathers what the device data points at, normalised'
@@ -35,20 +35,20 @@ final class DeviceAuditTests: XCTestCase {
         let arg: JSONValue = [
             "lists": [[
                 "items": [
-                    auditItem(["storage": "Loft", "ownedBy": "Anna", "condition": "worn", "phase": "week"]),
-                    auditItem(["storage": "  loft  ", "ownedBy": "anna", "condition": "worn", "phase": "door"]),
+                    auditItem(["storage": "Loft", "ownedBy": "Robin", "condition": "worn", "phase": "week"]),
+                    auditItem(["storage": "  loft  ", "ownedBy": "robin", "condition": "worn", "phase": "door"]),
                     auditItem(["storage": "Boat locker", "ownedBy": "", "condition": "", "phase": "week"]),
                 ],
             ]],
-            "events": [["entries": [["storage": "Garage", "packer": "Martin", "phase": "after"]]]],
+            "events": [["entries": [["storage": "Garage", "packer": "Kim", "phase": "after"]]]],
             "actions": [["phase": "prep"]],
         ]
         let r = referencedListValues(json: arg)
         // Case and spacing collapse, so "Loft" and "  loft  " are one place.
         XCTAssertEqual(r.places.sorted(), ["boat locker", "garage", "loft"])
-        XCTAssertEqual(r.owners.sorted(), ["anna"])
+        XCTAssertEqual(r.owners.sorted(), ["robin"])
         XCTAssertEqual(r.conditions.sorted(), ["worn"])
-        XCTAssertEqual(r.people.sorted(), ["martin"])
+        XCTAssertEqual(r.people.sorted(), ["kim"])
         XCTAssertEqual(r.phases.sorted(), ["after", "door", "prep", "week"])
         // Blanks are never referenced values.
         XCTAssertFalse(r.owners.contains(""))
@@ -56,7 +56,7 @@ final class DeviceAuditTests: XCTestCase {
         // own data — "Loft", not the "loft" the comparison runs on. First seen wins.
         XCTAssertEqual(r.shown("places", "loft"), "Loft")
         XCTAssertEqual(r.shown("places", "boat locker"), "Boat locker")
-        XCTAssertEqual(r.shown("people", "martin"), "Martin")
+        XCTAssertEqual(r.shown("people", "kim"), "Kim")
 
         // The same data as typed values gives the same answer. (`Item(…)` does not
         // coerce, so a blank stays blank; the to-do carries the `phase` key the JS reads.)
@@ -64,9 +64,9 @@ final class DeviceAuditTests: XCTestCase {
             Item(phase: phase, storage: storage, ownedBy: ownedBy, condition: condition)
         }
         let typed = referencedListValues(
-            lists: [PackList(items: [it("Loft", "Anna", "worn", "week"), it("  loft  ", "anna", "worn", "door"),
+            lists: [PackList(items: [it("Loft", "Robin", "worn", "week"), it("  loft  ", "robin", "worn", "door"),
                                      it("Boat locker", "", "", "week")])],
-            events: [TripEvent(entries: [Item(phase: "after", packer: "Martin", storage: "Garage")])],
+            events: [TripEvent(entries: [Item(phase: "after", packer: "Kim", storage: "Garage")])],
             actions: [ActionItem(phase: "prep")]
         )
         XCTAssertEqual(typed, r)
@@ -114,7 +114,7 @@ final class DeviceAuditTests: XCTestCase {
                                  json: [["id": "new", "label": "Brand new"]]).missing, [])
         XCTAssertEqual(auditList("phases", ReferencedListValues(["phases": ["week", "custom-1"]]),
                                  json: [["id": "week", "label": "The week before"]]).missing, ["custom-1"])
-        XCTAssertEqual(auditList("people", ReferencedListValues(["people": ["anna"]]), json: [["name": "Anna"]]).missing, [])
+        XCTAssertEqual(auditList("people", ReferencedListValues(["people": ["robin"]]), json: [["name": "Robin"]]).missing, [])
         // A kind nothing points at (trip presets) is never audited.
         XCTAssertFalse(AUDITABLE_KINDS.contains("presets"))
         XCTAssertEqual(auditList("presets", ReferencedListValues(["presets": ["x"]]), json: []).missing, [])
@@ -212,10 +212,10 @@ final class DeviceAuditTests: XCTestCase {
     // --- not in the JS suite: answers taken from Node, pinning the odd corners ---
 
     func testAuditListKeyRulesMatchTheJSAnswers() {
-        // node: auditList('people', { people: new Set(['anna','5','true']) }, [{name:'Anna'}, 5, true, null, ['x']])
+        // node: auditList('people', { people: new Set(['robin','5','true']) }, [{name:'Robin'}, 5, true, null, ['x']])
         //       → used 3, listed 3, missing []  (a bare number or `true` stands for itself)
-        let p = auditList("people", ReferencedListValues(["people": ["anna", "5", "true"]]),
-                          json: [["name": "Anna"], 5, true, nil, ["x"]])
+        let p = auditList("people", ReferencedListValues(["people": ["robin", "5", "true"]]),
+                          json: [["name": "Robin"], 5, true, nil, ["x"]])
         XCTAssertEqual(p, ListAudit(kind: "people", used: 3, listed: 3))
         // node: auditList('places', { places: new Set(['b','a','B','ä','Z']) }, [{name:'A'}, 5])
         //       → listed 1, missing ["B","Z","b","ä"]  (plain `.sort()`: by UTF-16 unit, not A–Z)

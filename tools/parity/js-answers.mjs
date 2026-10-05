@@ -84,7 +84,7 @@ const modelPath = path.resolve(opts.model || path.join(HERE, '..', '..', '..', '
 if (!fs.existsSync(modelPath)) { console.error(`model not found: ${modelPath}`); process.exit(2); }
 const M = await import(pathToFileURL(modelPath).href);
 if (typeof M.shareSafeOwner !== 'function' || !Array.isArray(M.SYNC_RESERVED_KEYS)) {
-  console.error('This contract (version 3) needs the web app model v186 or later: shareSafeOwner / SYNC_RESERVED_KEYS are missing.'); process.exit(2);
+  console.error('This contract (version 4) needs the web app model v186 or later: shareSafeOwner / SYNC_RESERVED_KEYS are missing.'); process.exit(2);
 }
 const B = JSON.parse(fs.readFileSync(path.resolve(opts.backup), 'utf8'));
 if (!B || typeof B !== 'object' || !(Array.isArray(B.lists) || Array.isArray(B.events))) {
@@ -260,8 +260,21 @@ for (const p of RAW.phases) note('phase', p, PHASE_KEYS);
 if (nonEmptyArr(prefs.conditions)) M.setItemConditions(clone(prefs.conditions)); else M.setItemConditions([]);
 
 // 6.3 The Settings lists in force.
+//
+// The two starter packers (§16 N8). The web app's model names the owner's household;
+// the native model — its repository is public — names two invented people instead.
+// Wherever the factory roster ITSELF is written into an answer or used as an input,
+// this half reads the native names in its place, by position, so how many there are,
+// their colours and that they ARE the factory list are still compared, and no real
+// name ever enters this repository. `toModel` is the way back, for the one question
+// that hands a roster to the model to judge (`settings.isFactoryList`).
+const STARTER_NAMES = ['Kim', 'Robin'];
+const starters = (list) => list.map((p, i) => (i < STARTER_NAMES.length ? { ...p, name: STARTER_NAMES[i] } : { ...p }));
+const toModel = (list) => (Array.isArray(list) ? list.map((p, i) =>
+  (p && typeof p === 'object' && i < STARTER_NAMES.length && p.name === STARTER_NAMES[i] && M.DEFAULT_PEOPLE[i]
+    ? { ...p, name: M.DEFAULT_PEOPLE[i].name } : p)) : list);
 const CONDITIONS_IN = nonEmptyArr(prefs.conditions) ? clone(prefs.conditions) : M.DEFAULT_ITEM_CONDITIONS.map((c) => ({ ...c }));
-const PEOPLE_IN = nonEmptyArr(prefs.people) ? clone(prefs.people) : M.DEFAULT_PEOPLE.map((p) => ({ ...p }));
+const PEOPLE_IN = nonEmptyArr(prefs.people) ? clone(prefs.people) : starters(M.DEFAULT_PEOPLE);
 const PLACES_IN = nonEmptyArr(prefs.storageLocations) ? clone(prefs.storageLocations) : M.DEFAULT_STORAGE_LOCATIONS.slice();
 const OWNERS_IN = nonEmptyArr(prefs.owners) ? clone(prefs.owners) : [];
 const PEOPLE = M.peopleFromRows(M.peopleToRows(clone(PEOPLE_IN)));
@@ -826,7 +839,9 @@ for (const [suffix, makeLists, makeActions] of [['', () => clone(LISTS), () => c
   for (const kind of M.SHARED_KINDS) {
     ask('settings.rows', kind, () => M.sharedRowsFrom(kind, clone(inputs[kind])).map(shapeRow));
     ask('settings.rowsOfKind', kind, () => M.sharedRowsOfKind(allRows().reverse(), kind).map((r) => r.id));
-    ask('settings.isFactoryList', kind, () => ({ inForce: M.isFactoryList(kind, clone(inputs[kind])), factory: M.isFactoryList(kind, M.defaultListFor(kind)), defaultList: M.defaultListFor(kind) }));
+    ask('settings.isFactoryList', kind, () => (kind === 'people'
+      ? { inForce: M.isFactoryList(kind, toModel(clone(inputs[kind]))), factory: M.isFactoryList(kind, M.defaultListFor(kind)), defaultList: starters(M.defaultListFor(kind)) }
+      : { inForce: M.isFactoryList(kind, clone(inputs[kind])), factory: M.isFactoryList(kind, M.defaultListFor(kind)), defaultList: M.defaultListFor(kind) }));
   }
   ask('settings.back', 'conditions', () => M.conditionsFromRows(allRows().reverse()).map(shapeCondition));
   ask('settings.back', 'people', () => M.peopleFromRows(allRows().reverse()).map((p) => shapePerson(p)));
@@ -902,9 +917,9 @@ POOL.forEach((s, i) => ask('strings.compare', s, () => {
       return c;
     });
   }
-  const EMAILS = ['anna.berg@example.com', 'm.s@example.org', 'x@y.z', 'first_last+tag@example.com', '  spaced.name@example.com ', 'UPPER.case@example.com', 'élan.vital@example.com', '-lead@example.com', 'noatsign', 'two@@example.com', 'a b@example.com', ''];
+  const EMAILS = ['robin.berg@example.com', 'k.r@example.org', 'x@y.z', 'first_last+tag@example.com', '  spaced.name@example.com ', 'UPPER.case@example.com', 'élan.vital@example.com', '-lead@example.com', 'noatsign', 'two@@example.com', 'a b@example.com', ''];
   for (const e of [...EMAILS, ...PEOPLE_NAMES]) ask('strings.email', e, () => ({ looksLikeEmail: M.looksLikeEmail(e), ownerName: M.ownerNameFromEmail(e) }));
-  const OWNER_CASES = ['Anna Berg', 'Anna <anna.berg@example.com>', '  Two   Spaces  ', 'name@host', 'mailto:someone@example.com', 'at @ sign alone',
+  const OWNER_CASES = ['Robin Berg', 'Robin <robin.berg@example.com>', '  Two   Spaces  ', 'name@host', 'mailto:someone@example.com', 'at @ sign alone',
     'A very long owner name that runs well past forty characters', `${'x'.repeat(38)} late@example.com`];
   const owners = distinct([...EMAILS, ...OWNER_CASES, ...PEOPLE_NAMES, ...LISTS.flatMap((l) => l.items.map((it) => it.ownedBy)), ...EVENTS.flatMap((e) => e.entries.map((it) => it.ownedBy))].filter((v) => typeof v === 'string')).sort(cmpCodeUnit);
   for (const v of owners) ask('strings.shareSafeOwner', v, () => [M.shareSafeOwner(v), M.shareSafeOwner(v, 10)]);
@@ -939,6 +954,7 @@ ask('calc.constants', ALL, () => {
   const skip = new Set(['PHASES', 'PHASE_IDS', 'ITEM_CONDITIONS', 'ITEM_CONDITION_IDS']);
   const o = {};
   for (const [name, v] of Object.entries(M)) if (typeof v !== 'function' && !skip.has(name)) o[name] = v;
+  o.DEFAULT_PEOPLE = starters(M.DEFAULT_PEOPLE);      // §16 N8: the names, by position
   return o;
 });
 ask('calc.constructors', ALL, () => {
@@ -993,7 +1009,7 @@ ask('calc.constructors', ALL, () => {
 }
 {
   const INCOMING = {
-    oldBundle: '{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Anna <anna@example.com>"},{"name":"Mug","ownedBy":"  Anna   Berg  "}]}}',
+    oldBundle: '{"app":"ams-packing-list","kind":"trip","version":1,"exportedAt":"2026-08-01T00:00:00.000Z","owner":"sender@example.com","realmId":"sender@example.com","event":{"name":"Old shared trip","owner":"sender@example.com","realmId":"sender@example.com","mode":"quick","startDate":"2026-08-10","status":"done","reviewedAt":"2026-08-20T00:00:00.000Z","entries":[{"name":"Tent","owner":"sender@example.com","realmId":"rlm-1","ownedBy":"sender@example.com","sub":[{"0":"P","1":"e","2":"g","3":"s"},{"name":"Guy lines"},"Mallet","",{"x":1},null],"checked":true,"used":true},{"name":"Stove","owner":"Legacy Name","sub":"nope"},{"name":"Lamp","ownedBy":"Robin <robin@example.com>"},{"name":"Mug","ownedBy":"  Robin   Berg  "}]}}',
     // the same, with an emoji in the name that was taken apart: its two halves arrive as lone
     // surrogate ESCAPES in the JSON text (doubled backslashes here, so JSON.parse sees them)
     oldBundleEmoji: '{"app":"ams-packing-list","kind":"trip","version":1,"event":{"name":"Emoji trip","entries":[{"name":"Kit","sub":[{"0":"H","1":"i","2":" ","3":"\\ud83d","4":"\\ude00","5":"!"}]}]}}',
@@ -1001,7 +1017,7 @@ ask('calc.constructors', ALL, () => {
     noEvent: '{"kind":"trip"}',
   };
   for (const [name, json] of Object.entries(INCOMING)) ask('calc.tripBundleIncoming', name, () => importedEventShape(M.parseTripBundle(json)));
-  const OUTGOING = '{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Anna Berg","sub":[],"itemType":"reminder"}]}';
+  const OUTGOING = '{"id":"out","name":"Outgoing","owner":"me@example.com","realmId":"me@example.com","mode":"trip","startDate":"2026-10-01","entries":[{"id":"e1","name":"Rope","owner":"me@example.com","realmId":"me@example.com","ownedBy":"me@example.com","sub":["Sling","","Carabiner"],"weight":120,"checked":true,"used":false,"custom":true,"sourceListId":"l","sourceItemId":"i","stats":{"packed":3}},{"id":"e2","name":"Helmet","ownedBy":"Robin Berg","sub":[],"itemType":"reminder"}]}';
   ask('calc.tripBundleOutgoing', ALL, () => {
     const b = M.buildTripBundle(M.coerceEvent(JSON.parse(OUTGOING)), NOW);
     return { bundle: bundleShape(b), leaks: leaksOf(b) };
@@ -1096,7 +1112,7 @@ for (const q of questionKeys) answerCount += Object.keys(answers[q]).length;
 let errors = 0;
 for (const q of questionKeys) for (const v of Object.values(answers[q])) if (v && typeof v === 'object' && '$error' in v) errors += 1;
 const info = {
-  generator: 'js', contract: 3, today: TODAY, now: NOW,
+  generator: 'js', contract: 4, today: TODAY, now: NOW,
   locale: new Intl.Collator().resolvedOptions().locale,
   node: process.version, icu: process.versions.icu, unicode: process.versions.unicode,
   model: path.relative(HERE, modelPath),

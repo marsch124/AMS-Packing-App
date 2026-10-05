@@ -334,7 +334,7 @@ templates sharing a name as "two libraries have met on one account" (31 August 2
 
 ### What is on screen
 - Top row (padding 16): "A new template" — 20 heavy violet, id `newlist-title`; spacer; "Cancel" (outlined,
-  muted; the style's own 16 bold).
+  muted; the style's own 17 bold — 16 until 0.6x, spec 06 §20).
 - Scroll (side 16, bottom 24):
   - "WHAT IS IT CALLED" — 12 heavy muted, kerning 0.6.
   - Name field — no placeholder, 17 semibold ink, min height 44, card fill, 10-radius border in `Theme.line`, or in
@@ -411,7 +411,7 @@ search function so that the user can find a specific item without the need to sc
 - **Share** — `ShareDoor(id: "template-share")`: outlined violet capsule with the drawn share mark (18) and
   "Share"; label "Share". Opens the share sheet with title `Share “<name>”` and
   `link = library.shareLink(templateId:)` (§19).
-- **"Done"** — `HeaderButtonStyle` filled violet (white 16 bold on a capsule, min height 36).
+- **"Done"** — `HeaderButtonStyle` filled violet (white 17 bold on a capsule, min height 36; 16 until 0.6x).
 - Under the row, `needsLine` id `template-rename-needs` (15 bold red), cleared as soon as the typed name changes.
 
 **Group pills** (`FlowRow` spacing 6, side 16, bottom 4): the word "Group" (15 heavy muted, min height 36), then
@@ -1113,7 +1113,7 @@ appearance, loose lines staying in place. **In this app kits are data only**: th
 in the `kits` table, carried in backups, and a deleted thing is removed from every kit (`deleteThing`); a row's
 `kit` name travels on the membership into trip lines and share codes. No screen shows, makes or edits a kit, and
 `clusterByKit` is not used by any screen. The only trace on screen is the number of kit records among
-Settings' per-table device counts ("Kits").
+Settings' per-table device counts ("Groups of things" since 0.6x, "Kits" before — spec 06 §16).
 
 Tests: `KitsTests` — `testCoerceKitDeDupsMemberIdsAndNormalisesFields`, `testNewKitSaneDefaultsAndTimestamps`,
 `testKitEmojiOwnEmojiWinsElseTheDefault`, `testClusterByKitLooseEntriesStayInPlace`, `testAKitRoundTripsThroughJSON`;
@@ -1220,22 +1220,25 @@ Left by "Done" (`lists-done`, filled slate) or swipe down. Container `lists-deta
 
 ### Behaviour (`PackingLibrary/SettingsLists.swift`)
 - Entries: places = his stored order, or the 12 `DEFAULT_STORAGE_LOCATIONS`; owners = his list A–Z (empty by
-  default); packers = his, or the factory two (`DEFAULT_PEOPLE`); conditions = his, or New/Good/Worn/Needs replacing;
-  When = his timeline, or the factory seven.
-- Uses (`usesOf`): things' storage / ownedBy / packer / condition / phase by `normName`; for When also every trip
-  line's and every membership's phase.
-- Add: places/owners → `setNames(kind, list + [name])` (trimmed, de-duplicated by `normName`, so a repeat silently
-  vanishes); packers → a person with colour `PERSON_COLORS[count % 8]`; conditions → `newCondition`; When →
+  default); packers = his, or (0.6x) the packers his things name, or the factory two (`DEFAULT_PEOPLE`, the
+  invented Kim and Robin since 0.6x); conditions = his, or New/Good/Worn/Needs replacing; When = his timeline, or the
+  factory seven. The full behaviour, with rename and reorder (0.6x), is spec 06 §2.
+- Uses (`usesOf`, a `ChoiceUse` since 0.6x): things' storage / ownedBy / packer / condition / phase by `normName`;
+  for When also, counted apart, the trips with a line in it and the templates with a place in it.
+- Add: one he already has → "You already have <name>." and nothing added (0.6x; until then a repeat silently
+  vanished); places/owners → `setNames(kind, list + [name])`; packers → a person with colour `PERSON_COLORS[count % 8]`; conditions → `newCondition`; When →
   `newStep(named:)` appended, `setTimeline` — `newPhase` with its colour from `COVER_COLOURS` (§3) by the number of
   steps, so the eighth is indigo, never teal as the web app's pick made it (the spec pass, 5 Oct 2026). A list that
   equals the factory one is stored as **no rows**.
-- Remove: in use → "<label> is still used by <n> thing(s), so it stays." and nothing changes; else removed. Removing
-  the last entry of a kind brings the factory list back (no rows = defaults).
+- Remove: in use → the reason under that entry, naming things, trips and templates ("<label> is still used by 3
+  things and on 1 trip, so it stays.", 0.6x) and nothing changes; else removed. Removing the last entry of a kind
+  brings the factory list back (no rows = defaults).
 
 ### Tests
 UI `testHisOwnListsAreAddedAndProtectedWhileInUse` (title "Your choices", each hint > 80 characters, "Garage shelf"
 added as place row 12, used on a thing, then refused with `lists-problem`); `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
-(`list-places-add`); `testTheEditorsLeadWithTheirHeadings` (five headings). Model `SettingsListsTests` (5);
+(`list-places-add`); `testTheEditorsLeadWithTheirHeadings` (five headings); 0.6x `testYourChoicesSaysWhyRightWhereItWasPressed`,
+`testAChoiceIsRenamedAndMovedAndItsThingsFollow`. Model `SettingsListsTests` (13);
 `TemplateFacesTests.testNoTemplateIsGivenTealOrCyan` (the eighth step's colour).
 
 ---
@@ -1370,5 +1373,5 @@ deciding before a rewrite.
     delete question's text 14, the row editor's "Blank means…" 14, picker pills/aside/counts 14, Your
     choices counts and footer 14 — while `Headings.swift` says "Nothing under 15, so it still reads without
     glasses".
-33. [rule-break] **`DEFAULT_PEOPLE`** (factory packers, `SharedRows.swift`) holds two real first names in a
-    public repository.
+33. **Resolved in 0.6x** — ~~`DEFAULT_PEOPLE` holds two real first names in a public repository.~~ They are the
+    invented Kim and Robin (spec 06, item 29).

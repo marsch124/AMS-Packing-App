@@ -148,13 +148,13 @@ extension Parity {
                 return c
             }
         }
-        let EMAILS = ["anna.berg@example.com", "m.s@example.org", "x@y.z", "first_last+tag@example.com", "  spaced.name@example.com ",
+        let EMAILS = ["robin.berg@example.com", "k.r@example.org", "x@y.z", "first_last+tag@example.com", "  spaced.name@example.com ",
                       "UPPER.case@example.com", "élan.vital@example.com", "-lead@example.com", "noatsign", "two@@example.com",
                       "a b@example.com", ""]
         for e in EMAILS + PEOPLE_NAMES {
             ask("strings.email", e) { obj(["looksLikeEmail": .bool(looksLikeEmail(e)), "ownerName": .string(ownerNameFromEmail(e))]) }
         }
-        let OWNER_CASES = ["Anna Berg", "Anna <anna.berg@example.com>", "  Two   Spaces  ", "name@host", "mailto:someone@example.com",
+        let OWNER_CASES = ["Robin Berg", "Robin <robin.berg@example.com>", "  Two   Spaces  ", "name@host", "mailto:someone@example.com",
                            "at @ sign alone", "A very long owner name that runs well past forty characters",
                            "\(String(repeating: "x", count: 38)) late@example.com"]
         var allOwners: [String] = EMAILS

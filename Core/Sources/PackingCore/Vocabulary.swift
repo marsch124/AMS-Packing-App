@@ -18,7 +18,7 @@ public struct IdLabel: Equatable, Hashable, Sendable {
 
 // MARK: - What / where
 
-/// WHAT kind of thing an item is — the primary grouping in Martin's own lists.
+/// WHAT kind of thing an item is — the primary grouping in his own lists.
 public let CATEGORIES: [String] = [
     "Clothing", "Adventure clothing", "Footwear", "Sport gear", "Food & drink",
     "Toiletries", "Pharmacy / meds", "Electronics", "Documents & money",
@@ -51,7 +51,7 @@ public let CONTAINER_LIMITS_KG: [String: Double] = [
 
 // MARK: - Activity groups
 
-/// Activity GROUPS — the top level Martin organises his life activities under.
+/// Activity GROUPS — the top level he organises his life activities under.
 /// Every building-block list belongs to one of these (or '' = ungrouped / utility list).
 public struct ActivityGroup: Equatable, Hashable, Sendable {
     public var id: String
@@ -170,5 +170,5 @@ public let RETIRE_REASONS: [IdLabel] = [
 public let RETIRE_REASON_IDS: [String] = RETIRE_REASONS.map { $0.id }
 public func retireReasonLabel(_ id: String?) -> String { RETIRE_REASONS.first { $0.id == id }?.label ?? "" }
 
-/// Currencies offered for an item's price (the list Martin is likely to use first).
+/// Currencies offered for an item's price (the list he is likely to use first).
 public let CURRENCIES: [String] = ["SEK", "EUR", "USD", "GBP", "CHF", "NOK", "DKK"]

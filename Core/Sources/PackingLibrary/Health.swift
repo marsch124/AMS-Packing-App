@@ -59,7 +59,7 @@ extension Library {
         let ids = Set(templates.map(\.id))
         let lost = memberships.filter { !ids.contains($0.templateId) }
         if !lost.isEmpty {
-            out.append(Worry(says: "\(lost.count) thing\(lost.count == 1 ? " sits" : "s sit") on a list that no longer exists."))
+            out.append(Worry(says: "\(lost.count) thing\(lost.count == 1 ? " sits" : "s sit") on a template that no longer exists."))
         }
 
         // Photos nothing shows any more — left behind by a trip deleted before 0.59

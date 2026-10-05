@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Model tests
         run: cd Core && swift test
+      # The "What to Test" requests the TestFlight release makes, checked without the
+      # network — a release is the wrong moment to find one malformed (5 Oct 2026).
+      - name: The release script's own check
+        run: python3 tools/release-to-testers.py --self-check
 
   parity:
     # The Swift model and the web app's model answer the same 200-odd questions
@@ -128,8 +132,9 @@ jobs:
     # SwiftUI a click on a pill "succeeded" and selected nothing, three runs in
     # a row, while the same test is green here every time.
     runs-on: macos-26
-    # 120: at 108 UI tests (0.58, 4 Oct 2026) the iPhone job passed every one and was
-    # cancelled at 80 minutes while the quick model tests were still finishing.
+    # 120, the same room as the iPhone job: the Mac runs the same 110-odd UI tests and,
+    # since 0.6x, both bundles of model tests as well (the iPhone job outgrew 80 minutes
+    # at 108 UI tests, 0.58, 4 Oct 2026).
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4

@@ -6,14 +6,26 @@ light one.
 
 ## The six sections — `App/Sources/Sections.swift`
 
-| Section   | Colour | Hex       |
-|-----------|--------|-----------|
-| Home      | blue   | `#2f6fe0` |
-| Events    | green  | `#2f9e63` |
-| Templates | violet | `#7c5cd6` |
-| Care      | orange | `#dd7324` |
-| Actions   | red    | `#dc3d43` |
-| Settings  | slate  | `#64748b` |
+The tab names are Trips and To do; the code still calls those two sections
+`events` and `actions` (their identifiers never change with a label).
+
+| Tab (code name)        | Colour | Hex       | On the light card | On the dark card |
+|------------------------|--------|-----------|-------------------|------------------|
+| Home (`home`)          | blue   | `#2f6fe0` | 4.7 : 1           | 3.6 : 1          |
+| Trips (`events`)       | green  | `#2f9e63` | 3.4 : 1           | 4.9 : 1          |
+| Templates (`templates`)| violet | `#7c5cd6` | 4.8 : 1           | 3.5 : 1          |
+| Care (`care`)          | orange | `#dd7324` | 3.2 : 1           | 5.2 : 1          |
+| To do (`actions`)      | red    | `#dc3d43` | 4.4 : 1           | 3.8 : 1          |
+| Settings (`settings`)  | slate  | `#64748b` | 4.8 : 1           | 3.5 : 1          |
+
+**One shade each, for day and night alike** — unlike the page and text colours
+below, which are pairs. They are mid-tones on purpose: each reads at 3 : 1 or
+better on the light card (`#ffffff`) AND on the dark one (`#161f22`) — the
+WCAG contrast ratios above, worked out on 5 Oct 2026 — which is enough for
+what they colour: headings, bands, bold words and the fills of buttons with
+white words on them (white on each: the "light card" column). Normal-weight
+small text is never set in a section colour; that is what `ink` and `muted`
+are for.
 
 Red `#dc3d43` is also the colour of a problem message (first run, a failed
 restore, a grab list that cannot be saved — "Put at least one thing on the list
@@ -50,7 +62,7 @@ blue, the tone Make gives.
 | teal   | `#17969b` |                               |
 | other  | `#64748b` | (none arrives since 5 Oct 2026; a factory row from the web app could carry one) |
 
-## Workout pills (WET) — decided 28 September 2026, built (`WorkoutTone`, 0.40)
+## Workout pills (WET) — decided 28 September 2026, built in 0.40 (`WorkoutTone`, HomeScreen.swift)
 
 WET = workout, exercise, training. On **Create new trip** and **Trip
 settings**, each WET template gets its own colour, so a sport is recognised by
@@ -77,5 +89,5 @@ Bike and Strength are the same hexes AMS Workout Sync uses.
 offered for Mobility and turned down; rose pink was picked from rose,
 raspberry and warm sand. Do not use teal for anything new.
 
-Status: decided during his test round of 0.39 and built after he says he is
-done testing, with photos in day and night mode before it ships.
+Status: decided during his test round of 0.39 and built in 0.40 ("workout
+colours" in What's new), seen in day and night mode before it shipped.

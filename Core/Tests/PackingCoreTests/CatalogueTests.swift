@@ -213,8 +213,8 @@ final class CatalogueTests: XCTestCase {
     // JS: 'packer is intrinsic: an item default reaches the catalog and every trip built from it'
     func testPackerIsIntrinsic() {
         XCTAssertTrue(INTRINSIC_FIELDS.contains("packer"))
-        let cat = catalogItemFromResolved(newItem(name: "Wetsuit", packer: "Anna"))
-        XCTAssertEqual(cat.packer, "Anna")
+        let cat = catalogItemFromResolved(newItem(name: "Wetsuit", packer: "Robin"))
+        XCTAssertEqual(cat.packer, "Robin")
         // A later edit in the item editor pushes the new answer onto the shared item.
         XCTAssertEqual(applyIntrinsic(cat, json: ["packer": "Jonas"]).packer, "Jonas")
         // …and clearing it back to "anyone" must actually clear it ('' , not undefined).
@@ -223,12 +223,12 @@ final class CatalogueTests: XCTestCase {
 
     // JS: 'a per-list link carries no packer of its own — the shared item stays the answer'
     func testAPerListLinkCarriesNoPackerOfItsOwn() {
-        let link = linkFromResolved(newItem(name: "Wetsuit", packer: "Anna"), "item-1")
+        let link = linkFromResolved(newItem(name: "Wetsuit", packer: "Robin"), "item-1")
         // JS: `link.packer === undefined`. Here: blank, and flagged as a link — which is
         // what makes applyIntrinsic pass over it.
         XCTAssertEqual(link.packer, "")
         XCTAssertTrue(link.link)
-        XCTAssertEqual(applyIntrinsic(newItem(name: "Wetsuit", packer: "Anna"), link).packer, "Anna")
+        XCTAssertEqual(applyIntrinsic(newItem(name: "Wetsuit", packer: "Robin"), link).packer, "Robin")
     }
 
     // JS: 'thumb + photo ids survive the catalog round-trip (edit propagates everywhere)'
@@ -308,10 +308,10 @@ final class CatalogueTests: XCTestCase {
         // Two copies of one item, as a pre-relational backup file holds them: the owner
         // is on one copy only and must not be lost when they are merged back into one.
         let list = coerceList(PackList(id: "l1", name: "Travel", items: [newItem(name: "Jacket", ownedBy: "")]))
-        let other = coerceList(PackList(id: "l2", name: "Hiking", items: [newItem(name: "Jacket", ownedBy: "Anna")]))
+        let other = coerceList(PackList(id: "l2", name: "Hiking", items: [newItem(name: "Jacket", ownedBy: "Robin")]))
         let c = buildCatalog([list, other])
         let jacket = try XCTUnwrap(c.items.first { $0.name == "Jacket" })
-        XCTAssertEqual(jacket.ownedBy, "Anna")
+        XCTAssertEqual(jacket.ownedBy, "Robin")
     }
 
     // JS: 'buildCatalog: a template default cannot swallow a row that differs from it'
@@ -678,9 +678,9 @@ final class CatalogueTests: XCTestCase {
     func testEveryIntrinsicFieldSurvivesARebuildAndSoDoesTheId() {
         var it = newItem(name: "Headlamp", swedish: "Pannlampa", category: "Electronics", charging: true, chargeType: "usb-c",
                          shortList: true, sub: ["Spare strap"], weight: 90, liquid: true, restricted: true, perNight: true,
-                         consumable: true, packer: "Anna", storage: "Hall closet", photos: ["ph-1"], thumb: "t",
+                         consumable: true, packer: "Robin", storage: "Hall closet", photos: ["ph-1"], thumb: "t",
                          maintenance: Maintenance(notes: "Check the seal", link: "", intervalDays: 90, lastDone: "2026-06-01", log: []),
-                         color: "Red", size: "M", manufacturer: "Petzl", model: "Actik", ownedBy: "Anna", acquired: "2025-01-02",
+                         color: "Red", size: "M", manufacturer: "Petzl", model: "Actik", ownedBy: "Robin", acquired: "2025-01-02",
                          price: 49, currency: "EUR", purchaseLink: "https://example.invalid/x", expiry: "2027-01-01",
                          condition: "good", retired: true, retiredReason: "sold", serial: "SN1", qtyOwned: 2, warranty: "2027-06-01",
                          capacityL: 1.5, maxKg: 0.5)
@@ -701,7 +701,7 @@ final class CatalogueTests: XCTestCase {
 
     /// JS: 'buildCatalog: one thing on two templates keeps its kit per template, its packer, and the richest review history — not a sum'
     func testOneThingOnTwoTemplatesKeepsItsKitPerTemplateItsPackerAndTheRichestHistory() {
-        var shared = newItem(name: "Power bank", consumable: true, packer: "Anna")
+        var shared = newItem(name: "Power bank", consumable: true, packer: "Robin")
         shared.stats = ItemStats(packed: 4, used: 4, unused: 0, skipped: 0)
         var stale = newItem(id: shared.id, name: "Power bank", kit: "Charging kit")
         stale.stats = ItemStats(packed: 1, used: 1, unused: 0, skipped: 0)
@@ -710,7 +710,7 @@ final class CatalogueTests: XCTestCase {
         let cat = buildCatalog([a, b])
         XCTAssertEqual(cat.items.count, 1, "one thing, two templates")
         XCTAssertEqual(cat.items[0].id, shared.id)
-        XCTAssertEqual(cat.items[0].packer, "Anna")
+        XCTAssertEqual(cat.items[0].packer, "Robin")
         XCTAssertTrue(cat.items[0].consumable)
         XCTAssertEqual(cat.items[0].stats.packed, 4, "the copy with the most history speaks — 4, not 4 + 1")
         XCTAssertEqual(cat.items[0].stats.used, 4)
@@ -719,7 +719,7 @@ final class CatalogueTests: XCTestCase {
         XCTAssertEqual(inCamp.kit, "", "no kit on the Camp template")
         XCTAssertEqual(inTravel.kit, "Charging kit", "the kit is a per-template answer, and it survives")
         XCTAssertEqual(cat.memberships.first { $0.templateId == b.id }?.kit, "Charging kit")
-        XCTAssertEqual(inTravel.packer, "Anna", "the packer is the thing's own, so it is there on both")
+        XCTAssertEqual(inTravel.packer, "Robin", "the packer is the thing's own, so it is there on both")
     }
 
     /// JS: '"Keep" on Refine is written to the catalogue item, so the suggestion stays away'

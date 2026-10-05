@@ -21,7 +21,7 @@
 // So this does not try to fix it. It tries to NOTICE it, which is the part that
 // was missing. No server call is needed, because the evidence is already on the
 // device: your items travel with the catalogue and they carry the answers — this
-// rucksack is kept in the "Loft", that jacket is "Anna's", this one is "Worn out".
+// rucksack is kept in the "Loft", that jacket is "Robin's", this one is "Worn out".
 // Those arrived. If your gear points at fifteen storage places and the storage-place
 // list has heard of two, the list did not arrive, and the device can work that out
 // entirely on its own.

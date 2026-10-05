@@ -53,6 +53,8 @@ final class WorkbookTests: XCTestCase {
         let file = dir.appendingPathComponent("t.xlsx")
         try made.data.write(to: file)
 
+        // The rest reads the file back with the Mac's unzip (see `run`): the iPhone stops here.
+        try XCTSkipIf(!Self.macTools, "/usr/bin/unzip exists only on the Mac")
         // unzip checks every entry against its checksum; a broken ZIP fails here.
         XCTAssertEqual(try run("/usr/bin/unzip", ["-tq", file.path]).status, 0, "the ZIP is not sound")
         let list = try run("/usr/bin/unzip", ["-Z1", file.path]).out
@@ -117,7 +119,20 @@ final class WorkbookTests: XCTestCase {
         xml.components(separatedBy: "<row ").dropFirst().map { String($0.prefix { $0 != "\u{0}" }) }
     }
 
+    /// Whether the Mac's command-line tools are here. These model tests also run with the
+    /// app's on the iPhone simulator since 0.6x, where there is no unzip (nor any
+    /// `Process`): there the read-back is skipped; the Mac and the "core" job still do it.
+    #if os(iOS)
+    static let macTools = false
+    #else
+    static let macTools = true
+    #endif
+
+    /// Reads the file back with the Mac's own unzip.
     private func run(_ tool: String, _ args: [String]) throws -> (status: Int32, out: String) {
+        #if os(iOS)
+        throw XCTSkip("\(tool) exists only on the Mac")
+        #else
         let p = Process()
         p.executableURL = URL(fileURLWithPath: tool)
         p.arguments = args
@@ -128,5 +143,6 @@ final class WorkbookTests: XCTestCase {
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
         return (p.terminationStatus, String(decoding: data, as: UTF8.self))
+        #endif
     }
 }

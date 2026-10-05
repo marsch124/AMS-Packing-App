@@ -258,7 +258,10 @@ struct SettingsScreen: View {
         case .trips: return "Trips"
         case .entries: return "Trip lines"
         case .actions: return "To-dos"
-        case .kits: return "Kits"
+        // Not "Kits": in his words a kit is ALL his things (Words, the guide); this
+        // table holds the web app's named groups of things, such as a dive kit
+        // (the spec pass, 5 Oct 2026: one word, two meanings).
+        case .kits: return "Groups of things"
         case .phases: return "Own \"When\" steps"
         case .shared: return "Choices"
         case .photos: return "Photos"
