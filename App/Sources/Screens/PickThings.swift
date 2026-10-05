@@ -249,7 +249,7 @@ struct PickThingsScreen: View {
                 Text(on ? "already on it" : aside)
                     .font(.system(.footnote, weight: on ? .semibold : .regular)).foregroundStyle(Theme.muted).lineLimit(1)
             }
-            .padding(.vertical, 9).contentShape(Rectangle())
+            .padding(.vertical, 5).contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }

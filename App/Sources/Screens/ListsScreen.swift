@@ -186,7 +186,7 @@ struct ListsScreen: View {
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.settings.color, lineWidth: 1.4))
-        .padding(.vertical, 6)
+        .padding(.vertical, 3)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("list-\(kind.rawValue)-editor")
     }

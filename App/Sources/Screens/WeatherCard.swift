@@ -51,7 +51,7 @@ struct WeatherCard: View {
                             }
                             Spacer(minLength: 8)
                         }
-                        .padding(.vertical, 6).contentShape(Rectangle())
+                        .padding(.vertical, 3).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("weather-gear-\(n)")

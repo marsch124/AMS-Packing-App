@@ -248,7 +248,7 @@ struct CareRow: View {
                 .accessibilityLabel("\(row.item.name) done today")
             }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 5)
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("care-row-\(n)")

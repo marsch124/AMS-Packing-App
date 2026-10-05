@@ -228,7 +228,7 @@ struct GrabScreen: View {
                         Text("Nothing on this list yet. Press Edit to put things on it.")
                             .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, 5)
                             .accessibilityIdentifier("grab-empty")
                     }
                     ForEach(Array(items.enumerated()), id: \.offset) { n, name in
@@ -254,7 +254,7 @@ struct GrabScreen: View {
                                             .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                                     }
                                 }
-                                .padding(.vertical, 11).contentShape(Rectangle())
+                                .padding(.vertical, 5).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("grab-item-\(n)")
