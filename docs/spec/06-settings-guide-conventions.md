@@ -1192,6 +1192,10 @@ being edited has no Cancel and no shortcut (its Done is hidden while editing). T
 the whole table; its sheets (Filter, Sort, Columns, Change, a thing) do have it. On the iPhone a sheet that may be
 swiped away also closes on ⌘. by itself (the system's own, shortcut or not), so there the tests pin that the right
 window closes and nothing is saved; on the Mac nothing closes without the shortcut. There is no `onExitCommand`.
+A mode inside a sheet takes Escape first: on a template's page while **arranging** (0.63, spec 04 §6a), the Arrange
+pill carries the shortcut and Done gives it up, so Escape ends Arrange (a heading's name typed and not saved is
+dropped) and a second Escape closes the page; meanwhile the page cannot be swiped away (`interactiveDismissDisabled`),
+so the iPhone's own ⌘. does not close it first.
 
 **Tests.** `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (Your things New + the line goes after typing, Your bags,
 To buy, Grab Lists Make, a grab list's Add, Your choices' first Add, a template's Add, Rename to another template's

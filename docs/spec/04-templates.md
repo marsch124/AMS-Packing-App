@@ -139,8 +139,9 @@ sheet: template page, Search or New.
 Same layout on both. On the Mac the whole app column is at most 720 wide (`RootView`), so cards are wider; sheets
 appear as Mac sheets with the minimum sizes given per screen below. Escape (⌘. on an iPhone keyboard) presses each
 sheet's Cancel — or its Done where it has none — and never a Save, a Make or an Add (`.keyboardShortcut(.cancelAction)`,
-0.62; spec 06 §20); Return has no app-defined meaning beyond a text field's `onSubmit` (no `.defaultAction`, no
-`.onExitCommand`). On the iPhone every sheet here can be swiped down (no `interactiveDismissDisabled`).
+0.62; spec 06 §20) — on a template's page while arranging, Escape ends Arrange first (§6a, 0.63); Return has no
+app-defined meaning beyond a text field's `onSubmit` (no `.defaultAction`, no `.onExitCommand`). On the iPhone every
+sheet here can be swiped down, except a template's page while arranging (`interactiveDismissDisabled`, §6a, 0.63).
 
 ### Tests
 - UI: `testEveryTabOpensItsScreen`; `testEveryDoorOfTheTemplatesTabOpens` (twice in a row: a card, Done, the
@@ -394,8 +395,9 @@ pick "C" of three pictured layouts, 5 Oct 2026).
 
 ### How it is reached and left
 - Reached: a card on the Templates tab; a Search result; straight after "Make the template".
-- Left: "Done" (`template-detail-done`; Escape too, 0.62), "Delete the template", swipe down on the iPhone. A rename
-  typed but not confirmed (Rename / Return) is **discarded** on leaving — by Escape too.
+- Left: "Done" (`template-detail-done`; Escape too, 0.62 — while arranging Escape ends Arrange instead, §6a),
+  "Delete the template", swipe down on the iPhone (not while arranging). A rename typed but not confirmed (Rename /
+  Return) is **discarded** on leaving — by Escape too.
 - Sheet; container id `template-detail` (`children: .contain`). Mac: min 480 × 600.
 - If the template no longer exists while open (deleted elsewhere), it renders as an empty unnamed template
   (`?? newList()`, a fresh id on every redraw). Add, Choose and the cover then do nothing
@@ -588,9 +590,14 @@ or a thing to its place"). Built for 0.63 with Apple's text styles and the slim 
 - Offered (`canArrange`) while the page is grouped by **Section**, or when the template has **no section in use**
   (Section is not among the Group pills: such a template is arranged as one list, the order a trip reads) — and only
   when the template has at least one row or one heading.
-- Left: a second tap on Arrange; a tap on any Group pill; the pill ceasing to be offered (`onChange(of:
-  canArrange)`); closing the page (Arrange is not remembered — the page always opens with it off). Leaving also
-  drops a heading rename not saved.
+- Left: a second tap on Arrange; **Escape** (⌘. on an iPhone keyboard: the Arrange pill carries
+  `.keyboardShortcut(.cancelAction)` while on, and Done gives it up meanwhile) — the page stays open, a second Escape
+  closes it as Done does; a tap on any Group pill; the pill ceasing to be offered (`onChange(of: canArrange)`);
+  Done (Arrange is not remembered — the page always opens with it off). Leaving drops a heading's name typed and
+  not saved: never saved, by Escape least of all (Escape everywhere: never a save).
+- While arranging the page cannot be swiped away on the iPhone (`interactiveDismissDisabled(arranging)`): a drag
+  that strays to the top would close it mid-move, and the iPhone's own ⌘. closes an untouched sheet by itself,
+  which would beat Escape to Arrange. Done still closes it.
 
 ### What is on screen
 - **The pill** — on its own row under the Group pills (side 16, bottom 4): "Arrange", Subheadline semibold, side
@@ -681,7 +688,9 @@ thenHoldForDuration: 0.8)` on the grips; they were run on the iPhone simulator o
   first with its three things, then Lights; the page reads Clothes first); `testAHeadingIsRenamed` (the field holds
   "Clothes"; "lights" → the needs line says "already"; it goes as he types; "Clothing" saved; the page reads
   "Clothing"); `testAHeadingIsRemovedAndItsThingsStay` (Lights removed: Clothes is heading 0, no heading 1, the six
-  things in order with Headlamp and Spare batteries under no heading; the page reads Clothes, Everything else).
+  things in order with Headlamp and Spare batteries under no heading; the page reads Clothes, Everything else);
+  `testEscapeEndsArrangingWithoutSavingAHeading` ("Clothing" typed over Clothes, not saved; Escape ends Arrange, the
+  page stays, the heading still reads "Clothes"; a second Escape closes the page).
 - Model: `ArrangeTests` (§13a).
 - **Not covered:** a drag on the Mac (built, not run here; CI runs the Mac UI tests); the heading editor's focus;
   a drag that scrolls a long list.

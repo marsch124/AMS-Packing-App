@@ -411,7 +411,9 @@ struct TemplateDetail: View {
                     .focusEffectDisabled()
                     .font(.system(.body, weight: .semibold))
                     .foregroundStyle(AppSection.templates.color)
-                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
+                    // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026) — except
+                    // while arranging, when Escape ends Arrange instead (the Arrange pill).
+                    .keyboardShortcut(arranging ? nil : .cancelAction)
                     .accessibilityIdentifier("template-detail-done")
             }
             .needsLine($renameNeeds, typed: renaming ?? "", id: "template-rename-needs")
@@ -611,6 +613,10 @@ struct TemplateDetail: View {
             RowEditor(templateId: listId, memId: e.id).environmentObject(model)
         }
         .onChange(of: canArrange) { _, offered in if !offered { endArranging() } }
+        // While arranging, the page is not swiped away — a drag that strays to its top
+        // would close it mid-move — and the iPhone's own ⌘. (which closes an untouched
+        // sheet by itself) leaves Escape to Arrange. Done still closes it.
+        .interactiveDismissDisabled(arranging)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("template-detail")
         #if os(macOS)
@@ -639,6 +645,10 @@ struct TemplateDetail: View {
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain).focusEffectDisabled()
+            // Escape while arranging ends it, as a second tap does — and a heading's
+            // name typed but not saved is dropped, never saved (Escape everywhere: never a
+            // save). The page itself stays open; a second Escape closes it.
+            .keyboardShortcut(arranging ? .cancelAction : nil)
             .accessibilityIdentifier("template-arrange")
             .accessibilityAddTraits(arranging ? .isSelected : [])
             if arranging {

@@ -3471,6 +3471,27 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["template-group-1"]), "Everything else")
     }
 
+    /// Escape everywhere, while arranging: Escape ends Arrange — the page stays open,
+    /// and a heading's name typed but not saved is dropped, never saved. A second
+    /// Escape closes the page, as Done does.
+    func testEscapeEndsArrangingWithoutSavingAHeading() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        startArranging(app)
+        tap(app, id: "arrange-heading-1")                                    // Clothes
+        let field = app.textFields["arrange-heading-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "tapping the heading did not open its name")
+        replace("Clothing", in: field)
+        pressEscape(app)
+        XCTAssertTrue(waitUntil { !self.isOn(app.buttons["template-arrange"]) }, "Escape did not end arranging")
+        XCTAssertNotNil(find(app, "template-detail"), "Escape closed the template instead of ending Arrange")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-1"]) == "Clothes" },
+                      "Escape saved the half-typed name: '\(words(app.staticTexts["template-group-1"]))'")
+        hideKeyboard(app)
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "a second Escape did not close the template")
+    }
+
     /// His ask (4 Oct 2026): "add a search function so that the user can find a
     /// specific item without the need to scroll." Typing narrows the template to the
     /// rows whose name holds it, says how many of all, says so when none, and the ✕
