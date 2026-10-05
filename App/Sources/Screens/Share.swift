@@ -125,7 +125,7 @@ struct ShareScreen: View {
                                 .accessibilityIdentifier("share-qr-toolong")
                         }
                         Text(link)
-                            .font(.system(size: 13, design: .monospaced)).foregroundStyle(Theme.muted)
+                            .font(.system(size: 15, design: .monospaced)).foregroundStyle(Theme.muted)
                             .lineLimit(3).truncationMode(.middle)
                             .textSelection(.enabled)
                             .accessibilityIdentifier("share-link")
@@ -173,7 +173,7 @@ struct ShareScreen: View {
                         .accessibilityIdentifier("share-file")
                     }
                     Text("The link opens in the web app, and in this app under Settings → Open a shared link.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -384,7 +384,7 @@ struct OpenSharedScreen: View {
 
     private func line(_ kind: String, _ name: String, _ count: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(kind.uppercased()).font(.system(size: 12, weight: .heavy)).kerning(0.6).foregroundStyle(Theme.muted)
+            Text(kind.uppercased()).font(.system(size: 15, weight: .heavy)).kerning(0.6).foregroundStyle(Theme.muted)
                 .accessibilityIdentifier("shared-kind")
             Text(name).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                 .accessibilityIdentifier("shared-name")
@@ -425,13 +425,14 @@ struct OpenSharedDoor: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Open a shared link").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
-                    Text("A trip, template or grab list someone shared").font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                    Text("A trip, template or grab list someone shared").font(.system(size: 15)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                     .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
             }
-            .padding(.horizontal, 14).frame(minHeight: 60)
+            .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 60)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
             .contentShape(Rectangle())

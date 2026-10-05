@@ -26,7 +26,7 @@ struct WeatherCard: View {
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("weather-line")
                 HStack(spacing: 10) {
-                    Text(sky.place).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                    Text(sky.place).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                     Spacer()
                     // In colour while it looks, too — the word says it is looking (his rule:
                     // nothing grey and switched off; the spec pass, 5 Oct 2026). A press
@@ -46,7 +46,7 @@ struct WeatherCard: View {
                                 .foregroundStyle(AppSection.events.color).frame(width: 22)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(gear.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.ink)
-                                Text(WeatherCard.why(gear)).font(.system(size: 13, weight: .semibold))
+                                Text(WeatherCard.why(gear)).font(.system(size: 15, weight: .semibold))
                                     .foregroundStyle(Theme.muted)
                             }
                             Spacer(minLength: 8)
@@ -71,7 +71,7 @@ struct WeatherCard: View {
                 }
                 if missing.isEmpty {
                     Text("You have what this weather asks for.")
-                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("weather-nothing-missing")
                 }
             } else {
@@ -100,7 +100,7 @@ struct WeatherCard: View {
                 .needsLine($needs, typed: place, id: "weather-look-needs")
             }
             if let trouble = model.weatherTrouble[tripId], !trouble.isEmpty {
-                Text(trouble).font(.system(size: 14, weight: .semibold))
+                Text(trouble).font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(AppSection.actions.color)
                     .accessibilityIdentifier("weather-trouble")
             }

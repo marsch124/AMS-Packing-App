@@ -16,6 +16,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Nothing under 15 pt
+        # His floor (F073, 5 Oct 2026): he reads the app without his glasses, so a
+        # word drawn under 15 points turns this red, naming file and line. A drawn
+        # mark may stay smaller when its line says "// not text: <what it is>".
+        run: tools/check-type-floor.sh
       - name: Model tests
         run: cd Core && swift test
       # The "What to Test" requests the TestFlight release makes, checked without the

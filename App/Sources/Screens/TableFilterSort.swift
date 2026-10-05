@@ -372,7 +372,7 @@ struct SortSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(TableKeys.sortGroups(library), id: \.title) { group in
                 Text(group.title.uppercased())
-                    .font(.system(size: 13, weight: .heavy)).kerning(0.5).foregroundStyle(AppSection.care.color)
+                    .font(.system(size: 15, weight: .heavy)).kerning(0.5).foregroundStyle(AppSection.care.color)
                     .padding(.top, 12).padding(.bottom, 2)
                 ForEach(group.keys, id: \.self) { key in
                     let on = levels[n].key == key

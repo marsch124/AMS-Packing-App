@@ -194,7 +194,7 @@ filled with the tint (or tone) and white (or tone ink) words; not picked = `Them
 12, they wrap (`FlowRow`, spacing 6). A picked pill carries the `.isSelected` trait. Identifier =
 `<id>-<position>`, never words.
 
-Below the card: "This Device" (written so, not upper-cased; 12 heavy muted, kerning 0.5, rotated −90°,
+Below the card: "This Device" (written so, not upper-cased; 15 heavy muted, kerning 0.5, rotated −90°,
 id `device-heading`) and three count tiles — Trips, Things, Templates (ids `count-trips`,
 `count-things`, `count-templates`) — belong to the Home spec.
 
@@ -283,8 +283,8 @@ and in Trip settings (grid CLOSED, `open: false`). The field toggles the grid; O
 ### What is on screen
 
 1. **The field** (a button, id `trip-dates-field` in BOTH places): calendar mark (24 pt, tint), a
-   small caption "Dates" — or "Now tap the last day" while waiting for the last day — (13 semibold
-   muted), the dates (17 bold ink, one line, scales to 0.8; id `trip-dates-label`):
+   small caption "Dates" — or "Now tap the last day" while waiting for the last day — (15 semibold
+   muted), the dates (17 bold ink, one line, scales to 0.9 — never under 15; id `trip-dates-label`):
    "Sat 26 Sep — Sun 27 Sep" (em dash with spaces), or only the first day while waiting; on the right
    the nights "1 night" / "N nights" (15 semibold muted, id `trip-dates-nights`), hidden while
    waiting. Min height 56, `Theme.bg`, corner 10; border 2 pt tint while open, 1 pt `Theme.line`
@@ -296,7 +296,7 @@ and in Trip settings (grid CLOSED, `open: false`). The field toggles the grid; O
      the first and › on the second.
    - Month header: ‹ (id `range-prev`), title "September 2026" (17 heavy, id `range-title-<index>`),
      › (id `range-next`); arrows are drawn chevrons 22 pt in 40×36.
-   - Weekday row "Mon Tue Wed Thu Fri Sat Sun" (12 heavy muted).
+   - Weekday row "Mon Tue Wed Thu Fri Sat Sun" (15 heavy muted).
    - Day cells (min height 40), Monday first: blanks before the 1st; the month's days only (no days
      of the neighbouring months). Every month is drawn as **six rows** (`DateRangePicker.sixWeeks`: the
      blanks after the last day fill the rest), so the grid keeps one height from month to month and OK
@@ -372,7 +372,7 @@ nights choice is his idea of 2 Oct 2026 (0.47): "a two-month stay may want 7".
 ### What is on screen (`LaundrySwitch`, used on Create new trip with id `trip-laundry` and in Trip settings with id `tripset-laundry`)
 
 - Toggle with a drawn washtub (24 pt, green) and "Laundry" (16 semibold ink), id `<id>`.
-- Under it, its own text (14 muted, indented 34), id `<id>-says`: on → "Wash and wear again:
+- Under it, its own text (15 muted, indented 34), id `<id>-says`: on → "Wash and wear again:
   per-night things count N nights at most."; off → "Wash and wear again, so you pack fewer per-night
   things." (A separate text because the Mac folds a switch's words into the switch.)
 - Only while on: question heading "Pack for this many nights, then wash" (17 heavy ink, id
@@ -576,7 +576,7 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
    muted, id `events-summary`): "Nothing planned" with no trips; else "N trip(s)" + " · N being
    packed" (state packing) + " · N ready to go" (state packed). On the right: the map pin
    (`WorldMapDoor`, id `events-map`), the magnifier (`search-open`), and — only when there are open
-   to-dos — a red capsule "N" (16 heavy) + "to do" (14 bold), white, id `events-todos`, label
+   to-dos — a red capsule "N" (16 heavy) + "to do" (15 bold), white, id `events-todos`, label
    "N to do, open the To do tab"; it switches to the To do tab. Count = open actions of kind "todo"
    (`openToDoCount`, shopping lines not counted).
 2. No trips: "No trips yet. Build one on the Home tab." (17 medium muted, id `events-none`), and none
@@ -602,7 +602,7 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
   forecast's temperature range ("4–11°C") — or "No dates" when there is nothing. Dates are written
   "3 Oct 2026" — fixed English words on every device (`TripChecksCard.day`, 0.6x), as the date grid,
   Check before you go and the map write them; until then they followed the device ("Oct 3, 2026").
-- Right: the state badge (13 heavy, capsule, min height 22, id `trip-state`): **Planned** (muted on
+- Right: the state badge (15 heavy, capsule, min height 22, id `trip-state`): **Planned** (muted on
   `Theme.line`), **Packing** (white on orange), **Ready** (white on green), **Reviewed** (muted on
   `Theme.line`); under it "done/total" or "done/total · N set aside" (15 bold mono; green when Ready,
   else muted).
@@ -625,11 +625,15 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
 ### Your year (`TravelYearBand`, `Library.travelYear(today:)`)
 
 `SectionTitle` "Your year" (id `events-year-heading`); 12 columns for the last twelve months ending with
-today's month, oldest first: the count above (10 heavy green, blank when 0), a bar (height max(4, 54 ×
-count / busiest month), green or `Theme.line`), the month "Sep" (10 bold muted); the bars are one
+today's month, oldest first: the count above (15 heavy green, blank when 0), a bar (height max(4, 54 ×
+count / busiest month), green or `Theme.line`), the month "Sep" (15 bold muted) where twelve three-letter
+months fit (the Mac), else its first letter, "S" (an iPhone: 26 pt a month, and "Sep" at 15 needs 30 —
+`ViewThatFits`, 0.6x; strip 100 tall); the bars are one
 accessibility element, id `events-year`, label "Trips month by month over the last year". Under it three
 figure tiles: trips ("trip"/"trips", id `year-trips`), nights ("night away"/"nights away", `year-nights`),
-packed ("things packed", `year-packed`) — 20 heavy green numbers over 12 bold muted words.
+packed ("things packed", `year-packed`) — 20 heavy green numbers (may shrink to 75 %, never under 15) over
+15 bold muted words, centred, wrapping onto a second line rather than shrinking; the tiles of a row are
+equally tall. (0.6x: counts and months were 10, the words 12 shrinking to 70 %.)
 A trip counts when its start's YYYY-MM is one of those months; nights = days between start and end
 (both ≥ 10 characters; same day or no end = 0); packed = its ticked lines that are not set aside
 (`Library.packedCount`, 0.6x — before, a line ticked and then set aside counted).
@@ -653,7 +657,7 @@ packed; reviewed → been; today and the last day → now, the day after → bee
 ### Traps and history
 - 🪤 Read a row's words through the ROW button: the Mac folds children into the button's label, the
   iPhone keeps them separate.
-- The Your-year labels are 10 and 12 pt, below his 15 pt floor (see Open questions).
+- The Your-year labels were 10 and 12 pt until 0.6x; they are 15 now (Open questions 24).
 
 ---
 
@@ -704,8 +708,9 @@ It stays until the sheet is closed.
 `trip-view-label`) on the left and four capsule buttons on the same line — **When**, **Into**,
 **From where**, **Category** (ids `trip-view-0…3`; 15 pt, semibold/bold when chosen, padding 14, min
 height 36; chosen = white on a green capsule; not chosen = ink on `Theme.bg` with a 1 pt `Theme.line`
-outline; `.isSelected` on the chosen one); if they do not fit, the same with 14 pt and padding 8
-(spacing 6); failing that, "Sorting" above the buttons (still 14 pt).
+outline; `.isSelected` on the chosen one); if they do not fit, the same with padding 8
+(spacing 6); failing that, "Sorting" above the buttons. The words are 15 in all three (0.6x: the slimmer
+two dropped them to 14).
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
 1. **Check before you go** card (only when something needs him) — own section below.
@@ -717,7 +722,7 @@ outline; `.isSelected` on the chosen one); if they do not fit, the same with 14 
    - Heading row (top padding 12): fold arrow (drawn chevron 20 pt in 34×36, pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
      (15 heavy; sorted When: the colour of the FIRST line's phase made readable; otherwise green; id
-     `trip-group-<g>-label`; tapping the words folds too); the count "ticked/packable" (13 bold mono
+     `trip-group-<g>-label`; tapping the words folds too); the count "ticked/packable" (15 bold mono
      muted, set-aside lines excluded); and at the right the **whole-section tick**: a 24 pt circle
      (2 pt `Theme.line` outline, or filled green with a white tick when every packable line of the
      section is ticked) in a 40×36 target, id `trip-group-<g>-all`, label "Tick all of <heading>" /
@@ -753,15 +758,15 @@ blink; skipped with Reduce Motion. The progress text turns green and carries the
   when ticked. Content: a 26 pt circle — stroke 2 pt in the line's phase colour (graphic-readable), or
   `Theme.line` when set aside; filled with a white tick when ticked and not set aside; the name (17,
   medium; regular and muted when ticked; muted and struck through — 3 px his call in the comment, drawn
-  with `.strikethrough` — when set aside; up to 2 lines); "Bought on site" (13 bold green) under the
+  with `.strikethrough` — when set aside; up to 2 lines); "Bought on site" (15 bold green) under the
   name when marked; at the right "×N" (15 bold mono muted) when the quantity > 1, plus the washtub when
-  laundry washes and the line is per night; then the bag name (14 muted, one line, max 150 pt wide) —
+  laundry washes and the line is per night; then the bag name (15 muted, up to two lines, right-aligned, max 150 pt wide) —
   except when sorted Into. 9 pt vertical padding, a hairline under it.
   Tap: toggles `checked` (`Library.setChecked`) — **a set-aside line does not tick**.
 - **⊘ / ↻** (`AsideMark`, 24 pt drawn, muted, 40×40 target), id `trip-line-<n>-aside`, label
   "Not this time" / "Take it this time": one tap toggles `skipped` (`Library.setAside`), no
   confirmation (his call). Setting aside also takes the line's tick (0.6x); taken back, it is unticked.
-- Sorted **From where**, under each line of the group **"No place set"**: **Set place** (13 bold green
+- Sorted **From where**, under each line of the group **"No place set"**: **Set place** (15 bold green
   capsule outline, indented 44), id `trip-line-<n>-place` — see "Set place".
 
 Each row view is keyed by "id|checked|aside|group|placing|qtyNights", so it is rebuilt whenever its
@@ -797,10 +802,10 @@ device no longer has (deleted on the other one too, `TripFolds.toggled`).
 His ask (2026-09-26): "No place set … I want to define a place for these items with one click or two".
 Tapping **Set place** opens a panel under that line (only one at a time; `placing` = the line id),
 indented 44, card with a 50 % green border, id `trip-place-panel`:
-"Where is <name> kept?" (13 heavy muted) and **Close** (outlined muted, id `trip-place-close`; closes
+"Where is <name> kept?" (15 heavy muted) and **Close** (outlined muted, id `trip-place-close`; closes
 and empties the field); one pill per storage place (`Library.storagePlaces()`: his own "places" list
 from Settings, or the 12 `DEFAULT_STORAGE_LOCATIONS` "Bedroom wardrobe" … "RV / camper" while he has
-none; 14 semibold ink on a `Theme.bg` capsule with a 1 pt line, min height 32, wrapping, id
+none; 15 semibold ink on a `Theme.bg` capsule with a 1 pt line, min height 32, wrapping, id
 `trip-place-<i>`) — one tap sets it; a field "A new place" (15 medium, min height 36, id
 `trip-place-new`, Return saves — Return on a blank field does nothing) and **Save** (15 bold white on
 green, id `trip-place-save`) — always in colour, never switched off (0.6x); pressed with the field
@@ -861,12 +866,12 @@ as the web app does, because it throws away the packing so far."
 
 ### What is on screen (only when the trip has packable lines)
 - **Tick everything** (only while something is unticked): green filled, a drawn tick 22 pt + "Tick
-  everything" (16 bold), under it "N still unticked" (13 semibold, 85 % opacity), white, min height 52,
+  everything" (16 bold), under it "N still unticked" (15 semibold, 85 % opacity), white, min height 52,
   corner 12; id `trip-tickall`, value "N".
 - **Clear every tick** (only while something is ticked): 16 bold ink, 1.4 pt `Theme.line` outline, min
   height 52; id `trip-clearall`. The two share the line equally.
 - Asking: a card with a red border: "Clear all N tick(s)?" (16 heavy), "The list stays as it is. Only
-  the ticks go." (14 medium muted), **Keep them** (16 bold ink, id `trip-clearall-no`) and **Clear the
+  the ticks go." (15 medium muted), **Keep them** (16 bold ink, id `trip-clearall-no`) and **Clear the
   ticks** (red capsule, white 16 heavy, id `trip-clearall-yes`).
 
 ### Behaviour
@@ -913,7 +918,7 @@ closes it (`interactiveDismissDisabled`, 0.6x) and Cancel or Save must be presse
   web app's "pack anyway"), Food (`tripset-transport-*`, `tripset-season-*`, `tripset-catering-*`,
   headings `…-title`), Laundry (`tripset-laundry`, `-says`, `-nights-*`).
 - "Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things
-  no longer asked for go." (14 muted), a divider, and **Start a new trip from this one** (next section).
+  no longer asked for go." (15 muted), a divider, and **Start a new trip from this one** (next section).
 - Bottom bar (top hairline, `Theme.bg`): the still-needed line (15 bold red, id `tripset-needs`) and
   **Save changes** (18 bold white on green, min height 52, id `tripset-save`), never disabled.
 
@@ -990,11 +995,11 @@ ended up, after a week of corrections."
 
 ### What is on screen (at the bottom of Trip settings)
 - Closed: an outlined green button (1.4 pt, corner 12, min height 56): "Start a new trip from this one"
-  (17 bold green) / "Same list, nothing ticked" (14 muted); id `tripset-again`.
+  (17 bold green) / "Same list, nothing ticked" (15 muted); id `tripset-again`.
 - Open: a card with a green border: "Name the new trip" (16 heavy); a field prefilled with
   `Library.againName(<the trip's SAVED name>)` = "<name> (again)" ("Trip (again)" for an empty name),
   id `tripset-again-name`, Return = Start it; "The same list as this trip, nothing ticked, no dates."
-  (14 muted); **Not now** (16 bold ink, id `tripset-again-no`) closes it; **Start it** (green capsule,
+  (15 muted); **Not now** (16 bold ink, id `tripset-again-no`) closes it; **Start it** (green capsule,
   16 heavy white, id `tripset-again-yes`); with a blank name: "Give the new trip a name." (15 bold red,
   id `tripset-again-needs`).
 
@@ -1062,7 +1067,7 @@ the last line is put right.
 
 ### What is on screen
 Card (padding 14, corner 12, 1.2 pt border in the tint), id `trip-checks`: "Check before you go" (15
-heavy) and a count capsule (13 heavy white on red if any line is red, else orange), id
+heavy) and a count capsule (15 heavy white on red if any line is red, else orange), id
 `trip-checks-count`. Then one button per flag (min height 44): a drawn icon 22 pt in the line's tint
 (the plane icon for cabin lines; the passport icon for documents; a drawn hourglass for other dates),
 the line's name (16 bold ink), the reason (15 medium, tint), and a chevron when there is a thing to
@@ -1120,19 +1125,19 @@ while busy), id `weather-look`, never disabled; after a press with a blank field
   cold "Cold", hot "Heat", wind "Wind" — none: "Nothing to watch out for"; one: "Rain"; two: "Rain and
   cold"; three or more: "Rain, Cold and wind" (later words lower-cased only for the last) — then ",
   2–8°C" unless the range contains "NaN".
-- The place as the service named it (14 semibold muted, e.g. "Testville, SE") and **Look again** /
+- The place as the service named it (15 semibold muted, e.g. "Testville, SE") and **Look again** /
   "Looking…" (15 bold green both ways, never switched off — 0.6x, his rule; a press while it looks does
   nothing more, one look at a time), id `weather-again`.
 - One row per missing piece of gear (id `weather-gear-<n>`): "+" (22 heavy green), the name (16 medium),
-  why (13 semibold muted): "for the <condition word lower-cased>" — "for the rain", "for the snow",
+  why (15 semibold muted): "for the <condition word lower-cased>" — "for the rain", "for the snow",
   "for the cold", "for the heat", "for the wind" — plus " · yours" for his own gear. A tap adds it.
   Rows are keyed by the gear's name.
 - **Add all N** (green capsule, 15 bold white; value N), id `weather-addall` — only when 2 or more are
   missing.
-- Nothing missing: "You have what this weather asks for." (14 semibold muted, id
+- Nothing missing: "You have what this weather asks for." (15 semibold muted, id
   `weather-nothing-missing`).
 
-**Trouble** (either state; 14 semibold red, id `weather-trouble`): "No place found for “<name>”." /
+**Trouble** (either state; 15 semibold red, id `weather-trouble`): "No place found for “<name>”." /
 "Could not reach the weather service — check the connection." / "No forecast for those dates yet."
 
 ### Behaviour
@@ -1212,17 +1217,18 @@ angles").
 
 ### What is on screen (card id `bags-card`; padding 14, corner 12; border red when any bag is over)
 - Header: "Bags" (15 heavy ink); ⓘ (a drawn circle with "i", id `bags-key-open`, label "What the colours
-  mean") toggles the key; "N over" (13 heavy white on red capsule, id `bags-over`) when any bag is over;
-  the total weight of the shown bags (14 heavy mono muted, id `bags-total`).
-- Key (id `bags-key`): "Blue — well within its max", "Orange — nine tenths of its max or more", "Red,
+  mean") toggles the key; "N over" (15 heavy white on red capsule, id `bags-over`) when any bag is over;
+  the total weight of the shown bags (15 heavy mono muted, id `bags-total`).
+- Key (id `bags-key`; all 15 — the colour's name heavy ink, its meaning medium muted; 13 until 0.6x):
+  "Blue — well within its max", "Orange — nine tenths of its max or more", "Red,
   “over” — more than its max", and "No bar: no max set. Set one in Care → Bags. Tap a bag for the luggage
   scale, and a photo of it packed."
 - One row per bag (a button, id `bag-<n>`, accessibility value = the gauge in words): the name ("Not in a
   bag" for "Other"; 15 semibold); at the right "<weight> / <max> kg", or "<weight> · no max", or only the
-  weight for "Not in a bag" (14 bold mono; red when over); weight = "<kilos> weighed" once weighed. Only
+  weight for "Not in a bag" (15 bold mono; red when over); weight = "<kilos> weighed" once weighed. Only
   a bag WITH a max has a bar: 16 pt capsule, `Theme.line` track, fill = min(1, kg/max) of the width (at
   least 16 pt) in blue (fine), orange (close) or red (over). Weighed: "The things in it add up to
-  <kilos>" (13 medium muted).
+  <kilos>" (15 medium muted).
 - Tapping a row opens (and a second tap closes) under it — only one bag open at a time:
   1. **The scale**: field "kg on the scale" (17 semibold mono, decimal pad on the iPhone, id
      `bag-<n>-scale`, Return saves), **Save** (green capsule, id `bag-<n>-scale-save`), **Clear** (15
@@ -1325,16 +1331,17 @@ A button (ids: `trip-loop` on a trip, `review-loop` on the review — always Rev
 on Refine — always Refine; label "The loop", value = the step's name) showing the five names with
 small drawn chevrons between them. The current step: white heavy words on a capsule in its tint, with
 the tab's mark; the others: semibold words in the readable tint on a `Theme.card` capsule with a 70 %
-tint outline (min height 28). It slims down until it fits (`ViewThatFits`): every mark, 14 pt, padding
-8, chevron room 14; then only the current step's mark, 14 pt, padding 7, 10; then 13 pt, padding 5, 8.
+tint outline (min height 28). It slims down until it fits (`ViewThatFits`): every mark, padding
+8, chevron room 14; then only the current step's mark, padding 7, 10; then padding 5, 8. The names are
+15 pt in all three (0.6x: 14, 14 and 13 — at 15 the slimmest still fits an iPhone, 323 of 370 pt).
 A tap opens **LoopScreen** (sheet: "The loop" 22 heavy, Done filled green id `loop-done`, the picture
 and the words; id `loop-screen`; Mac minimum 520 × 640).
 
 ### The picture (`LoopPicture`, also on How it works as `guide-loop`)
 Two boxes per row: Plan → Pack on top; down the right side Pack ↓ On site ↓ Review; Refine ← Review at
 the bottom; one long arrow up the left from Refine to Plan; a key "About your templates" / "About one
-trip". Each box (id `loop-step-<n>`): "n · Name" (18 heavy, readable tint), the short words (14 medium
-ink), the tab mark + "on <Tab>" (13 bold, tab colour), and "You are here" (13 heavy white on the tint)
+trip". Each box (id `loop-step-<n>`): "n · Name" (18 heavy, readable tint), the short words (15 medium
+ink), the tab mark + "on <Tab>" (15 bold, tab colour), and "You are here" (15 heavy white on the tint)
 on the trip's step; fill 24 %/12 % tint, border 3/1.2 pt. Accessibility label "Name: short, on Tab"
 plus ". You are here" (the Mac drops a non-control's value). `LoopWords`: each name (16 heavy, 72 pt
 column) with its explanation (16), then "Review looks back at one trip. Refine uses several reviews to
@@ -1361,8 +1368,8 @@ for Care.
 when `onSiteBegun` — the trip has a valid start date and today ≥ start (it then stays for good, also
 after the trip), OR any line is bought on site, whatever the dates say: buying on site says he is there.
 The loop's On site step goes by the same rule since 0.6x (a dated trip still ahead with something bought
-on site showed this door while the loop said Pack). The door: "On site" (17 heavy) over the summary (14
-medium mono muted, one line, scales to 0.85) and a chevron; card with a 1.2 pt green border, min height
+on site showed this door while the loop said Pack). The door: "On site" (17 heavy) over the summary (15
+medium mono muted, wrapping — 0.6x: 14, one line, scaling to 0.85) and a chevron; card with a 1.2 pt green border, min height
 58; id `trip-onsite`, accessibility value = the summary. It opens the page as a sheet; **Done** (filled
 green, id `onsite-done`) closes it. Screen id `onsite-screen`; Mac minimum 520 × 640.
 
@@ -1394,7 +1401,7 @@ and Done. Then four parts (each a `SectionTitle`, upper case 18 heavy):
    prefilled with the line's note, `onsite-note-field`, Return saves), **Save** (16 bold white on
    orange, `onsite-note-save`), "Type the note first." (16 bold red, `onsite-note-needs`, goes when
    typing) for an empty NEW note, a hint "Also goes onto the thing, for Care." or "Kept with this
-   trip." (14 medium muted; no thing behind it), **Cancel** (`onsite-note-cancel`, nothing saved).
+   trip." (15 medium muted; no thing behind it), **Cancel** (`onsite-note-cancel`, nothing saved).
 4. **PACK TO GO HOME** (green, `onsite-wayhome-title`, container `onsite-wayhome`): "Nothing to bring
    home yet." or "D of T packed" (17 bold mono; green when complete, else ink;
    `onsite-wayhome-progress`) and **Pack to go home ›** (17 bold white on green with a drawn chevron,
@@ -1409,7 +1416,7 @@ height 48. Lines: 17 semibold ink, up to 2 lines, a hairline under each.
 (`ClearButton`: ids `<prefix>-search` and `<prefix>-search-clear`, label "Clear the search"; the field
 only when there are lines), then the first **8** matches — a line matches when `normName(name)`
 CONTAINS `normName(typed text)` as one piece (not word by word) — each a button with the name (17
-medium) and its bag (14 muted; blank for "Other"/""), ids `<prefix>-pick-<n>`; then "N more — type a
+medium) and its bag (15 muted, up to two lines; blank for "Other"/""), ids `<prefix>-pick-<n>`; then "N more — type a
 word to find them" (15 medium muted, `<prefix>-more`) or, with no match, the empty words (no lines at
 all) or "Nothing that went is called “<q>”." (`<prefix>-none`). Card with a 1.2 pt border in the tint
 at 60 %, id `<prefix>-picker`. Prefixes `onsite-leave`, `onsite-note`. Opening one closes the other.
@@ -1531,18 +1538,18 @@ Mac minimum 520 × 600.
   id `review-miss-where-title`) — one per template the trip's lines came from (`tripTemplates`: in the
   order the lines first name them, existing templates only — the base and transport templates included),
   plus "No template" (`review-miss-where-<n>`, violet; default = the first). The button (16 bold white on
-  green, `review-miss-add`): "Add it to <template>" or "Add it, on no template"; pressed with nothing
+  green, `review-miss-add`, centred, up to two lines — 0.6x: one line shrinking to 80 %): "Add it to <template>" or "Add it, on no template"; pressed with nothing
   typed it says "Type what you wished you'd had first." under it (15 bold red, `review-miss-add-needs`,
   gone when typing — 0.6x; it did nothing and said nothing).
-- The missed things listed: name (16 semibold), its template or "no template" (14 muted,
+- The missed things listed: name (16 semibold), its template or "no template" (15 muted,
   `review-missed-<n>-where`), ✕ (`review-missed-<n>-remove`); row id `review-missed-<n>`.
 - "Tap anything you didn't use." or "N marked “didn't use”" (20 heavy, `review-summary`).
 - One row per PACKED line (`review-line-<n>`, `.isSelected` when marked): name (17 medium; muted and
-  struck through when marked), where it went "Bag · When label" (13 semibold muted,
-  `review-line-<n>-where`), and "Used" (green) / "Didn't use" (red) (14 bold). A pen
+  struck through when marked), where it went "Bag · When label" (15 semibold muted, up to two lines,
+  `review-line-<n>-where`), and "Used" (green) / "Didn't use" (red) (15 bold). A pen
   (`review-line-<n>-fix`, label "Change <name>") opens the thing (via `sourceItemId`, else `itemId`);
   the review stays as it was.
-- "Never went in the bag: N" (15 semibold muted) and the names joined " · " (14 muted), when any.
+- "Never went in the bag: N" (15 semibold muted) and the names joined " · " (15 muted), when any.
 - Bottom: **Save review** (18 bold white on green, min height 52, `review-save`).
 
 ### Behaviour
@@ -1604,7 +1611,7 @@ id `refine-open`, value = waiting count or ""; Templates spec). Sheet; **Done** 
 - Some: "Each of these has earned its place here over at least two trips. Keep settles it for good. Drop
   takes it off that one template — it stays your thing, and on your other templates." and one card per
   suggestion (`refine-row-<n>`): the name (17 semibold, `-name`), "<template> · packed N× · used 0×" or
-  "<template> · on the list N× · never packed" (14 muted, `-why`), **Keep** (green outline,
+  "<template> · on the list N× · never packed" (15 muted, `-why`), **Keep** (green outline,
   `refine-row-<n>-keep`) and **Drop** (red outline, `refine-row-<n>-drop`) → in place "Drop it from
   <template>?" with **Keep it** (`-drop-no`) and **Drop** (red capsule, `-drop-yes`).
 
@@ -1630,7 +1637,7 @@ offered on its other template; the door follows; things still 10).
 
 ### What is on screen
 A wide outlined green button (drawn sheet mark, "Save as Excel" 17 bold, min height 48), id
-`trip-excel`, left of Share; under it a status (14 medium muted, `trip-excel-status`): "Choosing where
+`trip-excel`, left of Share; under it a status (15 medium muted, `trip-excel-status`): "Choosing where
 to save…" → "Saved: <file name>" or "Not saved.". The system Save window (Mac) / Files (iPhone) opens.
 
 ### Behaviour
@@ -1659,7 +1666,7 @@ the link is short enough; a trip also as a file."
 **Share** — wide outlined green with a drawn box-and-arrow, id `trip-share`, label "Share" — opens the
 share sheet (id `share-screen`, Mac minimum 480 × 560): title "Share “<name>”", **Done**
 (`share-done`; Escape too, 0.6x); the QR code (white card, max 260 pt, id `share-qr`) or "Too long for a QR code. Send the
-link instead." (`share-qr-toolong`); the link (13 monospaced, 3 lines, middle-truncated, selectable,
+link instead." (`share-qr-toolong`); the link (15 monospaced, 3 lines, middle-truncated, selectable,
 `share-link`); **Send…** (system share, `share-send`) and **Copy link** → "Copied" (`share-copy`, value
 "copied"); without a link (a trip offers a file) "This is too big for a link. Share it as a file instead." (`share-toolong`);
 **Share as a file** (`share-file`); "The link opens in the web app, and in this app under Settings → Open
@@ -1686,7 +1693,7 @@ a shared link."
   adds to it, and switching Quick off brings in the rest. Only `updatedAt` is re-set; no duplicate check —
   adding the same link twice gives two trips. A pasted text is tried as a grab list, then a template, then a trip (a
   `#/t/<code>` found anywhere in the text, else the whole text as the code). The card reads "A TRIP"
-  (12 heavy muted, `shared-kind`), the name ("Untitled trip" when empty; 18 bold, `shared-name`),
+  (15 heavy muted, `shared-kind`), the name ("Untitled trip" when empty; 18 bold, `shared-name`),
   "1 thing" / "N things" (15 medium muted, `shared-count`; "1 things" until 0.6x — the same words for a
   template and a grab list), **Add this trip** (17 bold white on
   green, `shared-add`) → "Added. It is under Trips, nothing ticked." (15 bold green, `shared-result`).
@@ -1708,10 +1715,10 @@ gone, its bag photo stayed behind").
 ### What is on screen
 Last on the trip's list: **Delete trip** — `SmallDeleteButton(title: "Delete trip", id: "trip-delete")`,
 a small red outlined capsule at the right (red words, 1 pt outline in red at 60 %, min height 30,
-padding 12). Since 40be106 `SmallDeleteButton` takes a `size` parameter, 13 by default; the trip's
-button passes none, so it stays **13 semibold** (below his 15 pt floor; only "Delete grab list" passes
-15). It only opens the question: a card with a red border, "Delete
-“<name>”?" (16 heavy), "The trip and its N line(s) go. Your things and your templates stay." (14 medium
+padding 12), its words **15 semibold** (0.6x: 13 — `SmallDeleteButton` took a `size` parameter, 13 by
+default, that only "Delete grab list" set to 15; the parameter is gone and every Delete reads at 15). It
+only opens the question: a card with a red border, "Delete
+“<name>”?" (16 heavy), "The trip and its N line(s) go. Your things and your templates stay." (15 medium
 muted), **Keep it** (16 bold ink, `trip-delete-no`) and **Delete the trip** (red capsule, white 16 heavy,
 `trip-delete-yes`).
 
@@ -1861,10 +1868,11 @@ pins · [idea] a gap worth deciding on.
     when its thing changes.
 23. [doc] **Locale** of the Trips row's dates. Resolved in 0.6x: fixed English words, "3 Oct 2026", on
     every device.
-24. [rule-break] **Small type** (his floor is 15 pt): Your year's labels (10 pt counts and months, 12 pt
-    words) and the All-time words (12 pt); "Delete trip" 13 pt (`SmallDeleteButton` default — only the
-    grab list's delete passes 15); "Set place" 13; the On site door summary, the Bags key, captions and
-    the section counts 13–14 pt; the date grid's weekday row 12 pt; "Dates" caption 13 pt.
+24. **Resolved in 0.6x** — ~~Small type (his floor is 15 pt): Your year's labels (10 pt counts and months,
+    12 pt words) and the All-time words (12 pt); "Delete trip" 13 pt; "Set place" 13; the On site door
+    summary, the Bags key, captions and the section counts 13–14 pt; the date grid's weekday row 12 pt;
+    "Dates" caption 13 pt.~~ Every one is 15 now (F073). Your year says one letter per month where three do
+    not fit, its figure words wrap, and `tools/check-type-floor.sh` keeps anything under 15 out (spec 06, §21).
 25. [bug] **Trip settings drops templates not offered.** Resolved in 0.6x: templates with no activity area
     are offered (last, "Other templates") on Create new trip and in Trip settings, and Save keeps the ids
     it does not show.

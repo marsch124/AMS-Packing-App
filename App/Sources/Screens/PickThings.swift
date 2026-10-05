@@ -55,7 +55,7 @@ struct PickThingsScreen: View {
                 Spacer(minLength: 4)
                 Text(list.map { "Add to \($0.name)" } ?? "Add things")
                     .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .lineLimit(1).minimumScaleFactor(0.9)       // never under 15
                     .accessibilityIdentifier("pick-title")
                 Spacer(minLength: 4)
                 // Always in full colour (his rule for a main button); with nothing
@@ -75,12 +75,12 @@ struct PickThingsScreen: View {
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 FlowRow(spacing: 6) {
-                    Text("Group").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.muted)
+                    Text("Group").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
                         .frame(minHeight: 32)
                             ForEach(PickThingsScreen.ways, id: \.self) { way in
                                 let on = way == grouping
                                 Button { groupingRaw = way.rawValue } label: {
-                                    Text(way.label).font(.system(size: 14, weight: on ? .heavy : .semibold))
+                                    Text(way.label).font(.system(size: 15, weight: on ? .heavy : .semibold))
                                         .foregroundStyle(on ? Color.white : Theme.ink)
                                         .padding(.horizontal, 12).frame(minHeight: 32)
                                         .background(Capsule().fill(on ? violet : Theme.card))
@@ -196,7 +196,7 @@ struct PickThingsScreen: View {
                 .accessibilityIdentifier("pick-heading-\(g)")
                 .onTapGesture { if !searching { toggleFold(group.title, grouping) } }
             (ticked == 0 ? count : count + Text(" \u{00B7} \(ticked) ticked").foregroundStyle(violet))
-                .font(.system(size: 14, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                .font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
                 .lineLimit(1)
                 .accessibilityIdentifier("pick-heading-\(g)-count")
             Spacer(minLength: 0)
@@ -247,7 +247,8 @@ struct PickThingsScreen: View {
                     .foregroundStyle(on ? Theme.muted : Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
                 Text(on ? "already on it" : aside)
-                    .font(.system(size: 14, weight: on ? .semibold : .regular)).foregroundStyle(Theme.muted).lineLimit(1)
+                    .font(.system(size: 15, weight: on ? .semibold : .regular)).foregroundStyle(Theme.muted).lineLimit(2)
+                    .multilineTextAlignment(.trailing)
             }
             .padding(.vertical, 9).contentShape(Rectangle())
         }

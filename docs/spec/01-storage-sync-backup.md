@@ -617,7 +617,7 @@ A thing on no list and in no trip is deliberately NOT a worry.
 
 **How it is reached and left.** A trip's screen, near the end (after "tick all", before Delete): "Save as Excel" sits on ONE line with "Share", Share to its right (his test D.22).
 
-**What is on screen.** `WideButtonLabel` "Save as Excel" in green with a drawn sheet mark (`SheetMark`), id `trip-excel`. Below it, only once something happened, a status line (14 medium muted, id `trip-excel-status`): "Choosing where to save…", "Saved: <file name>", "Not saved.".
+**What is on screen.** `WideButtonLabel` "Save as Excel" in green with a drawn sheet mark (`SheetMark`), id `trip-excel`. Below it, only once something happened, a status line (15 medium muted, id `trip-excel-status`): "Choosing where to save…", "Saved: <file name>", "Not saved.".
 
 **Behaviour.** Press → `tripWorkbook(tripId:)` (nil for an unknown trip: nothing happens) → `.fileExporter` with an `XlsxDocument` (type `org.openxmlformats.spreadsheetml.sheet`) and the default file name.
 - File name `workbookFileName(trip.name)`: each of `/ : \ ? * " < > |` becomes a space, trimmed, "Trip" when empty, + " packing list.xlsx" (e.g. "Weekend in the hills packing list.xlsx").
@@ -686,22 +686,22 @@ A thing on no list and in no trip is deliberately NOT a worry.
 1. Header: the title (20 heavy ink, one line) · "Done" (`HeaderButtonStyle`, filled green, 17 bold white — the style's own since 0.6x (16 until then, overriding the caller's 17 bold); id `share-done`).
 2. With a link:
    - The QR code (CoreImage, correction level "L", scaled ×8, at most 260 wide, on a white rounded card, padding 12; a11y label "QR code", id `share-qr`) — or, when the link is too long for a QR code, "Too long for a QR code. Send the link instead." (15 medium muted, `share-qr-toolong`).
-   - The link itself (13 monospaced muted, up to 3 lines, truncated in the middle, selectable, `share-link`).
+   - The link itself (15 monospaced muted, up to 3 lines, truncated in the middle, selectable, `share-link`).
    - "Send…" (system share sheet for the URL — a `ShareLink`, shown only when the link parses as a `URL`; green filled, 17 bold white, min height 48, `share-send`) · "Copy link" (outlined green 1.4 pt; becomes "Copied" for as long as the sheet is open, accessibility value "copied"; `share-copy`). Row spacing 10, each half full width.
 3. Without a link: with a file to offer (a trip), "This is too big for a link. Share it as a file instead." (15 medium muted, `share-toolong`); with no file either (an empty template or grab list), "There is nothing on it to share yet." (15 medium muted, `share-empty`; 0.6x).
 4. With a file (trips): "Share as a file" (outlined green, system share sheet for the file written to the temporary folder on appear, `share-file`).
-5. "The link opens in the web app, and in this app under Settings → Open a shared link." (14 muted).
+5. "The link opens in the web app, and in this app under Settings → Open a shared link." (15 muted).
 
 ### 16.4 Settings → Open a shared link (`OpenSharedDoor`, `OpenSharedScreen`)
 
-**Where.** Settings, after the guide doors: a card "Open a shared link" (18 bold ink) with "A trip, template or grab list someone shared" (14 muted, one line) and a chevron; min height 60; id `settings-openshared`. Opens a sheet (id `shared-screen`; on the Mac min 480 × 520). Leave with "Done" (filled slate header button, `shared-done`) or by dismissing the sheet.
+**Where.** Settings, after the guide doors: a card "Open a shared link" (18 bold ink) with "A trip, template or grab list someone shared" (15 muted, wraps; 0.6x — it was 14, one line) and a chevron; 8 pt above and below, min height 60; id `settings-openshared`. Opens a sheet (id `shared-screen`; on the Mac min 480 × 520). Leave with "Done" (filled slate header button, `shared-done`) or by dismissing the sheet.
 
 **What is on screen** (header: "Open a shared link", 20 heavy ink, · Done; then a scroll column, spacing 12):
 1. "A trip, a template or a grab list someone shared, from the web app or this one." (15 muted).
 2. A text field "Paste the link or code" (1–4 lines, 15 monospaced, card with line border, `shared-input`).
 3. "Paste and open" (slate filled, 16 bold white, min height 46, `shared-paste`: replaces the field with the clipboard and opens it) · "Open" (outlined slate, `shared-open`).
 4. When an attempt found nothing: "This is not an AMS Packing link or code." (15 bold red, `shared-bad`).
-5. When something was found — a preview card (`shared-preview`): the kind upper-cased ("A TRIP", "A TEMPLATE", "A GRAB LIST"; 12 heavy, kerning 0.6, muted, `shared-kind`), the name (18 bold ink, `shared-name`; a trip without a name shows "Untitled trip"), "1 thing" / "<N> things" (15 medium muted, `shared-count`; a trip counts all its lines — "1 things" until 0.6x). Then:
+5. When something was found — a preview card (`shared-preview`): the kind upper-cased ("A TRIP", "A TEMPLATE", "A GRAB LIST"; 15 heavy, kerning 0.6, muted, `shared-kind`), the name (18 bold ink, `shared-name`; a trip without a name shows "Untitled trip"), "1 thing" / "<N> things" (15 medium muted, `shared-count`; a trip counts all its lines — "1 things" until 0.6x). Then:
    - Trip: "Add this trip" (green filled, 17 bold, min height 48, `shared-add`) → `importTrip` (the sender's own marks left out — `Library.justTheList` —, arrives Quick so Trip settings keeps its list as it came, appended, `updatedAt` now; 0.6x, see the trips spec) → "Added. It is under Trips, nothing ticked."
    - Template: the kind says "A TEMPLATE", "AN ALWAYS-PACKED TEMPLATE" or "A TRANSPORT TEMPLATE". When he has a template of that name (the bag list aside), "This one needs a name of its own" with a field (`shared-new-name`) holding a free name ("<name> 2"). "Add as a new template" (`shared-add`) → `importTemplate(shared, named:)` → "Added. It is under Templates. Things you already had keep your details." (for an always-packed or transport one it says so: "…, Always packed: every new trip packs it. …"); a blank or taken name → `shared-add-needs` says what is missing (spec 04 §19). When he has an ordinary template (role "") of the same name (`templateNamed`, by `normName`): "Replace your <name> instead" (15 bold violet, `shared-replace`) → a confirm row "Replace your <name>?" with "Keep mine" (`shared-replace-no`) and "Replace" (red capsule, `shared-replace-yes`), and under it (0.6x) what Replace does (15 medium muted, wraps, `shared-replace-says`; `replaceWords`): "2 things come in and 1 thing leaves it." (either part only when not 0; "It keeps the same things, in their order." when both are) + " Your icon, sections, bags and answers on the things you had stay yours." → `replaceTemplate(id:with:)` (0.6x; was `importTemplate(shared, replacing: id)`) (his template keeps its role, activity area and transport — spec 04 §19) → "Replaced your <name>. Trips that use it keep working."
    - Grab list: "Add it to your grab lists" (`shared-add`) → `importGrab` → "Added — it is on Home, in a free place." when Home (8 places) had room, else "Added — it waits in Grab Lists, as Home is full. Put it on Home when you want it there."

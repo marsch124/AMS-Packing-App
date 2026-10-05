@@ -14,7 +14,8 @@ struct KitDashboard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // Four numbers, read before anything is read.
+            // Four numbers, read before anything is read. Equal heights: a word that
+            // takes two lines makes every box that tall.
             HStack(spacing: 8) {
                 figure("\(stats.things)", "things", AppSection.templates.color, "kit-things")
                 figure(KitDashboard.kilos(stats.totalGrams), "in total", AppSection.home.color, "kit-weight")
@@ -22,6 +23,7 @@ struct KitDashboard: View {
                        stats.overdue > 0 ? AppSection.actions.color : AppSection.care.color, "kit-due")
                 figure("\(stats.withoutPlace)", "no place", Theme.muted, "kit-noplace")
             }
+            .fixedSize(horizontal: false, vertical: true)
 
             if !stats.heaviest.isEmpty {
                 section("Heaviest things", id: "kit-heavy-heading")
@@ -62,19 +64,14 @@ struct KitDashboard: View {
 
             if stats.dueByMonth.contains(where: { $0 > 0 }) {
                 section("The year ahead", id: "kit-year-heading")
-                let tallest = stats.dueByMonth.max() ?? 1
-                HStack(alignment: .bottom, spacing: 4) {
-                    ForEach(Array(stats.dueByMonth.enumerated()), id: \.offset) { n, count in
-                        VStack(spacing: 4) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(count > 0 ? AppSection.care.color : Theme.line)
-                                .frame(height: max(3, 44 * (tallest > 0 ? Double(count) / Double(tallest) : 0)))
-                            Text(KitDashboard.month(n))
-                                .font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.muted)
-                        }
-                    }
+                // The months at 15 (they were 10): "Sep" where twelve of them fit (the
+                // Mac), else "S" — an iPhone gives each month 27 points, and three
+                // letters at 15 need 30. Symbols over text; the order says which J is which.
+                ViewThatFits(in: .horizontal) {
+                    yearAhead(short: false)
+                    yearAhead(short: true)
                 }
-                .frame(height: 62)
+                .frame(height: 66)
                 .accessibilityIdentifier("kit-year")
                 .accessibilityLabel("Care due over the next twelve months")
             }
@@ -93,6 +90,22 @@ struct KitDashboard: View {
         }
     }
 
+    private func yearAhead(short: Bool) -> some View {
+        let tallest = stats.dueByMonth.max() ?? 1
+        return HStack(alignment: .bottom, spacing: 4) {
+            ForEach(Array(stats.dueByMonth.enumerated()), id: \.offset) { n, count in
+                VStack(spacing: 4) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(count > 0 ? AppSection.care.color : Theme.line)
+                        .frame(height: max(3, 44 * (tallest > 0 ? Double(count) / Double(tallest) : 0)))
+                    Text(short ? String(KitDashboard.month(n).prefix(1)) : KitDashboard.month(n))
+                        .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
+                        .lineLimit(1).fixedSize()
+                }
+            }
+        }
+    }
+
     private func section(_ title: String, id: String) -> some View {
         SectionTitle(title: title, id: id)
     }
@@ -100,11 +113,16 @@ struct KitDashboard: View {
     /// One big number with its word under it.
     private func figure(_ number: String, _ word: String, _ tint: Color, _ id: String) -> some View {
         VStack(spacing: 2) {
+            // A long number may shrink, never under 15 (0.7 × 22).
             Text(number).font(.system(size: 22, weight: .heavy).monospacedDigit()).foregroundStyle(tint)
-                .lineLimit(1).minimumScaleFactor(0.6)
-            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted).lineLimit(1)
+                .lineLimit(1).minimumScaleFactor(0.7)
+            // 15 (it was 12): "need care" takes two lines on an iPhone rather than shrinking.
+            Text(word).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 58)
+        .padding(.horizontal, 4).padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 58, maxHeight: .infinity)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .combine)
@@ -118,7 +136,7 @@ struct KitDashboard: View {
             HStack {
                 Text(label).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
-                Text(right).font(.system(size: 14, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+                Text(right).font(.system(size: 15, weight: .bold).monospacedDigit()).foregroundStyle(Theme.muted)
             }
             GeometryReader { space in
                 ZStack(alignment: .leading) {

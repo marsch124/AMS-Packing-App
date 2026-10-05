@@ -127,7 +127,7 @@ struct TripSettingsScreen: View {
                     LaundrySwitch(on: $laundry, nights: $laundryNights, id: "tripset-laundry")
 
                     Text("Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things no longer asked for go.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     Rectangle().fill(Theme.line).frame(height: 1).padding(.vertical, 8)
                     startAgain
@@ -183,7 +183,7 @@ struct TripSettingsScreen: View {
                     .onSubmit { startIt(againName ?? "") }
                     .accessibilityIdentifier("tripset-again-name")
                 Text("The same list as this trip, nothing ticked, no dates.")
-                    .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 15)).foregroundStyle(Theme.muted)
                 HStack(spacing: 10) {
                     Button("Not now") { againName = nil; againNeeds = "" }
                         .buttonStyle(.plain).focusEffectDisabled()
@@ -219,7 +219,7 @@ struct TripSettingsScreen: View {
                     Text("Start a new trip from this one")
                         .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
                     Text("Same list, nothing ticked")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
                 }
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.4))

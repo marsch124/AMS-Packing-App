@@ -21,7 +21,7 @@ struct TickAllRow: View {
                     Text("Clear all \(done) tick\(done == 1 ? "" : "s")?")
                         .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
                     Text("The list stays as it is. Only the ticks go.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                     HStack(spacing: 10) {
                         Button("Keep them") { askingToClear = false }
                             .buttonStyle(.plain).focusEffectDisabled()
@@ -59,7 +59,7 @@ struct TickAllRow: View {
                                         .frame(width: 22, height: 22)
                                     Text("Tick everything").font(.system(size: 16, weight: .bold))
                                 }
-                                Text("\(left) still unticked").font(.system(size: 13, weight: .semibold)).opacity(0.85)
+                                Text("\(left) still unticked").font(.system(size: 15, weight: .semibold)).opacity(0.85)
                             }
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity, minHeight: 52)

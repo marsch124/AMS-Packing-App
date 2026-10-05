@@ -49,7 +49,7 @@ Shared building blocks referred to below (defined outside this area, summarised 
 | `FieldButtonLabel(title:tint:)` | `Buttons.swift` | The button beside an add-field (New, Add). 16 bold white on a full-colour rounded rectangle (radius 10), min height 44. Always enabled. |
 | `.needsLine($says, typed:, id:)` | `Buttons.swift` | Under an add-row: a red (`AppSection.actions`) 15 bold line saying what a press was missing; it disappears as soon as the typed text changes. |
 | `.clearButton($text, id:)` | `Buttons.swift` | Names a search field `id` and, while it holds text, shows a round ✕ (`id-clear`, label "Clear the search", 36×36 hit area) that empties it and keeps the keyboard. |
-| `SmallDeleteButton(title:id:size:)` | `SmallDelete.swift` | Right-aligned small red outlined capsule (red words, 1 pt outline in red at 60 %, padding 12, min height 30). `size` (since 40be106) defaults to **13** semibold; "Delete thing" and "Delete bag" pass none, so they are 13 pt (only the grab list's delete passes 15). Only ever OPENS a question. |
+| `SmallDeleteButton(title:id:)` | `SmallDelete.swift` | Right-aligned small red outlined capsule (red words, 1 pt outline in red at 60 %, padding 12, min height 30). Its words are **15** semibold (0.6x: a `size` parameter, 13 by default, that only the grab list's delete set to 15 — gone; "small" is the capsule, not the words). Only ever OPENS a question. |
 | `HeadingBand(title:tint:id:)` | `Headings.swift` | A heading as a band: a 5×26 capsule in the tint, words 22 heavy in the tint, on a 13 % tint rounded strip. |
 | `HeadingTitle`, `SectionTitle` | `Headings.swift` | 20 heavy with a 4×18 mark; SectionTitle = 18 heavy CAPITALS, kerning 0.8, 16 pt above. |
 | `Pills(title:options:selected:id:tint:heading:choose:)` | `HomeScreen.swift` | A heading (here always `.band`, id `<id>-title`) over wrapping capsules (15 pt, medium; bold when picked), min height 36; picked = filled in the tint with white words; each pill id `<id>-<n>` by POSITION, never by words; picked pills carry the selected trait. Tapping calls `choose(id)` — the caller decides single or multiple choice. |
@@ -378,9 +378,10 @@ table on the Mac, a window).
    (decided in the 0.6x spec pass: each number counts what its own screen shows; "not in use" comes only from
    the web app).
 3. **"Bags" door** (`care-bags`): "Bags" (17 bold) + the number of bags (15 heavy muted) over "How much each may
-   carry, and what goes in it" (13 medium muted, one line). Opens Your bags.
+   carry, and what goes in it" (15 medium muted, wrapping — 0.6x: 13, one line). Opens Your bags.
 4. **"All your things · table" door** (`care-table`): "All your things · table" (17 bold) over "Weight and where
-   each one lives, filled in row by row" (13 medium muted). Opens the table (a sheet on the iPhone, its own
+   each one lives, filled in row by row" (15 medium muted, wrapping). Both doors have 8 pt above and below their
+   words (0.6x). Opens the table (a sheet on the iPhone, its own
    window on the Mac — `openWindow(id: "things-table")`).
 5. **Summary** (`care-summary`, 17 heavy): `CareScreen.summary(rows:overdue:soon:)` — "Nothing has a care
    schedule yet." when there are no care rows at all; "All up to date" when none is overdue or due soon;
@@ -443,7 +444,7 @@ placed first, it kept the rows below it from being built at all on the Mac's sho
 ### A care row (`CareRow`, in CareScreen.swift)
 
 - Left: the thing's name (17 semibold ink); the "when" line (15 medium, coloured by state, up to 2 lines); the
-  templates it is on (`row.listName`, joined ", ", 14 muted, 1 line, only when not empty — his bag list reads
+  templates it is on (`row.listName`, joined ", ", 15 muted, up to 2 lines, only when not empty — his bag list reads
   "Bags"; a thing on no template has none).
 - Right, only for a SCHEDULED row: "Done today" (15 bold white on an orange capsule, min height 36), id
   `care-row-N-done`, accessibility label "`<name>` done today".
@@ -534,16 +535,16 @@ overdue line (which switches to the List, where overdue services are).
    (`care-cal-next`), each a 22 pt drawn chevron in a 40×36 hit area.
 2. When anything is overdue (in ANY month): "`N` overdue · show in List ›" (`care-cal-overdue`, 15 bold red);
    tapping it switches Care to the List.
-3. The grid: a weekday row "Mon Tue Wed Thu Fri Sat Sun" (11 heavy muted), then weeks of 7 cells (4 pt
+3. The grid: a weekday row "Mon Tue Wed Thu Fri Sat Sun" (15 heavy muted), then weeks of 7 cells (4 pt
    spacing); `lead` empty cells before the 1st. Each day is a button `care-cal-<day of month>` with the
-   accessibility value "`N` due" when something is due (else ""). A cell: the day number (14, heavy for today,
-   medium otherwise; white when something is due), and under it the count (10 heavy, white 90 %) when > 0;
+   accessibility value "`N` due" when something is due (else ""). A cell: the day number (15, heavy for today,
+   medium otherwise; white when something is due), and under it the count (15 heavy, white 90 %; 1 pt apart) when > 0;
    background = the worst state's colour when something is due (overdue red, soon orange, ok green/events),
    otherwise the card colour; border = ink 2 pt on the picked day, orange 2 pt on today, else the line colour
-   1 pt; radius 8; min height 40.
+   1 pt; radius 8; min height 46. (0.6x: weekdays 11, day 14, count 10, min height 40.)
 4. Under the grid, when a day is picked: "`<day> <Month>` · `N`" (`care-cal-day`, 15 heavy muted, e.g.
    "25 September · 1"), then one `CareRow` per service due that day (ids `care-row-900`, `care-row-901`… with
-   their "Done today" `care-row-90N-done`), or "Nothing due that day." (14 medium muted). When no day is picked:
+   their "Done today" `care-row-90N-done`), or "Nothing due that day." (15 medium muted). When no day is picked:
    "Nothing due this month. A thing shows here once it has a service interval." (`care-cal-empty`).
 
 **Behaviour.**
@@ -588,8 +589,9 @@ rings, never art".
 **How it is reached.** The bottom of the Care tab (List or Calendar alike).
 
 **What is on screen** (14 pt between blocks):
-1. **Four figures** in one row, each a card (radius 12, min height 58): the number (22 heavy, monospaced, 1 line,
-   may shrink to 60 %) over a word (12 bold muted):
+1. **Four figures** in one row, each a card (radius 12, padding 4 × 6, min height 58; the four equally tall): the
+   number (22 heavy, monospaced, 1 line, may shrink to 70 % — never under 15) over a word (15 bold muted, centred,
+   wrapping onto a second line rather than shrinking; 0.6x: 12, one line, the number shrinking to 60 %):
    - `kit-things`: things (non-retired), word "things", violet (templates colour);
    - `kit-weight`: `KitDashboard.kilos(totalGrams)` ("—" when 0, "N g" under 1000 g, else "%.1f kg"), word
      "in total", blue (home colour);
@@ -597,7 +599,7 @@ rings, never art".
    - `kit-noplace`: things without a storage place, word "no place", muted.
    Each figure is one combined accessibility element.
 2. **"HEAVIEST THINGS"** (`kit-heavy-heading`, a `SectionTitle`), when any thing has a weight: up to 6 bars
-   (`kit-heavy-0`…), each a button: the name (15 semibold, 1 line) and the weight (14 bold muted), and a 6 pt
+   (`kit-heavy-0`…), each a button: the name (15 semibold, 1 line) and the weight (15 bold muted), and a 6 pt
    capsule bar whose length is this weight ÷ the heaviest (min 4 pt), blue. Tap → Your things searched for that
    name.
 3. **"WHERE IT ALL LIVES"** (`kit-places-heading`), only when there are at least 2 place groups: up to 6 bars
@@ -606,9 +608,10 @@ rings, never art".
 4. **"WHAT EACH TEMPLATE WEIGHS"** (`kit-lists-heading`), only when there are at least 2 templates: up to 5 bars
    (`kit-list-N`, not buttons — a tap does nothing), template name and its weight, green.
 5. **"THE YEAR AHEAD"** (`kit-year-heading`), when any month has something due: 12 bars bottom-aligned (height
-   max(3, 44 × count ÷ tallest), orange when > 0 else the line colour), each over a 3-letter month name (10 bold
+   max(3, 44 × count ÷ tallest), orange when > 0 else the line colour), each over a 3-letter month name (15 bold
    muted) — the month `n` months from now in the DEVICE's locale (`setLocalizedDateFormatFromTemplate("MMM")`,
-   first 3 characters); the block's id `kit-year`, accessibility label "Care due over the next twelve months".
+   first 3 characters) — where twelve of them fit (the Mac), else its first letter (an iPhone gives a month 27 pt
+   and "Sep" at 15 needs 30; `ViewThatFits`, 0.6x — the months were 10; block 66 tall); the block's id `kit-year`, accessibility label "Care due over the next twelve months".
 6. **"WORTH KNOWING"** (`kit-tips-heading`), when there are tips: up to 4 tips (`kit-tip-N`), each a 6 pt orange
    dot and the sentence (15 medium ink, wrapping).
 
@@ -681,7 +684,7 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
      when other rows follow — the heading "A–Z" (`things-rest`).
    - Then every other shown thing, A–Z (`thingRows()` order).
    - A row (`thing-row-N`, N = its position on screen counting the Just added rows first): a full-width button;
-     the name (17 semibold ink); under it one line (14) joining with " · " the template names (", "-joined) or
+     the name (17 semibold ink); under it one line (15, up to 2 lines) joining with " · " the template names (", "-joined) or
      "On no template", and the storage place when set — orange when on no template, muted otherwise; 10 pt
      vertical padding; a 1 pt line under it. A just-added row is lit for a moment: a rounded (8) orange 18 %
      background reaching 8 pt past the text on each side.
@@ -772,7 +775,7 @@ apart; a field 6 pt under its heading):
    named in other capitals lights the offered spelling (`ThingEditor.bagChoices`).
 7. **On a plane** — band (`thing-heading-plane`); two switches (orange tint): "Liquid" / "In the cabin: 100 ml at
    most, in the clear bag." (`thing-liquid`) and "Not allowed in the cabin" / "A knife, tools, gas — it goes in
-   the hold." (`thing-restricted`); title 16 semibold, explanation 14 muted.
+   the hold." (`thing-restricted`); title 16 semibold, explanation 15 muted.
 8. **Valid until** — band (`thing-heading-valid`):
    - No date: the pill "Add a date" (`thing-expiry-add`; 15 bold orange, orange 1.4 outline, min height 36) →
      sets the date to TODAY.
@@ -782,7 +785,7 @@ apart; a field 6 pt under its heading):
      (`thing-expiry-quick-0` … `-4`): "+1 month", "+6 months", "+1 year", "+5 years", "+10 years", each setting the
      date to `addMonths(today, 1/6/12/60/120)`; the pill equal to the current date is filled orange with white
      bold words and the selected trait.
-   - Always: "The trip warns before it runs out — a document (Documents & money) six months ahead." (14 muted).
+   - Always: "The trip warns before it runs out — a document (Documents & money) six months ahead." (15 muted).
 9. **When** — pills band (`thing-when-title`), one pill per live `PHASES` step (id and label; `thing-when-N`).
 10. **Whose it is** — pills band (`thing-owner-title`) when `ownerChoices()` is not empty: first
     "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026, replacing "Nobody's in
@@ -811,7 +814,7 @@ apart; a field 6 pt under its heading):
     tap this thing." (`thing-tags-hint`, 15 medium muted).
 17. When a save was refused: the problem in red (`thing-problem`, 15 semibold): "A thing needs a name." or "You
     already have a thing called that."
-18. "A change here reaches every template it is on. Past trips keep what they were packed with." (14 muted).
+18. "A change here reaches every template it is on. Past trips keep what they were packed with." (15 muted).
 19. **Delete** — absent for a bag (a bag is deleted on its own page). Otherwise the small "Delete thing"
     (`thing-delete`); pressed, it becomes a card (card colour, red 1 pt border, radius 12): "Delete
     “`<name being edited>`”?" (16 heavy) and "It is on none of your templates. Trips you already packed keep it."
@@ -897,14 +900,15 @@ A trip's bag ("Goes in the cabin", `BagCabinRow`) can also MAKE a bag (see a bag
 **What is on screen** (container `yourbags-detail`):
 1. Header: "Your bags" (22 heavy orange), the count (`yourbags-count`, 15 heavy muted), "Done" (filled).
 2. Fixed (does not scroll — his ask 26 Sep 2026, "keep the header row visible"): "Give a bag its max weight and
-   every trip shows how full it is." (14 medium muted), then the column names right-aligned over the fields:
-   "MAX KG" (64 wide), "LITRES" (64), "EMPTY G" (70) (10 heavy muted, kerning 0.4; one combined element
+   every trip shows how full it is." (15 medium muted), then the column names right-aligned over the fields:
+   "MAX KG" (64 wide), "LITRES" (64), "EMPTY G" (76) (15 heavy muted, kerning 0.4, one line; 0.6x: 10 pt, and
+   the Empty column 70 — too narrow for "EMPTY G" at 15; one combined element
    `yourbags-columns`); a 1 pt line under.
-3. Scrolling: one row per bag (min height 46, line under):
-   - the name button (`bag-N-name`): the name (15 semibold, may shrink to 80 %) and under it the glance line
-     (12 medium muted) — "`N` thing(s)" and/or "last trip `<weight>`" joined " · " (`BagsCard.kilos`: "N g" under
+3. Scrolling: one row per bag (min height 46, 4 pt above and below, line under):
+   - the name button (`bag-N-name`): the name (15 semibold, up to 2 lines, never shrunk) and under it the glance
+     line (15 medium muted, wrapping; 0.6x: the name shrank to 80 % and the line was 12, shrinking to 85 %) — "`N` thing(s)" and/or "last trip `<weight>`" joined " · " (`BagsCard.kilos`: "N g" under
      1000 g, else "%.1f kg"), also the button's accessibility value; a small chevron. Opens the bag's page.
-   - three number fields (`bag-N-maxkg` 64 wide, `bag-N-litres` 64, `bag-N-empty` 70; 15 semibold monospaced,
+   - three number fields (`bag-N-maxkg` 64 wide, `bag-N-litres` 64, `bag-N-empty` 76; 15 semibold monospaced,
      right-aligned, height 34, card, radius 8). Max kg and litres show "" when 0, else the number without a
      decimal when whole, otherwise one decimal (`BagsScreen.show`); empty grams shows whole grams.
    - No bags: "No bags yet." (15 medium muted).
@@ -972,9 +976,9 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
 **What is on screen** (container `bag-detail`, 18 pt between blocks):
 1. **Header:** the name IS the field (`bag-name`, 22 heavy orange). When the typed name differs from the stored
    one (trimmed), "Rename" appears beside it (`bag-rename`, 15 bold white on orange). "Done" (filled) right. A
-   refusal shows under it in red (`bag-problem`, 14 semibold): "A bag needs a name." or "You already have
+   refusal shows under it in red (`bag-problem`, 15 semibold): "A bag needs a name." or "You already have
    something called that."
-2. **Numbers:** "MAX KG", "LITRES", "EMPTY G" (11 heavy muted) over fields `bag-detail-maxkg`,
+2. **Numbers:** "MAX KG", "LITRES", "EMPTY G" (15 heavy muted, kerning 0.4; 11 until 0.6x) over fields `bag-detail-maxkg`,
    `bag-detail-litres`, `bag-detail-empty` (17 semibold monospaced, height 40) — saved as typed, same rules as
    Your bags.
 3. **Goes in the cabin** switch (`bag-detail-cabin`, orange): "Goes in the cabin" / "Carry-on. On a plane trip,
@@ -983,9 +987,10 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    this bag." or up to 12 things (`bag-thing-i`: name 16 medium, weight when > 0), each opening its thing's page;
    "Show all `N`" / "Show fewer" (`bag-things-all`) when more than 12.
 5. **On your trips** `N` (`bag-trips-count`): "Not packed on a trip yet." or up to 8 trips (`bag-trip-i`, one
-   combined element): name, date (13 monospaced), and "`<weight>` / `L` kg" when the trip had a limit else the
+   combined element): name, date (15 monospaced), and "`<weight>` / `L` kg" when the trip had a limit else the
    weight, red when over; "Heaviest: `<weight>` on `<trip>`" (`bag-heaviest`) when more than one trip.
-6. **Its details** door (`bag-details`): "Its details" / "Kept at home, condition, brand, colour, notes" → the
+6. **Its details** door (`bag-details`): "Its details" / "Kept at home, condition, brand, colour, notes" (15
+   muted, wrapping; 8 pt above and below) → the
    bag's own thing page (which has no Delete for a bag).
 7. **Delete:** the small "Delete bag" (`bag-delete`). Pressed, a card (red 1 pt border) asks "Delete
    “`<name>`”?" and:
@@ -1068,38 +1073,43 @@ window.
 2. **Tools row:** a search field "Search" (`table-search`, ✕ `table-search-clear`; 15 medium, min height 34,
    radius 9); "Filter" or "Filter `N`" (`table-filter`; N = number of filtered columns; filled orange when any);
    "Sort" or "Sort `N`" (`table-sort`; N = number of levels; filled when more than one); "Columns"
-   (`table-columns`). Chips: 14 bold, min height 34, radius 9.
+   (`table-columns`). Chips: 15 bold, min height 34, radius 9.
 3. **Quick chips:** "All" (`table-filter-all`), "No weight" (`table-filter-weight`), "No place"
-   (`table-filter-place`) — capsules 14 bold, min height 30; the chosen one filled orange with the selected trait.
+   (`table-filter-place`) — capsules 15 bold, min height 30; the chosen one filled orange with the selected trait.
 4. **Filter pills** (only when any column filter is on): a sideways-scrolling row with one pill per filtered
-   column that is still a column — "`<Column>`: `<answers>` ✕" (14 bold orange on 14 % orange, id
-   `table-pill-<safe key>`, accessibility label = the words) — then "Clear" (`table-filters-clear`, 14 bold red).
+   column that is still a column — "`<Column>`: `<answers>` ✕" (15 bold orange on 14 % orange — the ✕ a 13 black
+   mark; id `table-pill-<safe key>`, accessibility label = the words) — then "Clear" (`table-filters-clear`, 15 bold red).
    Tapping a pill removes that column's filter; Clear removes all.
-5. **"Sorted by …"** (`table-sorted-by`, 14 semibold muted, up to 2 lines), only when there is more than one
+5. **"Sorted by …"** (`table-sorted-by`, 15 semibold muted, wrapping as far as it needs — 0.6x: 14, 2 lines at most), only when there is more than one
    level: "Sorted by `Name` ▲, then `Hiking · section` ▼" (each level's title and arrow, joined ", then ").
 6. **The ticked bar** (only while anything is ticked, or a Change all can still be undone): "`N` ticked"
    (`table-chosen-count`, 15 heavy orange) — "`N` ticked · `H` not shown" when `H` ticked things are hidden by
-   the search, a chip or a filter (0.6x) — "Change all" (`table-change-all`, 14 bold white on orange capsule),
-   "Clear" (`table-clear-chosen`, 14 bold muted); right: after a Change all, "Undo" (`table-undo`, 14 bold red,
+   the search, a chip or a filter (0.6x) — "Change all" (`table-change-all`, 15 bold white on orange capsule),
+   "Clear" (`table-clear-chosen`, 15 bold muted); right: after a Change all, "Undo" (`table-undo`, 15 bold red,
    red outlined capsule); and on a line of its own under them what the change was, "`N` changed: `<sentence>`"
    — e.g. "2 changed: Condition → New" (`table-said`, 15 semibold muted, up to 2 lines; 0.6x — it said only
    "`N` changed").
 7. A divider, then **the grid** — one `ScrollView` that scrolls both ways, holding a `LazyVStack` with a pinned
    section header:
-   - **Band row** (20 tall): an empty block the width of the name column, then one band per run of neighbouring
-     columns of the same group — "The thing itself", "On this template", "On these templates" (11 heavy orange,
-     kerning 0.4, id `table-band-<n>-<group>`). A band's title holds still inside its run while the grid scrolls
-     sideways (offset = min(max(0, scrolled − band start), max(0, band width − 130))).
-   - **Column-name row** (26 tall): the "tick everything shown" box (`table-pick-all`, label "Tick everything
+   - **Band row** (at least 26 tall; bottom-aligned): an empty block the width of the name column, then one band
+     per run of neighbouring columns of the same group — "The thing itself", "On this template", "On these
+     templates" (15 heavy orange, kerning 0.4, padding 7 × 3, id `table-band-<n>-<group>`); over a run too narrow
+     for its title the title wraps (never cut) and the other bands stay seated on their column names. A band's
+     title holds still inside its run while the grid scrolls sideways (offset = min(max(0, scrolled − band
+     start), max(0, band width − 175)); 175 = room for the longest title at 15). (0.6x: 11 heavy, 20 tall, one
+     line, 130.)
+   - **Column-name row** (at least 32 tall; every heading as tall as the tallest): the "tick everything shown" box (`table-pick-all`, label "Tick everything
      shown"; an 18 pt outlined box with a dash) — if every shown row is already ticked it unticks them, else it
-     ticks them all; "Thing" (`table-head-name`, 12 heavy muted, ▲ or ▼ in orange when the table is sorted by
-     name); then one heading per column (`table-head-<column id>`), its title (12 heavy muted, 1 line, may shrink
-     to 70 %) and ▲/▼ when it is the first sort level; a 1 pt line at each column's right edge; a 1 pt line under
+     ticks them all; "Thing" (`table-head-name`, 15 heavy muted, ▲ or ▼ in orange when the table is sorted by
+     name — the arrow a 9 black mark); then one heading per column (`table-head-<column id>`), its title (15 heavy
+     muted, wrapping onto a second line — a template's long name — rather than shrinking; padding 6 × 4) and ▲/▼
+     when it is the first sort level (0.6x: 12 heavy, 1 line, shrinking to 70 %); a 1 pt line at each column's right edge; a 1 pt line under
      the row.
-   - **Rows** (`table-row-N`, 34 tall, alternating background, a 1 pt line under each): the name cell — the
+   - **Rows** (`table-row-N`, 44 tall — 34 until 0.6x, room for two lines of 15 — alternating background, a 1 pt
+     line under each): the name cell — the
      tick box (`table-N-pick`, 18 pt, filled orange when ticked, no tick mark: "the colour is enough" — his
-     words; selected trait), the name (`table-N-name`, 14 semibold, 1 line, may shrink to 80 %), and the open
-     arrow (`table-N-open`, an orange chevron in a 26 × 34 area, label "Open `<name>`", tooltip on the Mac) — then
+     words; selected trait), the name (`table-N-name`, 15 semibold, up to 2 lines, never shrunk — 0.6x: 14, 1 line, shrinking to 80 %),
+     and the open arrow (`table-N-open`, an orange chevron in a 26 × 44 area, label "Open `<name>`", tooltip on the Mac) — then
      one cell per chosen column (see Table columns).
 8. When no row is shown, under the grid (`table-none`, 16 medium muted): "Nothing matches these filters." (any
    column filter on) — else "Nothing matches." (quick chip All) — else "Nothing missing that — all filled in."
@@ -1171,7 +1181,7 @@ its words in on the Mac).
 
 | Group "The thing itself" (`intrinsic`) | | | |
 |---|---|---|---|
-| `weight` | Weight | 74 | number (grams) |
+| `weight` | Weight | 80 | number (grams) |
 | `storage` | Storage | 150 | choice from his places |
 | `container` | Packed in | 140 | choice from bag names |
 | `ownedBy` | Owner | 110 | choice from his owners list |
@@ -1183,16 +1193,19 @@ its words in on the Mac).
 | `model` | Model | 120 | words |
 | `serial` | Serial | 120 | words |
 | `note` | Note | 180 | words |
-| `liquid` | Liquid | 62 | tick |
-| `charging` | Charges | 68 | tick |
-| `restricted` | Restricted | 78 | tick |
-| `consumable` | Runs out | 72 | tick |
-| `perNight` | Per night | 74 | tick |
+| `liquid` | Liquid | 72 | tick |
+| `charging` | Charges | 88 | tick |
+| `restricted` | Restricted | 104 | tick |
+| `consumable` | Runs out | 92 | tick |
+| `perNight` | Per night | 94 | tick |
 | **Group "On this template"** (`perListColumns`) | | | |
-| `listQty` | How many | 92 | per template: quantity |
+| `listQty` | How many | 104 | per template: quantity |
 | `listSection` | Section | 140 | per template: section |
 | **Group "On these templates"** (`listColumns`) | | | |
-| `list:<template id>` | the template's name | 100 | tick: on this template |
+| `list:<template id>` | the template's name | 120 | tick: on this template |
+
+Each width holds its title at 15 heavy plus the sort arrow (0.6x: Weight 74, Liquid 62, Charges 68, Restricted
+78, Runs out 72, Per night 74, How many 92 and the template columns 100 held them only at 12, shrinking).
 
 The template columns follow `Library.templates` order (after a load, sorted by template id — for ids this app
 makes, roughly creation order), and are `templatesForThings()`: never his bag list (0.6x — a tick there made a
@@ -1200,7 +1213,7 @@ thing a bag, and an untick dropped a bag from the bag list without `deleteBag`'s
 deleted on Your bags). The Filter and Sort sheets offer the same templates. Starting columns (`startingColumns`, when he has chosen nothing): weight,
 storage, container, ownedBy, packer, condition, listQty. `TableColumns.ids(stored, library)` drops stored ids
 that are no longer columns (a deleted template) BEFORE anything counts them (0.6x), and gives the starting
-columns when none is left. Row height 34 (`TableColumns.rowHeight`).
+columns when none is left. Row height 44 (`TableColumns.rowHeight`; 34 until 0.6x).
 
 **The answers for choice columns (`Answers2`, worked out ONCE per redraw and handed to every cell):** each a
 `Choice {value, label}` — what is stored and what he reads. places = `storagePlaces()`; bags = `bagNames()`
@@ -1209,7 +1222,8 @@ columns when none is left. Row height 34 (`TableColumns.rowHeight`).
 map from a stored condition (id, or label by `normName`) to its label; every membership as
 "itemId|templateId", memberships by thing, each template's sections and shown name.
 
-**Each cell** (`Cell`, id `table-N-<column id>`, the column's width × 34, a 1 pt line at its right):
+**Each cell** (`Cell`, id `table-N-<column id>`, the column's width × 44, a 1 pt line at its right; the words in
+a box are 15 medium — 14 until 0.6x):
 - **Number** (weight): a text box showing `amountText` (whole grams without a point, else up to two decimals —
   0.6x; it showed the rounded whole grams) or "" for 0; a blank cell is tinted orange 10 % while not being typed
   in; text that is not a number tints it red 18 % (0.6x). Saved on Return or when the box loses focus through
@@ -1219,7 +1233,7 @@ map from a stored condition (id, or label by `normName`) to its label; every mem
 - **Words** (colour, size, maker, model, serial, note): a text box; saved on Return or leaving, trimmed, only
   when different from the stored (trimmed) value.
 - **Choice** (storage, packed in, owner, packed by, condition): a borderless menu showing the stored value — for
-  a condition its label (0.6x) — or "—" (13; "—" bold orange on an orange 10 % tint); the menu lists the
+  a condition its label (0.6x) — or "—" (15, up to 2 lines, never shrunk — 13 shrinking to 75 % until 0.6x; "—" bold orange on an orange 10 % tint); the menu lists the
   answers' labels, a divider, and "Leave blank". Choosing writes the answer's VALUE (for a condition its id)
   through `updateThing`. Accessibility value = what the cell shows.
 - **Tick** (liquid … per night): a 20 pt rounded box, filled orange when on (no mark); a tap flips it through
@@ -1230,7 +1244,7 @@ map from a stored condition (id, or label by `normName`) to its label; every mem
   text box saved (trimmed, every time it is left) to that membership's `qty` (`updateMembership`); Section is a
   menu of that template's sections plus "No section", showing the section's name, "Where?" (orange bold) when
   the template has sections but none is chosen, "—" (muted) when it has none. With no membership the cell reads
-  "—"; with several, "`N` templates" (12 medium muted, not editable; tooltip "Different on each template — open
+  "—"; with several, "`N` templates" (15 medium muted, up to 2 lines, not editable; tooltip "Different on each template — open
   the thing to set it"; with none: "On no template"); accessibility value = those words.
 
 **Tests.** UI `testTheTableTakesTheColumnsHeChooses` (a Liquid tick flips), `testTheTableSortsAndSaves` (a weight
@@ -1254,13 +1268,13 @@ tick; the red and blank tints.
 ### Choosing columns (`ColumnPicker`)
 
 Opened by "Columns" (`table-columns`) as a sheet (container `columns-detail`; Mac at least 460 × 540). Header
-"Columns" (20 heavy orange) and "Done" (`columns-done`, filled). "SHOWING, IN THIS ORDER" (12 heavy muted,
+"Columns" (20 heavy orange) and "Done" (`columns-done`, filled). "SHOWING, IN THIS ORDER" (15 heavy muted,
 kerning 0.6): one row per shown column of `TableColumns.ids` — live ids only (min height 44, line under): its
 title (16 semibold), an up arrow (`columns-<key>-up`, disabled on the first row; `<key>` = `TableKeys.safe`, so a
 template column is `list-<n>` — 0.6x), a down arrow (`columns-<key>-down`, disabled on the last) — each a
 22 pt drawn chevron pressed anywhere in a 44 × 44 square (his ask, 4 Oct 2026: "These arrows are rather
 difficult to hit") — and "Hide" (`columns-<id>-hide`, 15 bold red, at least 52 × 44). "NOT SHOWING": every other
-column, a row with its title (16 medium muted) and "Show" (14 bold orange), the whole row a button
+column, a row with its title (16 medium muted) and "Show" (15 bold orange), the whole row a button
 (`columns-<key>-show`). Up/down swap neighbours; Show appends at the end; Hide removes — except the LAST column,
 which cannot be hidden (an empty list would mean "nothing chosen" and bring the starting columns back). Every
 change is written at once to `ams.table.columns` — live ids only, so a gone template's id is forgotten at the
@@ -1351,7 +1365,7 @@ level only decides between things the levels above call equal; the name settles 
 (15 heavy muted, 64 wide); a box with the level's title and ▾/▴ (`sort-level-<n>`, accessibility value = the
 title; orange border while its list is open) — pressing it opens the list of keys under it; a ▲/▼ button
 (`sort-dir-<n>`, 20 black orange, 44 × 44, accessibility value "up"/"down") turning that level round; for levels
-after the first, ✕ (`sort-remove-<n>`, label "Remove this level"). The key list, in groups (13 heavy orange
+after the first, ✕ (`sort-remove-<n>`, label "Remove this level"). The key list, in groups (15 heavy orange
 capitals): "THE THING ITSELF" (Name + the 17 intrinsic columns), "ON THIS TEMPLATE" (How many, Section), "ON
 THESE TEMPLATES" (one per template), and — only when some template has sections — "BY A TEMPLATE'S SECTIONS"
 (one "`<Template>` · section" per such template); each a row (`sort-key-<safe key>`), the current one bold
@@ -1403,7 +1417,7 @@ this takes two taps"; the grid keeps the old values so one press puts them back.
 460 × 560). "Cancel" (`bulk-cancel`, outlined muted) or choosing a value (which applies and closes).
 
 **What is on screen.** "Change `N` thing(s)" (`bulk-count`, 20 heavy orange) and under it the first three names
-"A, B, C" or "A, B, C and `K` more" (13 medium muted, up to 2 lines). "WHAT TO CHANGE" (12 heavy muted). One row
+"A, B, C" or "A, B, C and `K` more" (15 medium muted, up to 2 lines). "WHAT TO CHANGE" (15 heavy muted). One row
 per intrinsic column (`bulk-field-<id>`, min height 42; the chosen one heavy orange with ▾ and the selected
 trait); under the chosen one its values, each a row "→ `<value>`" (15 semibold, min height 40):
 - choice columns: each answer of `Answers2` by its label (`bulk-value-<n>`; a condition stores its id) then
@@ -1475,7 +1489,7 @@ is `@State`: every time the tab is built again it starts on "To do".
    - One row per to-do in `sortedActions(kind: "todo")` order: the row button (`action-N`, selected trait when
      done) — a 26 pt circle with a red 2 pt ring; when done, a filled red circle with a white drawn tick; the
      text (17, medium; regular, muted and struck through when done); and, when the to-do has a thing, high
-     priority or a "When" step, a second line (13 semibold) joining with " · " "High", the thing's name and the
+     priority or a "When" step, a second line (15 semibold) joining with " · " "High", the thing's name and the
      step's label (`phaseLabel`: a step this device does not know is shown by its raw id) — red while a high
      one is open, muted otherwise. At the right a ✕ (`action-N-remove`, label
      "Remove", 24 pt mark in a 40 × 40 area). A 1 pt line under each row.
@@ -1560,7 +1574,7 @@ and taking it up stops it being offered (0.3, 23 Sep 2026; the web app's pre-tri
    and muted when bought) — no second line; ✕ (`buy-N-remove`, label "Remove `<text>`") deletes at once.
 4. When there are offers: "Worth buying" (`buy-offers`, 15 heavy muted, 18 pt above), then each offer as a button
    (`buy-offer-N`): a red "+" (22 heavy), the thing's name (`buy-offer-N-name`, 17 medium) over the reason
-   (`buy-offer-N-why`, 14 semibold; red for "Needs replacing" and "Expired", muted otherwise).
+   (`buy-offer-N-why`, 15 semibold; red for "Needs replacing" and "Expired", muted otherwise).
 5. After a ✕ (0.6x): "Removed “`<text>`”" (`buy-undo-says`) and "Undo" (`buy-undo`), as on To do.
 6. The add row at the BOTTOM: "Add something to buy" (`buy-add-text`), "Add" (`buy-add`, red); needs line
    `buy-add-needs` "Type what to buy first."
@@ -1781,7 +1795,10 @@ pins · [idea] a gap worth deciding on.
 31. **Resolved in 0.6x** — ~~A to-do found by the search goes nowhere.~~ `SearchScreen.chose` closes the
     search and sets `model.tabToOpen = .actions`; the frame opens the To do tab. Pinned by
     `testASearchedToDoOpensTheToDoTab` (Home spec).
-32. [rule-break] **Small type** (his floor is 15 pt): "Delete thing" / "Delete bag" 13 (`SmallDeleteButton`'s
-    default; only the grab list's delete passes 15), the bag glance line 12, Your bags' column names 10, the
-    bag page's number titles 11, the table's cells 13–14, headings 12 and bands 11, the kit figures' words 12
-    and the year-ahead months 10, the calendar's weekday row 11 and counts 10, the Care doors' second lines 13.
+32. **Resolved in 0.6x** — ~~Small type (his floor is 15 pt): "Delete thing" / "Delete bag" 13, the bag glance
+    line 12, Your bags' column names 10, the bag page's number titles 11, the table's cells 13–14, headings 12 and
+    bands 11, the kit figures' words 12 and the year-ahead months 10, the calendar's weekday row 11 and counts 10,
+    the Care doors' second lines 13.~~ Every one is 15 now (F073), and the layouts make room instead of shrinking:
+    the table's rows are 44 tall and its narrow columns wider, its headings and bands wrap; Your bags' Empty
+    column is 76; the year ahead says one letter per month on an iPhone; the kit's words wrap; the calendar's
+    cells are 46 tall. `tools/check-type-floor.sh` keeps anything under 15 out (spec 06, §21).
