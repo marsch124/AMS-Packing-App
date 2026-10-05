@@ -127,6 +127,108 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "home")
     }
 
+    /// His floor (F073, 5 Oct 2026): nothing a person reads is under 15 points — he
+    /// reads without his glasses. One line of 15-point words stands about 18 points
+    /// tall (14 → 17, 11 → 13), so the words that were the smallest are measured where
+    /// they stand; and a long label is given room rather than shrunk, so "Templates"
+    /// gets the tab width it needs at 15 (74 points, where an even sixth of an iPhone
+    /// is 67). Every screen the change touched is photographed on the way.
+    func testTheSmallestWordsAreFifteenPoints() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let tall: CGFloat = 17.5
+
+        // The version marker (it was 11) and the tab that needs the most room.
+        let version = app.staticTexts["app-version"]
+        XCTAssertTrue(version.waitForExistence(timeout: 5))
+        XCTAssertGreaterThanOrEqual(version.frame.height, tall, "the version is drawn under 15 pt")
+        let templatesTab = app.buttons["tab-templates"]
+        XCTAssertGreaterThanOrEqual(templatesTab.frame.width, 74,
+                                    "the Templates tab is too narrow for its name at 15 pt")
+        shot(app, "type-home")
+
+        // Trips: Your year and All your trips, under the trips.
+        tab(app, "events")
+        let year = app.otherElements["events-year"]
+        XCTAssertTrue(year.waitForExistence(timeout: 5), "no Your year on Trips")
+        bringIntoView(app, year)
+        shot(app, "type-trips-year")
+
+        // Templates: the line saying when each was last taken (it was 12).
+        tab(app, "templates")
+        let used = app.staticTexts["template-used"].firstMatch
+        XCTAssertTrue(used.waitForExistence(timeout: 5), "no template card says when it was used")
+        XCTAssertGreaterThanOrEqual(used.frame.height, tall, "a template card's last line is under 15 pt")
+        shot(app, "type-templates")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the icons")
+        shot(app, "type-icon-picker")
+        tap(app, id: "icon-cancel")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // Care: its doors, the kit's figures and the year ahead, the calendar.
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        shot(app, "type-care-doors")
+        let figures = app.otherElements["kit-things"].exists ? app.otherElements["kit-things"] : app.staticTexts["kit-things"]
+        XCTAssertTrue(figures.waitForExistence(timeout: 5), "no kit figures on Care")
+        bringIntoView(app, figures)
+        shot(app, "type-care-kit")
+        // The year ahead (its months were 10): the part under it brings it on screen.
+        for id in ["kit-year-heading", "kit-tips-heading"] where app.staticTexts[id].exists {
+            bringIntoView(app, app.staticTexts[id])
+        }
+        shot(app, "type-care-year-ahead")
+        tap(app, id: "care-view-calendar")
+        XCTAssertTrue(app.staticTexts["care-cal-title"].waitForExistence(timeout: 5), "Calendar did not open")
+        shot(app, "type-care-calendar")
+        tap(app, id: "care-view-list")
+
+        // The table: its cells and headings (13–14 and 12, bands 11).
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        let name = app.staticTexts["table-0-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        XCTAssertGreaterThanOrEqual(name.frame.height, tall, "the table's names are under 15 pt")
+        shot(app, "type-table")
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+
+        // Your bags (column names 10, the glance line 12) and a bag's page.
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        type("Duffel bag", into: app.textFields["bag-new-name"])
+        tap(app, id: "bag-new")
+        XCTAssertTrue(waitUntil { app.buttons["bag-0-name"].exists }, "the bag was not made")
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the bag's page did not open")
+        shot(app, "type-bag-page")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        shot(app, "type-your-bags")
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+
+        // Search (its part headings were 12) and Grab Lists (its pills were 13).
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("a", into: app.textFields["search-field"])
+        hideKeyboard(app)
+        shot(app, "type-search")
+        tap(app, id: "search-done")
+        XCTAssertTrue(disappears(app, "search-detail", timeout: 5))
+        tab(app, "home")
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        shot(app, "type-grab-lists")
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+    }
+
     /// Every tab opens its own screen — and leaves the previous one.
     func testEveryTabOpensItsScreen() {
         let app = launch()
