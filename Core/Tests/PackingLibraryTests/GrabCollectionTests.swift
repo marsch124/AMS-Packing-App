@@ -82,7 +82,7 @@ final class GrabCollectionTests: XCTestCase {
         XCTAssertTrue(lib.setHomeGrabLists(off))
         XCTAssertEqual(lib.homeGrabLists().map(\.id), off, "the list he took off came straight back")
         XCTAssertEqual(lib.waitingGrabLists().map(\.id), ["swim"])
-        XCTAssertEqual(lib.waitingGrabLists()[0].items, GRAB_FACTORY[0].items, "it lost its things on the way")
+        XCTAssertEqual(lib.waitingGrabLists().first?.items, GRAB_FACTORY[0].items, "it lost its things on the way")
 
         // It stays off on the other device (records) and after a restore.
         XCTAssertEqual(Library(records: lib.records()).homeGrabLists().map(\.id), off, "it came back through the store")
