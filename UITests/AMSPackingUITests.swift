@@ -1921,6 +1921,9 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "onsite-note-add")
         type("pass", into: app.textFields["onsite-note-search"])
         XCTAssertTrue(waitUntil { self.words(app.buttons["onsite-note-pick-0"]).hasPrefix("Passport") }, "the search did not find the passport")
+        // GitHub's iPhone 17 shows the on-screen keyboard over the found row (0.61, 5 Oct
+        // 2026): put it away first, as he would to tap what he found.
+        hideKeyboard(app)
         tap(app, id: "onsite-note-pick-0")
         let field = app.textFields["onsite-note-field"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "picking a thing opens no note")
@@ -3875,7 +3878,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["table-detail"].exists || find(app, "table-detail") != nil, "the table closed with the thing")
         XCTAssertEqual(words(app.staticTexts["table-6-name"]), thing, "another thing sits in that row now")
-        XCTAssertEqual(app.staticTexts["table-6-name"].frame, before, "the table moved while the thing was open")
+        // The same spot: the row is where it was, give or take the few points a sheet's
+        // closing can leave (3.7 on GitHub's iPhone 17, 5 Oct 2026) — never a row away.
+        let after = app.staticTexts["table-6-name"].frame
+        XCTAssertTrue(abs(after.minY - before.minY) < 10 && abs(after.minX - before.minX) < 1,
+                      "the table moved while the thing was open: \(before) → \(after)")
         tap(app, id: "table-columns")
         tap(app, id: "columns-color-show")
         tap(app, id: "columns-done")
