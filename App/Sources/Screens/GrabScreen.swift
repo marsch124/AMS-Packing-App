@@ -104,6 +104,11 @@ final class GrabStore {
         memory[id] = s
         if persistent, let data = try? JSONEncoder().encode(s) { UserDefaults.standard.set(data, forKey: "ams.grab.\(id)") }
     }
+    /// A deleted list's ticks go with it.
+    func forget(_ id: String) {
+        memory[id] = nil
+        if persistent { UserDefaults.standard.removeObject(forKey: "ams.grab.\(id)") }
+    }
 }
 
 /// The Home buttons — four in a row, two rows (his ask, 2 Oct 2026: "compress the
@@ -163,10 +168,18 @@ struct GrabScreen: View {
     @State private var addNeeds = ""
     /// While editing: which names are marked "only sometimes", by their plain form.
     @State private var draftSometimes: Set<String> = []
+    /// "Delete <name>?" is up, at the foot of the editor.
+    @State private var askingToDelete = false
+    /// The list as it was, while its sheet slides away after Delete — so the
+    /// screen does not turn into another list on the way out.
+    @State private var leaving: GrabDefinition?
 
     private var list: GrabDefinition {
-        model.library.allGrabLists().first { $0.id == listId } ?? GRAB_FACTORY[0]
+        leaving ?? model.library.grabList(id: listId) ?? GRAB_FACTORY[0]
     }
+    /// One he made himself — the only kind that can be deleted. The original six
+    /// can be taken off Home, never thrown away.
+    private var isOwn: Bool { model.library.ownGrabLists().contains { $0.id == listId } }
     private var tint: Color { GrabTone.color(list.tone) }
 
     var body: some View {
@@ -343,7 +356,52 @@ struct GrabScreen: View {
             }
             .needsLine($addNeeds, typed: newThing, id: "grab-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
+            // Last on the screen, quiet, and it asks first — as Delete template does.
+            if isOwn { deleteList.padding(.horizontal, 16).padding(.bottom, 10) }
         }
+    }
+
+    /// Delete one of HIS lists (4 Oct 2026: there was no way to). It goes from Home
+    /// and from Grab Lists with everything on it; nothing else in the app changes.
+    @ViewBuilder private var deleteList: some View {
+        if askingToDelete {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Delete \u{201C}\(list.label)\u{201D}?")
+                    .font(.system(size: 17, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .accessibilityIdentifier("grab-delete-question")
+                Text("It goes from Home and from Grab Lists, with everything on it. Your templates, things and trips stay as they are.")
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Keep it") { askingToDelete = false }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("grab-delete-no")
+                    Spacer()
+                    Button { deleteIt() } label: {
+                        Text("Delete the grab list").font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)
+                            .padding(.horizontal, 14).frame(minHeight: 40)
+                            .background(Capsule().fill(AppSection.actions.color))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("grab-delete-yes")
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
+        } else {
+            SmallDeleteButton(title: "Delete grab list", id: "grab-delete", size: 15) { askingToDelete = true }
+        }
+    }
+
+    private func deleteIt() {
+        let id = listId
+        leaving = list
+        dismiss()
+        model.change { _ = $0.deleteOwnGrabList(id: id) }
+        GrabStore.shared.forget(id)
     }
 
     private func mark(_ d: String, id: String, enabled: Bool, label: String, _ act: @escaping () -> Void) -> some View {
@@ -362,6 +420,7 @@ struct GrabScreen: View {
         draft = list.items
         draftSometimes = Set(model.library.sometimes(listId: listId).map(normName))
         newThing = ""
+        askingToDelete = false
         editing = true
     }
 
@@ -381,11 +440,14 @@ struct GrabScreen: View {
     private func saveEdits() {
         let items = draft
         let sometimes = items.filter { draftSometimes.contains(normName($0)) }
+        // One door for every list, his own ones too (they were thrown away here
+        // until 4 Oct 2026: the door took the original six only).
         model.change {
             _ = $0.saveGrabList(id: listId, items: items)
             _ = $0.setSometimes(listId: listId, names: sometimes)
         }
         editing = false
+        askingToDelete = false
         // The list changed under the session: start it again from the defaults.
         state = model.library.openingState(listId: listId, held: nil)
         GrabStore.shared.save(listId, state)

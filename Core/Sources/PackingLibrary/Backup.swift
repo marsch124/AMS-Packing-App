@@ -52,6 +52,9 @@ extension Library {
         }
         let home = (meta[GRAB_HOME_META]?.arrayValue ?? []).compactMap { $0.stringValue }
         if !home.isEmpty { ours["home"] = JSONValue(home) }
+        // …and the ones he sent off Home, or a restore would put them straight back.
+        let off = offHomeIds()
+        if !off.isEmpty { ours["off"] = JSONValue(off) }
 
         let grab = grabFromRows(shared)
         if !grab.isEmpty {

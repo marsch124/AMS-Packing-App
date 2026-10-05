@@ -97,16 +97,30 @@ public struct GrabState: Equatable, Codable, Sendable {
 }
 
 extension Library {
+    /// Any grab list by its id — one of the original six or one of his own.
+    public func grabList(id: String) -> GrabDefinition? {
+        allGrabLists().first { $0.id == id }
+    }
+
     /// Save an edited grab list for the account — ONE `grab` row, so it reaches the
     /// other device like every other record (web app v163: the iPhone is where he
     /// edits them). What he did not change (the list's name, doodle, colour) keeps
     /// whatever it was. A list with nothing on it is refused: it would not be a list.
+    ///
+    /// The ONE door for an edit of a list's things, whichever kind it is. A list of
+    /// his own is saved where his own lists live (the library's `meta`, also one
+    /// record, synced). Until 4 Oct 2026 this door took the original six only, and
+    /// his additions to a list he had made himself were silently thrown away.
     @discardableResult
     public mutating func saveGrabList(id: String, items newItems: [String]) -> Bool {
-        guard let at = GRAB_FACTORY.firstIndex(where: { $0.id == id }) else { return false }
         var seen = Set<String>()
         let clean = newItems.map(jsTrim).filter { !$0.isEmpty && seen.insert(normName($0)).inserted }
         guard !clean.isEmpty else { return false }
+        guard let at = GRAB_FACTORY.firstIndex(where: { $0.id == id }) else {
+            guard var own = ownGrabLists().first(where: { $0.id == id }) else { return false }
+            own.items = clean
+            return saveOwnGrabList(own)
+        }
         let before = grabFromRows(shared).first { $0.id == id }
         var rows = grabToRows([GrabList(id: id, items: clean, label: before?.label ?? "",
                                         icon: before?.icon ?? "", tone: before?.tone ?? "")])

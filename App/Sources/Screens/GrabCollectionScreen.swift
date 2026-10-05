@@ -13,7 +13,10 @@ struct GrabCollectionScreen: View {
     @State private var newNeeds = ""
     /// When Home is full and he wants another one on it: which one steps back?
     @State private var swappingIn: String?
-    @State private var problem = ""
+    /// Where the list he just made went — said plainly, not as a problem. It used
+    /// to say "<name> is waiting", in red, even when the list had gone straight onto
+    /// Home (4 Oct 2026).
+    @State private var made = ""
 
     var body: some View {
         let home = model.library.homeGrabLists()
@@ -31,10 +34,11 @@ struct GrabCollectionScreen: View {
 
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 8) {
-                    if !problem.isEmpty {
-                        Text(problem).font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(AppSection.actions.color)
-                            .accessibilityIdentifier("grablists-problem")
+                    if !made.isEmpty {
+                        Text(made).font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("grablists-made")
                     }
 
                     Text("On Home · \(home.count) of \(GRAB_HOME_SLOTS)")
@@ -49,7 +53,9 @@ struct GrabCollectionScreen: View {
                         .padding(.top, 14)
                         .accessibilityIdentifier("grablists-waiting-heading")
                     if waiting.isEmpty {
-                        Text("Nothing waiting. A new list starts here.")
+                        // Where a new list goes depends on whether Home has room.
+                        Text(home.count < GRAB_HOME_SLOTS ? "Nothing waiting. A new list goes straight onto Home."
+                                                          : "Nothing waiting. A new list waits here while Home is full.")
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                     }
                     ForEach(Array(waiting.enumerated()), id: \.element.id) { n, list in
@@ -168,9 +174,13 @@ struct GrabCollectionScreen: View {
     private func add() {
         let name = jsTrim(newName)
         guard !name.isEmpty else { newNeeds = "Type a name first."; return }
-        model.change { _ = $0.addGrabList(label: name) }
+        var list: GrabDefinition?
+        model.change { list = $0.addGrabList(label: name) }
         newName = ""
-        problem = "\(name) is waiting. Put it on Home when you want it there."
+        // A new list takes a free place on Home; only a full Home makes it wait.
+        let onHome = list.map { l in model.library.homeGrabLists().contains { $0.id == l.id } } ?? false
+        made = onHome ? "\(name) is on Home now. Open it there and press Edit to put things on it."
+                      : "\(name) waits below, as Home is full. Tap it to put it on Home."
     }
 
     private func move(_ id: String, by step: Int) {
@@ -178,19 +188,22 @@ struct GrabCollectionScreen: View {
         guard let n = ids.firstIndex(of: id), ids.indices.contains(n + step) else { return }
         ids.swapAt(n, n + step)
         model.change { _ = $0.setHomeGrabLists(ids) }
+        made = ""
     }
 
+    /// Off Home: it waits here, whole, until he puts it back — and Home shows one
+    /// tile fewer. (Until 4 Oct 2026 the free place pulled it straight back.)
     private func takeOff(_ id: String) {
         let ids = model.library.homeGrabLists().map(\.id).filter { $0 != id }
         model.change { _ = $0.setHomeGrabLists(ids) }
-        problem = ""
+        made = ""
     }
 
     private func bringOn(_ id: String) {
         let ids = model.library.homeGrabLists().map(\.id)
         if ids.count < GRAB_HOME_SLOTS {
             model.change { _ = $0.setHomeGrabLists(ids + [id]) }
-            problem = ""
+            made = ""
         } else {
             swappingIn = id            // full: he says which one steps back
         }

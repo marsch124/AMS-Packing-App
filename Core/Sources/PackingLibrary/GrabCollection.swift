@@ -3,11 +3,19 @@ import PackingCore
 
 // More grab lists than Home can hold.
 //
-// Home has SIX slots — six big targets he can hit with his glasses off, which is
-// the whole point of the thing. So the lists themselves are unlimited: the six he
-// keeps on Home are his choice, in his order, and everything else waits in Grab
-// Lists (the screen behind Home's "Grab Lists" door) with all its things. Nothing
-// is ever deleted by making room. (Called "the shelf" until the field test of Oct 2026.)
+// Home has EIGHT places (4 × 2 since 2 Oct 2026; six before) — big targets he can
+// hit with his glasses off, which is the whole point of the thing. So the lists
+// themselves are unlimited: the ones he keeps on Home are his choice, in his order,
+// and everything else waits in Grab Lists (the screen behind Home's "Grab Lists"
+// door) with all its things. Nothing is ever deleted by making room. (Called "the
+// shelf" until the field test of Oct 2026.)
+//
+// A list he sends to wait STAYS waiting until he puts it back (4 Oct 2026). Home
+// used to fill every free place from the waiting lists, so "Off Home" put the very
+// list he had taken off straight back at the end — the button seemed to do
+// nothing. Now his arrangement remembers what it left out (`grabOff`), and only a
+// list that is NEW since he last arranged Home — made here, made on the other
+// device, received as a link — takes a free place by itself.
 //
 // The original six keep their ids and their storage (the `grab` rows the web app
 // reads). His own lists live in the library's own `meta` — a new shared-row kind
@@ -15,6 +23,9 @@ import PackingCore
 
 public let GRAB_OWN_META = "grabOwnLists"
 public let GRAB_HOME_META = "grabHome"
+/// The lists he left off Home when he last arranged it: they wait until he puts
+/// them back, and a free place on Home never pulls one of them in.
+public let GRAB_OFF_META = "grabOff"
 /// How many fit on Home.
 public let GRAB_HOME_SLOTS = 8          // 4 × 2 since 2 Oct 2026, his ask: "I need four of them × 2 rows" (was 6)
 
@@ -38,20 +49,31 @@ extension Library {
         }
     }
 
-    /// The six on Home, in his order. Anything he has not chosen falls back to the
-    /// original six, so a library that has never been arranged looks as it always did.
+    /// The ones on Home (up to eight), in his order. A library that has never been
+    /// arranged shows the first eight, so it looks as it always did.
     public func homeGrabLists() -> [GrabDefinition] {
         let all = allGrabLists()
         let chosen = (meta[GRAB_HOME_META]?.arrayValue ?? []).compactMap { $0.stringValue }
+        let off = Set(offHomeIds())
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var home = Array(chosen.compactMap { byId[$0] }.prefix(GRAB_HOME_SLOTS))
-        // A free place on Home is never left empty while a list waits: the next one
-        // waiting, in waiting order, takes it (Home grew from 6 to 8 on 2 Oct
-        // 2026 — his arranged six were joined by the next two).
-        for d in all where home.count < GRAB_HOME_SLOTS && !home.contains(where: { $0.id == d.id }) {
+        // A free place takes a list he has not yet placed: a new one, in waiting
+        // order (and, when Home grew from 6 to 8 on 2 Oct 2026, his arranged six
+        // were joined by the next two). NEVER one he sent to wait — that is the
+        // "Off Home" that did nothing until 4 Oct 2026.
+        for d in all where home.count < GRAB_HOME_SLOTS && !off.contains(d.id) && !home.contains(where: { $0.id == d.id }) {
             home.append(d)
         }
         return home
+    }
+
+    /// The ids he left off Home when he last arranged it.
+    public func offHomeIds() -> [String] {
+        (meta[GRAB_OFF_META]?.arrayValue ?? []).compactMap { $0.stringValue }
+    }
+
+    private mutating func writeOff(_ ids: [String]) {
+        if ids.isEmpty { meta[GRAB_OFF_META] = nil } else { meta[GRAB_OFF_META] = JSONValue(ids) }
     }
 
     /// The ones waiting: everything that is not on Home, with all their things.
@@ -60,20 +82,25 @@ extension Library {
         return allGrabLists().filter { !onHome.contains($0.id) }
     }
 
-    /// Put these lists on Home, in this order. More than six is refused rather
-    /// than silently trimmed — Home holds six, and he chooses which.
+    /// Put these lists on Home, in this order — and ONLY these: every other list
+    /// there is waits in Grab Lists until he puts it on Home himself (taken off,
+    /// stepped back for another, or simply not chosen). More than eight is refused
+    /// rather than silently trimmed — Home holds eight, and he chooses which.
     @discardableResult
     public mutating func setHomeGrabLists(_ ids: [String]) -> Bool {
-        let known = Set(allGrabLists().map(\.id))
+        let all = allGrabLists().map(\.id)
+        let known = Set(all)
         var seen = Set<String>()
         let clean = ids.filter { known.contains($0) && seen.insert($0).inserted }
         guard clean.count <= GRAB_HOME_SLOTS else { return false }
         meta[GRAB_HOME_META] = JSONValue(clean)
+        writeOff(all.filter { !seen.contains($0) })
         return true
     }
 
-    /// A new list of his own. It waits in Grab Lists, not on Home: Home is full
-    /// until he says what steps back.
+    /// A new list of his own. It takes a free place on Home if there is one (it
+    /// is new: he has not sent it anywhere yet); when Home is full it waits in Grab
+    /// Lists until he says what steps back.
     @discardableResult
     public mutating func addGrabList(label: String, title: String = "", tone: String = "blue",
                                      icon: String = "", items: [String] = []) -> GrabDefinition? {

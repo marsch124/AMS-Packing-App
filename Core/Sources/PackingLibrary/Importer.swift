@@ -85,6 +85,9 @@ public enum Importer {
             if let own = grab["own"]?.arrayValue, !own.isEmpty { lib.meta[GRAB_OWN_META] = .array(own) }
             let home = (grab["home"]?.arrayValue ?? []).compactMap { $0.stringValue }
             if !home.isEmpty { lib.meta[GRAB_HOME_META] = JSONValue(home) }
+            // …and the ones he sent off Home, which stay off.
+            let off = (grab["off"]?.arrayValue ?? []).compactMap { $0.stringValue }
+            if !off.isEmpty { lib.meta[GRAB_OFF_META] = JSONValue(off) }
         }
         if let conditions = backup.prefsConditions, !conditions.isEmpty { _ = setItemConditions(conditions) }
         report.sharedRows = lib.shared.count
