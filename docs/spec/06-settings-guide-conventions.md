@@ -643,12 +643,12 @@ picture; the words.
 - **The picture** (`LoopPicture(here: nil)`, container id `loop-picture`): five boxes in a ring of two columns —
   top row *1 · Plan* → *2 · Pack*; down the right side *3 · On site*; bottom row *5 · Refine* ← *4 · Review*; one
   long arrow up the left from Refine back to Plan. Drawn arrows (`LoopArrow`), gaps 30 pt. Each box: "<n> · <name>"
-  (18 heavy, the tint made readable — `readableHex`), a short line (14 medium ink): Plan "Make templates, create a
+  (18 heavy, the tint made readable — `readableHex`), a short line (15 medium ink): Plan "Make templates, create a
   trip", Pack "Tick things as they go in", On site "Bought, left, notes, and packing for home", Review "After it:
   unused, missed", Refine "Keep or drop, from reviews"; the tab mark (15 pt) and "on Home" / "on Trips" / "on
-  Templates" (13 bold, tab colour). Background tint 12 % (24 % when "here"), border 1.2 (3 when "here"). Tint:
+  Templates" (15 bold, tab colour). Background tint 12 % (24 % when "here"), border 1.2 (3 when "here"). Tint:
   Pack, On site, Review = Trips green; Plan, Refine = Templates violet. A key under it: "About your templates",
-  "About one trip" (14 medium muted). Each box is one accessibility element (`children: .ignore`) with label
+  "About one trip" (15 medium muted). (0.6x: the short line and the key were 14, "on <tab>" and "You are here" 13.) Each box is one accessibility element (`children: .ignore`) with label
   "<name>: <short>, on <tab>" (+ ". You are here" when marked), id `loop-step-<0…4>`. In the guide nothing is "here".
 - **The words** (`LoopWords`): five rows — the step name (16 heavy, readable tint, 72 wide) and its sentence (16 ink)
   — then in bold: "Review looks back at one trip. Refine uses several reviews to make your templates better."
@@ -707,8 +707,8 @@ Shipped in 0.41.
 ## 11. *Open a shared link* door (`OpenSharedDoor` in `Screens/Share.swift`)
 
 The door only (the sheet `OpenSharedScreen`, container `shared-screen`, belongs to the sharing chapter). Built like
-the other doors: **"Open a shared link"** (18 bold), **"A trip, template or grab list someone shared"** (14 muted,
-one line), chevron; id `settings-openshared`; it owns its sheet. Origin: 0.38 — the web app's "Paste a shared link".
+the other doors: **"Open a shared link"** (18 bold), **"A trip, template or grab list someone shared"** (15 muted,
+wrapping — 14, one line, until 0.6x), chevron, 8 pt above and below; id `settings-openshared`; it owns its sheet. Origin: 0.38 — the web app's "Paste a shared link".
 Tests: `testATripIsSharedAndOpenedAgain`, `testATemplateAndAGrabListAreSharedAndOpenedAgain` (both enter here).
 
 ---
@@ -1053,7 +1053,8 @@ one tap empties the text and the keyboard stays. Uses: `things-search`, `pick-se
 The way-home search draws its own ✕ instead (`wayhome-search-clear`, 44×44, a plain cross) — see Open questions.
 
 **`SmallDeleteButton(title:, id:, action:)`** — his mark (2026-09-26): "Delete should be a small button at the side."
-Right-aligned; 13 semibold red words in a capsule outlined in red at 60 %, padding 12, min height 30. It only ever
+Right-aligned; 15 semibold red words in a capsule outlined in red at 60 %, padding 12, min height 30 (0.6x: 13, with a
+`size` parameter that only Delete grab list set to 15 — gone; small is the capsule, not the words). It only ever
 OPENS the question, never deletes by itself. Uses: Delete bag (`bag-delete`), Delete trip (`trip-delete`), Delete
 template (`template-delete`), Delete thing (`thing-delete`).
 
@@ -1099,16 +1100,38 @@ reads without glasses."
   row when the next one would pass the right edge; row height = tallest child; reported width = the proposed width
   (10 000 if none).
 
-**The font floor in fact.** The floor of 15 holds for headings, pills, buttons and the main lines. Secondary lines are
-smaller in many places: in this chapter's screens the door sub-lines and Reminders sub-line (14), *Your choices*' use
-counts and footer (14), Worth a look's names and closing line (14), the sync pill (13), What's new dates (14), part
-names and "On this device" (12), the loop's short lines (14), "on <tab>" and "You are here" (13), `SmallDeleteButton`
-(13), the tab labels (12.5) and the version marker (11). Across the app 166 `.system(size:)` values below 15 appear in 42 (of 67)
-files. See Open questions.
+**The font floor (0.6x, F073).** His floor: nothing a person reads is smaller than 15 points — he reads without his
+glasses. 0.6x raised about 150 sizes of 10–14 across the app to 15, keeping each one's weight; where the words no
+longer fitted, the layout gave way, never the type: fewer words (one letter per month in Your year and the year
+ahead on an iPhone), a second line (figure words, door sub-lines, table headings and names, icon names), more room
+(the tab bar's `TabRow`, wider table columns and 44-pt rows, Your bags' Empty column 76, the icon picker three
+across on an iPhone, Home's count tiles 96 tall). A `minimumScaleFactor` never takes words under 15 (size × factor ≥
+15). A size under 15 stays only on a drawn mark that is not read as words, and says so on its line with
+`// not text: <what it is>` — the sort arrows ▲▼ (9), the filter pill's ✕ (13), Change all's → (13) and ▾ (14), the
+letter of the drawn ⓘ mark (12), the loop strip's tab mark (13). A letter standing for a cover or a grab list's
+drawing is `max(15, size × …)`. Still under 15, swept by the lead after the settings merge (another helper was
+changing them): Buttons.swift (`WideButtonLabel` 17 shrinking to 80 %), Theme.swift, ListsScreen, SettingsScreen,
+WayHomeScreen, Countdown, GuideScreen, Releases and SyncCard — in this chapter the door sub-lines and Reminders
+sub-line (14), *Your choices*' use counts and footer (14), Worth a look's names and closing line (14), the sync pill
+(13), What's new dates (14), part names and "On this device" (12).
+
+**The guard (`tools/check-type-floor.sh`).** Run first in the model job of every push (§27) and by hand any time. It
+reads every Swift file in `App/Sources` and fails, naming file:line, for: a `size: N` under 15 (also either side of
+`size: a ? N : M`) on a line without `// not text`; a text style under 15 — `.caption`, `.caption2`, `.footnote`,
+`.subheadline`, and `.callout`, `.body`, `.headline`, which are 12–13 on the Mac though 16–17 on an iPhone; a
+`minimumScaleFactor(f)` whose nearest literal size (that line or the four above) times f is under 15. What a comment
+says does not count. Files still to sweep are listed in the script (`ALLOWED`), each to be removed once swept.
+Seen to fail (0.6x): a 13 planted on the version, a `.caption`, a `14 : 16` ternary and a 0.8 scale on 17 each named
+their line; removed, it passed.
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
 trip, Trip settings, the review and Your choices exists; photographs each), `testWhoseItIsOffersEachOwnerOnce` (a
-22-pt heading line is at least 25 tall; a pill at least 36 tall), `testContextSitsUnderTheWorkouts`.
+22-pt heading line is at least 25 tall; a pill at least 36 tall), `testContextSitsUnderTheWorkouts`,
+`testTheSmallestWordsAreFifteenPoints` (0.6x: the version and a table name — words that were 11 and 14 and stay on
+one line — stand at least 17.5 tall, a 15-pt line; the Templates tab is at least 74 wide, its name at 15; photographs
+Home, Your year, the Templates tab, the icon picker, Care's doors, calendar, kit and year ahead, the table, a bag's
+page, Your bags, Search and Grab Lists. Seen red with the version at 11, the tabs at even widths, the table's names
+at 14).
 
 ## 22. Scrolling and the keyboard (`KeyboardAwayScroll` in `Theme.swift`)
 
@@ -1192,9 +1215,11 @@ mark at 96 pt (line 1.6) in its colour and its label (34 heavy, id `screen-title
 
 **Tab bar.** Six equal buttons (plain, no focus ring, id `tab-<section>`, VoiceOver label = the tab label, selected
 trait on the current one). Each: the mark (24 pt) on a 46 × 30 capsule — active: white mark (line 2.2) on the
-section colour; inactive: the mark in its colour (1.9) on its colour at 14 %; under it the label (12.5, heavy and ink
-when active, semibold and muted otherwise, one line, scales to 80 %); min height 54. Below the buttons, in its own thin
-row so it can never sit on a label: the build marker `AppInfo.version` (11 semibold, muted at 70 %, right-aligned,
+section colour; inactive: the mark in its colour (1.9) on its colour at 14 %; under it the label (15, heavy and ink
+when active, semibold and muted otherwise, one line, never shrunk — 0.6x: 12.5 scaling to 80 %); min height 54. The
+buttons sit in a `TabRow` layout: an even share each, unless a label needs more — that tab gets what it needs and
+the others share the rest (an iPhone's even sixth is 67 pt; "Templates" at 15 heavy needs 79). Below the buttons, in its own thin
+row so it can never sit on a label: the build marker `AppInfo.version` (15 semibold — 11 until 0.6x — muted at 70 %, right-aligned,
 8 from the edge, not tappable, id `app-version`). The bar: at most 720 wide, `Theme.card` behind (to the bottom edge),
 a hairline on top, 6 above, 2 below.
 
@@ -1333,7 +1358,7 @@ runs it first). Four jobs, in parallel:
 
 | Job | Runner | Timeout | What it does |
 |---|---|---|---|
-| `core` — The model (Core package) | macos-15 | 15 min | `cd Core && swift test` (both model test targets; 662 model tests in the repo) |
+| `core` — The model (Core package) | macos-15 | 15 min | first `tools/check-type-floor.sh` — "Nothing under 15 pt" (§21; 0.6x), then `cd Core && swift test` (both model test targets; 662 model tests in the repo) |
 | `parity` — Parity with the web app's model | macos-15 | 20 min | checks out the web app's repository into `web-app/`, Node 22, `PARITY_MODEL=$PWD/web-app/js/model.js tools/parity/run.sh --invented` (§31) |
 | `iphone` — UI tests — iPhone | macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 120 min | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test` with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone.xcresult` |
 | `mac` — UI tests — Mac | macos-26 | 120 min | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
@@ -1408,6 +1433,8 @@ none), writes each to `crash-reports/<n>-<date>.txt` and always uploads the fold
   diagnostics for ten minutes"). `icloud` adds `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`, the
   iCloud entitlements and `PACKING_USES_ICLOUD=YES` (needs his Apple ID in Xcode; the device-registration flag because
   a Mac development profile only counts on a registered Mac). Prints the built app's path.
+- **`tools/check-type-floor.sh`** — his 15-pt floor: fails naming file:line for any size, text style or scale
+  factor under 15 in `App/Sources` (§21). Exit 0 = nothing under 15; 1 = the list.
 - **`tools/test-core.sh [swift test args]`** — the model tests alone, in seconds, scratch path
   `$TMPDIR/AMSPacking-core-<8 hex of the checkout path>` (one per checkout, so worktrees do not fight).
 - **`tools/import-check.sh [file]`** → `swift run import-check <file>` (default: the newest `private/migration-*.json`):
@@ -1495,6 +1522,7 @@ gate that counts.
 ## 33. Test inventory for this chapter
 
 UI (`AMSPackingUITests`): `testAAAWarmsUpTheSimulator`, `testStartsOnHomeAndNamesItsVersion`,
+`testTheSmallestWordsAreFifteenPoints`,
 `testEveryTabOpensItsScreen`, `testAnEmptyDeviceShowsTheTwoDoors`, `testSettingsOffersABackup`,
 `testWhatsNewStartsWithThisVersion`, `testTheLoopShowsWhereATripStands` (guide part),
 `testTheFirstTripStepsHaveTheirOwnDoor`, `testSettingsTurnsOnPackingReminders`, `testSyncNowChecksInFromThisDevice`,
@@ -1524,9 +1552,12 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
 2. **Resolved in 0.6x** — ~~Rescue-copy times are UTC.~~ They are said in the device's time zone (`RescueNames.when`, §15).
 3. **Resolved in 0.6x** — ~~RestoreSheet's minimum size applies on the iPhone too.~~ It is the Mac's only; the restore UI test checks the sheet lies inside the window.
 4. **Resolved in 0.6x** — ~~The backup JSON is rebuilt on every redraw of Settings.~~ It is built when Save is pressed (§1, §13).
-5. [rule-break] **The font floor of 15 is not universal**: 166 `.system(size:)` values below 15 in 42 of the 67 app
-   source files (11–14 for secondary lines, the tab labels 12.5, the version marker 11, `SmallDeleteButton` 13). The
-   code comments state the floor ("Nothing under 15, so it still reads without glasses") for headings and pills only.
+5. **Resolved in 0.6x** — ~~The font floor of 15 is not universal: 166 `.system(size:)` values below 15 in 42 of the 67
+   app source files (11–14 for secondary lines, the tab labels 12.5, the version marker 11, `SmallDeleteButton` 13).~~
+   Every word outside the nine files another helper was changing is 15 or more (F073); the layouts make room instead
+   of shrinking, drawn marks under 15 say `// not text`, and `tools/check-type-floor.sh` fails any push that brings a
+   small size back (§21). The nine files (Settings, Your choices, the sync card, Reminders/countdown, the way home,
+   the guide, What's new, Buttons, Theme) are listed in the script for the lead to sweep.
 6. [idea] **`HeaderButtonStyle` callers' fonts are dead**: Done/Cancel attach `.font(17 bold)` and a colour outside the
    style; the style's own 16 bold and white/tint win. Delete them or make the style honour them.
 7. [rule-break] **The way-home search does not use `.clearButton`** although `ClearButton` says "ONE modifier for

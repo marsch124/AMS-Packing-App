@@ -163,7 +163,8 @@ column width, whole card tappable):
 1. Row: the **cover** (§3) at 34 pt · spacer · the number of rows on the template (`list.items.count`, i.e.
    memberships whose thing exists — a thing twice counts twice) 15 heavy monospaced digits, muted.
 2. The template's **name** — 16 semibold, ink, at most 2 lines, wraps.
-3. The **"used" line** (`Library.TemplateUse.line(use, today: Today.local)`) — 12 medium, one line, id
+3. The **"used" line** (`Library.TemplateUse.line(use, today: Today.local)`) — 15 medium, wrapping (0.6x: 12,
+   one line), id
    `template-used`; muted, or muted at 65 % opacity when the template has never been used ("Quiet, not invisible:
    the divider colour could not be read on either a white or a black background").
 
@@ -207,7 +208,7 @@ Released in 0.46. No stock art, no emoji in the icon set.
   `#8b5cf6`).
 - If `TemplateIcons.icon(Library.icon(of: list))` exists → that icon drawn white at `size × 0.66`
   (`IconMark`, stroke 1.9 × size/24, round caps and joins).
-- Otherwise its letter, white, heavy, font `size × 0.46`: `Library.coverLetter(list)` = the first character of the
+- Otherwise its letter, white, heavy, font `size × 0.46` but never under 15 (0.6x — a letter is read): `Library.coverLetter(list)` = the first character of the
   trimmed name, upper-cased. **Never the template's `emoji`** (a web-app template may carry one): no emoji in this
   app (until the spec pass the emoji showed here).
 - `accessibilityHidden(true)`.
@@ -298,10 +299,13 @@ saves and closes), or a swipe down on the iPhone.
     (`coverLetter`) 22 heavy when there is no suggestion; selected when no choice is stored) and **"Letter"** (id
     `icon-letter`; the letter 22 heavy; selected when the stored choice is "letter").
   - `SectionTitle` "All icons" (shown in capitals, 18 heavy, kerning 0.8, 16 above).
-  - The 50 icons in rows of **5** (plain `HStack` rows, not a lazy grid: "the Mac builds only what is on screen").
+  - The 50 icons in rows of **3 on the iPhone, 4 on the Mac** (0.6x: 5 — at 15 pt "Racket sports" needs 101
+    points; plain `HStack` rows, not a lazy grid: "the Mac builds only what is on screen"), each row as tall as
+    its tallest tile.
     Each tile: icon at 30 + its label; id `icon-<key>`; selected when a choice is stored and the icon in force is
     this key.
-- Tile look: mark 32 high; label 12 bold, 1 line, shrinks to 70 %; min height 74, full width share; selected =
+- Tile look: mark 32 high; label 15 bold, centred, up to 2 lines, never shrunk (0.6x: 12 bold, 1 line, shrinking
+  to 70 %); padding 4 × 6; min height 80, full width share; selected =
   filled with the template's own colour (`coverColour`), white mark and label, 2-pt stroke in that colour, trait
   `isSelected`; not selected = `Theme.card`, ink mark, muted label, 1-pt `Theme.line` stroke.
 - Container id `icon-picker` (`children: .contain`). Mac: min 520 × 620.
@@ -336,11 +340,11 @@ templates sharing a name as "two libraries have met on one account" (31 August 2
 - Top row (padding 16): "A new template" — 20 heavy violet, id `newlist-title`; spacer; "Cancel" (outlined,
   muted; the style's own 16 bold).
 - Scroll (side 16, bottom 24):
-  - "WHAT IS IT CALLED" — 12 heavy muted, kerning 0.6.
+  - "WHAT IS IT CALLED" — 15 heavy muted, kerning 0.6.
   - Name field — no placeholder, 17 semibold ink, min height 44, card fill, 10-radius border in `Theme.line`, or in
     red (`AppSection.actions.color` `#dc3d43`) while the name is taken; focused on appear; Return = Make;
     id `newlist-name`.
-  - While taken: "You already have a template called that." — 14 semibold red, id `newlist-taken`.
+  - While taken: "You already have a template called that." — 15 semibold red, id `newlist-taken`.
   - `SectionTitle` "In which activity area should it live?" (rendered in capitals), id `newlist-area-title`.
   - One row per GROUP: "GA · Goal Activity", "WET · Workout, Exercise & Training", "OE · Other Events", then
     "No activity area". Rows are full-width buttons, min height 44, a hairline under each; the chosen one is 16
@@ -436,8 +440,8 @@ trait `isSelected` on the chosen one. Labels: Section · When · Into · From wh
   group on screen).
 - Under it each **row** (HStack spacing 4, a hairline under it):
   - A button (id `template-item-<n>`) holding: the thing's name (17 medium ink); a second line when it has a
-    quantity or note: `"×<qty>"` and the note joined by " · " (13 regular muted, 1 line); a third line when the row
-    is limited: **`"Only on: <tags>"`** (13 semibold violet, 1 line; `Library.onlyOnWords(row, on: template)` —
+    quantity or note: `"×<qty>"` and the note joined by " · " (15 regular muted, up to 2 lines); a third line when the row
+    is limited: **`"Only on: <tags>"`** (15 semibold violet, up to 2 lines; `Library.onlyOnWords(row, on: template)` —
     Context listed only on a WET template, where a trip reads it); and on the right the bag the row resolves to
     (`item.container`, 15 regular muted, 1 line). Vertical padding 6. Tap → the row editor (§7) as a sheet.
   - The **✕** — a drawn cross 22 pt (stroke 1.8, muted) in a 40 × 36 hit area; id `template-item-<n>-remove`;
@@ -462,12 +466,12 @@ violet, radius 10, min height 44; id `template-add`). `needsLine` id `template-a
   area" (min height 44, hairline under; the current one 16 heavy violet with `isSelected`, else 16 medium ink; ids
   `template-area-GA`, `-WET`, `-OE`, `-none`). A press files it (`setTemplateArea`, §14) and the card goes. The
   spec pass (5 Oct 2026): New asked for the area and nothing could put a wrong answer right.
-- At the right, when not asking: `SmallDeleteButton` "Delete template" (13 semibold red text in a red 60 %
+- At the right, when not asking: `SmallDeleteButton` "Delete template" (15 semibold red text — 13 until 0.6x — in a red 60 %
   outlined capsule, min height 30; id `template-delete`). When asking, in place of the row a card
 (padding 14, card fill, red 1-pt border, radius 12, side 16, bottom 10):
 - `Delete “<name>”?` — 16 heavy ink.
 - "The template and its <N> row(s) go. The THINGS stay — they are still in Your things and on any other template."
-  — 14 medium muted.
+  — 15 medium muted.
 - "Keep it" (plain, 16 bold ink, id `template-delete-no`) · spacer · "Delete the template" (16 heavy white on a red
   capsule, min height 40; id `template-delete-yes`).
 
@@ -594,7 +598,7 @@ closes), swipe down (= Cancel). Container id `row-detail`. Mac: min 520 × 600.
   7. **"Note"** (band, `row-heading-note`): field `row-note`; placeholder "Same as the thing: <the first line of
      the thing's note>" when it has one, else "e.g. with the red filter" — so a blank field never looks as if the
      thing's note had gone.
-  8. "Blank means the same as the thing itself, so a change to the thing still reaches this template." — 14 muted.
+  8. "Blank means the same as the thing itself, so a change to the thing still reaches this template." — 15 muted.
   9. **"Only on some trips"** (band, `row-heading-some`), then "Leave these off and it always comes along. Pick one
      or more and it comes only on trips that match — on this template." (15 medium muted, pulled 6 pt up), then
      four pill rows with a smaller heading each (`HeadingTitle`, 20 heavy violet after a 4 × 18 violet capsule),
@@ -701,14 +705,14 @@ Container id `pick-screen`. Mac: min 520 × 620.
 
 ### What is on screen
 - Top row (padding 16): "Cancel" (outlined muted) · `"Add to <template name>"` (or "Add things" if the template is
-  gone) 17 heavy ink, 1 line, shrinks to 80 %, id `pick-title` · the add button (filled violet, always in colour):
+  gone) 17 heavy ink, 1 line, shrinks to 90 % at most — never under 15 (80 % until 0.6x), id `pick-title` · the add button (filled violet, always in colour):
   "Add" with nothing ticked, `"Add <n>"` with n ticked; id `pick-add`. Under the row, when Add was pressed with
   nothing ticked: "Tick the things to put on first." (the shared `needsLine`, 15 bold red, id `pick-add-needs`),
   gone as soon as a tick changes.
 - Under it (side 16, bottom 8), spacing 10:
   - Search field "Search your things, or type a new one" (17 medium, min height 44, card fill, hairline) with the ✕:
     ids `pick-search`, `pick-search-clear`.
-  - "Group" (14 heavy muted) and five pills (14; heavy white on violet when on, semibold ink on card off; min
+  - "Group" (15 heavy muted) and five pills (15; heavy white on violet when on, semibold ink on card off; min
     height 32): Kind · From where · Into · When · A–Z; ids `pick-group-kind`, `-fromWhere`, `-into`, `-when`,
     `-name`. No Section here.
   - Count row (min height 34): `"1 thing"` / `"<n> things"` (15 bold monospaced muted, id `pick-count`; the things
@@ -723,11 +727,11 @@ Container id `pick-screen`. Mac: min 520 × 620.
     down when open; 30 × 36 hit area; id `pick-group-<g>-fold`; label "Open <title>" / "Fold <title>"; replaced by
     an empty 30 × 36 space while searching), the title in capitals (16 heavy violet, kerning 0.6, 1 line; id
     `pick-heading-<g>`; a tap on it also folds/opens, not while searching), and the count
-    `"1 thing"`/`"<n> things"`, plus `" · <k> ticked"` in violet when k > 0 (14 bold monospaced muted; id
+    `"1 thing"`/`"<n> things"`, plus `" · <k> ticked"` in violet when k > 0 (15 bold monospaced muted; id
     `pick-heading-<g>-count`). A folded group keeps its heading and counts.
   - Unless folded, its **rows**: a 24-pt circle (violet outline; filled violet with a white tick when ticked;
     filled `Theme.line` with a white tick when already on the template), the name (17 medium; muted when already on
-    it, else ink; 1 line), and on the right either "already on it" (14 semibold muted) or (14 regular muted):
+    it, else ink; 1 line), and on the right either "already on it" (15 semibold muted) or (15 regular muted; both up to 2 lines, right-aligned):
     grouped by From where → its bag; any other grouping → its storage place, or its bag when no place is set (so
     under Into a thing with no place shows the bag it is grouped by — better than saying nothing; the code's
     comment says so since the spec pass). Vertical padding 9, hairline under. id `pick-row-<n>` with n numbered as read across
