@@ -129,8 +129,8 @@ final class AMSPackingUITests: XCTestCase {
 
     /// His floor (F073, 5 Oct 2026): nothing a person reads is under 15 points — he
     /// reads without his glasses. One line of 15-point words stands about 18 points
-    /// tall (14 → 17, 11 → 13), so the words that were the smallest are measured where
-    /// they stand; and a long label is given room rather than shrunk, so "Templates"
+    /// tall (14 → 17, 11 → 13), so words that were the smallest and stay on one line
+    /// are measured where they stand; and a long label is given room rather than shrunk, so "Templates"
     /// gets the tab width it needs at 15 (74 points, where an even sixth of an iPhone
     /// is 67). Every screen the change touched is photographed on the way.
     func testTheSmallestWordsAreFifteenPoints() {
@@ -154,11 +154,11 @@ final class AMSPackingUITests: XCTestCase {
         bringIntoView(app, year)
         shot(app, "type-trips-year")
 
-        // Templates: the line saying when each was last taken (it was 12).
+        // Templates: the line saying when each was last taken (it was 12). Photographed,
+        // not measured: it wraps, so two lines of 12 would pass for one of 15.
         tab(app, "templates")
-        let used = app.staticTexts["template-used"].firstMatch
-        XCTAssertTrue(used.waitForExistence(timeout: 5), "no template card says when it was used")
-        XCTAssertGreaterThanOrEqual(used.frame.height, tall, "a template card's last line is under 15 pt")
+        XCTAssertTrue(app.staticTexts["template-used"].firstMatch.waitForExistence(timeout: 5),
+                      "no template card says when it was used")
         shot(app, "type-templates")
         tap(app, id: "template-row-1")
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
@@ -170,23 +170,10 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-detail-done")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
 
-        // Care: its doors, the kit's figures and the year ahead, the calendar.
+        // Care: its doors first (a lazy screen forgets them once scrolled far down).
         tab(app, "care")
         XCTAssertTrue(appears(app, "screen-care"))
         shot(app, "type-care-doors")
-        let figures = app.otherElements["kit-things"].exists ? app.otherElements["kit-things"] : app.staticTexts["kit-things"]
-        XCTAssertTrue(figures.waitForExistence(timeout: 5), "no kit figures on Care")
-        bringIntoView(app, figures)
-        shot(app, "type-care-kit")
-        // The year ahead (its months were 10): the part under it brings it on screen.
-        for id in ["kit-year-heading", "kit-tips-heading"] where app.staticTexts[id].exists {
-            bringIntoView(app, app.staticTexts[id])
-        }
-        shot(app, "type-care-year-ahead")
-        tap(app, id: "care-view-calendar")
-        XCTAssertTrue(app.staticTexts["care-cal-title"].waitForExistence(timeout: 5), "Calendar did not open")
-        shot(app, "type-care-calendar")
-        tap(app, id: "care-view-list")
 
         // The table: its cells and headings (13–14 and 12, bands 11).
         tap(app, id: "care-table")
@@ -213,7 +200,27 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "yourbags-done")
         XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
 
+        // The calendar (weekday row 11, counts 10), then — scrolled down — the kit's
+        // figures (their words were 12) and the year ahead (months 10).
+        tap(app, id: "care-view-calendar")
+        XCTAssertTrue(app.staticTexts["care-cal-title"].waitForExistence(timeout: 5), "Calendar did not open")
+        shot(app, "type-care-calendar")
+        tap(app, id: "care-view-list")
+        // The overdue boots looked after today are next due in 90 days: the year
+        // ahead has something to show.
+        tap(app, id: "care-row-0-done")
+        let figures = app.otherElements["kit-things"].exists ? app.otherElements["kit-things"] : app.staticTexts["kit-things"]
+        XCTAssertTrue(figures.waitForExistence(timeout: 5), "no kit figures on Care")
+        bringIntoView(app, figures)
+        shot(app, "type-care-kit")
+        // The part under the year ahead brings it on screen.
+        for id in ["kit-year-heading", "kit-tips-heading"] where app.staticTexts[id].exists {
+            bringIntoView(app, app.staticTexts[id])
+        }
+        shot(app, "type-care-year-ahead")
+
         // Search (its part headings were 12) and Grab Lists (its pills were 13).
+        tab(app, "home")
         tap(app, id: "search-open")
         XCTAssertTrue(appears(app, "search-detail", timeout: 5))
         type("a", into: app.textFields["search-field"])
@@ -221,7 +228,6 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "type-search")
         tap(app, id: "search-done")
         XCTAssertTrue(disappears(app, "search-detail", timeout: 5))
-        tab(app, "home")
         tap(app, id: "grab-lists")
         XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
         shot(app, "type-grab-lists")
