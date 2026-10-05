@@ -168,24 +168,17 @@ struct ThingsTable: View {
     /// the left the same way a row's does.
     private func heading(_ columns: [TableColumns.Column], _ rowsNow: [Item]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Bottom-aligned: when one band's title takes two lines, the others still
-            // sit right on their column names (top-aligned left a gap under them).
-            HStack(alignment: .bottom, spacing: 0) {
-                Color.clear.frame(width: nameWidth, height: 26)
+            HStack(spacing: 0) {
+                Color.clear.frame(width: nameWidth, height: 20)
                 ForEach(TableColumns.bands(columns)) { band in
                     // The title holds still inside its own run of columns instead of
                     // sliding away, so it still says which group you are looking at.
-                    // 15 like every word (it was 11); over a single narrow column it
-                    // wraps rather than being cut, and 175 is room for the longest
-                    // title, "On these templates", so it never slides out of its run.
                     Text(band.title)
-                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(AppSection.care.color)
-                        .kerning(0.4)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 7).padding(.vertical, 3)
-                        .frame(width: band.width, alignment: .leading)
-                        .frame(minHeight: 26)
-                        .offset(x: min(max(0, across - band.start), max(0, band.width - 175)))
+                        .font(.system(size: 11, weight: .heavy)).foregroundStyle(AppSection.care.color)
+                        .kerning(0.4).lineLimit(1)
+                        .padding(.horizontal, 7)
+                        .frame(width: band.width, height: 20, alignment: .leading)
+                        .offset(x: min(max(0, across - band.start), max(0, band.width - 130)))
                         .accessibilityIdentifier("table-band-\(band.id)")
                 }
             }
@@ -213,15 +206,14 @@ struct ThingsTable: View {
 
                 Button { turn("name") } label: {
                     HStack(spacing: 4) {
-                        Text("Thing").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                        Text("Thing").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
                         if sortBy == "name" {
-                            Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))      // not text: sort arrow
+                            Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
                                 .foregroundStyle(AppSection.care.color)
                         }
                         Spacer(minLength: 0)
                     }
-                    .frame(width: nameWidth - 36, alignment: .leading)
-                    .frame(maxHeight: .infinity)
+                    .frame(width: nameWidth - 36, height: 26, alignment: .leading)
                     .background(Theme.bg)
                     .contentShape(Rectangle())
                 }
@@ -232,20 +224,16 @@ struct ThingsTable: View {
                 ForEach(columns) { column in
                     Button { turn(column.id) } label: {
                         HStack(spacing: 3) {
-                            // 15 and whole (it was 12, shrinking to 70 %): the columns are
-                            // wide enough for their names, and a template's long name
-                            // takes a second line rather than being cut.
                             Text(column.title)
-                                .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
+                                .lineLimit(1).minimumScaleFactor(0.7)
                             if sortBy == column.id {
-                                Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))      // not text: sort arrow
+                                Text(descending ? "▼" : "▲").font(.system(size: 9, weight: .black))
                                     .foregroundStyle(AppSection.care.color)
                             }
                         }
-                        .padding(.horizontal, 6).padding(.vertical, 4)
-                        .frame(width: column.width, alignment: .leading)
-                        .frame(minHeight: 32, maxHeight: .infinity)
+                        .padding(.horizontal, 6)
+                        .frame(width: column.width, height: 26, alignment: .leading)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -253,9 +241,6 @@ struct ThingsTable: View {
                     .accessibilityIdentifier("table-head-\(column.id)")
                 }
             }
-            // Every heading as tall as the tallest, so the column lines run unbroken
-            // when one name takes two lines.
-            .fixedSize(horizontal: false, vertical: true)
             Rectangle().fill(Theme.line).frame(height: 1)
         }
         .background(Theme.bg)
@@ -278,7 +263,7 @@ struct ThingsTable: View {
 
                     Button { changing = true } label: {
                         Text("Change all")
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                            .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
                             .padding(.horizontal, 12).frame(minHeight: 32)
                             .background(Capsule().fill(AppSection.care.color))
                             .contentShape(Capsule())
@@ -287,7 +272,7 @@ struct ThingsTable: View {
                     .accessibilityIdentifier("table-change-all")
 
                     Button { chosen.removeAll() } label: {
-                        Text("Clear").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
+                        Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("table-clear-chosen")
@@ -296,7 +281,7 @@ struct ThingsTable: View {
                 if !wasBefore.isEmpty {
                     Button { putBack() } label: {
                         Text("Undo")
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                            .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
                             .padding(.horizontal, 10).frame(minHeight: 32)
                             .overlay(Capsule().stroke(AppSection.actions.color, lineWidth: 1))
                             .contentShape(Capsule())
@@ -393,7 +378,7 @@ struct ThingsTable: View {
                 ForEach(ThingsTable.filters, id: \.id) { filter in
                     Button { only = filter.id } label: {
                         Text(filter.label)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(only == filter.id ? .white : Theme.muted)
                             .padding(.horizontal, 12).frame(minHeight: 30)
                             .background(Capsule().fill(only == filter.id ? AppSection.care.color : Theme.card))
@@ -413,9 +398,8 @@ struct ThingsTable: View {
                 Text("Sorted by " + ([SortLevel(key: sortBy, descending: descending)] + then)
                         .map { TableKeys.title($0.key, model.library) + ($0.descending ? " ▼" : " ▲") }
                         .joined(separator: ", then "))
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("table-sorted-by")
             }
         }
@@ -424,7 +408,7 @@ struct ThingsTable: View {
 
     private func chip(_ text: String, lit: Bool = false) -> some View {
         Text(text)
-            .font(.system(size: 15, weight: .bold)).foregroundStyle(lit ? .white : Theme.ink)
+            .font(.system(size: 14, weight: .bold)).foregroundStyle(lit ? .white : Theme.ink)
             .lineLimit(1)
             .padding(.horizontal, 10).frame(minHeight: 34)
             .background(RoundedRectangle(cornerRadius: 9).fill(lit ? AppSection.care.color : Theme.card))
@@ -446,8 +430,8 @@ struct ThingsTable: View {
                         filtersStored = TableKeys.store(all)
                     } label: {
                         HStack(spacing: 6) {
-                            Text(words).font(.system(size: 15, weight: .bold)).lineLimit(1)
-                            Text("✕").font(.system(size: 13, weight: .black))      // not text: the pill's remove cross
+                            Text(words).font(.system(size: 14, weight: .bold)).lineLimit(1)
+                            Text("✕").font(.system(size: 13, weight: .black))
                         }
                         .foregroundStyle(AppSection.care.color)
                         .padding(.horizontal, 10).frame(minHeight: 30)
@@ -459,7 +443,7 @@ struct ThingsTable: View {
                     .accessibilityLabel(words)
                 }
                 Button { filtersStored = "" } label: {
-                    Text("Clear").font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
+                    Text("Clear").font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.actions.color)
                         .padding(.horizontal, 8).frame(minHeight: 30).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
@@ -534,11 +518,9 @@ struct ThingsTable: View {
                     .accessibilityIdentifier("table-\(n)-pick")
                     .accessibilityAddTraits(ticked ? .isSelected : [])
 
-                    // 15 and never shrunk (it was 14, down to 80 %): a long name takes a
-                    // second line — the rows are tall enough for two.
                     Text(thing.name)
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .lineLimit(2)
+                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("table-\(n)-name")
                     // Open the thing itself. Its own button, so the name stays words

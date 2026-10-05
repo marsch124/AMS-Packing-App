@@ -73,8 +73,7 @@ struct ReviewScreen: View {
                             Text(target.isEmpty ? "Add it, on no template"
                                  : "Add it to \(lists.first { $0.id == target }?.name ?? "the template")")
                                 .font(.system(size: 16, weight: .bold)).foregroundStyle(Color.white)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(2)       // a long template name wraps; it used to shrink under 15
+                                .lineLimit(1).minimumScaleFactor(0.8)
                                 .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 44)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color))
                                 .contentShape(Rectangle())
@@ -87,7 +86,7 @@ struct ReviewScreen: View {
                         HStack {
                             Text(m.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                             Text(lists.first { $0.id == m.templateId }?.name ?? "no template")
-                                .font(.system(size: 15)).foregroundStyle(Theme.muted)
+                                .font(.system(size: 14)).foregroundStyle(Theme.muted)
                                 .accessibilityIdentifier("review-missed-\(n)-where")
                             Spacer()
                             Button { missed.remove(at: n) } label: {
@@ -120,12 +119,12 @@ struct ReviewScreen: View {
                                     // WHERE it went: the same words as packing mode,
                                     // so "did I use it" is asked in context.
                                     Text(ReviewScreen.where(line))
-                                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
-                                        .lineLimit(2)
+                                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                                        .lineLimit(1)
                                         .accessibilityIdentifier("review-line-\(n)-where")
                                 }
                                 Spacer(minLength: 8)
-                                Text(off ? "Didn't use" : "Used").font(.system(size: 15, weight: .bold))
+                                Text(off ? "Didn't use" : "Used").font(.system(size: 14, weight: .bold))
                                     .foregroundStyle(off ? AppSection.actions.color : AppSection.events.color)
                             }
                             .padding(.vertical, 10).contentShape(Rectangle())
@@ -156,7 +155,7 @@ struct ReviewScreen: View {
                             .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                             .padding(.top, 14)
                         Text(lines.neverPacked.map(\.name).joined(separator: " · "))
-                            .font(.system(size: 15)).foregroundStyle(Theme.muted)
+                            .font(.system(size: 14)).foregroundStyle(Theme.muted)
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)

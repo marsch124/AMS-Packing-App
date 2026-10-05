@@ -56,7 +56,7 @@ struct HomeScreen: View {
                     // is "Your templates"). His note on the Mac: "Your Grab Lists".
                     Button("Grab Lists") { showingGrabLists = true }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.home.color)
+                        .font(.system(size: 14, weight: .bold)).foregroundStyle(AppSection.home.color)
                         .accessibilityIdentifier("grab-lists")
                 }
                 .padding(.top, 14)
@@ -177,14 +177,12 @@ struct HomeScreen: View {
                 // His marks on the Mac: the heading struck out and written down the
                 // SIDE instead, and Trips and Templates swapped over.
                 HStack(spacing: 10) {
-                    // 15 (it was 12): standing on its side it is 95 points long, so the
-                    // tiles beside it are 96 tall (they were 76).
                     Text("This Device")
-                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted)
                         .kerning(0.5)
                         .fixedSize()
                         .rotationEffect(.degrees(-90))
-                        .frame(width: 20)
+                        .frame(width: 16)
                         .accessibilityIdentifier("device-heading")
                     CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
                     CountTile(number: model.library.items.count, label: "Things", id: "count-things", color: AppSection.care.color)
@@ -376,9 +374,9 @@ struct CountTile: View {
         VStack(spacing: 2) {
             Text("\(number)").font(.system(size: 30, weight: .heavy).monospacedDigit()).foregroundStyle(color)
                 .accessibilityIdentifier(id)
-            Text(label).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+            Text(label).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
         }
-        .frame(maxWidth: .infinity, minHeight: 96)
+        .frame(maxWidth: .infinity, minHeight: 76)
         .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line, lineWidth: 1))
     }

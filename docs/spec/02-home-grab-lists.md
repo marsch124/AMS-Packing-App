@@ -88,19 +88,15 @@ Each tab button (`TabButtonLabel`):
 - The mark at 24 pt, centred in a **46 × 30 capsule**. Active: a white mark (stroke 2.2) on a capsule
   filled with the section colour. Inactive: the mark in the section colour (stroke 1.9) on the section
   colour at 14 % opacity.
-- Under it, 3 pt apart, the label: **15 pt**, `.heavy` and `ink` when active, `.semibold` and `muted`
-  otherwise. One line, never shrunk (0.62: it was 12.5 pt, scaling down to 80 % — his floor is 15).
-- The six buttons sit in a `TabRow` layout (0.62), not equal sixths: each tab is as wide as an even share
-  of the bar, unless its label needs more — then it gets exactly what it needs and the others share the
-  rest. On an iPhone an even sixth is 67 pt and "Templates" at 15 heavy needs 79; on the Mac every tab
-  has an even share.
+- Under it, 3 pt apart, the label: **12.5 pt**, `.heavy` and `ink` when active, `.semibold` and `muted`
+  otherwise. One line, scaling down to 80 %.
 - Minimum height 54. The whole rectangle is tappable. Plain button style, no focus ring
   (`.focusEffectDisabled()`). Accessibility label = the label; the active tab has the `.isSelected` trait.
 
 The version marker (`app-version`): text `AppInfo.version` = `"<CFBundleShortVersionString> (<CFBundleVersion>)"`,
 e.g. "0.61 (130)". The short version is `MARKETING_VERSION` in `project.yml` ("0.61"); the build number is
 `CURRENT_PROJECT_VERSION` ("2" for a local build), which the TestFlight workflow overrides with its own run
-number. Each part falls back to "?" when missing. **15 pt semibold** (11 until 0.62), `muted` at 70 %
+number. Each part falls back to "?" when missing. **11 pt semibold**, `muted` at 70 %
 opacity, right-aligned with 8 pt trailing padding, so it sits under the Settings tab. It does not take
 taps (`allowsHitTesting(false)`). Because it reads the bundle, the number on screen and the number
 TestFlight shows can never disagree. `AppInfo.marketing` (the short version alone) is what What's new
@@ -262,7 +258,7 @@ spacing, 16 pt side padding and 24 pt bottom padding.
    - "Grab and go": **22 pt heavy** (`HeadingSize.band`), `ink`; id `home-grab-heading`.
    - A spacer.
    - The magnifier `SearchButton` (`search-open`; section 15).
-   - "Grab Lists": a plain button, 15 pt bold, Home blue, no focus ring; id `grab-lists`. It opens the
+   - "Grab Lists": a plain button, 14 pt bold, Home blue, no focus ring; id `grab-lists`. It opens the
      Grab Lists sheet (section 8). The code comment notes that this door opens the grab lists, not the
      templates ("Your templates"), and that the owner's note on the Mac asked for "Your Grab Lists".
 2. The grab tiles (`GrabButtons`, section 4) for `library.homeGrabLists()`. When that is empty (every list
@@ -333,7 +329,7 @@ the buttons a bit so they are thinner … four on each row … two rows". They w
 - A short last row is padded with invisible equal-width spacers, so every tile has the same width.
 - Each tile is a plain button:
   - the list's drawing (`GrabDoodle`) at **36 pt** in the list's tone colour;
-  - 3 pt below it, `label` at **15 pt bold** `ink`, centred, up to two lines, never shrunk (0.62: 14 pt, one line, scaling to 75 %);
+  - 3 pt below it, `label` at **14 pt bold** `ink`, one line, scaling to 75 %;
   - 4 pt side padding, full width, minimum height **68**, `card` fill, corner radius 12;
   - a 1.5-pt stroke in the tone colour at 50 % opacity.
 - Identifier `grab-<n>`, where n is the **position** (0…7), never the name.
@@ -369,7 +365,7 @@ round caps and joins.
 | `swim-sun` | the swimmer + sun at (12, 12), scale 1.2 |
 | `bike-sun` | the bike + sun at (11.5, 11.5), scale 1.2 |
 | `run-sun` | the runner with only the two lower speed lines + sun at (11, 12), scale 1.15 |
-| `""` with a non-empty `initial` | the **first character of the label, upper-cased**, at half the size but never under 15 (0.62: the 28-pt drawing made it 14), heavy, in the tone colour |
+| `""` with a non-empty `initial` | the **first character of the label, upper-cased**, at half the size, heavy, in the tone colour |
 | **any other key**, or `""` with no initial | the runner (the `default` case). Since 0.62 a received list cannot bring an unknown key (`importGrab` keeps only `GRAB_ICONS`, section 10); only a factory row written by the web app could |
 
 The sun is the web app's GRAB_SUN: a closed curve plus 8 rays reaching 9.6 units from its middle. It was
@@ -659,7 +655,7 @@ device's own working state.
      - the name at 18 pt, semibold, or regular when ticked; `muted` when ticked or skipped, else `ink`;
        struck through in `muted` when skipped;
      - when skipped, at the right: **"only sometimes"** if the name (by `normName`) is marked only
-       sometimes for this list, else **"not this time"** (15 pt semibold `muted`);
+       sometimes for this list, else **"not this time"** (13 pt semibold `muted`);
      - 11 pt vertical padding.
    - The skip button (`grab-skip-<n>`), 40 × 40: `AsideMark` (shared with the trip screen), a 24-pt
      drawing stroked 1.8 in `muted`: the ⊘ (a circle with a slash); when skipped, the ↻ (an arrow round).
@@ -791,7 +787,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
    shared `NeedsLine`). It goes as soon as the draft changes (a name typed, a thing added or removed) and
    when editing starts again.
 2. A scroll (4 pt spacing, 16 pt side padding):
-   - The hint "Tap a name to change it · ▲▼ move · ✕ remove. Saved for both your devices." (15 pt
+   - The hint "Tap a name to change it · ▲▼ move · ✕ remove. Saved for both your devices." (14 pt
      medium `muted`).
    - One row per draft name:
      - a text field (`grab-rename-<n>`, placeholder "Name", 17 pt medium `ink`, a radius-8 `card`
@@ -799,7 +795,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
      - **up** (`grab-up-<n>`, accessibility label "Move up"), disabled on the first row;
      - **down** (`grab-down-<n>`, "Move down"), disabled on the last row;
      - **"1 in 10"** (`grab-sometimes-<n>`, accessibility label "Take <name> only sometimes", the
-       `.isSelected` trait when marked): a 30-tall capsule, 15 pt heavy. Marked = tone fill and white
+       `.isSelected` trait when marked): a 30-tall capsule, 12 pt heavy. Marked = tone fill and white
        text; unmarked = `card` fill and `muted` text; `line` stroke either way;
      - **✕ remove** (`grab-remove-<n>`, "Remove"), disabled when only one name is left.
      - The up, down and remove marks are 22-pt drawn glyphs in a 38 × 44 hit area: `ink` when enabled,
@@ -811,9 +807,9 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
    16 pt side and 10 pt vertical padding.
 4. **Only on one of his own lists** (`isOwn` = the id is among `ownGrabLists()`, so a list received by
    sharing counts too), last on the screen, under the bar, with 16 pt side and 10 pt bottom padding:
-   - **"Delete grab list"** (`grab-delete`): the shared `SmallDeleteButton`, **15 pt** like every
-     Delete (0.62: the button's `size` parameter, added in 0.61 for this one, is gone — its words are
-     always 15 now; Delete trip, template, thing and bag were 13): semibold text in To do red, 12 pt
+   - **"Delete grab list"** (`grab-delete`): the shared `SmallDeleteButton` at **15 pt** (its `size`
+     parameter, added in 0.61: "13 where it began; a new one is read at 15 (his floor: nothing under 15)";
+     Delete trip, template, thing and bag still use the default 13): semibold text in To do red, 12 pt
      side padding, minimum 30 tall, a 1-pt capsule outline in red at 60 % opacity, pushed to the right
      edge. "Quiet until wanted; it only ever
      OPENS the question, never deletes by itself."
@@ -1012,12 +1008,12 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
    - One row per list on Home (container `grablists-home-<n>`):
      - drawing 30 pt;
      - label (17 pt semibold, one line; the label, not the title, so the two "Swim" lists read alike);
-     - "<k> thing" or "<k> things" (15 pt medium `muted`);
+     - "<k> thing" or "<k> things" (13 pt medium `muted`);
      - **up chevron** (`grablists-up-<n>`, label "Move <label> earlier"), disabled on the first row;
      - **down chevron** (`grablists-down-<n>`, label "Move <label> later"), disabled on the last row;
        the chevrons are `muted` when enabled and `line` when disabled, in a 34 × 36 hit area;
      - **"Off Home"** (`grablists-off-<n>`, label "Take <label> off Home; it waits with everything on
-       it"): an outlined pill, 15 pt heavy `muted` on `bg`, 28 tall.
+       it"): an outlined pill, 13 pt heavy `muted` on `bg`, 28 tall.
      - The row is minimum 54 tall, `card` fill, radius 12, hairline stroke.
    - **"Waiting · <n>"** (`grablists-waiting-heading`), 15 pt heavy `muted`, 14 pt above.
    - If none are waiting (15 pt medium `muted`), worded by whether Home has room: fewer than 8 on Home →
@@ -1028,11 +1024,11 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
        "<label>, <k> things. Open it" — always "things", even for 1): **opens the list** to tick, fill or
        delete it, and it stays waiting;
      - a filled Home-blue pill reading **"On Home"** (`grablists-on-<n>`, label "Put <label> on Home";
-       15 pt heavy white, 28 tall): puts it on Home.
+       13 pt heavy white, 28 tall): puts it on Home.
      (Until 0.62 the whole row was the "On Home" button, and a waiting list could not be opened here.)
    - Both row kinds say "1 thing" / "<k> things" on screen (singular for one).
    - Footer: "A list that steps back off Home keeps everything on it — nothing here throws a list away."
-     (15 pt medium `muted`).
+     (14 pt medium `muted`).
 3. A bottom bar:
    - a field (`grablists-new-name`, placeholder "A new grab list");
    - **"Make"** (`grablists-new`): always full colour, Home blue;
@@ -1205,7 +1201,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
   - a header: the title (20 pt heavy, one line) and "Done" (`share-done`, filled Trips green);
   - a QR code at most 260 wide on a white radius-12 card (`share-qr`, accessibility label "QR code"), or
     "Too long for a QR code. Send the link instead." (`share-qr-toolong`, 15 pt medium `muted`);
-  - the link (`share-link`, 15 pt monospaced `muted`, three lines at most, middle-truncated, selectable);
+  - the link (`share-link`, 13 pt monospaced `muted`, three lines at most, middle-truncated, selectable);
   - **"Send…"** (`share-send`, the system share sheet, Trips-green fill, 48 tall) and **"Copy link"**
     (`share-copy`, outlined Trips green, 48 tall), which then reads "Copied" (accessibility value
     "copied");
@@ -1214,7 +1210,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
   - with no link and no file — an **empty** grab list (a list just made with Make, before anything is
     saved on it) or an empty template: **"There is nothing on it to share yet."** (`share-empty`, 15 pt
     medium `muted`; 0.62 — it used to give the "too big" reason, and there is no file for these);
-  - a footer, 15 pt `muted`: "The link opens in the web app, and in this app under Settings → Open a
+  - a footer, 14 pt `muted`: "The link opens in the web app, and in this app under Settings → Open a
     shared link."
 - Codes are byte for byte the web app's (PackingCore `GrabSharing.swift`: short keys `k`, `v`, `n`, `x`,
   `i`, `c`; optional "z." squeezed form).
@@ -1222,7 +1218,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
 **Receiving.**
 - Settings → "Open a shared link" → paste or type → `Library.readShared(text)`. It tries a grab list
   first, then a template, then a trip.
-- A grab list shows "A GRAB LIST" (`shared-kind`, 15 pt heavy `muted`, kerning 0.6), its name
+- A grab list shows "A GRAB LIST" (`shared-kind`, 12 pt heavy `muted`, kerning 0.6), its name
   (`shared-name`, 18 pt bold) and "1 thing" / "<n> things" (15 pt medium `muted`, `shared-count`; "1 things"
   until 0.62 — the trips spec pass).
   `decodeGrabShare` refuses a code with no items ("The shared list is empty."), and `readShared` then tries
@@ -1358,11 +1354,10 @@ marked the heading to be struck out and written **down the side** instead (and T
 swapped over).
 
 **What is on screen.** A row with 10 pt spacing:
-- **"This Device"**: 15 pt heavy `muted`, kerning 0.5, rotated −90° in a 20-pt-wide column
-  (`device-heading`). (0.62: 12 pt in a 16-pt column; standing on its side at 15 it is 95 pt long.)
-- Three `CountTile`s of equal width, each minimum 96 tall (76 until 0.62, shorter than the side heading
-  at 15), `card` fill, radius 14, hairline stroke. Each
-  shows the number (30 pt heavy monospaced) and under it a 15 pt semibold `muted` label:
+- **"This Device"**: 12 pt heavy `muted`, kerning 0.5, rotated −90° in a 16-pt-wide column
+  (`device-heading`).
+- Three `CountTile`s of equal width, each minimum 76 tall, `card` fill, radius 14, hairline stroke. Each
+  shows the number (30 pt heavy monospaced) and under it a 14 pt semibold `muted` label:
 
 | Tile | Number | Identifier (on the number) | Colour |
 |---|---|---|---|
@@ -1580,9 +1575,9 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
    - **Nothing typed** (after trimming): "Type to search across everything — your things, your
      templates, your trips and your to-dos." (15 pt medium `muted`, 24 pt above).
    - **No match:** "Nothing matches “<typed, trimmed>”." (`search-none`, same style).
-   - **Otherwise** up to four parts, always in this order, each with a heading in capitals (15 pt heavy
-     `muted`, kerning 0.6; 18 pt above, 4 below) followed by its total (15 pt heavy monospaced digits):
-     - each row: name (16 pt semibold, one line), an under-line (15 pt medium `muted`, up to two lines, only
+   - **Otherwise** up to four parts, always in this order, each with a heading in capitals (12 pt heavy
+     `muted`, kerning 0.6; 18 pt above, 4 below) followed by its total (12 pt heavy monospaced digits):
+     - each row: name (16 pt semibold, one line), an under-line (13 pt medium `muted`, one line, only
        when non-empty), a chevron, minimum 48 tall, a hairline under it;
      - row identifiers `search-<part>-<n>`, with part = `things`, `lists`, `trips`, `todos`.
 
@@ -1604,7 +1599,7 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
 - A **to-do** closes Search and sets `model.tabToOpen = .actions`; the frame switches to the To do tab
   (section 1), whichever tab Search was opened from (0.62; it asked a `go` no screen passed, so it only
   closed Search). The to-do itself is not singled out on the To do tab.
-- The "more" line is 15 pt medium `muted` with 8 pt above and below; only the things part is ever capped.
+- The "more" line is 13 pt medium `muted` with 8 pt above and below; only the things part is ever capped.
 
 **iPhone vs Mac.** Mac minimum **460 × 560**.
 

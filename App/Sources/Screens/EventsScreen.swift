@@ -38,7 +38,7 @@ struct EventsScreen: View {
                         Button(action: goToActions) {
                             HStack(spacing: 6) {
                                 Text("\(toDos)").font(.system(size: 16, weight: .heavy).monospacedDigit())
-                                Text(toDos == 1 ? "to do" : "to do").font(.system(size: 15, weight: .bold))
+                                Text(toDos == 1 ? "to do" : "to do").font(.system(size: 14, weight: .bold))
                             }
                             .foregroundStyle(.white)
                             .padding(.horizontal, 12).frame(minHeight: 34)
@@ -192,7 +192,7 @@ struct TripRow: View {
                 VStack(alignment: .trailing, spacing: 3) {
                     // Narrow on purpose: the trip's own words matter more.
                     Text(badge)
-                        .font(.system(size: 15, weight: .heavy))
+                        .font(.system(size: 13, weight: .heavy))
                         .foregroundStyle(card.state == .planned || card.state == .reviewed ? Theme.muted : .white)
                         .padding(.horizontal, 10).frame(minHeight: 22)
                         .background(Capsule().fill(card.state == .planned || card.state == .reviewed
@@ -252,14 +252,21 @@ struct TravelYearBand: View {
             SectionTitle(title: "Your year", id: "events-year-heading")
                 .padding(.top, 6)
 
-            // Counts and months at 15 (they were 10): "Sep" where twelve of them fit
-            // (the Mac), else "S" — an iPhone gives each month 26 points, and three
-            // letters at 15 need 30. Symbols over text; the order says which J is which.
-            ViewThatFits(in: .horizontal) {
-                months(short: false)
-                months(short: true)
+            HStack(alignment: .bottom, spacing: 5) {
+                ForEach(Array(year.byMonth.enumerated()), id: \.offset) { n, count in
+                    VStack(spacing: 5) {
+                        Text(count > 0 ? "\(count)" : " ")
+                            .font(.system(size: 10, weight: .heavy).monospacedDigit())
+                            .foregroundStyle(AppSection.events.color)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(count > 0 ? AppSection.events.color : Theme.line)
+                            .frame(height: max(4, 54 * (year.most > 0 ? Double(count) / Double(year.most) : 0)))
+                        Text(TravelYearBand.month(n < year.months.count ? year.months[n] : ""))
+                            .font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.muted)
+                    }
+                }
             }
-            .frame(height: 100)         // a count, the tallest bar (54) and a month, at 15
+            .frame(height: 84)
             .accessibilityElement(children: .ignore)
             .accessibilityIdentifier("events-year")
             .accessibilityLabel("Trips month by month over the last year")
@@ -269,44 +276,18 @@ struct TravelYearBand: View {
                 figure("\(year.nights)", year.nights == 1 ? "night away" : "nights away", "year-nights")
                 figure("\(year.packed)", "things packed", "year-packed")
             }
-            .fixedSize(horizontal: false, vertical: true)       // equal heights when a word wraps
-        }
-    }
-
-    private func months(short: Bool) -> some View {
-        HStack(alignment: .bottom, spacing: 5) {
-            ForEach(Array(year.byMonth.enumerated()), id: \.offset) { n, count in
-                VStack(spacing: 5) {
-                    Text(count > 0 ? "\(count)" : " ")
-                        .font(.system(size: 15, weight: .heavy).monospacedDigit())
-                        .foregroundStyle(AppSection.events.color)
-                        .lineLimit(1).fixedSize()
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(count > 0 ? AppSection.events.color : Theme.line)
-                        .frame(height: max(4, 54 * (year.most > 0 ? Double(count) / Double(year.most) : 0)))
-                    let name = TravelYearBand.month(n < year.months.count ? year.months[n] : "")
-                    Text(short ? String(name.prefix(1)) : name)
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
-                        .lineLimit(1).fixedSize()
-                }
-            }
         }
     }
 
     private func figure(_ number: String, _ word: String, _ id: String) -> some View {
         VStack(spacing: 2) {
-            // A long number may shrink, never under 15 (0.75 × 20).
             Text(number).font(.system(size: 20, weight: .heavy).monospacedDigit())
                 .foregroundStyle(AppSection.events.color)
-                .lineLimit(1).minimumScaleFactor(0.75)
-            // 15 (it was 12, shrinking further): "things packed" takes two lines on an
-            // iPhone rather than shrinking.
-            Text(word).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted)
+                .lineLimit(1).minimumScaleFactor(0.7)
         }
-        .padding(.horizontal, 4).padding(.vertical, 6)
-        .frame(maxWidth: .infinity, minHeight: 56, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 56)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .combine)
@@ -335,25 +316,19 @@ struct AllTimeBand: View {
                 figure("\(totals.places)", totals.places == 1 ? "place" : "places", "alltime-places")
                 figure("\(totals.packed)", "things packed", "alltime-packed")
             }
-            .fixedSize(horizontal: false, vertical: true)       // equal heights when a word wraps
             MiniWorldMap().environmentObject(model)
         }
     }
 
     private func figure(_ number: String, _ word: String, _ id: String) -> some View {
         VStack(spacing: 2) {
-            // A long number may shrink, never under 15 (0.75 × 20).
             Text(number).font(.system(size: 20, weight: .heavy).monospacedDigit())
                 .foregroundStyle(AppSection.events.color)
-                .lineLimit(1).minimumScaleFactor(0.75)
-            // 15 (it was 12, shrinking further): "things packed" takes two lines on an
-            // iPhone rather than shrinking.
-            Text(word).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Text(word).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted)
+                .lineLimit(1).minimumScaleFactor(0.6)
         }
-        .padding(.horizontal, 4).padding(.vertical, 6)
-        .frame(maxWidth: .infinity, minHeight: 56, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 56)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .combine)

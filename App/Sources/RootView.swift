@@ -130,7 +130,7 @@ private struct TabBar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TabRow {
+            HStack(spacing: 0) {
                 ForEach(AppSection.allCases) { s in
                     Button { section = s } label: { TabButtonLabel(section: s, active: s == section) }
                         .buttonStyle(.plain)
@@ -143,7 +143,7 @@ private struct TabBar: View {
             // A quiet build marker in its own thin row, so it can never sit on
             // top of a tab's label.
             Text(AppInfo.version)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Theme.muted.opacity(0.7))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.trailing, 8)
@@ -169,54 +169,13 @@ private struct TabButtonLabel: View {
                 .foregroundStyle(active ? Color.white : section.color)
                 .frame(width: 46, height: 30)
                 .background(Capsule().fill(active ? section.color : section.color.opacity(0.14)))
-            // 15 like every word in the app (his floor: nothing under 15), and never
-            // shrunk to fit — `TabRow` gives a long label the room it needs instead.
             Text(section.label)
-                .font(.system(size: 15, weight: active ? .heavy : .semibold))
+                .font(.system(size: 12.5, weight: active ? .heavy : .semibold))
                 .foregroundStyle(active ? Theme.ink : Theme.muted)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity, minHeight: 54)
         .contentShape(Rectangle())
-    }
-}
-
-/// The six tabs side by side, each label whole at 15 pt. Equal widths wherever they
-/// fit; a tab whose label needs more ("Templates" on an iPhone, at 12.5 pt it fitted
-/// by shrinking) gets exactly what it needs and the others share what is left. At
-/// equal widths an iPhone gives each tab 67 points, and "Templates" at 15 heavy needs 79.
-private struct TabRow: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let widths = widths(proposal.width, subviews)
-        let height = zip(subviews, widths)
-            .map { $0.sizeThatFits(ProposedViewSize(width: $1, height: proposal.height)).height }
-            .max() ?? 0
-        return CGSize(width: widths.reduce(0, +), height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        for (tab, width) in zip(subviews, widths(bounds.width, subviews)) {
-            tab.place(at: CGPoint(x: x, y: bounds.minY), proposal: ProposedViewSize(width: width, height: bounds.height))
-            x += width
-        }
-    }
-
-    /// What each tab needs; the room left over is shared evenly by the tabs that need
-    /// less than an even share.
-    private func widths(_ total: CGFloat?, _ subviews: Subviews) -> [CGFloat] {
-        let needs = subviews.map { ceil($0.sizeThatFits(.unspecified).width) }
-        guard let total, !needs.isEmpty else { return needs }
-        var wide = Set<Int>()           // the tabs given exactly what they need
-        while true {
-            let left = total - wide.reduce(0) { $0 + needs[$1] }
-            let share = left / CGFloat(needs.count - wide.count)
-            let more = needs.indices.filter { !wide.contains($0) && needs[$0] > share }
-            if more.isEmpty || wide.count + more.count == needs.count {
-                wide.formUnion(more)
-                return needs.indices.map { wide.contains($0) ? needs[$0] : share }
-            }
-            wide.formUnion(more)
-        }
     }
 }

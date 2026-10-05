@@ -46,7 +46,7 @@ struct NewList: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("WHAT IS IT CALLED")
-                        .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
+                        .font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.6)
                         .padding(.bottom, 6)
                     TextField("", text: $name)
                         .textFieldStyle(.plain)
@@ -61,7 +61,7 @@ struct NewList: View {
 
                     if taken {
                         Text("You already have a template called that.")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(AppSection.actions.color)
                             .padding(.top, 6)
                             .accessibilityIdentifier("newlist-taken")

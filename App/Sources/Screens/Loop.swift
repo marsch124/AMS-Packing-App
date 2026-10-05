@@ -99,16 +99,16 @@ struct LoopPicture: View {
             Text("\(step.rawValue + 1) · \(step.name)")
                 .font(.system(size: 18, weight: .heavy)).foregroundStyle(step.words(scheme))
             Text(step.short)
-                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.ink)
+                .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 4) {
                 SectionMark(section: step.tab, size: 15, weight: 1.8).foregroundStyle(step.tab.color)
-                Text("on \(step.tabName)").font(.system(size: 15, weight: .bold)).foregroundStyle(step.tab.color)
+                Text("on \(step.tabName)").font(.system(size: 13, weight: .bold)).foregroundStyle(step.tab.color)
             }
             if on {
                 Text("You are here")
-                    .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
                     .padding(.horizontal, 10).padding(.vertical, 3)
                     .background(Capsule().fill(step.tint))
                     .padding(.top, 2)
@@ -130,7 +130,7 @@ struct LoopPicture: View {
             RoundedRectangle(cornerRadius: 3).fill(step.tint.opacity(0.24))
                 .overlay(RoundedRectangle(cornerRadius: 3).stroke(step.tint, lineWidth: 1.2))
                 .frame(width: 14, height: 14)
-            Text(label).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+            Text(label).font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
         }
     }
 }
@@ -187,9 +187,8 @@ struct LoopWords: View {
 ///
 /// Five names and their marks do not fit an iPhone's width (On site joined, 3 Oct
 /// 2026), so the strip slims down until it fits: every mark where there is room (the
-/// Mac); then the mark of the step it is at only; then tighter capsules. The names stay
-/// in every one, at 15 — they are what is read (his floor: nothing under 15; the
-/// slimmest used to drop them to 13).
+/// Mac); then the mark of the step it is at only; then smaller words. The names stay
+/// in every one — they are what is read.
 struct LoopDoor: View {
     let here: Library.LoopStep
     /// Its own name on each screen: a sheet can sit over another strip.
@@ -198,9 +197,9 @@ struct LoopDoor: View {
     @State private var open = false
 
     private struct Fit { let marks: Bool; let size: CGFloat; let pad: CGFloat; let arrow: CGFloat; let space: CGFloat }
-    private static let fits = [Fit(marks: true, size: 15, pad: 8, arrow: 14, space: 3),
-                               Fit(marks: false, size: 15, pad: 7, arrow: 10, space: 2),
-                               Fit(marks: false, size: 15, pad: 5, arrow: 8, space: 1)]
+    private static let fits = [Fit(marks: true, size: 14, pad: 8, arrow: 14, space: 3),
+                               Fit(marks: false, size: 14, pad: 7, arrow: 10, space: 2),
+                               Fit(marks: false, size: 13, pad: 5, arrow: 8, space: 1)]
 
     var body: some View {
         Button { open = true } label: {
@@ -232,7 +231,7 @@ struct LoopDoor: View {
                 let on = step == here
                 HStack(spacing: 4) {
                     // Slimmed down, the step it is at keeps its mark.
-                    if fit.marks || on { SectionMark(section: step.tab, size: 13, weight: 1.9) }      // not text: the step's tab mark
+                    if fit.marks || on { SectionMark(section: step.tab, size: 13, weight: 1.9) }
                     Text(step.name)
                         .font(.system(size: fit.size, weight: on ? .heavy : .semibold))
                         .lineLimit(1).fixedSize()

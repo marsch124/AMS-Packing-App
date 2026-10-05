@@ -39,20 +39,17 @@ struct BagsScreen: View {
             // them — his ask (2026-09-26): "keep the header row visible".
             VStack(alignment: .leading, spacing: 0) {
                 Text("Give a bag its max weight and every trip shows how full it is.")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 10)
 
-                // The column names at 15 (they were 10): the Empty column is 76 wide
-                // to hold "EMPTY G", and the fields under them follow.
                 HStack(spacing: 6) {
                     Spacer()
                     Text("MAX KG").frame(width: 64)
                     Text("LITRES").frame(width: 64)
-                    Text("EMPTY G").frame(width: 76)
+                    Text("EMPTY G").frame(width: 70)
                 }
-                .font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.4)
-                .lineLimit(1).fixedSize(horizontal: false, vertical: true)
+                .font(.system(size: 10, weight: .heavy)).foregroundStyle(Theme.muted).kerning(0.4)
                 .padding(.bottom, 4)
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("yourbags-columns")
@@ -133,14 +130,12 @@ struct BagsScreen: View {
                 Button(action: open) {
                     HStack(spacing: 4) {
                         VStack(alignment: .leading, spacing: 1) {
-                            // Never shrunk under 15 (the name went to 12, the glance line
-                            // was 12 and went to 10): both wrap instead, in a taller row.
                             Text(bag.name)
                                 .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
-                                .lineLimit(2)
+                                .lineLimit(1).minimumScaleFactor(0.8)
                             if !line.isEmpty {
-                                Text(line).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(line).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.muted)
+                                    .lineLimit(1).minimumScaleFactor(0.85)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -158,12 +153,11 @@ struct BagsScreen: View {
                 field($litres, now: bag.capacityL, width: 64, id: "bag-\(n)-litres") { v in
                     model.change { _ = $0.setBag(id: bag.id, capacityL: v) }
                 }
-                field($empty, now: bag.weight, width: 76, id: "bag-\(n)-empty") { v in
+                field($empty, now: bag.weight, width: 70, id: "bag-\(n)-empty") { v in
                     model.change { _ = $0.setBag(id: bag.id, emptyGrams: v) }
                 }
             }
             .frame(minHeight: 46)
-            .padding(.vertical, 4)
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
             .onAppear {
                 maxKg = bag.maxKg > 0 ? BagsScreen.show(bag.maxKg) : ""

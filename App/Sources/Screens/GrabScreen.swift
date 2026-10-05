@@ -66,7 +66,7 @@ struct GrabDoodle: View {
         let k = size / 64
         if icon.isEmpty, !initial.isEmpty {
             Text(initial.prefix(1).uppercased())
-                .font(.system(size: max(15, size * 0.5), weight: .heavy))      // a letter is read: never under 15 (the 28-pt doodle made it 14)
+                .font(.system(size: size * 0.5, weight: .heavy))
                 .frame(width: size, height: size)
         } else {
             SVGPath.path(GrabDoodle.path(icon))
@@ -122,10 +122,8 @@ struct GrabButtons: View {
                         Button { open(d) } label: {
                             VStack(spacing: 3) {
                                 GrabDoodle(icon: d.icon, size: 36, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
-                                // 15 (it was 14, shrinking to 75 %): a long label takes two lines.
-                                Text(d.label).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                                Text(d.label).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.ink)
+                                    .lineLimit(1).minimumScaleFactor(0.75)
                             }
                             .padding(.horizontal, 4)
                             .frame(maxWidth: .infinity, minHeight: 68)
@@ -244,7 +242,7 @@ struct GrabScreen: View {
                                     Spacer(minLength: 8)
                                     if skipped {
                                         Text(onlySometimes.contains(normName(name)) ? "only sometimes" : "not this time")
-                                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
+                                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
                                     }
                                 }
                                 .padding(.vertical, 11).contentShape(Rectangle())
@@ -333,7 +331,7 @@ struct GrabScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Tap a name to change it · ▲▼ move · ✕ remove. Saved for both your devices.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
                     ForEach(draft.indices, id: \.self) { n in
                         HStack(spacing: 2) {
                             TextField("Name", text: Binding(get: { n < draft.count ? draft[n] : "" },
@@ -351,7 +349,7 @@ struct GrabScreen: View {
                                 if !jsTrim(name).isEmpty { draftSometimes.formSymmetricDifference([normName(name)]) }
                             } label: {
                                 Text("1 in 10")
-                                    .font(.system(size: 15, weight: .heavy))
+                                    .font(.system(size: 12, weight: .heavy))
                                     .foregroundStyle(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? .white : Theme.muted)
                                     .padding(.horizontal, 8).frame(minHeight: 30)
                                     .background(Capsule().fill(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? tint : Theme.card))
@@ -419,7 +417,7 @@ struct GrabScreen: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
         } else {
-            SmallDeleteButton(title: "Delete grab list", id: "grab-delete") { askingToDelete = true }
+            SmallDeleteButton(title: "Delete grab list", id: "grab-delete", size: 15) { askingToDelete = true }
         }
     }
 

@@ -41,7 +41,7 @@ struct BagsCard: View {
                     Button { showKey.toggle() } label: {
                         ZStack {
                             Circle().stroke(Theme.muted, lineWidth: 1.4).frame(width: 18, height: 18)
-                            Text("i").font(.system(size: 12, weight: .heavy, design: .serif)).foregroundStyle(Theme.muted)      // not text: the letter of the drawn info mark
+                            Text("i").font(.system(size: 12, weight: .heavy, design: .serif)).foregroundStyle(Theme.muted)
                         }
                         .frame(width: 32, height: 28).contentShape(Rectangle())
                     }
@@ -51,14 +51,14 @@ struct BagsCard: View {
                     let over = bags.filter(\.over).count
                     if over > 0 {
                         Text("\(over) over")
-                            .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                            .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
                             .padding(.horizontal, 8).padding(.vertical, 2)
                             .background(Capsule().fill(AppSection.actions.color))
                             .accessibilityIdentifier("bags-over")
                     }
                     Spacer()
                     Text(BagsCard.kilos(bags.reduce(0) { $0 + $1.grams }))
-                        .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(.system(size: 14, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("bags-total")
                 }
                 if showKey { key }
@@ -95,7 +95,7 @@ struct BagsCard: View {
             keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
             keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
             Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag for the luggage scale, and a photo of it packed.")
-                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(10)
@@ -107,8 +107,8 @@ struct BagsCard: View {
     private func keyLine(_ tint: Color, _ name: String, _ meaning: String) -> some View {
         HStack(spacing: 8) {
             Capsule().fill(tint).frame(width: 22, height: 8)
-            Text(name).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.ink)
-            Text(meaning).font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+            Text(name).font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.ink)
+            Text(meaning).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -128,7 +128,7 @@ struct BagsCard: View {
                 Text(bag.grams == 0 ? "Tap to weigh"
                      : limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
                      : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
-                    .font(.system(size: 15, weight: .bold).monospacedDigit())
+                    .font(.system(size: 14, weight: .bold).monospacedDigit())
                     .foregroundStyle(bag.over ? AppSection.actions.color : Theme.muted)
             }
             // Only a bag that HAS a limit gets a bar — a bar with no end says nothing —
@@ -145,7 +145,7 @@ struct BagsCard: View {
             }
             if bag.scaleGrams != nil {
                 Text("The things in it add up to \(BagsCard.kilos(bag.load.grams))")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
             }
         }
         .contentShape(Rectangle())

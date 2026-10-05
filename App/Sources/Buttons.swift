@@ -91,8 +91,7 @@ struct WideButtonLabel<Mark: View>: View {
     var body: some View {
         HStack(spacing: 10) {
             mark().frame(width: 22, height: 22)
-            // Two lines rather than shrinking: under 15 pt is too small without glasses (F073).
-            Text(title).font(.system(size: 17, weight: .bold)).lineLimit(2).multilineTextAlignment(.center)
+            Text(title).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
         }
         .foregroundStyle(tint)
         .frame(maxWidth: .infinity, minHeight: 48)

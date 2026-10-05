@@ -152,11 +152,11 @@ struct TemplateCard: View {
                 .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             Text(Library.TemplateUse.line(use, today: Today.local))
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 12, weight: .medium))
                 // Quiet, not invisible: the divider colour could not be read on
                 // either a white or a black background.
                 .foregroundStyle(use == nil ? Theme.muted.opacity(0.65) : Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)      // 15 (it was 12): wraps, never cut
+                .lineLimit(1)
                 .accessibilityIdentifier("template-used")
         }
         .padding(10)
@@ -182,7 +182,7 @@ struct Cover: View {
                 IconMark(path: icon.path, size: size * 0.66).foregroundStyle(.white)
             } else {
                 Text(Library.coverLetter(list))
-                    .font(.system(size: max(15, size * 0.46), weight: .heavy))      // a letter is read: never under 15
+                    .font(.system(size: size * 0.46, weight: .heavy))
                     .foregroundStyle(.white)
             }
         }
@@ -230,14 +230,7 @@ struct IconPickerScreen: View {
     let templateId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
-    /// Five across on the Mac's wider sheet was 12-pt names shrinking to 70 %. At 15
-    /// (his floor) "Racket sports" needs 101 points: four across on the Mac, three on
-    /// an iPhone, and a two-word name may take two lines.
-    #if os(macOS)
-    private let columns = 4
-    #else
-    private let columns = 3
-    #endif
+    private let columns = 5
 
     var body: some View {
         let list = model.library.resolvedTemplate(id: templateId) ?? newList()
@@ -270,7 +263,6 @@ struct IconPickerScreen: View {
                             Text(Library.coverLetter(list)).font(.system(size: 22, weight: .heavy))
                         } pick: { pick(Library.letterIcon) }
                     }
-                    .fixedSize(horizontal: false, vertical: true)
                     SectionTitle(title: "All icons")
                     // Plain rows, not a lazy grid (the Mac builds only what is on screen).
                     ForEach(rows.indices, id: \.self) { r in
@@ -282,7 +274,6 @@ struct IconPickerScreen: View {
                             }
                             if rows[r].count < columns { Spacer(minLength: 0) }
                         }
-                        .fixedSize(horizontal: false, vertical: true)      // a row as tall as its tallest tile
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -301,13 +292,11 @@ struct IconPickerScreen: View {
         Button(action: pick) {
             VStack(spacing: 6) {
                 mark().foregroundStyle(on ? Color.white : Theme.ink).frame(height: 32)
-                Text(title).font(.system(size: 15, weight: .bold))
+                Text(title).font(.system(size: 12, weight: .bold))
                     .foregroundStyle(on ? Color.white : Theme.muted)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
-            .padding(.horizontal, 4).padding(.vertical, 6)
-            .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 74)
             .background(RoundedRectangle(cornerRadius: 12).fill(on ? tint : Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? tint : Theme.line, lineWidth: on ? 2 : 1))
             .contentShape(Rectangle())
@@ -482,14 +471,14 @@ struct TemplateDetail: View {
                                             if !item.qty.isEmpty || !item.note.isEmpty {
                                                 Text([item.qty.isEmpty ? "" : "×\(item.qty)", item.note]
                                                         .filter { !$0.isEmpty }.joined(separator: " · "))
-                                                    .font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(2)
+                                                    .font(.system(size: 13)).foregroundStyle(Theme.muted).lineLimit(1)
                                             }
                                             // Only on some trips, said on the row (field test 4.4, 3 Oct 2026)
                                             // — only what a trip reads on this template.
                                             let tags = Library.onlyOnWords(item, on: list)
                                             if !tags.isEmpty {
-                                                Text(tags).font(.system(size: 15, weight: .semibold))
-                                                    .foregroundStyle(AppSection.templates.color).lineLimit(2)
+                                                Text(tags).font(.system(size: 13, weight: .semibold))
+                                                    .foregroundStyle(AppSection.templates.color).lineLimit(1)
                                             }
                                         }
                                         Spacer(minLength: 8)
@@ -547,7 +536,7 @@ struct TemplateDetail: View {
                     Text("Delete “\(list.name)”?")
                         .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
                     Text("The template and its \(list.items.count) row\(list.items.count == 1 ? "" : "s") go. The THINGS stay — they are still in Your things and on any other template.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 10) {
                         Button("Keep it") { askingToDelete = false }
@@ -828,7 +817,7 @@ struct RowEditor: View {
                         field($note, RowEditor.sameAs(thing.note, else: "e.g. with the red filter"), "row-note")
                     }
                     Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
-                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
 
                     // Only on some trips — per template, as the web app keeps it: a towel
                     // can be summer-only on Beach and always on Swim (his ask, 2 Oct 2026).

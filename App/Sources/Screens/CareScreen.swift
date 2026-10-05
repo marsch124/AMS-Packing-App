@@ -81,16 +81,14 @@ struct CareScreen: View {
                                 Text("\(model.library.bags().count)")
                                     .font(.system(size: 15, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.muted)
                             }
-                            // 15 (it was 13); it wraps rather than being cut.
                             Text("How much each may carry, and what goes in it")
-                                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
                         }
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 52)
+                    .padding(.horizontal, 14).frame(minHeight: 52)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
@@ -104,14 +102,13 @@ struct CareScreen: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("All your things · table").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
                             Text("Weight and where each one lives, filled in row by row")
-                                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted).lineLimit(1)
                         }
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 52)
+                    .padding(.horizontal, 14).frame(minHeight: 52)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
@@ -131,7 +128,7 @@ struct CareScreen: View {
                     ForEach(["list", "calendar"], id: \.self) { view in
                         Button { careView = view } label: {
                             Text(view == "list" ? "List" : "Calendar")
-                                .font(.system(size: 15, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(careView == view ? .white : Theme.muted)
                                 .padding(.horizontal, 14).frame(minHeight: 32)
                                 .background(Capsule().fill(careView == view ? AppSection.care.color : Theme.card))
@@ -235,7 +232,7 @@ struct CareRow: View {
                     .font(.system(size: 15, weight: .medium)).foregroundStyle(CareScreen.tone(s.state))
                     .lineLimit(2)
                 if !row.listName.isEmpty {
-                    Text(row.listName).font(.system(size: 15)).foregroundStyle(Theme.muted).lineLimit(2)
+                    Text(row.listName).font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
             }
             Spacer(minLength: 8)

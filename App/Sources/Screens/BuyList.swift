@@ -78,7 +78,7 @@ struct BuyList: View {
                                         Text(offer.item.name).font(.system(size: 17, weight: .medium))
                                             .foregroundStyle(Theme.ink)
                                             .accessibilityIdentifier("buy-offer-\(n)-name")
-                                        Text(offer.reason).font(.system(size: 15, weight: .semibold))
+                                        Text(offer.reason).font(.system(size: 14, weight: .semibold))
                                             .foregroundStyle(offer.reason == "Needs replacing" || offer.reason == "Expired"
                                                              ? AppSection.actions.color : Theme.muted)
                                             .accessibilityIdentifier("buy-offer-\(n)-why")

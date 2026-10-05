@@ -60,7 +60,7 @@ struct ActionsScreen: View {
                                         if !a.itemName.isEmpty || a.priority == "high" || !a.whenPhase.isEmpty {
                                             Text([a.priority == "high" ? "High" : "", a.itemName, a.whenPhase.isEmpty ? "" : phaseLabel(a.whenPhase)]
                                                     .filter { !$0.isEmpty }.joined(separator: " · "))
-                                                .font(.system(size: 15, weight: .semibold))
+                                                .font(.system(size: 13, weight: .semibold))
                                                 .foregroundStyle(a.priority == "high" && !a.done ? AppSection.actions.color : Theme.muted)
                                         }
                                     }

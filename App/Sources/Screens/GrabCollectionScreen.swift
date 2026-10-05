@@ -66,7 +66,7 @@ struct GrabCollectionScreen: View {
                     }
 
                     Text("A list that steps back off Home keeps everything on it — nothing here throws a list away.")
-                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
                         .padding(.top, 14)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -121,7 +121,7 @@ struct GrabCollectionScreen: View {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(list.label).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                             Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
-                                .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
                         }
                         Spacer(minLength: 8)
                     }
@@ -149,7 +149,7 @@ struct GrabCollectionScreen: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(list.label).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
-                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.muted)
             }
             Spacer(minLength: 8)
             Group {
@@ -173,7 +173,7 @@ struct GrabCollectionScreen: View {
     }
 
     private func pill(_ words: String, filled: Bool) -> some View {
-        Text(words).font(.system(size: 15, weight: .heavy))
+        Text(words).font(.system(size: 13, weight: .heavy))
             .foregroundStyle(filled ? .white : Theme.muted)
             .padding(.horizontal, 10).frame(minHeight: 28)
             .background(Capsule().fill(filled ? AppSection.home.color : Theme.bg))
