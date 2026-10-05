@@ -2803,6 +2803,7 @@ final class AMSPackingUITests: XCTestCase {
         let needs = app.staticTexts["pick-add-needs"]
         XCTAssertTrue(needs.waitForExistence(timeout: 5), "Add with nothing ticked said nothing")
         XCTAssertNotNil(find(app, "pick-screen"), "Add with nothing ticked closed the picker")
+        shot(app, "pick-add-needs")
 
         // Three things he owns, ticked neither A–Z nor as listed.
         tap(app, id: "pick-group-name")
@@ -2841,6 +2842,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(says.waitForExistence(timeout: 5), "a second Map was added without a word")
         XCTAssertTrue(words(says).contains("already"), "'\(words(says))'")
         hideKeyboard(app)
+        shot(app, "template-already-on")
         XCTAssertFalse(scrollUntil(app, "template-item-4", near: "template-item-3", tries: 3), "the Map is on the template twice")
     }
 
@@ -2902,6 +2904,8 @@ final class AMSPackingUITests: XCTestCase {
         let rig = app.buttons["row-section-2"]
         XCTAssertTrue(rig.waitForExistence(timeout: 5), "the typed section is not offered")
         XCTAssertTrue(waitUntil { self.isOn(rig) }, "the typed section is not chosen")
+        hideKeyboard(app)
+        shot(app, "row-section-waiting")
         tap(app, id: "row-cancel")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
 
@@ -2911,9 +2915,9 @@ final class AMSPackingUITests: XCTestCase {
         addSection("Rig")
         tap(app, id: "row-save")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
-        let headings = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH 'template-group-'"))
-        XCTAssertTrue(waitUntil { headings.allElementsBoundByIndex.contains { self.words($0) == "RIG" } },
-                      "the row is not under its new section: \(headings.allElementsBoundByIndex.map { self.words($0) })")
+        // Lights is empty now, so Rig is the first heading (a section with nothing in it is not shown).
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "RIG" },
+                      "the row is not under its new section: '\(words(app.staticTexts["template-group-0"]))'")
         openFirstRow()
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["row-section-2"]) }, "the saved section is not the row's")
         tap(app, id: "row-cancel")
@@ -2939,6 +2943,7 @@ final class AMSPackingUITests: XCTestCase {
         let door = app.buttons["template-area"]
         XCTAssertTrue(door.waitForExistence(timeout: 5), "no way to change the activity area")
         XCTAssertEqual(door.value as? String, "GA")
+        shot(app, "template-area-door")
         tap(app, id: "template-area")
         XCTAssertTrue(isOn(app.buttons["template-area-GA"]) || waitUntil { self.isOn(app.buttons["template-area-GA"]) },
                       "the area it lives in is not marked")
@@ -2962,6 +2967,7 @@ final class AMSPackingUITests: XCTestCase {
         // The sample trip is a month ahead: Hiking has never been out, it goes next.
         XCTAssertTrue(waitUntil { self.words(app.buttons["template-row-1"]).contains("Next: in 30 days") },
                       "the card does not say when it goes next: '\(words(app.buttons["template-row-1"]))'")
+        shot(app, "templates-tab")
         for _ in 0..<2 {
             tap(app, id: "template-row-1")
             XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the template did not open")
