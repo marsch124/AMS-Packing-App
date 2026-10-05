@@ -29,7 +29,11 @@ Why one generic model rather than forty-five typed columns:
   TestFlight build silently depends on.
 - **PackingCore is already the schema.** Decoding is coercion: an old record, a
   record from a newer build, a record with a field this build has never heard of
-  all read correctly, and unknown keys are written back untouched.
+  all read correctly. Unknown keys are written back untouched on things, places on
+  templates, templates, trips, trip lines, to-dos and kits (their `extra`); phases,
+  shared rows, photos, template sections, care records and forecasts are rebuilt
+  from the fields this build knows, so a key only a newer build writes there is
+  dropped by the next save on an older one.
 - **The unit of sync is the unit of change.** A tick is one `entries` record. Two
   devices ticking different lines of the same trip both win, because they wrote
   different records. (The web app's v120 lesson: one row per entry, never one row
@@ -53,8 +57,11 @@ which is how the web app works too.
    *my other device has my lists → wait for iCloud* and *this is my first device →
    import a backup file*. It never decides by itself.
 3. **The import happens once, on one device**, and writes a `meta` record saying
-   so (when, from which file, how many of each thing). A device that sees that
-   record refuses a second import unless told "replace everything", loudly.
+   so (when, from which file, how many of each thing — Settings shows it under
+   This device holds). The first-run import is refused once the library holds
+   anything of his, that record included; after that only Restore ("replace
+   everything", loudly, with a copy kept first) brings a file in. A device's
+   check-in (Sync now) is about the device and does not count (2026-10-05).
 4. **The import does not go through `buildCatalog`.** The web app's rebuild
    dropped consumable, packer, review history, "not in use" and kit membership
    (found by the port, 2026-09-21; fixed in the web app's v188 the next day). The
@@ -63,12 +70,16 @@ which is how the web app works too.
 5. **Same key, two records → one survives, by rule.** CloudKit cannot enforce a
    unique key, and two devices can create `phases/prep` independently. On load,
    records are grouped by (table, key); the newest `updatedAt` wins, the rest are
-   deleted, and the key is the tiebreak so both devices pick the same one.
+   deleted, and on an equal `updatedAt` the greater JSON text wins — the content
+   is the tiebreak (twins share their key), so both devices pick the same one.
 6. **Stable keys for things that are the same thing.** A phase is `prep`, a shared
    row is `places:garage`. Random ids only for things that are genuinely new.
 7. **No field is ever called `owner` or `realmId`** (PackingCore already refuses).
-8. **A restore never quietly overwrites a newer copy on the other device.** It
-   takes a snapshot first, says what it will replace, and is one deliberate act.
+8. **A restore never quietly overwrites.** It takes a snapshot of THIS device
+   first, shows what the file holds beside what this device holds, and is one
+   deliberate act. It compares with this device only: its deletes and puts then
+   reach the other device through iCloud without a look at what that device holds
+   — so restore on the device with the newest work, or compare both first.
 9. **Regenerating a trip never drops lines whose template no longer exists.** One
    of his real trips names three templates deleted long ago.
 10. **Backups are files he can see.** Save window on the Mac, Files on the iPhone
