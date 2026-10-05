@@ -137,7 +137,16 @@ public struct Library: Equatable, Sendable {
             } else if keepingMembershipIds, let mid = row.memId, !mid.isEmpty, memIndex[mid] == nil {
                 existing = newMembership(id: mid, itemId: cat.id, templateId: list.id)
             }
-            let m = membershipFromResolved(cat, list.id, row, order, existing)
+            var m = membershipFromResolved(cat, list.id, row, order, existing)
+            // How many and the note are the row's own only where they say something
+            // the thing does not. `membershipFromResolved` (the web app's, kept as a
+            // copy) stores the row's RESOLVED values — the thing's own note included —
+            // so putting a thing on a template, or saving that template later, froze
+            // the thing's note onto every row, and a change to the note never reached
+            // them again (the spec pass, 5 Oct 2026; "Blank means the same as the thing
+            // itself").
+            m.qty = Library.placeAnswer(shown: row.qty, stored: existing?.qty, thing: cat.qty)
+            m.note = Library.placeAnswer(shown: row.note, stored: existing?.note, thing: cat.note)
             order += 1
             if let n = memIndex[m.id] { memberships[n] = m }
             else { memberships.append(m); memIndex[m.id] = memberships.count - 1 }
@@ -299,10 +308,16 @@ extension Library {
     /// Add a thing to a template. A thing of that name already in the library is
     /// PUT ON the template (one thing, one more place it sits) — a new name makes a
     /// new thing. Returns the resolved row as it now appears on the template.
+    ///
+    /// A thing ALREADY on the template is not put on a second time (nil): typing its
+    /// name again is a slip, never a wish — the picker and the review refuse it too
+    /// (the spec pass, 5 Oct 2026). A thing can still sit twice on one template
+    /// where the data says so (the web app allows it); it is never MADE so by typing.
     @discardableResult
     public mutating func addToTemplate(templateId: String, name: String, container: String = "", phase: String = "") -> Item? {
         let clean = jsTrim(name)
         guard !clean.isEmpty, var list = resolvedTemplate(id: templateId) else { return nil }
+        guard !isOnTemplate(templateId: templateId, name: clean) else { return nil }
         var row = newItem(name: clean, container: container.isEmpty ? "Carry-on / hand luggage" : container,
                           phase: phase.isEmpty ? defaultPhaseId() : phase)
         if let existing = items.first(where: { normName($0.name) == normName(clean) }) {
@@ -312,6 +327,14 @@ extension Library {
         list.items.append(row)
         saveTemplate(list)
         return resolvedTemplate(id: templateId)?.items.last
+    }
+
+    /// Is a thing of this name on this template already? (By the thing's name, as
+    /// typing finds a thing.)
+    public func isOnTemplate(templateId: String, name: String) -> Bool {
+        let wanted = normName(name)
+        let here = Set(memberships.filter { $0.templateId == templateId }.map(\.itemId))
+        return items.contains { here.contains($0.id) && normName($0.name) == wanted }
     }
 
     /// Take a row off a template. The thing itself survives (web app v176): on

@@ -247,6 +247,9 @@ public func groupByStorage(_ entries: [Item]) -> [EntryGroup] {
 public func groupBy(_ mode: String, _ entries: [Item]) -> [EntryGroup] {
     if mode == "category" { return groupByCategory(entries).map { EntryGroup(label: $0.category, entries: $0.entries) } }
     if mode == "container" {
+        // "Unpacked" is never reached: `groupByContainer` has already put a blank bag
+        // under "Other". Kept line for line as the web app has it (this file is its
+        // copy, held to it by the parity check) — noted by the spec pass, 5 Oct 2026.
         return groupByContainer(entries).map { EntryGroup(label: $0.container.isEmpty ? "Unpacked" : $0.container, entries: $0.entries) }
     }
     if mode == "section" { return groupBySection(entries) }

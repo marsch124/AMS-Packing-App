@@ -25,6 +25,16 @@ final class TemplateIconTests: XCTestCase {
         for (l, want) in cases { XCTAssertEqual(Library.suggestedIcon(for: l), want, l.name) }
     }
 
+    /// Whole words (the spec pass, 5 Oct 2026): "training" is no train, "Campus" no tent.
+    func testATrainAndATentNeedTheirWholeWord() {
+        let cases: [(String, String?)] = [
+            ("Strength training", "strength"), ("Swim training", "swim"), ("Mobility training", "mobility"),
+            ("Brain training", nil), ("Night train", "train"), ("Trains and buses", "train"),
+            ("Campus visit", nil), ("Camping", "tent"), ("Training camp", "tent"), ("Campsite week", "tent"),
+        ]
+        for (name, want) in cases { XCTAssertEqual(Library.suggestedIcon(for: list(name)), want, name) }
+    }
+
     func testHisChoiceIsKeptThroughEditsBackupsAndRecords() {
         var lib = Library()
         var hiking = list("Hiking", group: "GA"); hiking.items = [newItem(name: "Map")]

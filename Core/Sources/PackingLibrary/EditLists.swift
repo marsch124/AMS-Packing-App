@@ -17,9 +17,25 @@ extension Library {
     public mutating func renameTemplate(id: String, to name: String) -> Bool {
         let wanted = jsTrim(name)
         guard !wanted.isEmpty, let n = templates.firstIndex(where: { $0.id == id }) else { return false }
-        let taken = templates.contains { $0.id != id && normName($0.name) == normName(wanted) }
-        guard !taken else { return false }
+        // The bag list's stored name ("Containers") is not one he can see, so it
+        // does not count as taken (the spec pass, 5 Oct 2026).
+        guard !templateNameTaken(wanted, except: id) else { return false }
         templates[n].name = wanted
+        templates[n].updatedAt = nowISO()
+        return true
+    }
+
+    /// Move a template to another activity area (GA, WET, OE, or "" = none) — his
+    /// choice on New, which could not be put right afterwards until the spec pass
+    /// (5 Oct 2026). Only an activity template has an area: always packed and
+    /// transport templates are filed by what they do, so they are refused (false),
+    /// as is an area that is not one of his.
+    @discardableResult
+    public mutating func setTemplateArea(id: String, area: String) -> Bool {
+        guard let n = templates.firstIndex(where: { $0.id == id }), templates[n].role.isEmpty,
+              area.isEmpty || GROUP_IDS.contains(area) else { return false }
+        guard templates[n].group != area else { return true }
+        templates[n].group = area
         templates[n].updatedAt = nowISO()
         return true
     }
