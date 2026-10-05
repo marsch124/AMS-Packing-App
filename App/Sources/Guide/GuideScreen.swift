@@ -72,7 +72,10 @@ struct WhatsNewScreen: View {
         VStack(spacing: 0) {
             GuideHeader(title: "What's new")
             KeyboardAwayScroll {
-                LazyVStack(alignment: .leading, spacing: 12) {
+                // Every card built at once (a plain VStack, 0.62): the newest entry can be
+                // longer than the screen, and a lazy list then left the next card unbuilt —
+                // on the Mac no scroll in the test reached it. Sixty-odd text cards are light.
+                VStack(alignment: .leading, spacing: 12) {
                     ForEach(Array(Releases.all.enumerated()), id: \.element.id) { n, r in
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -188,6 +191,7 @@ struct HowItWorksScreen: View {
             "In Choose from your things, the arrow before a group folds it; Fold all / Unfold all does every group. A folded group says how many things it holds and how many you ticked. A search opens them all while you type.",
             "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",
             "Delete template asks first. Your things stay. Beside it, Activity area moves the template to GA, WET, OE or none.",
+            "Arrange, under Group (while it groups by Section): hold \u{2261} and drag a heading \u{2014} its things come along \u{2014} or a thing to its place, under any heading. Tap a heading's name to rename it, or Remove heading (its things stay). Tap Arrange again, or press Escape, when done. New trips pack in the new order.",
             "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
             "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [

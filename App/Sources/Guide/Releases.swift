@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.63", date: "5 Oct 2026", title: "Arrange a template",
+                new: ["Arrange your templates: on a template, tap Arrange, then hold \u{2261} and drag a heading (its things come along) or a thing to where it belongs \u{2014} even under another heading. Tap a heading's name to rename it or remove it; its things stay. New trips pack in the new order."]),
         Release(version: "0.62", date: "5 Oct 2026", title: "The big check-up: everything we found, put right",
                 new: ["Your choices: the pen beside each entry renames it \u{2014} everything that said the old name follows \u{2014} and the arrows move it up or down (owners stay A to Z).",
                       "A thing's page: a Care schedule with what to do, your places a tap away under Kept at home, and \u{201C}No bag\u{201D} under Usually packed in.",

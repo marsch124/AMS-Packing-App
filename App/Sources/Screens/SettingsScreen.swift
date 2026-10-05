@@ -14,11 +14,12 @@ struct SettingsScreen: View {
     /// When a backup was last saved from this device (`savedKey`).
     @AppStorage(SettingsScreen.savedKey) private var savedAt = ""
     @State private var status = ""
-    /// What Settings has open. ONE sheet with a destination, not two (Your choices,
-    /// the restore): SwiftUI does not reliably present a second sheet on a view while
-    /// the first is still closing — the trap met in Search (0.17), and flagged here by
-    /// the spec pass (5 Oct 2026). The Templates tab was changed the same way.
-    @State private var open: Open?
+    /// Your choices and the restore are two sheets, as in 0.61. 0.62's single sheet with
+    /// a destination (the spec pass's item 18) failed on the Mac: after one restore, the
+    /// rescue copy's restore never opened (GitHub's Mac run, 5 Oct 2026). Both sheets
+    /// are opened one after the other by `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`.
+    @State private var lists = false
+    @State private var pending: PendingRestore?
     /// A restore offered and not yet answered. A sheet swiped away (the iPhone) —
     /// or closed any way but its two buttons — then says what Cancel says: until
     /// 5 Oct 2026 the line under Save went on saying nothing.
@@ -29,21 +30,11 @@ struct SettingsScreen: View {
     /// A file that has been read and checked, waiting for him to say yes.
     struct PendingRestore: Identifiable { let id = UUID(); let library: Library }
 
-    enum Open: Identifiable {
-        case choices
-        case restore(PendingRestore)
-        var id: String {
-            switch self {
-            case .choices: return "choices"
-            case .restore(let waiting): return "restore:" + waiting.id.uuidString
-            }
-        }
-    }
 
     var body: some View {
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 10) {
-                Button { open = .choices } label: {
+                Button { lists = true } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Your choices").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -223,23 +214,20 @@ struct SettingsScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .sheet(item: $open, onDismiss: {
+        .sheet(isPresented: $lists) { ListsScreen().environmentObject(model) }
+        .sheet(item: $pending, onDismiss: {
             if unanswered { unanswered = false; status = "Nothing was replaced." }
-        }) { destination in
-            switch destination {
-            case .choices: ListsScreen().environmentObject(model)
-            case .restore(let waiting):
-                RestoreSheet(file: waiting.library, device: model.library) { yes in
-                    unanswered = false
-                    open = nil
-                    guard yes else { status = "Nothing was replaced."; return }
-                    do {
-                        try model.restore(waiting.library)
-                        copies = RescueCopies.all()
-                        status = "Restored from the file: \(waiting.library.holdsWords). A copy of what was here is kept on this device."
-                    } catch {
-                        status = error.localizedDescription
-                    }
+        }) { waiting in
+            RestoreSheet(file: waiting.library, device: model.library) { yes in
+                unanswered = false
+                pending = nil
+                guard yes else { status = "Nothing was replaced."; return }
+                do {
+                    try model.restore(waiting.library)
+                    copies = RescueCopies.all()
+                    status = "Restored from the file: \(waiting.library.holdsWords). A copy of what was here is kept on this device."
+                } catch {
+                    status = error.localizedDescription
                 }
             }
         }
@@ -269,7 +257,7 @@ struct SettingsScreen: View {
     private func offer(_ data: Data) {
         do {
             let (library, _) = try model.inspectBackup(data)
-            open = .restore(PendingRestore(library: library))
+            pending = PendingRestore(library: library)
             unanswered = true
         } catch {
             status = error.localizedDescription

@@ -532,7 +532,8 @@ His standing rule from the web apps: the version log and 'How it works' are upda
 [String], removed: [String] }`, `id = version`. `Releases.all` is a hand-ordered array, newest first; versions
 are plain strings ("0.10" follows "0.9"). Dates are written "4 Oct 2026".
 
-**On screen.** Container id `guide-whatsnew`; a `LazyVStack(spacing: 12)` of cards (padding 14, card, radius 12,
+**On screen.** Container id `guide-whatsnew`; a `VStack(spacing: 12)` of cards — every card built at once since 0.62 (a
+lazy list left the next card unbuilt once the newest entry outgrew the screen, and the Mac test could not scroll to it) — (padding 14, card, radius 12,
 line border, container id `guide-release-<n>`, n = position, 0 = newest). Each card:
 - First line (baseline-aligned, spacing 10): the version (20 heavy, monospaced digits, Settings slate, id
   `guide-release-<n>-version`), the title (17 bold ink), and — only when `version == AppInfo.marketing`
@@ -543,11 +544,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (62 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (63 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.63 | 5 Oct 2026 | Arrange a template | N1 | Arrange on a template: drag headings and things (its things come along), rename and remove a heading; new trips pack in the new order (spec 04 §6a, §13a) |
 | 0.62 | 5 Oct 2026 | The big check-up: everything we found, put right | N7 C26 F12 | the fix-everything program: every finding of specs 01–06 dealt with (each chapter's open questions say how); Apple's standard text styles and slim controls throughout (§21), one-line rows in Your things and Search; Escape on the Mac everywhere, Owners from his things, the reminders line kept; rename and reorder in Your choices; template notes on a thing's page; Care schedules; Pack weather gear anyway; 0.59's Worth a look line moved from Changed to New |
 | 0.61 | 5 Oct 2026 | Your own grab lists, and a restore that brings back everything | N1 C5 | own grab lists can be filled, keep their ticks and be deleted; Off Home really takes a list off Home; Make says where the list went; restore accepts a cabin bag and brings back every note |
 | 0.60 | 4 Oct 2026 | Find a thing on a template | N1 C1 | search field above a template's list, "how many of all", ✕; Worth a look offers a photo only when it can tell the photo is more than a day old |
@@ -671,8 +673,8 @@ no entry shows no marker anywhere (and fails the test).
    stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
    Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
    folding in the picker (Fold all / Unfold all, counts, search opens
-   all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first, with Activity area beside it (0.62); Share at the top (also on
-   a grab list); Refine (violet card) after two or more reviews — Keep / Drop. (10 lines.)
+   all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first, with Activity area beside it (0.62); Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (also on
+   a grab list); Refine (violet card) after two or more reviews — Keep / Drop. (11 lines.)
 6. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
    again — 0.62); Just added at the top until you
    leave; ✕ in search; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
@@ -1788,11 +1790,11 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
     Columns, Change (the table's bulk change), the world map. On the iPhone ⌘. closes a sheet that may be swiped
     away by itself, so these tests go red there only when Escape SAVES (seen: Escape planted on Save → "Escape
     saved the thing / the row"); a missing shortcut shows on the Mac, in CI's Mac job.
-18. **Resolved in 0.62** — ~~Settings keeps two `.sheet` modifiers on one view.~~ One `.sheet(item:)` with a
-    destination (`Open`: `choices`, `restore`), as the Templates tab has since 0.62; every id and behaviour kept; the
-    `.fileImporter` and `.fileExporter` stay (system windows, each opened only by its own button) (§1). Pinned by
-    `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther` (red with the destinations crossed; the old two
-    sheets pass it too — the trap does not show every time).
+18. [rule-break] **Settings keeps two `.sheet` modifiers on one view** (Your choices and the restore, plus a
+    `.fileImporter` and a `.fileExporter`). Tried in 0.62 as one `.sheet(item:)` with a destination; on GitHub's Mac
+    run the rescue copy's restore then never opened after a first restore (`testTheCopyKeptBeforeARestoreBringsEverythingBack`),
+    so it is two sheets again, as in 0.61, which that test passes. Left open: the single sheet needs a Mac to prove it on.
+    `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther` opens both one after the other.
 19. **Resolved in 0.62** — ~~The shot helper's comment names `tools/shots.sh`.~~ It says how pictures are taken
     (`TEST_RUNNER_SHOTS_DIR`) and that night mode is the simulator's appearance, set before running the same tests again.
 20. **Resolved in 0.62** — ~~`forThisLaunch`'s doc comment lists only three test modes.~~ It lists all six.
