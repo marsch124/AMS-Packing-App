@@ -642,3 +642,213 @@ extension Library {
         return s
     }
 }
+
+// MARK: - Arranging a template: its headings and the order of its rows
+
+// His choice (5 Oct 2026, layout "C" of three pictures): on a template's page,
+// Arrange shows a grip on every heading and every thing; he holds it and drags a
+// heading to move its whole section, or a thing to its place — under its own
+// heading or another. A heading's name is tapped to rename it or remove it.
+// (Spec 04, open item 19: "renaming, reordering or deleting a section and
+// reordering rows need a way of working he has not seen … worth a picture first".)
+//
+// How the order is KEPT: a template's rows are its memberships, read in `order`;
+// its headings are `sections`, in their own order. A trip takes the rows in
+// `order` and lists its headings by FIRST APPEARANCE of a row under them
+// (`buildTotalEntries`, `groupBySection`) — it never reads `sections`' order. So
+// every move below also renumbers the rows 0, 1, 2… in the order the page reads by
+// Section (each heading's rows in turn, then the rows under no heading). Then a
+// new trip, or a rebuilt one, reads exactly as he arranged it, and the numbers
+// stay small whole numbers however often he drags (as `saveTemplate` keeps them).
+// Only the rows whose number changed are written: the store saves differences.
+
+extension Library {
+    /// A heading of this template other than `except` already has this name (by
+    /// `normName`: case and spaces do not count). A blank name is never "taken".
+    public func sectionNameTaken(templateId: String, name: String, except sectionId: String = "") -> Bool {
+        let wanted = normName(name)
+        guard !wanted.isEmpty, let t = templates.first(where: { $0.id == templateId }) else { return false }
+        return t.sections.contains { $0.id != sectionId && normName($0.name) == wanted }
+    }
+
+    /// Rename a heading. The name is trimmed; a blank name, a name another heading
+    /// of this template has, an unknown template or heading are refused (false).
+    /// A change of case of its own name is allowed. Its rows stay where they are.
+    /// (Trips already made keep the words they were made with: a trip's lines carry
+    /// the heading's NAME, frozen like everything else on a line.)
+    @discardableResult
+    public mutating func renameSection(templateId: String, sectionId: String, to name: String) -> Bool {
+        let clean = jsTrim(name)
+        guard !clean.isEmpty, let t = templates.firstIndex(where: { $0.id == templateId }),
+              let s = templates[t].sections.firstIndex(where: { $0.id == sectionId }),
+              !sectionNameTaken(templateId: templateId, name: clean, except: sectionId) else { return false }
+        guard templates[t].sections[s].name != clean else { return true }
+        templates[t].sections[s].name = clean
+        templates[t].updatedAt = nowISO()
+        return true
+    }
+
+    /// Move a heading, with every row under it, to just before the heading
+    /// `before` — or after the last heading when `before` is nil. False for an
+    /// unknown template, heading or `before`.
+    @discardableResult
+    public mutating func moveSection(templateId: String, sectionId: String, before: String? = nil) -> Bool {
+        guard let t = templates.firstIndex(where: { $0.id == templateId }),
+              let from = templates[t].sections.firstIndex(where: { $0.id == sectionId }) else { return false }
+        if let before, !templates[t].sections.contains(where: { $0.id == before }) { return false }
+        guard before != sectionId else { return true }
+        var sections = templates[t].sections
+        let moving = sections.remove(at: from)
+        let at = before.flatMap { b in sections.firstIndex { $0.id == b } } ?? sections.count
+        sections.insert(moving, at: at)
+        let moved = sections != templates[t].sections
+        templates[t].sections = sections
+        if renumberRows(templateId: templateId) || moved { templates[t].updatedAt = nowISO() }
+        return true
+    }
+
+    /// Take a heading away. Nothing is lost: its rows stay on the template, under
+    /// no heading — together, in their order, first among the things there (as
+    /// they stood on the page, above them). False for an unknown template or heading.
+    @discardableResult
+    public mutating func removeSection(templateId: String, sectionId: String) -> Bool {
+        guard let t = templates.firstIndex(where: { $0.id == templateId }),
+              templates[t].sections.contains(where: { $0.id == sectionId }) else { return false }
+        // Numbered as the page reads first, so its rows do not scatter among the
+        // others by numbers he never saw (seen on the screen, 5 Oct 2026).
+        _ = renumberRows(templateId: templateId)
+        templates[t].sections.removeAll { $0.id == sectionId }
+        templates[t].updatedAt = nowISO()
+        for n in memberships.indices where memberships[n].templateId == templateId && memberships[n].section == sectionId {
+            memberships[n].section = ""
+        }
+        _ = renumberRows(templateId: templateId)
+        return true
+    }
+
+    /// Move one row of a template under the heading `section` ("" = under no
+    /// heading): just before the row `before` when that row sits under the same
+    /// heading, else at the end of that heading's rows. Its bag, When, how many,
+    /// note and conditions go with it — only its heading and place change. False
+    /// for an unknown template or row, or a heading this template does not have.
+    @discardableResult
+    public mutating func moveRow(templateId: String, memId: String, section: String, before: String? = nil) -> Bool {
+        guard let t = templates.firstIndex(where: { $0.id == templateId }),
+              section.isEmpty || templates[t].sections.contains(where: { $0.id == section }),
+              let n = memberships.firstIndex(where: { $0.id == memId && $0.templateId == templateId }) else { return false }
+        var heads = arrangedRows(templateId: templateId)
+        // Out of where it was…
+        for h in heads.indices { heads[h].rows.removeAll { $0 == memId } }
+        // …and into its new heading, before `before` if that row is there.
+        guard let h = heads.firstIndex(where: { $0.sectionId == section }) else { return false }
+        let at = before.flatMap { b in heads[h].rows.firstIndex(of: b) } ?? heads[h].rows.count
+        heads[h].rows.insert(memId, at: at)
+        // (A row under a heading id this template does not have is shown under no
+        // heading; moved, it is filed there for real.)
+        var changed = memberships[n].section != section
+        memberships[n].section = section
+        changed = setRowOrder(heads.flatMap(\.rows)) || changed
+        if changed { templates[t].updatedAt = nowISO() }
+        return true
+    }
+
+    /// The template's rows (membership ids) as its page reads them by Section:
+    /// each heading in turn, with the rows whose `section` is that heading, then
+    /// one last group (`sectionId` "") with every other row — no heading, or a
+    /// heading id this template does not have (the page shows those under no
+    /// heading too). Inside a group the rows keep their `order`, ties as stored.
+    public func arrangedRows(templateId: String) -> [(sectionId: String, rows: [String])] {
+        guard let t = templates.first(where: { $0.id == templateId }) else { return [] }
+        let mine = memberships
+            .filter { $0.templateId == templateId }
+            .stableSorted(compare: { a, b in jsSign((a.order.isNaN ? 0 : a.order) - (b.order.isNaN ? 0 : b.order)) })
+        let known = Set(t.sections.map(\.id))
+        var out = t.sections.map { s in (sectionId: s.id, rows: mine.filter { $0.section == s.id }.map(\.id)) }
+        out.append((sectionId: "", rows: mine.filter { !known.contains($0.section) }.map(\.id)))
+        return out
+    }
+
+    /// One line of the page while he arranges: a heading (a section id), the line
+    /// that heads the rows under no heading, or a row (a membership id).
+    public enum ArrangeLine: Hashable, Sendable { case heading(String), rest, row(String) }
+
+    /// The page while he arranges, top to bottom, as ONE list — so a single drag can
+    /// carry a thing from under one heading to under another: every heading, even an
+    /// empty one (something can be dragged into it), with its rows; then, when the
+    /// template has headings, the "Everything else" line and the rows under no
+    /// heading. A template with no headings is just its rows. Rows whose thing is
+    /// gone are not shown, as everywhere.
+    public func arrangeLines(templateId: String) -> [ArrangeLine] {
+        guard let t = templates.first(where: { $0.id == templateId }) else { return [] }
+        let things = Set(items.map(\.id))
+        let shown = Set(memberships.filter { $0.templateId == templateId && things.contains($0.itemId) }.map(\.id))
+        var lines: [ArrangeLine] = []
+        for group in arrangedRows(templateId: templateId) {
+            if !group.sectionId.isEmpty { lines.append(.heading(group.sectionId)) }
+            else if !t.sections.isEmpty { lines.append(.rest) }
+            lines += group.rows.filter { shown.contains($0) }.map { .row($0) }
+        }
+        return lines
+    }
+
+    /// A drag on that list: the line at `from` dropped at `to`, counted the way
+    /// SwiftUI's `onMove` counts (`to` is a place in the list BEFORE the move). A
+    /// heading takes its rows along and lands before the next heading below where
+    /// it was dropped (or last); a row goes under the nearest heading above where it
+    /// was dropped, before the row that follows it there — dropped above every
+    /// heading, it goes to the top of the first. The "Everything else" line never
+    /// moves. False when nothing could be done.
+    @discardableResult
+    public mutating func dropLine(templateId: String, from: Int, to: Int) -> Bool {
+        var lines = arrangeLines(templateId: templateId)
+        guard lines.indices.contains(from), (0...lines.count).contains(to),
+              let t = templates.first(where: { $0.id == templateId }) else { return false }
+        let moving = lines.remove(at: from)
+        let at = to > from ? to - 1 : to
+        lines.insert(moving, at: at)
+        let below = lines[(at + 1)...]
+        switch moving {
+        case .rest:
+            return false
+        case .heading(let id):
+            let next = below.first { if case .row = $0 { return false }; return true }
+            if case .heading(let before)? = next { return moveSection(templateId: templateId, sectionId: id, before: before) }
+            return moveSection(templateId: templateId, sectionId: id)
+        case .row(let id):
+            var section: String? = nil
+            for line in lines[..<at].reversed() {
+                if case .heading(let s) = line { section = s; break }
+                if case .rest = line { section = ""; break }
+            }
+            var before: String? = nil
+            if case .row(let b)? = below.first { before = b }
+            if section == nil, let first = t.sections.first {
+                // Above every heading: the top of the first one.
+                section = first.id
+                before = nil
+                if let h = lines.firstIndex(of: .heading(first.id)), h + 1 < lines.count, case .row(let b) = lines[h + 1] { before = b }
+            }
+            return moveRow(templateId: templateId, memId: id, section: section ?? "", before: before)
+        }
+    }
+
+    /// Number this template's rows 0, 1, 2… in the order its page reads. True when
+    /// a number changed.
+    private mutating func renumberRows(templateId: String) -> Bool {
+        setRowOrder(arrangedRows(templateId: templateId).flatMap(\.rows))
+    }
+
+    /// Give these memberships the order 0, 1, 2… as listed — changing only the ones
+    /// whose number really changes. True when one did.
+    private mutating func setRowOrder(_ ids: [String]) -> Bool {
+        var at: [String: Int] = [:]
+        for (n, m) in memberships.enumerated() { at[m.id] = n }
+        var changed = false
+        for (place, id) in ids.enumerated() {
+            guard let n = at[id], memberships[n].order != Double(place) else { continue }
+            memberships[n].order = Double(place)
+            changed = true
+        }
+        return changed
+    }
+}

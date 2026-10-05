@@ -342,6 +342,15 @@ struct TemplateDetail: View {
     /// What he is looking for on this template — his ask (4 Oct 2026): "add a search
     /// function so that the user can find a specific item without the need to scroll."
     @State private var finding = ""
+    /// Arranging the template: a grip on every heading and every thing, held and
+    /// dragged to its place — his choice of three pictures, "C" (5 Oct 2026).
+    @State private var arranging = false
+    /// The heading whose name is being changed while arranging, and what he typed.
+    @State private var renamingHeading: String?
+    @State private var headingName = ""
+    /// Why Save could not take the heading's new name.
+    @State private var headingNeeds = ""
+    @FocusState private var writingHeading: Bool
 
     struct TakingOff: Equatable { let memId: String; let name: String }
 
@@ -352,6 +361,10 @@ struct TemplateDetail: View {
         let sectioned = list.items.contains { !$0.section.isEmpty }
         let ways: [ThingGrouping] = (sectioned ? [.section] : []) + [.when, .into, .fromWhere, .kind, .name]
         let grouping = ThingGrouping(rawValue: groupingRaw).flatMap { ways.contains($0) ? $0 : nil } ?? ways[0]
+        // Arranging moves headings and the things under them, so it is offered while
+        // the page reads by its headings — or on a template with none, arranged as
+        // the one list a trip reads.
+        let canArrange = grouping == .section || !ways.contains(.section)
         // Only the rows whose name holds what he typed, each still under its own
         // heading; a heading with none of them goes. The pills above are worked out
         // from the WHOLE template, so they stay put while he searches.
@@ -398,7 +411,9 @@ struct TemplateDetail: View {
                     .focusEffectDisabled()
                     .font(.system(.body, weight: .semibold))
                     .foregroundStyle(AppSection.templates.color)
-                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
+                    // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026) — except
+                    // while arranging, when Escape ends Arrange instead (the Arrange pill).
+                    .keyboardShortcut(arranging ? nil : .cancelAction)
                     .accessibilityIdentifier("template-detail-done")
             }
             .needsLine($renameNeeds, typed: renaming ?? "", id: "template-rename-needs")
@@ -408,8 +423,14 @@ struct TemplateDetail: View {
                 Text("Group").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     .frame(minHeight: Metrics.chip)
                         ForEach(ways, id: \.self) { way in
-                            let on = way == grouping
-                            Button { groupingRaw = way.rawValue } label: {
+                            // While arranging, the page reads by its headings (or as one
+                            // list, when it has none): no other way is lit.
+                            let on = way == grouping && !(arranging && way != .section)
+                            Button {
+                                groupingRaw = way.rawValue
+                                // Another way of reading the page ends arranging.
+                                endArranging()
+                            } label: {
                                 Text(way.label).font(.system(.subheadline, weight: on ? .semibold : .regular))
                                     .foregroundStyle(on ? Color.white : Theme.ink)
                                     .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
@@ -424,9 +445,11 @@ struct TemplateDetail: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.bottom, 4)
+            if canArrange && (!list.items.isEmpty || !list.sections.isEmpty) { arrangeDoor() }
             // Find a thing without scrolling (his ask, 4 Oct 2026). Not on a template
-            // with nothing on it yet — there is nothing to find there.
-            if !list.items.isEmpty || !finding.isEmpty {
+            // with nothing on it yet — there is nothing to find there. Not while
+            // arranging: every heading and thing is in view then, in its place.
+            if !arranging && (!list.items.isEmpty || !finding.isEmpty) {
                 HStack(spacing: 10) {
                     TextField("Find a thing on this template", text: $finding)
                         .textFieldStyle(.plain)
@@ -446,133 +469,142 @@ struct TemplateDetail: View {
                 }
                 .padding(.horizontal, 16).padding(.top, 6)
             }
-            KeyboardAwayScroll {
-                LazyVStack(alignment: .leading, spacing: 6) {
-                    // A search that finds nothing says so, quietly, where the rows were.
-                    if !q.isEmpty && groups.isEmpty {
-                        Text("Nothing on this template is called that.")
-                            .font(.system(.callout)).foregroundStyle(Theme.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, 16)
-                            .accessibilityIdentifier("template-find-none")
-                    }
-                    ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
-                        Text(group.title)
-                            .font(.headline)
-                            .foregroundStyle(group.colour ?? AppSection.templates.color)
-                            .padding(.top, 16)
-                            .accessibilityIdentifier("template-group-\(g)")
-                        ForEach(group.items, id: \.memId) { item in
-                            let n = index[item.memId ?? ""] ?? 0
-                            HStack(spacing: 4) {
-                                Button { editingRow = item.memId } label: {
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(item.name).font(.system(.body)).foregroundStyle(Theme.ink)
-                                            if !item.qty.isEmpty || !item.note.isEmpty {
-                                                Text([item.qty.isEmpty ? "" : "×\(item.qty)", item.note]
-                                                        .filter { !$0.isEmpty }.joined(separator: " · "))
-                                                    .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                                            }
-                                            // Only on some trips, said on the row (field test 4.4, 3 Oct 2026)
-                                            // — only what a trip reads on this template.
-                                            let tags = Library.onlyOnWords(item, on: list)
-                                            if !tags.isEmpty {
-                                                Text(tags).font(.system(.footnote, weight: .semibold))
-                                                    .foregroundStyle(AppSection.templates.color).lineLimit(1)
-                                            }
-                                        }
-                                        Spacer(minLength: 8)
-                                        Text(item.container).font(.system(.subheadline)).foregroundStyle(Theme.muted).lineLimit(1)
-                                    }
-                                    .padding(.vertical, 3).contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("template-item-\(n)")
-                                Button {
-                                    if let mid = item.memId { withAnimation(.easeOut(duration: 0.15)) { takingOff = TakingOff(memId: mid, name: item.name) } }
-                                } label: {
-                                    SVGPath.path("M6 6L18 18M18 6L6 18")
-                                        .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-                                        .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-                                        .frame(width: 40, height: 36).contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain).focusEffectDisabled()
-                                .accessibilityIdentifier("template-item-\(n)-remove")
-                                .accessibilityLabel("Take \(item.name) off this template")
-                            }
-                            .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-                            // A row whose number changes is built afresh: kept, it kept its
-                            // OLD number — the Map, the only row a search left, still said
-                            // "template-item-1" (4 Oct 2026), as the Mac did on Your things.
-                            .id("\(item.memId ?? "")#\(n)")
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
-            }
-            // Things he already owns, picked from the whole list (his H.9 — the one red
-            // box of the test); or a new one typed beside it.
-            PickThingsDoor(templateId: listId).environmentObject(model)
-                .padding(.horizontal, 16).padding(.top, 10)
-            HStack(spacing: 8) {
-                TextField("Or type a new thing", text: $newName)
-                    .textFieldStyle(.plain)
-                    .font(.system(.body)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                    .onSubmit { add() }
-                    .accessibilityIdentifier("template-add-name")
-                Button { add() } label: { FieldButtonLabel(title: "Add", tint: AppSection.templates.color) }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("template-add")
-            }
-            .needsLine($addNeeds, typed: newName, id: "template-add-needs")
-            .padding(.horizontal, 16).padding(.vertical, 10)
-
-            if askingToDelete {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Delete “\(list.name)”?")
-                        .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                    Text("The template and its \(list.items.count) row\(list.items.count == 1 ? "" : "s") go. The THINGS stay — they are still in Your things and on any other template.")
-                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 10) {
-                        Button("Keep it") { askingToDelete = false }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                            .accessibilityIdentifier("template-delete-no")
-                        Spacer()
-                        Button {
-                            model.change { _ = $0.deleteTemplate(id: listId) }
-                            dismiss()
-                        } label: {
-                            Text("Delete the template")
-                                .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
-                                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
-                                .background(Capsule().fill(AppSection.actions.color))
-                                .contentShape(Capsule())
-                        }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("template-delete-yes")
-                    }
-                }
-                .padding(14)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
-                .padding(.horizontal, 16).padding(.bottom, 10)
-            } else if choosingArea {
-                areaCard(list)
+            if arranging {
+                arrangeList(list)
             } else {
-                HStack(spacing: 8) {
-                    // Only an activity template lives in an area; always packed and
-                    // transport templates are filed by what they do.
-                    if list.role.isEmpty { areaDoor(list) }
-                    SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
+                KeyboardAwayScroll {
+                    LazyVStack(alignment: .leading, spacing: 6) {
+                        // A search that finds nothing says so, quietly, where the rows were.
+                        if !q.isEmpty && groups.isEmpty {
+                            Text("Nothing on this template is called that.")
+                                .font(.system(.callout)).foregroundStyle(Theme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, 16)
+                                .accessibilityIdentifier("template-find-none")
+                        }
+                        ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
+                            Text(group.title)
+                                .font(.headline)
+                                .foregroundStyle(group.colour ?? AppSection.templates.color)
+                                .padding(.top, 16)
+                                .accessibilityIdentifier("template-group-\(g)")
+                            ForEach(group.items, id: \.memId) { item in
+                                let n = index[item.memId ?? ""] ?? 0
+                                HStack(spacing: 4) {
+                                    Button { editingRow = item.memId } label: {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(item.name).font(.system(.body)).foregroundStyle(Theme.ink)
+                                                if !item.qty.isEmpty || !item.note.isEmpty {
+                                                    Text([item.qty.isEmpty ? "" : "×\(item.qty)", item.note]
+                                                            .filter { !$0.isEmpty }.joined(separator: " · "))
+                                                        .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
+                                                }
+                                                // Only on some trips, said on the row (field test 4.4, 3 Oct 2026)
+                                                // — only what a trip reads on this template.
+                                                let tags = Library.onlyOnWords(item, on: list)
+                                                if !tags.isEmpty {
+                                                    Text(tags).font(.system(.footnote, weight: .semibold))
+                                                        .foregroundStyle(AppSection.templates.color).lineLimit(1)
+                                                }
+                                            }
+                                            Spacer(minLength: 8)
+                                            Text(item.container).font(.system(.subheadline)).foregroundStyle(Theme.muted).lineLimit(1)
+                                        }
+                                        .padding(.vertical, 3).contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("template-item-\(n)")
+                                    Button {
+                                        if let mid = item.memId { withAnimation(.easeOut(duration: 0.15)) { takingOff = TakingOff(memId: mid, name: item.name) } }
+                                    } label: {
+                                        SVGPath.path("M6 6L18 18M18 6L6 18")
+                                            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+                                            .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
+                                            .frame(width: 40, height: 36).contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("template-item-\(n)-remove")
+                                    .accessibilityLabel("Take \(item.name) off this template")
+                                }
+                                .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                                // A row whose number changes is built afresh: kept, it kept its
+                                // OLD number — the Map, the only row a search left, still said
+                                // "template-item-1" (4 Oct 2026), as the Mac did on Your things.
+                                .id("\(item.memId ?? "")#\(n)")
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 16).padding(.bottom, 8)
+            }
+            // While a heading's name is being changed the keyboard is up: the foot
+            // steps aside, so the name, Save and Remove heading stay in sight (seen
+            // on the screen, 5 Oct 2026: the list was left a sliver).
+            if renamingHeading == nil {
+                // Things he already owns, picked from the whole list (his H.9 — the one red
+                // box of the test); or a new one typed beside it.
+                PickThingsDoor(templateId: listId).environmentObject(model)
+                    .padding(.horizontal, 16).padding(.top, 10)
+                HStack(spacing: 8) {
+                    TextField("Or type a new thing", text: $newName)
+                        .textFieldStyle(.plain)
+                        .font(.system(.body)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                        .onSubmit { add() }
+                        .accessibilityIdentifier("template-add-name")
+                    Button { add() } label: { FieldButtonLabel(title: "Add", tint: AppSection.templates.color) }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("template-add")
+                }
+                .needsLine($addNeeds, typed: newName, id: "template-add-needs")
+                .padding(.horizontal, 16).padding(.vertical, 10)
+
+                if askingToDelete {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Delete “\(list.name)”?")
+                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                        Text("The template and its \(list.items.count) row\(list.items.count == 1 ? "" : "s") go. The THINGS stay — they are still in Your things and on any other template.")
+                            .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: 10) {
+                            Button("Keep it") { askingToDelete = false }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                                .accessibilityIdentifier("template-delete-no")
+                            Spacer()
+                            Button {
+                                model.change { _ = $0.deleteTemplate(id: listId) }
+                                dismiss()
+                            } label: {
+                                Text("Delete the template")
+                                    .font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                                    .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
+                                    .background(Capsule().fill(AppSection.actions.color))
+                                    .contentShape(Capsule())
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("template-delete-yes")
+                        }
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
+                    .padding(.horizontal, 16).padding(.bottom, 10)
+                } else if choosingArea {
+                    areaCard(list)
+                } else {
+                    HStack(spacing: 8) {
+                        // Only an activity template lives in an area; always packed and
+                        // transport templates are filed by what they do.
+                        if list.role.isEmpty { areaDoor(list) }
+                        SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
+                    }
+                    .padding(.horizontal, 16).padding(.bottom, 8)
+                }
             }
         }
         .background(Theme.bg.ignoresSafeArea())
@@ -580,11 +612,211 @@ struct TemplateDetail: View {
         .sheet(item: Binding(get: { editingRow.map { Editing(id: $0) } }, set: { editingRow = $0?.id })) { e in
             RowEditor(templateId: listId, memId: e.id).environmentObject(model)
         }
+        .onChange(of: canArrange) { _, offered in if !offered { endArranging() } }
+        // While arranging, the page is not swiped away — a drag that strays to its top
+        // would close it mid-move — and the iPhone's own ⌘. (which closes an untouched
+        // sheet by itself) leaves Escape to Arrange. Done still closes it.
+        .interactiveDismissDisabled(arranging)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("template-detail")
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 600)
         #endif
+    }
+
+    // MARK: Arranging (his layout "C", 5 Oct 2026)
+
+    /// "Arrange", a pill under the Group pills — filled while on — and, while on, how
+    /// it works in one line under it.
+    private func arrangeDoor() -> some View {
+        let tint = AppSection.templates.color
+        return VStack(alignment: .leading, spacing: 4) {
+            Button {
+                if arranging { endArranging() } else {
+                    finding = ""
+                    withAnimation(.easeOut(duration: 0.15)) { arranging = true }
+                }
+            } label: {
+                Text("Arrange").font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(arranging ? Color.white : tint)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                    .background(Capsule().fill(arranging ? tint : tint.opacity(0.10)))
+                    .overlay(Capsule().stroke(tint, lineWidth: 1))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            // Escape while arranging ends it, as a second tap does — and a heading's
+            // name typed but not saved is dropped, never saved (Escape everywhere: never a
+            // save). The page itself stays open; a second Escape closes it.
+            .keyboardShortcut(arranging ? .cancelAction : nil)
+            .accessibilityIdentifier("template-arrange")
+            .accessibilityAddTraits(arranging ? .isSelected : [])
+            if arranging {
+                Text("Hold \u{2261} and drag a heading or a thing to its place.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("template-arrange-hint")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16).padding(.bottom, 4)
+    }
+
+    private func endArranging() {
+        renamingHeading = nil
+        headingNeeds = ""
+        writingHeading = false
+        withAnimation(.easeOut(duration: 0.15)) { arranging = false }
+    }
+
+    /// The page while arranging: ONE list of headings and things, so one drag can
+    /// carry a thing from under one heading to under another.
+    ///
+    /// SwiftUI's own `List` with `onMove`: the one way of dragging rows that works the
+    /// same with a finger on the iPhone (hold, then drag) and with the mouse on the
+    /// Mac, scrolls the list while a row is carried, and needs no edit mode — whose
+    /// system grips and red delete buttons are Apple's art, not the app's. The grip
+    /// drawn on each line is the app's own; the list does the carrying. The drop
+    /// itself is read by the model (`dropLine`), where it is tested.
+    private func arrangeList(_ list: PackList) -> some View {
+        let lines = model.library.arrangeLines(templateId: listId)
+        var rowsById: [String: Item] = [:]
+        for item in list.items { if let m = item.memId, rowsById[m] == nil { rowsById[m] = item } }
+        var place: [String: Int] = [:]          // a thing's number, as read top to bottom
+        for line in lines { if case .row(let m) = line, place[m] == nil { place[m] = place.count } }
+        return List {
+            ForEach(lines, id: \.self) { line in
+                arrangeLine(line, list: list, rows: rowsById, place: place)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Theme.bg)
+                    // "Everything else" is where things under no heading are, not a
+                    // heading of his: it stays put. A heading being renamed too.
+                    .moveDisabled(line == .rest || (renamingHeading != nil && line == .heading(renamingHeading!)))
+            }
+            .onMove { from, to in
+                guard let at = from.first else { return }
+                model.change { _ = $0.dropLine(templateId: listId, from: at, to: to) }
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .environment(\.defaultMinListRowHeight, 1)
+        .background(Theme.bg)
+        .accessibilityIdentifier("arrange-list")
+    }
+
+    @ViewBuilder
+    private func arrangeLine(_ line: Library.ArrangeLine, list: PackList, rows: [String: Item], place: [String: Int]) -> some View {
+        let tint = AppSection.templates.color
+        switch line {
+        case .heading(let id):
+            if let k = list.sections.firstIndex(where: { $0.id == id }) {
+                let section = list.sections[k]
+                if renamingHeading == id {
+                    headingEditor(section)
+                } else {
+                    HStack(spacing: 8) {
+                        // The heading's name: tapped, it can be renamed or removed.
+                        Button {
+                            renamingHeading = id
+                            headingName = section.name
+                            headingNeeds = ""
+                            writingHeading = true
+                        } label: {
+                            Text(section.name).font(.headline).foregroundStyle(tint)
+                                .multilineTextAlignment(.leading)
+                                .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.borderless).focusEffectDisabled()
+                        .accessibilityIdentifier("arrange-heading-\(k)")
+                        .accessibilityHint("Rename or remove this heading")
+                        Spacer(minLength: 8)
+                        GripMark(id: "arrange-heading-\(k)-grip", label: "Move the heading \(section.name)")
+                            .foregroundStyle(tint)
+                    }
+                    .padding(.top, 10)
+                }
+            }
+        case .rest:
+            Text("Everything else").font(.headline).foregroundStyle(Theme.muted)
+                .frame(maxWidth: .infinity, minHeight: Metrics.tap, alignment: .leading)
+                .padding(.top, 10)
+                .accessibilityIdentifier("arrange-heading-rest")
+        case .row(let id):
+            if let item = rows[id] {
+                let n = place[id] ?? 0
+                HStack(spacing: 8) {
+                    Text(item.name).font(.body).foregroundStyle(Theme.ink).lineLimit(1)
+                        .accessibilityIdentifier("arrange-item-\(n)")
+                    Spacer(minLength: 8)
+                    GripMark(id: "arrange-item-\(n)-grip", label: "Move \(item.name)")
+                        .foregroundStyle(Theme.muted)
+                }
+                .frame(minHeight: Metrics.row)
+                .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                .contentShape(Rectangle())
+            }
+        }
+    }
+
+    /// A heading's name, being changed: the field with Save, and a quiet red "Remove
+    /// heading" — which asks nothing, because nothing is lost: its things stay on
+    /// the template, under no heading.
+    private func headingEditor(_ section: TemplateSection) -> some View {
+        let tint = AppSection.templates.color
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                TextField("Heading", text: $headingName)
+                    .textFieldStyle(.plain)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
+                    .overlay(RoundedRectangle(cornerRadius: 10)
+                        .stroke(headingNeeds.isEmpty ? Theme.line : AppSection.actions.color, lineWidth: 1))
+                    .focused($writingHeading)
+                    .onSubmit { saveHeading(section) }
+                    .accessibilityIdentifier("arrange-heading-field")
+                Button { saveHeading(section) } label: { FieldButtonLabel(title: "Save", tint: tint) }
+                    .buttonStyle(.borderless).focusEffectDisabled()
+                    .accessibilityIdentifier("arrange-heading-save")
+            }
+            .needsLine($headingNeeds, typed: headingName, id: "arrange-heading-needs")
+            HStack(spacing: 8) {
+                Button {
+                    model.change { _ = $0.removeSection(templateId: listId, sectionId: section.id) }
+                    renamingHeading = nil
+                    writingHeading = false
+                } label: {
+                    Text("Remove heading").font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(AppSection.actions.color)
+                        .frame(minHeight: Metrics.compact).contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless).focusEffectDisabled()
+                .accessibilityIdentifier("arrange-heading-remove")
+                Text("Its things stay, under no heading.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1))
+        .padding(.vertical, 6)
+    }
+
+    /// Save a heading's new name — never one the template already has (two
+    /// "Lights" would read as one on a trip, which merges headings by name).
+    private func saveHeading(_ section: TemplateSection) {
+        let wanted = jsTrim(headingName)
+        guard !wanted.isEmpty else { headingNeeds = "Type a name first."; return }
+        guard !model.library.sectionNameTaken(templateId: listId, name: wanted, except: section.id) else {
+            headingNeeds = "This template already has a heading called that."
+            return
+        }
+        model.change { _ = $0.renameSection(templateId: listId, sectionId: section.id, to: wanted) }
+        renamingHeading = nil
+        writingHeading = false
     }
 
     /// Is this name free — nobody else's, and not blank?
@@ -926,5 +1158,25 @@ extension Color {
         if s.hasPrefix("#") { s.removeFirst() }
         if s.count == 3 { s = s.map { "\($0)\($0)" }.joined() }
         self.init(hex: UInt32(s.prefix(6), radix: 16) ?? 0x64748b)
+    }
+}
+
+/// The grip, ≡, drawn by hand in the app's style (three strokes, round ends, a
+/// 24-point box): hold it and drag — a heading with its things, or one thing (his
+/// layout "C", 5 Oct 2026). Named for the tests; read as "Move …".
+struct GripMark: View {
+    let id: String
+    let label: String
+
+    var body: some View {
+        SVGPath.path("M5 8h14M5 12h14M5 16h14")
+            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+            .frame(width: 20, height: 20)
+            .frame(width: 36, height: Metrics.compact)
+            .contentShape(Rectangle())
+            .accessibilityElement()
+            .accessibilityLabel(label)
+            .accessibilityAddTraits(.isImage)
+            .accessibilityIdentifier(id)
     }
 }

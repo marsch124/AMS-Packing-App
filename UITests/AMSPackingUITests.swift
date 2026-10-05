@@ -3295,6 +3295,203 @@ final class AMSPackingUITests: XCTestCase {
                       "Into does not group by bag: '\(words(app.staticTexts["template-group-0"]))'")
     }
 
+    // MARK: Arranging a template (his layout "C", 5 Oct 2026)
+
+    /// Hiking in `-uiTestingSections`: Lights (Headlamp, Spare batteries), Clothes
+    /// (Hiking boots, Rain jacket, Wool socks), and the Map under no heading.
+    private func openSectionedHiking(_ app: XCUIApplication) {
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+    }
+
+    /// A grip ≡ — a drawn mark, so an image (asked of each kind it can be).
+    private func grip(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        let image = app.images[id]
+        return image.exists ? image : app.otherElements[id]
+    }
+
+    private func startArranging(_ app: XCUIApplication) {
+        let arrange = app.buttons["template-arrange"]
+        XCTAssertTrue(arrange.waitForExistence(timeout: 5), "no Arrange")
+        select(app, arrange)
+        XCTAssertTrue(app.staticTexts["template-arrange-hint"].waitForExistence(timeout: 5), "arranging does not say how")
+    }
+
+    /// Hold the grip, carry it to the other one, hold a moment, let go — slowly, as
+    /// a hand does: a quick throw lets go before the list has opened the gap.
+    private func drag(_ app: XCUIApplication, _ from: String, to: String) {
+        let a = grip(app, from), b = grip(app, to)
+        XCTAssertTrue(a.waitForExistence(timeout: 5), "no \(from)")
+        XCTAssertTrue(b.exists, "no \(to)")
+        a.press(forDuration: 1.0, thenDragTo: b, withVelocity: .slow, thenHoldForDuration: 0.8)
+    }
+
+    /// The names of the things while arranging, top to bottom.
+    private func arranged(_ app: XCUIApplication, _ count: Int) -> [String] {
+        (0..<count).map { words(app.staticTexts["arrange-item-\($0)"]) }
+    }
+
+    /// Arrange is a pill under the Group pills: offered while the page reads by its
+    /// headings (and on a template with none), filled while on, saying how it works;
+    /// a grip instead of every ✕; tapped again, it ends.
+    func testArrangeTurnsOnAndOff() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        XCTAssertTrue(isOn(app.buttons["template-grouping-section"]))
+        let arrange = app.buttons["template-arrange"]
+        XCTAssertTrue(arrange.waitForExistence(timeout: 5), "Arrange is not offered by Section")
+        XCTAssertFalse(isOn(arrange))
+        XCTAssertFalse(app.staticTexts["template-arrange-hint"].exists)
+        XCTAssertTrue(app.buttons["template-item-0-remove"].exists)
+        shot(app, "arrange-off")
+
+        startArranging(app)
+        XCTAssertTrue(isOn(arrange), "Arrange is not shown as on")
+        XCTAssertEqual(words(app.buttons["arrange-heading-0"]), "Lights")
+        XCTAssertEqual(words(app.buttons["arrange-heading-1"]), "Clothes")
+        XCTAssertTrue(app.staticTexts["arrange-heading-rest"].exists, "no line for the things under no heading")
+        XCTAssertEqual(arranged(app, 6), ["Headlamp", "Spare batteries", "Hiking boots", "Rain jacket", "Wool socks", "Map"])
+        for id in ["arrange-heading-0-grip", "arrange-heading-1-grip", "arrange-item-0-grip", "arrange-item-5-grip"] {
+            XCTAssertTrue(grip(app, id).exists, "no grip \(id)")
+        }
+        XCTAssertFalse(app.buttons["template-item-0-remove"].exists, "the ✕ is still there while arranging")
+        XCTAssertFalse(app.textFields["template-find"].exists, "Find is still there while arranging")
+        shot(app, "arrange-on")
+
+        tap(app, id: "template-arrange")
+        XCTAssertTrue(waitUntil { !self.isOn(arrange) }, "a second tap did not end arranging")
+        XCTAssertTrue(waitUntil { !app.staticTexts["template-arrange-hint"].exists })
+        XCTAssertTrue(waitUntil { app.buttons["template-item-0-remove"].exists }, "the ✕ did not come back")
+
+        // Read another way, there is nothing to arrange by.
+        tap(app, id: "template-grouping-when")
+        XCTAssertTrue(waitUntil { !app.buttons["template-arrange"].exists }, "Arrange is offered while reading by When")
+        tap(app, id: "template-grouping-section")
+        XCTAssertTrue(app.buttons["template-arrange"].waitForExistence(timeout: 5))
+
+        // A template with no headings is arranged as one list.
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-row-2")                           // Swim: no headings
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        startArranging(app)
+        XCTAssertEqual(arranged(app, 3).filter { !$0.isEmpty }.count, 3, "Swim's three things are not one list")
+        XCTAssertFalse(app.buttons["arrange-heading-0"].exists)
+        XCTAssertFalse(app.staticTexts["arrange-heading-rest"].exists, "a template with no headings has no Everything else")
+    }
+
+    /// Hold a thing's ≡ and drag it under another heading: it is filed there, and
+    /// stays there.
+    func testAThingIsDraggedUnderAnotherHeading() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        startArranging(app)
+        // The Map, under no heading, carried up onto the Headlamp, under Lights.
+        drag(app, "arrange-item-5-grip", to: "arrange-item-0-grip")
+        XCTAssertTrue(waitUntil { self.arranged(app, 3).contains("Map") },
+                      "the Map did not land under Lights: \(arranged(app, 6))")
+        XCTAssertEqual(arranged(app, 6).filter { $0 == "Map" }.count, 1)
+        tap(app, id: "template-arrange")
+
+        // Read by its headings: Lights holds the Map, and nothing is left under no heading.
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Lights" })
+        XCTAssertFalse(app.staticTexts["template-group-2"].exists, "Everything else is still there")
+        let lights = (0..<3).map { words(app.buttons["template-item-\($0)"]) }
+        XCTAssertTrue(lights.contains { $0.hasPrefix("Map") }, "the Map is not under Lights: \(lights)")
+
+        // Kept: closed and opened again.
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.staticTexts["template-group-1"].exists })
+        XCTAssertFalse(app.staticTexts["template-group-2"].exists, "the move was not kept")
+    }
+
+    /// Hold a heading's ≡ and drag it: the whole section moves, things and all.
+    func testAHeadingIsDraggedWithItsThings() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        startArranging(app)
+        drag(app, "arrange-heading-1-grip", to: "arrange-heading-0-grip")    // Clothes above Lights
+        XCTAssertTrue(waitUntil { self.words(app.buttons["arrange-heading-0"]) == "Clothes" },
+                      "Clothes did not move up: '\(words(app.buttons["arrange-heading-0"]))'")
+        XCTAssertEqual(words(app.buttons["arrange-heading-1"]), "Lights")
+        XCTAssertEqual(arranged(app, 6), ["Hiking boots", "Rain jacket", "Wool socks", "Headlamp", "Spare batteries", "Map"],
+                       "the things did not go with their heading")
+        tap(app, id: "template-arrange")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Clothes" },
+                      "the page does not read Clothes first: '\(words(app.staticTexts["template-group-0"]))'")
+    }
+
+    /// While arranging, a heading's name is tapped to rename it — never to a name the
+    /// template already has, which is said under the field.
+    func testAHeadingIsRenamed() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        startArranging(app)
+        tap(app, id: "arrange-heading-1")
+        let field = app.textFields["arrange-heading-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "tapping the heading did not open its name")
+        XCTAssertEqual(field.value as? String, "Clothes")
+        XCTAssertTrue(app.buttons["arrange-heading-remove"].exists, "no Remove heading")
+        replace("lights", in: field)
+        tap(app, id: "arrange-heading-save")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["arrange-heading-needs"]).contains("already") },
+                      "a name the template has was not refused: '\(words(app.staticTexts["arrange-heading-needs"]))'")
+        replace("Clothing", in: field)
+        XCTAssertFalse(app.staticTexts["arrange-heading-needs"].exists, "the line did not go as he typed")
+        shot(app, "arrange-renaming")
+        tap(app, id: "arrange-heading-save")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["arrange-heading-1"]) == "Clothing" },
+                      "not renamed: '\(words(app.buttons["arrange-heading-1"]))'")
+        XCTAssertFalse(app.textFields["arrange-heading-field"].exists)
+        hideKeyboard(app)
+        tap(app, id: "template-arrange")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-1"]) == "Clothing" })
+    }
+
+    /// "Remove heading" asks nothing, because nothing is lost: its things stay on
+    /// the template, under no heading.
+    func testAHeadingIsRemovedAndItsThingsStay() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        startArranging(app)
+        tap(app, id: "arrange-heading-0")                                    // Lights
+        tap(app, id: "arrange-heading-remove")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["arrange-heading-0"]) == "Clothes" }, "Lights is still there")
+        XCTAssertFalse(app.buttons["arrange-heading-1"].exists)
+        XCTAssertEqual(arranged(app, 6), ["Hiking boots", "Rain jacket", "Wool socks", "Headlamp", "Spare batteries", "Map"],
+                       "its things did not stay, under no heading")
+        hideKeyboard(app)
+        tap(app, id: "template-arrange")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Clothes" })
+        XCTAssertEqual(words(app.staticTexts["template-group-1"]), "Everything else")
+    }
+
+    /// Escape everywhere, while arranging: Escape ends Arrange — the page stays open,
+    /// and a heading's name typed but not saved is dropped, never saved. A second
+    /// Escape closes the page, as Done does.
+    func testEscapeEndsArrangingWithoutSavingAHeading() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        startArranging(app)
+        tap(app, id: "arrange-heading-1")                                    // Clothes
+        let field = app.textFields["arrange-heading-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "tapping the heading did not open its name")
+        replace("Clothing", in: field)
+        pressEscape(app)
+        XCTAssertTrue(waitUntil { !self.isOn(app.buttons["template-arrange"]) }, "Escape did not end arranging")
+        XCTAssertNotNil(find(app, "template-detail"), "Escape closed the template instead of ending Arrange")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-1"]) == "Clothes" },
+                      "Escape saved the half-typed name: '\(words(app.staticTexts["template-group-1"]))'")
+        hideKeyboard(app)
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "a second Escape did not close the template")
+    }
+
     /// His ask (4 Oct 2026): "add a search function so that the user can find a
     /// specific item without the need to scroll." Typing narrows the template to the
     /// rows whose name holds it, says how many of all, says so when none, and the ✕
@@ -3898,7 +4095,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-templates"))
         app.buttons["template-row-1"].tap()                       // Hiking, which has a section
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        // Its section headings, in capitals since 0.40 (his "much larger headings", H.13).
+        // Its section headings — in capitals from 0.40 (his "much larger headings", H.13), in
+        // Apple's Headline as he named them since 0.62 ("Apple-standard", 5 Oct 2026).
         let headings = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH 'template-group-'"))
         XCTAssertTrue(headings.firstMatch.waitForExistence(timeout: 5), "the list has no headings")
         // words(): the iPhone reports a text's words as its label, the Mac as its value
