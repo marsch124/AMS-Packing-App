@@ -14,7 +14,7 @@ final class TripAgainTests: XCTestCase {
         var lib = Library()
         var old = newEvent(name: "Run and swim", mode: "quick", activities: ["run", "swim"], transport: "RV",
                            season: "Summer", contexts: ["Outdoor"], weatherOn: ["rain"], catering: "self",
-                           startDate: "2026-09-26", endDate: "2026-09-27", laundry: true, destination: "Finspång")
+                           startDate: "2026-09-26", endDate: "2026-09-27", laundry: true, destination: "Lakeside")
         var shoes = newItem(name: "Running shoes"); shoes.checked = true; shoes.used = true
         shoes.extra["packedAt"] = .string("2026-09-25T18:00:00.000Z")
         var cap = newItem(name: "Swim cap"); cap.skipped = true
@@ -39,7 +39,7 @@ final class TripAgainTests: XCTestCase {
         XCTAssertEqual(copy.mode, "quick"); XCTAssertEqual(copy.activities, ["run", "swim"])
         XCTAssertEqual(copy.transport, "RV"); XCTAssertEqual(copy.contexts, ["Outdoor"])
         XCTAssertEqual(copy.weatherOn, ["rain"]); XCTAssertEqual(copy.catering, "self")
-        XCTAssertTrue(copy.laundry); XCTAssertEqual(copy.destination, "Finspång")
+        XCTAssertTrue(copy.laundry); XCTAssertEqual(copy.destination, "Lakeside")
         XCTAssertEqual(copy.startDate, "", "no dates: they belonged to the old trip")
         XCTAssertEqual(copy.endDate, "")
         XCTAssertEqual(copy.status, "active", "not reviewed")

@@ -19,7 +19,7 @@ final class WorkbookTests: XCTestCase {
         XCTAssertEqual(Xlsx.sheetName(String(repeating: "x", count: 40)).count, 31)
         XCTAssertEqual(Xlsx.sheetName("  "), "Trip")
         XCTAssertEqual(Library.workbookFileName("Weekend in the hills"), "Weekend in the hills packing list.xlsx")
-        XCTAssertEqual(Library.workbookFileName("Run/swim: Finspång"), "Run swim  Finspång packing list.xlsx")
+        XCTAssertEqual(Library.workbookFileName("Run/swim: Testvillå"), "Run swim  Testvillå packing list.xlsx")
         XCTAssertEqual(Library.workbookFileName(""), "Trip packing list.xlsx")
     }
 

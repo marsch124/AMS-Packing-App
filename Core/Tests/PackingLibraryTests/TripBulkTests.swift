@@ -42,8 +42,8 @@ final class TripBulkTests: XCTestCase {
         let days = (0...2).map { n in
             WeatherDay(date: "2026-10-0\(3 + n)", code: 61, tmax: 8, tmin: 2, precipProb: 90, wind: 24)
         }
-        _ = lib.setWeather(tripId: trip.id, place: "Testville", lat: 58.59, lon: 16.18,
-                           snapshot: WeatherSnapshot(place: "Testville, SE", lat: 58.59, lon: 16.18,
+        _ = lib.setWeather(tripId: trip.id, place: "Testville", lat: 10.5, lon: 20.5,
+                           snapshot: WeatherSnapshot(place: "Testville, SE", lat: 10.5, lon: 20.5,
                                                      fetchedAt: nowISO(), daily: days))
         return (lib, trip.id)
     }

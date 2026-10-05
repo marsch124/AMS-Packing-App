@@ -15,7 +15,7 @@ final class TripWeatherTests: XCTestCase {
             return WeatherDay(date: String(ISO8601DateFormatter().string(from: d).prefix(10)),
                               code: 61, tmax: 8, tmin: 2, precipProb: 90, wind: 24)
         }
-        return WeatherSnapshot(place: "Testville, SE", lat: 58.59, lon: 16.18, fetchedAt: nowISO(), daily: days)
+        return WeatherSnapshot(place: "Testville, SE", lat: 10.5, lon: 20.5, fetchedAt: nowISO(), daily: days)
     }
 
     /// A library with one trip built from a list whose rain gear is tagged.
@@ -38,7 +38,7 @@ final class TripWeatherTests: XCTestCase {
     func testAForecastIsKeptOnTheTripAndReadBack() {
         var (lib, id) = library()
         XCTAssertNil(lib.weather(tripId: id), "a trip starts with no forecast")
-        XCTAssertTrue(lib.setWeather(tripId: id, place: "Testville", lat: 58.59, lon: 16.18,
+        XCTAssertTrue(lib.setWeather(tripId: id, place: "Testville", lat: 10.5, lon: 20.5,
                                      snapshot: wet(from: "2026-10-03", nights: 2)))
         guard let said = lib.weather(tripId: id) else { return XCTFail("the forecast did not come back") }
         XCTAssertEqual(said.place, "Testville, SE")
@@ -50,7 +50,7 @@ final class TripWeatherTests: XCTestCase {
 
     func testTheGearItAsksForIsWhatIsMissing() {
         var (lib, id) = library()
-        _ = lib.setWeather(tripId: id, place: "Testville", lat: 58.59, lon: 16.18,
+        _ = lib.setWeather(tripId: id, place: "Testville", lat: 10.5, lon: 20.5,
                            snapshot: wet(from: "2026-10-03", nights: 2))
         let asked = lib.weatherMissing(tripId: id)
         XCTAssertFalse(asked.isEmpty, "wet and cold, and nothing suggested")
@@ -71,7 +71,7 @@ final class TripWeatherTests: XCTestCase {
 
         var fresh = wet(from: "2026-10-03", nights: 2)
         fresh.fetchedAt = nowISO()
-        _ = lib.setWeather(tripId: id, place: "Testville", lat: 58.59, lon: 16.18, snapshot: fresh)
+        _ = lib.setWeather(tripId: id, place: "Testville", lat: 10.5, lon: 20.5, snapshot: fresh)
         XCTAssertFalse(lib.forecastIsStale(tripId: id), "a forecast taken just now is not stale")
 
         // Six hours on, it is.
@@ -86,7 +86,7 @@ final class TripWeatherTests: XCTestCase {
 
     func testAForecastTravelsInABackup() {
         var (lib, id) = library()
-        _ = lib.setWeather(tripId: id, place: "Testville", lat: 58.59, lon: 16.18,
+        _ = lib.setWeather(tripId: id, place: "Testville", lat: 10.5, lon: 20.5,
                            snapshot: wet(from: "2026-10-03", nights: 2))
         guard let json = try? JSONValue.parse(lib.backupData()) else { return XCTFail("the backup did not parse") }
         let (back, report) = Importer.library(from: BackupFile(json: json))

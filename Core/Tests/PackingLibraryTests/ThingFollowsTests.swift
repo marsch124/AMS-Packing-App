@@ -88,7 +88,7 @@ final class ThingFollowsTests: XCTestCase {
     /// after midnight in Sweden the UTC date is still yesterday, and a trip that ended
     /// yesterday took a change to its thing.
     func testStillAheadGoesByTheDayWhereHeIs() {
-        let zone = TimeZone(identifier: "Europe/Stockholm")!
+        let zone = TimeZone(secondsFromGMT: 2 * 3600)!                                    // two hours ahead of UTC
         let justAfterMidnight = ISO8601DateFormatter().date(from: "2026-10-05T22:30:00Z")!   // 00:30 on the 6th there
         XCTAssertEqual(Library.localToday(justAfterMidnight, zone: zone), "2026-10-06")
         XCTAssertEqual(Library.localToday(justAfterMidnight, zone: TimeZone(identifier: "UTC")!), "2026-10-05")
