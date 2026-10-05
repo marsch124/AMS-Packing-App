@@ -98,6 +98,16 @@ extension Library {
         return true
     }
 
+    /// Is this name taken already — by any grab list's word on its tile or its title,
+    /// ignoring case and spaces? Make refuses a second list of the same name: two
+    /// tiles saying the same thing cannot be told apart with his glasses off (5 Oct
+    /// 2026). A list received by sharing is not refused; it is his to rename.
+    public func grabListNameTaken(_ name: String) -> Bool {
+        let key = normName(name)
+        guard !key.isEmpty else { return false }
+        return allGrabLists().contains { normName($0.label) == key || normName($0.title) == key }
+    }
+
     /// A new list of his own. It takes a free place on Home if there is one (it
     /// is new: he has not sent it anywhere yet); when Home is full it waits in Grab
     /// Lists until he says what steps back.
@@ -141,6 +151,9 @@ extension Library {
         writeOwn(all)
         let onHome = (meta[GRAB_HOME_META]?.arrayValue ?? []).compactMap { $0.stringValue }.filter { $0 != id }
         if !onHome.isEmpty { meta[GRAB_HOME_META] = JSONValue(onHome) }
+        // …and from the lists he sent off Home: nothing is left behind of it, in the
+        // library or in a backup made afterwards (it stayed there, unread, until 5 Oct 2026).
+        writeOff(offHomeIds().filter { $0 != id })
         var marks = sometimesByList()
         marks[id] = nil
         setSometimesByList(marks)

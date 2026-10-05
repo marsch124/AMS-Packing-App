@@ -98,10 +98,14 @@ extension Library {
         return templates.first { $0.role.isEmpty && normName($0.name) == want }
     }
 
-    /// A shared grab list waits in Grab Lists: Home is his to arrange.
+    /// A shared grab list is a NEW list: it takes a free place on Home when there is
+    /// one, and waits in Grab Lists only while Home is full. A drawing or a colour
+    /// this app does not have becomes the standard look a list made here gets — its
+    /// initial, in blue — instead of the runner and the slate grey it was drawn in
+    /// until 5 Oct 2026.
     @discardableResult
     public mutating func importGrab(_ g: GrabShare) -> GrabDefinition? {
-        addGrabList(label: g.name.isEmpty ? "Shared" : g.name, tone: g.tone.isEmpty ? "blue" : g.tone,
-                    icon: g.icon, items: g.items)
+        addGrabList(label: g.name.isEmpty ? "Shared" : g.name, tone: GRAB_TONES.contains(g.tone) ? g.tone : "blue",
+                    icon: GRAB_ICONS.contains(g.icon) ? g.icon : "", items: g.items)
     }
 }

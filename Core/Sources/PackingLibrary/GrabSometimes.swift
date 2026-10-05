@@ -91,4 +91,27 @@ extension Library {
         fresh.skipped = items.filter { mine.contains(normName($0)) }
         return fresh
     }
+
+    /// The session after he saves an edit of the list: today's ticks STAY. Until 5 Oct
+    /// 2026 every Save started the session over — even a Save with nothing changed
+    /// threw away what he had already picked up. Now a name edited away drops out; a
+    /// thing he has just marked "1 in 10" is set aside, unless it is already in his
+    /// hand; one he has just unmarked comes back into the count. A session that had
+    /// not begun (or has run out) starts from the defaults, as an opening does.
+    public func stateAfterEdit(listId: String, held: GrabState?, markedBefore: [String], now: Date = Date()) -> GrabState {
+        let items = grabList(id: listId)?.items ?? []
+        var live = (held ?? GrabState()).current(for: items, now: now)
+        guard live.at != Date.distantPast else { return openingState(listId: listId, held: nil, now: now) }
+        let before = Set(markedBefore.map(normName))
+        let after = Set(sometimes(listId: listId).map(normName))
+        for name in items {
+            let key = normName(name)
+            if after.contains(key), !before.contains(key), !live.done.contains(name), !live.skipped.contains(name) {
+                live.skipped.append(name)
+            } else if before.contains(key), !after.contains(key) {
+                live.skipped.removeAll { $0 == name }
+            }
+        }
+        return live
+    }
 }

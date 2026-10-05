@@ -6,7 +6,10 @@
 // receiving app offers for import. Short keys on purpose — the same code is
 // drawn as a QR, and every byte makes it denser. Icon and tone are carried as
 // the keys the app stores; the receiver checks them against its own gallery
-// and falls back to the target button's factory look for anything unknown.
+// and falls back for anything unknown — the web app to the target button's
+// factory look, this app to the look a new list gets: its initial, in blue
+// (`Library.importGrab`, since 5 Oct 2026; before, it kept whatever came and drew
+// an unknown icon as the runner).
 
 import Foundation
 
