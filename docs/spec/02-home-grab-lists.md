@@ -157,8 +157,9 @@ marks "On this device".
   so every window switches to Home. The **last** window to appear owns `PackingReminders.open`.
 - Colours resolve light/dark through `NSColor(name:)` on the Mac and `UIColor { traits in … }` on the
   iPhone (`Theme.swift`).
-- No keyboard shortcuts are wired anywhere in the app (no `.keyboardShortcut`, `onExitCommand` or
-  `onKeyPress`). Tabs are changed by click or tap.
+- One keyboard shortcut only: Escape (⌘. on an iPhone keyboard) presses a sheet's Cancel, or its Done / Close
+  where it has no Cancel — never a Save (`.keyboardShortcut(.cancelAction)`; trips 0.62, every other sheet
+  0.63; spec 06 §20). No `onExitCommand`, no `onKeyPress`, no `.defaultAction`. Tabs are changed by click or tap.
 
 **Tests.**
 - UI `testStartsOnHomeAndNamesItsVersion`: launches on `screen-home`; `app-version` contains a digit.
@@ -293,8 +294,8 @@ Open-requests from outside are handled in `HomeScreen` with `onChange(…, initi
   Lists was open could open nothing.
 
 **iPhone vs Mac.** All of these are `.sheet`s. On the iPhone a sheet can also be swiped down (no
-`interactiveDismissDisabled` anywhere). On the Mac each sheet sets its own minimum size (given per
-screen below).
+`interactiveDismissDisabled` anywhere here). On the Mac each sheet sets its own minimum size (given per
+screen below). Escape closes each of them as its Done / Close / Cancel does (0.63; ⌘. on an iPhone keyboard).
 
 **Tests.**
 - UI `testTheEditorsLeadWithTheirHeadings` checks that `home-grab-heading` and `home-create-heading`
@@ -609,7 +610,9 @@ device's own working state.
   - the Open a grab list Shortcut (`grabToOpen`);
   - a tile in the Which grab list? menu, where the list replaces the menu inside the same sheet.
 - **Out:**
-  - "Done" (`grab-done`) → `dismiss()`;
+  - "Done" (`grab-done`) → `dismiss()` — Escape too (0.63; ⌘. on an iPhone keyboard). While the list is
+    being edited Done is hidden and there is no Cancel, so no key closes it on the Mac (the iPhone's ⌘.
+    closes it as a swipe does, the draft thrown away);
   - "Ready to go" on a complete list (it closes itself after 0.35 s);
   - "Delete the grab list" in the editor of one of his own lists (section 7);
   - the list going while it is open (0.62): deleted on the other device, or lost to a later write from
@@ -808,9 +811,8 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
    16 pt side and 10 pt vertical padding.
 4. **Only on one of his own lists** (`isOwn` = the id is among `ownGrabLists()`, so a list received by
    sharing counts too), last on the screen, under the bar, with 16 pt side and 10 pt bottom padding:
-   - **"Delete grab list"** (`grab-delete`): the shared `SmallDeleteButton` at **15 pt** (its `size`
-     parameter, added in 0.61);
-     Delete trip, template, thing and bag still use the default 13): semibold text in To do red, 12 pt
+   - **"Delete grab list"** (`grab-delete`): the shared `SmallDeleteButton`, Footnote semibold like every Delete
+     (0.62; its `size` parameter, added in 0.61 for this one at 15, is gone): text in To do red, 12 pt
      side padding, minimum 30 tall, a 1-pt capsule outline in red at 60 % opacity, pushed to the right
      edge. "Quiet until wanted; it only ever
      OPENS the question, never deletes by itself."
@@ -991,9 +993,9 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 
 **How it is reached and left.**
 - **In:** Home → "Grab Lists" (`grab-lists`).
-- **Out:** "Done" (`grablists-done`, a capsule filled with Home blue), or a swipe down on the iPhone.
+- **Out:** "Done" (`grablists-done`, a capsule filled with Home blue; Escape too, 0.63), or a swipe down on the iPhone.
 - Swap sheet: opened by a waiting list's "On Home" while Home is full. It closes on "Cancel"
-  (`swap-cancel`, an outlined capsule) or after a pick.
+  (`swap-cancel`, an outlined capsule; Escape too, 0.63) or after a pick.
 - A waiting list's own screen (`GrabScreen`, section 6): opened by tapping the waiting row (0.62); its
   Done (or Delete) comes back here.
 - Both open through ONE sheet with a destination (`Window`: `.swap(id)` or `.open(id)`), as Search does.
@@ -1155,7 +1157,7 @@ grab list" opens the app here: every grab list as a big tile, and one tap opens 
   `whenFree`, so it opens even over another Home sheet (0.62). Under UI tests the launch argument
   `-openGrabMenu` sets the same flag.
 - **Out:** "Close" (`grab-menu-close`, a `muted` outlined capsule; `HeaderButtonStyle` makes it 17 pt
-  bold — 16 until 0.62 — overriding the 17 pt semibold written on it) or a swipe down.
+  bold — 16 until 0.62 — overriding the 17 pt semibold written on it; Escape too, 0.63) or a swipe down.
 
 **What is on screen.**
 - "Which grab list?" (24 pt heavy, Home blue) and Close; 14 pt between this row and the tiles.
@@ -1462,14 +1464,17 @@ same news twice." Tapping one opens the trip.
 - **A Toggle** (`settings-reminders`): a switch on the iPhone, a check box on the Mac; tinted Trips
   green ("green when on, like every switch he knows: the Settings slate read as 'off'").
   - Title "Remind me to pack" (18 pt bold `ink`).
-  - Detail "On this device, at 9 in the morning of the day each packing step is due — a week ahead, the
-    day before, the morning." (14 pt regular `muted`).
+  - Detail "On this device, at 9 in the morning of each day a packing step is due — Preparations a month
+    ahead, then a week ahead, the day before and the day you leave." (regular, `muted`; these words since
+    0.62 — spec 06 §3).
   - The switch's state is `@AppStorage("ams.reminders")`; its setter does not store the wanted value
     directly but runs the permission check first (below).
 - **Refused or blocked:** "This device does not allow the app to remind you. Allow it in the device's
   Settings, under Notifications." (15 pt semibold red, `settings-reminders-refused`). Shown when the
   permission was just refused, **and** (0.62) whenever the switch is on but the device's Settings have the
-  app's notifications switched off — the switch stays on (his choice), and no "Next" line is shown.
+  app's notifications switched off — the switch stays on (his choice), and no "Next" line is shown — **and**
+  (0.63) whenever the device refuses them with the switch off, so the line no longer vanishes when Settings is
+  left. Never asked yet is no refusal: no line.
 - **On, and allowed:** (15 pt semibold Settings slate, `settings-reminders-next`)
   - `"Next: <d Mon> · <trip name> — <says>"` for the first upcoming reminder, e.g.
     "Next: 14 Oct · Weekend in the hills — ≥1 week ahead: 4 to pack";
@@ -1482,11 +1487,14 @@ same news twice." Tapping one opens the trip.
 - anything else (not decided yet) → the system question (alert + sound); its answer, or no when it
   throws.
 
-Then `on = want && ok`, `refused = want && !ok`, and the reminders are rescheduled. Turning it off never
-asks, then reschedules (which removes them all). `refused` is view state: it is forgotten when the screen
-is rebuilt — but `blocked` (0.62) is looked up again every time the card is shown (`.task`) and every time
-the app comes back to the front: `PackingReminders.allowed()` asks the system for the current status
-without asking him anything (authorised or provisional → allowed). `blocked = on && !allowed`.
+Then `on = want && ok`, `refused = want && !ok`, the permission is looked up again, and the reminders are
+rescheduled. Turning it off never asks, looks the permission up again, then reschedules (which removes them
+all). `refused` is view state: it is forgotten when the screen is rebuilt — but `blocked` (0.62) is looked up
+again every time the card is shown (`.task`), every time the app comes back to the front and (0.63) after every
+turn of the switch: `PackingReminders.permission()` asks the system for the current status without asking him
+anything — `allowed` (authorised or provisional), `refused` (denied) or `notAskedYet`. `blocked = refused || (on
+&& not allowed)` (0.63; it was `on && !allowed`, so a device that refused showed nothing while the switch was off
+— spec 06 item 27).
 
 **The plan** (`Library.reminderPlan(today:limit: 48)`):
 - for every trip still to leave (the countdown's rule), every packing step dated today or later;
@@ -1528,7 +1536,7 @@ build (0.49 on GitHub).
 **Under UI tests:** no delegate is set, permission is always "yes" without asking (the system's question
 is a window no test can answer), `reschedule` does nothing, and `ams.reminders` is cleared at launch.
 `-pretendRemindersBlocked` (0.62) plays "switched on here earlier, then blocked in the device's
-Settings": `start()` sets `ams.reminders` on, and both `askToShow` and `allowed` say no.
+Settings": `start()` sets `ams.reminders` on, `askToShow` says no and `permission()` says `refused`.
 
 **Tests.**
 - UI `testSettingsTurnsOnPackingReminders` (`-uiTestingChecks`): off at first with no "next" line; on →
@@ -1537,7 +1545,8 @@ Settings": `start()` sets `ams.reminders` on, and both `askToShow` and `allowed`
   same day joined in one reminder; soonest first; `limit` respected; a reviewed trip gives no reminders.
 - UI `testRemindersSayWhenTheDeviceBlocksThem` (0.62, `-pretendRemindersBlocked`): the switch is on,
   `settings-reminders-refused` shows and `settings-reminders-next` does not; after Home and back to
-  Settings the line is still there.
+  Settings the line is still there; (0.63) switched off, the line stays, and after Home and back the
+  switch is still off and the line still there.
 - UI `testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp`: a reminder's trip opens over Search.
 - **Not covered:**
   - real scheduling and identifiers;
@@ -1560,7 +1569,7 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
 - **In:** the magnifier (`search-open`, a drawn magnifier 24 pt in a 40 × 36 area, `muted`,
   accessibility label "Search everything") on Home (beside "Grab Lists"), Trips, Templates, Care and
   To do. Each opens its own sheet.
-- **Out:** "Done" (`search-done`, Home-blue filled capsule) or a swipe down.
+- **Out:** "Done" (`search-done`, Home-blue filled capsule; Escape too, 0.63 — even with the field being typed in) or a swipe down.
 
 **What is on screen.**
 1. "Search" (20 pt heavy `ink`) and Done; 16 pt side and top padding, 8 below.
@@ -1764,7 +1773,11 @@ keep their tag and say why they were left.
     for a case that needs both devices editing grab lists while both are offline.
 25. **Resolved in 0.62** — ~~Dead code: `GrabStore.state(_:items:)`.~~ Removed. (`bringOn`'s "fewer than 8"
     branch is the normal way back onto Home since 0.61.)
-26. [idea] No keyboard shortcuts anywhere: Escape closing a sheet on the Mac is neither wired nor tested.
+26. **Resolved in 0.63** — ~~No keyboard shortcuts anywhere: Escape closing a sheet on the Mac is neither wired
+    nor tested.~~ Escape (⌘. on an iPhone keyboard) presses Done or Close on Search, Grab Lists, the grab
+    menu and a grab list, and Cancel on the swap sheet (spec 06 §20). Pinned by
+    `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (Search and Grab Lists); the menu, a grab list and
+    the swap sheet by the code only (the same one line).
 
 **Untested and unguarded.**
 

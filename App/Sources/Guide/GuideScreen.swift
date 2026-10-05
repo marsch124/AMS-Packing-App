@@ -58,6 +58,7 @@ private struct GuideHeader: View {
             Button("Done") { dismiss() }
                 .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                 .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
                 .accessibilityIdentifier("guide-done")
         }
         .padding(16)

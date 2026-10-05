@@ -25,8 +25,9 @@ extension Library {
     /// little before the trip that shows it.
     public func unusedPhotos(now: Date = PackingEnv.now()) -> [PhotoRecord] {
         let dayAgo = now.addingTimeInterval(-86_400)
+        let used = photoIdsInUse()                      // one walk, not one per photo
         return photos.filter { photo in
-            guard !photoInUse(photo.id) else { return false }
+            guard !used.contains(photo.id) else { return false }
             // A date that cannot be read is no proof of age: kept, never offered.
             guard let made = isoMoment(photo.createdAt) else { return false }
             return made < dayAgo

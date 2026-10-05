@@ -4695,7 +4695,10 @@ final class AMSPackingUITests: XCTestCase {
 
     /// Remind me to pack, switched on here but blocked in the device's Settings: the
     /// card says so — every time it is shown — and names no reminder that will never
-    /// come. (`-pretendRemindersBlocked`: on earlier, then blocked.)
+    /// come. Switched off, it still says so, and still after Settings is left and
+    /// opened again (spec 06 item 27: the line was forgotten, so nothing said why
+    /// switching on would not work). (`-pretendRemindersBlocked`: on earlier, then
+    /// blocked.)
     func testRemindersSayWhenTheDeviceBlocksThem() {
         let app = XCUIApplication()
         app.launchArguments += ["-uiTestingChecks", "-pretendRemindersBlocked"]
@@ -4711,6 +4714,19 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         XCTAssertTrue(app.staticTexts["settings-reminders-refused"].waitForExistence(timeout: 5),
                       "the card forgot that the device blocks reminders")
+
+        setSwitch(app, "settings-reminders", on: false)
+        sleep(1)                                                   // the card looks the permission up again
+        XCTAssertTrue(app.staticTexts["settings-reminders-refused"].exists,
+                      "switched off, the card no longer says the device does not allow reminders")
+        shot(app, "settings-reminders-blocked-off")
+        tab(app, "home")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        XCTAssertFalse(isSwitchOn(app, "settings-reminders"), "the switch came back on by itself")
+        XCTAssertTrue(app.staticTexts["settings-reminders-refused"].waitForExistence(timeout: 5),
+                      "Settings left and opened again: the card forgot that the device does not allow reminders")
+        XCTAssertFalse(app.staticTexts["settings-reminders-next"].exists)
     }
 
     #if os(iOS)
@@ -6248,4 +6264,231 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "thing-row-notes")
         tap(app, id: "thing-cancel")
     }
+
+    // MARK: - Escape everywhere (5 Oct 2026)
+
+    /// Escape on the Mac; on an iPhone with a keyboard ⌘. is the same Cancel. (The
+    /// simulator passes no Escape on without a keyboard of its own; ⌘. arrives.)
+    /// An iPhone closes a sheet that may be swiped away on ⌘. by itself, shortcut or
+    /// not — there these tests pin that the right window closes and nothing is saved;
+    /// the Mac, where nothing closes without the shortcut, pins the shortcut itself.
+    private func pressEscape(_ app: XCUIApplication) {
+        sleep(1)                                    // a window just opened: let it take the keys
+        #if os(macOS)
+        app.typeKey(.escape, modifierFlags: [])
+        #else
+        app.typeKey(".", modifierFlags: .command)
+        #endif
+    }
+
+    /// Escape everywhere: Cancel where a window has Cancel, Done where it has only
+    /// Done — never a save. Settings' windows: Your choices (a name typed and not
+    /// added stays out), the restore (nothing replaced, and the line says so), a guide
+    /// page, Open a shared link.
+    func testEscapeClosesSettingsWindowsAndNeverReplaces() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let things = app.staticTexts["device-count-items"]
+        XCTAssertTrue(waitUntil { self.words(things) == "10" }, "the sample is not what it was: '\(words(things))'")
+
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        type("Attic shelf", into: app.textFields["list-places-add-name"])
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Escape did not close Your choices")
+        XCTAssertNotNil(find(app, "screen-settings"), "Escape took Settings with it")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Escape added the place that was only typed")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+
+        let status = app.staticTexts["backup-status"]
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5), "Escape did not cancel the restore")
+        XCTAssertTrue(waitUntil { self.words(status) == "Nothing was replaced." }, "Escape left the line saying: '\(words(status))'")
+        XCTAssertEqual(words(things), "10", "Escape replaced the library")
+
+        tap(app, id: "settings-whatsnew")
+        XCTAssertTrue(appears(app, "guide-whatsnew", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "guide-whatsnew", timeout: 5), "Escape did not close What's new")
+
+        tap(app, id: "settings-openshared")
+        XCTAssertTrue(appears(app, "shared-screen", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "shared-screen", timeout: 5), "Escape did not close Open a shared link")
+        XCTAssertNotNil(find(app, "screen-settings"))
+    }
+
+    /// Escape everywhere, Care: a thing's page is CANCELLED (the new name is not kept)
+    /// and only it closes, not Your things behind it; Your bags closes; on the iPhone
+    /// the table closes, and its Filter alone before it. (On the Mac the table is a
+    /// window of its own, which Escape leaves open — a window closes with ⌘W.)
+    func testEscapeCancelsAThingAndClosesCaresWindows() {
+        let app = launch()
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let first = app.buttons["thing-row-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        let before = first.label
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        replace("Escaped name", in: app.textFields["thing-name"])
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Escape did not cancel the thing")
+        XCTAssertNotNil(find(app, "things-detail"), "Escape closed Your things behind the thing too")
+        XCTAssertFalse(app.buttons["thing-row-0"].label.contains("Escaped name"), "Escape saved the thing")
+        XCTAssertEqual(app.buttons["thing-row-0"].label, before, "the thing changed")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5), "Escape did not close Your things")
+
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5), "Escape did not close Your bags")
+
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5))
+        tap(app, id: "table-filter")
+        XCTAssertTrue(appears(app, "filter-sheet", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "filter-sheet", timeout: 5), "Escape did not close the filter")
+        XCTAssertNotNil(find(app, "table-detail"), "Escape closed the table behind the filter too")
+        pressEscape(app)
+        #if os(macOS)
+        XCTAssertNotNil(find(app, "table-detail"), "Escape closed the table's own window")
+        tap(app, id: "table-done")
+        #endif
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5), "Escape did not close the table")
+    }
+
+    /// Escape everywhere, Home and Templates: Search and Grab Lists close; a row's
+    /// editor is CANCELLED — a section typed there is not made — and only it closes,
+    /// not the template behind it; New makes nothing.
+    func testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "search-detail", timeout: 5), "Escape did not close Search")
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5), "Escape did not close Grab Lists")
+
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let summary = app.staticTexts["templates-summary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        let counted = words(summary)
+        tap(app, id: "template-row-1")                            // Hiking: one section, Lights
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        let field = app.textFields["row-section-new"]
+        bringIntoView(app, field)
+        type("Rig", into: field)
+        tap(app, id: "row-section-add")
+        XCTAssertTrue(app.buttons["row-section-2"].waitForExistence(timeout: 5), "the typed section is not offered")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5), "Escape did not cancel the row")
+        XCTAssertNotNil(find(app, "template-detail"), "Escape closed the template behind the row too")
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["row-section-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["row-section-2"].exists, "Escape saved the row and its section")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Escape did not close the template")
+
+        tap(app, id: "templates-new")
+        XCTAssertTrue(appears(app, "newlist-detail", timeout: 5))
+        type("Picnic", into: app.textFields["newlist-name"])
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "newlist-detail", timeout: 5), "Escape did not cancel New")
+        XCTAssertNil(find(app, "template-detail"), "Escape made the template")
+        XCTAssertEqual(words(summary), counted, "Escape made a template")
+    }
+
+    /// Owners has no factory list (the spec pass, 5 Oct 2026): on an account that never
+    /// added one, Your choices showed no owners at all while Whose it is on a thing
+    /// offered them. It shows the owners his things name — A–Z, with how many things
+    /// each — and one still in use cannot be removed.
+    func testOwnersAreTheNamesHisThingsCarry() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        let kim = app.staticTexts["list-owners-name-0"]
+        XCTAssertTrue(kim.waitForExistence(timeout: 5), "Owners is empty while his things name owners")
+        XCTAssertEqual(words(kim), "Kim")
+        XCTAssertEqual(words(app.staticTexts["list-owners-name-1"]), "Robin")
+        XCTAssertFalse(app.staticTexts["list-owners-name-2"].exists, "an owner twice, or one no thing names")
+        bringIntoView(app, kim)
+        shot(app, "choices-owners")
+        tap(app, id: "list-owners-remove-0")
+        let problem = app.staticTexts["lists-problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 5), "an owner his things name was removed")
+        XCTAssertEqual(words(problem), "Kim is still used by 5 things, so it stays.")
+        XCTAssertEqual(words(app.staticTexts["list-owners-name-0"]), "Kim")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+    }
+
+    /// Settings has ONE sheet with two destinations (spec 06 item 18: two `.sheet`s on
+    /// one view, the trap met in Search). Each door opens its own window, one after the
+    /// other, twice — and Cancel on the restore says so under Save.
+    func testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let status = app.staticTexts["backup-status"]
+        for _ in 0..<2 {
+            tap(app, id: "settings-lists")
+            XCTAssertTrue(appears(app, "lists-detail", timeout: 5), "Your choices did not open")
+            XCTAssertNil(find(app, "restore-detail"), "the restore opened for Your choices")
+            tap(app, id: "lists-done")
+            XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+            tap(app, id: "backup-restore")
+            XCTAssertTrue(appears(app, "restore-detail", timeout: 5), "the restore did not open after Your choices")
+            XCTAssertNil(find(app, "lists-detail"), "Your choices opened for the restore")
+            tap(app, id: "restore-cancel")
+            XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+            XCTAssertTrue(waitUntil { self.words(status) == "Nothing was replaced." }, "Cancel said: '\(words(status))'")
+        }
+    }
+
+    #if os(iOS)
+    /// Swiping the restore away (the iPhone) is a no, and the line under Save says so,
+    /// as Cancel does (spec 06 item 17: it went on saying nothing at all).
+    func testARestoreSwipedAwaySaysNothingWasReplaced() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let things = app.staticTexts["device-count-items"]
+        XCTAssertTrue(waitUntil { self.words(things) == "10" })
+        let status = app.staticTexts["backup-status"]
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        XCTAssertNotEqual(words(status), "Nothing was replaced.")
+        guard let sheet = find(app, "restore-detail") else { return XCTFail("no restore to swipe") }
+        sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05))
+            .press(forDuration: 0.05, thenDragTo: sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)))
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5), "the swipe did not close the restore")
+        XCTAssertTrue(waitUntil { self.words(status) == "Nothing was replaced." },
+                      "swiped away, the line says: '\(words(status))'")
+        XCTAssertEqual(words(things), "10", "the swipe replaced the library")
+        shot(app, "restore-swiped-away")
+    }
+    #endif
 }

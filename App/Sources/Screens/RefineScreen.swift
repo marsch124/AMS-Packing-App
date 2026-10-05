@@ -24,6 +24,7 @@ struct RefineScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.templates.color)
+                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("refine-done")
             }
             .padding(16)

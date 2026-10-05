@@ -663,7 +663,7 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
 
 **How it is reached and left.** Care → "Your things" (empty search); Care's dashboard bars (search filled in:
 `ThingsScreen(searching:)` copies it into the search on appear when the search is empty). A sheet. Left with
-"Done" (`things-done`) or (iPhone) a swipe down. No keyboard shortcut.
+"Done" (`things-done`; Escape too, ⌘. on an iPhone keyboard — 0.63) or (iPhone) a swipe down.
 
 **What is on screen, top to bottom** (accessibility container `things-detail`):
 1. Header (16 pt padding): "Your things" (22 heavy ink); right: "Done" (`HeaderButtonStyle`, filled orange).
@@ -744,8 +744,9 @@ nearer its heading").
 **How it is reached and left.** A sheet from: Your things (a row), the table (a row's open arrow), a bag's
 page ("Its details" and each thing "Usually in it"), the global search (a thing), a trip's "Check before you
 go" (`TripScreen`), the trip review (`ReviewScreen`) and Pack to go home (`WayHomeScreen`, its "Open"). Left with
-"Cancel" (`thing-cancel`: nothing is saved), "Save" (`thing-save`: saves and closes, unless the name is
-refused), "Delete the thing" (closes, then deletes), or (iPhone) a swipe down = Cancel. The screen behind is not
+"Cancel" (`thing-cancel`: nothing is saved; Escape presses it too, 0.63 — never Save, so a name typed is not kept),
+"Save" (`thing-save`: saves and closes, unless the name is refused), "Delete the thing" (closes, then deletes), or
+(iPhone) a swipe down = Cancel. Only the thing's page closes, not the screen it was opened from. The screen behind is not
 rebuilt, so it is exactly where it was (the table keeps its scroll position).
 
 **What is on screen, top to bottom** (accessibility container `thing-detail`; 16 pt padding; headings 22 pt
@@ -893,7 +894,7 @@ its empty weight (grams). A bag with a max weight shows how full it is on every 
 web app's names (`container` fields, list role "container", list name "Containers") because they are the shared
 format with the web app, backups and iCloud.
 
-**How it is reached and left.** Care → "Bags" (`care-bags`), a sheet. "Done" (`yourbags-done`) or a swipe.
+**How it is reached and left.** Care → "Bags" (`care-bags`), a sheet. "Done" (`yourbags-done`; Escape too, 0.63) or a swipe.
 A trip's bag ("Goes in the cabin", `BagCabinRow`) can also MAKE a bag (see a bag's page).
 
 **What is on screen** (container `yourbags-detail`):
@@ -968,7 +969,7 @@ unused bag gets a plain delete (27 Sep, his empty handbag); a bag that is also a
 goes completely (27 Sep, "I thought it would just be a deleted bag"). "Goes in the cabin": his idea 4 (2 Oct
 2026, 0.48).
 
-**How it is reached and left.** Your bags → a bag's name. A sheet; "Done" (`bag-done`) or a swipe. If the bag
+**How it is reached and left.** Your bags → a bag's name. A sheet; "Done" (`bag-done`; Escape too, 0.63) or a swipe. If the bag
 no longer exists the page closes itself on appear. "Delete …" closes it.
 
 **What is on screen** (container `bag-detail`, 18 pt between blocks):
@@ -1061,8 +1062,10 @@ update items — like Excel." Releases: 0.9 (23 Sep 2026) the table; 0.11 a real
 open arrow, the Mac window, 44-point arrows in Columns.
 
 **How it is reached and left.** Care → "All your things · table" (`care-table`). iPhone: a sheet; "Done"
-(`table-done`) or a swipe closes it. Mac: the window "All your things" (see The Mac window); "Done" closes the
-window.
+(`table-done`; Escape too — ⌘. on an iPhone keyboard, 0.63) or a swipe closes it. Mac: the window "All your things"
+(see The Mac window); "Done" closes the window, and Escape does NOT (0.63: `.keyboardShortcut(inWindow ? nil :
+.cancelAction)` — a window closes with ⌘W, and Escape pressed in its search field would close the whole table).
+Its sheets (Filter, Sort, Columns, Change, a thing) do close with Escape, on the Mac too.
 
 **What is on screen, top to bottom** (container `table-detail`):
 1. **Title row** (16 pt sides, 14 top): "All your things" (21 heavy orange), the number of rows shown
@@ -1256,7 +1259,7 @@ tick; the red and blank tints.
 ### Choosing columns (`ColumnPicker`)
 
 Opened by "Columns" (`table-columns`) as a sheet (container `columns-detail`; Mac at least 460 × 540). Header
-"Columns" (20 heavy orange) and "Done" (`columns-done`, filled). "SHOWING, IN THIS ORDER" (12 heavy muted,
+"Columns" (20 heavy orange) and "Done" (`columns-done`, filled; Escape too, 0.63). "SHOWING, IN THIS ORDER" (12 heavy muted,
 kerning 0.6): one row per shown column of `TableColumns.ids` — live ids only (min height 44, line under): its
 title (16 semibold), an up arrow (`columns-<key>-up`, disabled on the first row; `<key>` = `TableKeys.safe`, so a
 template column is `list-<n>` — 0.62), a down arrow (`columns-<key>-down`, disabled on the last) — each a
@@ -1281,7 +1284,8 @@ filtered columns must both hold. The answers offered are the ones his things act
 so a filter never empties the table by surprise.
 
 **How it is reached and left.** "Filter" (`table-filter`) → a sheet (container `filter-sheet`; Mac at least
-480 × 560). "Done" (`filter-done`) or a swipe; every tick is stored at once.
+480 × 560). "Done" (`filter-done`; Escape too, 0.63 — only the filter closes, the table stays) or a swipe; every
+tick is stored at once.
 
 **What is on screen.** Header "Filter" (22 heavy orange), "`S` of `B`" (`filter-count`: S = things passing all
 filters, B = things after the search and the quick chip), "Done". When any filter is on: "Clear all filters"
@@ -1347,7 +1351,7 @@ criterion and then sorting on section as an under criterion." Up to three levels
 level only decides between things the levels above call equal; the name settles the rest (0.58).
 
 **How it is reached and left.** "Sort" (`table-sort`) → a sheet (container `sort-sheet`; Mac at least 480 × 560);
-"Done" (`sort-done`); changes are stored at once.
+"Done" (`sort-done`; Escape too, 0.63); changes are stored at once.
 
 **What is on screen.** "Sort" (22 heavy orange) and "Done". One row per level: "Sort by" (first) or "then by"
 (15 heavy muted, 64 wide); a box with the level's title and ▾/▴ (`sort-level-<n>`, accessibility value = the
@@ -1402,7 +1406,8 @@ all of them get changed at once" (0.12, 24 Sep 2026). One field at a time on pur
 this takes two taps"; the grid keeps the old values so one press puts them back.
 
 **How it is reached and left.** The ticked bar's "Change all" → a sheet (container `bulk-detail`; Mac at least
-460 × 560). "Cancel" (`bulk-cancel`, outlined muted) or choosing a value (which applies and closes).
+460 × 560). "Cancel" (`bulk-cancel`, outlined muted; Escape too, 0.63 — nothing changes) or choosing a value (which
+applies and closes).
 
 **What is on screen.** "Change `N` thing(s)" (`bulk-count`, 20 heavy orange) and under it the first three names
 "A, B, C" or "A, B, C and `K` more" (13 medium muted, up to 2 lines). "WHAT TO CHANGE" (12 heavy muted). One row
@@ -1778,8 +1783,13 @@ pins · [idea] a gap worth deciding on.
 29. [rule-break] Resolved in 0.62: the bag delete's main button is full red ("Delete"); pressed before a bag is
     chosen it says "Choose where its things go first — another bag, or No bag." under it (UI
     `testABagIsRenamedAndDeletedFromItsPage`).
-30. [untested] **Escape on the Mac**: no screen in this area declares a keyboard shortcut (`.cancelAction` /
-    `.defaultAction` / `onExitCommand`); whether Escape closes a sheet is SwiftUI's default and is not tested.
+30. **Resolved in 0.63** — ~~[untested] Escape on the Mac: no screen in this area declares a keyboard shortcut.~~
+    Escape (⌘. on an iPhone keyboard) presses Cancel on a thing's page and on Change, and Done on Your things,
+    Your bags, a bag's page, the table (as a sheet — not the Mac's own window), Filter, Sort and Columns; never a
+    Save (spec 06 §20). Pinned by `testEscapeCancelsAThingAndClosesCaresWindows` (a renamed thing cancelled, Your
+    things behind it still open; Your bags; the table's Filter alone, then the table — on the Mac the window stays
+    and Done closes it); a bag's page, Sort, Columns and Change by the code only (the same one line). With
+    Escape planted on Save the test goes red on the iPhone ("Escape saved the thing").
 31. **Resolved in 0.62** — ~~A to-do found by the search goes nowhere.~~ `SearchScreen.chose` closes the
     search and sets `model.tabToOpen = .actions`; the frame opens the To do tab. Pinned by
     `testASearchedToDoOpensTheToDoTab` (Home spec).

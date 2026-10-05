@@ -35,6 +35,7 @@ struct RestoreSheet: View {
                 Button("Cancel") { answer(false); dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: false)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("restore-cancel")
             }
             .padding(16)

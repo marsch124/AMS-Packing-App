@@ -575,7 +575,8 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
 1. Header line: **"Trips"** (28 heavy green, id `events-heading`) and under it the summary (15 medium
    muted, id `events-summary`): "Nothing planned" with no trips; else "N trip(s)" + " · N being
    packed" (state packing) + " · N ready to go" (state packed). On the right: the map pin
-   (`WorldMapDoor`, id `events-map`), the magnifier (`search-open`), and — only when there are open
+   (`WorldMapDoor`, id `events-map`; its sheet *Where you have been* closes with **Done**, `map-done` — Escape
+   too since 0.63), the magnifier (`search-open`), and — only when there are open
    to-dos — a red capsule "N" (16 heavy) + "to do" (14 bold), white, id `events-todos`, label
    "N to do, open the To do tab"; it switches to the To do tab. Count = open actions of kind "todo"
    (`openToDoCount`, shopping lines not counted).
@@ -1593,7 +1594,7 @@ not evidence".
 
 **How it is reached and left.** Templates tab → the violet **Refine your templates** card (`RefineDoor`,
 id `refine-open`, value = waiting count or ""; Templates spec). Sheet; **Done** (filled violet,
-`refine-done`). Screen id `refine-screen`; Mac minimum 520 × 600.
+`refine-done`; Escape too, ⌘. on an iPhone keyboard — 0.63). Screen id `refine-screen`; Mac minimum 520 × 600.
 
 ### What is on screen
 - "Refine" (22 heavy violet) and the count (15 heavy mono muted, `refine-count`); the loop strip at
@@ -1879,7 +1880,8 @@ pins · [idea] a gap worth deciding on.
     Look-and-feel area's (file 06).
 29. [untested] **Escape on the Mac.** Resolved in 0.62: every window a trip opens has Escape as Cancel or
     Done (⌘. on an iPhone keyboard), tested by `testEscapeClosesTheTripsWindows`. Return is left to the
-    fields: it never saves a trip's settings or a review by accident.
+    fields: it never saves a trip's settings or a review by accident. (0.63: every other sheet of the app
+    too — Refine and the world map here among them; spec 06 §20.)
 30. [idea] **Swipe-down on the iPhone.** Resolved in 0.62: Trip settings and the review refuse the swipe
     while something is changed or marked; Cancel or Save closes them.
 31. [bug] **"1 things".** Resolved in 0.62: "1 thing" on the shared card, for a trip, a template and a grab
