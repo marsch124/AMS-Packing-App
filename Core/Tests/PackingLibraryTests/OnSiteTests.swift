@@ -26,14 +26,19 @@ final class OnSiteTests: XCTestCase {
     private func id(_ lib: Library, _ name: String) -> String { lib.trips[0].entries.first { $0.name == name }!.id }
     private func thing(_ lib: Library, _ name: String) -> Item { lib.items.first { $0.name == name }! }
 
-    /// Its door shows once the first day has come, or once something was bought on site.
+    /// Its door shows once the first day has come, or once something was bought on
+    /// site — and the loop strip says On site exactly then (the spec pass, 5 Oct 2026: a
+    /// dated trip ahead with a bought line showed the door while the loop said Pack).
     func testOnSiteBeginsOnTheFirstDayOrWithSomethingBought() {
         var (lib, trip) = library(start: "2026-10-10", end: "2026-10-12")
         XCTAssertFalse(lib.onSiteBegun(tripId: trip, today: "2026-10-03"), "a trip a week ahead has begun")
+        XCTAssertEqual(lib.loopStep(tripId: trip, today: "2026-10-03"), .pack)
         XCTAssertTrue(lib.onSiteBegun(tripId: trip, today: "2026-10-10"), "its first day has not begun it")
         XCTAssertTrue(lib.onSiteBegun(tripId: trip, today: "2026-10-20"), "after the trip the door went")
         _ = lib.addBoughtOnSite(tripId: trip, name: "Sandals")
         XCTAssertTrue(lib.onSiteBegun(tripId: trip, today: "2026-10-03"), "something bought on site, and no door")
+        XCTAssertEqual(lib.loopStep(tripId: trip, today: "2026-10-03"), .onSite,
+                       "the door shows On site and the loop still says Pack")
         XCTAssertFalse(lib.onSiteBegun(tripId: "no such trip", today: "2026-10-03"))
     }
 

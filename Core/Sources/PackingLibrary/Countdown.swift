@@ -45,7 +45,7 @@ extension Library {
 
     /// Not reviewed, dated, and starting today or later.
     private func stillToLeave(_ t: TripEvent, _ today: String) -> Bool {
-        t.status != "done" && t.reviewedAt.isEmpty && isYMD(t.startDate) && !jsStringLess(t.startDate, today)
+        !Library.isReviewed(t) && isYMD(t.startDate) && !jsStringLess(t.startDate, today)
     }
 
     /// One trip's steps that still have something left, soonest first (steps due

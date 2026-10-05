@@ -109,11 +109,17 @@ extension Library {
 
     /// Set a line aside for THIS trip ("not this time"): greyed, struck through,
     /// and out of the counts. On the trip's line only, never the template.
+    ///
+    /// Setting aside takes the tick away (the spec pass, 5 Oct 2026): a line ticked and
+    /// then set aside stayed ticked underneath, so the review asked about it as packed
+    /// and Your year counted it. "Not this time" means it did not go. Taking it back
+    /// brings it back unticked.
     @discardableResult
     public mutating func setAside(_ aside: Bool, tripId: String, entryId: String) -> Bool {
         guard let t = trips.firstIndex(where: { $0.id == tripId }),
               let e = trips[t].entries.firstIndex(where: { $0.id == entryId }) else { return false }
         trips[t].entries[e].skipped = aside
+        if aside { trips[t].entries[e].checked = false }
         return true
     }
 

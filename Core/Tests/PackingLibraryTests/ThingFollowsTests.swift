@@ -83,4 +83,53 @@ final class ThingFollowsTests: XCTestCase {
         XCTAssertEqual(line?.container, "Hip belt", "the template's own bag lost to the thing's")
         XCTAssertEqual(line?.weight, 90, "the weight did not follow")
     }
+
+    /// "Still ahead" goes by the day where he is (the spec pass, 5 Oct 2026): just
+    /// after midnight in Sweden the UTC date is still yesterday, and a trip that ended
+    /// yesterday took a change to its thing.
+    func testStillAheadGoesByTheDayWhereHeIs() {
+        let zone = TimeZone(secondsFromGMT: 2 * 3600)!                                    // two hours ahead of UTC
+        let justAfterMidnight = ISO8601DateFormatter().date(from: "2026-10-05T22:30:00Z")!   // 00:30 on the 6th there
+        XCTAssertEqual(Library.localToday(justAfterMidnight, zone: zone), "2026-10-06")
+        XCTAssertEqual(Library.localToday(justAfterMidnight, zone: TimeZone(identifier: "UTC")!), "2026-10-05")
+
+        let saved = NSTimeZone.default
+        defer { NSTimeZone.default = saved }
+        NSTimeZone.default = zone
+        PackingEnv.now = { justAfterMidnight }
+        var lib = Library()
+        var hiking = newList(name: "Hiking", group: "GA")
+        hiking.items = [newItem(name: "Headlamp")]
+        lib.saveTemplate(hiking)
+        var t = newEvent(name: "Ended yesterday", startDate: "2026-10-03", endDate: "2026-10-05")
+        t.activities = [lib.templates[0].id]
+        _ = lib.createTrip(t)
+        let lamp = lib.items.first { $0.name == "Headlamp" }!.id
+        _ = lib.updateThing(id: lamp) { $0.container = "Duffel bag" }
+        XCTAssertNotEqual(lib.trips[0].entries.first { $0.sourceItemId == lamp }?.container, "Duffel bag",
+                          "a trip that ended yesterday (where he is) still took the change")
+        // The same moment, a trip ending TODAY there is still ahead and follows.
+        lib.trips[0].endDate = "2026-10-06"
+        _ = lib.updateThing(id: lamp) { $0.container = "Day pack" }
+        XCTAssertEqual(lib.trips[0].entries.first { $0.sourceItemId == lamp }?.container, "Day pack",
+                       "a trip ending today (where he is) did not take the change")
+    }
+
+    /// A line's own marks stay when its thing changes (the spec pass, 5 Oct 2026): a
+    /// way-home tick, used up and a maintenance note on a line that was ticked and then
+    /// unticked were wiped by the next change to the thing.
+    func testALineKeepsItsOwnMarksWhenItsThingChanges() {
+        var (lib, id) = library()
+        let t = lib.trips.firstIndex { $0.name == "ahead" }!
+        let n = lib.trips[t].entries.firstIndex { $0.sourceItemId == id }!
+        lib.trips[t].entries[n].extra[HOME_KEY] = .bool(true)
+        lib.trips[t].entries[n].extra[USED_UP_KEY] = .bool(true)
+        lib.trips[t].entries[n].extra[HOME_NOTE_KEY] = .string("Strap loose")
+        XCTAssertTrue(lib.updateThing(id: id) { $0.weight = 75 })
+        let line = lampLine(lib, "ahead", id)!
+        XCTAssertEqual(line.weight, 75, "the change did not reach the trip still ahead")
+        XCTAssertTrue(Library.isPackedHome(line), "the way-home tick was wiped")
+        XCTAssertTrue(Library.isUsedUp(line), "used up was wiped")
+        XCTAssertEqual(Library.homeNote(line), "Strap loose", "the maintenance note was wiped")
+    }
 }

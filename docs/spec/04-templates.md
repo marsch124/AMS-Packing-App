@@ -1089,9 +1089,10 @@ His decision on test I.7 (1 Oct 2026), released 0.45.
   thing that are not ticked, not added by hand (`custom`) and not changed on the trip (`edited`) are rebuilt the way a
   new trip would build them (`buildTotalEntries(trip, resolvedTemplates())` filtered to this thing) — "so a bag
   chosen for that one template still wins over the thing's own bag". Each old line takes a fresh line from the same
-  template first, else any unused one; it keeps its `id`, `checked`, `skipped` (set aside) and `used`. A line with no
+  template first, else any unused one; it keeps its `id`, `checked`, `skipped` (set aside), `used` and its own
+  `extra` marks (way home, used up, maintenance note — 0.6x). A line with no
   fresh counterpart is left as it is. The trip's `updatedAt` is set when something changed. Returns how many lines
-  changed. `today` defaults to the UTC date of `nowISO()`.
+  changed. `today` defaults to `Library.localToday()`, the device's own date (0.6x; it was the UTC date).
 - A row saved in the row editor calls this too (`saveRow`, §7 — the spec pass, 5 Oct 2026), so a row's own bag,
   When, how many, note or conditions reach the open lines of trips still ahead. Other changes to a template's rows
   (typed on, picked on, taken off, the table's per-template columns, `setOnTemplate`) do not.
@@ -1138,7 +1139,7 @@ becomes a QR code; it opens in the web app for anyone, and in this app via Setti
   (`extra.iconKey`) does **not** travel. An empty template throws "This template has nothing on it to share."
 - **Opening** (`Library.readShared` tries grab list, then template, then trip): the preview says what it is —
   "A TEMPLATE", "AN ALWAYS-PACKED TEMPLATE" (role base) or "A TRANSPORT TEMPLATE" (role transport), so he knows
-  before he adds it — the name and "<n> things".
+  before he adds it — the name and "1 thing" / "<n> things" (`shared-count`; "1 things" until 0.6x).
   - When he already has a template of that name (`templateNameTaken`, the bag list aside): "You already have a
     template called “<name>”. This one needs a name of its own:" (15 medium muted, `shared-name-taken`) and a field
     (`shared-new-name`, 17 semibold, placeholder "A name you do not have yet") holding a free name
@@ -1297,9 +1298,8 @@ deciding before a rewrite.
     RESOLVED bag list, so his own bags are offered.
 12. [bug] **Your choices' refusal** says "<label> is still used by <n> thing(s)", but for When steps n also
     counts trip lines and template rows.
-13. [bug] **`followThing`'s "today"** is the UTC date (`nowISO()`), while the screens use the device's local
-    date: around midnight a trip that ended "yesterday" locally can still be followed, or one ending today
-    skipped.
+13. [bug] **`followThing`'s "today"** was the UTC date. Resolved in 0.6x (the trips area, F036): it goes by
+    `Library.localToday()`, the device's own date, as the screens do.
 14. [untested] **A shared base or transport template keeps its role.** — Resolved in 0.6x: pinned by
     `testASharedAlwaysPackedTemplateStaysOneButReplaceKeepsHisPlace` — as a new template it stays always packed (the
     preview and the "Added" line now say so); Replace now keeps HIS template's role, area and transport, so his

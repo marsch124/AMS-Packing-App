@@ -200,7 +200,7 @@ negative price/qtyOwned clamped, unknown retire reason dropped), `testConsumable
 | `templatesForThings()` (Bags.swift, 0.6x) | Every template but his bag list: the templates a thing's page and the table put a thing on or take it off. |
 | `bagNames()` (Bags.swift, 0.6x) | `containerNames` over his RESOLVED bag list(s): the 17 built-in names, then his own bags not among them. The one answer for the thing page's "Usually packed in", the table's "Packed in" and Change all. |
 | `usesOf(kind)` | How many items name each place / owner / packer / condition / phase (by `normName`), so Settings can refuse to remove one in use. |
-| `followThing(id:today:) -> Int` | His decision on test I.7 (1 Oct 2026, release 0.45): a change to a thing reaches trips still ahead — status not "done", not reviewed, and either no start date or an end date (or the start, when there is no end) ≥ today — and on them only lines of that thing (`sourceItemId == id`) that are not ticked, not custom and not edited on the trip. Each such line is rebuilt as a new trip would build it (`buildTotalEntries` over the resolved templates, so a template's own bag still wins; the fresh line from the same `sourceListId` first), keeping ONLY its id, tick, set-aside and `used` — the line's other data, its `extra` marks included, are the fresh line's. Without `today` it uses the UTC date (`nowISO().prefix(10)`); `updateThing` and `renameThing` never pass one. Returns the number of lines changed. |
+| `followThing(id:today:) -> Int` | His decision on test I.7 (1 Oct 2026, release 0.45): a change to a thing reaches trips still ahead — status not "done", not reviewed, and either no start date or an end date (or the start, when there is no end) ≥ today — and on them only lines of that thing (`sourceItemId == id`) that are not ticked, not custom and not edited on the trip. Each such line is rebuilt as a new trip would build it (`buildTotalEntries` over the resolved templates, so a template's own bag still wins; the fresh line from the same `sourceListId` first), keeping its id, tick, set-aside, `used` and its own `extra` marks (way home, used up, maintenance note — 0.6x) — the line's other data are the fresh line's. Without `today` it uses `Library.localToday()`, the device's own date (0.6x; it was the UTC date); `updateThing` and `renameThing` never pass one. Returns the number of lines changed. |
 
 **Data.** Items → `items` records; memberships → `memberships` records (parent = template id); kits → `kits`
 records; shared rows (owners/places/people/conditions) → `shared` records (`places:garage`-style keys).
@@ -225,8 +225,8 @@ choices counts it), `testHisOwnConditionIsRepairedByItsOwnLabel`. UI `testACondi
 (`-uiTestingOldConditions`: the sample with the Goggles' condition stored as "Needs replacing" — To buy offers them).
 
 **Not covered by a test.** `setOnTemplate` order placement (bottom of the template); `deleteThing` leaving
-to-dos/buy lines that name the thing; `renameThing` to a different capitalisation of its own name;
-`followThing` using the UTC date when called from `updateThing`.
+to-dos/buy lines that name the thing; `renameThing` to a different capitalisation of its own name.
+(`followThing`'s local day is pinned by `ThingFollowsTests.testStillAheadGoesByTheDayWhereHeIs`, 0.6x.)
 
 ---
 
@@ -1752,9 +1752,8 @@ pins · [idea] a gap worth deciding on.
     `testALineWhoseReminderWasDeletedCanBeSentAgain`).
 24. [bug] Resolved in 0.6x: confirmed (the row kept the old number), and each row now follows its bag's numbers
     unless the field already says them (UI `testYourBagsShowsANumberChangedOnTheBagsPage`).
-25. [bug] **`followThing` uses the UTC date** when called from `updateThing`/`renameThing` (no `today` passed),
-    unlike the screens, which use the local day; just after midnight in a time zone ahead of UTC a trip that
-    ended yesterday still counts as ahead.
+25. [bug] **`followThing` used the UTC date.** Resolved in 0.6x (the trips area, F036): it goes by
+    `Library.localToday()`, the device's own date.
 26. [bug] Resolved in 0.6x: the table sorts with `jsLocaleCompare` (base), as Your things and the templates do
     (`testTheTableSortsAccentedNamesAsYourThingsDoes`).
 27. [doc] Resolved in 0.6x: `KitDashboard`'s comments say it is the foot of the tab and that template bars are not

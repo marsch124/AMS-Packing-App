@@ -29,6 +29,19 @@ struct TripSettingsScreen: View {
     @State private var transport = "Car"
     @State private var season = "Summer"
     @State private var catering = "mixed"
+    /// Weather gear packed whatever the forecast says (the trip's `weatherOn`) — the
+    /// web app's "pack anyway". The spec pass (5 Oct 2026): no screen here showed it,
+    /// so a trip that carried it (a backup, the web app, Start again) could not be seen
+    /// or changed.
+    @State private var weatherOn: Set<String> = []
+    /// The trip's templates that this screen does not offer — one deleted since, or a
+    /// trip someone sent naming THEIR templates. Kept on Save, never dropped unseen
+    /// (the spec pass, 5 Oct 2026).
+    @State private var unshown: [String] = []
+    /// What the screen held when it opened: a swipe down must not throw changes away
+    /// without a word (the spec pass, 5 Oct 2026), so it only closes the sheet while
+    /// nothing has changed. Cancel always closes.
+    @State private var opened: [String] = []
     @State private var stillNeeded = ""
     /// The new trip's name while Start a new trip is open; nil when closed.
     @State private var againName: String?
@@ -43,6 +56,7 @@ struct TripSettingsScreen: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("tripset-cancel")
                 Spacer()
                 Text("Trip settings").font(.system(size: HeadingSize.band, weight: .heavy)).foregroundStyle(Theme.ink)
@@ -102,11 +116,17 @@ struct TripSettingsScreen: View {
                     }
                     Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: [transport], id: "tripset-transport") { transport = $0 }
                     Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "tripset-season") { season = $0 }
+                    // Rain gear on a dry forecast, or long before any forecast exists: his
+                    // own gear tagged for these comes onto the list, whatever the weather.
+                    Pills(title: "Pack weather gear anyway", options: WEATHER_CONDITIONS.map { ($0.id, $0.label) },
+                          selected: weatherOn, id: "tripset-weather") { id in
+                        if weatherOn.contains(id) { weatherOn.remove(id) } else { weatherOn.insert(id) }
+                    }
                     Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
                           selected: [catering], id: "tripset-catering") { catering = $0 }
                     LaundrySwitch(on: $laundry, nights: $laundryNights, id: "tripset-laundry")
 
-                    Text("Save rebuilds the list: what you ticked or added yourself stays; new things arrive; things no longer asked for go.")
+                    Text("Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things no longer asked for go.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     Rectangle().fill(Theme.line).frame(height: 1).padding(.vertical, 8)
@@ -140,6 +160,7 @@ struct TripSettingsScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .onAppear(perform: load)
+        .interactiveDismissDisabled(loaded && snapshot() != opened)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("tripset-screen")
         #if os(macOS)
@@ -234,6 +255,17 @@ struct TripSettingsScreen: View {
         transport = t.transport.isEmpty ? "Car" : t.transport
         season = t.season.isEmpty ? "Summer" : t.season
         catering = t.catering.isEmpty ? "mixed" : t.catering
+        weatherOn = Set(t.weatherOn)
+        let offered = Set(model.library.activityChoices().flatMap(\.lists).map(\.id))
+        unshown = t.activities.filter { !offered.contains($0) }
+        opened = snapshot()
+    }
+
+    /// Everything the screen can change, in one comparable piece.
+    private func snapshot() -> [String] {
+        [name, place, "\(hasDates)", HomeScreen.ymd(start), HomeScreen.ymd(end), "\(quick)", "\(laundry)",
+         "\(laundryNights)", activities.sorted().joined(separator: ","), contexts.sorted().joined(separator: ","),
+         transport, season, catering, weatherOn.sorted().joined(separator: ",")]
     }
 
     private func needs() -> String {
@@ -248,8 +280,11 @@ struct TripSettingsScreen: View {
         stillNeeded = needs()
         guard stillNeeded.isEmpty else { return }
         let n = name, dated = hasDates, s = start, e = end, q = quick
-        let acts = flat.map(\.id).filter { activities.contains($0) }
+        // The ticked ones in the order offered — then the trip's templates this screen
+        // does not show, as they were (see `unshown`).
+        let acts = flat.map(\.id).filter { activities.contains($0) } + unshown.filter { activities.contains($0) }
         let ctx = CONTEXTS.filter { contexts.contains($0) }
+        let wx = WEATHER_CONDITION_IDS.filter { weatherOn.contains($0) }
         let tr = transport, se = season, ca = catering, la = laundry, pl = jsTrim(place), ln = laundryNights
         var result: Library.TripRebuilt?
         model.change { lib in
@@ -264,6 +299,7 @@ struct TripSettingsScreen: View {
                 t.transport = tr
                 t.season = se
                 t.catering = ca
+                t.weatherOn = wx
                 t.laundry = la
                 t.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(ln))
                 t.startDate = dated ? HomeScreen.ymd(s) : ""

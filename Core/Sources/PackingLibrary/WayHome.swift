@@ -12,7 +12,10 @@ public let HOME_KEY = "packedHome"
 public let USED_UP_KEY = "usedUp"
 /// A line's extra key: a note made while packing to go home — "zip broken", "wash
 /// before next trip" (their field test, 3 Oct 2026: "a button for each item to write
-/// maintenance in the comment"). It stays on the trip's line; the thing is untouched.
+/// maintenance in the comment"). It is kept on the trip's line. The way home and On
+/// site save it through `noteOnSite`, which ALSO writes it onto the thing behind the
+/// line, dated, for Care (his choice, 3 Oct 2026); only `setHomeNote` alone leaves the
+/// thing untouched. (The spec pass, 5 Oct 2026: this said the thing was never touched.)
 public let HOME_NOTE_KEY = "homeNote"
 
 extension Library {
@@ -21,6 +24,18 @@ extension Library {
     public func homeLines(tripId: String) -> [Item] {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return [] }
         return trip.entries.filter { ($0.checked && !isSetAside($0)) || Library.isBoughtOnSite($0) }
+    }
+
+    /// The bag a way-home line is packed in, by the name the trip's Bags card uses —
+    /// a line in no bag is "Other" there ("Not in a bag" on screen). The spec pass
+    /// (5 Oct 2026): after a bag was deleted with "no bag", its lines said "" while its
+    /// photos had moved to "Other", so the way home showed none of them — and two
+    /// "Not in a bag" headings, one for "" and one for "Other".
+    public static func homeBag(_ line: Item) -> String { line.container.isEmpty ? "Other" : line.container }
+
+    /// The way home's bags, each once, in the order they first appear on the list.
+    public func homeBags(tripId: String) -> [String] {
+        homeLines(tripId: tripId).map(Library.homeBag).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
     }
 
     public static func isPackedHome(_ line: Item) -> Bool { line.extra[HOME_KEY]?.boolValue == true }
@@ -77,8 +92,8 @@ extension Library {
         return ids.count
     }
 
-    /// The line's note for the way home; an empty one removes it. The thing itself is
-    /// not touched — the note belongs to this trip.
+    /// The line's note for the way home; an empty one removes it. This alone does not
+    /// touch the thing — `noteOnSite`, which the screens call, carries it there too.
     @discardableResult
     public mutating func setHomeNote(_ text: String, tripId: String, entryId: String) -> Bool {
         let note = jsTrim(text)

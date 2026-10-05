@@ -15,9 +15,9 @@ final class AMSPackingUITests: XCTestCase {
     /// simulator, the Mac and GitHub. `-uiTestingEmpty` = nothing at all. (The copies
     /// kept before a restore ARE real files; the app deletes them at launch under the
     /// tests. Every launch mode: `LibraryModel.forThisLaunch`.)
-    private func launch(_ mode: String = "-uiTesting") -> XCUIApplication {
+    private func launch(_ mode: String = "-uiTesting", _ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments += [mode]
+        app.launchArguments += [mode] + extra
         app.launch()
         // GitHub's runners are slow and shared: a launch can time out there while
         // the same launch is instant here. One more try before giving up.
@@ -646,7 +646,8 @@ final class AMSPackingUITests: XCTestCase {
     /// a month grid, tap the first day and then the last; a tap before the first
     /// starts again; and the trip made keeps the dates he picked.
     func testDatesArePickedLikeBooking() {
-        let app = launch()
+        // An American-set device writes "Oct 1, 2026" its own way — the trip row must not.
+        let app = launch("-uiTesting", ["-AppleLocale", "en_US"])
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
@@ -723,18 +724,20 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-done")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
         tab(app, "events")
-        // The row writes dates the device's way: "27 Sep 2026" here, "Sep 27, 2026" on
-        // GitHub's Mac (0.22) — so look for the day and the month, in either order.
-        let c1 = cal.dateComponents([.day, .month], from: day(1))
-        let startDay = "\(c1.day!)", startMonth = mo[c1.month! - 1]
+        // The row writes a day in the same English words on every device, "27 Sep 2026"
+        // (the spec pass, 5 Oct 2026 — before, the device's way: "Sep 27, 2026" on
+        // GitHub's Mac and on an American-set iPhone).
+        let c1 = cal.dateComponents([.year, .day, .month], from: day(1))
+        let startDay = "\(c1.day!)", startMonth = mo[c1.month! - 1], startYear = "\(c1.year!)"
         let row = (0..<6).map { app.buttons["trip-row-\($0)"] }.first { $0.exists && self.words($0).contains("Dated trip") }
         XCTAssertNotNil(row, "the dated trip is not listed")
         if let row {
             let said = words(row)
             let first = said.range(of: "Dated trip").map { String(said[$0.upperBound...]) } ?? said
-            let startsRight = first.range(of: "\\b\(startDay) \(startMonth)|\(startMonth) \(startDay)\\b", options: .regularExpression) != nil
-            XCTAssertTrue(startsRight, "the trip lost its first day (\(startDay) \(startMonth)): '\(said)'")
+            let startsRight = first.range(of: "\\b\(startDay) \(startMonth) \(startYear)\\b", options: .regularExpression) != nil
+            XCTAssertTrue(startsRight, "the trip lost its first day, or wrote it the device's way (\(startDay) \(startMonth) \(startYear)): '\(said)'")
         }
+        shot(app, "trips-row-dates")
     }
 
     /// Bug B1 (his screenshot, 2026-09-26): a row showed NOT ticked while its section
@@ -1233,7 +1236,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick did not count: '\(words(progress))'")
 
         tap(app, id: "trip-settings")
-        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5), "the gear did not open Trip settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5), "the pen did not open Trip settings")
         let name = app.textFields["tripset-name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Weekend in the hills", "the settings do not start from the trip")
@@ -1337,6 +1340,464 @@ final class AMSPackingUITests: XCTestCase {
         }
         XCTAssertTrue(sawOld, "the old trip is gone")
     }
+
+    // MARK: - Trips: the spec pass (5 Oct 2026)
+
+    /// Escape means Cancel, or Done, on every window a trip opens (the spec pass,
+    /// 5 Oct 2026): nothing said so, and whether Escape closed one was left to the Mac.
+    /// The same key on an iPhone with a keyboard.
+    func testEscapeClosesTheTripsWindows() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        func escape() {
+            sleep(1)                                    // a window just opened: let it take the keys
+            #if os(macOS)
+            app.typeKey(.escape, modifierFlags: [])
+            #else
+            // An iPhone with a keyboard: ⌘. is the same Cancel. (The simulator passes no
+            // Escape on without a keyboard of its own — tried 5 Oct 2026; ⌘. arrives.)
+            app.typeKey(".", modifierFlags: .command)
+            #endif
+        }
+
+        // With something changed, so only a real Cancel closes it (an iPhone closes an
+        // untouched sheet on ⌘. by itself; a changed one it keeps — see the swipe test).
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tapVisible(app, app.buttons["tripset-season-1"])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-season-1"]) })
+        escape()
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Escape did not cancel Trip settings")
+        XCTAssertNotNil(find(app, "trip-detail"), "Escape closed the trip behind Trip settings too")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertFalse(isOn(app.buttons["tripset-season-1"]), "Escape saved the change instead of cancelling it")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+
+        app.buttons["trip-line-0"].tap()                          // something packed, for the review to ask about
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        tap(app, id: "review-line-0")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["review-line-0"]) }, "the mark did not take")
+        escape()
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5), "Escape did not cancel the review")
+        XCTAssertTrue(app.buttons["trip-review"].waitForExistence(timeout: 5), "Escape saved the review")
+
+        tap(app, id: "trip-loop")
+        XCTAssertTrue(appears(app, "loop-screen", timeout: 5))
+        escape()
+        XCTAssertTrue(disappears(app, "loop-screen", timeout: 5), "Escape did not close the loop")
+
+        tapVisible(app, app.buttons["trip-share"])
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5))
+        escape()
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5), "Escape did not close Share")
+
+        XCTAssertNotNil(find(app, "trip-detail"), "a closed window took the trip with it")
+        escape()
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5), "Escape did not close the trip")
+    }
+
+    /// His first finding of the spec pass (5 Oct 2026): a trip someone SENT lost its
+    /// whole list — ticks too — the first time Trip settings was saved. Sent, opened,
+    /// ticked, saved: the list stays as it came, and its tick with it. (Here the
+    /// "someone" is this same device, through the link it copies.)
+    func testATripSomeoneSentKeepsItsListOnSave() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        // The sender's own tick: it tells the two trips apart later (ticks never travel).
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick did not count: '\(words(progress))'")
+        tapVisible(app, app.buttons["trip-share"])
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5), "Share did not open")
+        tap(app, id: "share-copy")
+        XCTAssertTrue(waitUntil { (app.buttons["share-copy"].value as? String) == "copied" }, "Copy link did not say so")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        tab(app, "settings")
+        tap(app, id: "settings-openshared")
+        XCTAssertTrue(appears(app, "shared-screen", timeout: 5))
+        tap(app, id: "shared-paste")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A TRIP" }, "the link was not read as a trip")
+        XCTAssertEqual(words(app.staticTexts["shared-count"]), "7 things")
+        tap(app, id: "shared-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).hasPrefix("Added") }, "the trip was not added")
+        tap(app, id: "shared-done")
+        XCTAssertTrue(disappears(app, "shared-screen", timeout: 5))
+
+        // The received one is the trip with nothing ticked.
+        tab(app, "events")
+        var found = false
+        for row in 0..<2 where !found {
+            guard app.buttons["trip-row-\(row)"].waitForExistence(timeout: 5) else { continue }
+            app.buttons["trip-row-\(row)"].tap()
+            XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+            if waitUntil(timeout: 3, { self.words(progress) == "0/7" }) { found = true; break }
+            tap(app, id: "trip-done")
+            XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        }
+        XCTAssertTrue(found, "the received trip is not among the trips")
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick on the received trip did not count")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Save did not close Trip settings")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-rebuilt"]) == "Saved. The list is the same." },
+                      "Save changed the received list: '\(words(app.staticTexts["trip-rebuilt"]))'")
+        XCTAssertEqual(words(progress), "1/7", "the received list, or its tick, was lost on Save")
+        shot(app, "received-trip-saved")
+    }
+
+    /// "Not this time" means it did not go (the spec pass, 5 Oct 2026): setting a
+    /// ticked line aside takes the tick, a set-aside line does not tick, and taken
+    /// back it is unticked. A section with every line set aside has nothing to tick
+    /// whole — and no switched-off grey circle either (his rule).
+    func testASetAsideLineIsNotPacked() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick did not count: '\(words(progress))'")
+        tap(app, id: "trip-line-0-aside")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/6 · 1 set aside" }, "not set aside: '\(words(progress))'")
+        XCTAssertFalse(isOn(app.buttons["trip-line-0"]), "set aside, and still ticked underneath")
+        app.buttons["trip-line-0"].tap()
+        XCTAssertFalse(waitUntil(timeout: 2) { self.isOn(app.buttons["trip-line-0"]) }, "a set-aside line took a tick")
+        XCTAssertEqual(words(progress), "0/6 · 1 set aside")
+        tap(app, id: "trip-line-0-aside")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "taken back, it came back ticked: '\(words(progress))'")
+
+        // Every line of the one section set aside.
+        XCTAssertTrue(app.buttons["trip-group-0-all"].waitForExistence(timeout: 5), "the section has no tick to begin with")
+        for n in 0..<7 {
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)-aside", near: n > 0 ? "trip-line-\(n - 1)-aside" : nil))
+            tap(app, id: "trip-line-\(n)-aside")
+        }
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/0 · 7 set aside" }, "not all set aside: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-group-0-all"].exists },
+                      "a section with nothing to tick still offers its tick (a grey, switched-off one)")
+        shot(app, "trip-all-set-aside")
+    }
+
+    /// His rule (2026-09-26), the spec pass (5 Oct 2026): Set place's Save sat grey and
+    /// switched off while its field was empty, and the review's Add did nothing at all
+    /// with nothing typed. Both are there to press, and say what is missing. And in the
+    /// review, "No template" can really be chosen — it fell back to the first template.
+    func testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        type("Tripod", into: app.textFields["trip-add-name"])
+        tap(app, id: "trip-add")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/8" }, "the typed line was not added: '\(words(progress))'")
+        hideKeyboard(app)
+        tap(app, id: "trip-view-2")                              // From where
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-place"), "no Set place on the typed line")
+        tap(app, id: "trip-line-7-place")
+        XCTAssertTrue(appears(app, "trip-place-panel", timeout: 5))
+        bringIntoView(app, app.buttons["trip-place-save"])
+        var misses = [saysWhatIsMissing(app, "trip-place-save")]
+        shot(app, "trip-place-needs")
+        tap(app, id: "trip-place-close")
+
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        misses.append(saysWhatIsMissing(app, "review-miss-add"))
+        shot(app, "review-add-needs")
+        misses.removeAll { $0.isEmpty }
+        XCTAssertTrue(misses.isEmpty, "buttons that are not ready, or do not say what is missing:\n" + misses.joined(separator: "\n"))
+
+        type("Sit mat", into: app.textFields["review-miss-input"])
+        XCTAssertTrue(waitUntil { !app.staticTexts["review-miss-add-needs"].exists }, "the line stayed after typing")
+        // "No template" is the last pill.
+        var last = 0
+        while app.buttons["review-miss-where-\(last + 1)"].exists { last += 1 }
+        XCTAssertGreaterThan(last, 0, "the trip shows no templates to choose from")
+        let none = app.buttons["review-miss-where-\(last)"]
+        XCTAssertEqual(words(none), "No template")
+        select(app, none)
+        XCTAssertFalse(isOn(app.buttons["review-miss-where-0"]), "the first template stayed picked")
+        hideKeyboard(app)
+        tap(app, id: "review-miss-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["review-missed-0-where"]) == "no template" },
+                      "the missed thing did not go on no template: '\(words(app.staticTexts["review-missed-0-where"]))'")
+        shot(app, "review-no-template")
+        tap(app, id: "review-cancel")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+    }
+
+    /// The date grid (the spec pass, 5 Oct 2026). Tapping the field with only the first
+    /// day picked closed the grid and kept a one-day trip; now the field is OK: it waits
+    /// for the last day and says so, and closes on a whole range. And the grid keeps
+    /// one height — six rows every month — so OK never moves under his finger.
+    func testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        setSwitch(app, "trip-dates", on: true)
+        let grid = app.staticTexts["range-title-0"]
+        XCTAssertTrue(grid.waitForExistence(timeout: 5), "the month grid did not open")
+        let field = app.buttons["trip-dates-field"]
+        func says() -> String { field.value as? String ?? "" }
+
+        pickDay(app, dayFromToday(3))
+        tap(app, id: "trip-dates-field")
+        XCTAssertTrue(app.staticTexts["range-needs"].waitForExistence(timeout: 5), "the field closed the grid with only the first day")
+        XCTAssertTrue(grid.exists, "the grid closed with only the first day")
+        shot(app, "date-field-needs")
+        pickDay(app, dayFromToday(5))
+        tap(app, id: "trip-dates-field")
+        XCTAssertTrue(waitUntil { !grid.exists }, "the field did not close the grid on a whole range")
+        XCTAssertTrue(says().hasSuffix("2 nights"), "the range was not kept: '\(says())'")
+
+        // Six rows, whatever the month: OK stays where it was, month after month.
+        tap(app, id: "trip-dates-field")
+        XCTAssertTrue(grid.waitForExistence(timeout: 5), "the field did not open the grid again")
+        let ok = app.buttons["range-ok"]
+        XCTAssertTrue(ok.waitForExistence(timeout: 5))
+        func gap() -> CGFloat { ok.frame.minY - grid.frame.minY }
+        let months = ["January", "February", "March", "April", "May", "June", "July",
+                      "August", "September", "October", "November", "December"]
+        func weeks() -> Int {
+            let shown = words(grid).split(separator: " ")
+            var cal = Calendar(identifier: .gregorian); cal.firstWeekday = 2
+            let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
+            let first = cal.date(from: DateComponents(year: Int(shown.last ?? "") ?? 2026, month: m, day: 1))!
+            let lead = (cal.component(.weekday, from: first) + 5) % 7
+            return (lead + cal.range(of: .day, in: .month, for: first)!.count + 6) / 7
+        }
+        let start = gap()
+        var rows: Set<Int> = [weeks()]
+        for _ in 0..<5 {
+            tap(app, id: "range-next")
+            usleep(300_000)
+            rows.insert(weeks())
+            XCTAssertEqual(gap(), start, accuracy: 1, "OK moved with the month (\(words(grid)))")
+        }
+        XCTAssertGreaterThan(rows.count, 1, "the months seen all have as many weeks — this proves nothing")
+        shot(app, "date-six-rows")
+        tap(app, id: "range-cancel")
+    }
+
+    /// A bag whose things have no weight is on the trip's Bags card all the same (the
+    /// spec pass, 5 Oct 2026): it was left off, and its luggage scale, cabin switch and
+    /// photos could not be reached from the trip.
+    func testABagWithNothingWeighedIsOnTheTrip() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Map", into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let bag = app.buttons["thing-bag-2"]
+        XCTAssertTrue(bag.waitForExistence(timeout: 5))
+        XCTAssertFalse(words(bag).contains("Carry-on"), "pick a bag other than the one it has: '\(words(bag))'")
+        select(app, bag)
+        let weight = app.textFields["thing-weight"]
+        XCTAssertTrue(weight.waitForExistence(timeout: 5), "no weight on the thing's page")
+        bringIntoView(app, weight)
+        replace("0", in: weight)                                  // 0 = not known
+        hideKeyboard(app)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["bag-0"].waitForExistence(timeout: 5), "no Bags card")
+        let unweighed = (0..<4).map { app.buttons["bag-\($0)"] }.first { $0.exists && ($0.value as? String) == "not weighed" }
+        let said = (0..<4).map { n -> String in
+            let e = app.buttons["bag-\(n)"]
+            return e.exists ? (e.value as? String ?? "") : "-"
+        }
+        XCTAssertNotNil(unweighed, "the bag with nothing weighed is not on the trip: \(said)")
+        guard let unweighed else { return }
+        let n = unweighed.identifier
+        tapVisible(app, unweighed)
+        XCTAssertTrue(app.textFields["\(n)-scale"].waitForExistence(timeout: 5), "its luggage scale cannot be reached")
+        shot(app, "bags-unweighed")
+    }
+
+    /// Weather gear "anyway" (the spec pass, 5 Oct 2026): the trip's own forced
+    /// conditions had no switch here — a trip that carried them could not show or
+    /// change them. Picked, saved, and still picked when Trip settings opens again.
+    func testWeatherGearCanBePackedAnyway() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-weather-0"), "no weather gear choice")
+        let rain = app.buttons["tripset-weather-0"]
+        XCTAssertEqual(words(rain), "Rain")
+        XCTAssertFalse(isOn(rain), "rain gear is forced on from the start")
+        select(app, rain)
+        shot(app, "tripset-weather")
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-weather-0"))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-weather-0"]) }, "rain gear anyway was not kept")
+        XCTAssertFalse(isOn(app.buttons["tripset-weather-1"]), "a condition he did not pick is on")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+    }
+
+    /// A template with no activity area is offered for a trip, last, under "Other
+    /// templates" (the spec pass, 5 Oct 2026): A new template offers "No activity area",
+    /// and such a template could never go on a trip. And Trip settings keeps a trip's
+    /// template it does not show: a Quick trip whose template was deleted since lost its
+    /// Save without a word (the name typed was simply gone).
+    func testATemplateWithNoActivityAreaGoesOnATrip() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "templates-new")
+        XCTAssertTrue(appears(app, "newlist-detail", timeout: 5))
+        type("Picnic", into: app.textFields["newlist-name"])
+        hideKeyboard(app)
+        tap(app, id: "newlist-area-none")
+        tap(app, id: "newlist-make")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the new template did not open")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // Create new trip: Hiking 0, Swim 1, and the new one last. A Quick trip of it.
+        tab(app, "home")
+        XCTAssertTrue(scrollUntil(app, "trip-activity-2"), "a template with no activity area is not offered")
+        let picnic = app.buttons["trip-activity-2"]
+        XCTAssertEqual(words(picnic), "Picnic")
+        bringIntoView(app, picnic)
+        shot(app, "home-other-templates")
+        type("Lunch out", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        setSwitch(app, "trip-quick", on: true)
+        select(app, picnic)
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip was not made")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-activity-2"))
+        XCTAssertTrue(isOn(app.buttons["tripset-activity-2"]), "Trip settings does not show the template on the trip")
+        bringIntoView(app, app.buttons["tripset-activity-2"])
+        shot(app, "tripset-other-templates")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // The template goes (row 3: Common base, Hiking, Swim, then Picnic).
+        tab(app, "templates")
+        XCTAssertTrue(scrollUntil(app, "template-row-3", near: "template-row-2"), "the new template is not listed")
+        tap(app, id: "template-row-3")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertEqual(cellSays(app, "template-name"), "Picnic", "row 3 is not the new template")
+        tap(app, id: "template-delete")
+        tap(app, id: "template-delete-yes")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // The trip (undated, so after the sample's): renamed in Trip settings, and saved.
+        tab(app, "events")
+        tap(app, id: "trip-row-1")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-name"]) == "Lunch out" }, "row 1 is not the new trip")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        replace("Lunch in the park", in: app.textFields["tripset-name"])
+        app.textFields["tripset-name"].typeText("\n")
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-name"]) == "Lunch in the park" },
+                      "Save was lost without a word: '\(words(app.staticTexts["trip-name"]))'")
+    }
+
+    /// "1 thing", not "1 things" (the spec pass, 5 Oct 2026) — on the card a shared
+    /// link shows; a grab list of one thing says it.
+    func testASharedListOfOneSaysOneThing() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        makeOwnGrabList(app, "Sunglasses", things: ["Sunglasses"])
+        tap(app, id: "grab-edit")                                    // Save
+        tap(app, id: "grab-share")
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5))
+        tap(app, id: "share-copy")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
+        tap(app, id: "grab-done")
+        tab(app, "settings")
+        tap(app, id: "settings-openshared")
+        XCTAssertTrue(appears(app, "shared-screen", timeout: 5))
+        tap(app, id: "shared-paste")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A GRAB LIST" }, "not read as a grab list")
+        XCTAssertEqual(words(app.staticTexts["shared-count"]), "1 thing")
+        shot(app, "shared-one-thing")
+        tap(app, id: "shared-done")
+    }
+
+    #if os(iOS)
+    /// A swipe down must not throw unsaved work away without a word (the spec pass,
+    /// 5 Oct 2026): with something marked in the review, or changed in Trip settings,
+    /// the swipe no longer closes the sheet — Cancel or Save does. With nothing
+    /// changed, the swipe closes it as before.
+    func testASwipeDownKeepsWhatIsNotSavedYet() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        app.buttons["trip-line-0"].tap()                          // something packed, for the review to ask about
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "1/7" })
+        func swipeDown(_ screen: String) {
+            guard let sheet = find(app, screen) else { return }
+            sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05))
+                .press(forDuration: 0.05, thenDragTo: sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)))
+            sleep(1)
+        }
+
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        swipeDown("review-detail")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5), "with nothing marked, the swipe did not close the review")
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        tap(app, id: "review-line-0")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["review-line-0"]) }, "the mark did not take")
+        swipeDown("review-detail")
+        XCTAssertNotNil(find(app, "review-detail"), "a swipe threw the review's marks away")
+        XCTAssertTrue(isOn(app.buttons["review-line-0"]), "the mark was lost")
+        tap(app, id: "review-cancel")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5), "Cancel did not close the review")
+
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tapVisible(app, app.buttons["tripset-season-1"])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-season-1"]) })
+        swipeDown("tripset-screen")
+        XCTAssertNotNil(find(app, "tripset-screen"), "a swipe threw Trip settings' change away")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Cancel did not close Trip settings")
+        XCTAssertEqual(words(app.staticTexts["trip-progress"]), "1/7", "Cancel changed the trip")
+    }
+    #endif
 
     /// Laundry (the web app's, gap list 2026-09-27): he can wash, so per-night things
     /// count 4 nights at most — a 7-night trip packs 4 of the per-night towel, not 7,

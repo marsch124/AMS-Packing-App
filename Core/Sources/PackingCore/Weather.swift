@@ -235,8 +235,8 @@ public struct WeatherGearSpec: Equatable, Hashable, Sendable {
 }
 
 /// Curated, generic add-ons per condition — the kind of gear that isn't
-/// activity-specific. Suggested only when the forecast calls for it and the item
-/// isn't already on the list. (Keyed by WEATHER_CONDITIONS id.)
+/// activity-specific. Suggested whenever the forecast names the condition and the
+/// item isn't already on the list or already suggested. (Keyed by WEATHER_CONDITIONS id.)
 public let WEATHER_SUGGESTIONS: [String: [WeatherGearSpec]] = [
     "rain": [
         WeatherGearSpec(name: "Rain jacket", category: "Adventure clothing"),
@@ -321,8 +321,13 @@ public struct WeatherSuggestions: Equatable, Hashable, Sendable {
 }
 
 /// Suggested additions for this trip's forecast, minus anything already packed.
-/// Prefers the user's OWN weather-tagged items from the chosen activity lists,
-/// then fills any remaining conditions with the curated generic add-ons.
+/// First the user's OWN weather-tagged items from the lists named in
+/// `event.activities` (only those — the base and transport lists are not looked at
+/// here; the native app passes them in itself, see `Library.weatherMissing`), then
+/// the curated generic add-ons for EVERY active condition — not only for conditions
+/// his own gear left uncovered — each skipped only when its name is already on the
+/// trip or already suggested. (As the JS does; the comment that said "any condition
+/// your lists didn't" was wrong — the spec pass, 5 Oct 2026.)
 public func weatherSuggestions(_ event: TripEvent, _ lists: [PackList] = []) -> WeatherSuggestions {
     guard let d = deriveWeather(event) else { return WeatherSuggestions() }
     let active = Set(d.conditions)
@@ -343,7 +348,7 @@ public func weatherSuggestions(_ event: TripEvent, _ lists: [PackList] = []) -> 
         }
     }
 
-    // 2) Curated generic add-ons cover any condition your lists didn't.
+    // 2) Curated generic add-ons for every active condition, de-duplicated by name.
     for cond in d.conditions {
         for spec in WEATHER_SUGGESTIONS[cond] ?? [] {
             let key = normName(spec.name)

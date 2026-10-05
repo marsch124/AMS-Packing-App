@@ -50,7 +50,7 @@ blue, the tone Make gives.
 | teal   | `#17969b` |                               |
 | other  | `#64748b` | (none arrives since 5 Oct 2026; a factory row from the web app could carry one) |
 
-## Workout pills (WET) — decided 28 September 2026, not built yet
+## Workout pills (WET) — decided 28 September 2026, built (`WorkoutTone`, 0.40)
 
 WET = workout, exercise, training. On **Create new trip** and **Trip
 settings**, each WET template gets its own colour, so a sport is recognised by

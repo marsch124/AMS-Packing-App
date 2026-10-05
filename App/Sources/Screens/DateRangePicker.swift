@@ -42,8 +42,11 @@ struct DateRangePicker: View {
 
     private var field: some View {
         Button {
-            open.toggle()
-            if open { month = ""; before = (start, end); okTooSoon = false }   // opens on the month of the first day
+            // Open: opens on the month of the first day. Open already: the same as OK —
+            // with only the first day picked it stays open and says what is missing (the
+            // spec pass, 5 Oct 2026: it closed, keeping a one-day trip and "Now tap the
+            // last day" on the field, and Create or Save stored the day trip).
+            if open { ok() } else { open = true; month = ""; before = (start, end); okTooSoon = false }
         } label: {
             HStack(spacing: 12) {
                 SectionMark(section: .events, size: 24, weight: 1.8)
@@ -134,7 +137,7 @@ struct DateRangePicker: View {
 
     private func monthView(_ ym: String, index: Int, showPrev: Bool, showNext: Bool) -> some View {
         let cells = DateRangePicker.cells(ym)
-        let weeks = stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<min($0 + 7, cells.count)]) }
+        let weeks = DateRangePicker.sixWeeks(cells)
         return VStack(spacing: 6) {
             HStack {
                 if showPrev { arrow(-1, "M15 6l-6 6 6 6", "range-prev") } else { Color.clear.frame(width: 40, height: 36) }
@@ -242,6 +245,15 @@ struct DateRangePicker: View {
     }
 
     // MARK: Dates
+
+    /// A month as SIX rows of seven, the blanks after its last day filled in — so the
+    /// grid keeps one height from month to month and OK and Cancel never move under his
+    /// finger (the spec pass, 5 Oct 2026; the model's `monthGrid` was made "so the panel
+    /// never jumps" — a month drew four to six rows here, and the panel jumped).
+    static func sixWeeks(_ cells: [Date?]) -> [[Date?]] {
+        let padded = cells + Array(repeating: nil, count: max(0, 42 - cells.count))
+        return stride(from: 0, to: 42, by: 7).map { Array(padded[$0..<$0 + 7]) }
+    }
 
     /// The month's cells, Monday first: nil for the blanks before the 1st.
     static func cells(_ ym: String) -> [Date?] {

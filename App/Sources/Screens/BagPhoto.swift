@@ -197,6 +197,7 @@ struct BigPhoto: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold))
+                    .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("bag-photo-done")
             }
             .padding(16)

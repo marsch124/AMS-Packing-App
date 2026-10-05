@@ -19,14 +19,15 @@ public enum SharedThing: Equatable {
 extension Library {
     /// A trip as a link, or nil when it is too big for one (then share it as a file).
     public func shareLink(tripId: String) -> String? {
-        guard let trip = trips.first(where: { $0.id == tripId }), let frag = encodeTripLink(trip) else { return nil }
+        guard let trip = trips.first(where: { $0.id == tripId }),
+              let frag = encodeTripLink(Library.justTheList(trip)) else { return nil }
         return SHARE_WEB_BASE + frag
     }
 
     /// A trip as a file — the web app's "<name>-trip.json", which it can open too.
     public func shareFile(tripId: String) -> (fileName: String, data: Data)? {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return nil }
-        let text = buildTripBundle(trip).text(pretty: true)
+        let text = buildTripBundle(Library.justTheList(trip)).text(pretty: true)
         return (Library.workbookFileName(trip.name).replacingOccurrences(of: " packing list.xlsx", with: " trip.json"),
                 Data(text.utf8))
     }
@@ -58,12 +59,40 @@ extension Library {
     }
 
     /// A shared trip becomes a trip of his: new ids, nothing ticked, not reviewed
-    /// (parseTripBundle has seen to that).
+    /// (parseTripBundle has seen to that) — and none of the sender's own marks, even
+    /// from a link made before they stopped travelling.
+    ///
+    /// It arrives QUICK (the spec pass, 5 Oct 2026): its list is what was sent, and
+    /// Trip settings' Save keeps it as it came. Quick means his own always-packed and
+    /// transport templates do not pour in on top of it at the first Save; a template he
+    /// ticks there adds to it, and switching Quick off brings in the rest — his choice,
+    /// in plain sight.
     @discardableResult
     public mutating func importTrip(_ trip: TripEvent) -> TripEvent {
-        var t = trip
+        var t = Library.justTheList(trip)
+        t.mode = "quick"
         t.updatedAt = nowISO()
         trips.append(t)
+        return t
+    }
+
+    /// What a trip's sender keeps to himself (the spec pass, 5 Oct 2026: "a shared trip
+    /// carries your private marks and scale readings"): the trip's luggage-scale
+    /// readings and its bag photos (only their ids would travel — the photos never
+    /// do); a line's "not this time", way-home tick, used up, maintenance note,
+    /// bought on site, packing time and "changed on the trip". The list itself — its
+    /// lines, bags, When, quantities and the trip's answers — goes as it is.
+    public static func justTheList(_ trip: TripEvent) -> TripEvent {
+        var t = trip
+        t.extra[WEIGHED_KEY] = nil
+        t.extra[BAG_PHOTOS_KEY] = nil
+        t.entries = t.entries.map { line in
+            var l = line
+            l.skipped = false
+            l.edited = false
+            for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt"] { l.extra[key] = nil }
+            return l
+        }
         return t
     }
 

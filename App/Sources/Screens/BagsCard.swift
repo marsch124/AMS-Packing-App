@@ -30,8 +30,10 @@ struct BagsCard: View {
     @FocusState private var typing: Bool
 
     var body: some View {
-        let bags = model.library.weighedBags(tripId: tripId)
-            .filter { $0.load.items > 0 && ($0.load.grams > 0 || $0.scaleGrams != nil) }
+        // Every bag that has something in it — weighed or not (the spec pass, 5 Oct
+        // 2026): a bag whose things had no weight was left off, and its luggage scale,
+        // cabin switch and photos could not be reached from the trip.
+        let bags = model.library.weighedBags(tripId: tripId).filter { $0.load.items > 0 }
         if !bags.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
@@ -122,13 +124,16 @@ struct BagsCard: View {
                 Text(name).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 Spacer(minLength: 8)
                 // Every bag says its maximum — or that it has none (his ask, 2026-09-26).
-                Text(limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
-                               : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
+                // A bag with nothing weighed says what to do instead of "0 g".
+                Text(bag.grams == 0 ? "Tap to weigh"
+                     : limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
+                     : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
                     .font(.system(size: 14, weight: .bold).monospacedDigit())
                     .foregroundStyle(bag.over ? AppSection.actions.color : Theme.muted)
             }
-            // Only a bag that HAS a limit gets a bar — a bar with no end says nothing.
-            if limit > 0 {
+            // Only a bag that HAS a limit gets a bar — a bar with no end says nothing —
+            // and something weighed to show on it.
+            if limit > 0 && bag.grams > 0 {
                 GeometryReader { space in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Theme.line)
@@ -216,6 +221,7 @@ struct BagsCard: View {
     /// The bar in words: "fine, 25% of its max"; "no max" when it has none.
     static func gauge(_ bag: WeighedBag) -> String {
         let limit = bag.load.limitKg
+        guard bag.grams > 0 else { return "not weighed" }
         guard limit > 0 else { return "no max" }
         return "\(state(bag)), \(Int((bag.grams / 10 / limit).rounded()))% of its max"
     }

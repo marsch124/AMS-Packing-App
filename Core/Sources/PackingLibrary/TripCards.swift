@@ -41,13 +41,21 @@ extension Library {
         public var part: Double { total > 0 ? Double(done) / Double(total) : 0 }
     }
 
+    /// Has the trip been reviewed? ONE rule for every screen (the spec pass, 5 Oct
+    /// 2026): marked done, or a review time on it — trips from the web app can carry
+    /// the time alone. The trip screen asked only for "done", so such a trip looked
+    /// reviewed on its card and offered Review again on its page.
+    public static func isReviewed(_ trip: TripEvent) -> Bool {
+        trip.status == "done" || !trip.reviewedAt.isEmpty
+    }
+
     /// Every trip, in the order the Events screen shows them: what is happening
     /// now first, then what is coming, then what has been (most recent first).
     public func tripCards(today: String) -> [TripCard] {
         sortEventsForList(trips, today).map { trip in
             let p = progress(trip.entries)
             let state: TripState
-            if trip.status == "done" || !trip.reviewedAt.isEmpty { state = .reviewed }
+            if Library.isReviewed(trip) { state = .reviewed }
             else if p.total > 0 && p.done == p.total { state = .packed }
             else if p.done > 0 || p.aside > 0 { state = .packing }
             else { state = .planned }

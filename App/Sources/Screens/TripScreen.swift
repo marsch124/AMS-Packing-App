@@ -34,6 +34,8 @@ struct TripScreen: View {
     /// What the last Trip settings save did to the list, said under the loop.
     @State private var rebuiltNote = ""
     @State private var newPlace = ""
+    /// What Save in Set place was missing, said under it (never a grey button).
+    @State private var placeNeeds = ""
     /// The thing opened from Check before you go.
     @State private var checking: CheckedThing?
     /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
@@ -57,15 +59,12 @@ struct TripScreen: View {
         }
     }
 
-    private func foldKey(_ label: String) -> String { "\(tripId)|\(view)|\(label)" }
-    private func isFolded(_ label: String) -> Bool {
-        foldedRaw.split(separator: "\n").contains { String($0) == foldKey(label) }
-    }
+    private func foldKey(_ label: String) -> String { TripFolds.key(trip: tripId, view: view, heading: label) }
+    private func isFolded(_ label: String) -> Bool { TripFolds.isFolded(foldedRaw, foldKey(label)) }
+    /// Folding also sweeps out the folds of trips this device no longer has (the spec
+    /// pass, 5 Oct 2026: a deleted trip's folds were kept for ever).
     private func toggleFold(_ label: String) {
-        var keys = foldedRaw.split(separator: "\n").map(String.init)
-        let k = foldKey(label)
-        if let i = keys.firstIndex(of: k) { keys.remove(at: i) } else { keys.append(k) }
-        foldedRaw = keys.joined(separator: "\n")
+        foldedRaw = TripFolds.toggled(foldedRaw, foldKey(label), trips: Set(model.library.trips.map(\.id)))
     }
 
     private var sortingLabel: some View {
@@ -128,8 +127,10 @@ struct TripScreen: View {
                     }
                 }
                 Spacer()
-                // After the trip: what did I use, what did I miss. Once, then it says so.
-                if trip.status == "done" {
+                // After the trip: what did I use, what did I miss. Once, then it says so —
+                // by the one rule every screen uses (the spec pass, 5 Oct 2026: a trip with
+                // only a review time looked reviewed on its card and offered Review here).
+                if Library.isReviewed(trip) {
                     Text("Reviewed").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("trip-reviewed")
                 } else if !trip.entries.isEmpty {
@@ -141,6 +142,9 @@ struct TripScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(size: 17, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    // Escape closes it, as Done does (the spec pass, 5 Oct 2026 — on the Mac,
+                    // and on an iPhone with a keyboard).
+                    .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("trip-done")
             }
             .padding(16)
@@ -187,7 +191,8 @@ struct TripScreen: View {
                         .padding(.top, 6).padding(.horizontal, 16)
                 }
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    // The web app's nesting: When → by bag inside; Where / Category → by When inside.
+                    // One level of groups; inside a group the lines keep the trip's own order.
+                    // (The web app nests: When → by bag inside; the others → by When inside.)
                     ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { g, group in
                         if !group.entries.isEmpty {
                             // The heading, and one press to tick the whole section
@@ -219,27 +224,34 @@ struct TripScreen: View {
                                     .font(.system(size: 13, weight: .bold).monospacedDigit())
                                     .foregroundStyle(Theme.muted)
                                 Spacer()
-                                Button {
-                                    model.change { lib in
-                                        for line in mine { _ = lib.setChecked(!sectionDone, tripId: tripId, entryId: line.id) }
-                                    }
-                                } label: {
-                                    ZStack {
-                                        Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 2)
-                                            .frame(width: 24, height: 24)
-                                        if sectionDone {
-                                            Circle().fill(AppSection.events.color).frame(width: 24, height: 24)
-                                            Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                                                .frame(width: 24, height: 24)
+                                // Only while the section has something to tick: with every line set
+                                // aside there is nothing, and a switched-off grey circle is what his
+                                // rule forbids (the spec pass, 5 Oct 2026) — the space stays, so the
+                                // heading does not jump.
+                                if mine.isEmpty {
+                                    Color.clear.frame(width: 40, height: 36)
+                                } else {
+                                    Button {
+                                        model.change { lib in
+                                            for line in mine { _ = lib.setChecked(!sectionDone, tripId: tripId, entryId: line.id) }
                                         }
+                                    } label: {
+                                        ZStack {
+                                            Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 2)
+                                                .frame(width: 24, height: 24)
+                                            if sectionDone {
+                                                Circle().fill(AppSection.events.color).frame(width: 24, height: 24)
+                                                Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                                                    .frame(width: 24, height: 24)
+                                            }
+                                        }
+                                        .frame(width: 40, height: 36).contentShape(Rectangle())
                                     }
-                                    .frame(width: 40, height: 36).contentShape(Rectangle())
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("trip-group-\(g)-all")
+                                    .accessibilityLabel(sectionDone ? "Untick \(group.label)" : "Tick all of \(group.label)")
+                                    .accessibilityAddTraits(sectionDone ? .isSelected : [])
                                 }
-                                .buttonStyle(.plain).focusEffectDisabled()
-                                .disabled(mine.isEmpty)
-                                .accessibilityIdentifier("trip-group-\(g)-all")
-                                .accessibilityLabel(sectionDone ? "Untick \(group.label)" : "Tick all of \(group.label)")
-                                .accessibilityAddTraits(sectionDone ? .isSelected : [])
                             }
                             .padding(.top, 12)
                             if !folded {
@@ -275,7 +287,7 @@ struct TripScreen: View {
                                 if needsPlace {
                                     if placing == line.id { placePanel(line) }
                                     else {
-                                        Button { placing = line.id; newPlace = "" } label: {
+                                        Button { placing = line.id; newPlace = ""; placeNeeds = "" } label: {
                                             Text("Set place").font(.system(size: 13, weight: .bold))
                                                 .foregroundStyle(AppSection.events.color)
                                                 .padding(.horizontal, 10).frame(minHeight: 30)
@@ -304,9 +316,7 @@ struct TripScreen: View {
                 }
                 .padding(.horizontal, 16)
 
-                // Last on the screen, quiet and red, and it asks first — his rule for
-                // removing anything. His two test trips had no way out (2026-09-26).
-                // The web app's "Mark everything packed" / "Clear every tick".
+                // The web app's "Mark everything packed" / "Clear every tick", under the list.
                 TickAllRow(tripId: tripId, done: p.done, total: p.total).environmentObject(model)
                     .padding(.horizontal, 16).padding(.top, 18)
                 // The web app's Excel button (the trip as a spreadsheet) and its Share (a
@@ -320,6 +330,8 @@ struct TripScreen: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.top, 12)
+                // Last on the screen, quiet and red, and it asks first — his rule for
+                // removing anything. His two test trips had no way out (2026-09-26).
                 deleteTrip(trip)
                     .padding(.horizontal, 16).padding(.top, 18)
                 }
@@ -409,7 +421,7 @@ struct TripScreen: View {
                     .font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
-                Button("Close") { placing = nil; newPlace = "" }
+                Button("Close") { placing = nil; newPlace = ""; placeNeeds = "" }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("trip-place-close")
@@ -436,17 +448,22 @@ struct TripScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { putAway(line, newPlace) }
                     .accessibilityIdentifier("trip-place-new")
-                Button { putAway(line, newPlace) } label: {
-                    Text("Save").font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(jsTrim(newPlace).isEmpty ? Theme.muted : Color.white)
+                // Always in colour (his rule for a main button, 2026-09-26 — it sat grey and
+                // switched off until the spec pass, 5 Oct 2026); pressed with nothing typed
+                // it says so under the field.
+                Button {
+                    if jsTrim(newPlace).isEmpty { placeNeeds = "Type a place first, or tap one above." } else { putAway(line, newPlace) }
+                } label: {
+                    Text("Save").font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.white)
                         .padding(.horizontal, 14).frame(minHeight: 36)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(jsTrim(newPlace).isEmpty ? Theme.line : AppSection.events.color))
+                        .background(RoundedRectangle(cornerRadius: 8).fill(AppSection.events.color))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .disabled(jsTrim(newPlace).isEmpty)
                 .accessibilityIdentifier("trip-place-save")
             }
+            .needsLine($placeNeeds, typed: newPlace, id: "trip-place-save-needs")
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
@@ -482,6 +499,7 @@ struct TripScreen: View {
                         let id = tripId
                         dismiss()
                         model.change { _ = $0.deleteTrip(id: id) }
+                        foldedRaw = TripFolds.without(trip: id, in: foldedRaw)     // its folds go with it
                     } label: {
                         Text("Delete the trip")
                             .font(.system(size: 16, weight: .heavy)).foregroundStyle(.white)

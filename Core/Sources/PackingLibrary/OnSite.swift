@@ -14,7 +14,9 @@ import PackingCore
 
 extension Library {
     /// Has the trip's On site begun? Once its first day has come — or as soon as
-    /// something was bought on site, whatever the dates say.
+    /// something was bought on site, whatever the dates say: buying on site says he is
+    /// there. The loop (`loopStep`) goes by the same rule since the spec pass (5 Oct
+    /// 2026) — it said Pack for a dated trip still ahead while this door was showing.
     public func onSiteBegun(tripId: String, today: String) -> Bool {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return false }
         if isYMD(trip.startDate) && !jsStringLess(today, trip.startDate) { return true }

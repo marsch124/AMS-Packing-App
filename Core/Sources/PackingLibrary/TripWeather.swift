@@ -6,7 +6,11 @@ import PackingCore
 // this is only the library's way in and out.
 
 extension Library {
-    public func trip(_ id: String) -> TripEvent? { trips.last { $0.id == id } }
+    /// The trip with this id. The FIRST of two, as everywhere else in the app (the spec
+    /// pass, 5 Oct 2026: this one alone took the last, so the weather card would have
+    /// read one trip and the rest of the screen the other — ids are unique, but never
+    /// two answers to one question).
+    public func trip(_ id: String) -> TripEvent? { trips.first { $0.id == id } }
 
     /// What the forecast on this trip says: the place, the days, the range and the
     /// conditions it adds up to. nil when the trip has no forecast.
@@ -16,10 +20,26 @@ extension Library {
     }
 
     /// The gear this trip's weather calls for that is NOT on the trip yet: your own
-    /// tagged things from its lists first, then the plain ones everybody needs.
+    /// tagged things first, then the plain add-ons for every condition the forecast
+    /// names (each only once, and never one the trip already has by name).
+    ///
+    /// Two decisions of the spec pass (5 Oct 2026), made here so the web app's model
+    /// (`weatherSuggestions`, parity-checked) stays as it is:
+    ///  • A thing marked "Not in use" is never offered — a trip never packs one either
+    ///    (`buildTotalEntries`); a retired rain jacket came back on a rainy trip.
+    ///  • His own tagged gear comes from EVERY template the trip is built from — the
+    ///    always-packed and transport ones too, not only those he ticked. Tagged gear is
+    ///    held back from the list for the forecast to offer; on the base it was held
+    ///    back and then never offered at all.
     public func weatherMissing(tripId: String) -> [WeatherGearSpec] {
-        guard let t = trip(tripId) else { return [] }
-        return weatherSuggestions(t, resolvedTemplates()).items
+        guard var t = trip(tripId) else { return [] }
+        let lists = resolvedTemplates().map { list -> PackList in
+            var l = list
+            l.items.removeAll { $0.retired }
+            return l
+        }
+        t.activities = listsForEvent(t, lists).map(\.id)
+        return weatherSuggestions(t, lists).items
     }
 
     /// Keep a forecast on the trip. The place is kept too, so the next look needs

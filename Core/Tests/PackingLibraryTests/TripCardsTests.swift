@@ -85,4 +85,23 @@ final class TripCardsTests: XCTestCase {
         lib.setActionDone(true, id: a.id)
         XCTAssertEqual(lib.openToDoCount(), 1, "a done to-do is not still to do")
     }
+
+    /// ONE rule for "reviewed" (the spec pass, 5 Oct 2026): a trip from the web app can
+    /// carry its review time without "done"; its card said Reviewed while its page
+    /// offered Review again.
+    func testReviewedIsOneRuleEverywhere() {
+        var t = newEvent(name: "Old one")
+        XCTAssertFalse(Library.isReviewed(t))
+        t.reviewedAt = "2026-09-28T08:00:00.000Z"
+        XCTAssertTrue(Library.isReviewed(t), "a review time alone is a review")
+        t.reviewedAt = ""; t.status = "done"
+        XCTAssertTrue(Library.isReviewed(t), "done is a review")
+        var lib = Library()
+        var only = newEvent(name: "Time only", startDate: "2026-10-10", endDate: "2026-10-12")
+        only.reviewedAt = "2026-09-28T08:00:00.000Z"
+        only.entries = [newItem(name: "Map")]
+        lib.trips = [only]
+        XCTAssertEqual(lib.tripCards(today: "2026-10-01").first?.state, .reviewed)
+        XCTAssertEqual(lib.loopStep(tripId: only.id, today: "2026-10-01"), .refine)
+    }
 }
