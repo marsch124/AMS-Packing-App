@@ -30,8 +30,10 @@ extension Library {
 
     /// Where a trip stands in the loop. Reviewed: what it taught now waits in
     /// Refine. Over and not reviewed: Review. No lines yet: still Plan. Under way
-    /// (its first day has come, its last not yet passed): On site — and so is a trip
-    /// without dates once something was bought on site, the one sign it has begun.
+    /// (its first day has come, its last not yet passed): On site — and so is any trip
+    /// once something was bought on site, whatever its dates say: buying on site says
+    /// he is there. (The spec pass, 5 Oct 2026: a dated trip still ahead stayed at Pack
+    /// here while its On site door, which has always gone by a bought line, showed.)
     /// Otherwise it is being packed — all ticked or not, until it begins.
     public func loopStep(tripId: String, today: String) -> LoopStep {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return .plan }
@@ -39,11 +41,8 @@ extension Library {
         let end = trip.endDate.isEmpty ? trip.startDate : trip.endDate
         if !end.isEmpty, end < today { return .review }
         if trip.entries.isEmpty { return .plan }
-        if isYMD(trip.startDate) {
-            if trip.startDate <= today { return .onSite }
-        } else if trip.entries.contains(where: Library.isBoughtOnSite) {
-            return .onSite
-        }
+        if isYMD(trip.startDate) && trip.startDate <= today { return .onSite }
+        if trip.entries.contains(where: Library.isBoughtOnSite) { return .onSite }
         return .pack
     }
 }

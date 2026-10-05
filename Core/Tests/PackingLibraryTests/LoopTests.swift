@@ -46,7 +46,7 @@ final class LoopTests: XCTestCase {
     }
 
     /// A trip without dates has no first day to say it has begun — something bought on
-    /// site says so instead. A dated trip goes by its dates alone.
+    /// site says so instead; and on a dated trip still ahead, a bought line says it too.
     func testSomethingBoughtOnSiteBeginsATripWithoutDates() {
         var lib = Library()
         let undated = trip("", "")
@@ -55,8 +55,12 @@ final class LoopTests: XCTestCase {
         XCTAssertEqual(lib.loopStep(tripId: undated.id, today: "2026-09-27"), .pack)
         _ = lib.addBoughtOnSite(tripId: undated.id, name: "Sun hat")
         XCTAssertEqual(lib.loopStep(tripId: undated.id, today: "2026-09-27"), .onSite, "bought on site and still Pack")
+        XCTAssertEqual(lib.loopStep(tripId: ahead.id, today: "2026-09-27"), .pack, "a dated trip ahead, nothing bought")
+        // Bought on site says he is there, whatever the dates say — as the On site door
+        // has always gone (the spec pass, 5 Oct 2026: the two disagreed).
         _ = lib.addBoughtOnSite(tripId: ahead.id, name: "Sun hat")
-        XCTAssertEqual(lib.loopStep(tripId: ahead.id, today: "2026-09-27"), .pack, "a dated trip ahead goes by its dates")
+        XCTAssertEqual(lib.loopStep(tripId: ahead.id, today: "2026-09-27"), .onSite, "bought on site and still Pack")
+        XCTAssertTrue(lib.onSiteBegun(tripId: ahead.id, today: "2026-09-27"))
         // Reviewed beats everything.
         lib.trips[0].reviewedAt = "2026-09-28T08:00:00.000Z"
         XCTAssertEqual(lib.loopStep(tripId: undated.id, today: "2026-09-27"), .refine)

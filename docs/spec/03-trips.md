@@ -1304,8 +1304,9 @@ Checked in this order:
 2. `status == "done"` or `reviewedAt` set → **Refine**;
 3. its end (end date, else start) is before today → **Review**;
 4. no lines → **Plan**;
-5. a valid start date ≤ today → **On site**; an undated trip with something bought on site → **On site**
-   (the On site door follows exactly this rule, 0.6x);
+5. a valid start date ≤ today → **On site**; any trip with something bought on site → **On site**,
+   whatever its dates say (0.6x: a dated trip still ahead stayed at Pack while its On site door showed;
+   the door and the loop now go by one rule);
 6. otherwise → **Pack** (ticked or not, until it begins).
 
 | Step | rawValue | Name | About | Tab mark | Short words | Explained |
@@ -1338,7 +1339,7 @@ make your templates better." (16 bold).
 
 ### Tests
 Model `LoopTests` (3: every case above incl. a one-day trip, empty trips, undated; bought on site
-begins only an UNDATED trip; names/order/aboutOneTrip). UI `testTheLoopShowsWhereATripStands` (five
+begins a trip, dated or not; names/order/aboutOneTrip). UI `testTheLoopShowsWhereATripStands` (five
 steps, labels with tabs, no "You are here" in the guide, trip at Pack or Review, the picture marks it,
 review at Review, after saving the review the trip is at Refine, Refine at Refine),
 `testATripUnderWayStandsAtOnSite` (strip fits the screen width).
@@ -1354,9 +1355,10 @@ Pack to go home. Nothing new is stored on the trip; a maintenance note ALSO land
 for Care.
 
 **How it is reached and left.** The **On site door** on the trip screen (after the Bags card): shown
-when `onSiteBegun` — a DATED trip once today ≥ its start (it then stays for good, also after the trip);
-a trip WITHOUT dates once any line is bought on site. The same rule as the loop's On site step (0.6x: a
-dated trip still ahead with something bought on site showed the door while the loop said Pack). The door: "On site" (17 heavy) over the summary (14
+when `onSiteBegun` — the trip has a valid start date and today ≥ start (it then stays for good, also
+after the trip), OR any line is bought on site, whatever the dates say: buying on site says he is there.
+The loop's On site step goes by the same rule since 0.6x (a dated trip still ahead with something bought
+on site showed this door while the loop said Pack). The door: "On site" (17 heavy) over the summary (14
 medium mono muted, one line, scales to 0.85) and a chevron; card with a 1.2 pt green border, min height
 58; id `trip-onsite`, accessibility value = the summary. It opens the page as a sheet; **Done** (filled
 green, id `onsite-done`) closes it. Screen id `onsite-screen`; Mac minimum 520 × 640.
@@ -1423,8 +1425,8 @@ The typed search is lost when the picker closes.
   the note is removed.
 
 ### Tests
-Model `OnSiteTests` (6: the door's beginning incl. after the trip, and bought on site — only an undated
-trip, agreeing with `loopStep`; summary words;
+Model `OnSiteTests` (6: the door's beginning incl. after the trip, and bought on site on a dated trip
+ahead — `loopStep` agreeing; summary words;
 note on the line and the thing, once, new lines appended; his own words not repeated; no thing → trip
 only, clearing keeps the thing's; the dated line). UI `testOnSiteHoldsBoughtLeftNotesAndTheWayHome`,
 `testANoteMadeOnSiteReachesTheThing` (the thing's Notes become "Keep it dry\nOn site <today>: Zip
@@ -1813,8 +1815,8 @@ pins · [idea] a gap worth deciding on.
    ticks, used up and notes stay with the old trip; the new one stands at Pack.
 3. [bug] **Shares carry trip-private extras.** Resolved in 0.6x: `Library.justTheList` leaves the scale
    readings, bag photo ids and every line's own marks out of the link and the file, and off an arriving trip.
-4. [bug] **On site door vs loop step disagree.** Resolved in 0.6x: a dated trip goes by its dates for both;
-   bought on site begins only a trip without dates, for both.
+4. [bug] **On site door vs loop step disagree.** Resolved in 0.6x: the loop now goes by the door's rule —
+   a bought-on-site line begins On site whatever the dates say (his field-tested flow uses exactly that).
 5. [bug] **Way-home photos of loose things are invisible.** Resolved in 0.6x: the way home names bags as the
    Bags card does (`homeBag`: "" is "Other") — one heading, and the photos are found.
 6. [bug] **A bag whose things have no weight never appears on the Bags card.** Resolved in 0.6x: every bag
