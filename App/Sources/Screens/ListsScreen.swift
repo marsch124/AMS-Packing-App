@@ -11,7 +11,15 @@ struct ListsScreen: View {
     @State private var adding: [String: String] = [:]
     /// What each part's Add was missing, said under its field (never a grey button).
     @State private var needs: [String: String] = [:]
-    @State private var problem = ""
+    /// Why an entry stays, said right under the entry whose ✕ was pressed — not at the
+    /// top of the page, where on a phone it was off screen when Remove was pressed far
+    /// down the "When" steps and it looked as if nothing happened (the spec pass, 5 Oct 2026).
+    @State private var problem: (kind: String, key: String, says: String)?
+    /// The entry whose pen is open: its rename field and, where its order is his to
+    /// set, its ▲ ▼. Followed by its KEY, so it stays open on the entry as it moves.
+    @State private var editing: (kind: String, key: String)?
+    @State private var renaming = ""
+    @State private var editSays = ""
 
     private enum Kind: String, CaseIterable {
         case places, owners, people, conditions, phases
@@ -53,14 +61,10 @@ struct ListsScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 8) {
                     // What this page is, once, at the top (K.3).
-                    Text("The words the app offers you as buttons. Add your own with the field under each part; one that is still in use somewhere cannot be removed.")
+                    Text("The words the app offers you as buttons. Add your own with the field under each part; the pen renames one or moves it up or down; one that is still in use somewhere cannot be removed.")
                         .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("choices-intro")
-                    if !problem.isEmpty {
-                        Text(problem).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
-                            .accessibilityIdentifier("lists-problem")
-                    }
                     ForEach(Kind.allCases, id: \.rawValue) { kind in
                         let entries = entries(kind)
                         // A band, as the editors' headings are — bigger than the rows under
@@ -73,11 +77,25 @@ struct ListsScreen: View {
                         ForEach(Array(entries.enumerated()), id: \.offset) { n, entry in
                             HStack {
                                 Text(entry.label).font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
-                                if entry.uses > 0 {
-                                    Text("\(entry.uses)").font(.system(size: 14, weight: .bold).monospacedDigit())
+                                    .accessibilityIdentifier("list-\(kind.rawValue)-name-\(n)")
+                                // The THINGS that use it — for a "When" step its trips and
+                                // templates are said when Remove is refused (the spec pass).
+                                if entry.uses.things > 0 {
+                                    Text("\(entry.uses.things)").font(.system(size: 14, weight: .bold).monospacedDigit())
                                         .foregroundStyle(Theme.muted)
                                 }
                                 Spacer()
+                                // His own lists could only be added to and taken from (the spec
+                                // pass, 5 Oct 2026: "no rename, no reorder"). The pen opens the
+                                // entry: a new name, and ▲ ▼ where its order is his to set.
+                                Button { toggleEditing(kind, entry) } label: {
+                                    PenMark().frame(width: 22, height: 22)
+                                        .foregroundStyle(isEditing(kind, entry.key) ? AppSection.settings.color : Theme.muted)
+                                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("list-\(kind.rawValue)-edit-\(n)")
+                                .accessibilityLabel("Change \(entry.label)")
                                 Button { remove(kind, n) } label: {
                                     SVGPath.path("M6 6L18 18M18 6L6 18")
                                         .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
@@ -91,6 +109,12 @@ struct ListsScreen: View {
                             .accessibilityElement(children: .contain)
                             .accessibilityIdentifier("list-\(kind.rawValue)-row-\(n)")
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                            if let p = problem, p.kind == kind.rawValue, p.key == entry.key {
+                                Text(p.says).font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .accessibilityIdentifier("lists-problem")
+                            }
+                            if isEditing(kind, entry.key) { editor(kind, entry) }
                         }
                         HStack(spacing: 8) {
                             TextField("Add to \(kind.title.lowercased())", text: Binding(
@@ -123,22 +147,109 @@ struct ListsScreen: View {
         #endif
     }
 
-    private func entries(_ kind: Kind) -> [(label: String, key: String, uses: Int)] {
-        let uses = model.library.usesOf(kind.rawValue)
-        func rows(_ names: [String]) -> [(String, String, Int)] { names.map { ($0, $0, uses[normName($0)] ?? 0) } }
-        switch kind {
-        case .places: return rows(model.library.storagePlaces()).map { (label: $0.0, key: $0.1, uses: $0.2) }
-        case .owners: return rows(model.library.owners()).map { (label: $0.0, key: $0.1, uses: $0.2) }
-        case .people: return model.library.people().map { (label: $0.name, key: $0.name, uses: uses[normName($0.name)] ?? 0) }
-        case .conditions: return model.library.conditions().map { (label: $0.label, key: $0.id, uses: uses[normName($0.id)] ?? 0) }
-        case .phases: return model.library.timeline().map { (label: $0.label, key: $0.id, uses: uses[normName($0.id)] ?? 0) }
+    /// One entry's editor, under its row: a new name with Rename, and ▲ ▼ (44 × 44,
+    /// drawn) where the list's order is his. What a press could not do is said under it.
+    private func editor(_ kind: Kind, _ entry: Entry) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                TextField("New name", text: $renaming)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 17, weight: .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .onSubmit { rename(kind, entry) }
+                    .accessibilityIdentifier("list-\(kind.rawValue)-rename-name")
+                Button { rename(kind, entry) } label: { FieldButtonLabel(title: "Rename", tint: AppSection.settings.color) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("list-\(kind.rawValue)-rename")
+            }
+            if Library.canMove(kind.rawValue) {
+                HStack(spacing: 12) {
+                    moveButton(kind, entry, by: -1, mark: "M6 15l6-6 6 6", id: "list-\(kind.rawValue)-up", says: "Move \(entry.label) up")
+                    moveButton(kind, entry, by: 1, mark: "M6 9l6 6 6-6", id: "list-\(kind.rawValue)-down", says: "Move \(entry.label) down")
+                    Text(kind == .phases ? "Up or down the timeline: every trip follows this order." : "Up or down the list.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                Text("Owners are always in A\u{2013}Z order.")
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+            }
         }
+        .needsLine($editSays, typed: renaming, id: "list-\(kind.rawValue)-edit-needs")
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.settings.color, lineWidth: 1.4))
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("list-\(kind.rawValue)-editor")
+    }
+
+    private func moveButton(_ kind: Kind, _ entry: Entry, by step: Int, mark: String, id: String, says: String) -> some View {
+        Button { move(kind, entry, by: step) } label: {
+            SVGPath.path(mark)
+                .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                .frame(width: 24, height: 24).foregroundStyle(AppSection.settings.color)
+                .frame(width: 44, height: 44)
+                .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.settings.color.opacity(0.10)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.settings.color, lineWidth: 1.4))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+        .accessibilityLabel(says)
+    }
+
+    private typealias Entry = (label: String, key: String, uses: ChoiceUse)
+
+    private func entries(_ kind: Kind) -> [Entry] {
+        let uses = model.library.usesOf(kind.rawValue)
+        func use(_ key: String) -> ChoiceUse { uses[normName(key)] ?? ChoiceUse() }
+        switch kind {
+        case .places: return model.library.storagePlaces().map { (label: $0, key: $0, uses: use($0)) }
+        case .owners: return model.library.owners().map { (label: $0, key: $0, uses: use($0)) }
+        case .people: return model.library.people().map { (label: $0.name, key: $0.name, uses: use($0.name)) }
+        case .conditions: return model.library.conditions().map { (label: $0.label, key: $0.id, uses: use($0.id)) }
+        case .phases: return model.library.timeline().map { (label: $0.label, key: $0.id, uses: use($0.id)) }
+        }
+    }
+
+    private func isEditing(_ kind: Kind, _ key: String) -> Bool { editing?.kind == kind.rawValue && editing?.key == key }
+
+    private func toggleEditing(_ kind: Kind, _ entry: Entry) {
+        problem = nil
+        editSays = ""
+        if isEditing(kind, entry.key) { editing = nil; return }
+        editing = (kind.rawValue, entry.key)
+        renaming = entry.label
+    }
+
+    private func rename(_ kind: Kind, _ entry: Entry) {
+        var said: String?
+        model.change { lib in said = lib.renameChoice(kind.rawValue, key: entry.key, to: renaming) }
+        if let said { editSays = said; return }
+        editing = nil
+        editSays = ""
+    }
+
+    private func move(_ kind: Kind, _ entry: Entry, by step: Int) {
+        var moved = false
+        model.change { lib in moved = lib.moveChoice(kind.rawValue, key: entry.key, by: step) }
+        // Pressed where it cannot go, it says so — a press always answers.
+        editSays = moved ? "" : (step < 0 ? "\(entry.label) is already at the top." : "\(entry.label) is already at the bottom.")
     }
 
     private func add(_ kind: Kind) {
         let name = jsTrim(adding[kind.rawValue] ?? "")
         guard !name.isEmpty else { needs[kind.rawValue] = "Type a name first."; return }
-        problem = ""
+        // One he already has is said, never dropped or doubled in silence (the spec pass,
+        // 5 Oct 2026). What he typed stays, so the line stays until he changes it.
+        if let twin = model.library.existingChoice(kind.rawValue, name) {
+            needs[kind.rawValue] = "You already have \(twin)."
+            return
+        }
+        problem = nil
         model.change { lib in
             switch kind {
             case .places: _ = lib.setNames("places", lib.storagePlaces() + [name])
@@ -160,11 +271,12 @@ struct ListsScreen: View {
         let all = entries(kind)
         guard n < all.count else { return }
         let entry = all[n]
-        guard entry.uses == 0 else {
-            problem = "\(entry.label) is still used by \(entry.uses) thing\(entry.uses == 1 ? "" : "s"), so it stays."
+        guard !entry.uses.inUse else {
+            problem = (kind.rawValue, entry.key, entry.uses.refusal(entry.label))
             return
         }
-        problem = ""
+        problem = nil
+        if isEditing(kind, entry.key) { editing = nil }
         model.change { lib in
             switch kind {
             case .places: _ = lib.setNames("places", lib.storagePlaces().filter { $0 != entry.key })
