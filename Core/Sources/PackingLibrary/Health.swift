@@ -26,12 +26,14 @@ extension Library {
 
     /// The one-press repairs a worry can offer.
     public static let FIX_UNUSED_PHOTOS = "unusedPhotos"
+    public static let FIX_UNDATED_PHOTOS = "undatedPhotos"
 
     /// Run a worry's repair. How many records it changed.
     @discardableResult
     public mutating func repair(_ fix: String) -> Int {
         switch fix {
         case Library.FIX_UNUSED_PHOTOS: return removeUnusedPhotos()
+        case Library.FIX_UNDATED_PHOTOS: return removeUndatedUnusedPhotos()
         default: return 0
         }
     }
@@ -68,9 +70,34 @@ extension Library {
                              fix: Library.FIX_UNUSED_PHOTOS, fixSays: unused == 1 ? "Remove it" : "Remove them"))
         }
 
+        // …and the ones whose age cannot be read. Since 0.60 such a photo is never
+        // offered with the ones above ("a date that cannot be read is no proof of age":
+        // a photo may arrive a little before the trip that shows it), so it stayed for
+        // ever — in iCloud and in every backup — and nothing said so (the spec pass,
+        // 2026-10-05). It is named on its own, and only he removes it. This app dates
+        // every photo it makes, so one without a date is old, not on its way.
+        let undated = undatedUnusedPhotos().count
+        if undated > 0 {
+            out.append(Worry(says: "\(undated) photo\(undated == 1 ? "" : "s") with no date \(undated == 1 ? "is" : "are") no longer shown anywhere.",
+                             fix: Library.FIX_UNDATED_PHOTOS, fixSays: undated == 1 ? "Remove it" : "Remove them"))
+        }
+
         // A thing that is on no list and in no trip is not wrong — he can keep
         // things loose — so that is not a worry.
         return out
+    }
+
+    /// Photos nothing shows whose age cannot be read (`unusedPhotos` keeps them).
+    public func undatedUnusedPhotos() -> [PhotoRecord] {
+        photos.filter { !photoInUse($0.id) && isoMoment($0.createdAt) == nil }
+    }
+
+    /// Take them away — only when he presses for it. How many went.
+    @discardableResult
+    public mutating func removeUndatedUnusedPhotos() -> Int {
+        let gone = Set(undatedUnusedPhotos().map(\.id))
+        photos.removeAll { gone.contains($0.id) }
+        return gone.count
     }
 
     /// The names that appear more than once among those of one kind, in the order

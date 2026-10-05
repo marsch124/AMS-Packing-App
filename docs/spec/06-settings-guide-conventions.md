@@ -50,17 +50,17 @@ order in the code:
 | 5 | *Open a shared link* door (§11) | always | `settings-openshared` |
 | 6 | *Worth a look* card (§12) | only when `library.worries()` is not empty | `health-heading`, `health-<n>` … |
 | 7 | Heading *BACKUP* (§13) | always | `backup-heading` |
-| 8 | *Save a backup…* button + status line | always | `backup-save`, `backup-status` |
+| 8 | *Save a backup…* button + status line (+ "Last saved from this …" once saved here, 0.6x) | always | `backup-save`, `backup-status`, `backup-last` |
 | 9 | *Restore from a file…* button (§14) | always | `backup-restore` |
 | 10 | *Kept before a restore* list (§15) | only when a rescue copy exists on this device | `rescue-heading`, `rescue-row-<n>` |
-| 11 | *This device holds* table + footer (sync mode, version) (§16) | always | `device-count-<table>` |
+| 11 | *This device holds* table + footer (sync mode, version) (§16), and under it where the library came from (0.6x) | always; the line only for a library brought in from a file | `device-count-<table>`, `device-import` |
 
 **Sheets and windows owned by the screen itself.** `.sheet(isPresented: lists)` → `ListsScreen`;
 `.sheet(item: pending)` → `RestoreSheet`; `.fileImporter` (open a `.json`); `.fileExporter` (save the backup).
 The guide doors and the shared-link door own their OWN sheets (`GuideDoors`, `OpenSharedDoor`) because "several
 sheets on one view is a trap met in Search" (GuideScreen.swift comment).
 
-**State held by the screen** (`@State`, lost when the tab is left): `exporting`, `status` (the line under Save),
+**State held by the screen** (`@State`, lost when the tab is left): `exporting`, `saving` (the backup document, built when Save is pressed — 0.6x), `status` (the line under Save),
 `lists`, `picking`, `pending: PendingRestore?` (a file already read and checked, waiting for his yes),
 `copies: [URL]` (rescue copies, read once when the view is created and again after a restore).
 
@@ -71,8 +71,8 @@ Restore opens the Files browser / an Open panel. Sheets on the Mac get minimum s
 pressing it says "Choosing…"; on the Mac a Save window opens and Escape closes it), `testEveryTabOpensItsScreen`
 (tab ids and `screen-settings`). Each card's own tests are in its section.
 
-**Traps.** The backup JSON is built inside `body` (`BackupDocument(data: model.library.backupData())` is an
-argument of `.fileExporter`), i.e. on every redraw of Settings — including all photo data. See Open questions.
+**Traps.** Until 0.6x the backup JSON was built inside `body` (`BackupDocument(data: model.library.backupData())` was an
+argument of `.fileExporter`), i.e. on every redraw of Settings — including all photo data. Now it is built when Save is pressed.
 
 ---
 
@@ -381,10 +381,12 @@ tests), a tapped notification opening the trip, the 09:00 cut-off for today.
 Full behaviour belongs to the storage/sync chapter and `docs/store.md`; here only what Settings shows.
 Origin: field test 3 Oct 2026 ("we need to get the sync going because I need to work from the Mac"), 0.54.
 
-- Header: **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`): **"Off"** (muted fill)
-  when this build keeps its library on the device only (`model.usesICloud == false`, always so under tests);
-  **"Stuck"** (red) when something is not in iCloud yet or the last send/receive failed; else **"Working"** (green) —
-  also when iCloud is on but the store file could not be read (then no Sent/Not-in-iCloud/problem lines show).
+- Header: **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
+  (muted fill) when this build keeps its library on the device only (`model.usesICloud == false`, always so under
+  tests); **"Can’t tell"** (muted, 0.6x) when iCloud is on but the store file could not be read — then no
+  Sent/Not-in-iCloud/problem lines show, only `sync-unknown` "This device cannot tell right now how the sync is
+  going."; **"Stuck"** (red) when something is not in iCloud yet or the last send/receive failed; else **"Working"**
+  (green). Until 0.6x the unreadable case said a green "Working".
 - Lines (15 medium muted; "loud" ones 15 bold red): `sync-off` "This copy of the app keeps its library on this
   device only."; `sync-times` "Sent: <when> · received: <when>"; `sync-notsent` "Not in iCloud yet: <words>.";
   `sync-problem` "The last send|receive failed <when>: <plain words>."; `sync-other` "The <Mac|iPhone> last checked in
@@ -398,7 +400,10 @@ Origin: field test 3 Oct 2026 ("we need to get the sync going because I need to 
   Claude."
 - `<when>`: "today HH:MM", "D Mon HH:MM" (local), or "never". The card border turns red when stuck. It refreshes on
   appear and 1 s after every library change. The device word is "Mac" under `#if os(macOS)`, else "iPhone".
-- Tests: UI `testSyncNowChecksInFromThisDevice`; model `SyncCheckInTests.testACheckInTravelsWithTheLibraryAndKeepsTheDevicesApart`.
+- "Not in iCloud yet" lists kinds most first; equal counts in the order of the store's tables (0.6x).
+- Tests: UI `testSyncNowChecksInFromThisDevice`, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` (0.6x); model
+  `SyncCheckInTests.testACheckInTravelsWithTheLibraryAndKeepsTheDevicesApart`, `SyncCheckTests` (0.6x: the reading,
+  the pill, the order, the plain words, `<when>`).
 
 ---
 
@@ -740,6 +745,10 @@ device that looked empty merged with an older iCloud copy). Shipped 0.5; the pho
    `removeUnusedPhotos()` (returns how many went). "Only photos older than a day, so one still on its way from your
    other device is never touched" (Release 0.59); "Worth a look offers to remove a photo only when it can tell the
    photo is more than a day old" (Release 0.60, under Changed).
+4. (0.6x) Photos nothing shows whose `createdAt` cannot be read (`undatedUnusedPhotos()`): "<n> photo(s) with no
+   date is / are no longer shown anywhere." with **"Remove it"** / **"Remove them"** → `repair("undatedPhotos")` →
+   `removeUndatedUnusedPhotos()`. Never offered with worry 3 (0.60's rule stands); named on its own, and only his
+   press removes it. This app dates every photo it makes, so one without a date is old, not on its way.
 A thing on no template and in no trip is deliberately NOT a worry ("he can keep things loose").
 
 **Tests.** Model `HealthTests` (`testASoundLibraryHasNothingToSay`, `testTwoLibrariesThatMetAreNoticed`,
@@ -749,9 +758,10 @@ A thing on no template and in no trip is deliberately NOT a worry ("he can keep 
 2026-10-04T10:00Z: the photo from 2 Oct is offered, the one from 30 minutes ago and the one with `createdAt` "" are
 not; exact sentence and "Remove it"; the repair returns 1 and leaves the other two). UI `testALibraryThatHasMetAnotherSaysSo` (sound sample: no heading;
 `-uiTestingTwoLibraries`: heading, "twice", names present), `testWorthALookRemovesAPhotoLeftBehind`
-(`-uiTestingOldPhoto`: "1 photo is no longer shown anywhere", Remove it → card gone, photos count 0).
-**Not covered on screen:** the lost-membership worry, the six-name cut with " …", "Remove them", an undated photo
-(model-tested only). An undated unused photo now stays for ever and nothing on screen names it (Open questions).
+(`-uiTestingOldPhoto`: "1 photo is no longer shown anywhere" and, 0.6x, "1 photo with no date…" under it; Remove
+it → the old one goes, the undated worry moves up; Remove it → card gone, photos count 0); model
+`UndatedPhotoTests` (0.6x). **Not covered on screen:** the lost-membership worry, the six-name cut with " …",
+"Remove them".
 
 ---
 
@@ -763,12 +773,14 @@ same file the web app writes, so either app can read it."
 **On screen.** `SectionTitle("Backup")` → **"BACKUP"** (18 heavy, letter-spaced 0.8, ink, 16 pt above, id
 `backup-heading`). **"Save a backup…"** — full width, min height 52, Settings-slate fill, radius 12, 18 bold white,
 id `backup-save`. Under it the status line (15 medium muted, id `backup-status`): by default **"The same file the web
-app writes, so either app can read it."**, otherwise the last message.
+app writes, so either app can read it."**, otherwise the last message. Under that, once a backup has been saved from
+this device (0.6x): **"Last saved from this <iPhone|Mac> <when>."** (15 medium muted, id `backup-last`; UserDefaults
+`ams.backup.savedAt`, per device, cleared under the tests). No reminder.
 
-**Behaviour.** Press → status "Choosing where to save…" and `exporting = true` → `.fileExporter` with
-`BackupDocument(data: library.backupData())`, type `.json`, default name `Library.backupFileName(on: Today.local)`
-= **`ams-packing-list-backup-YYYY-MM-DD.json`** (the local date). Saved → "Saved: <file name>"; cancelled or failed
-→ "Not saved." `BackupDocument` is a `FileDocument` reading/writing the bytes unchanged (readable type `.json`).
+**Behaviour.** Press → status "Choosing where to save…", `saving = BackupDocument(data: library.backupData())` (built
+now, 0.6x) and `exporting = true` → `.fileExporter` with it, type `.json`, default name `Library.backupFileName(on: Today.local)`
+= **`ams-packing-list-backup-YYYY-MM-DD.json`** (the local date). Saved → "Saved: <file name>" and the moment kept for
+`backup-last`; cancelled or failed → "Not saved." `BackupDocument` is a `FileDocument` reading/writing the bytes unchanged (readable type `.json`).
 
 **The file** (`Library.backupFile(exportedAt:)`, pretty-printed JSON): `app: "ams-packing-list"`, `version: 2`,
 `exportedAt` (ISO, UTC), `lists` (every template resolved with its items, A–Z), `events` (trips with lines),
@@ -796,13 +808,15 @@ in Settings slate, id `backup-restore`. Press → status cleared; under the UI t
 for `.json`. Picked → security-scoped read → `offer(data)`; unreadable → "That file could not be read."; cancelled →
 "Nothing chosen."
 
-**Checking before offering** (`offer` → `LibraryModel.inspectBackup(data)`): parse the JSON and require
+**Checking before offering** (`offer` → `LibraryModel.inspectBackup(data)` = `Importer.read`, which since 0.6x leaves
+the live "When" steps and conditions as they were): parse the JSON and require
 `BackupFile.looksLikeBackup`, else "That is not an AMS Packing backup file."; import it in memory with
 `Importer.library(from:)`; if the import does not round-trip faithfully, "The import did not come back the same
 (<n> rows differ), so nothing was stored."; otherwise `pending = PendingRestore(library)` → the sheet opens. Nothing
 on the device changes until he confirms.
 
-**The sheet** (container id `restore-detail`; `.frame(minWidth: 420, minHeight: 520)` on BOTH platforms):
+**The sheet** (container id `restore-detail`; `.frame(minWidth: 420, minHeight: 520)` on the Mac only — 0.6x; on the
+iPhone it was wider than the screen and its edges were cut off):
 - Header: **"Restore from a file"** (22 heavy ink) and **Cancel** (outlined `HeaderButtonStyle`, slate, id
   `restore-cancel`) → `answer(false)` + dismiss.
 - "Everything on this device is replaced by what the file holds." (16 medium ink).
@@ -818,14 +832,16 @@ on the device changes until he confirms.
   `restore-confirm` → `answer(true)` + dismiss.
 
 **After the answer** (`pending = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
-(1) `RescueCopies.write(current)` — BEFORE anything is replaced; (2) `commit(imported)` — the record difference
-between what was held and the file's library is applied to the store (everything not in the file is deleted);
-(3) `reload()`. Then `copies` is re-read and status = "Restored from the file. A copy of what was here is kept on
-this device."; an error → its description. Dismissing the sheet by swiping (iPhone) does not call `answer`, so the
+(1) `RescueCopies.write(current)` — BEFORE anything is replaced; (2) `commit(Importer.restoring(imported, over:
+current))` — the record difference between what was held and the file's library (with the devices' check-ins kept,
+0.6x) is applied to the store (everything else not in the file is deleted); (3) `reload()`. Then `copies` is re-read
+and status = "Restored from the file: <n> template(s), <n> thing(s) and <n> trip(s). A copy of what was here is kept
+on this device." (the counts since 0.6x); an error → its description. Dismissing the sheet by swiping (iPhone) does not call `answer`, so the
 status says nothing.
 
 **Tests.** UI `testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything` (device 10 things; file 2 vs now 10;
-`restore-fewer` shown; Cancel changes nothing; confirm → 2 things, 0 trips). Model `RestoreTests`
+`restore-fewer` shown; 0.6x: the sheet inside the window; Cancel changes nothing; confirm → 2 things, 0 trips, the
+counts in the status line, `device-import`). Model `RestoreTests`
 (`testARestoreLeavesExactlyWhatTheFileHeldAndNothingOfWhatWasThere` — items, templates, no trips, no to-dos, no old
 Settings-list entry, every table count equals the file's; `testTheFileHoldingLessThanTheDeviceIsVisibleInTheCounts`;
 `testSomethingThatIsNotABackupIsNotReadAsOne`). **Not covered:** the error lines, "Nothing was replaced.", the ", and
@@ -840,21 +856,24 @@ written to this device BEFORE a restore replaces it — "never after" — so goi
 saved a file first.
 
 **Storage.** Folder `Application Support/AMS Packing/rescue/` on this device only (never synced). File name
-`before-restore-<ISO time with ":" replaced by "-">.json`, e.g. `before-restore-2026-09-22T23-04-11.123Z.json`;
+(`RescueNames.fileName`) `before-restore-<ISO time, world time, with ":" replaced by "-">.json`, e.g.
+`before-restore-2026-09-22T23-04-11.123Z.json`;
 content = the ordinary backup JSON (either app can read it). An EMPTY library writes nothing (and deletes nothing).
 After each write the folder is pruned to the newest **3** (newest = file name sorted descending). Under the UI tests
 the folder is emptied at launch.
 
 **On screen** (only when at least one copy exists): **"Kept before a restore"** (15 heavy muted, 10 pt above, id
-`rescue-heading`), then a card list, one row per copy, newest first: the moment written as **"22 September, 23:04"**
-(16 medium ink; built from the file name — day number, English month name, hours:minutes; an unexpected name is
-shown as it is) and **"Look at it"** (15 bold slate); min height 44; hairline under each; id `rescue-row-<n>`.
+`rescue-heading`), then a card list, one row per copy, newest first: the moment written as **"23 September, 01:04"**
+(16 medium ink; `RescueNames.when` — the file name's world time said in this device's time zone (0.6x; until then the
+world time as it was, an hour or two off and near midnight the wrong day), day number, English month name,
+hours:minutes; an unexpected name is shown as it is) and **"Look at it"** (15 bold slate); min height 44; hairline under each; id `rescue-row-<n>`.
 Tapping reads the file and goes through exactly the same `offer` → comparison sheet → confirm path as a chosen
 file (an unreadable copy says "That is not an AMS Packing backup file.").
 
 **Tests.** UI `testTheCopyKeptBeforeARestoreBringsEverythingBack` (no heading before any restore; after one: heading,
-one row, no second; the copy holds 10 things; confirming brings 10 things and the 1 trip back). **Not covered:** the
-three-copy limit, the date text, an empty library writing no copy.
+one row, no second; the copy holds 10 things; confirming brings 10 things and the 1 trip back); model
+`RescueNamesTests` (0.6x: the three-copy limit, the date text in a given time zone). **Not covered:** an empty
+library writing no copy.
 
 ---
 
@@ -870,7 +889,11 @@ id `device-count-<table raw value>`), min height 40, hairline. Labels (`Settings
 library". Last row: **"Synced through iCloud"** or **"On this device only"** (`model.usesICloud`) and the version
 `AppInfo.version` = "<CFBundleShortVersionString> (<CFBundleVersion>)", e.g. "0.60 (2)" (both 15 semibold muted).
 
-**Data.** `Library.counts` = for each `Table`, the number of records `library.records()` produces for it.
+Under the card, only for a library brought in from a file (0.6x): **"Brought in from a backup <when> (the file was
+saved <when>)."** (15 medium muted, id `device-import`; from the import's own marker, so both devices say it).
+
+**Data.** `Library.counts` = for each `Table`, the number of records `library.records()` produces for it — counted
+without building them since 0.6x (building decoded every photo on every redraw).
 
 **Tests.** `testSettingsOffersABackup` (`device-count-items` exists), the restore tests (counts 10 → 2 → 10, trips
 1 → 0 → 1), `testATripIsDeletedOnlyAfterAsking` and `testWorthALookRemovesAPhotoLeftBehind` (`device-count-photos`
@@ -1485,7 +1508,7 @@ UI (`AMSPackingUITests`): `testAAAWarmsUpTheSimulator`, `testStartsOnHomeAndName
 Model: `SettingsListsTests` (5), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
 `ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (3), `BackupTests` (library, 5),
 `RestoreTests` (3), `SyncCheckInTests` (1), `CountdownTests` (4), `ContrastTests` (3). Not unit-tested at all (the app
-target has no unit-test target): `SVGPath`, `RescueCopies`, `AppInfo`, `Releases`/`Words`/`HowItWorksScreen`
+target has no unit-test target): `SVGPath`, `RescueCopies` (its naming, time and pruning are, since 0.6x: `RescueNamesTests`; also `StoreTests`, `SyncCheckTests`, `UndatedPhotoTests`), `AppInfo`, `Releases`/`Words`/`HowItWorksScreen`
 content, the button and heading components.
 
 ---
@@ -1497,18 +1520,10 @@ the code's own stated rule); **[doc]** a comment or document disagrees with the 
 matters and no test pins; **[idea]** worth deciding before a rewrite. (The 0.59 item "a photo whose `createdAt`
 cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo and never offers it — §12.)
 
-1. [bug] [untested] **Sync now on an empty device blocks the import.** `Library.isEmpty` includes `meta`. On a fresh
-   device (state `.empty`, Settings reachable), pressing *Sync now* writes `meta["syncCheck.<device>"]`, so the library
-   is no longer empty: Home stops showing the first-run doors and `importBackup` refuses with "This library has
-   already been imported into." (A check-in arriving from the other device has the same effect.)
-2. [bug] **Rescue-copy times are UTC.** `RescueCopies.write` stamps the file with `nowISO()` (UTC, "Z") and `when(_:)`
-   shows that clock as it is ("22 September, 23:04"), not local time — one or two hours off in his time zone, and
-   near midnight the day is wrong too.
-3. [bug] **RestoreSheet's minimum size applies on the iPhone too.** `.frame(minWidth: 420, minHeight: 520)` is not
-   inside `#if os(macOS)` (every other sheet's is); 420 pt is wider than most iPhones. The UI test still passes on the
-   iPhone.
-4. [idea] **The backup JSON is rebuilt on every redraw of Settings** (it is an argument of `.fileExporter` in `body`),
-   photos included — a full resolve, encode and pretty-print each time anything on the screen changes.
+1. **Resolved in 0.6x** — ~~Sync now on an empty device blocks the import.~~ A device's check-in no longer counts as holding anything (`Library.isDeviceNote`); the doors stay and the import is taken. See the storage chapter (01), item 3.
+2. **Resolved in 0.6x** — ~~Rescue-copy times are UTC.~~ They are said in the device's time zone (`RescueNames.when`, §15).
+3. **Resolved in 0.6x** — ~~RestoreSheet's minimum size applies on the iPhone too.~~ It is the Mac's only; the restore UI test checks the sheet lies inside the window.
+4. **Resolved in 0.6x** — ~~The backup JSON is rebuilt on every redraw of Settings.~~ It is built when Save is pressed (§1, §13).
 5. [rule-break] **The font floor of 15 is not universal**: 166 `.system(size:)` values below 15 in 42 of the 67 app
    source files (11–14 for secondary lines, the tab labels 12.5, the version marker 11, `SmallDeleteButton` 13). The
    code comments state the floor ("Nothing under 15, so it still reads without glasses") for headings and pills only.
@@ -1547,8 +1562,7 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
 19. [doc] **The shot helper's comment names `tools/shots.sh`**, which is not in the repository; the env var it reads
     is `SHOTS_DIR` (set as `TEST_RUNNER_SHOTS_DIR`). Nothing in the tests switches to dark mode, though the comment
     says shots are looked at "in dark mode".
-20. [doc] **`forThisLaunch`'s doc comment lists only three test modes**; the code also has `-uiTestingChecks`,
-    `-uiTestingOldPhoto`, `-uiTestingTwoLibraries` (and `-pretendShopTicks` elsewhere).
+20. **Resolved in 0.6x** — ~~`forThisLaunch`'s doc comment lists only three test modes.~~ It lists all six.
 21. [doc] **SampleLibrary's weight/place tables name Towel, Goggles and Swim cap**, but they are applied before Swim
     exists, so those three have no weight and no place (the UI tests depend on that). Its comment "514 of 431 things
     weigh something" is self-contradictory.
@@ -1576,5 +1590,4 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
     normalised units become two records under one key, and the next load keeps only one (§2.5).
 31. [doc] **"Kit" means two things**: Words defines it as "All your things together — what Care counts and weighs",
     while the library's `kits` table (counted as "Kits" in *This device holds*) holds named groups of things.
-32. [idea] **An undated unused photo is now kept for ever and never mentioned** (0.60): it travels through iCloud and
-    every backup; decide whether Worth a look should at least name it without offering removal.
+32. **Resolved in 0.6x** — ~~An undated unused photo is kept for ever and never mentioned.~~ Worth a look names it on its own and removes it only on his press (§12, worry 4).

@@ -28,15 +28,17 @@ struct SyncCard: View {
 
     var body: some View {
         let c = check
-        let stuck = (c?.notSentTotal ?? 0) > 0 || c?.problem != nil
+        let state = SyncCheck.state(usesICloud: model.usesICloud, check: c)
+        let stuck = state == .stuck
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text("iCloud sync").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
-                Text(!model.usesICloud ? "Off" : stuck ? "Stuck" : "Working")
+                Text(state.word)
                     .font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
                     .padding(.horizontal, 10).padding(.vertical, 3)
-                    .background(Capsule().fill(!model.usesICloud ? Theme.muted : stuck ? AppSection.actions.color : AppSection.events.color))
+                    .background(Capsule().fill(state == .working ? AppSection.events.color
+                                               : stuck ? AppSection.actions.color : Theme.muted))
                     .accessibilityIdentifier("sync-state")
             }
             if !model.usesICloud {
@@ -50,6 +52,10 @@ struct SyncCard: View {
                     loud("The last \(p.sending ? "send" : "receive") failed \(SyncCard.when(p.at)): \(SyncCheck.plain(domain: p.domain, code: p.code)).",
                          id: "sync-problem")
                 }
+            } else {
+                // iCloud is on, but this device cannot read its own record of it: say
+                // so, rather than a green "Working" over nothing (the spec pass, 2026-10-05).
+                quiet("This device cannot tell right now how the sync is going.", id: "sync-unknown")
             }
             quiet(model.library.lastCheckIn(device: SyncCard.other).map { "The \(SyncCard.other) last checked in \(SyncCard.when(iso: $0))." }
                   ?? "The \(SyncCard.other) has not checked in yet \u{2014} press Sync now there.", id: "sync-other")
@@ -122,20 +128,8 @@ struct SyncCard: View {
         said = "Copied. Paste it into the chat with Claude."
     }
 
-    private static let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    /// "today 13:52", "2 Oct 22:10", "never" (`SyncCheck.when`, held by the model tests).
+    static func when(_ date: Date?) -> String { SyncCheck.when(date) }
 
-    /// "today 13:52", "2 Oct 22:10", "never".
-    static func when(_ date: Date?) -> String {
-        guard let date else { return "never" }
-        let cal = Calendar.current
-        let hm = String(format: "%02d:%02d", cal.component(.hour, from: date), cal.component(.minute, from: date))
-        if cal.isDateInToday(date) { return "today \(hm)" }
-        return "\(cal.component(.day, from: date)) \(months[cal.component(.month, from: date) - 1]) \(hm)"
-    }
-
-    static func when(iso: String) -> String {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return when(f.date(from: iso) ?? ISO8601DateFormatter().date(from: iso))
-    }
+    static func when(iso: String) -> String { SyncCheck.when(iso: iso) }
 }

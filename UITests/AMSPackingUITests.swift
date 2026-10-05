@@ -11,8 +11,10 @@ final class AMSPackingUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// `-uiTesting` = an invented library held in memory: no iCloud, no files, the
-    /// same on the simulator, the Mac and GitHub. `-uiTestingEmpty` = nothing at all.
+    /// `-uiTesting` = an invented library held in memory: no iCloud, the same on the
+    /// simulator, the Mac and GitHub. `-uiTestingEmpty` = nothing at all. (The copies
+    /// kept before a restore ARE real files; the app deletes them at launch under the
+    /// tests. Every launch mode: `LibraryModel.forThisLaunch`.)
     private func launch(_ mode: String = "-uiTesting") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += [mode]
@@ -177,6 +179,22 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-templates", timeout: 5))
         XCTAssertFalse(app.buttons["template-row-0"].exists, "nothing may be seeded into an empty library")
     }
+    /// Sync now on a new, empty device — or the other device's check-in arriving —
+    /// made the library "not empty": the two doors went and the backup was refused
+    /// (the spec pass, 2026-10-05). A check-in is about the device; the doors stay.
+    func testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors() {
+        let app = launch("-uiTestingEmpty")
+        XCTAssertTrue(app.buttons["first-run-import"].waitForExistence(timeout: 20))
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "sync-now")
+        let me = app.staticTexts["sync-self"]
+        XCTAssertTrue(waitUntil { self.words(me).contains("checked in today") }, "Sync now did not check in: '\(words(me))'")
+        tab(app, "home")
+        XCTAssertTrue(app.buttons["first-run-import"].waitForExistence(timeout: 5),
+                      "one check-in shut the doors of an empty device")
+    }
+
     /// A tick counts, and it is still there after leaving the trip and coming back.
     func testATickCountsAndStays() {
         let app = launch()
@@ -870,11 +888,21 @@ final class AMSPackingUITests: XCTestCase {
         let says = app.staticTexts["health-0"]
         XCTAssertTrue(says.waitForExistence(timeout: 5), "Worth a look does not mention the photo")
         XCTAssertTrue(words(says).hasPrefix("1 photo is no longer shown anywhere"), "'\(words(says))'")
+        // The one whose age cannot be read is named on its own (the spec pass, 2026-10-05):
+        // never offered with the old one, and until now never mentioned at all.
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["health-1"]).hasPrefix("1 photo with no date") },
+                      "the photo with no date is not mentioned: '\(words(app.staticTexts["health-1"]))'")
         bringIntoView(app, app.buttons["health-0-fix"])
         shot(app, "health-photo")
         tap(app, id: "health-0-fix")
-        XCTAssertTrue(waitUntil { !app.staticTexts["health-heading"].exists }, "Worth a look stayed after Remove it")
         let photos = app.staticTexts["device-count-photos"]
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["health-0"]).hasPrefix("1 photo with no date") },
+                      "Remove it took the photo with no date along, or left the old one: '\(words(app.staticTexts["health-0"]))'")
+        bringIntoView(app, photos)
+        XCTAssertEqual(words(photos), "1", "Remove it did not take exactly the old photo")
+        bringIntoView(app, app.buttons["health-0-fix"])
+        tap(app, id: "health-0-fix")
+        XCTAssertTrue(waitUntil { !app.staticTexts["health-heading"].exists }, "Worth a look stayed after Remove it")
         bringIntoView(app, photos)
         XCTAssertEqual(words(photos), "0", "the photo is still on the device")
     }
@@ -2479,6 +2507,47 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["grab-6"].exists }, "the shared grab list is not on Home")
     }
 
+    /// Replace says what it does before he says yes, and takes the sender's things
+    /// into HIS template (the spec pass, 2026-10-05: it used to take his icon,
+    /// sections, bags and answers without a word). The sample's Hiking is shared and
+    /// opened again, so the question here is the words; the model holds the rest
+    /// (ReplaceTemplateTests).
+    func testReplacingATemplateSaysWhatItKeeps() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let before = words(app.staticTexts["templates-summary"])
+        app.buttons["template-row-1"].tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-share")
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5))
+        tap(app, id: "share-copy")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        tab(app, "settings")
+        tap(app, id: "settings-openshared")
+        XCTAssertTrue(appears(app, "shared-screen", timeout: 5))
+        tap(app, id: "shared-paste")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-kind"]) == "A TEMPLATE" }, "not read as a template")
+        XCTAssertFalse(app.staticTexts["shared-replace-says"].exists, "the question came before Replace was pressed")
+        tap(app, id: "shared-replace")
+        let says = app.staticTexts["shared-replace-says"]
+        XCTAssertTrue(waitUntil { self.words(says).contains("stay yours") }, "Replace does not say what it keeps: '\(words(says))'")
+        XCTAssertTrue(words(says).hasPrefix("It keeps the same things"), "its own things, shared back: '\(words(says))'")
+        shot(app, "shared-replace")
+        tap(app, id: "shared-replace-yes")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["shared-result"]).hasPrefix("Replaced") },
+                      "'\(words(app.staticTexts["shared-result"]))'")
+        tap(app, id: "shared-done")
+        XCTAssertTrue(disappears(app, "shared-screen", timeout: 5))
+        tab(app, "templates")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["templates-summary"]) == before },
+                      "Replace made a template more or fewer: '\(words(app.staticTexts["templates-summary"]))', was '\(before)'")
+    }
+
     /// A Toggle is a switch on the iPhone and a check box on the Mac.
     private func switchNamed(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         _ = waitUntil(timeout: 5) { app.switches[id].exists || app.checkBoxes[id].exists }
@@ -3409,10 +3478,25 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(things) == "10" },
                       "the sample library is not what it was: '\(words(things))'")
 
+        XCTAssertFalse(app.staticTexts["device-import"].exists, "the sample never came from a file")
+
         tap(app, id: "backup-restore")
         XCTAssertTrue(appears(app, "restore-detail", timeout: 5), "the restore was not shown first")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "2" },
                       "what the file holds: '\(words(app.staticTexts["restore-file-items"]))'")
+        // The sheet fits the screen: on the iPhone its Mac-sized minimum was wider than
+        // the screen, and both edges were cut off (the spec pass, 2026-10-05).
+        let window = app.windows.firstMatch.frame
+        if let sheet = find(app, "restore-detail") {
+            XCTAssertTrue(sheet.frame.minX >= window.minX - 0.5 && sheet.frame.maxX <= window.maxX + 0.5,
+                          "the restore sheet runs off the screen: \(sheet.frame) in \(window)")
+        }
+        for id in ["restore-cancel", "restore-confirm"] {
+            let box = app.buttons[id].frame
+            XCTAssertTrue(box.minX >= window.minX - 0.5 && box.maxX <= window.maxX + 0.5,
+                          "\(id) runs off the screen: \(box) in \(window)")
+        }
+        shot(app, "restore-sheet")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-now-items"]) == "10" },
                       "what the device holds: '\(words(app.staticTexts["restore-now-items"]))'")
         XCTAssertTrue(app.staticTexts["restore-fewer"].exists, "a file holding less said nothing")
@@ -3429,6 +3513,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(things) == "2" }, "the device still holds \(words(things)) things")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["device-count-trips"]) == "0" },
                       "a trip from before the restore survived")
+        // …and it says what came in, and where the library now comes from.
+        let status = app.staticTexts["backup-status"]
+        XCTAssertTrue(waitUntil { self.words(status).hasPrefix("Restored from the file: 1 template, 2 things and 0 trips.") },
+                      "the restore did not say what came in: '\(words(status))'")
+        let came = app.staticTexts["device-import"]
+        bringIntoView(app, came)
+        XCTAssertTrue(waitUntil { self.words(came).hasPrefix("Brought in from a backup today") },
+                      "Settings does not say the library came from a file: '\(words(came))'")
+        shot(app, "restore-done")
     }
 
     /// The way back. A restore keeps a copy of what was on the device first, and
@@ -3451,6 +3544,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["rescue-heading"].waitForExistence(timeout: 5), "nothing was kept")
         XCTAssertTrue(app.buttons["rescue-row-0"].exists, "the copy is not offered")
         XCTAssertFalse(app.buttons["rescue-row-1"].exists, "more copies than restores")
+        bringIntoView(app, app.buttons["rescue-row-0"])
+        shot(app, "rescue-copy")
         tap(app, id: "rescue-row-0")
         XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "10" },

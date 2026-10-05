@@ -116,7 +116,10 @@ extension Library {
                                      icon: String = "", items: [String] = []) -> GrabDefinition? {
         let name = jsTrim(label)
         guard !name.isEmpty else { return nil }
-        let id = "own-\(Int(Date().timeIntervalSince1970 * 1000))-\(Int.random(in: 100...999))"
+        // The app's own id maker, as everywhere else — the clock and dice went straight
+        // to Date() and Int.random, so no model test could pin a new list's id (the
+        // spec pass, 2026-10-05). Lists made before keep their "own-<ms>-<nnn>" ids.
+        let id = "own-" + PackingEnv.makeId()
         let made = GrabDefinition(id: id, label: name, title: jsTrim(title).isEmpty ? name : jsTrim(title),
                                   tone: tone, icon: icon, items: items.map(jsTrim).filter { !$0.isEmpty })
         var all = ownGrabLists()

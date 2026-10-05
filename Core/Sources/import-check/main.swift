@@ -19,6 +19,9 @@ guard let json = try? JSONValue.parse(data), BackupFile.looksLikeBackup(json) el
 }
 let backup = BackupFile(json: json)
 let (library, report) = Importer.library(from: backup)
+// Reading a file leaves the live "When" steps and conditions alone (2026-10-05); the
+// app installs the stored library's own, so this does too before it looks further.
+library.installLiveChoices()
 
 func line(_ label: String, _ value: Any) { print(label.padding(toLength: 22, withPad: " ", startingAt: 0) + "\(value)") }
 line("templates", report.templates)

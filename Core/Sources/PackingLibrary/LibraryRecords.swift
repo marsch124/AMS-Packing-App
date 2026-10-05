@@ -94,12 +94,51 @@ extension Library {
         phases = phases.stableSorted(compare: { a, b in jsOr(jsSign(a.order - b.order), jsLocaleCompare(a.id, b.id)) })
     }
 
-    /// "data:image/jpeg;base64,…" → its bytes and its type. Anything else → no bytes.
+    /// "data:image/jpeg;base64,…" → its bytes and its type. Anything that is not a
+    /// data URL → no bytes.
+    ///
+    /// Read the way a browser reads a picture, not strictly (the spec pass,
+    /// 2026-10-05): a photo whose code had line breaks in it, lost its "=" padding,
+    /// used the web-safe "-" "_" letters, or was not base64 at all ("%"-escaped) came
+    /// out with NO bytes — the store kept the photo's place and quietly dropped the
+    /// picture. The bytes are the same picture; it comes back as a plain base64 URL.
     static func bytes(fromDataURL s: String) -> (Data?, String) {
         guard s.hasPrefix("data:"), let comma = s.firstIndex(of: ",") else { return (nil, "image/jpeg") }
         let header = s[s.index(s.startIndex, offsetBy: 5)..<comma]
-        let mime = header.split(separator: ";").first.map(String.init) ?? "image/jpeg"
-        guard header.contains("base64") else { return (nil, mime) }
-        return (Data(base64Encoded: String(s[s.index(after: comma)...])), mime.isEmpty ? "image/jpeg" : mime)
+        let first = header.split(separator: ";", omittingEmptySubsequences: false).first.map(String.init) ?? ""
+        let mime = first.isEmpty ? "image/jpeg" : first
+        let body = s[s.index(after: comma)...]
+        guard header.split(separator: ";").contains("base64") else { return (percentDecoded(body), mime) }
+        return (looseBase64(body), mime)
+    }
+
+    /// Base64 as a browser takes it: white space ignored, web-safe letters read,
+    /// the padding optional.
+    static func looseBase64(_ s: Substring) -> Data? {
+        if let exact = Data(base64Encoded: String(s)) { return exact }   // nearly every photo
+        var t = String(String.UnicodeScalarView(s.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }))
+        t = t.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        while t.hasSuffix("=") { t.removeLast() }
+        t += String(repeating: "=", count: (4 - t.utf8.count % 4) % 4)
+        return Data(base64Encoded: t)
+    }
+
+    /// "%"-escaped bytes ("data:image/svg+xml,%3Csvg…"); nil for a broken escape.
+    static func percentDecoded(_ s: Substring) -> Data? {
+        let u = Array(s.utf8)
+        var out = Data(capacity: u.count)
+        var k = 0
+        while k < u.count {
+            if u[k] == UInt8(ascii: "%") {
+                guard k + 2 < u.count, let hex = String(bytes: u[(k + 1)...(k + 2)], encoding: .ascii),
+                      let b = UInt8(hex, radix: 16) else { return nil }
+                out.append(b)
+                k += 3
+            } else {
+                out.append(u[k])
+                k += 1
+            }
+        }
+        return out
     }
 }

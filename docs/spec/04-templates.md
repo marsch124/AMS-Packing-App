@@ -1151,8 +1151,10 @@ becomes a QR code; it opens in the web app for anyone, and in this app via Setti
     trip packs it. …". (The spec pass, 5 Oct 2026: it used to make a second template of a name he had, which Worth
     a look then reported as "Two libraries may have met".)
   - When he has a role-"" template of the same `normName` (`templateNamed`), also "Replace your <name> instead"
-    (`shared-replace`) → "Replace your <name>?" with "Keep mine" / "Replace" → `importTemplate(shared, replacing:
-    id)` → "Replaced your <name>. Trips that use it keep working."
+    (`shared-replace`) → "Replace your <name>?" with "Keep mine" / "Replace", and under it what Replace does
+    (`shared-replace-says`, 0.6x) → `replaceTemplate(id:with:)` (0.6x: the sender's things in the sender's order; his
+    template — look, sections, bag, icon, role, activity area and transport — and the answers on the things he had
+    stay his; storage chapter §16.4) → "Replaced your <name>. Trips that use it keep working."
 - `listFromShare`: fresh ids (sections, rows, then the list), sections rebuilt and rows pointed at them by name
   (case-insensitive), roles `loose`/`container` arrive as ordinary templates, never `builtin`; a blank name becomes
   "Shared template"; a `partial` (`id`, `createdAt`) keeps a replaced template's identity. The roles `base` and

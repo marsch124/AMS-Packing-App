@@ -188,15 +188,15 @@ tell "nothing has arrived yet" from "there is nothing". So it never decides by i
 starter lists. It offers two doors instead.
 
 **How it is reached and left.** It shows on the Home tab while `model.state == .empty`, i.e.
-`Library.isEmpty`: items, memberships, templates, trips, actions, kits, phases, shared rows, photos **and
-`meta`** are all empty. It leaves by itself when the state becomes `.ready`:
+`Library.isEmpty`: items, memberships, templates, trips, actions, kits, phases, shared rows, photos and
+`meta` are all empty — a device's check-in (`syncCheck.*`, `Library.isDeviceNote`) aside (0.6x). It leaves by itself when the state becomes `.ready`:
 - after a successful import (`LibraryModel.importBackup` commits, and the state is recomputed); or
 - when iCloud delivers records (`store.onRemoteChange` → `reload()`).
 
-Because `isEmpty` counts `meta`, ANY one record ends the empty state — also a lone `meta` note such as a
-Sync now check-in made from Settings on this empty device, or the other device's check-in arriving. Home then
-shows the ordinary (empty) `HomeScreen` instead of the doors, and the import is refused as "already imported"
-(see the storage file's open questions).
+Any one record of his ends the empty state. A Sync now check-in made from Settings on this empty device, or the
+other device's check-in arriving, does not (0.6x; until then it did: Home showed the ordinary empty `HomeScreen`
+instead of the doors and the import was refused as "already imported" — the storage file's open questions, item 3;
+UI `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors`).
 
 While empty, the Trips, Templates, Care and To do tabs show their placeholder. Settings works.
 
@@ -467,7 +467,8 @@ device's own working state.
   shared list does not (it goes through `addGrabList` directly).
 - `addGrabList(label:title:tone:icon:items:)`:
   - the label is `jsTrim`med; an empty label returns nil;
-  - id `own-<milliseconds since 1970>-<random 100…999>`;
+  - id `own-` + `PackingEnv.makeId()` (0.6x, so a model test can pin it; lists made before keep their
+    `own-<milliseconds since 1970>-<random 100…999>`);
   - `title` = the trimmed title, or the label when that is blank;
   - `tone` defaults to "blue" and `icon` to "";
   - items are trimmed and blanks dropped, but **repeats are not removed here**;

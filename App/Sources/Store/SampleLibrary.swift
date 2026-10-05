@@ -137,6 +137,8 @@ enum SampleLibrary {
     static func oldPhoto() -> Library {
         var lib = make()
         lib.photos.append(PhotoRecord(id: "left-behind", data: "data:image/jpeg;base64,AQID", createdAt: "2026-01-01T09:00:00.000Z"))
+        // …and one whose age cannot be read: never offered with the first, named on its own.
+        lib.photos.append(PhotoRecord(id: "no-date", data: "data:image/jpeg;base64,BAUG", createdAt: ""))
         return lib
     }
 
