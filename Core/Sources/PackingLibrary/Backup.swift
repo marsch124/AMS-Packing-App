@@ -5,11 +5,24 @@ import PackingCore
 // can read the other's file during the change-over (docs/store.md, rule 10).
 
 extension Library {
+    /// The two keys only THIS app writes into a backup: every thing, and every place
+    /// on a template, exactly as stored. The web app reads neither (it reads `lists`
+    /// and `things`), so its file and ours stay readable by both.
+    public static let backupItemsKey = "items"
+    public static let backupPlacesKey = "memberships"
+
     /// Everything, as `db.exportJSON()` writes it: templates resolved with their
     /// items (each row carrying its item and membership ids, as the web app's rows
     /// do), trips with their lines, and the Settings lists — only the ones that are
     /// his own, never the factory defaults (a backup must never plant defaults on
     /// another device as data).
+    ///
+    /// …plus, for this app alone, the things and their places on templates as they
+    /// are stored (the spec pass, 2026-10-05). A resolved row cannot say everything:
+    /// it shows a place's own note OR the thing's, never which, so a restore built
+    /// from rows alone moved every thing's note onto its places — and a thing on no
+    /// list lost it. With these two, a restore puts back exactly what was here, and
+    /// the rows are still there for the web app and for the import's own check.
     public func backupFile(exportedAt: String = nowISO()) -> BackupFile {
         var o: [String: JSONValue] = [
             "app": "ams-packing-list",
@@ -22,6 +35,8 @@ extension Library {
             "phases": .array(phases.map { $0.json }),
             "things": .array(thingsOnNoList().map { $0.json }),
             "photos": .array(photos.map { $0.json }),
+            Library.backupItemsKey: .array(items.map { $0.json }),
+            Library.backupPlacesKey: .array(placesOnTemplates().map { $0.json }),
         ]
         var prefs: [String: JSONValue] = [:]
         let conditions = conditionsFromRows(shared)

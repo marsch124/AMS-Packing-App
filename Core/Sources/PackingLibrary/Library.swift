@@ -74,9 +74,22 @@ public struct Library: Equatable, Sendable {
     }
 
     /// Things that are on no template. They exist in their own right (web app v175).
+    ///
+    /// A place on a template that no longer exists does not count (the spec pass,
+    /// 2026-10-05): such a thing shows on no template, so a backup that left it out
+    /// of `things` too lost it — and "a backup, then Restore" is exactly what Worth
+    /// a look suggests for "a thing sits on a list that no longer exists".
     public func thingsOnNoList() -> [Item] {
-        let used = Set(memberships.map(\.itemId))
+        let used = Set(placesOnTemplates().map(\.itemId))
         return items.filter { !used.contains($0.id) }.map { resolveItemAlone($0) }
+    }
+
+    /// The places on templates that can be shown: their template and their thing
+    /// both exist. A membership pointing at a gone template (a delete on the other
+    /// device while this one added to it) is left out — of a backup too.
+    public func placesOnTemplates() -> [Membership] {
+        let lists = Set(templates.map(\.id)), things = Set(items.map(\.id))
+        return memberships.filter { lists.contains($0.templateId) && things.contains($0.itemId) }
     }
 
     // MARK: - Saving a template

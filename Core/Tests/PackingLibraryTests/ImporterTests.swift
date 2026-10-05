@@ -110,6 +110,24 @@ final class ImporterTests: XCTestCase {
         XCTAssertEqual(Library(records: got.records()).meta["import"], got.meta["import"])
     }
 
+    /// A key the web app keeps on a thing and this build does not know rides on every
+    /// row of that thing. The import used to leave it behind and then refuse the whole
+    /// file for it ("did not come back the same"); a thing on no list lost it silently.
+    func testAKeyThisBuildDoesNotKnowComesAcross() {
+        var lib = LibraryTests.sample()
+        let lamp = lib.items.firstIndex { $0.name == "Headlamp" }!
+        lib.items[lamp].extra["webOnlyKey"] = ["since": "v190"]
+        var shovel = newItem(name: "Snow shovel", storage: "Garage")
+        shovel.extra["webOnlyKey"] = 3
+        lib.items.append(shovel)
+        let (got, report) = Importer.library(from: ImporterTests.backup(of: lib))
+        XCTAssertTrue(report.isFaithful, report.mismatches.joined(separator: "; "))
+        XCTAssertFalse(report.asStored, "the web app's file is rebuilt from its rows")
+        XCTAssertEqual(got.items.first { $0.name == "Headlamp" }?.extra["webOnlyKey"], ["since": "v190"])
+        XCTAssertEqual(got.items.first { $0.name == "Snow shovel" }?.extra["webOnlyKey"], 3)
+        XCTAssertEqual(got.resolvedTemplates(), lib.resolvedTemplates())
+    }
+
     func testAThingOnNoListComesAcross() {
         var lib = LibraryTests.sample()
         lib.items.append(newItem(name: "Snow shovel", storage: "Garage"))

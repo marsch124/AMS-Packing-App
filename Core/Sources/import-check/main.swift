@@ -22,6 +22,7 @@ let (library, report) = Importer.library(from: backup)
 
 func line(_ label: String, _ value: Any) { print(label.padding(toLength: 22, withPad: " ", startingAt: 0) + "\(value)") }
 line("templates", report.templates)
+line("things as stored", report.asStored ? "yes: a file this app wrote, taken as it is" : "no: rebuilt from the rows")
 line("rows on templates", "\(report.rows)  →  \(report.items) things, \(report.memberships) places on lists")
 line("things on no list", report.things)
 line("trips", "\(report.trips)  (\(report.lines) lines, \(report.ticks) ticked)")
