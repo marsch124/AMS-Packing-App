@@ -127,7 +127,7 @@ struct ReviewScreen: View {
                                 Text(off ? "Didn't use" : "Used").font(.system(.footnote, weight: .semibold))
                                     .foregroundStyle(off ? AppSection.actions.color : AppSection.events.color)
                             }
-                            .padding(.vertical, 10).contentShape(Rectangle())
+                            .padding(.vertical, 5).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }

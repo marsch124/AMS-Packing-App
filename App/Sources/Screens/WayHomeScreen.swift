@@ -205,7 +205,7 @@ struct WayHomeScreen: View {
                         }
                         Spacer(minLength: 4)
                     }
-                    .padding(.vertical, 9).contentShape(Rectangle())
+                    .padding(.vertical, 5).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("wayhome-line-\(n)")

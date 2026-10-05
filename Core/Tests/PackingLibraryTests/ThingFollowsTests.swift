@@ -93,9 +93,9 @@ final class ThingFollowsTests: XCTestCase {
         XCTAssertEqual(Library.localToday(justAfterMidnight, zone: zone), "2026-10-06")
         XCTAssertEqual(Library.localToday(justAfterMidnight, zone: TimeZone(identifier: "UTC")!), "2026-10-05")
 
-        let saved = NSTimeZone.default
-        defer { NSTimeZone.default = saved }
-        NSTimeZone.default = zone
+        let saved = Library.dayZone
+        defer { Library.dayZone = saved }
+        Library.dayZone = { zone }
         PackingEnv.now = { justAfterMidnight }
         var lib = Library()
         var hiking = newList(name: "Hiking", group: "GA")

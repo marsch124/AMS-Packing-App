@@ -79,7 +79,7 @@ struct SearchScreen: View {
                             if part.total > part.rows.count {
                                 Text("…and \(part.total - part.rows.count) more. Say more of the name.")
                                     .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                                    .padding(.vertical, 8)
+                                    .padding(.vertical, 4)
                                     .accessibilityIdentifier("search-\(part.id)-more")
                             }
                         }
@@ -214,22 +214,21 @@ struct SearchScreen: View {
 
     private func line(_ row: Row) -> some View {
         HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(row.name)
-                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                if !row.under.isEmpty {
-                    Text(row.under)
-                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                        .lineLimit(1)
-                }
+            // The name and its details on ONE line (his word, 5 Oct 2026).
+            Text(row.name)
+                .font(.body).foregroundStyle(Theme.ink)
+                .lineLimit(1).layoutPriority(1)
+            Spacer(minLength: 6)
+            if !row.under.isEmpty {
+                Text(row.under)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .lineLimit(1).truncationMode(.middle)
             }
-            Spacer(minLength: 8)
             SVGPath.path("M9 6l6 6-6 6")
                 .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                 .frame(width: 20, height: 20).foregroundStyle(Theme.muted)
         }
-        .frame(minHeight: Metrics.tap)
+        .frame(minHeight: Metrics.compact)
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
         .contentShape(Rectangle())
     }

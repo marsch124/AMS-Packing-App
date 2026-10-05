@@ -4972,7 +4972,7 @@ final class AMSPackingUITests: XCTestCase {
         // The heaviest things are drawn from the things that have a weight — under a
         // heading in capitals (his words, 2026-09-28: "The heavy end" was misleading).
         XCTAssertTrue(app.buttons["kit-heavy-0"].waitForExistence(timeout: 5), "nothing in the heaviest things")
-        XCTAssertEqual(words(app.staticTexts["kit-heavy-heading"]), "HEAVIEST THINGS")
+        XCTAssertEqual(words(app.staticTexts["kit-heavy-heading"]), "Heaviest things")
         let heaviest = words(app.buttons["kit-heavy-0"])
         XCTAssertTrue(heaviest.contains("g"), "the heaviest thing does not say its weight: '\(heaviest)'")
 

@@ -112,23 +112,32 @@ struct GrabButtons: View {
     var prefix = "grab"
     let open: (GrabDefinition) -> Void
     private let perRow = 4
+    #if os(macOS)
+    static let doodle: CGFloat = 20
+    static let height: CGFloat = 40
+    #else
+    static let doodle: CGFloat = 24
+    static let height: CGFloat = 50
+    #endif
 
     var body: some View {
         let rows = stride(from: 0, to: lists.count, by: perRow).map { Array(lists.enumerated())[$0..<min($0 + perRow, lists.count)] }
-        VStack(spacing: 8) {
+        // Small tiles (his word, 5 Oct 2026: "You can even make the grab lists buttons
+        // smaller"); smaller again on the Mac.
+        VStack(spacing: 6) {
             ForEach(rows.indices, id: \.self) { r in
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(Array(rows[r]), id: \.element.id) { n, d in
                         Button { open(d) } label: {
-                            VStack(spacing: 3) {
-                                GrabDoodle(icon: d.icon, size: 36, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
-                                Text(d.label).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.ink)
-                                    .lineLimit(1).minimumScaleFactor(0.75)
+                            VStack(spacing: 2) {
+                                GrabDoodle(icon: d.icon, size: GrabButtons.doodle, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
+                                Text(d.label).font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.ink)
+                                    .lineLimit(1).minimumScaleFactor(0.8)
                             }
                             .padding(.horizontal, 4)
-                            .frame(maxWidth: .infinity, minHeight: 68)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(GrabTone.color(d.tone).opacity(0.5), lineWidth: 1.5))
+                            .frame(maxWidth: .infinity, minHeight: GrabButtons.height)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(GrabTone.color(d.tone).opacity(0.5), lineWidth: 1.2))
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
@@ -219,7 +228,7 @@ struct GrabScreen: View {
                         Text("Nothing on this list yet. Press Edit to put things on it.")
                             .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, 5)
                             .accessibilityIdentifier("grab-empty")
                     }
                     ForEach(Array(items.enumerated()), id: \.offset) { n, name in
@@ -245,7 +254,7 @@ struct GrabScreen: View {
                                             .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                                     }
                                 }
-                                .padding(.vertical, 11).contentShape(Rectangle())
+                                .padding(.vertical, 5).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("grab-item-\(n)")

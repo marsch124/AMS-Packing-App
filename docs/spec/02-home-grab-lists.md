@@ -255,7 +255,7 @@ spacing, 16 pt side padding and 24 pt bottom padding.
 
 **What is on screen** (top to bottom):
 1. A row, aligned on the first text baseline, 14 pt top padding:
-   - "Grab and go": **22 pt heavy** (`HeadingSize.band`), `ink`; id `home-grab-heading`.
+   - "Grab and go": **Title 3 bold** (22 heavy before 0.62), `ink`; id `home-grab-heading`.
    - A spacer.
    - The magnifier `SearchButton` (`search-open`; section 15).
    - "Grab Lists": a plain button, 14 pt bold, Home blue, no focus ring; id `grab-lists`. It opens the
@@ -320,17 +320,19 @@ the buttons a bit so they are thinner … four on each row … two rows". They w
 (release 0.46).
 
 **What is on screen.**
-- Rows of **4** (`perRow = 4`) with 8 pt between tiles and 8 pt between rows. Home passes at most
+- Rows of **4** (`perRow = 4`) with 6 pt between tiles and 6 pt between rows (8 until 0.62). Home passes at most
   **8 lists** (`GRAB_HOME_SLOTS`), so at most two rows. It can pass fewer than 8 even when he has more
   lists: a list he took off Home leaves its place free (section 5), so Home simply shows one tile fewer.
   With every list taken off, Home shows the "Grab and go" row and, instead of tiles, the
   `home-grab-none` line that leads to Grab Lists (section 3; 0.62).
 - A short last row is padded with invisible equal-width spacers, so every tile has the same width.
 - Each tile is a plain button:
-  - the list's drawing (`GrabDoodle`) at **36 pt** in the list's tone colour;
-  - 3 pt below it, `label` at **14 pt bold** `ink`, one line, scaling to 75 %;
-  - 4 pt side padding, full width, minimum height **68**, `card` fill, corner radius 12;
-  - a 1.5-pt stroke in the tone colour at 50 % opacity.
+  - the list's drawing (`GrabDoodle`) at **24 pt** on the iPhone, **20** on the Mac (`GrabButtons.doodle`; 36
+    until 0.62 — his word, 5 Oct 2026: "You can even make the grab lists buttons smaller"), in the list's tone colour;
+  - 2 pt below it, `label` in **Caption semibold**, `ink`, one line, scaling to 80 %;
+  - 4 pt side padding, full width, minimum height **50** on the iPhone, **40** on the Mac (`GrabButtons.height`;
+    68 until 0.62), `card` fill, corner radius 10;
+  - a 1.2-pt stroke in the tone colour at 50 % opacity.
 - Identifier `grab-<n>`, where n is the **position** (0…7), never the name.
 - Accessibility label = `title` (for example "Indoor swim"); the visible word is `label` ("Swim"). The
   two Swim tiles differ on screen only by the sun in the drawing. Each tile passes its `label` to
@@ -1575,8 +1577,9 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
    - **No match:** "Nothing matches “<typed, trimmed>”." (`search-none`, same style).
    - **Otherwise** up to four parts, always in this order, each with a heading in capitals (12 pt heavy
      `muted`, kerning 0.6; 18 pt above, 4 below) followed by its total (12 pt heavy monospaced digits):
-     - each row: name (16 pt semibold, one line), an under-line (13 pt medium `muted`, one line, only
-       when non-empty), a chevron, minimum 48 tall, a hairline under it;
+     - each row, on ONE line (0.62): the name at the left (Body, one line, keeps its room first), its details at the
+       right (Footnote `muted`, one line, cut in the middle; only when non-empty), a chevron, minimum
+       `Metrics.compact` tall, a hairline under it (until 0.62: the details on a second line, 48 tall);
      - row identifiers `search-<part>-<n>`, with part = `things`, `lists`, `trips`, `todos`.
 
 **Matching.** `needle = normName(query)` (trimmed, lower-cased, whitespace runs collapsed). A hit is a

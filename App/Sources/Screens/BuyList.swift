@@ -47,7 +47,7 @@ struct BuyList: View {
                                         .accessibilityIdentifier("buy-\(n)-name")
                                     Spacer(minLength: 8)
                                 }
-                                .padding(.vertical, 10).contentShape(Rectangle())
+                                .padding(.vertical, 5).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("buy-\(n)")
@@ -85,7 +85,7 @@ struct BuyList: View {
                                     }
                                     Spacer(minLength: 8)
                                 }
-                                .padding(.vertical, 10).contentShape(Rectangle())
+                                .padding(.vertical, 5).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("buy-offer-\(n)")

@@ -183,7 +183,7 @@ struct OnSiteScreen: View {
                             small("Change", id: "onsite-note-\(n)-change") { startNote(line) }
                         }
                     }
-                    .padding(.vertical, 9)
+                    .padding(.vertical, 5)
                     if noting == line.id { noteEditor(line) }
                 }
                 .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
@@ -297,7 +297,7 @@ struct OnSiteScreen: View {
 
     private func row<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         HStack(spacing: 8) { content() }
-            .padding(.vertical, 9)
+            .padding(.vertical, 5)
             .frame(maxWidth: .infinity, alignment: .leading)
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }
@@ -387,7 +387,7 @@ private struct LinePicker: View {
                         Text(line.container.isEmpty || line.container == "Other" ? "" : line.container)
                             .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                     }
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 5)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()

@@ -1,7 +1,7 @@
 # Templates — the building blocks, and how things sit on them
 
 > Verified against the code on 5 Oct 2026 (app 0.60); the spec pass's fixes of spec 04 (the same day,
-> release 0.62) are written in, and Arrange (§6a, his layout "C", 0.62) with its model (§13a).
+> release 0.62) are written in, and Arrange (§6a, his layout "C", 0.63) with its model (§13a).
 
 **What this part is for, in the owner's terms.** A *template* is a building block: the things for one activity
 or need — Hiking, Swim, Car, the Common base. A trip's packing list is *made from* templates: the always-packed
@@ -387,7 +387,7 @@ renaming to it is allowed and is no worry; two bag lists still are).
 itself survives)." Grew through: rename/delete (0.16), headings in capitals (0.40, H.13), ✕ asks first (0.40,
 H.5), Group pills (0.42, H.3: "group and sort the items in a template in the same way as when you pack"), Choose
 from your things (0.42, H.9), icon (0.46), "Only on:" line (0.55, field test 4.4), Find (0.60, 4 Oct 2026: "add a
-search function so that the user can find a specific item without the need to scroll"), Arrange (0.62, §6a: his
+search function so that the user can find a specific item without the need to scroll"), Arrange (0.63, §6a: his
 pick "C" of three pictured layouts, 5 Oct 2026).
 
 ### How it is reached and left
@@ -579,7 +579,7 @@ both.
 Open item 19 left "renaming, reordering or deleting a section and reordering rows" for him to decide, "worth a
 picture first". On 5 Oct 2026 he was shown three layouts on the real page (today's, A: arrow buttons on every line,
 B: a pen on each heading and a heading card, C: grips to hold and drag) and chose **C** ("Hold ≡ and drag a heading
-or a thing to its place"). Built in 0.62 with Apple's text styles and the slim heights of the new look.
+or a thing to its place"). Built for 0.63 with Apple's text styles and the slim heights of the 0.62 look.
 
 ### How it is reached and left
 - Reached: the **Arrange** pill on a template's page (`template-arrange`).
@@ -1125,7 +1125,7 @@ Takes an edited **resolved** template apart:
   own that says something else is kept). Run by `LibraryModel.reload()` on every load, after duplicate records are
   settled; only the changed membership records are written, so it is idempotent and both devices agree.
 - `setTemplateArea(id:area:)` — §14. The cover's icon: `setTemplateIcon` (§3).
-- Renaming, moving and removing a section and moving a row: §13a (Arrange, 0.62). There are still **no**
+- Renaming, moving and removing a section and moving a row: §13a (Arrange, 0.63). There are still **no**
   operations for changing a template's role/transport/colour/emoji/default bag (see open question 19).
 
 ### Tests
@@ -1516,7 +1516,7 @@ deciding before a rewrite.
     "templates".
 19. [idea] **Row editor's Add-a-section** — Partly resolved in 0.62: a section typed in the row editor is made only
     on Save (UI `testASectionTypedInARowIsMadeOnlyOnSave`), and a template's activity area can be changed on its
-    page (`setTemplateArea`, UI `testATemplateMovesToAnotherActivityArea`). Resolved in 0.62 for renaming,
+    page (`setTemplateArea`, UI `testATemplateMovesToAnotherActivityArea`). Resolved in 0.63 for renaming,
     reordering and deleting a section and reordering rows: he was shown three layouts and chose "C" — Arrange on
     the template's page, hold ≡ and drag a heading or a thing; a heading's name tapped to rename or remove it
     (§6a, model §13a; `ArrangeTests`, UI `testArrangeTurnsOnAndOff`, `testAThingIsDraggedUnderAnotherHeading`,

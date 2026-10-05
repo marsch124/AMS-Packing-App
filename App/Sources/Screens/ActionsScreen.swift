@@ -66,7 +66,7 @@ struct ActionsScreen: View {
                                     }
                                     Spacer(minLength: 8)
                                 }
-                                .padding(.vertical, 10).contentShape(Rectangle())
+                                .padding(.vertical, 5).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("action-\(n)")

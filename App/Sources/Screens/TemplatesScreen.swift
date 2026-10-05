@@ -507,7 +507,7 @@ struct TemplateDetail: View {
                                             Spacer(minLength: 8)
                                             Text(item.container).font(.system(.subheadline)).foregroundStyle(Theme.muted).lineLimit(1)
                                         }
-                                        .padding(.vertical, 6).contentShape(Rectangle())
+                                        .padding(.vertical, 3).contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("template-item-\(n)")

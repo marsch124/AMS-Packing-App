@@ -25,7 +25,12 @@ extension Library {
     /// the app). The spec pass (5 Oct 2026): this used the UTC date, so in Sweden, just
     /// after midnight, a trip that ended yesterday still counted as ahead and took a
     /// change to a thing (and one behind UTC skipped a trip ending today).
-    public static func localToday(_ now: Date = PackingEnv.now(), zone: TimeZone = .current) -> String {
+    /// The time zone "today" is read in — the device's own. A test sets another: the
+    /// app-wide default time zone does not move `TimeZone.current`, so a test that only
+    /// set that passed in Sweden and failed on GitHub's machines, which run on UTC.
+    public static var dayZone: () -> TimeZone = { .current }
+
+    public static func localToday(_ now: Date = PackingEnv.now(), zone: TimeZone = Library.dayZone()) -> String {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = zone
         let c = cal.dateComponents([.year, .month, .day], from: now)

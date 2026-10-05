@@ -214,7 +214,7 @@ struct FilterSheet: View {
             if all.isEmpty {
                 Text("None of the things in view has an answer here.")
                     .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 4)
             }
             ForEach(Array(all.enumerated()), id: \.element.value) { n, answer in
                 if needle.isEmpty || normName(answer.label).contains(needle) {
@@ -242,7 +242,7 @@ struct FilterSheet: View {
                     Text("Any — clear this one").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
                 .accessibilityIdentifier("filter-\(safe)-clear")
             }
         }

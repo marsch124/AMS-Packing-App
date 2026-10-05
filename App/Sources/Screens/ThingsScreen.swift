@@ -127,15 +127,19 @@ struct ThingsScreen: View {
 
     private func thingRow(_ row: (item: Item, templates: [String]), n: Int) -> some View {
         Button { editing = row.item.id } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(row.item.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+            // The name and where it lives on ONE line (his word, 5 Oct 2026: "set the item
+            // name and the info on the same line").
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(row.item.name).font(.body).foregroundStyle(Theme.ink)
+                    .lineLimit(1).layoutPriority(1)
+                Spacer(minLength: 6)
                 Text([row.templates.isEmpty ? "On no template" : row.templates.joined(separator: ", "),
                       row.item.storage].filter { !$0.isEmpty }.joined(separator: " · "))
                     .font(.system(.footnote)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
-                    .lineLimit(1)
+                    .lineLimit(1).truncationMode(.middle)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 10)
+            .padding(.vertical, 5)
             // Lit just past the text's edges, so the name does not move.
             .background(RoundedRectangle(cornerRadius: 8)
                 .fill(lit == row.item.id ? AppSection.care.color.opacity(0.18) : Color.clear)
