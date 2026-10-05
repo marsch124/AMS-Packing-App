@@ -89,9 +89,14 @@ struct ListsScreen: View {
                                 // pass, 5 Oct 2026: "no rename, no reorder"). The pen opens the
                                 // entry: a new name, and ▲ ▼ where its order is his to set.
                                 Button { toggleEditing(kind, entry) } label: {
+                                    // Open: the slate on a slate tint, so it is plain which entry the
+                                    // editor under it belongs to (colour as the message).
                                     PenMark().frame(width: 22, height: 22)
                                         .foregroundStyle(isEditing(kind, entry.key) ? AppSection.settings.color : Theme.muted)
-                                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                                        .frame(width: 44, height: 44)
+                                        .background(RoundedRectangle(cornerRadius: 10)
+                                            .fill(isEditing(kind, entry.key) ? AppSection.settings.color.opacity(0.16) : Color.clear))
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("list-\(kind.rawValue)-edit-\(n)")

@@ -605,6 +605,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(save.waitForExistence(timeout: 5), "no way to save a backup")
         // Further down than the everyday doors (his K.2, 1 Oct 2026).
         XCTAssertGreaterThan(save.frame.minY, app.buttons["settings-lists"].frame.maxY, "Save a backup is still above Your choices")
+        // What this device holds, for the day-and-night look (the web app's kits are
+        // counted as "Groups of things" since the spec pass, 5 Oct 2026).
+        bringIntoView(app, app.staticTexts["device-count-kits"])
+        shot(app, "settings-device-holds")
         tapVisible(app, save)
         let status = app.staticTexts["backup-status"]
         XCTAssertTrue(waitUntil { self.words(status).hasPrefix("Choosing") }, "the save was not started: '\(words(status))'")
