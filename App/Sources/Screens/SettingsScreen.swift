@@ -30,7 +30,7 @@ struct SettingsScreen: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Your choices").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                             Text("Storage places, owners, packers, conditions, \"When\" steps")
-                                .font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                                .font(.system(size: 15)).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -83,13 +83,13 @@ struct SettingsScreen: View {
                             if !worry.names.isEmpty {
                                 Text(worry.names.prefix(6).joined(separator: " · ")
                                      + (worry.names.count > 6 ? " …" : ""))
-                                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+                                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .accessibilityIdentifier("health-\(n)-names")
                             }
                         }
                         Text("A backup and then \"Restore from a file…\" puts a library back exactly as the file has it.")
-                            .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted)
+                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)

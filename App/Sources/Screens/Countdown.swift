@@ -19,7 +19,7 @@ struct CountdownCard: View {
                         .lineLimit(1).minimumScaleFactor(0.6)
                     if next.days > 0 {
                         Text(next.days == 1 ? "day" : "days")
-                            .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.muted)
+                            .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
                     }
                 }
                 .frame(minWidth: 72)
@@ -89,7 +89,7 @@ struct RemindersCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Remind me to pack").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
                     Text("On this device, at 9 in the morning of each day a packing step is due \u{2014} Preparations a month ahead, then a week ahead, the day before and the day you leave.")
-                        .font(.system(size: 14)).foregroundStyle(Theme.muted)
+                        .font(.system(size: 15)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

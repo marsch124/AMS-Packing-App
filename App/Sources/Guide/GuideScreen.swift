@@ -30,7 +30,7 @@ struct GuideDoors: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.ink)
-                    Text(line).font(.system(size: 14)).foregroundStyle(Theme.muted).lineLimit(1)
+                    Text(line).font(.system(size: 15)).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -81,13 +81,13 @@ struct WhatsNewScreen: View {
                                 Text(r.title).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
                                 Spacer(minLength: 6)
                                 if r.version == here {
-                                    Text("On this device").font(.system(size: 12, weight: .heavy))
+                                    Text("On this device").font(.system(size: 15, weight: .heavy))
                                         .foregroundStyle(AppSection.events.color)
                                         .padding(.horizontal, 8).padding(.vertical, 3)
                                         .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
                                 }
                             }
-                            Text(r.date).font(.system(size: 14)).foregroundStyle(Theme.muted)
+                            Text(r.date).font(.system(size: 15)).foregroundStyle(Theme.muted)
                             kind("New", r.new, AppSection.events.color)
                             kind("Changed", r.changed, AppSection.home.color)
                             kind("Fixed", r.fixed, AppSection.care.color)
@@ -114,7 +114,7 @@ struct WhatsNewScreen: View {
     @ViewBuilder private func kind(_ label: String, _ lines: [String], _ tint: Color) -> some View {
         if !lines.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                Text(label.uppercased()).font(.system(size: 12, weight: .heavy)).kerning(0.6).foregroundStyle(tint)
+                Text(label.uppercased()).font(.system(size: 15, weight: .heavy)).kerning(0.6).foregroundStyle(tint)
                 ForEach(lines, id: \.self) { line in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Circle().fill(tint).frame(width: 6, height: 6).offset(y: -2)

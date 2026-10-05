@@ -156,7 +156,7 @@ struct WayHomeScreen: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Image(decorative: shot.image, scale: 1).resizable().scaledToFill()
                                     .frame(width: 120, height: 90).clipShape(RoundedRectangle(cornerRadius: 10))
-                                Text(shot.bag).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
+                                Text(shot.bag).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(2)
                             }
                             .frame(width: 120)
                         }
@@ -198,9 +198,9 @@ struct WayHomeScreen: View {
                                 .strikethrough(used, pattern: .solid, color: Theme.muted)
                                 .lineLimit(2)
                             if used {
-                                Text("Used up").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.muted)
+                                Text("Used up").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.muted)
                             } else if Library.isBoughtOnSite(line) {
-                                Text("Bought on site").font(.system(size: 13, weight: .bold)).foregroundStyle(tint)
+                                Text("Bought on site").font(.system(size: 15, weight: .bold)).foregroundStyle(tint)
                             }
                         }
                         Spacer(minLength: 4)
@@ -313,7 +313,7 @@ struct WayHomeScreen: View {
 
     private func smallWords(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.muted)
+            .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
             .padding(.horizontal, 7).frame(minHeight: 40)
     }
 
