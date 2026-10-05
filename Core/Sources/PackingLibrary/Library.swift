@@ -708,12 +708,15 @@ extension Library {
     }
 
     /// Take a heading away. Nothing is lost: its rows stay on the template, under
-    /// no heading (where they keep their order among the other rows there). False
-    /// for an unknown template or heading.
+    /// no heading — together, in their order, first among the things there (as
+    /// they stood on the page, above them). False for an unknown template or heading.
     @discardableResult
     public mutating func removeSection(templateId: String, sectionId: String) -> Bool {
         guard let t = templates.firstIndex(where: { $0.id == templateId }),
               templates[t].sections.contains(where: { $0.id == sectionId }) else { return false }
+        // Numbered as the page reads first, so its rows do not scatter among the
+        // others by numbers he never saw (seen on the screen, 5 Oct 2026).
+        _ = renumberRows(templateId: templateId)
         templates[t].sections.removeAll { $0.id == sectionId }
         templates[t].updatedAt = nowISO()
         for n in memberships.indices where memberships[n].templateId == templateId && memberships[n].section == sectionId {

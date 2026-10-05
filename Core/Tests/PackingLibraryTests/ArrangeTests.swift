@@ -94,8 +94,9 @@ final class ArrangeTests: XCTestCase {
         let things = lib.items
         XCTAssertTrue(lib.removeSection(templateId: t, sectionId: lights))
         XCTAssertEqual(lib.templates.first { $0.id == t }!.sections.map(\.name), ["Clothes"])
-        // Nothing is lost: under no heading, in the order they had among the rest.
-        XCTAssertEqual(page(lib), ["Clothes: Boots, Rain jacket", "Everything else: Headlamp, Map, Spare batteries"])
+        // Nothing is lost: under no heading, together and in their order, first there
+        // (not scattered among the Map by the jumbled numbers he never saw).
+        XCTAssertEqual(page(lib), ["Clothes: Boots, Rain jacket", "Everything else: Headlamp, Spare batteries, Map"])
         XCTAssertEqual(stored(lib).count, 5)
         XCTAssertEqual(lib.items, things, "no thing is touched")
         XCTAssertEqual(lib.memberships.filter { $0.section == lights }.count, 0, "no row points at the gone heading")
