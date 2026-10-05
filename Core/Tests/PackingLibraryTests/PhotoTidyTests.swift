@@ -52,4 +52,31 @@ final class PhotoTidyTests: XCTestCase {
         XCTAssertEqual(lib.photos.map(\.id), ["new", "undated"])
         XCTAssertNil(lib.worries().first { $0.fix == Library.FIX_UNUSED_PHOTOS }, "the worry outlived its repair")
     }
+
+    /// Worth a look is asked on every drawing of Settings. It used to check each photo
+    /// against every thing and trip line in turn; now one walk gathers what is shown
+    /// (the spec pass, 5 Oct 2026). Same answer as the one-by-one check — a thing's
+    /// photo, a line's, a bag's in either stored shape — and the loose one alone is
+    /// offered.
+    func testOneWalkFindsEveryPhotoStillShownAsTheOneByOneCheckDoes() {
+        var (lib, trip) = library()
+        let bag = lib.addBagPhoto(tripId: trip, bag: "Carry-on", jpeg: Data([1, 2, 3]))!
+        let n = lib.trips.firstIndex { $0.id == trip }!
+        var bags = lib.trips[n].extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]
+        bags["Duffel"] = .string("single")                    // the older one-photo shape
+        lib.trips[n].extra[BAG_PHOTOS_KEY] = .object(bags)
+        lib.trips[n].entries[0].photos = ["line"]
+        lib.items[0].photos = ["thing"]
+        let old = "2026-10-01T09:00:00.000Z"
+        lib.photos = [bag] + ["single", "line", "thing", "loose"].map {
+            PhotoRecord(id: $0, data: "data:image/jpeg;base64,AQID", createdAt: old)
+        }
+        XCTAssertEqual(lib.photoIdsInUse(), [bag.id, "single", "line", "thing"])
+        for photo in lib.photos {
+            XCTAssertEqual(lib.photoIdsInUse().contains(photo.id), lib.photoInUse(photo.id), photo.id)
+        }
+        XCTAssertEqual(lib.unusedPhotos().map(\.id), ["loose"])
+        lib.photos.append(PhotoRecord(id: "undated", data: "data:image/jpeg;base64,AQID", createdAt: ""))
+        XCTAssertEqual(lib.undatedUnusedPhotos().map(\.id), ["undated"])
+    }
 }

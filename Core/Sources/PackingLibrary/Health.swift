@@ -89,7 +89,8 @@ extension Library {
 
     /// Photos nothing shows whose age cannot be read (`unusedPhotos` keeps them).
     public func undatedUnusedPhotos() -> [PhotoRecord] {
-        photos.filter { !photoInUse($0.id) && isoMoment($0.createdAt) == nil }
+        let used = photoIdsInUse()                      // one walk, not one per photo
+        return photos.filter { !used.contains($0.id) && isoMoment($0.createdAt) == nil }
     }
 
     /// Take them away — only when he presses for it. How many went.

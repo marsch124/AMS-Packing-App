@@ -87,6 +87,20 @@ extension Library {
         }
     }
 
+    /// Every photo something still shows, by the same rule as `photoInUse`, gathered
+    /// in ONE walk of the things and the trips. Worth a look asks on every drawing of
+    /// Settings, and asking `photoInUse` once per photo walked every thing and every
+    /// trip line once PER PHOTO (the spec pass, 5 Oct 2026: the cost grew with photos
+    /// times things).
+    func photoIdsInUse() -> Set<String> {
+        var used = Set(items.flatMap { photoRefs($0) })
+        for t in trips {
+            for line in t.entries { used.formUnion(photoRefs(line)) }
+            for bag in (t.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values { used.formUnion(Library.bagPhotoIds(bag)) }
+        }
+        return used
+    }
+
     /// A thing bought on the trip: onto this trip's list, ticked (it is in hand),
     /// marked bought on site.
     @discardableResult
