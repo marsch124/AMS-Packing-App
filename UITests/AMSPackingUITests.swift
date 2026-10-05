@@ -3331,6 +3331,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["rescue-heading"].waitForExistence(timeout: 5), "nothing was kept")
         XCTAssertTrue(app.buttons["rescue-row-0"].exists, "the copy is not offered")
         XCTAssertFalse(app.buttons["rescue-row-1"].exists, "more copies than restores")
+        bringIntoView(app, app.buttons["rescue-row-0"])
+        shot(app, "rescue-copy")
         tap(app, id: "rescue-row-0")
         XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "10" },
