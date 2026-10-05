@@ -14,18 +14,36 @@ struct SettingsScreen: View {
     /// When a backup was last saved from this device (`savedKey`).
     @AppStorage(SettingsScreen.savedKey) private var savedAt = ""
     @State private var status = ""
-    @State private var lists = false
+    /// What Settings has open. ONE sheet with a destination, not two (Your choices,
+    /// the restore): SwiftUI does not reliably present a second sheet on a view while
+    /// the first is still closing — the trap met in Search (0.17), and flagged here by
+    /// the spec pass (5 Oct 2026). The Templates tab was changed the same way.
+    @State private var open: Open?
+    /// A restore offered and not yet answered. A sheet swiped away (the iPhone) —
+    /// or closed any way but its two buttons — then says what Cancel says: until
+    /// 5 Oct 2026 the line under Save went on saying nothing.
+    @State private var unanswered = false
     @State private var picking = false
-    @State private var pending: PendingRestore?
     @State private var copies: [URL] = RescueCopies.all()
 
     /// A file that has been read and checked, waiting for him to say yes.
     struct PendingRestore: Identifiable { let id = UUID(); let library: Library }
 
+    enum Open: Identifiable {
+        case choices
+        case restore(PendingRestore)
+        var id: String {
+            switch self {
+            case .choices: return "choices"
+            case .restore(let waiting): return "restore:" + waiting.id.uuidString
+            }
+        }
+    }
+
     var body: some View {
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 10) {
-                Button { lists = true } label: {
+                Button { open = .choices } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Your choices").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -60,6 +78,11 @@ struct SettingsScreen: View {
 
                 // Only when there is something to say. Both times this library went
                 // wrong, nothing on screen said so and the counts alone knew.
+                // ⚠️ Asked on EVERY drawing of Settings, as are the counts below. Both
+                // walk the library in memory only — no record is built, no photo
+                // decoded, and the photos still shown are gathered in one walk (the
+                // spec pass, 5 Oct 2026); the backup file is built only when Save is
+                // pressed. Anything heavier belongs in a button, not here.
                 let worries = model.library.worries()
                 if !worries.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
@@ -200,17 +223,23 @@ struct SettingsScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .sheet(isPresented: $lists) { ListsScreen().environmentObject(model) }
-        .sheet(item: $pending) { waiting in
-            RestoreSheet(file: waiting.library, device: model.library) { yes in
-                pending = nil
-                guard yes else { status = "Nothing was replaced."; return }
-                do {
-                    try model.restore(waiting.library)
-                    copies = RescueCopies.all()
-                    status = "Restored from the file: \(waiting.library.holdsWords). A copy of what was here is kept on this device."
-                } catch {
-                    status = error.localizedDescription
+        .sheet(item: $open, onDismiss: {
+            if unanswered { unanswered = false; status = "Nothing was replaced." }
+        }) { destination in
+            switch destination {
+            case .choices: ListsScreen().environmentObject(model)
+            case .restore(let waiting):
+                RestoreSheet(file: waiting.library, device: model.library) { yes in
+                    unanswered = false
+                    open = nil
+                    guard yes else { status = "Nothing was replaced."; return }
+                    do {
+                        try model.restore(waiting.library)
+                        copies = RescueCopies.all()
+                        status = "Restored from the file: \(waiting.library.holdsWords). A copy of what was here is kept on this device."
+                    } catch {
+                        status = error.localizedDescription
+                    }
                 }
             }
         }
@@ -240,7 +269,8 @@ struct SettingsScreen: View {
     private func offer(_ data: Data) {
         do {
             let (library, _) = try model.inspectBackup(data)
-            pending = PendingRestore(library: library)
+            open = .restore(PendingRestore(library: library))
+            unanswered = true
         } catch {
             status = error.localizedDescription
         }

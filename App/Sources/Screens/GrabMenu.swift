@@ -24,6 +24,7 @@ struct GrabMenuScreen: View {
                     Button("Close") { dismiss() }
                         .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                         .font(.system(.body, weight: .semibold))
+                        .keyboardShortcut(.cancelAction)            // Escape closes it, as Close does (Escape everywhere, 5 Oct 2026)
                         .accessibilityIdentifier("grab-menu-close")
                 }
                 ScrollView {

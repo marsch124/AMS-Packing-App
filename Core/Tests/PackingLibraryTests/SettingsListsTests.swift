@@ -271,4 +271,42 @@ final class SettingsListsTests: XCTestCase {
         XCTAssertEqual(lib.people().map(\.name), ["bo", "Zoe", "Sam"])
         XCTAssertEqual(Library().people().map(\.name), ["Kim", "Robin"], "nobody named anywhere: the starters")
     }
+
+    /// The spec pass (5 Oct 2026, spec 06 item 14): Owners has no factory list, so an
+    /// account that never added one showed an empty Owners part in Your choices while
+    /// "Whose it is" offered the names his things carry. Those names are his Owners now
+    /// — A–Z, each once, things only — and the remove and rename rules hold for them.
+    func testOwnersWithNoListOfHisOwnAreTheOwnersHisThingsName() {
+        var lib = Library()
+        lib.items = [newItem(name: "Tent", ownedBy: "Zoe"), newItem(name: "Mat", ownedBy: " Bo "),
+                     newItem(name: "Stove", ownedBy: "zoe"), newItem(name: "Map")]
+        var trip = newEvent(name: "Away")
+        trip.entries = [newItem(name: "Rope", ownedBy: "Alex")]
+        lib.trips = [trip]
+        XCTAssertEqual(lib.owners().map(normName), ["bo", "zoe"], "each once, A–Z — things, not old trip lines")
+        XCTAssertEqual(lib.owners(), lib.ownerChoices(), "Your choices and Whose it is name the same owners")
+        XCTAssertEqual(lib.records().filter { $0.table == .shared }.count, 0, "nothing is stored by looking")
+        XCTAssertEqual(Library().owners(), [], "nobody named anywhere: no owners")
+
+        // Every one is in use by a thing, so none can be removed (the screen refuses).
+        let uses = lib.usesOf("owners")
+        for name in lib.owners() { XCTAssertTrue(uses[normName(name)]?.inUse == true, "\(name) could be removed") }
+
+        // A rename makes the list his own, and his things follow.
+        let zoe = lib.owners()[1]
+        XCTAssertEqual(lib.renameChoice("owners", key: zoe, to: "Bo"), "You already have Bo.")
+        XCTAssertNil(lib.renameChoice("owners", key: zoe, to: "Ann"))
+        XCTAssertEqual(lib.owners(), ["Ann", "Bo"], "still A–Z")
+        XCTAssertEqual(lib.items.map(\.ownedBy), ["Ann", " Bo ", "Ann", ""], "both spellings follow")
+        XCTAssertEqual(lib.records().filter { $0.table == .shared }.map(\.key).sorted(), ["owners:ann", "owners:bo"],
+                       "his own list now, stored")
+        XCTAssertEqual(lib.trips[0].entries[0].ownedBy, "Alex", "a trip line of another name is left alone")
+
+        // Adding one to a list he never wrote keeps the names his things carry.
+        var fresh = Library()
+        fresh.items = [newItem(name: "Tent", ownedBy: "Zoe")]
+        fresh.setNames("owners", fresh.owners() + ["Sam"])
+        XCTAssertEqual(fresh.owners(), ["Sam", "Zoe"])
+        XCTAssertFalse(Library.canMove("owners"), "owners stay A–Z")
+    }
 }

@@ -385,6 +385,7 @@ struct ColumnPicker: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("columns-done")
             }
             .padding(16)
@@ -409,7 +410,7 @@ struct ColumnPicker: View {
                                 Button { hide(id) } label: {
                                     Text("Hide").font(.system(.subheadline, weight: .semibold))
                                         .foregroundStyle(AppSection.actions.color)
-                                        .frame(minWidth: 52, minHeight: Metrics.tap)
+                                        .frame(minWidth: 52, minHeight: Metrics.fingertip)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
@@ -457,7 +458,7 @@ struct ColumnPicker: View {
         SVGPath.path(path)
             .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-            .frame(width: Metrics.tap, height: Metrics.tap)
+            .frame(width: Metrics.fingertip, height: Metrics.fingertip)
             .contentShape(Rectangle())
     }
 

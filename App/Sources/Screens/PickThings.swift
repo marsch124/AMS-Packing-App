@@ -51,6 +51,7 @@ struct PickThingsScreen: View {
             HStack(spacing: 10) {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("pick-cancel")
                 Spacer(minLength: 4)
                 Text(list.map { "Add to \($0.name)" } ?? "Add things")

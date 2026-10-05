@@ -51,7 +51,8 @@ final class CloudStore: LibraryStore {
         context = ModelContext(container)
         context.autosaveEnabled = false
         // Records that arrived from the other device land in the store behind our
-        // back; this is how we hear about it.
+        // back; this is how we hear about it. Heard on the main queue: the model then
+        // reloads the whole store there (see LibraryModel.init for what that costs).
         observer = NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main
         ) { [weak self] _ in self?.onRemoteChange?() }
@@ -67,6 +68,10 @@ final class CloudStore: LibraryStore {
         guard !changes.isEmpty else { return }
         // Nothing is unique in a CloudKit store, so a key can have twins. Every
         // twin is updated or deleted together; `settleDuplicates` tidies on load.
+        // ⚠️ To find them, EVERY record is fetched — for one tick as for a restore —
+        // because only a full fetch is sure to see every twin of a key. Quick at a few
+        // thousand records; fetching only the keys that change is the cure if a tick
+        // ever feels slow (the spec pass, 5 Oct 2026; spec 01 item 15).
         var held: [RecordID: [Record]] = [:]
         for r in try context.fetch(FetchDescriptor<Record>()) {
             guard let t = Table(rawValue: r.table) else { continue }

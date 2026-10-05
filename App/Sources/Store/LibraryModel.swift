@@ -45,6 +45,12 @@ final class LibraryModel: ObservableObject {
         self.store = store
         self.usesICloud = usesICloud
         self.sky = sky
+        // ⚠️ Every iCloud notification reloads the WHOLE store — every record read,
+        // settled and turned back into a library — on the main thread, so the screen
+        // waits while it runs, and a sync that arrives in bursts reloads once per
+        // notification. Kept simple on purpose: one full read can never miss a record,
+        // and it is quick at a few thousand. If the app ever stutters while the other
+        // device syncs, look here first (the spec pass, 5 Oct 2026; spec 01 item 15).
         store.onRemoteChange = { [weak self] in
             Task { @MainActor in self?.reload() }
         }
@@ -77,6 +83,12 @@ final class LibraryModel: ObservableObject {
         commit(next)
     }
 
+    /// ⚠️ What one change costs: `StoreSession.save` builds EVERY record of the
+    /// library again — base64-decoding every photo — and compares them all with what
+    /// is held, then the store fetches all it holds to apply the few that differ
+    /// (`CloudStore.apply`). So one tick costs as much as the whole library and its
+    /// photos. Kept because a full comparison can never forget a change; a rewrite
+    /// would remember what changed instead (the spec pass, 5 Oct 2026; spec 01 item 15).
     private func commit(_ next: Library) {
         do {
             guard let records = try StoreSession.save(next, held: held, to: store) else { return }
