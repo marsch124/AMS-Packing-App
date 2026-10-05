@@ -3,7 +3,7 @@
 `PackingCore` is a port of the web app's `../AMS Packing/js/model.js` (pure logic,
 no screen, no storage, no network) and of its tests, `../AMS Packing/tests/model.test.mjs`.
 The port is **faithful, not creative**: the same question must get the same answer.
-A parity checker will run both models over Martin's real data and compare every
+A parity checker will run both models over the owner's real data and compare every
 answer, so a "sensible improvement" shows up as a difference and has to be undone.
 
 ## Names
