@@ -1471,8 +1471,8 @@ same news twice." Tapping one opens the trip.
   green ("green when on, like every switch he knows: the Settings slate read as 'off'").
   - Title "Remind me to pack" (18 pt bold `ink`).
   - Detail "On this device, at 9 in the morning of each day a packing step is due — Preparations a month
-    ahead, then a week ahead, the day before and the day you leave." (15 pt regular `muted`; the words and
-    the size since 0.62 — spec 06 §3).
+    ahead, then a week ahead, the day before and the day you leave." (regular, `muted`; these words since
+    0.62 — spec 06 §3).
   - The switch's state is `@AppStorage("ams.reminders")`; its setter does not store the wanted value
     directly but runs the permission check first (below).
 - **Refused or blocked:** "This device does not allow the app to remind you. Allow it in the device's
