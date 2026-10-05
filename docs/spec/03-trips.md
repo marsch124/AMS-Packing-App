@@ -28,7 +28,7 @@ Conventions in this file: "green" = `AppSection.events.color` #2f9e63, "blue" = 
 #2f6fe0, "violet" = `AppSection.templates.color` #7c5cd6, "orange" = `AppSection.care.color` #dd7324,
 "red" = `AppSection.actions.color` #dc3d43; `Theme.ink/muted/line/card/bg` are the light/dark pairs in
 `App/Sources/Theme.swift` — all listed in `docs/colours.md`, not repeated here. "HeaderButtonStyle
-filled" = capsule filled with the tint, white 16 pt bold text; "outlined" = tint text on 10 % tint,
+filled" = capsule filled with the tint, white 17 pt bold text (16 until 0.6x, spec 06 §20); "outlined" = tint text on 10 % tint,
 1.4 pt tint stroke (`App/Sources/Buttons.swift`). Font sizes are points, `.system` font.
 Text comparison "normName" = trimmed, lower-cased, inner whitespace collapsed (PackingCore).
 "jsTrim" = JavaScript `trim()` semantics.
@@ -665,8 +665,9 @@ screen shows an empty placeholder trip ("Untitled event", 0/0).
   `trip-settings`, label "Trip settings").
 - Right: "Reviewed" (15 bold muted, id `trip-reviewed`) when `status == "done"`; otherwise, if the trip
   has lines, **Review** (outlined green, id `trip-review`) — offered at ANY time, before the trip too.
-  Then **Done** (filled green, id `trip-done`). Both use `HeaderButtonStyle`, whose own 16 pt bold
-  wins over the 17 pt the call site sets (the same everywhere in this area: Done, Cancel, Next, Close).
+  Then **Done** (filled green, id `trip-done`). Both use `HeaderButtonStyle`, whose own font wins over the
+  one the call site sets — 17 pt bold since 0.6x, the size the call sites ask for (16 until then; the same
+  everywhere in this area: Done, Cancel, Next, Close).
 
 **Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
 
@@ -1382,7 +1383,8 @@ leaves the search as it was.
 ### What is on screen
 - Header "Way home" (24 heavy green); "D/T" or "D/T · N used up" (15 bold mono muted, `wayhome-progress`).
 - Search field "Search the way home" (17 medium, ✕ at its end only when typed: `wayhome-search-clear`,
-  label "Clear the search"), id `wayhome-search` — only when the way home has lines.
+  label "Clear the search" — since 0.6x the shared round `.clearButton` ✕, 36 points, like every other search;
+  until then a plain cross of its own in 44 points), id `wayhome-search` — only when the way home has lines.
 - Photos of the packed bags (only when not searching): every photo of every bag that has way-home lines,
   bag by bag, each bag's in the order taken: 120×90 thumbnails (corner 10) with the bag name (13 semibold
   muted; "Not in a bag" for "" or "Other") in a horizontal strip, ids `wayhome-photo-<n>`; a tap opens

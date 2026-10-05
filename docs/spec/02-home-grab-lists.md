@@ -632,9 +632,9 @@ device's own working state.
    - **Share** (`grab-share`): the drawn share mark only, outlined in the tone, accessibility label
      "Share";
    - **"Done"** (`grab-done`): a capsule filled with the tone, white text.
-   - The buttons use `HeaderButtonStyle`: 16 pt bold, minimum 36 tall, 14 pt side padding, 70 % opacity
-     while pressed, words never cut. The `.font(17 bold)` written on them is overridden by the style's
-     16 pt.
+   - The buttons use `HeaderButtonStyle`: 17 pt bold (16 until 0.6x, which overrode the `.font(17 bold)`
+     written on them — spec 06 §20), minimum 36 tall, 14 pt side padding, 70 % opacity while pressed, words
+     never cut.
 2. The pinned counter (outside the scroll; 16 pt side and 10 pt bottom padding; a hairline under it):
    - **Not complete:**
      - `"<inHand> of <active> in hand"`, plus `" · <skipped> skipped"` when any of the list's names is
@@ -1152,8 +1152,8 @@ grab list" opens the app here: every grab list as a big tile, and one tap opens 
   switches to Home; Home clears the flag at once and opens the menu (its own `menuShown`) through
   `whenFree`, so it opens even over another Home sheet (0.6x). Under UI tests the launch argument
   `-openGrabMenu` sets the same flag.
-- **Out:** "Close" (`grab-menu-close`, a `muted` outlined capsule; `HeaderButtonStyle` makes it 16 pt
-  bold, overriding the 17 pt semibold written on it) or a swipe down.
+- **Out:** "Close" (`grab-menu-close`, a `muted` outlined capsule; `HeaderButtonStyle` makes it 17 pt
+  bold — 16 until 0.6x — overriding the 17 pt semibold written on it) or a swipe down.
 
 **What is on screen.**
 - "Which grab list?" (24 pt heavy, Home blue) and Close; 14 pt between this row and the tiles.
