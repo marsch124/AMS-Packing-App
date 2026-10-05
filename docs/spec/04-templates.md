@@ -1,6 +1,7 @@
 # Templates — the building blocks, and how things sit on them
 
-> Verified against the code on 5 Oct 2026 (app 0.60).
+> Verified against the code on 5 Oct 2026 (app 0.60); the spec pass's fixes of spec 04 (the same day,
+> release 0.6x) are written in.
 
 **What this part is for, in the owner's terms.** A *template* is a building block: the things for one activity
 or need — Hiking, Swim, Car, the Common base. A trip's packing list is *made from* templates: the always-packed
@@ -33,8 +34,9 @@ deleting a template **never deletes a thing**.
 model: `PackingCore/Lists.swift`, `Memberships.swift`, `Resolve.swift`, `Grouping.swift`, `Kits.swift`,
 `ListSharing.swift`; `PackingLibrary/Library.swift` (template parts), `EditLists.swift`, `Bags.swift` (list role and
 `shownName`), `TemplateIcon.swift`, `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
-`Sharing.swift` (template parts). Storage and sync are in `docs/store.md`; colours in `docs/colours.md` (both
-linked, not repeated).
+`Sharing.swift` (template parts), `TemplateRows.swift` (a row's own answers, the row editor's Save, covers'
+letter and colours, which templates are shown and what they add up to, free names — the spec pass). Storage and
+sync are in `docs/store.md`; colours in `docs/colours.md` (both linked, not repeated).
 
 ---
 
@@ -83,9 +85,11 @@ magnifier.
    - "Your templates" — 28 heavy, violet (`AppSection.templates.color`), id `templates-heading`.
    - Under it the **summary** — 15 medium, `Theme.muted`, id `templates-summary`:
      `"<T> template(s) · <N> thing(s)"` plus `" · <K> trip(s) packed from them"` only when K > 0. Singular when the
-     number is 1. T = the number of templates shown on this screen (bag list and "loose" lists excluded);
-     N = `library.items.count` (ALL things, including bags and things on no template); K = `library.trips.count`
-     (ALL trips, whichever templates they used). Separator " · " (U+00B7).
+     number is 1. `Library.templateSummary(shown)`: T = the templates shown on this screen (bag list and "loose"
+     lists excluded); N = the things ON them, each once however many templates it sits on (bags, the loose bin's
+     things and things on no template are not counted); K = the trips packed from them — a trip that names one of
+     them as an activity or has a line from one of them. "The words should match the numbers" (the spec pass,
+     5 Oct 2026; until then N was every thing he owns and K every trip). Separator " · " (U+00B7).
    - The magnifier `SearchButton` (24 pt drawn magnifier in a 40×36 hit area, muted, id `search-open`,
      label "Search everything") → opens `SearchScreen` as a sheet.
    - "+ New" — 15 heavy white on a violet capsule, min height 36, horizontal padding 14, id `templates-new` →
@@ -100,14 +104,17 @@ magnifier.
      `transport`, `GA`, `WET`, `OE` or `other`.
    - A `LazyVGrid` of two flexible columns (spacing 8 both ways) of **cards** (§2). Each card is a plain Button;
      id `template-row-<n>` where n = the template's index in the flattened list of all areas, top to bottom
-     (so with the sample library: 0 = Common base, 1 = Hiking, 2 = Swim). Tap → opens `TemplateDetail` (§6) as a
-     sheet (`sheet(item:)`, `PackList` made `Identifiable` by its `id`).
+     (so with the sample library: 0 = Common base, 1 = Hiking, 2 = Swim). Tap → opens `TemplateDetail` (§6).
 - No empty-state text: a ready library with no templates shows the header, the summary "0 templates · …" and the
   Refine door only.
 
 ### Behaviour
-- `activityAreas(all)` takes `library.resolvedTemplates()` (every template resolved, sorted A–Z with
-  `jsLocaleCompare` default sensitivity) and builds, **omitting empty areas**:
+- **One sheet with a destination** (`opened: Opened?` — `.template(id)`, `.search`, `.new`): a card, the
+  magnifier and "+ New" each set it. Not three `.sheet` modifiers: "SwiftUI does not reliably present a second
+  sheet on a view while the first is still closing" — the trap met in Search (0.17), tidied here by the spec pass
+  (5 Oct 2026).
+- `activityAreas(all)` takes `library.shownTemplates()` (every template but the bag list and the loose bin,
+  resolved, sorted A–Z with `jsLocaleCompare` default sensitivity) and builds, **omitting empty areas**:
   1. `base` "Always packed" — templates with `role == "base"` (A–Z).
   2. `transport` "By transport" — `role == "transport"` (A–Z).
   3. For each GROUP in `GROUPS` order (GA, WET, OE): templates with `role == ""` and `group == id`, ordered by
@@ -118,13 +125,14 @@ magnifier.
     items" bin) appear in **no** area: "Bags are not an activity: they have their own screen, on Care".
   - A base or transport template that also has a group is shown only under Always packed / By transport.
 - The template's stored field is still `group`; only the shown word changed ("activity area").
-- Every render recomputes `resolvedTemplates()` and `templateUse()` (§16).
-- `NewList` hands back the new template → `model.change { saveTemplate(list) }` → `open = list`, so the new
-  template's page opens straight away ("a list he cannot see the inside of is not made yet").
+- Every render recomputes `shownTemplates()` and `templateUse(today: Today.local)` (§16).
+- `NewList` hands back the new template → `model.change { saveTemplate(list) }` and its id is kept; when New's
+  sheet has closed (`onDismiss`) the new template's page opens straight away ("a list he cannot see the inside of
+  is not made yet") — never on top of New.
 
 ### Data
-Reads `library.templates`, `memberships`, `items`, `trips`. Writes only via `saveTemplate` (new template). Sheets:
-template page, Search, New — three `.sheet` modifiers on the same scroll view.
+Reads `library.templates`, `memberships`, `items`, `trips`. Writes only via `saveTemplate` (new template). One
+sheet: template page, Search or New.
 
 ### iPhone vs Mac
 Same layout on both. On the Mac the whole app column is at most 720 wide (`RootView`), so cards are wider; sheets
@@ -133,18 +141,17 @@ this area (no `.keyboardShortcut`, no `.onExitCommand`), so Return/Escape have n
 text field's `onSubmit`; on the iPhone every sheet here can be swiped down (no `interactiveDismissDisabled`).
 
 ### Tests
-- UI: `testEveryTabOpensItsScreen`; `testATemplateOpensAndCloses` (row-0 and row-2 exist — three sample templates;
+- UI: `testEveryTabOpensItsScreen`; `testEveryDoorOfTheTemplatesTabOpens` (twice in a row: a card, Done, the
+  magnifier, Done, + New, Cancel — each opens the moment the one before has closed; the Hiking card says
+  "Next: in 30 days"); `testATemplateOpensAndCloses` (row-0 and row-2 exist — three sample templates;
   `templates-area-GA` reads "GA · GOAL ACTIVITY"; summary contains "templates"; a card opens `template-detail`,
   Done closes it); `testAnEmptyDeviceShowsTheTwoDoors`; `testHeMakesAListOfHisOwn` (heading reads "Your templates");
   `testRefineOffersWhatTheReviewsFoundAndKeepAndDropSettleIt` and `testTheLoopShowsWhereATripStands` (use
   `refine-open` here).
-- Model: `ListsTests.testOrderActivities*` (4 tests); `CreateTripTests.testTheChoicesAreHisGroupsInHisOrder`.
-- **Not covered:** the "By transport" and "Other templates" areas, the exact summary wording with trips, the
-  exclusion of bag/loose lists from the tab.
-
-### Traps and history
-- "15 lists · 431 things · 4 trips packed from them" in the code comment predates the word change; the code says
-  "templates".
+- Model: `ListsTests.testOrderActivities*` (4 tests); `CreateTripTests.testTheChoicesAreHisGroupsInHisOrder`;
+  `TemplateFacesTests.testTheTemplatesLineCountsWhatItSays` (the bag list and the loose bin are not shown; things
+  on them counted once; a trip packed from none of them not counted).
+- **Not covered:** the "By transport" and "Other templates" areas, the exact summary wording on screen.
 
 ---
 
@@ -156,23 +163,25 @@ column width, whole card tappable):
 1. Row: the **cover** (§3) at 34 pt · spacer · the number of rows on the template (`list.items.count`, i.e.
    memberships whose thing exists — a thing twice counts twice) 15 heavy monospaced digits, muted.
 2. The template's **name** — 16 semibold, ink, at most 2 lines, wraps.
-3. The **"used" line** (`lastTaken`) — 12 medium, one line, id `template-used`; muted, or muted at 65 % opacity
-   when the template has never been used ("Quiet, not invisible: the divider colour could not be read on either a
-   white or a black background").
+3. The **"used" line** (`Library.TemplateUse.line(use, today: Today.local)`) — 12 medium, one line, id
+   `template-used`; muted, or muted at 65 % opacity when the template has never been used ("Quiet, not invisible:
+   the divider colour could not be read on either a white or a black background").
 
-### Behaviour — `TemplateCard.lastTaken(use)`
+### Behaviour — `TemplateUse.line(use, today:)` (PackingLibrary, `TemplateUse.swift`)
 - No use record, or `use.trips == 0` → "Never taken along".
-- `use.lastTrip` empty (every trip that used it has no start date — or the latest dated one has an empty
-  name) → "Taken on <n> trip(s)".
-- Otherwise `ago = countdownLabel(daysUntil(use.lastDate, Today.local))` (Today.local = the device's local
-  `yyyy-MM-dd`): "Today", "Tomorrow", "Yesterday", "in <d> days", "<d> days ago". The line is
+- A trip that drew on it has BEGUN (start date ≤ today, §16): `ago = countdownLabel(daysUntil(lastDate, today))`
+  (today = the device's local `yyyy-MM-dd`): "Today", "Yesterday", "<d> days ago". The line is
   `"<ago> · <trip name>"` ("the WHEN first: it is the part that is always worth reading, and the part that still
   shows when a long trip name is cut off"), or `"Last: <trip name>"` if `ago` is empty (unreadable date).
-- Because `lastDate` is the **latest start date**, a trip still ahead counts: the sample shows
-  "in 30 days · Weekend in the hills".
+- Else, a trip still AHEAD: `"Next: <when> · <trip name>"` with when = "in <d> days" or "tomorrow" (first letter
+  small); `"Next: <trip name>"` if the date cannot be read. The sample shows "Next: in 30 days · Weekend in the
+  hills". (Until the spec pass a trip still ahead counted as "last": the card said "in 30 days · …".)
+- Else (no trip with a date, or the winning trip has no name) → "Taken on <n> trip(s)".
 
 ### Tests
-- Model: `TemplateUseTests` (§16). **Not covered:** `lastTaken` wording, the 65 % opacity, the count.
+- Model: `TemplateUseTests` (§16), `testATripStillAheadIsNextNotLast` pins the wording. UI
+  `testEveryDoorOfTheTemplatesTabOpens` reads "Next: in 30 days" on the Hiking card. **Not covered:** the 65 %
+  opacity, the count.
 
 ### Traps
 - A card's texts are children of a Button; the Mac and the iPhone report a button's child texts differently, so the
@@ -188,15 +197,19 @@ on a sample sheet in day and night mode and said (2 Oct 2026): "Your suggestions
 Released in 0.46. No stock art, no emoji in the icon set.
 
 ### `Cover(list, size = 40)` — what is drawn
-- A rounded square (`cornerRadius = size × 0.28`) filled with **`listColor(list)`**: the template's own `color` if
-  it is a valid hex colour, else a stable pick from `TEMPLATE_COLORS` (`#7c5cd6 #3b82f6 #06b6d4 #22c55e #f59e0b
-  #ef4444 #ec4899 #14b8a6 #8b5cf6 #64748b`) by `jsHash31(id)` (`h = h*31 + utf16 unit`, wrapping at 32 bits;
-  falls back to the name when the id is empty; `listColor(nil)` = the first colour) modulo 10. The web app picks the
-  same colour (pinned: id "fixed-id" → `#8b5cf6`).
+- A rounded square (`cornerRadius = size × 0.28`) filled with **`Library.coverColour(list)`**: the template's own
+  `color` if it is a valid hex colour (his data, kept whatever it is), else a stable pick by `jsHash31(id)`
+  (`h = h*31 + utf16 unit`, wrapping at 32 bits; falls back to the name when the id is empty) modulo 10 from
+  **`COVER_COLOURS`** — the web app's `TEMPLATE_COLORS` (`#7c5cd6 #3b82f6 #06b6d4 #22c55e #f59e0b #ef4444 #ec4899
+  #14b8a6 #8b5cf6 #64748b`, kept as they are for the parity check) with cyan `#06b6d4` → orange `#f97316` and teal
+  `#14b8a6` → indigo `#4f46e5` ("Not teal … Do not use teal for anything new", `docs/colours.md`; the spec pass,
+  5 Oct 2026). Every other template keeps the colour the web app gives it (`listColor`, pinned: id "fixed-id" →
+  `#8b5cf6`).
 - If `TemplateIcons.icon(Library.icon(of: list))` exists → that icon drawn white at `size × 0.66`
   (`IconMark`, stroke 1.9 × size/24, round caps and joins).
-- Otherwise a glyph, white, heavy: the template's `emoji` if it has one (font `size × 0.52`), else the first
-  character of the name upper-cased (font `size × 0.46`).
+- Otherwise its letter, white, heavy, font `size × 0.46`: `Library.coverLetter(list)` = the first character of the
+  trimmed name, upper-cased. **Never the template's `emoji`** (a web-app template may carry one): no emoji in this
+  app (until the spec pass the emoji showed here).
 - `accessibilityHidden(true)`.
 - `Color(hexString:)`: trims spaces, drops a leading "#", expands 3-digit hex, parses the first 6 hex digits;
   anything unreadable → slate `#64748b`.
@@ -217,13 +230,15 @@ Released in 0.46. No stock art, no emoji in the icon set.
   4. word "car" → `car`
   5. has "plane", "flight" or word "fly" → `plane`
   6. word "rv", has "camper", "motorhome", "caravan" → `rv`
-  7. has "train" → `train`
+  7. word "train" or "trains", or has "railway" → `train` (whole words since the spec pass, 5 Oct 2026:
+     "Strength training" and "Swim training" were given a train)
   8. has "ferry" or "boat" → `ferry`
   9. has "golf" → `golf`
   10. has "hik" or "trek" → `hiking`
   11. has "climb" → `climb`
   12. word "ski" or has "skiing" → `ski`
-  13. has "camp" → `tent`
+  13. word "camp", "camping" or "camps", or has "campsite", "campground", "campfire" → `tent` (whole words since
+      the spec pass: "Campus" was a tent)
   14. has "bike" or "cycl" → `bike`
   15. word "run" or has "running" → `run`
   16. has "swim" → `swim`
@@ -261,7 +276,11 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   round trip, backup round trip; "letter" → nil; nil → back to the suggestion; unknown id → false);
   `ListsTests.testListColorCustomColourWinsElseAStablePalettePick`, `testListEmojiCustomEmojiElseTheDefaultGlyph`.
 - UI: `testATemplatesIconIsSuggestedAndCanBeChosen`.
-- **Not covered:** the emoji glyph path, an unknown stored key, the "train"/"training" overlap (see open questions).
+  `testATrainAndATentNeedTheirWholeWord` ("Strength training" → strength, "Swim training" → swim, "Brain
+  training" → nil, "Night train" → train, "Campus visit" → nil, "Training camp" → tent);
+  `TemplateFacesTests.testACoverShowsALetterNeverAnEmoji`, `testNoTemplateIsGivenTealOrCyan` (200 ids: never teal
+  or cyan, every colour that was never teal unchanged, his own teal kept).
+- **Not covered:** an unknown stored key.
 
 ---
 
@@ -275,15 +294,15 @@ saves and closes), or a swipe down on the iPhone.
 - Top row (padding 16): the template's cover (40), its name (20 heavy ink, 1 line, shrinks to 80 %), spacer,
   "Cancel" (outlined `HeaderButtonStyle`, muted tint).
 - Scroll (side 16, bottom 24), spacing 10:
-  - Two tiles side by side: **"Suggested"** (id `icon-suggested`; shows the suggested icon at 30, or the first
-    letter 22 heavy when there is no suggestion; selected when no choice is stored) and **"Letter"** (id
-    `icon-letter`; the first letter 22 heavy; selected when the stored choice is "letter").
+  - Two tiles side by side: **"Suggested"** (id `icon-suggested`; shows the suggested icon at 30, or the letter
+    (`coverLetter`) 22 heavy when there is no suggestion; selected when no choice is stored) and **"Letter"** (id
+    `icon-letter`; the letter 22 heavy; selected when the stored choice is "letter").
   - `SectionTitle` "All icons" (shown in capitals, 18 heavy, kerning 0.8, 16 above).
   - The 50 icons in rows of **5** (plain `HStack` rows, not a lazy grid: "the Mac builds only what is on screen").
     Each tile: icon at 30 + its label; id `icon-<key>`; selected when a choice is stored and the icon in force is
     this key.
 - Tile look: mark 32 high; label 12 bold, 1 line, shrinks to 70 %; min height 74, full width share; selected =
-  filled with the template's own colour (`listColor`), white mark and label, 2-pt stroke in that colour, trait
+  filled with the template's own colour (`coverColour`), white mark and label, 2-pt stroke in that colour, trait
   `isSelected`; not selected = `Theme.card`, ink mark, muted label, 1-pt `Theme.line` stroke.
 - Container id `icon-picker` (`children: .contain`). Mac: min 520 × 620.
 
@@ -292,7 +311,7 @@ saves and closes), or a swipe down on the iPhone.
   Letter = "letter", an icon = its key. Picking the very icon that is suggested **stores** it, so it no longer
   follows later renames.
 - When the stored key is not one of the 50 (e.g. from a newer build), no tile is ringed and the cover shows the
-  letter/emoji.
+  letter.
 
 ### Tests
 UI `testATemplatesIconIsSuggestedAndCanBeChosen`: Hiking's cover value "hiking"; Suggested is selected; picking
@@ -329,30 +348,34 @@ templates sharing a name as "two libraries have met on one account" (31 August 2
     `-none`. Default: "No activity area".
   - "Make the template" — 17 heavy white on a violet rounded rectangle (radius 12), full width, min height 50,
     24 above; id `newlist-make`. **Always in colour and always pressable** (his rule, 2026-09-26).
-  - When pressed too early, a line under it: 15 bold red, centred, id `newlist-needs`.
+  - When pressed too early, a line under it (the shared `needsLine`): 15 bold red, at the left, id
+    `newlist-needs`; it goes as soon as the name changes.
 - Container id `newlist-detail`. Mac: min 440 × 480.
 
 ### Behaviour
-- `taken` = `normName(name)` is not empty AND **any** template (any role, the bag list "Containers" included) has
-  the same `normName` (trimmed, lower-cased, whitespace runs collapsed).
+- `taken` = `Library.templateNameTaken(name)`: `normName(name)` is not empty AND a template **other than the bag
+  list** has the same `normName` (trimmed, lower-cased, whitespace runs collapsed). The bag list's stored name
+  "Containers" is never shown ("Bags"), so it is not taken (the spec pass, 5 Oct 2026); Worth a look counts the bag
+  list apart, so a template he calls "Containers" is not read as two libraries meeting.
 - `make()`: blank (after `jsTrim`) → needs "Give the template a name."; taken → "Pick a name you do not have
   yet."; else clears needs, calls `made(newList(name: jsTrim(name), group: chosen))` and dismisses. The new list:
   role "", no items, no sections, no cover, fresh id, `createdAt`/`updatedAt` now; `coerceList` keeps the group only
   if it is a GROUP id.
 - The caller saves it (`saveTemplate`) and opens it.
-- The needs line is a plain text: it stays until the next press (it does **not** clear on typing, unlike the
-  `needsLine` used elsewhere).
+- The needs line is the shared `needsLine`: it clears as soon as the name changes (until the spec pass it stayed
+  until the next press).
 - There is no way here (or anywhere in this app) to make a `base` or `transport` template, or to set a colour,
   emoji or default bag.
 
 ### Tests
-UI `testHeMakesAListOfHisOwn` (title "A new template"; Make enabled; empty press says "…name…"; "Hiking" shows
-`newlist-taken` and a press says "…do not have…"; "Mushroom picking" + GA → page opens; summary changes; the
+UI `testHeMakesAListOfHisOwn` (title "A new template"; Make enabled; empty press says "…name…" and the line goes
+once a name is typed; "Hiking" shows `newlist-taken` and a press says "…do not have…"; "Mushroom picking" + GA →
+page opens; summary changes; the
 "Other templates" area does not appear); `testANewTemplateAsksForItsActivityArea` (question text, "No activity
 area").
 
-### Traps
-- `canMake` is computed but never used (dead code).
+Model `TemplateFacesTests.testANameIsTakenOnlyByATemplateHeCanSee` (the bag list's "Containers" is free;
+renaming to it is allowed and is no worry; two bag lists still are).
 
 ---
 
@@ -414,7 +437,8 @@ trait `isSelected` on the chosen one. Labels: Section · When · Into · From wh
 - Under it each **row** (HStack spacing 4, a hairline under it):
   - A button (id `template-item-<n>`) holding: the thing's name (17 medium ink); a second line when it has a
     quantity or note: `"×<qty>"` and the note joined by " · " (13 regular muted, 1 line); a third line when the row
-    is limited: **`"Only on: <tags>"`** (13 semibold violet, 1 line); and on the right the bag the row resolves to
+    is limited: **`"Only on: <tags>"`** (13 semibold violet, 1 line; `Library.onlyOnWords(row, on: template)` —
+    Context listed only on a WET template, where a trip reads it); and on the right the bag the row resolves to
     (`item.container`, 15 regular muted, 1 line). Vertical padding 6. Tap → the row editor (§7) as a sheet.
   - The **✕** — a drawn cross 22 pt (stroke 1.8, muted) in a 40 × 36 hit area; id `template-item-<n>-remove`;
     label "Take <name> off this template". Tap → the take-off question (below), with a 0.15 s ease-out.
@@ -429,8 +453,17 @@ trait `isSelected` on the chosen one. Labels: Section · When · Into · From wh
 fill, hairline border; id `template-add-name`; Return = Add) and **"Add"** (`FieldButtonLabel`: 16 bold white on
 violet, radius 10, min height 44; id `template-add`). `needsLine` id `template-add-needs`.
 
-**Delete** — when not asking: `SmallDeleteButton` "Delete template" (13 semibold red text in a red 60 % outlined
-capsule, min height 30, right-aligned; id `template-delete`; side 16, bottom 8). When asking, in its place a card
+**Activity area and Delete** (one row, side 16, bottom 8):
+- Only on an activity template (role ""): at the left, **"Activity area: <GA / WET / OE / none>"** — 15 semibold
+  violet plain text button, min height 36, id `template-area`, accessibility value the area id or "none". Tap →
+  in place of the row, a card (padding 14, card fill, violet 1-pt border, radius 12, side 16, bottom 10): "In which
+  activity area should it live?" (16 heavy ink) with "Cancel" (outlined muted, `template-area-cancel`), then the
+  rows New offers — "GA · Goal Activity", "WET · Workout, Exercise & Training", "OE · Other Events", "No activity
+  area" (min height 44, hairline under; the current one 16 heavy violet with `isSelected`, else 16 medium ink; ids
+  `template-area-GA`, `-WET`, `-OE`, `-none`). A press files it (`setTemplateArea`, §14) and the card goes. The
+  spec pass (5 Oct 2026): New asked for the area and nothing could put a wrong answer right.
+- At the right, when not asking: `SmallDeleteButton` "Delete template" (13 semibold red text in a red 60 %
+  outlined capsule, min height 30; id `template-delete`). When asking, in place of the row a card
 (padding 14, card fill, red 1-pt border, radius 12, side 16, bottom 10):
 - `Delete “<name>”?` — 16 heavy ink.
 - "The template and its <N> row(s) go. The THINGS stay — they are still in Your things and on any other template."
@@ -466,25 +499,27 @@ capsule, min height 30, right-aligned; id `template-delete`; side 16, bottom 8).
   (no filter, no count) but the ✕ is shown. The rows are re-numbered as read, so the first match is
   `template-item-0`.
 - **Rename** (`saveName`): only when something was typed. Blank (after `normName`) → needs "Type a name first.";
-  another template (any role, the bag list included, compared by `normName`, itself excluded) already has the name
-  → "You already have a template called that."; else `renameTemplate(id:to:)` (§14), the typed state is dropped
-  and the field loses focus. Only a case change of its own name is allowed (it is not "another" template).
+  another template (`templateNameTaken(except: itself)` — any role but the bag list, compared by `normName`)
+  already has the name → "You already have a template called that."; else `renameTemplate(id:to:)` (§14), the
+  typed state is dropped and the field loses focus. Only a case change of its own name is allowed (it is not
+  "another" template).
 - **Take off** ("Take it off"): `removeFromTemplate(templateId:memId:)` → the template resolved, the row with that
   `memId` removed, `saveTemplate` (§13). The thing survives in Your things and on its other templates; past and
   current trips are not touched.
-- **Add** (`add()`): blank after `jsTrim` → needs "Type a thing first."; else `addToTemplate(templateId:name:)`
-  (§13), the field emptied, and **Find emptied** too ("A search left on would hide the new thing… and then Add looks
-  as if it did nothing"). A name he already owns (by `normName`) puts THAT thing on (one thing, one more place,
-  bringing its own defaults); a new name makes a new thing (bag "Carry-on / hand luggage", When = the first
-  non-task phase, by default "≥1 week ahead"). There is **no check** that the thing is already on this template:
-  typing the name of a thing already here adds a **second row** of it.
+- **Add** (`add()`): blank after `jsTrim` → needs "Type a thing first."; a thing of that name already ON this
+  template (`isOnTemplate`, by `normName`) → needs "“<name>” is already on this template." and nothing changes (the
+  typed text stays; the spec pass, 5 Oct 2026 — it used to add a second row); else
+  `addToTemplate(templateId:name:)` (§13), the field emptied, and **Find emptied** too ("A search left on would
+  hide the new thing… and then Add looks as if it did nothing"). A name he already owns (by `normName`) puts THAT
+  thing on (one thing, one more place, bringing its own defaults); a new name makes a new thing (bag "Carry-on /
+  hand luggage", When = the first non-task phase, by default "≥1 week ahead").
 - **Delete template** ("Delete the template"): `deleteTemplate(id:)` (§14) then dismiss. Things stay; trips keep
   their lines.
 
 ### Data
-Reads `resolvedTemplate(id:)`, `templates` (name check), `shareLink(templateId:)`. Writes through
-`renameTemplate`, `removeFromTemplate`, `addToTemplate`, `deleteTemplate`, `setTemplateIcon` (cover), and through
-the sheets. AppStorage: `ams.template.grouping`.
+Reads `resolvedTemplate(id:)`, `templateNameTaken`, `isOnTemplate`, `shareLink(templateId:)`. Writes through
+`renameTemplate`, `removeFromTemplate`, `addToTemplate`, `deleteTemplate`, `setTemplateArea`, `setTemplateIcon`
+(cover), and through the sheets. AppStorage: `ams.template.grouping`.
 
 ### iPhone vs Mac
 Same content; Mac min size 480 × 600. The header holds cover, name field, Rename, Share and Done in one row on
@@ -502,10 +537,15 @@ both.
   "10 things"); `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (`template-add` → `template-add-needs`; name
   replaced by "Swim" → `template-rename` → `template-rename-needs`); `testATripReviewIsSavedAndTheMissedThingIsFiled`
   (a missed thing lands on the base template: `template-item-4`); `testOneSearchReachesEverything` (a Search
-  result opens `template-detail`); `testATemplateAndAGrabListAreSharedAndOpenedAgain` (`template-share`).
-- Model: `TemplateEditingTests`, `EditListsTests`, `RowEditingTests` (§13–14).
-- **Not covered:** the device-wide grouping memory; When's colours; the "×qty · note" line; adding a thing already on
-  the template (duplicate row); Delete's "Keep it"; a rename discarded by Done; Return in the name field.
+  result opens `template-detail`); `testATemplateAndAGrabListAreSharedAndOpenedAgain` (`template-share`);
+  `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
+  row); `testATemplateMovesToAnotherActivityArea` (Common base offers no `template-area`; Hiking's reads "GA",
+  `template-area-OE` → "OE", and on the tab OE appears and GA goes).
+- Model: `TemplateEditingTests`, `EditListsTests`, `RowEditingTests` (§13–14);
+  `TemplateRowsTests.testTypingAThingAlreadyOnTheTemplateDoesNotAddItTwice`,
+  `testOnlyOnSaysWhatATripReadsOnThisTemplate`; `TemplateFacesTests.testATemplateMovesToAnotherActivityArea`.
+- **Not covered:** the device-wide grouping memory; When's colours; Delete's "Keep it"; a rename discarded by Done;
+  Return in the name field; the area card's Cancel.
 
 ### Traps and history
 - 🪤 **Row identity.** "A row whose number changes is built afresh: kept, it kept its OLD number — the Map, the only
@@ -535,20 +575,25 @@ closes), swipe down (= Cancel). Container id `row-detail`. Mac: min 520 × 600.
 - Top row (padding 16): "Cancel" (outlined, muted) · spacer · "Save" (filled violet).
 - Scroll (side 16, bottom 24), blocks 20 apart, each field right under its heading:
   1. The thing's name — 26 heavy ink, wraps, id `row-thing-name`; "On <template name>" — 15 semibold muted.
-  2. **"Bag on this template"** (heading band, id `row-bag-title`): pills `row-bag-0` = "Same as the thing (<the
-     thing's own bag>)", then `row-bag-1…` = `containerNames(resolvedTemplates())` (the 17 built-in names —
+  2. **"Bag on this template"** (heading band, id `row-bag-title`): pills `row-bag-0` = what a blank bag really
+     means (`sameBagWords`): "Same as the template (<its own bag>)" on a template that came with a default bag,
+     else "Same as the thing (<the thing's own bag>)"; then `row-bag-1…` = `containerNames(resolvedTemplates())` (the 17 built-in names —
      Toiletry bag, Carry-on / hand luggage, Checked luggage, Hiking backpack, Climbing backpack, Golf bag,
      Triathlon bag, Swim bag, Duffel bag, Day pack, Bellroy backpack, Tech pouch, Electronics bag, Cool box,
      Handbag, RV storage box, Other — then his own bags from the bag list, de-duplicated case-insensitively). One
      choice.
   3. **"When, on this template"** (band, `row-when-title`): `row-when-0` = "Same as the thing (<phase label>)", then
      the live timeline (`PHASES`, his own steps if he changed them). One choice.
-  4. **"Section of this template"** (band, `row-section-title`) — only when the template has sections:
-     `row-section-0` = "No section", then the sections in order. One choice.
+  4. **"Section of this template"** (band, `row-section-title`) — when the template has sections or one was just
+     typed: `row-section-0` = "No section", then the sections in order, then the section typed under "A new
+     section" and not made yet (the last pill). One choice.
   5. **"A new section"** (band, `row-heading-section-new`): field "e.g. Lights" (`row-section-new`) and "Add"
      (`row-section-add`); `needsLine` `row-section-add-needs`.
-  6. **"How many"** (band, `row-heading-qty`): field "e.g. 2, or 2 pairs" (`row-qty`).
-  7. **"Note"** (band, `row-heading-note`): field "e.g. with the red filter" (`row-note`).
+  6. **"How many"** (band, `row-heading-qty`): field `row-qty`; its grey words (placeholder) "Same as the thing:
+     <the thing's own how-many>" when the thing has one, else "e.g. 2, or 2 pairs".
+  7. **"Note"** (band, `row-heading-note`): field `row-note`; placeholder "Same as the thing: <the first line of
+     the thing's note>" when it has one, else "e.g. with the red filter" — so a blank field never looks as if the
+     thing's note had gone.
   8. "Blank means the same as the thing itself, so a change to the thing still reaches this template." — 14 muted.
   9. **"Only on some trips"** (band, `row-heading-some`), then "Leave these off and it always comes along. Pick one
      or more and it comes only on trips that match — on this template." (15 medium muted, pulled 6 pt up), then
@@ -560,6 +605,8 @@ closes), swipe down (= Cancel). Container id `row-detail`. Mac: min 520 × 600.
      - "Transport" (`row-transports-title`): Car, Plane, RV (`row-transports-0…2`).
      - "Food" (`row-catering-title`): Self-sufficient, Eating out, Mix of both (`row-catering-0…2`; stored ids
        `self`, `eatout`, `mixed`).
+     - After the app's own words, each a stored word the app does not know (a web-app "summer", "Boat") as a pill
+       of its own, as stored, lit — so it can be seen and switched off (`Library.unknownConditions`).
 - Field look: 17 medium ink, min height 44, card fill, 10-radius hairline border. Heading band: a 5 × 26 capsule in
   violet, the title 22 heavy violet, on a 13 % violet strip (radius 10). Pills: 15 (bold when on), min height 36,
   white on violet when on, ink on `Theme.bg` with a hairline when off; ids are `<id>-<position>`, never words.
@@ -567,58 +614,74 @@ closes), swipe down (= Cancel). Container id `row-detail`. Mac: min 520 × 600.
 ### Behaviour
 - On appear the state is loaded from the **membership itself** (not the resolved row): bag = `m.container`, when =
   `m.phase`, qty, note, section, seasons, contexts, transports, catering. A blank membership value selects the
-  "Same as the thing" / "No section" pill. A stored bag, When or section that is not among the pills selects
-  none, and is kept unchanged on Save. A stored **condition** value that is not one of the app's own words
-  (exactly `Summer`/`Winter`, `Indoor`/`Outdoor`/`Race`, `Car`/`Plane`/`RV`, `self`/`eatout`/`mixed` — case
-  matters) also selects nothing, but is **dropped** on Save, because Save rebuilds each list by filtering the
-  vocabulary (see open questions).
-- **Add a section**: blank (after `jsTrim`) → "Type the section's name first."; else
-  `addSection(templateId:name:)` — **written immediately** (a section of the same `normName` returns the existing one
-  instead of adding a second); the new/existing section becomes the chosen one in the editor; the field empties. The
-  section stays on the template even if the editor is then cancelled. Adding the first section makes the "Section of
-  this template" pills appear.
-- **Save**: `updateMembership(memId:)` sets `container = bag`, `phase = when`, `qty = jsTrim(qty)`,
-  `note = jsTrim(note)`, `section`, and the four condition lists **in the app's own order** (SEASONS, CONTEXTS,
-  TRANSPORTS, CATERING order) "so the stored lists read the same every time"; then `coerceMembership`; then
-  dismiss. `weather`, `kit`, `itemType` and `order` are left as they were (no UI for them). Contexts stay stored on
-  a non-WET template even though their pills are hidden there (and ignored there when a trip is built).
-  Save closes the sheet even when `updateMembership` finds no such row (deleted meanwhile); nothing is said.
+  "Same as the thing" / "No section" pill (and leaves How many / Note blank, showing the thing's own in grey). A
+  stored bag, When or section that is not among the pills selects none, and is kept unchanged on Save. A stored
+  **condition** value that is not one of the app's own words (exactly `Summer`/`Winter`, `Indoor`/`Outdoor`/`Race`,
+  `Car`/`Plane`/`RV`, `self`/`eatout`/`mixed` — case matters) shows as a lit pill of its own and is **kept** on
+  Save unless switched off (until the spec pass, 5 Oct 2026, Save silently dropped it).
+- **Add a section**: blank (after `jsTrim`) → "Type the section's name first."; a section of this template with
+  the same `normName` → that one is chosen; else the name **waits for Save** as the last, chosen pill — nothing is
+  written yet. The field empties. Cancel therefore leaves the template as it was (until the spec pass the section
+  was written at once and stayed behind, empty).
+- **Save** → `Library.saveRow(templateId:memId:_:)` (`TemplateRows.swift`), then dismiss:
+  - a section waiting for Save is made (`addSection`: trimmed, an existing one of the same `normName` reused) and
+    the row put in it, if its pill is still the chosen one;
+  - `updateMembership` sets `container = bag`, `phase = when`, `section`, `qty = jsTrim(qty)` and
+    `note = jsTrim(note)` — **each stored as "" when it equals the thing's own** ("the same as the thing", so a
+    later change to the thing reaches the row; the spec pass) — and the four condition lists: the app's own words
+    **in the app's own order** (SEASONS, CONTEXTS, TRANSPORTS, CATERING order) "so the stored lists read the same
+    every time", then any stored word it does not know that is still switched on (`keptConditions`);
+    `coerceMembership`. `weather`, `kit`, `itemType` and `order` are left as they were (no UI for them). Contexts
+    stay stored on a non-WET template even though their pills are hidden there (and ignored there when a trip is
+    built);
+  - then `followThing(id: the thing)` (§17): the thing's open lines on trips still ahead are rebuilt, so the row's
+    new bag, When, how many, note or conditions reach them (the spec pass, carrying his I.7 decision to a row).
+  Save closes the sheet even when the row is gone (deleted meanwhile; `saveRow` answers false); nothing is said.
 - With the row gone (deleted on the other device while open) the editor shows an empty `Item()`: a blank name,
   "Same as the thing ()" for the bag and "Same as the thing (Unsorted)" for When.
 - The thing itself, and the same thing's rows on other templates, are untouched.
-- A row change does **not** reach trips already made (only a change to the THING follows to trips, §17); it reaches
-  new trips and a trip's rebuild (Trip settings → Save).
+- A row change reaches the open lines of trips still ahead (above); ticked, hand-added and trip-edited lines, and
+  trips over or reviewed, keep theirs. (Until the spec pass only a change to the THING followed, §17.)
 - How the conditions act on a trip (`itemMatchesEvent`): a dimension with no values always matches; a trip with no
   value for that dimension matches; otherwise the trip's value must be one of the row's. Context only counts on a
   WET template, and a trip may pin several contexts (any overlap matches).
 - The row on the template page then says `Only on: <seasons · contexts · transports · food>` (food in the short
-  words) — `TemplatesScreen.tags(_:)`; contexts are listed even on a non-WET template.
+  words) — `Library.onlyOnWords(row, on: template)`; contexts only on a WET template, where a trip reads them
+  (until the spec pass they were listed everywhere, claiming a limit that did nothing).
 
 ### Data
 Reads `library.row(templateId:memId:)` (membership + thing + resolved row), `templates` (the shell, for name,
-sections, group), `resolvedTemplates()` (bag names). Writes `memberships[n]` via `updateMembership`, and
-`templates[t].sections` via `addSection`.
+sections, group), `resolvedTemplates()` (bag names), `sameBagWords`. Writes through `saveRow` only: `memberships[n]`
+(`updateMembership`), `templates[t].sections` (`addSection`, on Save) and the lines of trips still ahead
+(`followThing`).
 
 ### Tests
 - UI: `testARowOfAListHasItsOwnAnswers` (Hiking's first row is the sectioned Headlamp and shows "Carry-on"; picking
   `row-bag-4` and a note "with the red filter" → the row shows the note and no longer "Carry-on"; Season Summer kept
   and the row says "Only on: Summer"; Context not offered on Hiking; the thing's own bag unchanged in Your things);
   `testTheEditorsLeadWithTheirHeadings` (all ten heading ids exist); `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
-  (`row-section-add` → `row-section-add-needs`).
+  (`row-section-add` → `row-section-add-needs`); `testASectionTypedInARowIsMadeOnlyOnSave` ("Rig" typed and Added
+  → `row-section-2` chosen; Cancel → gone on reopening; typed again and Saved → a "RIG" heading, and the row in
+  it); `testAThingsNoteIsNotCopiedOntoATemplate` (-uiTestingOnSite: the Passport, with the note "Keep it dry",
+  picked onto Hiking → the row shows the note, its `row-note` is empty with the grey words "Same as the thing: Keep
+  it dry").
 - Model: `RowEditingTests.testThisListsOwnAnswersStayThisListsOwn` (addSection trims and de-duplicates;
   updateMembership sets bag/When/qty/note/section on THIS row only; blank again = follow the thing; unknown id →
   false); `testTheRowsOfATemplateGroupIntoItsSections`; `RowTagsTests.testATaggedRowComesOnlyOnTripsThatMatch`
   (Summer+Plane row, Outdoor row on a WET template; Indoor+Outdoor takes both; untagged always comes; tags survive
-  records).
+  records); `TemplateRowsTests` — `testARowSavedFromTheEditorKeepsWhatItDoesNotKnow` ("summer", "Boat", "picnic"
+  kept; switched off, gone; equal-to-the-thing answers blank), `testARowsNewSectionIsMadeWhenTheRowIsSaved`,
+  `testARowChangeReachesATripStillAhead` (bag and note reach the open line, which keeps its id; a ticked line
+  does not change), `testOnlyOnSaysWhatATripReadsOnThisTemplate`, `testABlankBagNamesWhereItReallyGoes`.
 - The model classes `TemplateEditingTests`, `ThingEditingTests` and `RowEditingTests` live in
   `PackingLibraryTests/CreateTripTests.swift`.
-- **Not covered:** Food tags; Transport-only tags on their own; Cancel after Add-a-section; a section from another
-  template; an unknown condition value being dropped on Save.
+- **Not covered:** Food tags on screen; Transport-only tags on their own; a section from another template; an
+  unknown condition's pill on screen (no sample row has one).
 
 ### Traps
 - 🪤 The Pills' heading must be bigger than the pills (field test 3 Oct): bands 22, inner headings 20, pills 15.
-- "Same as the thing (X)" names the thing's own bag, but a blank bag actually resolves **template default first**,
-  then the thing (§12) — see open questions.
+- 🪤 A blank bag resolves **template default first**, then the thing (§12) — so the first pill names the template's
+  bag when it has one ("Same as the template (X)"); until the spec pass it always named the thing's.
 
 ---
 
@@ -638,8 +701,10 @@ Container id `pick-screen`. Mac: min 520 × 620.
 
 ### What is on screen
 - Top row (padding 16): "Cancel" (outlined muted) · `"Add to <template name>"` (or "Add things" if the template is
-  gone) 17 heavy ink, 1 line, shrinks to 80 %, id `pick-title` · the add button (filled violet): "Add" with
-  nothing ticked, `"Add <n>"` with n ticked; id `pick-add`.
+  gone) 17 heavy ink, 1 line, shrinks to 80 %, id `pick-title` · the add button (filled violet, always in colour):
+  "Add" with nothing ticked, `"Add <n>"` with n ticked; id `pick-add`. Under the row, when Add was pressed with
+  nothing ticked: "Tick the things to put on first." (the shared `needsLine`, 15 bold red, id `pick-add-needs`),
+  gone as soon as a tick changes.
 - Under it (side 16, bottom 8), spacing 10:
   - Search field "Search your things, or type a new one" (17 medium, min height 44, card fill, hairline) with the ✕:
     ids `pick-search`, `pick-search-clear`.
@@ -662,9 +727,10 @@ Container id `pick-screen`. Mac: min 520 × 620.
     `pick-heading-<g>-count`). A folded group keeps its heading and counts.
   - Unless folded, its **rows**: a 24-pt circle (violet outline; filled violet with a white tick when ticked;
     filled `Theme.line` with a white tick when already on the template), the name (17 medium; muted when already on
-    it, else ink; 1 line), and on the right either "already on it" (14 semibold muted) or the thing's *other*
-    answer (14 regular muted): grouped by From where → its bag; any other grouping → its storage place, or its bag
-    when no place is set. Vertical padding 9, hairline under. id `pick-row-<n>` with n numbered as read across
+    it, else ink; 1 line), and on the right either "already on it" (14 semibold muted) or (14 regular muted):
+    grouped by From where → its bag; any other grouping → its storage place, or its bag when no place is set (so
+    under Into a thing with no place shows the bag it is grouped by — better than saying nothing; the code's
+    comment says so since the spec pass). Vertical padding 9, hairline under. id `pick-row-<n>` with n numbered as read across
     **all** groups, folded ones included (so numbers do not shift when a group folds). Trait `isSelected` when
     ticked or already on it; accessibility value "already on it" or "".
   - Nothing owned and nothing typed: "You have no things yet. Type a name above to make one." (16 medium muted).
@@ -681,10 +747,14 @@ Container id `pick-screen`. Mac: min 520 × 620.
 - **A search opens every group** ("what he typed for must never sit in a folded one"); the folds come back when the
   search is emptied. Fold all is hidden while searching.
 - A row already on the template (`thingIds(onTemplate:)` = item ids of its memberships) cannot be ticked. Ticks
-  (`picked`, a set of item ids) survive folding, regrouping and searching.
-- **Add N** (`putOn`): nothing ticked → nothing happens and nothing is said (see open questions); else
-  `putOnTemplate(templateId:itemIds: Array(picked))` and close. Each new row brings the thing's own defaults
-  (blank bag/When on the membership); already-on things, repeats and unknown ids are skipped.
+  (`picked`, the item ids **in the order he ticked them**; untick removes one) survive folding, regrouping and
+  searching.
+- **Add N** (`putOn`): nothing ticked → "Tick the things to put on first." under the title, the screen stays (his
+  rule: a main button pressed too early says what is missing; until the spec pass it did nothing and said
+  nothing); else `putOnTemplate(templateId:itemIds: picked)` and close — the things land at the bottom of the
+  template **in the order ticked** (a set put them on in no particular order until the spec pass). Each new row
+  brings the thing's own defaults (blank bag/When/how many/note on the membership); already-on things, repeats
+  and unknown ids are skipped.
 - **A new thing** (`makeNew`): `addToTemplate(templateId:name: jsTrim(query))` — a brand-new thing straight onto the
   template — then the query is emptied; the screen stays open; the new thing now shows as "already on it".
 
@@ -698,10 +768,11 @@ it"; ticking two → "Add 2"; Add closes and rows 4–5 arrive, not 6; "Gaiters"
 says "11 things" — no copies); `testAGroupOfThingsToChooseFoldsAndSaysWhatItHolds`;
 `testEveryGroupOfThingsToChooseFoldsAndOpensAtOnce`; `testTheFoldsOfThingsToChooseAreRemembered`;
 `testASearchOpensAFoldedGroupOfThingsToChoose`; `testATickSurvivesFolding` ("2 things · 1 ticked");
-`testTheCrossEmptiesASearch` (`pick-count` "10 things" → "1 thing" → back). Model
-`TemplatePickingTests.testThingsHeOwnsArePutOnATemplateOnceEach`.
-**Not covered:** Add with nothing ticked; Kind/When/Into grouping of the picker; the order in which picked things
-land.
+`testTheCrossEmptiesASearch` (`pick-count` "10 things" → "1 thing" → back); `testThingsPickedLandInTheOrderTicked`
+(Add with nothing ticked → `pick-add-needs`, the picker stays; Towel, Goggles, Passport ticked in that order →
+the line goes, rows 4–6 read Towel, Goggles, Passport). Model
+`TemplatePickingTests.testThingsHeOwnsArePutOnATemplateOnceEach`, `TemplateRowsTests.testThingsPutOnLandInTheOrderGiven`.
+**Not covered:** Kind/When/Into grouping of the picker.
 
 ### Traps
 - 🪤 The fold arrow is its own button and the name a separate text: "the Mac folds a button's texts into the
@@ -717,7 +788,9 @@ land.
 
 ### `ThingGrouping` (raw values `section`, `when`, `into`, `fromWhere`, `kind`, `name`; labels Section, When, Into, From where, Kind, A–Z — "the same words as the trip's sorting")
 `groups(items, sections:) -> [(title, items)]`; A–Z inside a group = stable `jsLocaleCompare(…, .base)` (case- and
-accent-insensitive):
+accent-insensitive) — except by Section, which keeps the template's order. (The template page groups When with
+`entriesByPhase` itself, so its rows keep the template's order there too; only the picker's When is A–Z, to find a
+thing among all he owns. The type's comment says so since the spec pass.)
 - `.section` → `groupItemsBySection(items, sections)`: sections in the template's order, empty ones omitted, rows
   whose section is blank **or not one of this template's** in a last group "Everything else"; rows keep template
   order (no A–Z).
@@ -768,10 +841,10 @@ inside, labels list); `GroupingTests` — `testEntriesByPhaseOnlyReturnsNonEmpty
 |---|---|
 | `id` | String; fresh `PackingEnv.makeId()`. |
 | `name` | Free text (no trimming in `coerceList`; `newList` from the UI trims). |
-| `emoji` | Cover glyph; trimmed, cut to 4 UTF-16 units; non-string → "". "" = no glyph (the web app shows 📋 `TEMPLATE_DEFAULT_EMOJI` via `listEmoji`; this app shows the first letter). No UI sets it here. |
-| `color` | Cover colour; kept only if a hex colour, else "" (= hashed pick, §3). No UI sets it here. |
+| `emoji` | Cover glyph; trimmed, cut to 4 UTF-16 units; non-string → "". The web app shows it (📋 `TEMPLATE_DEFAULT_EMOJI` when ""); this app never does — its cover shows the first letter (§3). Kept for round trips; no UI sets it here. |
+| `color` | Cover colour; kept only if a hex colour, else "" (= hashed pick from `COVER_COLOURS`, §3). No UI sets it here. |
 | `sections` | Ordered `[TemplateSection {id, name}]`; `normalizeSections`: unnamed (after trim) dropped, a missing id invented, a repeated id dropped, names trimmed. |
-| `group` | "GA" / "WET" / "OE" or "" (any other value → ""). The activity area. Set only when the template is made. |
+| `group` | "GA" / "WET" / "OE" or "" (any other value → ""). The activity area. Set when the template is made, and changed on its page (`setTemplateArea`, §14). |
 | `role` | "base" (always on every trip), "transport" (only when the trip's transport equals `transport`), "loose" (retired bin, never fed to a trip), "container" (the bag list, never fed to a trip), "" (an activity template the user ticks). Unknown → "". |
 | `transport` | "Car" / "Plane" / "RV" or "" (only meaningful for role transport). |
 | `defaultContainer` | One bag for everything on this template ("" = none); sits between the thing's own bag and the row's exception. No UI sets it here (imported data only). |
@@ -878,7 +951,13 @@ Takes an edited **resolved** template apart:
      order, existing)`: conditions from the row; `container` = the row's `ovContainer` verbatim when present, else
      an exception only if it differs from the fallback (`containerOverrideFor`); `section`, `kit` always stored;
      `phase` = `ovPhase` when present, else an exception if different from the thing's; `itemType` only if
-     different; **`qty` and `note` = the row's (resolved) values**; `order` = 0, 1, 2… in row order.
+     different; `order` = 0, 1, 2… in row order. `membershipFromResolved` (the web app's, kept as the copy the parity
+     check holds) stores the row's RESOLVED `qty` and `note` — the thing's own when the row has none — so the save
+     then puts them right with `Library.placeAnswer(shown:stored:thing:)`: a row whose value is what its place
+     resolved to before keeps what the place stored ("" stays "", a real exception stays one even when it equals
+     the thing's); a changed or new value is stored only where it differs from the thing's own, else "". (Until the
+     spec pass, 5 Oct 2026, putting a thing on a template — or any later save of it — copied the thing's note and
+     how-many into every row, and a change to the thing's note never reached them again.)
 2. Memberships of this template not seen in this save are deleted. **Things are never deleted.**
 3. The shell is stored with `items = []`, coerced, `updatedAt = now` (added if new).
 
@@ -886,8 +965,10 @@ Takes an edited **resolved** template apart:
 - `addToTemplate(templateId:name:container:phase:) -> Item?` — blank → nil; unknown template → nil. An existing thing
   of that `normName` → its `resolveItemAlone` row (memId cleared); else a new row (bag default "Carry-on / hand
   luggage", When `defaultPhaseId()` = the first non-task phase). Appended, `saveTemplate`, returns the last resolved
-  row. No duplicate check. Either way the new membership stores no bag or When exception (a new thing's
-  bag and When become the THING's defaults; a known thing's row arrives with `ovContainer` = "").
+  row. A thing of that name already ON the template → nil, nothing changes (`isOnTemplate(templateId:name:)`;
+  "never twice by typing" — the spec pass; the picker and the review refuse it too; a thing can still sit twice on
+  one template where the data says so). Either way the new membership stores no bag, When, how-many or note of its
+  own (a new thing's bag and When become the THING's defaults; a known thing's row arrives with `ovContainer` = "").
 - `removeFromTemplate(templateId:memId:) -> Bool` — false if the template or row is missing; removes that one row
   and saves.
 - `putOnTemplate(templateId:itemIds:) -> Int` (`TemplatePicking.swift`) — skips ids already on the template, repeats
@@ -902,10 +983,22 @@ Takes an edited **resolved** template apart:
   template's `updatedAt`, and does not follow to trips.
 - `addSection(templateId:name:) -> TemplateSection?` — trims; blank or unknown template → nil; an existing section of
   the same `normName` is returned instead of a second; else appended. Does not touch `updatedAt`.
+- `saveRow(templateId:memId:_ RowAnswers) -> Bool` (`TemplateRows.swift`) — the row editor's Save (§7): a section
+  typed there made now, how many / note "" when equal to the thing's, conditions kept with words unknown to the
+  app, then `followThing`. false when that row is not on that template.
+- `letCopiedAnswersFollowTheirThings() -> Int` — the clean-up of the rows an older build froze: a membership whose
+  non-empty `qty` or `note` is EXACTLY its thing's own is set back to "" (nothing on screen changes; a row of his
+  own that says something else is kept). Run by `LibraryModel.reload()` on every load, after duplicate records are
+  settled; only the changed membership records are written, so it is idempotent and both devices agree.
+- `setTemplateArea(id:area:)` — §14. The cover's icon: `setTemplateIcon` (§3).
 - There are **no** operations for renaming, reordering or deleting a section, reordering rows, or changing a
-  template's group/role/transport/cover/default bag.
+  template's role/transport/colour/emoji/default bag (see open question 19).
 
 ### Tests
+`TemplateRowsTests.testAThingsNoteIsNeverFrozenOntoItsRows` (picked, typed, saved again: the membership's note and
+how-many stay "", the row shows the thing's, a change to the thing reaches every row; a row's own answer — even
+one equal to the thing's — survives a save), `testTheCopiesAnOlderBuildMadeFollowTheirThingsAgain` (a copy goes
+back to "", his own note kept, nothing a row says changes, a second run changes nothing);
 `TemplateEditingTests.testAddingANewNameMakesANewThingAndAKnownNamePutsTheSameThingOn` (" Gaiters " → new thing
 "Gaiters"; "headlamp" → the existing Headlamp, which brings its own packer; blank → nil);
 `testRemovingARowKeepsTheThing`; `ThingEditingTests.testAThingIsPutOnAListAndTakenOff`; `RowEditingTests` (2);
@@ -926,14 +1019,19 @@ Takes an edited **resolved** template apart:
 
 His ask: "You don't need to merge the content of the two templates — I can add items later on. Just delete one and
 rename the existing."
-- `renameTemplate(id:to:) -> Bool`: trims; refuses blank, an unknown id, or a name another template (any role) has
-  by `normName`; sets the name and `updatedAt`. The icon choice (in `extra`) is kept.
+- `renameTemplate(id:to:) -> Bool`: trims; refuses blank, an unknown id, or a name another template has by
+  `normName` (`templateNameTaken(except:)` — any role but the bag list, whose stored "Containers" he never sees);
+  sets the name and `updatedAt`. The icon choice (in `extra`) is kept.
+- `setTemplateArea(id:area:) -> Bool` (the spec pass, 5 Oct 2026): moves an ACTIVITY template (role "") to "GA",
+  "WET", "OE" or "" (none) and sets `updatedAt` (not when the area is already that one). Refused (false) for an
+  unknown id, an always-packed or transport template (filed by what they do) and an area that is not one of his.
 - `deleteTemplate(id:) -> Bool`: false for an unknown id; removes the template's memberships and the template. Things
   stay (also things that were on no other template — they become things on no template). Trips built from it are
   untouched ("a trip's lines stand on their own"); a rebuild never drops lines whose template is gone
   (`docs/store.md` rule 9, `Library.regenerated`).
 
-Tests: `EditListsTests` — `testARenameSticksAndRefusesANameHeAlreadyHas`,
+Tests: `TemplateFacesTests.testATemplateMovesToAnotherActivityArea`, `testANameIsTakenOnlyByATemplateHeCanSee`;
+`EditListsTests` — `testARenameSticksAndRefusesANameHeAlreadyHas`,
 `testADeleteTakesTheListAndItsRowsButNeverTheThings`, `testTheOtherListIsUntouchedByTheDelete`,
 `testItRefusesAListThatIsNotThere`; `LibraryTests.testRegeneratingNeverDropsTheLinesOfADeletedTemplate`,
 `testRegeneratingStillDropsWhatALivingTemplateNoLongerHas`; UI `testAListIsRenamedAndAnotherIsDeleted`.
@@ -965,14 +1063,20 @@ shown "Bags", Your things never says "Containers"), and the other 15 Bags tests 
 ## 16. When a template was last taken (`PackingLibrary/TemplateUse.swift`)
 
 "A list nobody has packed in a year is worth knowing about; so is the one that goes everywhere."
-`templateUse() -> [templateId: TemplateUse(lastTrip, lastDate, trips)]`, counted from the trips: for each trip, the
-set of template ids = its `activities` plus every line's `sourceListId` (so a base template counts through its lines,
-and a template since deleted or replaced still counts by the lines that name it). Each id: `trips += 1`; if the
-trip has a start date later (string compare of `YYYY-MM-DD`) than the stored one, it becomes `lastDate`/`lastTrip`
-(the trip's name). A trip with no date counts but never wins. A trip in the future counts and can win.
+`templateUse(today:) -> [templateId: TemplateUse(lastTrip, lastDate, trips, nextTrip, nextDate)]`, counted from the
+trips: for each trip, the set of template ids = its `activities` plus every line's `sourceListId` (so a base
+template counts through its lines, and a template since deleted or replaced still counts by the lines that name
+it). Each id: `trips += 1` (trips still ahead included); a trip that has BEGUN (start ≤ `today`, string compare of
+`YYYY-MM-DD`) and is later than the stored one becomes `lastDate`/`lastTrip` (the trip's name); a trip starting
+after `today` becomes `nextDate`/`nextTrip` when it is the soonest such. A trip with no date counts but never wins
+either. `today` "" (the default) counts every dated trip as begun. The screen passes the device's local date. (The
+spec pass, 5 Oct 2026: before, a trip in the future counted as "last" — "in 30 days" on a card meant to say when
+it was last taken.) The card's words: `TemplateUse.line(_:today:)`, §2.
 
 Tests: `TemplateUseTests` — `testAListNobodyHasTakenSaysNothing`, `testTheMostRecentTripWins` (base counted on 3 trips
-through its lines), `testATripWithNoDateStillCountsButNeverWins`.
+through its lines), `testATripWithNoDateStillCountsButNeverWins`, `testATripStillAheadIsNextNotLast` (the soonest
+ahead is next; "Next: in 30 days · …", "Next: tomorrow · …", "2 days ago · …", "Never taken along"; begun today
+counts as taken).
 
 ---
 
@@ -988,12 +1092,14 @@ His decision on test I.7 (1 Oct 2026), released 0.45.
   template first, else any unused one; it keeps its `id`, `checked`, `skipped` (set aside) and `used`. A line with no
   fresh counterpart is left as it is. The trip's `updatedAt` is set when something changed. Returns how many lines
   changed. `today` defaults to the UTC date of `nowISO()`.
-- A change to a ROW (membership) or to a template's rows does not call this.
+- A row saved in the row editor calls this too (`saveRow`, §7 — the spec pass, 5 Oct 2026), so a row's own bag,
+  When, how many, note or conditions reach the open lines of trips still ahead. Other changes to a template's rows
+  (typed on, picked on, taken off, the table's per-template columns, `setOnTemplate`) do not.
 
 Tests: `ThingFollowsTests` — `testAChangeToAThingReachesOnlyWhatIsStillUndecided` (ahead and undated trips follow;
 ticked line, over trip, reviewed trip keep theirs; ids and line count kept),
-`testARenameAndAnEditedOrSetAsideLineAreHandledRightly`, `testABagChosenForOneTemplateStillWins`; UI
-`testAChangeToAThingReachesATripStillAhead`.
+`testARenameAndAnEditedOrSetAsideLineAreHandledRightly`, `testABagChosenForOneTemplateStillWins`;
+`TemplateRowsTests.testARowChangeReachesATripStillAhead`; UI `testAChangeToAThingReachesATripStillAhead`.
 
 ---
 
@@ -1030,27 +1136,50 @@ becomes a QR code; it opens in the web app for anyone, and in this app via Setti
   then cover emoji (4 units), colour, group, role, transport, default bag (≤ 60), section names. Packed with an LZW
   "z." form when that is shorter. Photos, care and history are "deliberately left behind". The icon choice
   (`extra.iconKey`) does **not** travel. An empty template throws "This template has nothing on it to share."
-- **Opening** (`Library.readShared` tries grab list, then template, then trip): the preview says "A TEMPLATE", the
-  name and "<n> things"; **"Add as a new template"** (`shared-add`) → `importTemplate(shared)` → "Added. It is under
-  Templates. Things you already had keep your details."; when he has a role-"" template of the same `normName`
-  (`templateNamed`), also "Replace your <name> instead" (`shared-replace`) → "Replace your <name>?" with "Keep mine"
-  / "Replace" → `importTemplate(shared, replacing: id)` → "Replaced your <name>. Trips that use it keep working."
+- **Opening** (`Library.readShared` tries grab list, then template, then trip): the preview says what it is —
+  "A TEMPLATE", "AN ALWAYS-PACKED TEMPLATE" (role base) or "A TRANSPORT TEMPLATE" (role transport), so he knows
+  before he adds it — the name and "<n> things".
+  - When he already has a template of that name (`templateNameTaken`, the bag list aside): "You already have a
+    template called “<name>”. This one needs a name of its own:" (15 medium muted, `shared-name-taken`) and a field
+    (`shared-new-name`, 17 semibold, placeholder "A name you do not have yet") holding a free name
+    (`freeTemplateName`: "<name> 2", "3"…).
+  - **"Add as a new template"** (`shared-add`, always in colour) → `importTemplate(shared, named:)` (the field's
+    name when his name was taken). Pressed with a blank name → "Give the template a name."; with a name he has →
+    "Pick a name you do not have yet." (`needsLine`, `shared-add-needs`, gone as he types). Added → "Added. It is
+    under Templates. Things you already had keep your details." — for an always-packed one "Added. It is under
+    Templates, Always packed: every new trip packs it. …", for a transport one "…, By transport: every new <Car>
+    trip packs it. …". (The spec pass, 5 Oct 2026: it used to make a second template of a name he had, which Worth
+    a look then reported as "Two libraries may have met".)
+  - When he has a role-"" template of the same `normName` (`templateNamed`), also "Replace your <name> instead"
+    (`shared-replace`) → "Replace your <name>?" with "Keep mine" / "Replace" → `importTemplate(shared, replacing:
+    id)` → "Replaced your <name>. Trips that use it keep working."
 - `listFromShare`: fresh ids (sections, rows, then the list), sections rebuilt and rows pointed at them by name
   (case-insensitive), roles `loose`/`container` arrive as ordinary templates, never `builtin`; a blank name becomes
   "Shared template"; a `partial` (`id`, `createdAt`) keeps a replaced template's identity. The roles `base` and
-  `transport` (and the group, transport, colour, emoji and default bag) are KEPT: "Add as a new template" of a
-  shared always-packed template gives him a second base template, which every new trip then packs.
+  `transport` (and the group, transport, colour, emoji and default bag) are KEPT by `listFromShare`: "Add as a new
+  template" of a shared always-packed template gives him a second base template, which every new trip then packs —
+  the preview and the "Added" line say so.
 - "Replace" is offered only against a template of role "" (`templateNamed`), so a base, transport or bag list
-  is never replaced; "Add as a new template" is always offered, whatever the name. The shared role wins on
-  Replace too: replacing his activity template with a shared base template turns his into a base template.
-- `importTemplate`: each row whose name matches a thing he has (`normName`) is made a **link** to that thing ("his
-  weight, bag, brand and notes stay his; only things new to him take the sender's details"), then `saveTemplate`.
+  is never replaced. `importTemplate(shared, replacing:)` keeps HIS template's role, activity area and transport,
+  so it stays where it was (the spec pass: replacing his activity template with a shared always-packed one turned
+  his into one that every trip packs). Colour, emoji and default bag are the shared one's.
+- `importTemplate(_:replacing:named:)`: as a NEW template it refuses (nil, nothing changes) a name he has
+  (`templateNameTaken`) — `named` gives it another (trimmed; ignored on Replace). Each row whose name matches a
+  thing he has (`normName`) is made a **link** to that thing ("his weight, bag, brand and notes stay his; only
+  things new to him take the sender's details") and takes HIS spelling of the name — the save writes a link's
+  name onto the thing, so a shared "towel" used to turn his "Towel" into "towel" (the spec pass) — then
+  `saveTemplate` (a sender's how-many or note equal to his thing's own is stored blank, §13).
 
 Tests: `ListSharingTests` (18: round trip; whole link / bare code / link in a message; rejects non-templates and grab
 codes; empty template; `listFromShare` rebuild; the two system bins; partial identity; five address tests; big
 template squeezed; byte-for-byte against the web app; a web-app code opens here; id order; junk inside a code; a name
 cut inside an emoji); `SharingTests.testATemplateArrivesWithoutTouchingHisThings` (his Towel keeps weight and bag,
-Fins arrives with 700 g, Replace keeps the id); UI `testATemplateAndAGrabListAreSharedAndOpenedAgain`.
+Fins arrives with 700 g, as "Swim 2" beside his Swim; Replace keeps the id), `testASharedTemplateIsNotAddedUnderANameHeHas`
+(refused and nothing changes; "Swim club" taken; then that name is taken too; no worry),
+`testALinkedThingKeepsHisSpelling`, `testASharedAlwaysPackedTemplateStaysOneButReplaceKeepsHisPlace` (as new: role
+base, a new trip packs its Fins; Replace: his Swim stays role "" in WET with the shared rows); UI
+`testATemplateAndAGrabListAreSharedAndOpenedAgain` (his Hiking: `shared-name-taken`, `shared-new-name` holds
+"Hiking 2"; "Hiking" → `shared-add-needs` "…do not have…", nothing added; "Hiking club" → "Added…").
 
 ---
 
@@ -1094,14 +1223,17 @@ Left by "Done" (`lists-done`, filled slate) or swipe down. Container `lists-deta
   line's and every membership's phase.
 - Add: places/owners → `setNames(kind, list + [name])` (trimmed, de-duplicated by `normName`, so a repeat silently
   vanishes); packers → a person with colour `PERSON_COLORS[count % 8]`; conditions → `newCondition`; When →
-  `newPhase` appended, `setTimeline`. A list that equals the factory one is stored as **no rows**.
+  `newStep(named:)` appended, `setTimeline` — `newPhase` with its colour from `COVER_COLOURS` (§3) by the number of
+  steps, so the eighth is indigo, never teal as the web app's pick made it (the spec pass, 5 Oct 2026). A list that
+  equals the factory one is stored as **no rows**.
 - Remove: in use → "<label> is still used by <n> thing(s), so it stays." and nothing changes; else removed. Removing
   the last entry of a kind brings the factory list back (no rows = defaults).
 
 ### Tests
 UI `testHisOwnListsAreAddedAndProtectedWhileInUse` (title "Your choices", each hint > 80 characters, "Garage shelf"
 added as place row 12, used on a thing, then refused with `lists-problem`); `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
-(`list-places-add`); `testTheEditorsLeadWithTheirHeadings` (five headings). Model `SettingsListsTests` (5).
+(`list-places-add`); `testTheEditorsLeadWithTheirHeadings` (five headings). Model `SettingsListsTests` (5);
+`TemplateFacesTests.testNoTemplateIsGivenTealOrCyan` (the eighth step's colour).
 
 ---
 
@@ -1110,13 +1242,15 @@ added as place row 12, used on a thing, then refused with `lists-problem`); `tes
 | Where | Function | Spec |
 |---|---|---|
 | Template page: type a name / Choose from your things / ✕ | `addToTemplate`, `putOnTemplate`, `removeFromTemplate` | here |
-| Row editor | `updateMembership`, `addSection` | here |
+| Row editor (Save) | `saveRow` → `updateMembership`, `addSection`, `followThing` | here |
+| Template page: activity area | `setTemplateArea` | here |
+| Every load of the library | `letCopiedAnswersFollowTheirThings` (`LibraryModel.reload`) | §13 |
 | Thing editor "On these templates" (all templates but the bag list) | `setOnTemplate` on save | Things spec |
 | Care table: "On these templates" columns; "How many" / "Section" per template (editable only when the thing is on exactly one template) | `setOnTemplate`, `updateMembership` | Table spec |
 | Review: a missed thing onto a chosen template (skipped if a row of that name is already there) | `addToTemplate` | Review spec |
 | Refine: Drop | `setOnTemplate(on: false)` | Refine spec |
 | Bags: add / delete a bag | `setOnTemplate` on the bag list | Bags spec |
-| Shared template import | `importTemplate` → `saveTemplate` | §19 |
+| Shared template import | `importTemplate(_:replacing:named:)` → `saveTemplate` | §19 |
 | Backup import | `saveTemplate` per list | Backup spec |
 
 ---
@@ -1130,39 +1264,32 @@ deciding before a rewrite.
 
 **Data and behaviour.**
 
-1. [bug] **The thing's own note (and qty) gets frozen into rows**: `membershipFromResolved` stores the
-   *resolved* `qty` and `note` (which fall back to the thing's own when the row is blank). So putting a thing
-   with a note on a template (`putOnTemplate`/`addToTemplate` via `resolveItemAlone`), or ANY later
-   `saveTemplate` of that template (adding or taking off any row, a shared-template import), copies the
-   thing's note and qty into every membership of the template — after which a change to the thing's note
-   no longer reaches those rows, contrary to "Blank means the same as the thing itself". The thing's note is
-   editable (thing editor, On site). Untested.
-2. [bug] **The row editor drops condition values it does not know.** Save rebuilds seasons / contexts /
-   transports / food by filtering `SEASONS`, `CONTEXTS`, `TRANSPORTS` and the `CATERING` ids, so a stored
-   value spelt differently (from the web app or an import, e.g. "summer") is silently removed, although the
-   membership model keeps any string. Untested.
-3. [bug] **Order of picked things**: `putOnTemplate` gets `Array(picked)` from a `Set`, so several picked
-   things land on the template in an unpredictable order. Untested.
-4. [bug] **Typing an existing thing's name on a template that already has it** adds a second row (no guard
-   in `addToTemplate`), while the picker and the review both guard against it. Intended "same thing twice"
-   support, or a slip? Untested.
-5. [bug] **"Add as a new template"** with a name he already has creates a second template of that name —
-   the very thing `NewList` and Rename refuse, and that the health check reports as "… appear(s) twice. Two
-   libraries may have met on this account." (`Health.swift`). The UI test
-   `testATemplateAndAGrabListAreSharedAndOpenedAgain` does exactly this (a second "Hiking").
-6. [bug] **Importing links takes the sender's spelling**: a linked row (`link == true`) still carries its
-   name, and `applyIntrinsic` writes it onto his thing. The names already match by `normName`, so only case
-   and spacing can change (a shared "towel" turns his "Towel" into "towel"). Untested.
+1. [bug] **The thing's own note (and qty) gets frozen into rows** — Resolved in 0.6x: a row stores how many and a
+   note only where they differ from the thing's own (`saveTemplate` → `placeAnswer`), and on load every place an
+   older build froze goes back to blank (`letCopiedAnswersFollowTheirThings`) — so a change to the thing's note
+   reaches every row again (`TemplateRowsTests`, UI `testAThingsNoteIsNotCopiedOntoATemplate`).
+2. [bug] **The row editor drops condition values it does not know.** — Resolved in 0.6x: Save keeps a word it does
+   not know (shown as a lit pill of its own, switched off like any) — `saveRow` → `keptConditions`
+   (`testARowSavedFromTheEditorKeepsWhatItDoesNotKnow`).
+3. [bug] **Order of picked things** — Resolved in 0.6x: the picker keeps the order he ticked, and that is the order
+   they land in (UI `testThingsPickedLandInTheOrderTicked`).
+4. [bug] **Typing an existing thing's name on a template that already has it** — Resolved in 0.6x: decided — typing
+   never makes a second row (a slip, never a wish); the page says "“<name>” is already on this template." and
+   `addToTemplate` refuses it. A thing twice on one template stays possible where the data says so (UI
+   `testTypingAThingAlreadyOnTheTemplateSaysSo`, model `testTypingAThingAlreadyOnTheTemplateDoesNotAddItTwice`).
+5. [bug] **"Add as a new template"** — Resolved in 0.6x: as a new template a name he has is refused; the screen
+   offers a free name ("Hiking 2") in a field and says what is missing when pressed with a taken one
+   (`importTemplate(…named:)`; `testASharedTemplateIsNotAddedUnderANameHeHas`, the share UI test).
+6. [bug] **Importing links takes the sender's spelling** — Resolved in 0.6x: a linked row takes HIS spelling of the
+   thing's name before the save (`testALinkedThingKeepsHisSpelling`).
 7. [bug] **Sharing an empty template**: `shareLink` is nil, and the share sheet then says "This is too big
    for a link. Share it as a file instead." — the wrong reason, and there is no file for a template.
-8. [bug] **`suggestedIcon`'s "train" rule** is a substring test, so "Strength training", "Swim training" etc.
-   get the **train** icon (rule 7 runs before strength and swim). Likewise "camp" (rule 13) catches any name
-   containing it once the camper rule has passed.
-9. [bug] **"Same as the thing (X)"** in the row editor names the thing's own bag, but a blank row bag
-   resolves to the template's `defaultContainer` first. Only matters for templates imported with a default
-   bag (no UI sets one here).
-10. [bug] **"Only on:" lists contexts on a non-WET template**, where the editor hides Context and a trip
-    build ignores it — the row claims a limit that has no effect.
+8. [bug] **`suggestedIcon`'s "train" rule** — Resolved in 0.6x: train and tent are whole words now ("Strength
+   training" → strength, "Campus" → nothing; `testATrainAndATentNeedTheirWholeWord`).
+9. [bug] **"Same as the thing (X)"** — Resolved in 0.6x: the first pill says "Same as the template (<its bag>)" on a
+   template with a default bag (`sameBagWords`; `testABlankBagNamesWhereItReallyGoes`).
+10. [bug] **"Only on:" lists contexts on a non-WET template** — Resolved in 0.6x: "Only on:" lists Context only on a
+    WET template (`onlyOnWords`; `testOnlyOnSaysWhatATripReadsOnThisTemplate`).
 11. [bug] **`TableColumns` calls `containerNames(library.templates)`** — the unresolved shells — so his own
     bags are never offered in the table's bag column (the trap `Bags.swift` warns about). Outside these
     files; flagged because it is `containerNames`.
@@ -1171,58 +1298,71 @@ deciding before a rewrite.
 13. [bug] **`followThing`'s "today"** is the UTC date (`nowISO()`), while the screens use the device's local
     date: around midnight a trip that ended "yesterday" locally can still be followed, or one ending today
     skipped.
-14. [untested] **A shared base or transport template keeps its role.** "Add as a new template" gives him a
-    second always-packed (or transport) template that every matching new trip packs; Replace can turn his
-    activity template into a base one.
-15. [untested] **Three `.sheet` modifiers on the Templates tab's scroll view** (template, Search, New),
-    although the code elsewhere calls several sheets on one view "a trap met in Search".
+14. [untested] **A shared base or transport template keeps its role.** — Resolved in 0.6x: pinned by
+    `testASharedAlwaysPackedTemplateStaysOneButReplaceKeepsHisPlace` — as a new template it stays always packed (the
+    preview and the "Added" line now say so); Replace now keeps HIS template's role, area and transport, so his
+    activity never becomes always packed.
+15. [untested] **Three `.sheet` modifiers on the Templates tab's scroll view** — Resolved in 0.6x: the tab has one
+    sheet with a destination; `testEveryDoorOfTheTemplatesTabOpens` opens a template, Search and New one after
+    another, twice. (Settings' two sheets are spec 06's.)
 
 **What to decide.**
 
 16. [idea] **Replace drops his icon choice and his row exceptions**: the shared list has no `extra`, so the
     stored `iconKey` is lost; linked rows get blank bag/When exceptions and the sender's
     conditions/qty/note/section; his rows not in the shared list are taken off.
-17. [idea] **`TemplateUse` counts future trips** as "last taken": the card can say "in 30 days · <trip>".
-18. [idea] **Template summary**: "<N> things" counts every thing (bags and things on no template too) and
-    "<K> trips packed from them" counts every trip. (The code comment's example still says "lists".)
-19. [idea] **Row editor's Add-a-section** writes the section immediately; Cancel leaves an empty section on the
-    template. There is no UI to rename, reorder or delete a section, to reorder rows, or to change a
-    template's activity area, role, transport, colour, emoji or default bag after creation; no UI for a
-    row's weather tags, kit or reminder type.
-20. [idea] **A row change does not reach trips already made** (`followThing` runs only for thing edits); only
-    a rebuild (Trip settings → Save) applies it.
-21. [idea] **Search can open a role-"loose" template** (it excludes only the bag list), which the Templates
-    tab never shows.
-22. [idea] **Device-wide memories**: the template page's grouping (`ams.template.grouping`) and the picker's
-    folds/grouping are one setting for all templates; fold keys of renamed places/kinds stay in
-    `ams.pick.folded` for ever.
-23. [idea] **`NewList`**: `canMake` is unused; the `newlist-needs` line does not clear on typing (other needs
-    lines do); the bag list "Containers" counts as a taken name although he never sees that name.
-24. [idea] **`groupBy("container")`'s "Unpacked"** label is dead code: `groupByKey` already turned a blank bag
-    into "Other".
+17. [idea] **`TemplateUse` counts future trips** — Resolved in 0.6x: a trip that has not begun is no longer "last":
+    the card says "Next: in 30 days · <trip>" for a template only ever planned (`templateUse(today:)`,
+    `TemplateUse.line`; `testATripStillAheadIsNextNotLast`).
+18. [idea] **Template summary** — Resolved in 0.6x: the line counts the things ON the templates shown (each once)
+    and the trips packed from them (`templateSummary`; `testTheTemplatesLineCountsWhatItSays`); the comment says
+    "templates".
+19. [idea] **Row editor's Add-a-section** — Partly resolved in 0.6x: a section typed in the row editor is made only
+    on Save (UI `testASectionTypedInARowIsMadeOnlyOnSave`), and a template's activity area can be changed on its
+    page (`setTemplateArea`, UI `testATemplateMovesToAnotherActivityArea`). Left, for him to decide: renaming,
+    reordering or deleting a section and reordering rows need a way of working he has not seen (drag, edit modes) —
+    worth a picture first; changing a template's role or transport changes what EVERY trip packs; colour, emoji and
+    default bag are web-app data he has never asked to set here (no emoji in this app); a row's weather tags, kit
+    and reminder type have no use on any screen of this app.
+20. [idea] **A row change does not reach trips already made** — Resolved in 0.6x: a row saved in the row editor
+    reaches the open lines of trips still ahead, as a change to the thing does (`saveRow` → `followThing`;
+    `testARowChangeReachesATripStillAhead`). Rows typed on, picked on or taken off still reach a trip only through
+    its Trip settings (adding or dropping a line is a bigger step than updating one).
+21. [idea] **Search can open a role-"loose" template** — Resolved in 0.6x: Search lists the same templates as the
+    tab (`shownTemplates()`: not the bag list, not the loose bin).
+22. [idea] **Device-wide memories** — Left: kept as one memory per device — one way of reading every template is
+    what he asked for ("the same way as when you pack"), as the trip's sorting is remembered; a fold kept for a
+    renamed place costs a few bytes, and forgetting it could unfold a group he folded on purpose.
+23. [idea] **`NewList`** — Resolved in 0.6x: the needs line goes as he types (the shared `needsLine`), `canMake` is
+    gone, and the bag list's hidden "Containers" is not a taken name (`templateNameTaken`; Worth a look counts the
+    bag list apart).
+24. [idea] **`groupBy("container")`'s "Unpacked"** — Left: a comment now says it is never reached; the line stays
+    because `Grouping.swift` is the web app's copy, held to it by the parity check, and removing it would change
+    nothing he sees.
 
 **Comments and documents.**
 
-25. [doc] **ThingGrouping's doc** says things read A–Z inside a group; `.section` keeps template order, and the
-    template page's **When** grouping uses `entriesByPhase` directly (template order), while the picker's
-    When sorts A–Z.
-26. [doc] **Picker row "aside"** comment says "never the one it is grouped by" — under Into, a thing with no
-    storage place shows its bag (the thing it is grouped by).
-27. [doc] **Release log**: the row editor's "Only on some trips" pills (2 Oct 2026) have no "What's new" entry;
-    only 0.55's "Only on: Summer" line mentions them.
-28. [doc] The `Cover` comment "the app adds no art of its own" predates the suggested icons.
+25. [doc] **ThingGrouping's doc** — Resolved in 0.6x: decided — a template page keeps HIS order inside a group
+    (Section and When), the picker's When reads A–Z to find a thing among all he owns; the `ThingGrouping` comment
+    says so.
+26. [doc] **Picker row "aside"** — Resolved in 0.6x: the comment now says what the row shows (under Into a thing
+    with no place shows its bag — better than nothing).
+27. [doc] **Release log** — Resolved in 0.6x: a What's new line for the "Only on some trips" choices is proposed for
+    the release notes (written at release time, not in this branch).
+28. [doc] The `Cover` comment "the app adds no art of its own" predates the suggested icons — Resolved in 0.6x: the
+    comment now says the cover shows his icon or the suggested one, drawn in the app's hand, else the letter.
 
 **His standing rules.**
 
-29. [rule-break] **Choose from your things, "Add" with nothing ticked**: the comment says it "says so under
-    the title instead of doing nothing silently"; the code (`putOn`) just returns — nothing is shown. His
-    rule: a main button pressed too early says what is missing. Untested.
-30. [rule-break] **Cover "Letter" with an emoji**: when a template carries an emoji (imported), choosing
-    Letter (or having no suggestion) shows the **emoji**, while the picker's Letter tile shows the first
-    letter. Breaks the "no emoji" rule stated in `TemplateIcons.swift`.
-31. [rule-break] **`TEMPLATE_COLORS`** (web app parity) contains teal `#14b8a6` and cyan `#06b6d4`;
-    `docs/colours.md` says "Not teal … Do not use teal for anything new". Any template without its own colour
-    may get teal.
+29. [rule-break] **Choose from your things, "Add" with nothing ticked** — Resolved in 0.6x: Add with nothing ticked
+    says "Tick the things to put on first." under the title (`pick-add-needs`, UI
+    `testThingsPickedLandInTheOrderTicked`).
+30. [rule-break] **Cover "Letter" with an emoji** — Resolved in 0.6x: the cover shows the letter, never the emoji
+    (`coverLetter`; `testACoverShowsALetterNeverAnEmoji`).
+31. [rule-break] **`TEMPLATE_COLORS`** — Resolved in 0.6x: covers and new "When" steps take `COVER_COLOURS` — the
+    web app's ten with cyan → orange and teal → indigo (`testNoTemplateIsGivenTealOrCyan`); `TEMPLATE_COLORS` itself
+    stays for the parity check. Not changed: the factory "When" steps' own colours (Day before is cyan, After /
+    recovery teal — his familiar steps, used across the trip screens).
 32. [rule-break] **Text under 15 pt** in this area — card "used" line 12, icon labels 12, "WHAT IS IT CALLED"
     12, row qty/note and tags 13, Delete template 13, "You already have a template called that." 14, the
     delete question's text 14, the row editor's "Blank means…" 14, picker pills/aside/counts 14, Your
