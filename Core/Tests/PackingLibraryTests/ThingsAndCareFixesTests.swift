@@ -53,7 +53,7 @@ final class ThingsAndCareFixesTests: XCTestCase {
             let n = lib.items.firstIndex { $0.name == name }!
             lib.items[n].condition = value
         }
-        set("Boots", "Needs replacing")        // as the table stored it before 0.6x
+        set("Boots", "Needs replacing")        // as the table stored it before 0.62
         set("Torch", "worn")                    // an id: left alone
         set("Sit bag", "Sliten")                // nothing of his: kept, never "corrected"
         XCTAssertEqual(lib.conditionLabel("Needs replacing"), "Needs replacing")

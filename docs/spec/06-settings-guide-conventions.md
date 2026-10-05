@@ -50,17 +50,17 @@ order in the code:
 | 5 | *Open a shared link* door (§11) | always | `settings-openshared` |
 | 6 | *Worth a look* card (§12) | only when `library.worries()` is not empty | `health-heading`, `health-<n>` … |
 | 7 | Heading *BACKUP* (§13) | always | `backup-heading` |
-| 8 | *Save a backup…* button + status line (+ "Last saved from this …" once saved here, 0.6x) | always | `backup-save`, `backup-status`, `backup-last` |
+| 8 | *Save a backup…* button + status line (+ "Last saved from this …" once saved here, 0.62) | always | `backup-save`, `backup-status`, `backup-last` |
 | 9 | *Restore from a file…* button (§14) | always | `backup-restore` |
 | 10 | *Kept before a restore* list (§15) | only when a rescue copy exists on this device | `rescue-heading`, `rescue-row-<n>` |
-| 11 | *This device holds* table + footer (sync mode, version) (§16), and under it where the library came from (0.6x) | always; the line only for a library brought in from a file | `device-count-<table>`, `device-import` |
+| 11 | *This device holds* table + footer (sync mode, version) (§16), and under it where the library came from (0.62) | always; the line only for a library brought in from a file | `device-count-<table>`, `device-import` |
 
 **Sheets and windows owned by the screen itself.** `.sheet(isPresented: lists)` → `ListsScreen`;
 `.sheet(item: pending)` → `RestoreSheet`; `.fileImporter` (open a `.json`); `.fileExporter` (save the backup).
 The guide doors and the shared-link door own their OWN sheets (`GuideDoors`, `OpenSharedDoor`) because "several
 sheets on one view is a trap met in Search" (GuideScreen.swift comment).
 
-**State held by the screen** (`@State`, lost when the tab is left): `exporting`, `saving` (the backup document, built when Save is pressed — 0.6x), `status` (the line under Save),
+**State held by the screen** (`@State`, lost when the tab is left): `exporting`, `saving` (the backup document, built when Save is pressed — 0.62), `status` (the line under Save),
 `lists`, `picking`, `pending: PendingRestore?` (a file already read and checked, waiting for his yes),
 `copies: [URL]` (rescue copies, read once when the view is created and again after a restore).
 
@@ -71,7 +71,7 @@ Restore opens the Files browser / an Open panel. Sheets on the Mac get minimum s
 pressing it says "Choosing…"; on the Mac a Save window opens and Escape closes it), `testEveryTabOpensItsScreen`
 (tab ids and `screen-settings`). Each card's own tests are in its section.
 
-**Traps.** Until 0.6x the backup JSON was built inside `body` (`BackupDocument(data: model.library.backupData())` was an
+**Traps.** Until 0.62 the backup JSON was built inside `body` (`BackupDocument(data: model.library.backupData())` was an
 argument of `.fileExporter`), i.e. on every redraw of Settings — including all photo data. Now it is built when Save is pressed.
 
 ---
@@ -120,20 +120,20 @@ true)`, id `lists-done`) which calls `dismiss()`; or by swiping the sheet down o
         shows its list in this order, step by step."
     - One row per entry (n = 0, 1, …): the label (17 medium, ink, id `list-<kind>-name-<n>`); if THINGS use the
       entry, how many (14 bold, monospaced digits, muted) right after it — things only, also for a "When" step
-      (0.6x; until then a step's number added its trip lines and template places); Spacer; the pen — a drawn
+      (0.62; until then a step's number added its trip lines and template places); Spacer; the pen — a drawn
       `PenMark` 22×22, muted (Settings slate on a 16 % slate rounded square while that entry's editor is open), in a 44×44 hit area, id
-      `list-<kind>-edit-<n>`, VoiceOver "Change <label>" (0.6x); a remove button — a drawn ✕ (`M6 6L18 18M18 6L6 18`,
+      `list-<kind>-edit-<n>`, VoiceOver "Change <label>" (0.62); a remove button — a drawn ✕ (`M6 6L18 18M18 6L6 18`,
       stroke 1.8, 22×22, muted) in a 40×40 hit area, id `list-<kind>-remove-<n>`, VoiceOver label
       "Remove <label>". The row is an accessibility container (`children: .contain`) with id `list-<kind>-row-<n>`
       and a 1-pt `Theme.line` hairline at its bottom. There is no empty-state text: an empty list (e.g. Owners on
       an account that never added one) shows no rows, only the Add field.
-    - Right under the row whose ✕ was refused (0.6x — until then at the TOP of the sheet, off screen when Remove
+    - Right under the row whose ✕ was refused (0.62 — until then at the TOP of the sheet, off screen when Remove
       was pressed far down the "When" steps): the problem line (15 semibold, To-do red `#dc3d43`, wraps, id
       `lists-problem`), `ChoiceUse.refusal(label)`, e.g. **"Garage is still used by 3 things, so it stays."** or
       **"≥1 week ahead is still used by 10 things and on 1 trip, so it stays."** One at a time; an Add that adds, a press
       on a pen or a remove that removes clears it.
     - Under the row whose pen is open (one at a time, followed by the entry's KEY so it stays on the entry as it
-      moves; the pen again closes it), the editor (0.6x): a card (padding 12, card fill, radius 12, 1.4-pt Settings
+      moves; the pen again closes it), the editor (0.62): a card (padding 12, card fill, radius 12, 1.4-pt Settings
       slate border, container id `list-<kind>-editor`) holding a field **"New name"** pre-filled with the entry's
       label (17 medium, `Theme.bg` fill, radius 10, min height 44, id `list-<kind>-rename-name`; Return = Rename)
       and **Rename** (`FieldButtonLabel`, slate, id `list-<kind>-rename`); under them, for places, packers,
@@ -148,7 +148,7 @@ true)`, id `lists-done`) which calls `dismiss()`; or by swiping the sheet down o
       steps" — 17 medium ink, 12 horizontal padding, min height 44, card fill, radius 10, 1-pt line border, id
       `list-<kind>-add-name`; Return (`onSubmit`) = Add. Then **Add** — `FieldButtonLabel(title: "Add", tint:
       Settings slate)`, id `list-<kind>-add`. Under the row, the needs line (`.needsLine`, id
-      `list-<kind>-add-needs`, §20): "Type a name first." or (0.6x) "You already have <name>.".
+      `list-<kind>-add-needs`, §20): "Type a name first." or (0.62) "You already have <name>.".
   - Footer (14, muted, 14 pt above): **"These belong to your account, so both your devices show the same."**
 - Whole sheet: `Theme.bg` behind (ignores the safe area), accessibility container id `lists-detail`.
 
@@ -164,7 +164,7 @@ true)`, id `lists-done`) which calls `dismiss()`; or by swiping the sheet down o
 | phases | `library.timeline()` (stored `phases`, or the factory 7) | `label` | `id` | `normName(id)` in `usesOf("phases")` |
 
 `Library.usesOf(kind)` answers, per normalised key (`normName`: trimmed, lower-cased, runs of white space collapsed;
-empty keys skipped), a `ChoiceUse { things, trips, templates }` (0.6x; until then one number): `things` = the
+empty keys skipped), a `ChoiceUse { things, trips, templates }` (0.62; until then one number): `things` = the
 catalogue items whose `storage` (places), `ownedBy` (owners), `packer` (people), `condition` (conditions) or
 `phase` (phases) it is. For `phases` ONLY also `trips` = the trips with at least one line in that step and
 `templates` = the templates with at least one membership whose `phase` is that step. Nothing else is counted (not
@@ -174,7 +174,7 @@ for the other kinds). The number on a row is `things`; an entry is in use (`inUs
 **Add** (`add(kind)`; the same from the button and from Return):
 1. `name = jsTrim(field)`. Empty → the needs line says **"Type a name first."** and nothing else happens (the
    button is never disabled or grey — §20).
-2. (0.6x) `library.existingChoice(kind, name)` finds one he already has → the needs line says **"You already have
+2. (0.62) `library.existingChoice(kind, name)` finds one he already has → the needs line says **"You already have
    <its spelling>."**, nothing is added, and what he typed stays (so the line stays until he types). Places,
    owners and packers match by `Library.choiceKey` (the normalised name cut to 60 UTF-16 units — what the store keys
    them by); a condition or a step by `choiceKey` of its LABEL.
@@ -196,21 +196,21 @@ for the other kinds). The number on a row is `things`; an entry is in use (`inUs
      count, then renumbered).
 5. The field is emptied.
 
-What happens to odd input: a name he already has is refused with words (step 2; until 0.6x a place, owner or packer
+What happens to odd input: a name he already has is refused with words (step 2; until 0.62 a place, owner or packer
 was dropped by the row builders without a message and a condition or step was added a second time as `good-2`). A
 list that ends up identical to the factory list stores no rows at all (and `LibraryModel.change` writes nothing when
 no record changed). A long name is cut AT ONCE, not later: the row is built by `coerceSharedRow`, which cuts its
 `name` to 80 UTF-16 units and its `key` (the normalised name) to 60, so the list shows the cut name straight away (a
 condition's or a step's label is already cut to 60 by `newCondition` / `newPhase`). Two place, owner or packer
-names alike in their first 60 normalised units are ONE name (0.6x): Add says he already has the first, and
-`setNames` / `setPeople` keep only the first of such twins, so no two records ever share a row id (until 0.6x
+names alike in their first 60 normalised units are ONE name (0.62): Add says he already has the first, and
+`setNames` / `setPeople` keep only the first of such twins, so no two records ever share a row id (until 0.62
 they were two records under one key and the next load kept only one).
 
 **Remove** (`remove(kind, n)`):
 1. The entries are recomputed; `n` out of range → nothing.
 2. In use (`uses.inUse`) → `problem` = `(kind, key, uses.refusal(label))`, shown under that row: "<label> is still
    used " + the parts that apply, joined ", " and " and " — "by <n> thing(s)", "on <n> trip(s)", "on <n>
-   template(s)" — + ", so it stays." Nothing changes. (Until 0.6x: "used by <n> thing(s)" with a step's trip lines
+   template(s)" — + ", so it stays." Nothing changes. (Until 0.62: "used by <n> thing(s)" with a step's trip lines
    and template places counted as things.)
 3. Otherwise `problem` is cleared (and the entry's editor, if open) and one `model.change`:
    - places: `setNames("places", storagePlaces().filter { $0 != key })`
@@ -222,7 +222,7 @@ they were two records under one key and the next load kept only one).
    people, conditions or phases brings the factory list back (an empty list means "the defaults").
    No confirmation is asked; there is no undo.
 
-**Rename** (0.6x; the pen, then Rename or Return — `library.renameChoice(kind, key:, to:)` inside one
+**Rename** (0.62; the pen, then Rename or Return — `library.renameChoice(kind, key:, to:)` inside one
 `model.change`): the new name is trimmed; empty → "Type a name first."; one he already has (`existingChoice`, the
 entry itself excepted, so a change of spelling only is allowed) → "You already have <name>."; for a place, owner or
 packer, a name his THINGS already carry though it is not on the list → "Some of your things already say <name>.
@@ -234,7 +234,7 @@ by its id, which stays, so only its label changes (cut to 60) — `setConditions
 lists, so every screen says the new words at once. A list renamed from the factory one becomes his own (stored).
 Success closes the editor; a refusal says why under it and keeps it open.
 
-**Move** (0.6x; ▲ / ▼ in the editor — `library.moveChoice(kind, key:, by: -1|1)`): swaps the entry with its
+**Move** (0.62; ▲ / ▼ in the editor — `library.moveChoice(kind, key:, by: -1|1)`): swaps the entry with its
 neighbour. Places (stored order), packers and conditions (row `order`) and steps (written into each `order` before
 `setTimeline`, which sorts by it — so every trip's "When" order follows) can move; owners cannot (`Library.canMove`:
 always A–Z, as every Owner dropdown offers them — the editor says so instead of showing arrows). The first entry
@@ -244,7 +244,7 @@ into the factory order stores nothing again.
 **What is NOT possible here** (the web app could): choosing a person's or a step's colour, a step's lead days or
 "to-do" flag, a condition's badge tone or its "needs replacing" flag, resetting to factory. A condition added here
 can therefore never feed To buy (its `replace` is always false), and a step added here falls due on the day of
-departure (`leadDays` 0). Left on purpose in 0.6x (the spec pass): each of these changes what To buy suggests or
+departure (`leadDays` 0). Left on purpose in 0.62 (the spec pass): each of these changes what To buy suggests or
 when reminders come, which is his to decide; rename and reorder were the parts that change nothing else.
 
 ### 2.6 Data
@@ -255,17 +255,17 @@ when reminders come, which is his to decide; rename and reorder were the parts t
 | `storagePlaces()` | `orderedNamesFromRows(shared, "places")` (stored order); empty → `DEFAULT_STORAGE_LOCATIONS` |
 | `owners()` | `namesFromRows(shared, "owners")` — A–Z (`jsLocaleCompare`, en-US collation); no defaults |
 | `ownerChoices()` | what *Whose it is* on a thing offers: `owners()` then every item's trimmed `ownedBy` sorted A–Z, each normalised name ONCE, first spelling wins (fix of 2026-09-26: one name appeared once per thing he owns) |
-| `people()` | `peopleFromRows(shared)`; empty → (0.6x) the packers his THINGS already name (`assignedPeople(items)`, each once, A–Z, coloured `PERSON_COLORS[n % 8]`), so an account that never wrote Packers of its own keeps showing its own people now that the starters are invented; none → `DEFAULT_PEOPLE`, each made a person with a fresh random id. Things only, not trip lines: every name it offers is then in use, so none can be removed only to come back from an old trip |
+| `people()` | `peopleFromRows(shared)`; empty → (0.62) the packers his THINGS already name (`assignedPeople(items)`, each once, A–Z, coloured `PERSON_COLORS[n % 8]`), so an account that never wrote Packers of its own keeps showing its own people now that the starters are invented; none → `DEFAULT_PEOPLE`, each made a person with a fresh random id. Things only, not trip lines: every name it offers is then in use, so none can be removed only to come back from an old trip |
 | `conditions()` | `conditionsFromRows(shared)`; empty → `DEFAULT_ITEM_CONDITIONS` |
 | `timeline()` | `phases`; empty → `DEFAULT_PHASES` |
-| `usesOf(kind)` | `[key: ChoiceUse]` — as above (0.6x: things, trips, templates apart; was one number) |
+| `usesOf(kind)` | `[key: ChoiceUse]` — as above (0.62: things, trips, templates apart; was one number) |
 | `ChoiceUse.refusal(label)` | the sentence of a refused remove (§2.5) |
-| `existingChoice(kind, name, except:)` | (0.6x) the entry `name` would repeat, as the list spells it, or nil (§2.5 Add step 2); `except` = the key of the entry being renamed |
-| `Library.choiceKey(name)` | (0.6x) `jsSlice(normName(name), 0, 60)` — the key a place, owner or packer is stored under |
-| `renameChoice(kind, key:, to:)` | (0.6x) §2.5 Rename; returns the refusal in words, or nil when done |
-| `Library.canMove(kind)` / `moveChoice(kind, key:, by:)` | (0.6x) §2.5 Move; false when it cannot move |
-| `setNames(kind, names)` | only `"places"` and `"owners"` (anything else → returns false, changes nothing); trims, drops empties, keeps one name per `choiceKey` (first spelling wins, 0.6x), removes every row of the kind, then appends `namesToRows(kind, clean)` unless `isFactoryList(kind, clean)` |
-| `setPeople(list)` | keeps one person per `choiceKey` of the name (0.6x); removes every `people` row; appends `peopleToRows(list)` unless factory |
+| `existingChoice(kind, name, except:)` | (0.62) the entry `name` would repeat, as the list spells it, or nil (§2.5 Add step 2); `except` = the key of the entry being renamed |
+| `Library.choiceKey(name)` | (0.62) `jsSlice(normName(name), 0, 60)` — the key a place, owner or packer is stored under |
+| `renameChoice(kind, key:, to:)` | (0.62) §2.5 Rename; returns the refusal in words, or nil when done |
+| `Library.canMove(kind)` / `moveChoice(kind, key:, by:)` | (0.62) §2.5 Move; false when it cannot move |
+| `setNames(kind, names)` | only `"places"` and `"owners"` (anything else → returns false, changes nothing); trims, drops empties, keeps one name per `choiceKey` (first spelling wins, 0.62), removes every row of the kind, then appends `namesToRows(kind, clean)` unless `isFactoryList(kind, clean)` |
+| `setPeople(list)` | keeps one person per `choiceKey` of the name (0.62); removes every `people` row; appends `peopleToRows(list)` unless factory |
 | `setConditions(list)` | removes every `conditions` row; appends `conditionsToRows(list)` unless factory; then installs the live condition list `setItemConditions(list.isEmpty ? DEFAULT : list)` |
 | `setTimeline(list)` | `settled = setPhases(list.isEmpty ? DEFAULT_PHASES : list)` (installs the live `PHASES`, sorted and renumbered 0…n-1); `phases = phasesCustomised(settled) ? settled : []` |
 
@@ -276,8 +276,8 @@ when reminders come, which is his to decide; rename and reorder were the parts t
 - Item conditions (`DEFAULT_ITEM_CONDITIONS`): `new` "New" (no badge), `good` "Good" (no badge), `worn` "Worn"
   (tone `warn`, amber badge), `retire` "Needs replacing" (tone `danger`, red badge, `replace` true). Tones allowed:
   "" (No badge), `warn` (Amber badge), `danger` (Red badge).
-- Packers (`DEFAULT_PEOPLE`): two starter people, **Kim** `#3b82f6` and **Robin** `#a855f7` (0.6x), with id "" in
-  the constant — INVENTED, the practice library's two names. Until 0.6x they were the owner's household by name, as
+- Packers (`DEFAULT_PEOPLE`): two starter people, **Kim** `#3b82f6` and **Robin** `#a855f7` (0.62), with id "" in
+  the constant — INVENTED, the practice library's two names. Until 0.62 they were the owner's household by name, as
   the web app's still are; the repository is public. The parity check compares everything about them but their
   names (tools/parity/QUESTIONS.md §16 N8). On an account that never wrote Packers of its own, `people()` shows the
   packers his things name before it falls back to these two (table above).
@@ -337,7 +337,7 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   owners → each once, the list's own A–Z first, then the one not on it; nobody named → `[]`), `testPuttingTheFactoryListBackRemovesItsRows`,
   `testHisOwnTimelineIsStoredAndTheLiveStepsFollow` (8 steps stored and live; back to factory = 0 records),
   `testWhatIsInUseIsCounted` (places, owners; a step's `things` are things only, its `trips` the one trip).
-  0.6x: `testAStepsNumberIsItsThingsAndTheRefusalSaysWhatElseHoldsIt` (one thing, five lines = one trip, two places =
+  0.62: `testAStepsNumberIsItsThingsAndTheRefusalSaysWhatElseHoldsIt` (one thing, five lines = one trip, two places =
   one template; every wording of `refusal`), `testADuplicateIsFoundTheWayTheListWouldSeeIt`,
   `testTwoLongNamesTheStoreCannotTellApartAreOneName` (no two records under one key; packers too),
   `testRenamingAPlaceCarriesItToEveryThingAndTripLine` (any spelling follows, another place is left alone, counts
@@ -362,7 +362,7 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   `list-places-add-needs`). `testTheEditorsLeadWithTheirHeadings` (all five `choices-heading-*`).
   `testWhoseItIsOffersEachOwnerOnce` (on a thing: `thing-owner-0` reads "Both have one", then exactly "Kim",
   "Robin"; Notes sit between Name and Kept at home; a 22-pt heading line is ≥ 25 tall, a pill ≥ 36).
-  0.6x: `testYourChoicesSaysWhyRightWhereItWasPressed` ("garage" → "You already have Garage." and no 13th row;
+  0.62: `testYourChoicesSaysWhyRightWhereItWasPressed` ("garage" → "You already have Garage." and no 13th row;
   Remove on "≥1 week ahead" → `lists-problem` says "on 1 trip" and sits within 60 points under the ✕ pressed),
   `testAChoiceIsRenamedAndMovedAndItsThingsFollow` (Hall closet → Hall cupboard through the pen; the editor
   closes; ▲ moves it to row 1 with the editor following; ▲ at the top says so; the Rain jacket's *Kept at home*
@@ -393,10 +393,10 @@ his iPhone and his Mac both reminding him would be the same news twice."
 - A `Toggle` (id `settings-reminders`; a switch on the iPhone, a check box on the Mac), tinted Trips green
   `#2f9e63` ("Green when on, like every switch he knows: the Settings slate read as 'off'"). Its label: **"Remind me
   to pack"** (18 bold ink) and **"On this device, at 9 in the morning of each day a packing step is due —
-  Preparations a month ahead, then a week ahead, the day before and the day you leave."** (14 muted, wraps; 0.6x —
+  Preparations a month ahead, then a week ahead, the day before and the day you leave."** (14 muted, wraps; 0.62 —
   until then it named only "a week ahead, the day before, the morning", though Preparations and every step with
   lead days ≥ 0 remind too).
-- If the system refused permission — or (0.6x) the switch is on but the app's notifications are switched off in
+- If the system refused permission — or (0.62) the switch is on but the app's notifications are switched off in
   the device's Settings — **"This device does not allow the app to remind you. Allow it in the device's
   Settings, under Notifications."** (15 semibold red, id `settings-reminders-refused`).
 - Else, if on: **"Next: <d Mon> · <trip name> — <says>"**, e.g. "Next: 14 Oct · Sunny weeks — ≥1 week ahead: 12 to
@@ -407,7 +407,7 @@ his iPhone and his Mac both reminding him would be the same news twice."
 authorized/provisional → yes, denied → no, not determined → the system's permission question for alert + sound);
 then `on = want && ok`, `refused = want && !ok`, then `reschedule(library)`. Turning it off: `on = false`,
 `refused = false`, reschedule (which removes them). `refused` is not stored: leaving Settings forgets it. Since
-0.6x the card also looks up, whenever it is shown and whenever the app comes back to the front, whether the
+0.62 the card also looks up, whenever it is shown and whenever the app comes back to the front, whether the
 device allows reminders now (`PackingReminders.allowed()`, which never asks him); switched on but not allowed, it
 shows the red line instead of "Next" (Home spec, section 14).
 
@@ -416,7 +416,7 @@ shows the red line instead of "Next" (Home spec, section 14).
 notification per entry of `upcoming(library)`: title = trip name, body = `says`, default sound,
 `userInfo["tripId"]`, id `packing-<tripId>-<YYYY-MM-DD>`, a non-repeating calendar trigger at 09:00 local on that
 day. It runs when the switch changes, whenever the library settles after a change (`RootView`: the library
-publisher debounced 2 s), and (0.6x) whenever the app comes back to the front. A notification arriving while the app is open shows as banner + list + sound; tapping
+publisher debounced 2 s), and (0.62) whenever the app comes back to the front. A notification arriving while the app is open shows as banner + list + sound; tapping
 one switches to Home and sets `model.tripToOpen`, which opens that trip.
 
 `upcoming(library, now:)` = `library.reminderPlan(today: Today.local)` filtered to moments (09:00 local of the
@@ -451,10 +451,10 @@ Origin: field test 3 Oct 2026 ("we need to get the sync going because I need to 
 
 - Header: **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
   (muted fill) when this build keeps its library on the device only (`model.usesICloud == false`, always so under
-  tests); **"Can’t tell"** (muted, 0.6x) when iCloud is on but the store file could not be read — then no
+  tests); **"Can’t tell"** (muted, 0.62) when iCloud is on but the store file could not be read — then no
   Sent/Not-in-iCloud/problem lines show, only `sync-unknown` "This device cannot tell right now how the sync is
   going."; **"Stuck"** (red) when something is not in iCloud yet or the last send/receive failed; else **"Working"**
-  (green). Until 0.6x the unreadable case said a green "Working".
+  (green). Until 0.62 the unreadable case said a green "Working".
 - Lines (15 medium muted; "loud" ones 15 bold red): `sync-off` "This copy of the app keeps its library on this
   device only."; `sync-times` "Sent: <when> · received: <when>"; `sync-notsent` "Not in iCloud yet: <words>.";
   `sync-problem` "The last send|receive failed <when>: <plain words>."; `sync-other` "The <Mac|iPhone> last checked in
@@ -468,9 +468,9 @@ Origin: field test 3 Oct 2026 ("we need to get the sync going because I need to 
   Claude."
 - `<when>`: "today HH:MM", "D Mon HH:MM" (local), or "never". The card border turns red when stuck. It refreshes on
   appear and 1 s after every library change. The device word is "Mac" under `#if os(macOS)`, else "iPhone".
-- "Not in iCloud yet" lists kinds most first; equal counts in the order of the store's tables (0.6x).
-- Tests: UI `testSyncNowChecksInFromThisDevice`, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` (0.6x); model
-  `SyncCheckInTests.testACheckInTravelsWithTheLibraryAndKeepsTheDevicesApart`, `SyncCheckTests` (0.6x: the reading,
+- "Not in iCloud yet" lists kinds most first; equal counts in the order of the store's tables (0.62).
+- Tests: UI `testSyncNowChecksInFromThisDevice`, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` (0.62); model
+  `SyncCheckInTests.testACheckInTravelsWithTheLibraryAndKeepsTheDevicesApart`, `SyncCheckTests` (0.62: the reading,
   the pill, the order, the plain words, `<when>`).
 
 ---
@@ -512,20 +512,22 @@ are plain strings ("0.10" follows "0.9"). Dates are written "4 Oct 2026".
 line border, container id `guide-release-<n>`, n = position, 0 = newest). Each card:
 - First line (baseline-aligned, spacing 10): the version (20 heavy, monospaced digits, Settings slate, id
   `guide-release-<n>-version`), the title (17 bold ink), and — only when `version == AppInfo.marketing`
-  (`CFBundleShortVersionString`) — the marker **"On this device"** (12 heavy, Trips green, 1.2-pt green capsule
+  (`CFBundleShortVersionString`) — the marker **"On this device"** (15 heavy since 0.62, 12 until then; Trips green, 1.2-pt green capsule
   outline, padding 8×3).
-- The date (14 muted).
+- The date (15 muted; 14 until 0.62).
 - Up to four parts, each only if it has lines, always in this order: **NEW** (Trips green), **CHANGED** (Home
-  blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 12 heavy, letter-spaced 0.6,
+  blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (60 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (62 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.62 | 5 Oct 2026 | The big check-up: everything we found, put right | N7 C22 F12 | the fix-everything program: every finding of specs 01–06 dealt with (each chapter's open questions say how); nothing under 15 pt; rename and reorder in Your choices; template notes on a thing's page; Care schedules; Pack weather gear anyway; 0.59's Worth a look line moved from Changed to New |
+| 0.61 | 5 Oct 2026 | Your own grab lists, and a restore that brings back everything | N1 C5 | own grab lists can be filled, keep their ticks and be deleted; Off Home really takes a list off Home; Make says where the list went; restore accepts a cabin bag and brings back every note |
 | 0.60 | 4 Oct 2026 | Find a thing on a template | N1 C1 | search field above a template's list, "how many of all", ✕; Worth a look offers a photo only when it can tell the photo is more than a day old |
-| 0.59 | 4 Oct 2026 | A deleted trip takes its photos along | C4 | trip delete removes its bag photos unless shown elsewhere; Worth a look offers to remove left-behind photos older than a day; "Nobody's in particular" → "Both have one"; Notes under the name |
+| 0.59 | 4 Oct 2026 | A deleted trip takes its photos along | N1 C3 | trip delete removes its bag photos unless shown elsewhere; Worth a look offers to remove left-behind photos older than a day; "Nobody's in particular" → "Both have one"; Notes under the name |
 | 0.58 | 4 Oct 2026 | The table: filter by anything, sort by levels | N4 C2 | filter by every column with pills; 3 sort levels; arrow opens the thing; own Mac window; wider column controls; blanks sort last |
 | 0.57 | 3 Oct 2026 | On site, and one bar per bag | N2 C6 | On site step and page; maintenance notes onto the thing; five-step loop; one bar per bag; headings lead; Add/New/Make/Weather never grey; Reminders carry the send date; Notes show every line |
 | 0.56 | 3 Oct 2026 | Your field test, part two | N7 C6 | Pack to go home search/tick-all/used-up count/notes/Open; three bag photos; Valid until "in 10 days" + quick spans; folding in Choose from your things; ✕ in every search; first-trip door; Category column in Excel; Shelf → Activity area; Bought there → Bought on site; date grid shows range, OK/Cancel; Used up undo; Just added; bag rename/delete carries readings and photos |
@@ -611,24 +613,25 @@ no entry shows no marker anywhere (and fails the test).
 **The topics and their lines** (summarised; the code holds the exact sentences):
 
 0. **Home** (Home mark): (1) eight grab lists, four in a row; tap one, tick what is in your hand; the count stays at
-   the top; Ready to go too early says Not yet in the middle with what is missing. (2) Grab Lists: the ones on Home
-   (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one puts it on
-   Home — when full, you pick which one steps back. (3) The countdown to the next trip under the grab lists; tap
+   the top; Ready to go too early says Not yet in the middle with what is missing; ticks clear themselves 6 hours after
+   the last tap (0.62). (2) Grab Lists: the ones on Home
+   (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on
+   Home — when full, you pick which one steps back; Make refuses a name already in use (0.62). (3) The countdown to the next trip under the grab lists; tap
    opens the trip. (4) Create new trip: name, Dates (first day, last day; the line says range and nights; OK keeps,
    Cancel restores), Quick in green while on. (5) Create trip is always ready; what is missing is said under it.
    (6) So is every Add, New, Make, Weather: empty press adds nothing and a short red line says what is missing,
    gone as soon as you type. (7) Pick templates, Transport, Season, Food; workout colours (Swim blue, Bike yellow,
    Run green, Strength orange, Breath work lavender, Mobility pink); Context (Indoor, Outdoor, Race) set in under
-   them. (8) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
+   them; templates without an activity area come last, under Other templates (0.62). (8) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
    ×4 · laundry with a washtub. (9) This Device: how many trips, things and templates.
 1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Check before you go
-   (cabin red/orange, expiry six months ahead for passports/IDs); the pen opens Trip settings (Save rebuilds, own
-   ticks/additions stay); Start a new trip from this one; Tick everything / Clear every tick (asks first); Save as
-   Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time, ↻ back; Sorting When /
+   (cabin red/orange, expiry six months ahead for passports/IDs); the pen opens Trip settings (every field it holds, Pack weather gear anyway included;
+   Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one; Tick everything / Clear every tick (asks first); Save as
+   Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
-   colours and the scale reading, Clear, up to three photos; Set place under "No place set"; typing a thing adds it
-   to this trip only, Bought on site adds it ticked; Delete this trip at the very end asks first (things and
-   templates stay). (15 lines.)
+   colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); Set place under "No place set"; typing a thing adds it
+   to this trip only, Bought on site adds it ticked; Delete trip at the very end asks first (things and
+   templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62). (16 lines.)
 2. **On site** (Trips mark): the door appears once the trip began or something was bought, with a summary line
    ("2 bought · 1 left · 3 notes · home 4/9"); Bought on site; Left on site with Undo; Maintenance notes (also
    dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕, Tick everything;
@@ -641,23 +644,30 @@ no entry shows no marker anywhere (and fails the test).
    first, card per place; a trip joins as soon as it has a place). (3 lines.)
 5. **Your templates** (Templates mark): templates are the building blocks, in activity areas (GA, WET…); each has
    an icon (50 drawn ones, or Letter); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
-   stays), How many and Section per template; Find a thing on this template ("3 of 40", ✕, adding clears it);
-   Choose from your things or type a new one; folding in the picker (Fold all / Unfold all, counts, search opens
-   all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first; Share at the top (also on
+   stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
+   Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
+   folding in the picker (Fold all / Unfold all, counts, search opens
+   all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first, with Activity area beside it (0.62); Share at the top (also on
    a grab list); Refine (violet card) after two or more reviews — Keep / Drop. (10 lines.)
-6. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines); Just added at the top until you
-   leave; ✕ in search; On a plane and Valid until (+1 month … +10 years, red once run out); Bags with max weight,
-   litres, empty weight and their own page; All your things · table (sort, filter, columns, Change all with Undo;
+6. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
+   again — 0.62); Just added at the top until you
+   leave; ✕ in search; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
+   notes under Notes, places to tap under Kept at home, No bag, Care how often and what to do (0.62); Bags with max weight,
+   litres, empty weight and their own page; All your things · table (sort, filter, columns, Change all — the line says what changed, Undo puts
+   back just that, the bar counts ticked things out of sight — 0.62;
    own window on the Mac); Filter by every column (pills, Clear); Sort up to three levels (blank last); the arrow
    opens the thing and returns to the same spot; Services List or Calendar (Done today, Today); the numbers under
-   the services. (10 lines.)
-7. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions; Send to Reminders into the list
-   "To buy · Packing", each once, dated, all day, ticks read back. (3 lines.)
-8. **Settings** (Settings mark): Remind me to pack (9 in the morning, per device, next reminder shown); iCloud sync
-   (times, what is not in iCloud, Sync now, Copy details for Claude); Save a backup / restore (a copy is kept
-   first); Your first real trip door; Your choices (places, owners, packers, conditions, When steps); Worth a look
-   (only when something seems wrong; one-press fix such as Remove it); Open a shared link (trip arrives unticked,
-   template links to existing things, grab list takes a free Home place or waits). (7 lines.)
+   the services. (11 lines.)
+7. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
+   "To buy · Packing", each once, dated, all day, ticks read back; ticks and removals here follow there, and a reminder deleted there can be sent again
+   (0.62). (3 lines.)
+8. **Settings** (Settings mark): Remind me to pack (9 in the morning, per device, next reminder shown; says in red when the iPhone does not allow
+   notifications — 0.62); iCloud sync
+   (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62); Save a backup / restore (a copy is kept
+   first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, owners stay A–Z,
+   no duplicates, the reason for a refused remove right under it — 0.62); Worth a look
+   (only when something seems wrong; one-press fix such as Remove it; an undated photo nothing shows goes only on Remove — 0.62); Open a shared link (trip arrives unticked,
+   template links to existing things — with a name he has, a name of its own or Replace (0.62) —, grab list takes a free Home place or waits). (7 lines.)
 9. **Shortcuts and the Action button** (Home mark): three actions (Choose a grab list, Open a grab list, Open my next
    trip); the Action-button path (iPhone Settings → Action Button → Shortcut → Packing → Choose a grab list); if
    Packing is missing, open it once; Home Screen or Siri ("Open Swim in Packing"). (4 lines.)
@@ -716,7 +726,7 @@ picture; the words.
   unused, missed", Refine "Keep or drop, from reviews"; the tab mark (15 pt) and "on Home" / "on Trips" / "on
   Templates" (15 bold, tab colour). Background tint 12 % (24 % when "here"), border 1.2 (3 when "here"). Tint:
   Pack, On site, Review = Trips green; Plan, Refine = Templates violet. A key under it: "About your templates",
-  "About one trip" (15 medium muted). (0.6x: the short line and the key were 14, "on <tab>" and "You are here" 13.) Each box is one accessibility element (`children: .ignore`) with label
+  "About one trip" (15 medium muted). (0.62: the short line and the key were 14, "on <tab>" and "You are here" 13.) Each box is one accessibility element (`children: .ignore`) with label
   "<name>: <short>, on <tab>" (+ ". You are here" when marked), id `loop-step-<0…4>`. In the guide nothing is "here".
 - **The words** (`LoopWords`): five rows — the step name (16 heavy, readable tint, 72 wide) and its sentence (16 ink)
   — then in bold: "Review looks back at one trip. Refine uses several reviews to make your templates better."
@@ -776,7 +786,7 @@ Shipped in 0.41.
 
 The door only (the sheet `OpenSharedScreen`, container `shared-screen`, belongs to the sharing chapter). Built like
 the other doors: **"Open a shared link"** (18 bold), **"A trip, template or grab list someone shared"** (15 muted,
-wrapping — 14, one line, until 0.6x), chevron, 8 pt above and below; id `settings-openshared`; it owns its sheet. Origin: 0.38 — the web app's "Paste a shared link".
+wrapping — 14, one line, until 0.62), chevron, 8 pt above and below; id `settings-openshared`; it owns its sheet. Origin: 0.38 — the web app's "Paste a shared link".
 Tests: `testATripIsSharedAndOpenedAgain`, `testATemplateAndAGrabListAreSharedAndOpenedAgain` (both enter here).
 
 ---
@@ -803,7 +813,7 @@ device that looked empty merged with an older iCloud copy). Shipped 0.5; the pho
    names in first-seen spelling and order):
    "<n> template name(s) appear(s) twice. Two libraries may have met on this account." — names listed, no repair.
 2. Memberships pointing at a template that no longer exists: "<n> thing sits / things sit on a template that no
-   longer exists." (0.6x; "on a list" until then, though since 0.34 a list is only what you pack from) — no names,
+   longer exists." (0.62; "on a list" until then, though since 0.34 a list is only what you pack from) — no names,
    no repair.
 3. Photos nothing shows any more (`unusedPhotos(now:)` in TripEdits.swift: not in use by anything — `photoInUse`:
    no thing, no trip line, no packed bag — and created strictly more than 86 400 s before now). `createdAt` is read
@@ -814,7 +824,7 @@ device that looked empty merged with an older iCloud copy). Shipped 0.5; the pho
    `removeUnusedPhotos()` (returns how many went). "Only photos older than a day, so one still on its way from your
    other device is never touched" (Release 0.59); "Worth a look offers to remove a photo only when it can tell the
    photo is more than a day old" (Release 0.60, under Changed).
-4. (0.6x) Photos nothing shows whose `createdAt` cannot be read (`undatedUnusedPhotos()`): "<n> photo(s) with no
+4. (0.62) Photos nothing shows whose `createdAt` cannot be read (`undatedUnusedPhotos()`): "<n> photo(s) with no
    date is / are no longer shown anywhere." with **"Remove it"** / **"Remove them"** → `repair("undatedPhotos")` →
    `removeUndatedUnusedPhotos()`. Never offered with worry 3 (0.60's rule stands); named on its own, and only his
    press removes it. This app dates every photo it makes, so one without a date is old, not on its way.
@@ -827,9 +837,9 @@ A thing on no template and in no trip is deliberately NOT a worry ("he can keep 
 2026-10-04T10:00Z: the photo from 2 Oct is offered, the one from 30 minutes ago and the one with `createdAt` "" are
 not; exact sentence and "Remove it"; the repair returns 1 and leaves the other two). UI `testALibraryThatHasMetAnotherSaysSo` (sound sample: no heading;
 `-uiTestingTwoLibraries`: heading, "twice", names present), `testWorthALookRemovesAPhotoLeftBehind`
-(`-uiTestingOldPhoto`: "1 photo is no longer shown anywhere" and, 0.6x, "1 photo with no date…" under it; Remove
+(`-uiTestingOldPhoto`: "1 photo is no longer shown anywhere" and, 0.62, "1 photo with no date…" under it; Remove
 it → the old one goes, the undated worry moves up; Remove it → card gone, photos count 0); model
-`UndatedPhotoTests` (0.6x). **Not covered on screen:** the lost-membership worry, the six-name cut with " …",
+`UndatedPhotoTests` (0.62). **Not covered on screen:** the lost-membership worry, the six-name cut with " …",
 "Remove them".
 
 ---
@@ -843,11 +853,11 @@ same file the web app writes, so either app can read it."
 `backup-heading`). **"Save a backup…"** — full width, min height 52, Settings-slate fill, radius 12, 18 bold white,
 id `backup-save`. Under it the status line (15 medium muted, id `backup-status`): by default **"The same file the web
 app writes, so either app can read it."**, otherwise the last message. Under that, once a backup has been saved from
-this device (0.6x): **"Last saved from this <iPhone|Mac> <when>."** (15 medium muted, id `backup-last`; UserDefaults
+this device (0.62): **"Last saved from this <iPhone|Mac> <when>."** (15 medium muted, id `backup-last`; UserDefaults
 `ams.backup.savedAt`, per device, cleared under the tests). No reminder.
 
 **Behaviour.** Press → status "Choosing where to save…", `saving = BackupDocument(data: library.backupData())` (built
-now, 0.6x) and `exporting = true` → `.fileExporter` with it, type `.json`, default name `Library.backupFileName(on: Today.local)`
+now, 0.62) and `exporting = true` → `.fileExporter` with it, type `.json`, default name `Library.backupFileName(on: Today.local)`
 = **`ams-packing-list-backup-YYYY-MM-DD.json`** (the local date). Saved → "Saved: <file name>" and the moment kept for
 `backup-last`; cancelled or failed → "Not saved." `BackupDocument` is a `FileDocument` reading/writing the bytes unchanged (readable type `.json`).
 
@@ -877,14 +887,14 @@ in Settings slate, id `backup-restore`. Press → status cleared; under the UI t
 for `.json`. Picked → security-scoped read → `offer(data)`; unreadable → "That file could not be read."; cancelled →
 "Nothing chosen."
 
-**Checking before offering** (`offer` → `LibraryModel.inspectBackup(data)` = `Importer.read`, which since 0.6x leaves
+**Checking before offering** (`offer` → `LibraryModel.inspectBackup(data)` = `Importer.read`, which since 0.62 leaves
 the live "When" steps and conditions as they were): parse the JSON and require
 `BackupFile.looksLikeBackup`, else "That is not an AMS Packing backup file."; import it in memory with
 `Importer.library(from:)`; if the import does not round-trip faithfully, "The import did not come back the same
 (<n> rows differ), so nothing was stored."; otherwise `pending = PendingRestore(library)` → the sheet opens. Nothing
 on the device changes until he confirms.
 
-**The sheet** (container id `restore-detail`; `.frame(minWidth: 420, minHeight: 520)` on the Mac only — 0.6x; on the
+**The sheet** (container id `restore-detail`; `.frame(minWidth: 420, minHeight: 520)` on the Mac only — 0.62; on the
 iPhone it was wider than the screen and its edges were cut off):
 - Header: **"Restore from a file"** (22 heavy ink) and **Cancel** (outlined `HeaderButtonStyle`, slate, id
   `restore-cancel`) → `answer(false)` + dismiss.
@@ -903,13 +913,13 @@ iPhone it was wider than the screen and its edges were cut off):
 **After the answer** (`pending = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
 (1) `RescueCopies.write(current)` — BEFORE anything is replaced; (2) `commit(Importer.restoring(imported, over:
 current))` — the record difference between what was held and the file's library (with the devices' check-ins kept,
-0.6x) is applied to the store (everything else not in the file is deleted); (3) `reload()`. Then `copies` is re-read
+0.62) is applied to the store (everything else not in the file is deleted); (3) `reload()`. Then `copies` is re-read
 and status = "Restored from the file: <n> template(s), <n> thing(s) and <n> trip(s). A copy of what was here is kept
-on this device." (the counts since 0.6x); an error → its description. Dismissing the sheet by swiping (iPhone) does not call `answer`, so the
+on this device." (the counts since 0.62); an error → its description. Dismissing the sheet by swiping (iPhone) does not call `answer`, so the
 status says nothing.
 
 **Tests.** UI `testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything` (device 10 things; file 2 vs now 10;
-`restore-fewer` shown; 0.6x: the sheet inside the window; Cancel changes nothing; confirm → 2 things, 0 trips, the
+`restore-fewer` shown; 0.62: the sheet inside the window; Cancel changes nothing; confirm → 2 things, 0 trips, the
 counts in the status line, `device-import`). Model `RestoreTests`
 (`testARestoreLeavesExactlyWhatTheFileHeldAndNothingOfWhatWasThere` — items, templates, no trips, no to-dos, no old
 Settings-list entry, every table count equals the file's; `testTheFileHoldingLessThanTheDeviceIsVisibleInTheCounts`;
@@ -933,7 +943,7 @@ the folder is emptied at launch.
 
 **On screen** (only when at least one copy exists): **"Kept before a restore"** (15 heavy muted, 10 pt above, id
 `rescue-heading`), then a card list, one row per copy, newest first: the moment written as **"23 September, 01:04"**
-(16 medium ink; `RescueNames.when` — the file name's world time said in this device's time zone (0.6x; until then the
+(16 medium ink; `RescueNames.when` — the file name's world time said in this device's time zone (0.62; until then the
 world time as it was, an hour or two off and near midnight the wrong day), day number, English month name,
 hours:minutes; an unexpected name is shown as it is) and **"Look at it"** (15 bold slate); min height 44; hairline under each; id `rescue-row-<n>`.
 Tapping reads the file and goes through exactly the same `offer` → comparison sheet → confirm path as a chosen
@@ -941,7 +951,7 @@ file (an unreadable copy says "That is not an AMS Packing backup file.").
 
 **Tests.** UI `testTheCopyKeptBeforeARestoreBringsEverythingBack` (no heading before any restore; after one: heading,
 one row, no second; the copy holds 10 things; confirming brings 10 things and the 1 trip back); model
-`RescueNamesTests` (0.6x: the three-copy limit, the date text in a given time zone). **Not covered:** an empty
+`RescueNamesTests` (0.62: the three-copy limit, the date text in a given time zone). **Not covered:** an empty
 library writing no copy.
 
 ---
@@ -954,16 +964,16 @@ library writing no copy.
 `Table.allCases` order, ALWAYS all eleven (zero included): label (16 medium ink) and count (16 bold monospaced muted,
 id `device-count-<table raw value>`), min height 40, hairline. Labels (`SettingsScreen.label`): `items` "Things",
 `memberships` "Places on templates", `templates` "Templates", `trips` "Trips", `entries` "Trip lines", `actions`
-"To-dos", `kits` "Groups of things" (0.6x; "Kits" until then — but in his words a kit is ALL his things, Words §10,
+"To-dos", `kits` "Groups of things" (0.62; "Kits" until then — but in his words a kit is ALL his things, Words §10,
 while this table holds the web app's named groups of things, such as a dive kit), `phases` "Own "When" steps", `shared` "Choices", `photos` "Photos", `meta` "Notes about the
 library". Last row: **"Synced through iCloud"** or **"On this device only"** (`model.usesICloud`) and the version
 `AppInfo.version` = "<CFBundleShortVersionString> (<CFBundleVersion>)", e.g. "0.60 (2)" (both 15 semibold muted).
 
-Under the card, only for a library brought in from a file (0.6x): **"Brought in from a backup <when> (the file was
+Under the card, only for a library brought in from a file (0.62): **"Brought in from a backup <when> (the file was
 saved <when>)."** (15 medium muted, id `device-import`; from the import's own marker, so both devices say it).
 
 **Data.** `Library.counts` = for each `Table`, the number of records `library.records()` produces for it — counted
-without building them since 0.6x (building decoded every photo on every redraw).
+without building them since 0.62 (building decoded every photo on every redraw).
 
 **Tests.** `testSettingsOffersABackup` (`device-count-items` exists), the restore tests (counts 10 → 2 → 10, trips
 1 → 0 → 1), `testATripIsDeletedOnlyAfterAsking` and `testWorthALookRemovesAPhotoLeftBehind` (`device-count-photos`
@@ -1037,7 +1047,7 @@ refused lines, restore warnings). Each section's colour is "the screen's colour"
 the light card and the dark one alike". Workout pills (`WorkoutTone.of(name)`, matched on `normName` with all white
 space removed): swim `#0a84ff`/white, bike `#ffd60a`/`#3d3000`, run `#30d158`/`#0b3a17`, strength `#ff8c1a`/`#4a2300`,
 breath work `#bf9cff`/`#2e1a5c`, mobility `#ff6fa8`/`#5a0f2e` (fill/words; light fills carry dark words — "white is
-unreadable on yellow"). He does not like teal: "Do not use teal for anything new." (docs/colours.md was brought up to date in 0.6x: the
+unreadable on yellow"). He does not like teal: "Do not use teal for anything new." (docs/colours.md was brought up to date in 0.62: the
 workout pills are marked built in 0.40, and the tabs are named Trips and To do, with their code names beside them.)
 `Color(hexString:)` (in
 TemplatesScreen.swift) reads "#rgb"/"#rrggbb"; anything unreadable becomes slate `#64748b`.
@@ -1098,7 +1108,7 @@ says what's missing under it. Never disable+grey a primary action." Until the fi
 
 **`HeaderButtonStyle(tint:, filled: true, stretch: false)`** — the buttons at the top of sheets (Done, Save: filled;
 Cancel, Share, Edit, Close: outlined). His words (test H.10, 2026-09-28): "make the Done and Share buttons visually
-pleasing all over the app". Label 17 bold (0.6x; 16 until then, while the screens asked for 17 — see below); white
+pleasing all over the app". Label 17 bold (0.62; 16 until then, while the screens asked for 17 — see below); white
 on a capsule filled with the tint, or tint-coloured on a 10 % tint capsule with a 1.4-pt tint outline; never cut
 (`lineLimit(1)` + `fixedSize()` — the "D…" of 0.40's photos); padding 14 horizontal; min height 36; the whole capsule
 is the hit area; 70 % opacity while pressed; `stretch` makes it share a card row's width. Most callers also attach
@@ -1130,10 +1140,10 @@ a 22×22 drawn mark and the word (17 bold, scales to 80 %), tint colour, full wi
 shows a `ClearMark` 24×24 in a 36×36 hit area, trailing padding −6, id `<id>-clear`, VoiceOver "Clear the search";
 one tap empties the text and the keyboard stays. Uses: `things-search`, `pick-search`, `search-field`,
 `table-search`, `template-find`, `filter-narrow`, `onsite-leave-search` / `onsite-note-search` (via `LinePicker`),
-and (0.6x) `wayhome-search` — until then the way-home search drew its own plain cross in a 44×44 area.
+and (0.62) `wayhome-search` — until then the way-home search drew its own plain cross in a 44×44 area.
 
 **`SmallDeleteButton(title:, id:, action:)`** — his mark (2026-09-26): "Delete should be a small button at the side."
-Right-aligned; 15 semibold red words in a capsule outlined in red at 60 %, padding 12, min height 30 (0.6x: 13, with a
+Right-aligned; 15 semibold red words in a capsule outlined in red at 60 %, padding 12, min height 30 (0.62: 13, with a
 `size` parameter that only Delete grab list set to 15 — gone; small is the capsule, not the words). It only ever
 OPENS the question, never deletes by itself. Uses: Delete bag (`bag-delete`), Delete trip (`trip-delete`), Delete
 template (`template-delete`), Delete thing (`thing-delete`).
@@ -1147,7 +1157,7 @@ To buy, Grab Lists Make, a grab list's Add, Your choices' first Add, a template'
 name, a row's new section, the trip Weather button; each must exist, be ENABLED, and answer on `<id>-needs`; all
 failures are listed in one message). `testHomeBuildsATrip` (Create trip enabled, `trip-create-needs`). The ✕:
 `testTheCrossEmptiesASearch` (Your things, the magnifier search, Choose from your things),
-`testTheCrossKeepsTheKeyboard`, `testTheWayHomeIsSearched` (0.6x: its ✕ is the shared 36-point one). Deletes: `testATripIsDeletedOnlyAfterAsking`, `testAThingIsDeletedOnlyAfterAsking`,
+`testTheCrossKeepsTheKeyboard`, `testTheWayHomeIsSearched` (0.62: its ✕ is the shared 36-point one). Deletes: `testATripIsDeletedOnlyAfterAsking`, `testAThingIsDeletedOnlyAfterAsking`,
 `testABagIsRenamedAndDeletedFromItsPage`. **Colour cannot be tested**: "A colour cannot be read by a test; being
 pressable and answering can."
 
@@ -1180,8 +1190,8 @@ reads without glasses."
   row when the next one would pass the right edge; row height = tallest child; reported width = the proposed width
   (10 000 if none).
 
-**The font floor (0.6x, F073).** His floor: nothing a person reads is smaller than 15 points — he reads without his
-glasses. 0.6x raised about 150 sizes of 10–14 across the app to 15, keeping each one's weight; where the words no
+**The font floor (0.62, F073).** His floor: nothing a person reads is smaller than 15 points — he reads without his
+glasses. 0.62 raised about 150 sizes of 10–14 across the app to 15, keeping each one's weight; where the words no
 longer fitted, the layout gave way, never the type: fewer words (one letter per month in Your year and the year
 ahead on an iPhone), a second line (figure words, door sub-lines, table headings and names, icon names), more room
 (the tab bar's `TabRow`, wider table columns and 44-pt rows, Your bags' Empty column 76, the icon picker three
@@ -1201,13 +1211,13 @@ reads every Swift file in `App/Sources` and fails, naming file:line, for: a `siz
 `.subheadline`, and `.callout`, `.body`, `.headline`, which are 12–13 on the Mac though 16–17 on an iPhone; a
 `minimumScaleFactor(f)` whose nearest literal size (that line or the four above) times f is under 15. What a comment
 says does not count. Files still to sweep are listed in the script (`ALLOWED`), each to be removed once swept.
-Seen to fail (0.6x): a 13 planted on the version, a `.caption`, a `14 : 16` ternary and a 0.8 scale on 17 each named
+Seen to fail (0.62): a 13 planted on the version, a `.caption`, a `14 : 16` ternary and a 0.8 scale on 17 each named
 their line; removed, it passed.
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
 trip, Trip settings, the review and Your choices exists; photographs each), `testWhoseItIsOffersEachOwnerOnce` (a
 22-pt heading line is at least 25 tall; a pill at least 36 tall), `testContextSitsUnderTheWorkouts`,
-`testTheSmallestWordsAreFifteenPoints` (0.6x: the version and a table name — words that were 11 and 14 and stay on
+`testTheSmallestWordsAreFifteenPoints` (0.62: the version and a table name — words that were 11 and 14 and stay on
 one line — stand at least 17.5 tall, a 15-pt line; the Templates tab is at least 74 wide, its name at 15; photographs
 Home, Your year, the Templates tab, the icon picker, Care's doors, calendar, kit and year ahead, the table, a bag's
 page, Your bags, Search and Grab Lists. Seen red with the version at 11, the tabs at even widths, the table's names
@@ -1284,8 +1294,8 @@ ignores size limits on the content."
 Mac"), centred; under it the tab bar; `Theme.bg` behind, ignoring safe areas. Starts on Home. On appear: the
 reminders' tap handler (→ Home + `tripToOpen`) and `PackingReminders.start()`. The library publisher, debounced 2 s:
 reschedule reminders and update the Shortcuts parameters. Scene becomes active: read back Reminders ticks and
-(0.6x) reschedule the packing reminders. A Shortcut asking for a grab list, the grab menu or a trip switches to
-Home; `model.tabToOpen` (0.6x; Search's to-do) switches to that tab. Under the UI tests only, a return from the
+(0.62) reschedule the packing reminders. A Shortcut asking for a grab list, the grab menu or a trip switches to
+Home; `model.tabToOpen` (0.62; Search's to-do) switches to that tab. Under the UI tests only, a return from the
 background plays the `-…OnReturn` arguments below.
 
 **`SectionScreen`.** By `(model.state, section)`: `.failed(why)` on any tab → the reason, 17 semibold, red, centred,
@@ -1296,10 +1306,10 @@ mark at 96 pt (line 1.6) in its colour and its label (34 heavy, id `screen-title
 **Tab bar.** Six equal buttons (plain, no focus ring, id `tab-<section>`, VoiceOver label = the tab label, selected
 trait on the current one). Each: the mark (24 pt) on a 46 × 30 capsule — active: white mark (line 2.2) on the
 section colour; inactive: the mark in its colour (1.9) on its colour at 14 %; under it the label (15, heavy and ink
-when active, semibold and muted otherwise, one line, never shrunk — 0.6x: 12.5 scaling to 80 %); min height 54. The
+when active, semibold and muted otherwise, one line, never shrunk — 0.62: 12.5 scaling to 80 %); min height 54. The
 buttons sit in a `TabRow` layout: an even share each, unless a label needs more — that tab gets what it needs and
 the others share the rest (an iPhone's even sixth is 67 pt; "Templates" at 15 heavy needs 79). Below the buttons, in its own thin
-row so it can never sit on a label: the build marker `AppInfo.version` (15 semibold — 11 until 0.6x — muted at 70 %, right-aligned,
+row so it can never sit on a label: the build marker `AppInfo.version` (15 semibold — 11 until 0.62 — muted at 70 %, right-aligned,
 8 from the edge, not tappable, id `app-version`). The bar: at most 720 wide, `Theme.card` behind (to the bottom edge),
 a hairline on top, 6 above, 2 below.
 
@@ -1319,8 +1329,8 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | (none) | SwiftData; iCloud when the Info.plist key `PackingUsesICloud` is "YES" | a failure to open → `.failed("The library could not be opened: …")` |
 | `-openGrab <label or title>`, `-openGrabMenu`, `-openNextTrip` | (testing only) play a Shortcut | |
 | `-pretendShopTicks` | (ShopReminders) pretend ticks in Reminders | |
-| `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings | 0.6x |
-| `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.6x |
+| `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings | 0.62 |
+| `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |
 
 Under testing, `usesICloud` is false, the forecast is `InventedForecast`, the rescue copies are deleted at launch,
@@ -1358,7 +1368,7 @@ went red.
    | Toothbrush | 18 | Bathroom cabinet | Robin |
 
    Goggles, Swim cap and Towel are created only in step 7, so they have NO weight and NO place — on purpose: the UI
-   tests rely on them being under "No place set". (Until 0.6x the dictionaries also named the three, with weights,
+   tests rely on them being under "No place set". (Until 0.62 the dictionaries also named the three, with weights,
    though they were never applied; the dead entries are gone and the comment says why the three have none.)
    Neither owner is on the owners list (the "Whose it is" bug shape).
 5. Review history: Map packed 3, used 0, unused 3; Headlamp packed 0, skipped 2; Hiking boots packed 1, used 0,
@@ -1430,8 +1440,8 @@ so a change to `project.yml` is committed together with the regenerated files. "
   [Portrait] — "portrait by design, like the web app on the phone".
 - **Target `AMSPackingUITests`** (UI-testing bundle, iOS and macOS), `TEST_TARGET_NAME` AMSPacking, generated
   Info.plist. **Scheme `AMSPacking`**: builds the app; tests `AMSPackingUITests` and the package's
-  `PackingCoreTests` AND (0.6x) `PackingLibraryTests`. So the two UI jobs of CI and `tools/build.sh test` run both
-  model bundles as well (on the simulator / the Mac) — until 0.6x the library's ran only in the `core` job and
+  `PackingCoreTests` AND (0.62) `PackingLibraryTests`. So the two UI jobs of CI and `tools/build.sh test` run both
+  model bundles as well (on the simulator / the Mac) — until 0.62 the library's ran only in the `core` job and
   `tools/test-core.sh`. One library test reads its workbook back with the Mac's `/usr/bin/unzip`; on the iPhone
   (no `Process`) that read-back is skipped with `XCTSkip` (`WorkbookTests.run`), the Mac and the `core` job still do it.
 
@@ -1443,14 +1453,14 @@ runs it first). Four jobs, in parallel:
 
 | Job | Runner | Timeout | What it does |
 |---|---|---|---|
-| `core` — The model (Core package) | macos-15 | 15 min | first `tools/check-type-floor.sh` — "Nothing under 15 pt" (§21; 0.6x), then `cd Core && swift test` (both model test targets); then (0.6x) `python3 tools/release-to-testers.py --self-check` — the "What to Test" requests checked without the network (§28) |
+| `core` — The model (Core package) | macos-15 | 15 min | first `tools/check-type-floor.sh` — "Nothing under 15 pt" (§21; 0.62), then `cd Core && swift test` (both model test targets); then (0.62) `python3 tools/release-to-testers.py --self-check` — the "What to Test" requests checked without the network (§28) |
 | `parity` — Parity with the web app's model | macos-15 | 20 min | checks out the web app's repository into `web-app/`, Node 22, `PARITY_MODEL=$PWD/web-app/js/model.js tools/parity/run.sh --invented` (§31) |
 | `iphone` — UI tests — iPhone | macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 120 min | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test` with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone.xcresult` |
-| `mac` — UI tests — Mac | macos-26 | 120 min (its own comment since 0.6x — it was a copy of the iPhone job's) | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
+| `mac` — UI tests — Mac | macos-26 | 120 min (its own comment since 0.62 — it was a copy of the iPhone job's) | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
 
 Timeout history (comments): 30 min outgrown at 48 tests (0.25), 55 nearly outgrown at 67 tests (0.46), 120 since 108
 UI tests (0.58) when the iPhone job passed every test and was cancelled at 80 minutes. Both UI jobs also run both
-model bundles since 0.6x (§26).
+model bundles since 0.62 (§26).
 
 ## 28. Shipping to TestFlight (`.github/workflows/testflight.yml`, `tools/release-to-testers.py`, `TESTFLIGHT.md`)
 
@@ -1463,7 +1473,7 @@ device": job `tests` calls `tests.yml`; job `upload` (`needs: tests`, macos-26, 
    With no such commit within reach it passes. His rule, 4 Oct 2026: every nit documented.
 1. Selects the newest Xcode on the runner (Apple refuses uploads built with an older SDK).
 2. Checks the four secrets exist — `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `ASC_TEAM_ID` — and names the
-   missing ones; and (0.6x) that the tester group's name is set — the repository variable `TESTER_GROUP`, or a
+   missing ones; and (0.62) that the tester group's name is set — the repository variable `TESTER_GROUP`, or a
    secret of that name (`secrets.TESTER_GROUP || vars.TESTER_GROUP`; a secret is also hidden in the run's log, which
    is public like the repository) — else it stops with "The repository variable TESTER_GROUP is not set — add it
    under Settings > Secrets and variables > Actions > Variables…" before anything is built. 🚨 The key must have the **Admin** role: an App Manager key uploads but fails cloud signing ("Cloud
@@ -1484,13 +1494,13 @@ device": job `tests` calls `tests.yml`; job `upload` (`needs: tests`, macos-26, 
    `manageAppVersionAndBuildNumber` false, the team id added) — cloud signing; each must log "** EXPORT SUCCEEDED **".
 9. Releases them to the tester group (`release-to-testers.py`, env `ASC_KEY_PATH`, `BUILD_VERSION`, `APP_BUNDLE_ID`,
    `TESTER_GROUP` from the repository as in step 2 — the step stops with the same message when it is empty; until
-   0.6x the group's name was written into the workflow, a public file — and `WHAT_TO_TEST` = the `notes`, through
+   0.62 the group's name was written into the workflow, a public file — and `WHAT_TO_TEST` = the `notes`, through
    the environment):
    "A successful upload does NOT put a build in TestFlight … an internal group does not pick new builds up by itself."
    It signs its own ES256 JWT with openssl (10-minute tokens), finds the app by bundle id, polls `/v1/builds` for this
    build number every 30 s up to 60 times (30 minutes) until BOTH the iPhone and the Mac build are VALID or
    PROCESSING (with only one after 30 minutes it warns that one device will not get it), finds the beta group by
-   name (missing → error; the name itself is never printed), then (0.6x) — when notes were given — gives each build
+   name (missing → error; the name itself is never printed), then (0.62) — when notes were given — gives each build
    its TestFlight **What to Test**: the notes trimmed and cut to 4000 characters, as the `en-US`
    `betaBuildLocalizations` record of the build (`GET /v1/betaBuildLocalizations?filter[build]=…&filter[locale]=en-US`;
    none → `POST /v1/betaBuildLocalizations` with `locale`, `whatsNew` and the build relationship; one → `PATCH
@@ -1505,12 +1515,12 @@ device": job `tests` calls `tests.yml`; job `upload` (`needs: tests`, macos-26, 
     appears in TestFlight on both devices." and, when notes were given, a blank line and "What is new: <notes>"
     (written with `printf '%s'`). The `notes` input reaches this step through an environment variable (`NOTES`),
     never pasted into the script: 0.59's notes held quotes ("Both have one") and the pasted text broke the shell —
-    after the build had gone out, so a good release showed as failed. Since 0.6x the same notes are also the builds'
+    after the build had gone out, so a good release showed as failed. Since 0.62 the same notes are also the builds'
     What to Test (step 9); until then they went only into this summary, which no tester sees.
 11. Always (`if: always()`) uploads `build/*.log` as `testflight-logs` (nothing to upload is not an error).
 
 One-time owner steps (TESTFLIGHT.md): create the app record with BOTH platforms in App Store Connect; create the
-internal tester group and put its name in the repository variable `TESTER_GROUP` (0.6x); set the secrets; deploy the CloudKit schema to Production before the first shipped build can
+internal tester group and put its name in the repository variable `TESTER_GROUP` (0.62); set the secrets; deploy the CloudKit schema to Production before the first shipped build can
 sync (and again when records start using a new field — docs/store.md: the first bag photo sank every send until
 `CD_blob` and `CD_blob_ckAsset` were deployed).
 
@@ -1556,7 +1566,7 @@ en-US]`, PackingCore's public API only, laid out like the JS half). `tools/parit
 [--only <prefix>] [--quiet]` compares the two documents and ends with exactly "differences: none" (exit 0) or
 "differences: N" (exit 1).
 
-**The contract** is `tools/parity/QUESTIONS.md` (contract version 4 since 0.6x; needs web model v186+): determinism rules — today
+**The contract** is `tools/parity/QUESTIONS.md` (contract version 4 since 0.62; needs web model v186+): determinism rules — today
 is a parameter (default 2026-09-21), the clock frozen at noon UTC of that day, minted ids and timestamps never
 compared (markers instead), each question gets its own deep copy, collation pinned to en-US, a throw is answered
 `{"$error": message}`, absent entities absent on both sides; a canonical JSON form (sorted keys by UTF-16 order, NaN
@@ -1566,7 +1576,7 @@ probe trips, the whole library, the Settings lists and their shared rows — `se
 `isFactoryList`, `back`, `ownersByUsage`, `grabShare` — every real string and id, fixed calculations, installing a
 list last); §16 what is deliberately not compared (raw trip-link text, random ids, minted times, the `…ToRows`
 functions reached through `sharedRowsFrom`, impossible dates, keys outside the shapes, photos and db/app code, and —
-N8, 0.6x — the NAMES of the two starter packers: the web app's are the owner's household, the native ones invented;
+N8, 0.62 — the NAMES of the two starter packers: the web app's are the owner's household, the native ones invented;
 the JS half puts the native names in by position wherever the roster itself is an answer or an input, so their
 count, colours and factory-ness are still compared and a wrong name turns it red; on a real backup whose own packers
 are exactly the web app's starters, `settings.isFactoryList` people `inForce` is the one expected difference); §17 what the contract requires for `sub`, `ownedBy`, `u` and the reserved keys.
@@ -1577,7 +1587,7 @@ as test-core), runs both halves over `private/migration-2026-09-21.json` by defa
 `fixtures/make-invented-backup.mjs` (deterministic; awkward on purpose: kits, things, presets, a customised phase list
 with ties, an item on three lists, legacy `owner` fields, names cut inside an emoji, 405 items in one list, dates that
 are not dates, the sync add-on's reserved keys on every row; its header lists the shapes deliberately left out) into
-the build folder — this is the CI run. Since 0.6x (contract 4) the example people in the questions' own inputs are
+the build folder — this is the CI run. Since 0.62 (contract 4) the example people in the questions' own inputs are
 invented too (an address and a pair of initials once held a real name). `fixtures/check-invented.mjs [real backup] [--show]` proves the invented file
 shares no value and no word of five letters or more with the real one (exit 1 if it does).
 
@@ -1594,7 +1604,7 @@ one more added at a time"; every test is seen to fail before it is committed (RE
 | `appears` / `disappears` | poll `find` every 0.2 s until the timeout (default 10 s). |
 | `words(e)` | "" if the element does not exist (reading a missing one is a HARD failure); else its label, or its value when the label is empty (Mac = value, iPhone = label). |
 | `isOn(e)` | exists and is selected. |
-| `shot(app, name)` | only when the env `SHOTS_DIR` is set (an xcodebuild line starting `TEST_RUNNER_SHOTS_DIR=<folder>` hands it to the runner): a PNG of the window (Mac) or screen (iPhone) into that folder, falling back to the runner's temporary folder (the Mac runner is sandboxed); prints "SHOT <path>". 110 calls. Night mode is not switched by any test: the simulator is put in dark mode first (`xcrun simctl ui <device> appearance dark`) and the same tests run again. (Until 0.6x its comment named a `tools/shots.sh` that does not exist.) |
+| `shot(app, name)` | only when the env `SHOTS_DIR` is set (an xcodebuild line starting `TEST_RUNNER_SHOTS_DIR=<folder>` hands it to the runner): a PNG of the window (Mac) or screen (iPhone) into that folder, falling back to the runner's temporary folder (the Mac runner is sandboxed); prints "SHOT <path>". 110 calls. Night mode is not switched by any test: the simulator is put in dark mode first (`xcrun simctl ui <device> appearance dark`) and the same tests run again. (Until 0.62 its comment named a `tools/shots.sh` that does not exist.) |
 | `type(text, into:)` | tap + type, verified by reading the value; up to 3 tries, deleting what landed in between. |
 | `cellSays` | a dropdown's text: tries buttons, pop-up buttons, menu buttons, text fields, texts, others; value first. |
 | `bringAcross` | travels a wide grid sideways (Mac scroll wheel ±240, iPhone swipes) until the element's middle is in the window; flips direction if it did not move; judges by frames. |
@@ -1634,15 +1644,15 @@ UI (`AMSPackingUITests`): `testAAAWarmsUpTheSimulator`, `testStartsOnHomeAndName
 `testHisOwnListsAreAddedAndProtectedWhileInUse`, `testWhoseItIsOffersEachOwnerOnce`,
 `testEveryAddButtonIsReadyAndSaysWhatIsMissing`, `testTheEditorsLeadWithTheirHeadings`, `testTheCrossEmptiesASearch`,
 `testTheCrossKeepsTheKeyboard`, `testATripIsDeletedOnlyAfterAsking` (photo count in Settings),
-`testATripIsSharedAndOpenedAgain` and `testATemplateAndAGrabListAreSharedAndOpenedAgain` (the door); 0.6x:
+`testATripIsSharedAndOpenedAgain` and `testATemplateAndAGrabListAreSharedAndOpenedAgain` (the door); 0.62:
 `testYourChoicesSaysWhyRightWhereItWasPressed`, `testAChoiceIsRenamedAndMovedAndItsThingsFollow`,
 `testTheWayHomeIsSearched` (its ✕ is the shared one).
 
-Model: `SettingsListsTests` (13 since 0.6x), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
+Model: `SettingsListsTests` (13 since 0.62), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
 `ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (3), `BackupTests` (library, 5),
-`RestoreTests` (3), `SyncCheckInTests` (1), `CountdownTests` (4), `ContrastTests` (3); and (0.6x)
+`RestoreTests` (3), `SyncCheckInTests` (1), `CountdownTests` (4), `ContrastTests` (3); and (0.62)
 `tools/release-to-testers.py --self-check`. Not unit-tested at all (the app
-target has no unit-test target): `SVGPath`, `RescueCopies` (its naming, time and pruning are, since 0.6x: `RescueNamesTests`; also `StoreTests`, `SyncCheckTests`, `UndatedPhotoTests`), `AppInfo`, `Releases`/`Words`/`HowItWorksScreen`
+target has no unit-test target): `SVGPath`, `RescueCopies` (its naming, time and pruning are, since 0.62: `RescueNamesTests`; also `StoreTests`, `SyncCheckTests`, `UndatedPhotoTests`), `AppInfo`, `Releases`/`Words`/`HowItWorksScreen`
 content, the button and heading components.
 
 ---
@@ -1654,43 +1664,43 @@ the code's own stated rule); **[doc]** a comment or document disagrees with the 
 matters and no test pins; **[idea]** worth deciding before a rewrite. (The 0.59 item "a photo whose `createdAt`
 cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo and never offers it — §12.)
 
-1. **Resolved in 0.6x** — ~~Sync now on an empty device blocks the import.~~ A device's check-in no longer counts as holding anything (`Library.isDeviceNote`); the doors stay and the import is taken. See the storage chapter (01), item 3.
-2. **Resolved in 0.6x** — ~~Rescue-copy times are UTC.~~ They are said in the device's time zone (`RescueNames.when`, §15).
-3. **Resolved in 0.6x** — ~~RestoreSheet's minimum size applies on the iPhone too.~~ It is the Mac's only; the restore UI test checks the sheet lies inside the window.
-4. **Resolved in 0.6x** — ~~The backup JSON is rebuilt on every redraw of Settings.~~ It is built when Save is pressed (§1, §13).
-5. **Resolved in 0.6x** — ~~The font floor of 15 is not universal: 166 `.system(size:)` values below 15 in 42 of the 67
+1. **Resolved in 0.62** — ~~Sync now on an empty device blocks the import.~~ A device's check-in no longer counts as holding anything (`Library.isDeviceNote`); the doors stay and the import is taken. See the storage chapter (01), item 3.
+2. **Resolved in 0.62** — ~~Rescue-copy times are UTC.~~ They are said in the device's time zone (`RescueNames.when`, §15).
+3. **Resolved in 0.62** — ~~RestoreSheet's minimum size applies on the iPhone too.~~ It is the Mac's only; the restore UI test checks the sheet lies inside the window.
+4. **Resolved in 0.62** — ~~The backup JSON is rebuilt on every redraw of Settings.~~ It is built when Save is pressed (§1, §13).
+5. **Resolved in 0.62** — ~~The font floor of 15 is not universal: 166 `.system(size:)` values below 15 in 42 of the 67
    app source files (11–14 for secondary lines, the tab labels 12.5, the version marker 11, `SmallDeleteButton` 13).~~
    Every word outside the nine files another helper was changing is 15 or more (F073); the layouts make room instead
    of shrinking, drawn marks under 15 say `// not text`, and `tools/check-type-floor.sh` fails any push that brings a
    small size back (§21). The nine files another helper was changing at the time (Settings, Your choices, the sync
    card, Reminders/countdown, the way home, the guide, What's new, Buttons, Theme) were swept after it, and the script
    has no list of exceptions left.
-6. **Resolved in 0.6x** — ~~`HeaderButtonStyle` callers' fonts are dead.~~ The style draws the 17 bold the screens ask
+6. **Resolved in 0.62** — ~~`HeaderButtonStyle` callers' fonts are dead.~~ The style draws the 17 bold the screens ask
    for (it drew 16); a caller's own font is still overridden, by design, so every header is alike (§20).
-7. **Resolved in 0.6x** — ~~The way-home search does not use `.clearButton`.~~ It does: the shared round ✕, 36 points
+7. **Resolved in 0.62** — ~~The way-home search does not use `.clearButton`.~~ It does: the shared round ✕, 36 points
    (§20; `testTheWayHomeIsSearched` measures it).
-8. **Resolved in 0.6x** — ~~The use count's wording.~~ The number is things only; a refused remove names what holds
+8. **Resolved in 0.62** — ~~The use count's wording.~~ The number is things only; a refused remove names what holds
    the entry — "by 3 things, on 2 trips and on 1 template" (`ChoiceUse`, §2.5).
-9. **Resolved in 0.6x** — ~~`usesOf`'s doc comment.~~ It says what is counted: things for every kind, trips and
+9. **Resolved in 0.62** — ~~`usesOf`'s doc comment.~~ It says what is counted: things for every kind, trips and
    templates apart for a step, and why to-dos are not.
-10. **Resolved in 0.6x (rename and reorder)** — ~~Your choices cannot edit.~~ The pen renames an entry (every thing
+10. **Resolved in 0.62 (rename and reorder)** — ~~Your choices cannot edit.~~ The pen renames an entry (every thing
     and trip line follows) and moves it up or down (owners stay A–Z) — §2.5. Still not here, on purpose: colours,
     lead days, the to-do flag, a condition's tone and "needs replacing" — each changes what To buy suggests or when
     reminders come, so they wait for his decision (a condition added here still never feeds To buy; a step added
     here is still due on departure day).
-11. **Resolved in 0.6x** (the templates pass, spec 04 §3) — ~~A new 8th "When" step gets teal.~~ `newStep(named:)` takes
+11. **Resolved in 0.62** (the templates pass, spec 04 §3) — ~~A new 8th "When" step gets teal.~~ `newStep(named:)` takes
     its colour from the app's cover colours, so the eighth is indigo `#4f46e5` (§2.5); changing a step's colour here is
     still not possible (item 10).
-12. **Resolved in 0.6x** — ~~Silent duplicates in Your choices.~~ Add says "You already have <name>." for every part,
+12. **Resolved in 0.62** — ~~Silent duplicates in Your choices.~~ Add says "You already have <name>." for every part,
     and adds nothing (§2.5).
-13. **Resolved in 0.6x** — ~~The problem line appears at the TOP.~~ It appears right under the entry whose ✕ was
+13. **Resolved in 0.62** — ~~The problem line appears at the TOP.~~ It appears right under the entry whose ✕ was
     pressed (§2.4; `testYourChoicesSaysWhyRightWhereItWasPressed`).
 14. [idea] **Owners are listed A–Z with no factory list**, so on an account whose things name owners but which never
     added one, the Owners part is empty while *Whose it is* offers those names (`ownerChoices`). `ownersByUsage`
     (the web app's most-owned-first order) is ported but unused.
-15. **Resolved in 0.6x** — ~~docs/colours.md is stale.~~ The workout pills are marked built (0.40), the tabs are
+15. **Resolved in 0.62** — ~~docs/colours.md is stale.~~ The workout pills are marked built (0.40), the tabs are
     Trips and To do with their code names beside them.
-16. **Resolved in 0.6x** — ~~Section colours are single hexes.~~ On purpose, and now said so: Theme.swift's comment
+16. **Resolved in 0.62** — ~~Section colours are single hexes.~~ On purpose, and now said so: Theme.swift's comment
     speaks of the page and text colours; docs/colours.md gives each section colour's contrast on the light card
     (3.2–4.8 : 1) and the dark one (3.5–5.2 : 1) — enough for headings, bands, bold words and white words on a fill.
 17. [idea] **Sheet dismissal without an answer**: swiping the restore sheet away (iPhone) leaves the status line
@@ -1699,31 +1709,31 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
 18. [rule-break] **Settings keeps two `.sheet` modifiers on one view** (Your choices and the restore sheet, plus a
     `.fileImporter` and a `.fileExporter`) although GuideScreen.swift's comment calls "several sheets on one view" a
     trap met in Search; it works today (both sheets are opened by UI tests).
-19. **Resolved in 0.6x** — ~~The shot helper's comment names `tools/shots.sh`.~~ It says how pictures are taken
+19. **Resolved in 0.62** — ~~The shot helper's comment names `tools/shots.sh`.~~ It says how pictures are taken
     (`TEST_RUNNER_SHOTS_DIR`) and that night mode is the simulator's appearance, set before running the same tests again.
-20. **Resolved in 0.6x** — ~~`forThisLaunch`'s doc comment lists only three test modes.~~ It lists all six.
-21. **Resolved in 0.6x** — ~~SampleLibrary's weight/place tables name Towel, Goggles and Swim cap.~~ The dead
+20. **Resolved in 0.62** — ~~`forThisLaunch`'s doc comment lists only three test modes.~~ It lists all six.
+21. **Resolved in 0.62** — ~~SampleLibrary's weight/place tables name Towel, Goggles and Swim cap.~~ The dead
     entries are gone and the comment says why those three have no weight and no place; "514 of 431" is gone.
-22. **Resolved in 0.6x (the screen)** — ~~Worth a look calls templates "lists".~~ It says "on a template that no
+22. **Resolved in 0.62 (the screen)** — ~~Worth a look calls templates "lists".~~ It says "on a template that no
     longer exists". Release 0.59 filing its new feature under *Changed* is in Releases.swift, which only a release
     edits: proposed for the next What's new pass.
-23. **Resolved in 0.6x** — ~~The scheme runs `PackingCoreTests` but not `PackingLibraryTests`.~~ It runs both, on the
+23. **Resolved in 0.62** — ~~The scheme runs `PackingCoreTests` but not `PackingLibraryTests`.~~ It runs both, on the
     iPhone and the Mac (§26).
-24. **Resolved in 0.6x** — ~~The `mac` job's timeout comment is a copy of the iPhone job's.~~ It has its own.
-25. **Resolved in 0.6x** — ~~TestFlight `notes` never reach testers.~~ They become the builds' "What to Test"; a
+24. **Resolved in 0.62** — ~~The `mac` job's timeout comment is a copy of the iPhone job's.~~ It has its own.
+25. **Resolved in 0.62** — ~~TestFlight `notes` never reach testers.~~ They become the builds' "What to Test"; a
     failure to set it only warns (§28).
-26. **Resolved in 0.6x** — ~~The Reminders card's sub-line.~~ It names Preparations a month ahead, a week ahead, the
+26. **Resolved in 0.62** — ~~The Reminders card's sub-line.~~ It names Preparations a month ahead, a week ahead, the
     day before and the day you leave (§3).
 27. [bug] **`RemindersCard.refused` is not remembered**: after leaving Settings the "not allowed" line is gone while
-    the switch is off. (Partly met in 0.6x: switched ON but blocked by the device, the line now shows every time —
+    the switch is off. (Partly met in 0.62: switched ON but blocked by the device, the line now shows every time —
     Home spec, item 13. Turning the switch on again still says why at that moment.)
-28. [idea] **Template covers can still show an emoji** (data from the web app) when a template has no icon, despite
+28. Resolved in 0.62 (the templates area): a cover never shows an emoji, even one a template brought from the web app — the drawn icon or the letter instead (spec 04). Was: [idea] **Template covers can still show an emoji** (data from the web app) when a template has no icon, despite
     "no emoji" — deliberate per the comment ("His covers are his data"), noted for a rewrite.
-29. **Resolved in 0.6x** — ~~The public repository holds real first names.~~ The starter packers are the invented
+29. **Resolved in 0.62** — ~~The public repository holds real first names.~~ The starter packers are the invented
     Kim and Robin (parity stays honest: QUESTIONS.md §16 N8), every example person in tests and parity inputs is
     invented, and the tester group's name comes from the repository variable `TESTER_GROUP` (§28).
-30. **Resolved in 0.6x** — ~~Two long place or owner names can share one row.~~ Names alike in their first 60
+30. **Resolved in 0.62** — ~~Two long place or owner names can share one row.~~ Names alike in their first 60
     normalised units are one name: Add says so, and `setNames` / `setPeople` keep only the first (§2.5).
-31. **Resolved in 0.6x** — ~~"Kit" means two things.~~ "Kit" is his word for all his things (Words); the table
+31. **Resolved in 0.62** — ~~"Kit" means two things.~~ "Kit" is his word for all his things (Words); the table
     of the web app's named groups is counted as "Groups of things" in *This device holds* (§16).
-32. **Resolved in 0.6x** — ~~An undated unused photo is kept for ever and never mentioned.~~ Worth a look names it on its own and removes it only on his press (§12, worry 4).
+32. **Resolved in 0.62** — ~~An undated unused photo is kept for ever and never mentioned.~~ Worth a look names it on its own and removes it only on his press (§12, worry 4).

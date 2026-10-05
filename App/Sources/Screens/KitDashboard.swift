@@ -159,7 +159,7 @@ struct KitDashboard: View {
     }
 
     /// The month n months from now, as three letters — the calendar month whose
-    /// services the bar counts (`KitStats.dueByMonth`, by calendar month since 0.6x).
+    /// services the bar counts (`KitStats.dueByMonth`, by calendar month since 0.62).
     static func month(_ ahead: Int) -> String {
         let now = Calendar(identifier: .gregorian).date(byAdding: .month, value: ahead, to: Date()) ?? Date()
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("MMM")

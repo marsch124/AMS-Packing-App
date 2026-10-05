@@ -109,7 +109,7 @@ struct InventedForecast: Forecaster {
         if name.lowercased().contains("nowhere") { throw ForecastTrouble.noSuchPlace(name) }
         // A place that exists but has no forecast for the trip's dates (his G.6).
         if name.lowercased().contains("late") { return Place(lat: 57.71, lon: 11.97, name: "Lateville, SE") }
-        return Place(lat: 58.59, lon: 16.18, name: "Testville, SE")
+        return Place(lat: 61.5, lon: 14.25, name: "Testville, SE")
     }
     func forecast(at place: Place, from startDate: String, nights: Int, today: String) async throws -> WeatherSnapshot {
         if place.name.hasPrefix("Lateville") { throw ForecastTrouble.nothingYet }

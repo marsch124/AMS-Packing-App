@@ -128,7 +128,7 @@ struct BuyList: View {
     }
 
     /// Gone from here = gone from Reminders too (its reminder stayed behind until
-    /// 0.6x). Undo brings the line back, to be sent again.
+    /// 0.62). Undo brings the line back, to be sent again.
     private func remove(_ line: ActionItem) {
         var gone: (line: ActionItem, reminderId: String?)?
         model.change { gone = $0.removeLine(id: line.id) }

@@ -6,7 +6,7 @@ import PackingCore
 // replacing" offer (`conditionReplaces`), the lit pill on the thing's page, and
 // Settings → Your choices, which refuses to remove a condition still in use.
 //
-// The table's Condition menu and Change all stored the LABEL until 0.6x (the spec
+// The table's Condition menu and Change all stored the LABEL until 0.62 (the spec
 // pass, 5 Oct 2026): a thing marked "Needs replacing" there never reached To buy,
 // its page lit nothing, and Your choices thought the condition unused. They store
 // the id now, and a thing already stored the old way is put right on load

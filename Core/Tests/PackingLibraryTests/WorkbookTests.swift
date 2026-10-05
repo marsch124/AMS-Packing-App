@@ -120,7 +120,7 @@ final class WorkbookTests: XCTestCase {
     }
 
     /// Whether the Mac's command-line tools are here. These model tests also run with the
-    /// app's on the iPhone simulator since 0.6x, where there is no unzip (nor any
+    /// app's on the iPhone simulator since 0.62, where there is no unzip (nor any
     /// `Process`): there the read-back is skipped; the Mac and the "core" job still do it.
     #if os(iOS)
     static let macTools = false

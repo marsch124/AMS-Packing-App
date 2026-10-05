@@ -981,7 +981,7 @@ ask('calc.constructors', ALL, () => {
     membership: '{"id":"m","itemId":"i","templateId":"t","seasons":"x","weather":["cold","mist"],"container":5,"phase":"  door ","itemType":"task","qty":3,"note":null,"order":"2"}',
     action: '{"id":"a","text":5,"kind":"buy","priority":"urgent","whenPhase":"  week  ","whenDate":"2026-9-1","done":"yes","createdAt":"2026-01-01T00:00:00.000Z"}',
     kit: '{"id":"k","name":7,"emoji":"  ","itemIds":["a","a",3,"","b"]}',
-    event: '{"id":"e","mode":"fast","activities":"x","nights":2.7,"laundry":"","status":"finished","weather":{"daily":[{"date":"2026-09-01","code":"61","tmax":"20.5","tmin":null,"precipProb":"x"},{"code":1}],"lat":"58.5","lon":null,"place":3},"weatherOn":["snow","sleet"],"geo":{"lat":"95","lon":0},"entries":[{"name":"In a hostile event"}]}',
+    event: '{"id":"e","mode":"fast","activities":"x","nights":2.7,"laundry":"","status":"finished","weather":{"daily":[{"date":"2026-09-01","code":"61","tmax":"20.5","tmin":null,"precipProb":"x"},{"code":1}],"lat":"61.5","lon":null,"place":3},"weatherOn":["snow","sleet"],"geo":{"lat":"95","lon":0},"entries":[{"name":"In a hostile event"}]}',
     eventNoWeather: '{"id":"e2","nights":-1,"weather":{"daily":[]},"geo":{"lat":"12.5","lon":"-7","place":"Testville"}}',
     list: '{"id":"l","name":"Hostile list","group":"XX","role":"special","transport":"Boat","emoji":"  \ud83d\udce6\ud83d\udce6\ud83d\udce6  ","color":"red","defaultContainer":4,"sections":[{"id":"s1","name":" A "},{"id":"s1","name":"B"},{"id":"s2","name":"  "}],"items":[{"name":"Inside"}]}',
   };
@@ -1027,7 +1027,7 @@ ask('calc.countdownLabel', ALL, () => { const o = {}; for (const d of [null, -10
 ask('calc.qtyNights', ALL, () => { const o = {}; for (let n = 0; n <= 10; n++) for (const laundry of [false, true]) o[`${n}/${laundry}`] = M.qtyNights({ nights: n, laundry }); return o; });
 ask('calc.backupShrinks', ALL, () => { const o = {}; for (const [p, n] of [[0, 0], [0, 5], [10, 0], [10, 4], [10, 5], [10, 6], [3, 1]]) o[`${p}>${n}`] = M.backupShrinks({ items: p }, { items: n }); return o; });
 ask('calc.coerceGeo', ALL, () => {
-  const cases = { valid: { lat: 58.5, lon: 16.25, place: 'Testville' }, strings: { lat: '12.5', lon: '-7' }, tooFarNorth: { lat: 91, lon: 0 }, tooFarEast: { lat: 0, lon: 180.5 }, edge: { lat: -90, lon: 180 }, notNumbers: { lat: 'x', lon: 1 }, blankStrings: { lat: '', lon: '' }, nothing: null, placeNotString: { lat: 1, lon: 2, place: 7 } };
+  const cases = { valid: { lat: 61.5, lon: 14.25, place: 'Testville' }, strings: { lat: '12.5', lon: '-7' }, tooFarNorth: { lat: 91, lon: 0 }, tooFarEast: { lat: 0, lon: 180.5 }, edge: { lat: -90, lon: 180 }, notNumbers: { lat: 'x', lon: 1 }, blankStrings: { lat: '', lon: '' }, nothing: null, placeNotString: { lat: 1, lon: 2, place: 7 } };
   const o = {}; for (const [name, g] of Object.entries(cases)) o[name] = M.coerceGeo(clone(g)); return o;
 });
 ask('calc.photos', ALL, () => {

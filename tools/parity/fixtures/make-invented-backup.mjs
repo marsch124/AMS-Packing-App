@@ -138,10 +138,10 @@ const events = [
     generatedAt: stamp(1), createdAt: stamp(1), updatedAt: stamp(1), ...reserved,
     entries: [entry(plane.items[1], plane, { checked: true, used: true }), entry(plane.items[0], plane, { checked: true, used: false }), entry(oe.items[1], oe, { checked: false }), entry(base.items[3], base, { checked: true })] },
   { id: 'ev-done', name: 'Last winter', mode: 'trip', activities: ['l-hike'], transport: 'RV', season: 'Winter', catering: 'mixed', startDate: '2026-01-10', endDate: '', nights: 6, laundry: true,
-    destination: '', geo: { lat: '58.75', lon: '16.25' }, status: 'done', reviewedAt: stamp(2), createdAt: stamp(0), updatedAt: stamp(2), ...reserved, entries: [entry(hiking.items[0], hiking, { checked: true, used: true })] },
+    destination: '', geo: { lat: '61.75', lon: '14.25' }, status: 'done', reviewedAt: stamp(2), createdAt: stamp(0), updatedAt: stamp(2), ...reserved, entries: [entry(hiking.items[0], hiking, { checked: true, used: true })] },
   { id: 'ev-draft', name: '', mode: 'weird', activities: 'l-hike', transport: 'Bus', season: '', catering: '', startDate: '2026-02-30', endDate: '2026-02-28', nights: -2, laundry: 'no', status: 'open', weather: { daily: [] }, geo: { lat: 95, lon: 0 }, createdAt: '', ...reserved, entries: [] },
   { id: 'ev-today', name: 'Ends today', mode: 'trip', activities: ['l-bike', 'l-run'], transport: 'Car', season: 'Summer', contexts: ['Race'], catering: 'mixed', startDate: '2026-09-19', endDate: '2026-09-21', nights: 2,
-    destination: 'Sampleton', geo: { lat: 58.75, lon: 16.25, place: '' }, status: 'active', createdAt: stamp(7), updatedAt: stamp(8), ...reserved,
+    destination: 'Sampleton', geo: { lat: 61.75, lon: 14.25, place: '' }, status: 'active', createdAt: stamp(7), updatedAt: stamp(8), ...reserved,
     entries: [entry(bike.items[0], bike, { checked: true }), entry(bike.items[1], bike, { checked: true }), entry(bike.items[2], bike, {}), entry(run.items[2], run, { checked: true })] },
 ];
 

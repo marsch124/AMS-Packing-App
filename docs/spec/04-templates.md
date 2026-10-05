@@ -1,7 +1,7 @@
 # Templates — the building blocks, and how things sit on them
 
 > Verified against the code on 5 Oct 2026 (app 0.60); the spec pass's fixes of spec 04 (the same day,
-> release 0.6x) are written in.
+> release 0.62) are written in.
 
 **What this part is for, in the owner's terms.** A *template* is a building block: the things for one activity
 or need — Hiking, Swim, Car, the Common base. A trip's packing list is *made from* templates: the always-packed
@@ -163,7 +163,7 @@ column width, whole card tappable):
 1. Row: the **cover** (§3) at 34 pt · spacer · the number of rows on the template (`list.items.count`, i.e.
    memberships whose thing exists — a thing twice counts twice) 15 heavy monospaced digits, muted.
 2. The template's **name** — 16 semibold, ink, at most 2 lines, wraps.
-3. The **"used" line** (`Library.TemplateUse.line(use, today: Today.local)`) — 15 medium, wrapping (0.6x: 12,
+3. The **"used" line** (`Library.TemplateUse.line(use, today: Today.local)`) — 15 medium, wrapping (0.62: 12,
    one line), id
    `template-used`; muted, or muted at 65 % opacity when the template has never been used ("Quiet, not invisible:
    the divider colour could not be read on either a white or a black background").
@@ -208,7 +208,7 @@ Released in 0.46. No stock art, no emoji in the icon set.
   `#8b5cf6`).
 - If `TemplateIcons.icon(Library.icon(of: list))` exists → that icon drawn white at `size × 0.66`
   (`IconMark`, stroke 1.9 × size/24, round caps and joins).
-- Otherwise its letter, white, heavy, font `size × 0.46` but never under 15 (0.6x — a letter is read): `Library.coverLetter(list)` = the first character of the
+- Otherwise its letter, white, heavy, font `size × 0.46` but never under 15 (0.62 — a letter is read): `Library.coverLetter(list)` = the first character of the
   trimmed name, upper-cased. **Never the template's `emoji`** (a web-app template may carry one): no emoji in this
   app (until the spec pass the emoji showed here).
 - `accessibilityHidden(true)`.
@@ -299,12 +299,12 @@ saves and closes), or a swipe down on the iPhone.
     (`coverLetter`) 22 heavy when there is no suggestion; selected when no choice is stored) and **"Letter"** (id
     `icon-letter`; the letter 22 heavy; selected when the stored choice is "letter").
   - `SectionTitle` "All icons" (shown in capitals, 18 heavy, kerning 0.8, 16 above).
-  - The 50 icons in rows of **3 on the iPhone, 4 on the Mac** (0.6x: 5 — at 15 pt "Racket sports" needs 101
+  - The 50 icons in rows of **3 on the iPhone, 4 on the Mac** (0.62: 5 — at 15 pt "Racket sports" needs 101
     points; plain `HStack` rows, not a lazy grid: "the Mac builds only what is on screen"), each row as tall as
     its tallest tile.
     Each tile: icon at 30 + its label; id `icon-<key>`; selected when a choice is stored and the icon in force is
     this key.
-- Tile look: mark 32 high; label 15 bold, centred, up to 2 lines, never shrunk (0.6x: 12 bold, 1 line, shrinking
+- Tile look: mark 32 high; label 15 bold, centred, up to 2 lines, never shrunk (0.62: 12 bold, 1 line, shrinking
   to 70 %); padding 4 × 6; min height 80, full width share; selected =
   filled with the template's own colour (`coverColour`), white mark and label, 2-pt stroke in that colour, trait
   `isSelected`; not selected = `Theme.card`, ink mark, muted label, 1-pt `Theme.line` stroke.
@@ -338,7 +338,7 @@ templates sharing a name as "two libraries have met on one account" (31 August 2
 
 ### What is on screen
 - Top row (padding 16): "A new template" — 20 heavy violet, id `newlist-title`; spacer; "Cancel" (outlined,
-  muted; the style's own 17 bold — 16 until 0.6x, spec 06 §20).
+  muted; the style's own 17 bold — 16 until 0.62, spec 06 §20).
 - Scroll (side 16, bottom 24):
   - "WHAT IS IT CALLED" — 15 heavy muted, kerning 0.6.
   - Name field — no placeholder, 17 semibold ink, min height 44, card fill, 10-radius border in `Theme.line`, or in
@@ -415,7 +415,7 @@ search function so that the user can find a specific item without the need to sc
 - **Share** — `ShareDoor(id: "template-share")`: outlined violet capsule with the drawn share mark (18) and
   "Share"; label "Share". Opens the share sheet with title `Share “<name>”` and
   `link = library.shareLink(templateId:)` (§19).
-- **"Done"** — `HeaderButtonStyle` filled violet (white 17 bold on a capsule, min height 36; 16 until 0.6x).
+- **"Done"** — `HeaderButtonStyle` filled violet (white 17 bold on a capsule, min height 36; 16 until 0.62).
 - Under the row, `needsLine` id `template-rename-needs` (15 bold red), cleared as soon as the typed name changes.
 
 **Group pills** (`FlowRow` spacing 6, side 16, bottom 4): the word "Group" (15 heavy muted, min height 36), then
@@ -466,7 +466,7 @@ violet, radius 10, min height 44; id `template-add`). `needsLine` id `template-a
   area" (min height 44, hairline under; the current one 16 heavy violet with `isSelected`, else 16 medium ink; ids
   `template-area-GA`, `-WET`, `-OE`, `-none`). A press files it (`setTemplateArea`, §14) and the card goes. The
   spec pass (5 Oct 2026): New asked for the area and nothing could put a wrong answer right.
-- At the right, when not asking: `SmallDeleteButton` "Delete template" (15 semibold red text — 13 until 0.6x — in a red 60 %
+- At the right, when not asking: `SmallDeleteButton` "Delete template" (15 semibold red text — 13 until 0.62 — in a red 60 %
   outlined capsule, min height 30; id `template-delete`). When asking, in place of the row a card
 (padding 14, card fill, red 1-pt border, radius 12, side 16, bottom 10):
 - `Delete “<name>”?` — 16 heavy ink.
@@ -705,7 +705,7 @@ Container id `pick-screen`. Mac: min 520 × 620.
 
 ### What is on screen
 - Top row (padding 16): "Cancel" (outlined muted) · `"Add to <template name>"` (or "Add things" if the template is
-  gone) 17 heavy ink, 1 line, shrinks to 90 % at most — never under 15 (80 % until 0.6x), id `pick-title` · the add button (filled violet, always in colour):
+  gone) 17 heavy ink, 1 line, shrinks to 90 % at most — never under 15 (80 % until 0.62), id `pick-title` · the add button (filled violet, always in colour):
   "Add" with nothing ticked, `"Add <n>"` with n ticked; id `pick-add`. Under the row, when Add was pressed with
   nothing ticked: "Tick the things to put on first." (the shared `needsLine`, 15 bold red, id `pick-add-needs`),
   gone as soon as a tick changes.
@@ -1094,9 +1094,9 @@ His decision on test I.7 (1 Oct 2026), released 0.45.
   new trip would build them (`buildTotalEntries(trip, resolvedTemplates())` filtered to this thing) — "so a bag
   chosen for that one template still wins over the thing's own bag". Each old line takes a fresh line from the same
   template first, else any unused one; it keeps its `id`, `checked`, `skipped` (set aside), `used` and its own
-  `extra` marks (way home, used up, maintenance note — 0.6x). A line with no
+  `extra` marks (way home, used up, maintenance note — 0.62). A line with no
   fresh counterpart is left as it is. The trip's `updatedAt` is set when something changed. Returns how many lines
-  changed. `today` defaults to `Library.localToday()`, the device's own date (0.6x; it was the UTC date).
+  changed. `today` defaults to `Library.localToday()`, the device's own date (0.62; it was the UTC date).
 - A row saved in the row editor calls this too (`saveRow`, §7 — the spec pass, 5 Oct 2026), so a row's own bag,
   When, how many, note or conditions reach the open lines of trips still ahead. Other changes to a template's rows
   (typed on, picked on, taken off, the table's per-template columns, `setOnTemplate`) do not.
@@ -1117,7 +1117,7 @@ appearance, loose lines staying in place. **In this app kits are data only**: th
 in the `kits` table, carried in backups, and a deleted thing is removed from every kit (`deleteThing`); a row's
 `kit` name travels on the membership into trip lines and share codes. No screen shows, makes or edits a kit, and
 `clusterByKit` is not used by any screen. The only trace on screen is the number of kit records among
-Settings' per-table device counts ("Groups of things" since 0.6x, "Kits" before — spec 06 §16).
+Settings' per-table device counts ("Groups of things" since 0.62, "Kits" before — spec 06 §16).
 
 Tests: `KitsTests` — `testCoerceKitDeDupsMemberIdsAndNormalisesFields`, `testNewKitSaneDefaultsAndTimestamps`,
 `testKitEmojiOwnEmojiWinsElseTheDefault`, `testClusterByKitLooseEntriesStayInPlace`, `testAKitRoundTripsThroughJSON`;
@@ -1143,7 +1143,7 @@ becomes a QR code; it opens in the web app for anyone, and in this app via Setti
   (`extra.iconKey`) does **not** travel. An empty template throws "This template has nothing on it to share."
 - **Opening** (`Library.readShared` tries grab list, then template, then trip): the preview says what it is —
   "A TEMPLATE", "AN ALWAYS-PACKED TEMPLATE" (role base) or "A TRANSPORT TEMPLATE" (role transport), so he knows
-  before he adds it — the name and "1 thing" / "<n> things" (`shared-count`; "1 things" until 0.6x).
+  before he adds it — the name and "1 thing" / "<n> things" (`shared-count`; "1 things" until 0.62).
   - When he already has a template of that name (`templateNameTaken`, the bag list aside): "You already have a
     template called “<name>”. This one needs a name of its own:" (15 medium muted, `shared-name-taken`) and a field
     (`shared-new-name`, 17 semibold, placeholder "A name you do not have yet") holding a free name
@@ -1157,7 +1157,7 @@ becomes a QR code; it opens in the web app for anyone, and in this app via Setti
     a look then reported as "Two libraries may have met".)
   - When he has a role-"" template of the same `normName` (`templateNamed`), also "Replace your <name> instead"
     (`shared-replace`) → "Replace your <name>?" with "Keep mine" / "Replace", and under it what Replace does
-    (`shared-replace-says`, 0.6x) → `replaceTemplate(id:with:)` (0.6x: the sender's things in the sender's order; his
+    (`shared-replace-says`, 0.62) → `replaceTemplate(id:with:)` (0.62: the sender's things in the sender's order; his
     template — look, sections, bag, icon, role, activity area and transport — and the answers on the things he had
     stay his; storage chapter §16.4) → "Replaced your <name>. Trips that use it keep working."
 - `listFromShare`: fresh ids (sections, rows, then the list), sections rebuilt and rows pointed at them by name
@@ -1224,24 +1224,24 @@ Left by "Done" (`lists-done`, filled slate) or swipe down. Container `lists-deta
 
 ### Behaviour (`PackingLibrary/SettingsLists.swift`)
 - Entries: places = his stored order, or the 12 `DEFAULT_STORAGE_LOCATIONS`; owners = his list A–Z (empty by
-  default); packers = his, or (0.6x) the packers his things name, or the factory two (`DEFAULT_PEOPLE`, the
-  invented Kim and Robin since 0.6x); conditions = his, or New/Good/Worn/Needs replacing; When = his timeline, or the
-  factory seven. The full behaviour, with rename and reorder (0.6x), is spec 06 §2.
-- Uses (`usesOf`, a `ChoiceUse` since 0.6x): things' storage / ownedBy / packer / condition / phase by `normName`;
+  default); packers = his, or (0.62) the packers his things name, or the factory two (`DEFAULT_PEOPLE`, the
+  invented Kim and Robin since 0.62); conditions = his, or New/Good/Worn/Needs replacing; When = his timeline, or the
+  factory seven. The full behaviour, with rename and reorder (0.62), is spec 06 §2.
+- Uses (`usesOf`, a `ChoiceUse` since 0.62): things' storage / ownedBy / packer / condition / phase by `normName`;
   for When also, counted apart, the trips with a line in it and the templates with a place in it.
-- Add: one he already has → "You already have <name>." and nothing added (0.6x; until then a repeat silently
+- Add: one he already has → "You already have <name>." and nothing added (0.62; until then a repeat silently
   vanished); places/owners → `setNames(kind, list + [name])`; packers → a person with colour `PERSON_COLORS[count % 8]`; conditions → `newCondition`; When →
   `newStep(named:)` appended, `setTimeline` — `newPhase` with its colour from `COVER_COLOURS` (§3) by the number of
   steps, so the eighth is indigo, never teal as the web app's pick made it (the spec pass, 5 Oct 2026). A list that
   equals the factory one is stored as **no rows**.
 - Remove: in use → the reason under that entry, naming things, trips and templates ("<label> is still used by 3
-  things and on 1 trip, so it stays.", 0.6x) and nothing changes; else removed. Removing the last entry of a kind
+  things and on 1 trip, so it stays.", 0.62) and nothing changes; else removed. Removing the last entry of a kind
   brings the factory list back (no rows = defaults).
 
 ### Tests
 UI `testHisOwnListsAreAddedAndProtectedWhileInUse` (title "Your choices", each hint > 80 characters, "Garage shelf"
 added as place row 12, used on a thing, then refused with `lists-problem`); `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
-(`list-places-add`); `testTheEditorsLeadWithTheirHeadings` (five headings); 0.6x `testYourChoicesSaysWhyRightWhereItWasPressed`,
+(`list-places-add`); `testTheEditorsLeadWithTheirHeadings` (five headings); 0.62 `testYourChoicesSaysWhyRightWhereItWasPressed`,
 `testAChoiceIsRenamedAndMovedAndItsThingsFollow`. Model `SettingsListsTests` (13);
 `TemplateFacesTests.testNoTemplateIsGivenTealOrCyan` (the eighth step's colour).
 
@@ -1274,75 +1274,75 @@ deciding before a rewrite.
 
 **Data and behaviour.**
 
-1. [bug] **The thing's own note (and qty) gets frozen into rows** — Resolved in 0.6x: a row stores how many and a
+1. [bug] **The thing's own note (and qty) gets frozen into rows** — Resolved in 0.62: a row stores how many and a
    note only where they differ from the thing's own (`saveTemplate` → `placeAnswer`), and on load every place an
    older build froze goes back to blank (`letCopiedAnswersFollowTheirThings`) — so a change to the thing's note
    reaches every row again (`TemplateRowsTests`, UI `testAThingsNoteIsNotCopiedOntoATemplate`).
-2. [bug] **The row editor drops condition values it does not know.** — Resolved in 0.6x: Save keeps a word it does
+2. [bug] **The row editor drops condition values it does not know.** — Resolved in 0.62: Save keeps a word it does
    not know (shown as a lit pill of its own, switched off like any) — `saveRow` → `keptConditions`
    (`testARowSavedFromTheEditorKeepsWhatItDoesNotKnow`).
-3. [bug] **Order of picked things** — Resolved in 0.6x: the picker keeps the order he ticked, and that is the order
+3. [bug] **Order of picked things** — Resolved in 0.62: the picker keeps the order he ticked, and that is the order
    they land in (UI `testThingsPickedLandInTheOrderTicked`).
-4. [bug] **Typing an existing thing's name on a template that already has it** — Resolved in 0.6x: decided — typing
+4. [bug] **Typing an existing thing's name on a template that already has it** — Resolved in 0.62: decided — typing
    never makes a second row (a slip, never a wish); the page says "“<name>” is already on this template." and
    `addToTemplate` refuses it. A thing twice on one template stays possible where the data says so (UI
    `testTypingAThingAlreadyOnTheTemplateSaysSo`, model `testTypingAThingAlreadyOnTheTemplateDoesNotAddItTwice`).
-5. [bug] **"Add as a new template"** — Resolved in 0.6x: as a new template a name he has is refused; the screen
+5. [bug] **"Add as a new template"** — Resolved in 0.62: as a new template a name he has is refused; the screen
    offers a free name ("Hiking 2") in a field and says what is missing when pressed with a taken one
    (`importTemplate(…named:)`; `testASharedTemplateIsNotAddedUnderANameHeHas`, the share UI test).
-6. [bug] **Importing links takes the sender's spelling** — Resolved in 0.6x: a linked row takes HIS spelling of the
+6. [bug] **Importing links takes the sender's spelling** — Resolved in 0.62: a linked row takes HIS spelling of the
    thing's name before the save (`testALinkedThingKeepsHisSpelling`).
-7. **Resolved in 0.6x** — ~~Sharing an empty template says "too big for a link".~~ With no link and no file
+7. **Resolved in 0.62** — ~~Sharing an empty template says "too big for a link".~~ With no link and no file
    the share sheet says "There is nothing on it to share yet." (`share-empty`; the Home spec's fix for the
    empty grab list, the same screen). Not pinned for a template in the UI.
-8. [bug] **`suggestedIcon`'s "train" rule** — Resolved in 0.6x: train and tent are whole words now ("Strength
+8. [bug] **`suggestedIcon`'s "train" rule** — Resolved in 0.62: train and tent are whole words now ("Strength
    training" → strength, "Campus" → nothing; `testATrainAndATentNeedTheirWholeWord`).
-9. [bug] **"Same as the thing (X)"** — Resolved in 0.6x: the first pill says "Same as the template (<its bag>)" on a
+9. [bug] **"Same as the thing (X)"** — Resolved in 0.62: the first pill says "Same as the template (<its bag>)" on a
    template with a default bag (`sameBagWords`; `testABlankBagNamesWhereItReallyGoes`).
-10. [bug] **"Only on:" lists contexts on a non-WET template** — Resolved in 0.6x: "Only on:" lists Context only on a
+10. [bug] **"Only on:" lists contexts on a non-WET template** — Resolved in 0.62: "Only on:" lists Context only on a
     WET template (`onlyOnWords`; `testOnlyOnSaysWhatATripReadsOnThisTemplate`).
-11. [bug] Resolved in 0.6x (Things spec, item 1): the table and Change all offer `Library.bagNames()`, over the
+11. [bug] Resolved in 0.62 (Things spec, item 1): the table and Change all offer `Library.bagNames()`, over the
     RESOLVED bag list, so his own bags are offered.
-12. [bug] **Your choices' refusal** says "<label> is still used by <n> thing(s)", but for When steps n also
+12. Resolved in 0.62 (the settings area, F061): the number is things only, and a refusal names what else holds a step — "by 3 things, on 2 trips and on 1 template" (`ChoiceUse`, spec 06). Was: [bug] **Your choices' refusal** says "<label> is still used by <n> thing(s)", but for When steps n also
     counts trip lines and template rows.
-13. [bug] **`followThing`'s "today"** was the UTC date. Resolved in 0.6x (the trips area, F036): it goes by
+13. [bug] **`followThing`'s "today"** was the UTC date. Resolved in 0.62 (the trips area, F036): it goes by
     `Library.localToday()`, the device's own date, as the screens do.
-14. [untested] **A shared base or transport template keeps its role.** — Resolved in 0.6x: pinned by
+14. [untested] **A shared base or transport template keeps its role.** — Resolved in 0.62: pinned by
     `testASharedAlwaysPackedTemplateStaysOneButReplaceKeepsHisPlace` — as a new template it stays always packed (the
     preview and the "Added" line now say so); Replace now keeps HIS template's role, area and transport, so his
     activity never becomes always packed.
-15. [untested] **Three `.sheet` modifiers on the Templates tab's scroll view** — Resolved in 0.6x: the tab has one
+15. [untested] **Three `.sheet` modifiers on the Templates tab's scroll view** — Resolved in 0.62: the tab has one
     sheet with a destination; `testEveryDoorOfTheTemplatesTabOpens` opens a template, Search and New one after
     another, twice. (Settings' two sheets are spec 06's.)
 
 **What to decide.**
 
-16. [idea] **Replace drops his icon choice and his row exceptions**: the shared list has no `extra`, so the
+16. Resolved in 0.62 (the storage area): `replaceTemplate(id:with:)` keeps his icon, sections, bags and his answers on the things he had, and says first what comes in and what leaves (spec 01 §16.4; `ReplaceTemplateTests`). Was: [idea] **Replace drops his icon choice and his row exceptions**: the shared list has no `extra`, so the
     stored `iconKey` is lost; linked rows get blank bag/When exceptions and the sender's
     conditions/qty/note/section; his rows not in the shared list are taken off.
-17. [idea] **`TemplateUse` counts future trips** — Resolved in 0.6x: a trip that has not begun is no longer "last":
+17. [idea] **`TemplateUse` counts future trips** — Resolved in 0.62: a trip that has not begun is no longer "last":
     the card says "Next: in 30 days · <trip>" for a template only ever planned (`templateUse(today:)`,
     `TemplateUse.line`; `testATripStillAheadIsNextNotLast`).
-18. [idea] **Template summary** — Resolved in 0.6x: the line counts the things ON the templates shown (each once)
+18. [idea] **Template summary** — Resolved in 0.62: the line counts the things ON the templates shown (each once)
     and the trips packed from them (`templateSummary`; `testTheTemplatesLineCountsWhatItSays`); the comment says
     "templates".
-19. [idea] **Row editor's Add-a-section** — Partly resolved in 0.6x: a section typed in the row editor is made only
+19. [idea] **Row editor's Add-a-section** — Partly resolved in 0.62: a section typed in the row editor is made only
     on Save (UI `testASectionTypedInARowIsMadeOnlyOnSave`), and a template's activity area can be changed on its
     page (`setTemplateArea`, UI `testATemplateMovesToAnotherActivityArea`). Left, for him to decide: renaming,
     reordering or deleting a section and reordering rows need a way of working he has not seen (drag, edit modes) —
     worth a picture first; changing a template's role or transport changes what EVERY trip packs; colour, emoji and
     default bag are web-app data he has never asked to set here (no emoji in this app); a row's weather tags, kit
     and reminder type have no use on any screen of this app.
-20. [idea] **A row change does not reach trips already made** — Resolved in 0.6x: a row saved in the row editor
+20. [idea] **A row change does not reach trips already made** — Resolved in 0.62: a row saved in the row editor
     reaches the open lines of trips still ahead, as a change to the thing does (`saveRow` → `followThing`;
     `testARowChangeReachesATripStillAhead`). Rows typed on, picked on or taken off still reach a trip only through
     its Trip settings (adding or dropping a line is a bigger step than updating one).
-21. [idea] **Search can open a role-"loose" template** — Resolved in 0.6x: Search lists the same templates as the
+21. [idea] **Search can open a role-"loose" template** — Resolved in 0.62: Search lists the same templates as the
     tab (`shownTemplates()`: not the bag list, not the loose bin).
 22. [idea] **Device-wide memories** — Left: kept as one memory per device — one way of reading every template is
     what he asked for ("the same way as when you pack"), as the trip's sorting is remembered; a fold kept for a
     renamed place costs a few bytes, and forgetting it could unfold a group he folded on purpose.
-23. [idea] **`NewList`** — Resolved in 0.6x: the needs line goes as he types (the shared `needsLine`), `canMake` is
+23. [idea] **`NewList`** — Resolved in 0.62: the needs line goes as he types (the shared `needsLine`), `canMake` is
     gone, and the bag list's hidden "Containers" is not a taken name (`templateNameTaken`; Worth a look counts the
     bag list apart).
 24. [idea] **`groupBy("container")`'s "Unpacked"** — Left: a comment now says it is never reached; the line stays
@@ -1351,31 +1351,31 @@ deciding before a rewrite.
 
 **Comments and documents.**
 
-25. [doc] **ThingGrouping's doc** — Resolved in 0.6x: decided — a template page keeps HIS order inside a group
+25. [doc] **ThingGrouping's doc** — Resolved in 0.62: decided — a template page keeps HIS order inside a group
     (Section and When), the picker's When reads A–Z to find a thing among all he owns; the `ThingGrouping` comment
     says so.
-26. [doc] **Picker row "aside"** — Resolved in 0.6x: the comment now says what the row shows (under Into a thing
+26. [doc] **Picker row "aside"** — Resolved in 0.62: the comment now says what the row shows (under Into a thing
     with no place shows its bag — better than nothing).
-27. [doc] **Release log** — Resolved in 0.6x: a What's new line for the "Only on some trips" choices is proposed for
+27. [doc] **Release log** — Resolved in 0.62: a What's new line for the "Only on some trips" choices is proposed for
     the release notes (written at release time, not in this branch).
-28. [doc] The `Cover` comment "the app adds no art of its own" predates the suggested icons — Resolved in 0.6x: the
+28. [doc] The `Cover` comment "the app adds no art of its own" predates the suggested icons — Resolved in 0.62: the
     comment now says the cover shows his icon or the suggested one, drawn in the app's hand, else the letter.
 
 **His standing rules.**
 
-29. [rule-break] **Choose from your things, "Add" with nothing ticked** — Resolved in 0.6x: Add with nothing ticked
+29. [rule-break] **Choose from your things, "Add" with nothing ticked** — Resolved in 0.62: Add with nothing ticked
     says "Tick the things to put on first." under the title (`pick-add-needs`, UI
     `testThingsPickedLandInTheOrderTicked`).
-30. [rule-break] **Cover "Letter" with an emoji** — Resolved in 0.6x: the cover shows the letter, never the emoji
+30. [rule-break] **Cover "Letter" with an emoji** — Resolved in 0.62: the cover shows the letter, never the emoji
     (`coverLetter`; `testACoverShowsALetterNeverAnEmoji`).
-31. [rule-break] **`TEMPLATE_COLORS`** — Resolved in 0.6x: covers and new "When" steps take `COVER_COLOURS` — the
+31. [rule-break] **`TEMPLATE_COLORS`** — Resolved in 0.62: covers and new "When" steps take `COVER_COLOURS` — the
     web app's ten with cyan → orange and teal → indigo (`testNoTemplateIsGivenTealOrCyan`); `TEMPLATE_COLORS` itself
     stays for the parity check. Not changed: the factory "When" steps' own colours (Day before is cyan, After /
     recovery teal — his familiar steps, used across the trip screens).
-32. [rule-break] **Text under 15 pt** in this area — card "used" line 12, icon labels 12, "WHAT IS IT CALLED"
+32. Resolved in 0.62 (F073): every one of these is 15 pt or more, and `tools/check-type-floor.sh` fails a push that brings a smaller size back (spec 06 §21). Was: [rule-break] **Text under 15 pt** in this area — card "used" line 12, icon labels 12, "WHAT IS IT CALLED"
     12, row qty/note and tags 13, Delete template 13, "You already have a template called that." 14, the
     delete question's text 14, the row editor's "Blank means…" 14, picker pills/aside/counts 14, Your
     choices counts and footer 14 — while `Headings.swift` says "Nothing under 15, so it still reads without
     glasses".
-33. **Resolved in 0.6x** — ~~`DEFAULT_PEOPLE` holds two real first names in a public repository.~~ They are the
+33. **Resolved in 0.62** — ~~`DEFAULT_PEOPLE` holds two real first names in a public repository.~~ They are the
     invented Kim and Robin (spec 06, item 29).

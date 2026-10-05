@@ -59,7 +59,7 @@ final class KitStatsTests: XCTestCase {
             lib.items[n].maintenance = Maintenance(notes: "Air it", intervalDays: 90, lastDone: "2026-01-01")
         }
         // Due in late February: inside the twelve calendar months the bars show (a year
-        // after 1 September falls in the thirteenth, since 0.6x counts real months).
+        // after 1 September falls in the thirteenth, since 0.62 counts real months).
         if let n = lib.items.firstIndex(where: { $0.name == "Sleeping bag" }) {
             lib.items[n].maintenance = Maintenance(notes: "Wash", intervalDays: 180, lastDone: "2026-09-01")
         }

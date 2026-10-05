@@ -1,6 +1,6 @@
 # Home, grab lists, Shortcuts, packing reminders and Search
 
-> Verified against the code on 5 Oct 2026 (app 0.61), and brought up to date with the fixes marked 0.6x.
+> Verified against the code on 5 Oct 2026 (app 0.61), and brought up to date with the fixes marked 0.62.
 
 Home is the first tab and the screen the app always opens on. In the owner's terms it has two jobs:
 **"Grab and go"**, a grid of up to eight *grab lists* (short lists for a quick outing such as a swim,
@@ -89,8 +89,8 @@ Each tab button (`TabButtonLabel`):
   filled with the section colour. Inactive: the mark in the section colour (stroke 1.9) on the section
   colour at 14 % opacity.
 - Under it, 3 pt apart, the label: **15 pt**, `.heavy` and `ink` when active, `.semibold` and `muted`
-  otherwise. One line, never shrunk (0.6x: it was 12.5 pt, scaling down to 80 % — his floor is 15).
-- The six buttons sit in a `TabRow` layout (0.6x), not equal sixths: each tab is as wide as an even share
+  otherwise. One line, never shrunk (0.62: it was 12.5 pt, scaling down to 80 % — his floor is 15).
+- The six buttons sit in a `TabRow` layout (0.62), not equal sixths: each tab is as wide as an even share
   of the bar, unless its label needs more — then it gets exactly what it needs and the others share the
   rest. On an iPhone an even sixth is 67 pt and "Templates" at 15 heavy needs 79; on the Mac every tab
   has an even share.
@@ -100,7 +100,7 @@ Each tab button (`TabButtonLabel`):
 The version marker (`app-version`): text `AppInfo.version` = `"<CFBundleShortVersionString> (<CFBundleVersion>)"`,
 e.g. "0.61 (130)". The short version is `MARKETING_VERSION` in `project.yml` ("0.61"); the build number is
 `CURRENT_PROJECT_VERSION` ("2" for a local build), which the TestFlight workflow overrides with its own run
-number. Each part falls back to "?" when missing. **15 pt semibold** (11 until 0.6x), `muted` at 70 %
+number. Each part falls back to "?" when missing. **15 pt semibold** (11 until 0.62), `muted` at 70 %
 opacity, right-aligned with 8 pt trailing padding, so it sits under the Settings tab. It does not take
 taps (`allowsHitTesting(false)`). Because it reads the bundle, the number on screen and the number
 TestFlight shows can never disagree. `AppInfo.marketing` (the short version alone) is what What's new
@@ -127,7 +127,7 @@ marks "On this device".
   (b) calls `PackingShortcuts.updateAppShortcutParameters()`, so the grab lists offered by name in
   Shortcuts/Siri follow the owner's lists.
 - **Whenever the app comes to the front** (`scenePhase` becomes `.active`, which includes launch):
-  `PackingReminders.reschedule` (since 0.6x: he may just have allowed reminders again in the device's
+  `PackingReminders.reschedule` (since 0.62: he may just have allowed reminders again in the device's
   Settings, and they are put back at once rather than at the next library change), and
   `ShopReminders.shared.readBack(into: model)`. This is field test 8.4 (3 Oct 2026): reminders ticked in
   Apple Reminders at the shop tick their To buy lines here. It looks only at buy lines that were sent and
@@ -138,7 +138,7 @@ marks "On this device".
   model.tripToOpen, initial: true)`. When a grab-list id, the grab menu flag or a trip id is set, the
   section switches to `.home`. HomeScreen then does the opening (section 3). `initial: true` matters: a
   request set before the view exists (a Shortcut that launched the app) is still acted on.
-- **A tab asked for from inside a window** (0.6x): `onChange(of: model.tabToOpen)` switches to that
+- **A tab asked for from inside a window** (0.62): `onChange(of: model.tabToOpen)` switches to that
   section and sets it back to nil. Search sets it to `.actions` for a to-do (section 15).
 - **Under UI tests only**, when the app comes back to the front after being in the background
   (`wasAway`), `playWhatHappenedWhileAway` plays what would reach the app from outside meanwhile:
@@ -173,7 +173,7 @@ marks "On this device".
   least two topics.
 - UI `testWhatWasTickedInTheShopIsTickedOnReturn` (iPhone only, `-pretendShopTicks`): Home button,
   `app.activate()`, and the To buy count reads "All bought." with no tab change; one line unticked then stays
-  unticked after Home and back (0.6x, its reminder is unticked too).
+  unticked after Home and back (0.62, its reminder is unticked too).
 - **Not covered:** the `.failed` screen (`library-problem`); the placeholder for `.loading` or `.empty`
   tabs; the 2-s debounce; tab colours, sizes and the selected trait; several Mac windows.
 
@@ -194,12 +194,12 @@ starter lists. It offers two doors instead.
 
 **How it is reached and left.** It shows on the Home tab while `model.state == .empty`, i.e.
 `Library.isEmpty`: items, memberships, templates, trips, actions, kits, phases, shared rows, photos and
-`meta` are all empty — a device's check-in (`syncCheck.*`, `Library.isDeviceNote`) aside (0.6x). It leaves by itself when the state becomes `.ready`:
+`meta` are all empty — a device's check-in (`syncCheck.*`, `Library.isDeviceNote`) aside (0.62). It leaves by itself when the state becomes `.ready`:
 - after a successful import (`LibraryModel.importBackup` commits, and the state is recomputed); or
 - when iCloud delivers records (`store.onRemoteChange` → `reload()`).
 
 Any one record of his ends the empty state. A Sync now check-in made from Settings on this empty device, or the
-other device's check-in arriving, does not (0.6x; until then it did: Home showed the ordinary empty `HomeScreen`
+other device's check-in arriving, does not (0.62; until then it did: Home showed the ordinary empty `HomeScreen`
 instead of the doors and the import was refused as "already imported" — the storage file's open questions, item 3;
 UI `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors`).
 
@@ -266,7 +266,7 @@ spacing, 16 pt side padding and 24 pt bottom padding.
      Grab Lists sheet (section 8). The code comment notes that this door opens the grab lists, not the
      templates ("Your templates"), and that the owner's note on the Mac asked for "Your Grab Lists".
 2. The grab tiles (`GrabButtons`, section 4) for `library.homeGrabLists()`. When that is empty (every list
-   taken off Home), a button in their place instead (0.6x, `home-grab-none`): "No grab lists on Home. They
+   taken off Home), a button in their place instead (0.62, `home-grab-none`): "No grab lists on Home. They
    wait in Grab Lists — tap here to put one back." (16 pt semibold Home blue, 14 pt padding, `card` fill,
    radius 12, a 1.5-pt Home-blue stroke at 50 %). It opens Grab Lists.
 3. The countdown card (section 11), only when `library.nextTrip(today: Today.local)` is not nil;
@@ -291,7 +291,7 @@ Open-requests from outside are handled in `HomeScreen` with `onChange(…, initi
 - `tripToOpen`: it is set back to `nil` at once. If `library.trips` holds that id, the trip opens. An
   unknown id does nothing.
 - `grabMenuOpen`: set back to `false` at once; the menu opens unless it is already up.
-- Each opening goes through `whenFree` (0.6x): if one of Home's own sheets is up (Search, a trip, Grab
+- Each opening goes through `whenFree` (0.62): if one of Home's own sheets is up (Search, a trip, Grab
   Lists, a grab list, the menu), all of them are closed first and the asked-for one opens **0.8 s** later;
   otherwise it opens at once. Until then a Shortcut or a tapped reminder that arrived while, say, Grab
   Lists was open could open nothing.
@@ -329,11 +329,11 @@ the buttons a bit so they are thinner … four on each row … two rows". They w
   **8 lists** (`GRAB_HOME_SLOTS`), so at most two rows. It can pass fewer than 8 even when he has more
   lists: a list he took off Home leaves its place free (section 5), so Home simply shows one tile fewer.
   With every list taken off, Home shows the "Grab and go" row and, instead of tiles, the
-  `home-grab-none` line that leads to Grab Lists (section 3; 0.6x).
+  `home-grab-none` line that leads to Grab Lists (section 3; 0.62).
 - A short last row is padded with invisible equal-width spacers, so every tile has the same width.
 - Each tile is a plain button:
   - the list's drawing (`GrabDoodle`) at **36 pt** in the list's tone colour;
-  - 3 pt below it, `label` at **15 pt bold** `ink`, centred, up to two lines, never shrunk (0.6x: 14 pt, one line, scaling to 75 %);
+  - 3 pt below it, `label` at **15 pt bold** `ink`, centred, up to two lines, never shrunk (0.62: 14 pt, one line, scaling to 75 %);
   - 4 pt side padding, full width, minimum height **68**, `card` fill, corner radius 12;
   - a 1.5-pt stroke in the tone colour at 50 % opacity.
 - Identifier `grab-<n>`, where n is the **position** (0…7), never the name.
@@ -369,8 +369,8 @@ round caps and joins.
 | `swim-sun` | the swimmer + sun at (12, 12), scale 1.2 |
 | `bike-sun` | the bike + sun at (11.5, 11.5), scale 1.2 |
 | `run-sun` | the runner with only the two lower speed lines + sun at (11, 12), scale 1.15 |
-| `""` with a non-empty `initial` | the **first character of the label, upper-cased**, at half the size but never under 15 (0.6x: the 28-pt drawing made it 14), heavy, in the tone colour |
-| **any other key**, or `""` with no initial | the runner (the `default` case). Since 0.6x a received list cannot bring an unknown key (`importGrab` keeps only `GRAB_ICONS`, section 10); only a factory row written by the web app could |
+| `""` with a non-empty `initial` | the **first character of the label, upper-cased**, at half the size but never under 15 (0.62: the 28-pt drawing made it 14), heavy, in the tone colour |
+| **any other key**, or `""` with no initial | the runner (the `default` case). Since 0.62 a received list cannot bring an unknown key (`importGrab` keeps only `GRAB_ICONS`, section 10); only a factory row written by the web app could |
 
 The sun is the web app's GRAB_SUN: a closed curve plus 8 rays reaching 9.6 units from its middle. It was
 made bigger at the owner's ask, which meant moving its middle inwards so it does not clip the box or
@@ -467,12 +467,12 @@ device's own working state.
   and ONLY these": every list not chosen — taken off, stepped back for another, or simply not chosen —
   waits until he puts it on Home himself). An empty remainder removes the `grabOff` key (`writeOff`); an
   empty `ids` stores `grabHome = []` and sends every list to wait.
-- `grabListNameTaken(_ name)` (0.6x): true when the name, by `normName`, is the `label` or the `title` of
+- `grabListNameTaken(_ name)` (0.62): true when the name, by `normName`, is the `label` or the `title` of
   any list (factory or own); false for a blank name. Make refuses such a name (section 8); receiving a
   shared list does not (it goes through `addGrabList` directly).
 - `addGrabList(label:title:tone:icon:items:)`:
   - the label is `jsTrim`med; an empty label returns nil;
-  - id `own-` + `PackingEnv.makeId()` (0.6x, so a model test can pin it; lists made before keep their
+  - id `own-` + `PackingEnv.makeId()` (0.62, so a model test can pin it; lists made before keep their
     `own-<milliseconds since 1970>-<random 100…999>`);
   - `title` = the trimmed title, or the label when that is blank;
   - `tone` defaults to "blue" and `icon` to "";
@@ -484,14 +484,14 @@ device's own working state.
   label (empty → false). Items are trimmed, blanks dropped, repeats removed by `normName` (first kept).
   Called by `saveGrabList` for an own list (since 0.61).
 - `deleteOwnGrabList(id:)`: false for an id that is not an own list. Otherwise it removes the own list,
-  removes its id from `grabHome`, removes it from `grabOff` (0.6x; it stayed there, unread, before — and
+  removes its id from `grabHome`, removes it from `grabOff` (0.62; it stayed there, unread, before — and
   rode in every backup's `off`), and removes its "sometimes" marks. If the remaining arrangement is
   empty, `grabHome` is left as it was; the stale id is harmless because unknown ids are skipped.
   The place a deleted list held on Home stays free unless a new list exists. Called by the grab editor's
   "Delete the grab list" (section 7, since 0.61).
 - `saveGrabList(id:items:)`: any list (section 7): a factory list as a `grab` row, an own list through
   `saveOwnGrabList`. False for an unknown id or when nothing is left after cleaning.
-- `saveGrabEdit(id:items:sometimes:)` (0.6x): what the editor's Save calls — `saveGrabList`, and only
+- `saveGrabEdit(id:items:sometimes:)` (0.62): what the editor's Save calls — `saveGrabList`, and only
   when that succeeds, `setSometimes`. Refused whole (false, nothing changed) when no name is left.
 - `writeOwn`, `writeOff`: an empty array removes the key altogether.
 
@@ -503,13 +503,13 @@ device's own working state.
 - `current(for: items, now:)`: if `now − at > 6 h`, an empty `GrabState()`. Otherwise `done` and
   `skipped` are filtered to names still on the list, and `at` is kept. The 6 hours count from the **last
   tap or skip**, because each of those stamps `at = now`, not from the start of the workout. That is on
-  purpose (decided 0.6x: a list he is still ticking is still the same outing and must not empty itself
+  purpose (decided 0.62: a list he is still ticking is still the same outing and must not empty itself
   under his hand), and the screen's footer says so (section 6).
 - `active(items)` = items not skipped.
 - `isComplete(items)` = `active` is not empty **and** every active name is in `done`. Nothing to take is
   not "all there".
 - `missing(items)` = active names not in `done`, in list order.
-- `inHand(items)` (0.6x) = active names that are in `done`; `skippedCount(items)` = the list's names that
+- `inHand(items)` (0.62) = active names that are in `done`; `skippedCount(items)` = the list's names that
   are in `skipped`. The counter uses these, so it reads the list as it stands, never a name edited away.
 - `tapped(name)`: stamps `at`. A skipped name comes back (un-skipped, **not** ticked); a ticked name is
   unticked; anything else is ticked (appended to `done`).
@@ -523,9 +523,9 @@ device's own working state.
   `UserDefaults`. `forget(id)` (0.61) removes both; it runs after one of his lists is deleted ("A deleted
   list's ticks go with it"). Only this device forgets: the other device keeps its own stored state for a
   list deleted elsewhere, unread (a few bytes, meaningless after 6 hours; see Open questions 36).
-- The grab screen always reads and saves under its own `listId` (0.6x), never under the id of a list it
+- The grab screen always reads and saves under its own `listId` (0.62), never under the id of a list it
   fell back to.
-- (`state(_:items:)`, never called, was removed in 0.6x.)
+- (`state(_:items:)`, never called, was removed in 0.62.)
 
 **Storage and sync of the list definitions.**
 - A factory edit is **one shared row** (`SharedRow`), kind `"grab"`:
@@ -547,7 +547,7 @@ device's own working state.
 - Backup (`Library.backupFile`): `prefs.grab` = `{ items: {gid: [names]}, meta: {gid: {label, icon, tone}} }`
   for the factory rows (the web app's shape), plus our own keys `sometimes: {listId: [names]}`,
   `own: [{id,label,title,tone,icon,items}]`, `home: [ids]` and (0.61) `off: [ids]` ("or a restore would
-  put them straight back"; since 0.6x it never names a deleted list). Each of our keys is written only when non-empty. When there are no factory
+  put them straight back"; since 0.62 it never names a deleted list). Each of our keys is written only when non-empty. When there are no factory
   rows but there are marks, own lists, an arrangement or off ids, `prefs.grab` holds only those keys.
 - Import (`Importer`): rebuilds the factory rows from the union of `items` and `meta` ids, **sorted**
   (so row order is alphabetical, which is harmless because `grabLists()` uses factory order). It
@@ -565,12 +565,12 @@ device's own working state.
   tap on a skipped name brings it back; skipping unticks; all skipped is not complete.
 - `GrabListsTests.testTicksClearThemselvesAfterSixHoursAndFollowTheItems`: a name edited away is dropped;
   after 7 h the state is empty.
-- `GrabListsTests.testTheSixHoursCountFromTheLastTap` (0.6x): taps at 0 h and 5 h are still there at 10 h,
+- `GrabListsTests.testTheSixHoursCountFromTheLastTap` (0.62): taps at 0 h and 5 h are still there at 10 h,
   gone at 12 h.
-- `GrabListsTests.testTheCountIsOfTheListAsItStands` (0.6x): a ticked or skipped name no longer on the list
+- `GrabListsTests.testTheCountIsOfTheListAsItStands` (0.62): a ticked or skipped name no longer on the list
   is not counted.
 - `GrabEditingTests` (a second class in `GrabListsTests.swift`, section 7).
-- `GrabCollectionTests` (Home slots, `grabOff` and own lists, sections 7 and 8; since 0.6x also
+- `GrabCollectionTests` (Home slots, `grabOff` and own lists, sections 7 and 8; since 0.62 also
   `testADeletedListLeavesNoTraceInTheArrangement`, `testANameAlreadyInUseIsTaken`,
   `testEveryListCanWaitOffHome`).
 - `GrabSometimesTests` (marks, opening state, own lists' marks and ticks, section 7).
@@ -615,7 +615,7 @@ device's own working state.
   - "Done" (`grab-done`) → `dismiss()`;
   - "Ready to go" on a complete list (it closes itself after 0.35 s);
   - "Delete the grab list" in the editor of one of his own lists (section 7);
-  - the list going while it is open (0.6x): deleted on the other device, or lost to a later write from
+  - the list going while it is open (0.62): deleted on the other device, or lost to a later write from
     there — the sheet closes by itself;
   - on the iPhone, swiping the sheet down.
 - Opened from the menu, Done (and Delete) closes the **whole** menu sheet; there is no way back to the
@@ -623,7 +623,7 @@ device's own working state.
 - The screen finds its list with `leaving ?? library.grabList(id: listId) ?? lastSeen ?? GRAB_FACTORY[0]`.
   `lastSeen` is the list as last found (kept by `onChange(of: grabList(id:), initial: true)`). When the
   list goes while open, that same `onChange` sets `leaving = lastSeen` and dismisses the sheet, so the
-  screen closes still showing it. `leaving` is also set by Delete (section 7). Until 0.6x a list that
+  screen closes still showing it. `leaving` is also set by Delete (section 7). Until 0.62 a list that
   went while open turned the screen into Indoor swim (`GRAB_FACTORY[0]`), and the next tick was saved under
   the swim list's key. `GRAB_FACTORY[0]` is now only reached for an id that never existed (Home never
   opens one).
@@ -637,14 +637,14 @@ device's own working state.
    - **Share** (`grab-share`): the drawn share mark only, outlined in the tone, accessibility label
      "Share";
    - **"Done"** (`grab-done`): a capsule filled with the tone, white text.
-   - The buttons use `HeaderButtonStyle`: 17 pt bold (16 until 0.6x, which overrode the `.font(17 bold)`
+   - The buttons use `HeaderButtonStyle`: 17 pt bold (16 until 0.62, which overrode the `.font(17 bold)`
      written on them — spec 06 §20), minimum 36 tall, 14 pt side padding, 70 % opacity while pressed, words
      never cut.
 2. The pinned counter (outside the scroll; 16 pt side and 10 pt bottom padding; a hairline under it):
    - **Not complete:**
      - `"<inHand> of <active> in hand"`, plus `" · <skipped> skipped"` when any of the list's names is
        skipped (`grab-count`), at 18 pt heavy monospaced digits, `ink`. Both numbers are counted against
-       the list as it stands (`inHand`, `skippedCount`, 0.6x);
+       the list as it stands (`inHand`, `skippedCount`, 0.62);
      - under it an 8-pt progress bar: a `line` capsule with a tone capsule filling
        `inHand / active` of the width (0 when nothing is active). The bar is hidden from accessibility.
    - **Complete:** a 52-tall tone-filled rounded bar saying **"All there — go!"** (20 pt heavy white,
@@ -652,7 +652,7 @@ device's own working state.
 3. The scrolling list, one row per item in list order (6 pt spacing, 16 pt side and 24 pt bottom
    padding), with a hairline under each row. A list with nothing on it (one just made) shows instead
    "Nothing on this list yet. Press Edit to put things on it." (17 pt semibold `ink`, 12 pt above and
-   below, `grab-empty`; 0.6x).
+   below, `grab-empty`; 0.62).
    - The row button (`grab-item-<n>`, the `.isSelected` trait when ticked):
      - a 26-pt circle: tone outline, or a `line` outline when skipped; ticked = filled tone with a
        white tick (stroke 2.4);
@@ -668,11 +668,11 @@ device's own working state.
 4. **"Ready to go"** (`grab-ready`), 14 pt above: full width, 52 tall, a radius-12 rounded rectangle
    filled with the tone, 18 pt bold white. **Never grey.**
 5. **"Start over"** (`grab-reset`): only when the list differs from how it opens — something ticked, or
-   the skipped names not exactly the "only sometimes" ones (0.6x; before, whenever anything was ticked or
+   the skipped names not exactly the "only sometimes" ones (0.62; before, whenever anything was ticked or
    skipped). 16 pt semibold `muted`, 44 tall.
 6. A footer, **15 pt** medium `muted`, 8 pt above: "Tap each thing as you pick it up — or tap ⊘ to leave
    something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap."
-   (0.6x: it said "after 6 hours", 14 pt.)
+   (0.62: it said "after 6 hours", 14 pt.)
 
 The whole screen is the container `grab-detail` on a `bg` background.
 
@@ -683,7 +683,7 @@ The whole screen is the container `grab-detail` on a `bg` background.
   held ticks are filtered against the list's own names for every list, factory or own (`openingState`
   reads `grabList(id:)`; until 0.61 it read the factory six only, so an own list's ticks were lost on
   every opening and the empty state was saved over them). Opening and every later save use the screen's
-  own `listId` (0.6x; it used `list.id`, which was Indoor swim's when the list had vanished).
+  own `listId` (0.62; it used `list.id`, which was Indoor swim's when the list had vanished).
 - **A tap on a row** → `tapped(name)`. **A tap on ⊘/↻** → `skipToggled(name)`. Each change:
   1. records whether the list was complete;
   2. applies the change;
@@ -696,7 +696,7 @@ The whole screen is the container `grab-detail` on a `bg` background.
   - complete → flash on (it is not switched off again; the sheet closes under it), and `dismiss()` after
     **0.35 s**;
   - otherwise the "Not yet" card shows, with a message:
-    - the list is empty (0.6x): **"Nothing on this list yet. Press Edit to put things on it."** (it said
+    - the list is empty (0.62): **"Nothing on this list yet. Press Edit to put things on it."** (it said
       "everything is skipped");
     - nothing missing (every item skipped): **"Nothing left to take — everything is skipped."**;
     - 1 to 3 missing: **"Still missing: A, B, C."** (comma-separated, list order);
@@ -711,13 +711,13 @@ The whole screen is the container `grab-detail` on a `bg` background.
   - Red is the To do colour `#dc3d43`.
   - The card appears and goes without animation (a plain `if` in an overlay); the content under it keeps
     its state.
-- **"Start over"** (0.6x) replaces the state with the list's opening state —
+- **"Start over"** (0.62) replaces the state with the list's opening state —
   `openingState(listId:, held: nil)`: nothing ticked, the "only sometimes" names skipped again, `at = now`
-  — and saves it. (Until 0.6x it was an empty `GrabState()`, so the "only sometimes" things counted as to
+  — and saves it. (Until 0.62 it was an empty `GrabState()`, so the "only sometimes" things counted as to
   take until the list was opened again, and only if nothing had been tapped since.)
 - The counter is counted against the list as it stands (`inHand`, `skippedCount`), so a list whose names
   change while it is open (an edit arriving from the other device) can no longer read "8 of 7".
-- **The list goes while open** (0.6x): the screen closes, still showing the list as last seen (see "How
+- **The list goes while open** (0.62): the screen closes, still showing the list as last seen (see "How
   it is reached and left"). Nothing is saved under another list's key.
 
 **Data.** Reads the list definition and `sometimes(listId:)`. Reads and writes `UserDefaults
@@ -737,14 +737,14 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 - UI `testTicksOnHisOwnGrabListSurviveClosingIt`: a list made with Make ("Golf": Clubs, Balls) is filled
   and saved ("0 of 2 in hand"); `grab-item-0` → "1 of 2 in hand"; Done, reopen `grab-6` → still "1 of 2 in
   hand" and `grab-item-0` is selected.
-- UI `testSaveKeepsTodaysTicksAndStartOverSetsAsideWhatIsTakenOnlySometimes` (0.6x): Indoor swim, tick
+- UI `testSaveKeepsTodaysTicksAndStartOverSetsAsideWhatIsTakenOnlySometimes` (0.62): Indoor swim, tick
   item 0 → "1 of 7 in hand"; Edit, mark `grab-sometimes-1`, Save → "1 of 6 in hand · 1 skipped" with item
   0 still selected; Start over → "0 of 6 in hand · 1 skipped", item 1 "only sometimes", and `grab-reset`
   gone.
-- UI `testAnEmptyGrabListSaysHowToFillIt` (0.6x): a list made with Make shows `grab-empty`; Ready to go's
+- UI `testAnEmptyGrabListSaysHowToFillIt` (0.62): a list made with Make shows `grab-empty`; Ready to go's
   message does not say "skipped"; Share says `share-empty`; Save with nothing on it says
   `grab-save-needs` and stays in the editor; after adding "Board" and saving, "0 of 1 in hand".
-- UI `testAGrabListGoneWhileOpenClosesInsteadOfBecomingAnother` (0.6x, iPhone only,
+- UI `testAGrabListGoneWhileOpenClosesInsteadOfBecomingAnother` (0.62, iPhone only,
   `-dropOwnGrabListsOnReturn`): his "Kayak" open with a tick; the own lists go while the app is away; on
   return `grab-detail` has closed, `grab-6` is gone, and Indoor swim reads "0 of 7 in hand".
 - Model: `GrabListsTests` (counting), `GrabSometimesTests` (opening state;
@@ -780,14 +780,14 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 **How it is reached and left.**
 - **In:** "Edit" (`grab-edit`) on an open list.
 - **Out:** "Save" (the same button, now filled) — unless nothing is left on the list, when the editor stays
-  open and says so (0.6x). Swiping the iPhone sheet down while editing throws the draft away (nothing is
+  open and says so (0.62). Swiping the iPhone sheet down while editing throws the draft away (nothing is
   saved). On one of his own lists, "Delete the grab list" closes the sheet and the list is gone.
 - While editing, the counter, Share and Done are hidden. The button's identifier stays `grab-edit`
   whether it reads "Edit" or "Save".
 
 **What is on screen** (editing):
 1. The header with **"Save"** (a capsule filled with the tone). Under the header, after a refused Save
-   (0.6x): **"Put at least one thing on the list first."** (`grab-save-needs`, 15 pt bold red — the
+   (0.62): **"Put at least one thing on the list first."** (`grab-save-needs`, 15 pt bold red — the
    shared `NeedsLine`). It goes as soon as the draft changes (a name typed, a thing added or removed) and
    when editing starts again.
 2. A scroll (4 pt spacing, 16 pt side padding):
@@ -812,7 +812,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 4. **Only on one of his own lists** (`isOwn` = the id is among `ownGrabLists()`, so a list received by
    sharing counts too), last on the screen, under the bar, with 16 pt side and 10 pt bottom padding:
    - **"Delete grab list"** (`grab-delete`): the shared `SmallDeleteButton`, **15 pt** like every
-     Delete (0.6x: the button's `size` parameter, added in 0.61 for this one, is gone — its words are
+     Delete (0.62: the button's `size` parameter, added in 0.61 for this one, is gone — its words are
      always 15 now; Delete trip, template, thing and bag were 13): semibold text in To do red, 12 pt
      side padding, minimum 30 tall, a 1-pt capsule outline in red at 60 % opacity, pushed to the right
      edge. "Quiet until wanted; it only ever
@@ -854,12 +854,12 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
      that succeeds `setSometimes(listId:names:)`, which validates against the new items. "One door for
      every list, his own ones too."
   4. **Refused** (nothing left on the list): nothing is stored, the editor stays open, and
-     `grab-save-needs` says "Put at least one thing on the list first." (0.6x).
+     `grab-save-needs` says "Put at least one thing on the list first." (0.62).
   5. Otherwise editing ends and the delete question closes.
-  6. **Today's session is kept** (0.6x): `stateAfterEdit(listId:held:markedBefore:)` — ticks and skips on
+  6. **Today's session is kept** (0.62): `stateAfterEdit(listId:held:markedBefore:)` — ticks and skips on
      names still on the list stay; a name just marked "1 in 10" is set aside unless it is already ticked;
      a name just unmarked comes back into the count; a session not under way (or older than 6 h) starts
-     from the defaults as an opening does. It is saved. (Until 0.6x every Save restarted the session —
+     from the defaults as an opening does. It is saved. (Until 0.62 every Save restarted the session —
      all ticks gone — even with nothing changed.)
 - **`saveGrabList(id:items:)`** (the one door for an edit of a list's things, whichever kind it is):
   1. trims every name, drops blanks, drops repeats by `normName` (first kept);
@@ -872,7 +872,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
      label refused; the items are cleaned again, which changes nothing), so it is written into
      `meta["grabOwnLists"]` — never as a `grab` row, which the web app would read;
   5. any other id: false.
-- **When a save is refused** (every name blanked, or a list just made with nothing added) — since 0.6x —
+- **When a save is refused** (every name blanked, or a list just made with nothing added) — since 0.62 —
   nothing is stored at all, the marks included, and the line under Save says what is missing. (Until then
   the editor closed silently and `setSometimes` still ran with no names, deleting every "only sometimes"
   mark of the list.)
@@ -909,7 +909,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 - The `grab` shared row (factory lists); `meta["grabOwnLists"]` (his own lists, edited and deleted here).
 - `meta["grabSometimes"]` = `{listId: [names]}`, carried in the backup as `prefs.grab.sometimes`.
 - `meta["grabHome"]` and `meta["grabOff"]` (a deleted list's id is removed from both).
-- `UserDefaults ams.grab.<id>` for the session after a Save (kept, 0.6x), removed by Delete.
+- `UserDefaults ams.grab.<id>` for the session after a Save (kept, 0.62), removed by Delete.
 
 **iPhone vs Mac.** The same. The add field's Return submits on both.
 
@@ -931,9 +931,9 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 - Model `GrabEditingTests.testAnEditedListIsOneSharedRecordAndTheOthersStayFactory`: trims, drops blanks
   and repeats; exactly one record `grab:swim`; saving again replaces; all-blank refused; unknown id
   refused; his label survives an items edit.
-- Model `GrabEditingTests.testARefusedSaveKeepsTheMarks` (0.6x): an all-blank `saveGrabEdit` changes
+- Model `GrabEditingTests.testARefusedSaveKeepsTheMarks` (0.62): an all-blank `saveGrabEdit` changes
   nothing — the marks stay — on a factory list and on his own.
-- Model `GrabSometimesTests.testSavingAnEditKeepsTodaysTicks` (0.6x): `stateAfterEdit` with nothing changed
+- Model `GrabSometimesTests.testSavingAnEditKeepsTodaysTicks` (0.62): `stateAfterEdit` with nothing changed
   is the state itself; a new mark is set aside but a ticked thing stays ticked; an unmarked thing comes
   back; a thing edited off goes; no session or a stale one gives the defaults.
 - UI `testSaveKeepsTodaysTicksAndStartOverSetsAsideWhatIsTakenOnlySometimes`, `testAnEmptyGrabListSaysHowToFillIt`
@@ -997,7 +997,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 - **Out:** "Done" (`grablists-done`, a capsule filled with Home blue), or a swipe down on the iPhone.
 - Swap sheet: opened by a waiting list's "On Home" while Home is full. It closes on "Cancel"
   (`swap-cancel`, an outlined capsule) or after a pick.
-- A waiting list's own screen (`GrabScreen`, section 6): opened by tapping the waiting row (0.6x); its
+- A waiting list's own screen (`GrabScreen`, section 6): opened by tapping the waiting row (0.62); its
   Done (or Delete) comes back here.
 - Both open through ONE sheet with a destination (`Window`: `.swap(id)` or `.open(id)`), as Search does.
 
@@ -1023,13 +1023,13 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
    - If none are waiting (15 pt medium `muted`), worded by whether Home has room: fewer than 8 on Home →
      "Nothing waiting. A new list goes straight onto Home."; 8 on Home → "Nothing waiting. A new list waits
      here while Home is full."
-   - One row per waiting list, same size and look as a Home row, holding **two buttons** (0.6x):
+   - One row per waiting list, same size and look as a Home row, holding **two buttons** (0.62):
      - the drawing, the label and "<k> thing(s)" (`grablists-waiting-<n>`, accessibility label
        "<label>, <k> things. Open it" — always "things", even for 1): **opens the list** to tick, fill or
        delete it, and it stays waiting;
      - a filled Home-blue pill reading **"On Home"** (`grablists-on-<n>`, label "Put <label> on Home";
        15 pt heavy white, 28 tall): puts it on Home.
-     (Until 0.6x the whole row was the "On Home" button, and a waiting list could not be opened here.)
+     (Until 0.62 the whole row was the "On Home" button, and a waiting list could not be opened here.)
    - Both row kinds say "1 thing" / "<k> things" on screen (singular for one).
    - Footer: "A list that steps back off Home keeps everything on it — nothing here throws a list away."
      (15 pt medium `muted`).
@@ -1042,7 +1042,7 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 **Behaviour.**
 - **Make** (button or Return):
   1. trims the name; empty → "Type a name first.";
-  2. a name a list already has, on its tile or as its title (`grabListNameTaken`, 0.6x) → **"You have a
+  2. a name a list already has, on its tile or as its title (`grabListNameTaken`, 0.62) → **"You have a
      grab list called <name> already. Give this one another name."** under the bar
      (`grablists-new-needs`); nothing is made and the field keeps the name;
   3. otherwise `addGrabList(label: name)`: **no things**, tone blue, no drawing (so its tile shows the
@@ -1070,16 +1070,16 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
   - The list now **waits, whole, until he puts it back**; Home shows one tile fewer, and its place stays
     free: no waiting list is pulled in, only a list made (or received) later takes it. ("Until 4 Oct 2026
     the free place pulled it straight back.")
-- The made line is cleared by Up/Down, Off Home, `bringOn`'s "room on Home" branch and (0.6x) a pick in
+- The made line is cleared by Up/Down, Off Home, `bringOn`'s "room on Home" branch and (0.62) a pick in
   the swap sheet (`SwapScreen`'s `picked`); an empty or refused Make and Cancel on the swap sheet leave it
   as it was.
-- **Tap a waiting list** (0.6x): its screen opens (section 6) over Grab Lists; nothing moves.
+- **Tap a waiting list** (0.62): its screen opens (section 6) over Grab Lists; nothing moves.
 - **"On Home" on a waiting list** (`bringOn`):
   - with fewer than 8 on Home (since 0.61 the normal case after Off Home or a delete): it is added at the
     **end** of Home with `setHomeGrabLists` (so it leaves `grabOff`), no question asked, and the made line
     is cleared;
   - otherwise the swap sheet opens for it.
-- A waiting list can be **opened** from here (0.6x) — also through the Action-button menu (section 9) or
+- A waiting list can be **opened** from here (0.62) — also through the Action-button menu (section 9) or
   the "Open a grab list" Shortcut.
 - **Swap sheet:**
   - title "Which one steps back?" (20 pt heavy);
@@ -1105,14 +1105,14 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
   - Make "Padel" → "7 of 8", Make "Golf" → "8 of 8"; after each, `grablists-made` contains "is on Home";
   - Make "Kayak" → the waiting heading contains "1", Home stays "8 of 8", and `grablists-made` contains
     "Home is full";
-  - tapping `grablists-on-0` opens `swap-detail`; `swap-0` closes it, and `grablists-made` is gone (0.6x);
+  - tapping `grablists-on-0` opens `swap-detail`; `swap-0` closes it, and `grablists-made` is gone (0.62);
   - Home is still 8 of 8; the list that stepped back is `grablists-waiting-0` and does not say
     "0 things";
   - the list now waiting carries the first four characters of `swap-0`'s words (it is the one he picked);
   - after Done, a Home tile says "Kayak".
 - UI `testAGrabListTakenOffHomeStaysOff`: "6 of 8"; `grablists-off-0` → "5 of 8" and Waiting contains "1";
   after Done, Home has no `grab-5` and the list's tile is gone; Grab Lists opened again still says "5 of 8";
-  tapping `grablists-waiting-0` opens `grab-detail` and, after its Done, Home is still "5 of 8" (0.6x);
+  tapping `grablists-waiting-0` opens `grab-detail` and, after its Done, Home is still "5 of 8" (0.62);
   `grablists-on-0` → "6 of 8" with **no** `swap-detail`; after Done the list is `grab-5`.
 - UI `testAnEmptyGrabListSaysHowToFillIt`: Make "swim" → `grablists-new-needs`, still "6 of 8".
 - UI `testHomeWithEveryGrabListOffSaysWhereTheyAre`: `grablists-off-0` six times → "0 of 8".
@@ -1155,10 +1155,10 @@ grab list" opens the app here: every grab list as a big tile, and one tap opens 
 **How it is reached and left.**
 - **In:** the `ChooseGrabListIntent` Shortcut (section 13) sets `model.grabMenuOpen = true`. RootView
   switches to Home; Home clears the flag at once and opens the menu (its own `menuShown`) through
-  `whenFree`, so it opens even over another Home sheet (0.6x). Under UI tests the launch argument
+  `whenFree`, so it opens even over another Home sheet (0.62). Under UI tests the launch argument
   `-openGrabMenu` sets the same flag.
 - **Out:** "Close" (`grab-menu-close`, a `muted` outlined capsule; `HeaderButtonStyle` makes it 17 pt
-  bold — 16 until 0.6x — overriding the 17 pt semibold written on it) or a swipe down.
+  bold — 16 until 0.62 — overriding the 17 pt semibold written on it) or a swipe down.
 
 **What is on screen.**
 - "Which grab list?" (24 pt heavy, Home blue) and Close; 14 pt between this row and the tiles.
@@ -1166,7 +1166,7 @@ grab list" opens the app here: every grab list as a big tile, and one tap opens 
   tiles are `grab-menu-0…`. The tiles hold
   **Home's lists first (in Home order), then all the others in `allGrabLists()` order**, four per row,
   with no limit on the number. So a waiting list — one sent off Home, or made while Home was full — can be
-  opened (ticked, edited, deleted) here without first being put on Home (as, since 0.6x, in Grab Lists).
+  opened (ticked, edited, deleted) here without first being put on Home (as, since 0.62, in Grab Lists).
 - 16 pt padding all round, `bg` background, container id `grab-menu`.
 
 **Behaviour.** A tile tap sets `chosen`. The sheet's content is then replaced by
@@ -1213,7 +1213,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
     (`share-toolong`);
   - with no link and no file — an **empty** grab list (a list just made with Make, before anything is
     saved on it) or an empty template: **"There is nothing on it to share yet."** (`share-empty`, 15 pt
-    medium `muted`; 0.6x — it used to give the "too big" reason, and there is no file for these);
+    medium `muted`; 0.62 — it used to give the "too big" reason, and there is no file for these);
   - a footer, 15 pt `muted`: "The link opens in the web app, and in this app under Settings → Open a
     shared link."
 - Codes are byte for byte the web app's (PackingCore `GrabSharing.swift`: short keys `k`, `v`, `n`, `x`,
@@ -1224,16 +1224,16 @@ web app for anyone, and in this app under Settings → Open a shared link.
   first, then a template, then a trip.
 - A grab list shows "A GRAB LIST" (`shared-kind`, 15 pt heavy `muted`, kerning 0.6), its name
   (`shared-name`, 18 pt bold) and "1 thing" / "<n> things" (15 pt medium `muted`, `shared-count`; "1 things"
-  until 0.6x — the trips spec pass).
+  until 0.62 — the trips spec pass).
   `decodeGrabShare` refuses a code with no items ("The shared list is empty."), and `readShared` then tries
   a template and a trip, so such a code ends as `shared-bad`.
 - **"Add it to your grab lists"** (`shared-add`, Trips-green fill, 48 tall) runs `importGrab`, which is
   `addGrabList`:
   - label = the shared name, or "Shared" when empty;
   - icon = the shared icon when this app draws it (`GRAB_ICONS`: the six doodle keys), else `""`, so the
-    tile wears the list's initial (0.6x; an unknown key used to show as the **runner**);
+    tile wears the list's initial (0.62; an unknown key used to show as the **runner**);
   - tone = the shared tone when it is one of `GRAB_TONES` (blue, yellow, green, red, purple, teal), else
-    "blue" (0.6x; an unknown tone used to show as slate `#64748b`);
+    "blue" (0.62; an unknown tone used to show as slate `#64748b`);
   - items as decoded.
 - The result line (`shared-result`, 15 pt bold Trips green; the preview and the typed text are cleared):
   - "Added — it is on Home, in a free place." when the fill put it on Home (a received list is new, so it
@@ -1247,7 +1247,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
   test "hello there" is refused with `shared-bad`.)
 - Model `SharingTests.testAGrabListWaitsInGrabLists`: a full Home is unchanged and the list waits;
   rubbish and blank text read as nothing.
-- Model `SharingTests.testAReceivedGrabListGetsTheStandardLookForWhatIsUnknown` (0.6x): a known drawing and
+- Model `SharingTests.testAReceivedGrabListGetsTheStandardLookForWhatIsUnknown` (0.62): a known drawing and
   colour are kept; "kite" and "magenta" become "" and "blue".
 - UI `testAnEmptyGrabListSaysHowToFillIt`: Share on an empty list shows `share-empty`, not `share-toolong`.
 - PackingCore `GrabSharingTests`:
@@ -1302,7 +1302,7 @@ a 1.2-pt stroke in Trips green:
 - "Still to leave" = `status != "done"` **and** `reviewedAt` empty **and** `startDate` is YYYY-MM-DD
   **and** `startDate >= today`.
 - **A trip under way is no countdown**: from the day after it starts it is gone. A trip without dates
-  never counts. (Kept on purpose, 0.6x: every packing step falls due on or before the first day, so a trip
+  never counts. (Kept on purpose, 0.62: every packing step falls due on or before the first day, so a trip
   under way has no step left to remind of; its On site page is on the Trips tab.)
 - The soonest by `startDate`. The sort is stable, so on equal dates the library's trip order wins.
 - `days` = `daysUntil(startDate, today)`, whole calendar days (UTC day arithmetic on the date strings);
@@ -1346,7 +1346,7 @@ summer); the web app's countdown lags exactly that way. The app always passes `T
   - "1 day";
   - the "All packed" and "N to pack" fallbacks;
   - ties on the start date.
-- Model `CountdownTests.testATripMarkedDoneIsNoCountdownEvenUnreviewed` (0.6x): `status == "done"` without
+- Model `CountdownTests.testATripMarkedDoneIsNoCountdownEvenUnreviewed` (0.62): `status == "done"` without
   `reviewedAt` gives no next trip and no reminders.
 
 ---
@@ -1359,8 +1359,8 @@ swapped over).
 
 **What is on screen.** A row with 10 pt spacing:
 - **"This Device"**: 15 pt heavy `muted`, kerning 0.5, rotated −90° in a 20-pt-wide column
-  (`device-heading`). (0.6x: 12 pt in a 16-pt column; standing on its side at 15 it is 95 pt long.)
-- Three `CountTile`s of equal width, each minimum 96 tall (76 until 0.6x, shorter than the side heading
+  (`device-heading`). (0.62: 12 pt in a 16-pt column; standing on its side at 15 it is 95 pt long.)
+- Three `CountTile`s of equal width, each minimum 96 tall (76 until 0.62, shorter than the side heading
   at 15), `card` fill, radius 14, hairline stroke. Each
   shows the number (30 pt heavy monospaced) and under it a 15 pt semibold `muted` label:
 
@@ -1372,7 +1372,7 @@ swapped over).
 
 **Behaviour.** Display only; no taps.
 
-Since 0.6x "Templates" is the same number as Your templates' summary: the hidden bags list (role
+Since 0.62 "Templates" is the same number as Your templates' summary: the hidden bags list (role
 `container`) and any `loose` list (the web app's retired bin) are not counted. (It counted every template
 record, so it was one higher with a bag list.) Settings' "This device holds" still counts every record.
 
@@ -1405,7 +1405,7 @@ on the shared `LibraryModel.shared`, the same object the app's window uses.
 - `id` = the list id;
 - title = the list's `title`, or its `label` when the title is empty, so factory lists show "Indoor swim",
   "Outdoor run" and so on;
-- synonyms (0.6x) = the word on its tile (`label`) when it differs from the title, so "Swim" can find the
+- synonyms (0.62) = the word on its tile (`label`) when it differs from the title, so "Swim" can find the
   indoor and the outdoor swim (Siri asks which) — the guide's example says "Swim".
 
 **`GrabListQuery`:**
@@ -1429,7 +1429,7 @@ SF Symbols shown only by Shortcuts/Siri, never inside the app.
 1. The request is set.
 2. RootView switches to Home (`onChange … initial: true`).
 3. HomeScreen clears `grabToOpen` / `tripToOpen` / `grabMenuOpen` and opens the sheet — at once, or, when
-   one of Home's sheets is up, after closing it (`whenFree`, section 3; 0.6x).
+   one of Home's sheets is up, after closing it (`whenFree`, section 3; 0.62).
 4. An unknown list or trip id is cleared without opening anything.
 5. On an **empty** device Home shows the doors, and the request waits unhandled.
 
@@ -1442,7 +1442,7 @@ Packing is not in the list there: open Packing once, then look again."
   "Bike" finds the indoor bike;
 - `-openGrabMenu` sets `grabMenuOpen`;
 - `-openNextTrip` sets `tripToOpen` to the next trip.
-- (0.6x) the same requests arriving while the app is in the background, played on its return:
+- (0.62) the same requests arriving while the app is in the background, played on its return:
   `-openGrabOnReturn <word>`, `-openNextTripOnReturn` (section 1).
 
 **Tests.**
@@ -1473,7 +1473,7 @@ same news twice." Tapping one opens the trip.
     directly but runs the permission check first (below).
 - **Refused or blocked:** "This device does not allow the app to remind you. Allow it in the device's
   Settings, under Notifications." (15 pt semibold red, `settings-reminders-refused`). Shown when the
-  permission was just refused, **and** (0.6x) whenever the switch is on but the device's Settings have the
+  permission was just refused, **and** (0.62) whenever the switch is on but the device's Settings have the
   app's notifications switched off — the switch stays on (his choice), and no "Next" line is shown.
 - **On, and allowed:** (15 pt semibold Settings slate, `settings-reminders-next`)
   - `"Next: <d Mon> · <trip name> — <says>"` for the first upcoming reminder, e.g.
@@ -1489,7 +1489,7 @@ same news twice." Tapping one opens the trip.
 
 Then `on = want && ok`, `refused = want && !ok`, and the reminders are rescheduled. Turning it off never
 asks, then reschedules (which removes them all). `refused` is view state: it is forgotten when the screen
-is rebuilt — but `blocked` (0.6x) is looked up again every time the card is shown (`.task`) and every time
+is rebuilt — but `blocked` (0.62) is looked up again every time the card is shown (`.task`) and every time
 the app comes back to the front: `PackingReminders.allowed()` asks the system for the current status
 without asking him anything (authorised or provisional → allowed). `blocked = on && !allowed`.
 
@@ -1515,7 +1515,7 @@ itself at 9:00.
    - identifier `packing-<tripId>-<YYYY-MM-DD>`.
 
 It runs at launch and 2 s after every library change (section 1), every time the app comes back to the
-front (0.6x; reminders allowed again in the device's Settings come back at once), and on every flip of the
+front (0.62; reminders allowed again in the device's Settings come back at once), and on every flip of the
 switch.
 
 **Presentation and taps.**
@@ -1532,7 +1532,7 @@ build (0.49 on GitHub).
 
 **Under UI tests:** no delegate is set, permission is always "yes" without asking (the system's question
 is a window no test can answer), `reschedule` does nothing, and `ams.reminders` is cleared at launch.
-`-pretendRemindersBlocked` (0.6x) plays "switched on here earlier, then blocked in the device's
+`-pretendRemindersBlocked` (0.62) plays "switched on here earlier, then blocked in the device's
 Settings": `start()` sets `ams.reminders` on, and both `askToShow` and `allowed` say no.
 
 **Tests.**
@@ -1540,7 +1540,7 @@ Settings": `start()` sets `ams.reminders` on, and both `askToShow` and `allowed`
   the next line names "Sunny weeks" and "week ahead"; off → the line goes.
 - Model `CountdownTests.testOneReminderPerTripPerDayFromTodayOn`: dates per trip; the two steps due the
   same day joined in one reminder; soonest first; `limit` respected; a reviewed trip gives no reminders.
-- UI `testRemindersSayWhenTheDeviceBlocksThem` (0.6x, `-pretendRemindersBlocked`): the switch is on,
+- UI `testRemindersSayWhenTheDeviceBlocksThem` (0.62, `-pretendRemindersBlocked`): the switch is on,
   `settings-reminders-refused` shows and `settings-reminders-next` does not; after Home and back to
   Settings the line is still there.
 - UI `testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp`: a reminder's trip opens over Search.
@@ -1602,7 +1602,7 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
   - a template → `TemplateDetail(listId:)`;
   - a trip → `TripScreen(tripId:)`.
 - A **to-do** closes Search and sets `model.tabToOpen = .actions`; the frame switches to the To do tab
-  (section 1), whichever tab Search was opened from (0.6x; it asked a `go` no screen passed, so it only
+  (section 1), whichever tab Search was opened from (0.62; it asked a `go` no screen passed, so it only
   closed Search). The to-do itself is not singled out on the To do tab.
 - The "more" line is 15 pt medium `muted` with 8 pt above and below; only the things part is ever capped.
 
@@ -1612,7 +1612,7 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
 - UI `testOneSearchReachesEverything`, opened from **Care**: "zzzz" → `search-none`; "Headlamp" →
   `search-things-0` opens `thing-detail`; "Hiking" → `search-lists-0` opens `template-detail`.
 - UI `testTheCrossEmptiesASearch`: `search-field-clear` empties the field and `search-none` goes.
-- UI `testASearchedToDoOpensTheToDoTab` (0.6x): a to-do added on To do, Search opened from **Home**,
+- UI `testASearchedToDoOpensTheToDoTab` (0.62): a to-do added on To do, Search opened from **Home**,
   "ferry" → `search-todos-0` → Search closes and `screen-actions` shows.
 - **Not covered:**
   - trip hits;
@@ -1643,21 +1643,21 @@ nothing on GitHub's slower runner, and would have on the phone too.
 - Frame: `tab-home`, `tab-events`, `tab-templates`, `tab-care`, `tab-actions`, `tab-settings`;
   `screen-<section>`; `screen-title`; `app-version`; `library-problem`.
 - First run: `first-run-wait`, `first-run-import`, `first-run-problem`.
-- Home: `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none` (0.6x), `home-countdown`,
+- Home: `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none` (0.62), `home-countdown`,
   `home-create-heading`, `device-heading`, `count-trips`, `count-things`, `count-templates`.
 - Grab list:
   - `grab-detail`, `grab-edit`, `grab-share`, `grab-done`, `grab-count`, `grab-allthere`;
-  - `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`, `grab-reset`, `grab-empty` (0.6x);
+  - `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`, `grab-reset`, `grab-empty` (0.62);
   - `grab-notyet`, `grab-message`, `grab-message-ok`;
   - editing: `grab-rename-<n>`, `grab-up-<n>`, `grab-down-<n>`, `grab-sometimes-<n>`, `grab-remove-<n>`,
-    `grab-add-name`, `grab-add`, `grab-add-needs`, `grab-save-needs` (0.6x);
+    `grab-add-name`, `grab-add`, `grab-add-needs`, `grab-save-needs` (0.62);
   - deleting one of his own (0.61): `grab-delete`, `grab-delete-question`, `grab-delete-no`,
     `grab-delete-yes`.
 - Grab Lists: `grablists-detail`, `grablists-done`, `grablists-made` (replaced `grablists-problem` in
   0.61), `grablists-home-heading`,
   `grablists-home-<n>`, `grablists-up-<n>`, `grablists-down-<n>`, `grablists-off-<n>`,
-  `grablists-waiting-heading`, `grablists-waiting-<n>` (opens the list since 0.6x), `grablists-on-<n>`
-  (0.6x, puts it on Home), `grablists-new-name`, `grablists-new`,
+  `grablists-waiting-heading`, `grablists-waiting-<n>` (opens the list since 0.62), `grablists-on-<n>`
+  (0.62, puts it on Home), `grablists-new-name`, `grablists-new`,
   `grablists-new-needs`.
 - Swap: `swap-detail`, `swap-cancel`, `swap-<n>`.
 - Menu: `grab-menu`, `grab-menu-close`, `grab-menu-<n>`.
@@ -1666,7 +1666,7 @@ nothing on GitHub's slower runner, and would have on the phone too.
 - Search: `search-detail`, `search-done`, `search-field`, `search-field-clear`, `search-none`,
   `search-<things|lists|trips|todos>-<n>`, `search-things-more`.
 - Sharing a grab list: `share-screen`, `share-done`, `share-qr`, `share-qr-toolong`, `share-link`,
-  `share-send`, `share-copy`, `share-toolong`, `share-empty` (0.6x); receiving: `settings-openshared`, `shared-screen`,
+  `share-send`, `share-copy`, `share-toolong`, `share-empty` (0.62); receiving: `settings-openshared`, `shared-screen`,
   `shared-input`, `shared-paste`, `shared-open`, `shared-bad`, `shared-preview`, `shared-kind`,
   `shared-name`, `shared-add`, `shared-result`, `shared-done`.
 
@@ -1679,8 +1679,8 @@ Every per-row identifier is built from the **position**, never from the words.
 Found by reading the code; none of these is covered by a test unless said. Tags: **[bug]** the code does
 something wrong or surprising; **[rule-break]** it breaks one of his standing rules; **[doc]** a comment or
 document disagrees with the code; **[untested]** behaviour that matters and no test pins; **[idea]** worth
-deciding before a rewrite. Items marked **Resolved** (in 0.61 or 0.6x) or **Decided** keep their number so
-that references stay valid; they carry no tag and are not counted as open. Items marked **Left in 0.6x**
+deciding before a rewrite. Items marked **Resolved** (in 0.61 or 0.62) or **Decided** keep their number so
+that references stay valid; they carry no tag and are not counted as open. Items marked **Left in 0.62**
 keep their tag and say why they were left.
 
 **What the screens promise and the code does not do.**
@@ -1699,93 +1699,93 @@ keep their tag and say why they were left.
    `testAGrabListTakenOffHomeStaysOff`.
 4. **Resolved in 0.61** — ~~Own lists cannot be deleted in the app.~~ "Delete grab list" at the foot of the
    editor, after a question (section 7). Pinned by the UI test `testHisOwnGrabListIsDeletedAfterAsking`.
-5. **Resolved in 0.6x** — ~~A to-do found by Search goes nowhere.~~ Search sets `model.tabToOpen = .actions`
+5. **Resolved in 0.62** — ~~A to-do found by Search goes nowhere.~~ Search sets `model.tabToOpen = .actions`
    and the frame opens the To do tab from any tab (section 15). Pinned by `testASearchedToDoOpensTheToDoTab`.
 6. **Resolved in 0.61** — ~~After Make, Grab Lists says "<name> is waiting" in red, even when the list went
    onto Home; "Nothing waiting. A new list starts here." is untrue while Home has room.~~ The made line now
    says where the list went, in `ink`, and the empty-waiting text depends on Home's room (section 8).
    Pinned by `testMoreGrabListsThanHomeHolds` ("is on Home", "Home is full"); the empty-waiting texts are
    not.
-7. **Resolved in 0.6x** — ~~A refused grab-list save deletes the list's "only sometimes" marks.~~ Save goes
+7. **Resolved in 0.62** — ~~A refused grab-list save deletes the list's "only sometimes" marks.~~ Save goes
    through `saveGrabEdit`: things and marks together or not at all; refused, the editor stays open and says
    "Put at least one thing on the list first." (section 7). Pinned by `testARefusedSaveKeepsTheMarks` and
    `testAnEmptyGrabListSaysHowToFillIt`.
-8. **Resolved in 0.6x** — ~~The Share screen for an empty grab list says "too big for a link".~~ With no link
+8. **Resolved in 0.62** — ~~The Share screen for an empty grab list says "too big for a link".~~ With no link
    and no file it says "There is nothing on it to share yet." (`share-empty`) — for an empty template too
    (section 10). Pinned by `testAnEmptyGrabListSaysHowToFillIt`.
-9. **Resolved in 0.6x** — ~~Save on an unchanged grab list restarts the session.~~ `stateAfterEdit` keeps
+9. **Resolved in 0.62** — ~~Save on an unchanged grab list restarts the session.~~ `stateAfterEdit` keeps
    today's ticks and applies only what the edit changed (section 7). Pinned by
    `testSavingAnEditKeepsTodaysTicks` and `testSaveKeepsTodaysTicksAndStartOverSetsAsideWhatIsTakenOnlySometimes`.
-10. **Resolved in 0.6x** — ~~"Start over" does not re-apply "only sometimes".~~ It goes back to the opening
+10. **Resolved in 0.62** — ~~"Start over" does not re-apply "only sometimes".~~ It goes back to the opening
     state, those things set aside (section 6). Pinned by the same UI test.
-11. **Resolved in 0.6x** — ~~"Ready to go" on an empty list says "everything is skipped".~~ It says "Nothing on
+11. **Resolved in 0.62** — ~~"Ready to go" on an empty list says "everything is skipped".~~ It says "Nothing on
     this list yet. Press Edit to put things on it.", and the empty list says so too (`grab-empty`). Pinned
     by `testAnEmptyGrabListSaysHowToFillIt`.
-12. **Resolved in 0.6x** — ~~Home's "Templates" tile includes the hidden bags list.~~ It counts what Your
+12. **Resolved in 0.62** — ~~Home's "Templates" tile includes the hidden bags list.~~ It counts what Your
     templates shows (section 12). Pinned by `testHomeCountsTheTemplatesYourTemplatesShows`.
-13. **Resolved in 0.6x** — ~~Switched off in the system's notification settings, the card still names the next
+13. **Resolved in 0.62** — ~~Switched off in the system's notification settings, the card still names the next
     reminder.~~ The card looks the permission up whenever it shows and whenever the app returns, and then
     says reminders are blocked instead of naming one; reminders are put back on return once allowed
     (section 14). Pinned by `testRemindersSayWhenTheDeviceBlocksThem`.
 
 **Comments and documents that disagree with the code.**
 
-14. **Resolved in 0.6x** — ~~"Six" left over in `Backup.swift` and `Importer.swift`.~~ Both say eight.
-15. **Resolved in 0.6x** — ~~`importGrab`'s comment says a shared list waits.~~ It says a received list is new,
+14. **Resolved in 0.62** — ~~"Six" left over in `Backup.swift` and `Importer.swift`.~~ Both say eight.
+15. **Resolved in 0.62** — ~~`importGrab`'s comment says a shared list waits.~~ It says a received list is new,
     takes a free place on Home and waits only while Home is full.
-16. **Resolved in 0.6x** — ~~HomeScreen's comment calls the Templates screen "Your lists".~~ It says "Your
+16. **Resolved in 0.62** — ~~HomeScreen's comment calls the Templates screen "Your lists".~~ It says "Your
     templates".
-17. **Resolved in 0.6x** — ~~`docs/colours.md` promises a red message for a grab list that cannot be saved.~~
+17. **Resolved in 0.62** — ~~`docs/colours.md` promises a red message for a grab list that cannot be saved.~~
     The editor now shows one (`grab-save-needs`, item 7); `docs/colours.md` names it.
-18. **Resolved in 0.6x** — ~~`docs/colours.md` and `WorkoutTone` say a sport keeps the same colour in the grab
+18. **Resolved in 0.62** — ~~`docs/colours.md` and `WorkoutTone` say a sport keeps the same colour in the grab
     lists.~~ Decided: the grab tiles keep their mid-tones (the workout fills, a bright yellow above all,
     would not read as a stroke on the light card); both notes now say the grab lists wear the same colour
     FAMILY in mid-tones.
-19. **Resolved in 0.6x** — ~~The `GrabSharing.swift` header promises a fallback this app did not make.~~ Decided
+19. **Resolved in 0.62** — ~~The `GrabSharing.swift` header promises a fallback this app did not make.~~ Decided
     for the fallback: `importGrab` keeps only a drawing and a colour this app has; anything else becomes a
     new list's look — its initial, in blue (section 10). Pinned by
     `testAReceivedGrabListGetsTheStandardLookForWhatIsUnknown`; the header says so.
-20. **Resolved in 0.6x** — ~~The guide's Siri example says "Swim", and no list is titled so.~~ The Shortcuts
+20. **Resolved in 0.62** — ~~The guide's Siri example says "Swim", and no list is titled so.~~ The Shortcuts
     entity carries the word on its tile as a synonym, so "Swim" can find both swim lists (Siri asks which).
     A How it works line naming a list by its full title ("Open Indoor swim in Packing") is proposed for
     the release; until it is written there, the guide still says "Swim". (Siri itself cannot be tested.)
 
 **Behaviour to decide.**
 
-21. **Decided in 0.6x** — the 6 hours count from the last tap, on purpose (a list he is still ticking is the
+21. **Decided in 0.62** — the 6 hours count from the last tap, on purpose (a list he is still ticking is the
     same outing); the footer now says "6 hours after your last tap" (section 6). Pinned by
     `testTheSixHoursCountFromTheLastTap`.
-22. **Decided in 0.6x: kept** — a trip under way leaves the countdown and the reminders. Every packing step
+22. **Decided in 0.62: kept** — a trip under way leaves the countdown and the reminders. Every packing step
     falls due on or before the first day, so there is nothing left to remind of; the trip's On site page
     is on the Trips tab (section 11).
-23. **Resolved in 0.6x** — Make refuses a name any grab list already has, on its tile or as its title, and says
+23. **Resolved in 0.62** — Make refuses a name any grab list already has, on its tile or as its title, and says
     so (section 8). Pinned by `testANameAlreadyInUseIsTaken` and `testAnEmptyGrabListSaysHowToFillIt`. No
     length limit: the tile shrinks a long word to fit, and only a share cuts it (to the web app's 14).
-24. [idea] **Left in 0.6x** — **All own lists share one `meta` record**, as do all "only sometimes" marks; the
+24. [idea] **Left in 0.62** — **All own lists share one `meta` record**, as do all "only sometimes" marks; the
     Home arrangement is two records (item 34). Offline edits on two devices: the later device wins for all of
     them (the web app's v120 lesson in `docs/store.md`). Storing them one by one would change how both
     devices store and back up his lists (a migration on each, while the other may still run the old build),
     for a case that needs both devices editing grab lists while both are offline.
-25. **Resolved in 0.6x** — ~~Dead code: `GrabStore.state(_:items:)`.~~ Removed. (`bringOn`'s "fewer than 8"
+25. **Resolved in 0.62** — ~~Dead code: `GrabStore.state(_:items:)`.~~ Removed. (`bringOn`'s "fewer than 8"
     branch is the normal way back onto Home since 0.61.)
 26. [idea] No keyboard shortcuts anywhere: Escape closing a sheet on the Mac is neither wired nor tested.
 
 **Untested and unguarded.**
 
-27. **Resolved in 0.6x** — ~~A trip with `status == "done"` but no `reviewedAt` is excluded untested.~~ Pinned by
+27. **Resolved in 0.62** — ~~A trip with `status == "done"` but no `reviewedAt` is excluded untested.~~ Pinned by
     `testATripMarkedDoneIsNoCountdownEvenUnreviewed`.
-28. **Resolved in 0.6x** — ~~Sheet collisions: a Shortcut or a tapped reminder fired while another Home sheet is
+28. **Resolved in 0.62** — ~~Sheet collisions: a Shortcut or a tapped reminder fired while another Home sheet is
     open may not present.~~ Home closes its sheets first (`whenFree`, section 3). Pinned by
     `testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp`.
-29. **Resolved in 0.6x** — ~~`GrabScreen` falls back to Indoor swim when its list disappears while open.~~ It
+29. **Resolved in 0.62** — ~~`GrabScreen` falls back to Indoor swim when its list disappears while open.~~ It
     closes, still showing the list, and never saves under another list's key (section 6). Pinned by
     `testAGrabListGoneWhileOpenClosesInsteadOfBecomingAnother`.
-30. **Resolved in 0.6x** — ~~The grab counter can exceed the list ("8 of 7").~~ It counts against the list as it
+30. **Resolved in 0.62** — ~~The grab counter can exceed the list ("8 of 7").~~ It counts against the list as it
     stands (`inHand`, `skippedCount`). Pinned by `testTheCountIsOfTheListAsItStands`.
 
 **His standing rules.**
 
-31. [rule-break] **Text sizes under the 15-pt reading floor** stated in `Headings.swift` ("Nothing under 15"):
+31. Resolved in 0.62 (F073): every one of these is 15 pt or more, and `tools/check-type-floor.sh` fails a push that brings a smaller size back (spec 06 §21). Was: [rule-break] **Text sizes under the 15-pt reading floor** stated in `Headings.swift` ("Nothing under 15"):
     - "1 in 10" 12;
     - "only sometimes" / "not this time" 13;
     - the Grab Lists pills 13, and "<k> things" 13;
@@ -1796,28 +1796,28 @@ keep their tag and say why they were left.
 
 **Added in 0.61 (the grab-list fixes).**
 
-32. **Resolved in 0.6x** — ~~A waiting list cannot be opened from Grab Lists.~~ A tap on the waiting row opens
+32. **Resolved in 0.62** — ~~A waiting list cannot be opened from Grab Lists.~~ A tap on the waiting row opens
     it; "On Home" is its own button (`grablists-on-<n>`), and the made line says both (section 8). Pinned by
     `testAGrabListTakenOffHomeStaysOff`.
-33. [idea] **Left in 0.6x** — **Arrangements stored before 0.61 are not migrated.** They have `grabHome` but no
+33. [idea] **Left in 0.62** — **Arrangements stored before 0.61 are not migrated.** They have `grabHome` but no
     `grabOff`, so until he next arranges Home (a move, Off Home, a swap, putting a list on) every list not in
     `grabHome` counts as new and fills a free place the old way — for example the place a deleted list
     leaves. Pinned as intended by `testHisArrangedSixAreJoinedByTheNextTwo`. Left because such an
     arrangement cannot tell a list that waited only because Home was full from one made since; guessing
     could hide a list he expects to see, and one rearrangement settles it for good.
-34. [idea] **Left in 0.6x** — **Two devices: the Home arrangement and the off list are separate `meta` records**,
+34. [idea] **Left in 0.62** — **Two devices: the Home arrangement and the off list are separate `meta` records**,
     settled one by one (later write wins per record). Offline arranging on both devices can pair one device's
     `grabHome` with the other's `grabOff`: a list in neither then counts as new and is pulled into a free
     place, a list in both stays on Home. No test covers two devices. Left because joining them into one
     record changes the stored shape that the other device's older build reads; the worst case is one list
     on or off Home, which one press settles.
-35. **Resolved in 0.6x** — ~~The made line outlives a swap.~~ A pick in the swap sheet clears it. Pinned by
+35. **Resolved in 0.62** — ~~The made line outlives a swap.~~ A pick in the swap sheet clears it. Pinned by
     `testMoreGrabListsThanHomeHolds`.
-36. **Partly resolved in 0.6x** — `deleteOwnGrabList` now also removes the id from `grabOff`, so neither the
+36. **Partly resolved in 0.62** — `deleteOwnGrabList` now also removes the id from `grabOff`, so neither the
     library nor a later backup keeps it (`testADeletedListLeavesNoTraceInTheArrangement`). [idea] Left: the
     OTHER device keeps its stored ticks (`ams.grab.<id>`) — a few bytes, never read, meaningless after 6
     hours; removing them safely needs a moment when that device's library has certainly arrived in full.
-37. **Resolved in 0.6x** — ~~Home can end up with no grab tiles, the heading over nothing.~~ Kept his choice
+37. **Resolved in 0.62** — ~~Home can end up with no grab tiles, the heading over nothing.~~ Kept his choice
     (every list may go off Home), but Home then says where they are, and that line opens Grab Lists
     (`home-grab-none`, section 3). Pinned by `testHomeWithEveryGrabListOffSaysWhereTheyAre` and
     `testEveryListCanWaitOffHome`.

@@ -1,6 +1,6 @@
 #!/bin/bash
 # His floor (F073, 5 Oct 2026): nothing a person reads is smaller than 15 points — he
-# reads the app without his glasses. 0.6x raised about 150 sizes of 10–14 to 15; this
+# reads the app without his glasses. 0.62 raised about 150 sizes of 10–14 to 15; this
 # keeps them there. It fails, naming file:line, for:
 #   1. a `size: N` under 15 (or a `size: a ? N : M` with either under 15) — unless the
 #      line says `// not text: <what it is>` (a drawn mark, a shape, a glyph);

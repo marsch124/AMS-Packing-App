@@ -114,7 +114,7 @@ enum SampleLibrary {
         return lib
     }
 
-    /// The sample library as the table left it before 0.6x (`-uiTestingOldConditions`):
+    /// The sample library as the table left it before 0.62 (`-uiTestingOldConditions`):
     /// the Goggles' condition stored as the LABEL "Needs replacing", not its id — the
     /// app must repair it when it reads the library, so To buy offers them.
     static func oldConditions() -> Library {

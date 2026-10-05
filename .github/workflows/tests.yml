@@ -138,7 +138,7 @@ jobs:
     # a row, while the same test is green here every time.
     runs-on: macos-26
     # 120, the same room as the iPhone job: the Mac runs the same 110-odd UI tests and,
-    # since 0.6x, both bundles of model tests as well (the iPhone job outgrew 80 minutes
+    # since 0.62, both bundles of model tests as well (the iPhone job outgrew 80 minutes
     # at 108 UI tests, 0.58, 4 Oct 2026).
     timeout-minutes: 120
     steps:

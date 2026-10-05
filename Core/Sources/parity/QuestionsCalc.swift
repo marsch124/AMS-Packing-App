@@ -47,7 +47,7 @@ extension Parity {
         }
         ask("calc.coerceGeo", ALL) {
             let cases: [(String, J?)] = [
-                ("valid", ["lat": 58.5, "lon": 16.25, "place": "Testville"]), ("strings", ["lat": "12.5", "lon": "-7"]),
+                ("valid", ["lat": 61.5, "lon": 14.25, "place": "Testville"]), ("strings", ["lat": "12.5", "lon": "-7"]),
                 ("tooFarNorth", ["lat": 91, "lon": 0]), ("tooFarEast", ["lat": 0, "lon": 180.5]), ("edge", ["lat": -90, "lon": 180]),
                 ("notNumbers", ["lat": "x", "lon": 1]), ("blankStrings", ["lat": "", "lon": ""]), ("nothing", .null),
                 ("placeNotString", ["lat": 1, "lon": 2, "place": 7]),
@@ -80,7 +80,7 @@ extension Parity {
         let membership = #"{"id":"m","itemId":"i","templateId":"t","seasons":"x","weather":["cold","mist"],"container":5,"phase":"  door ","itemType":"task","qty":3,"note":null,"order":"2"}"#
         let action = #"{"id":"a","text":5,"kind":"buy","priority":"urgent","whenPhase":"  week  ","whenDate":"2026-9-1","done":"yes","createdAt":"2026-01-01T00:00:00.000Z"}"#
         let kit = #"{"id":"k","name":7,"emoji":"  ","itemIds":["a","a",3,"","b"]}"#
-        let event = #"{"id":"e","mode":"fast","activities":"x","nights":2.7,"laundry":"","status":"finished","weather":{"daily":[{"date":"2026-09-01","code":"61","tmax":"20.5","tmin":null,"precipProb":"x"},{"code":1}],"lat":"58.5","lon":null,"place":3},"weatherOn":["snow","sleet"],"geo":{"lat":"95","lon":0},"entries":[{"name":"In a hostile event"}]}"#
+        let event = #"{"id":"e","mode":"fast","activities":"x","nights":2.7,"laundry":"","status":"finished","weather":{"daily":[{"date":"2026-09-01","code":"61","tmax":"20.5","tmin":null,"precipProb":"x"},{"code":1}],"lat":"61.5","lon":null,"place":3},"weatherOn":["snow","sleet"],"geo":{"lat":"95","lon":0},"entries":[{"name":"In a hostile event"}]}"#
         let eventNoWeather = #"{"id":"e2","nights":-1,"weather":{"daily":[]},"geo":{"lat":"12.5","lon":"-7","place":"Testville"}}"#
         let list = #"{"id":"l","name":"Hostile list","group":"XX","role":"special","transport":"Boat","emoji":"  \ud83d\udce6\ud83d\udce6\ud83d\udce6  ","color":"red","defaultContainer":4,"sections":[{"id":"s1","name":" A "},{"id":"s1","name":"B"},{"id":"s2","name":"  "}],"items":[{"name":"Inside"}]}"#
 

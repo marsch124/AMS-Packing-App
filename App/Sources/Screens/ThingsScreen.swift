@@ -200,7 +200,7 @@ struct ThingEditor: View {
     @State private var weightText = ""
     /// What was wrong with the weight when Save was pressed, said under the field.
     @State private var weightProblem = ""
-    /// The care schedule (days, 0 = none) and care notes, edited here since 0.6x.
+    /// The care schedule (days, 0 = none) and care notes, edited here since 0.62.
     @State private var careEvery = 0
     @State private var careNotes = ""
 
@@ -273,7 +273,7 @@ struct ThingEditor: View {
                         }
                     }
                     // The condition's ID is what is stored; a thing still holding a label
-                    // (stored by the table before 0.6x) lights its pill all the same.
+                    // (stored by the table before 0.62) lights its pill all the same.
                     Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
                           selected: [model.library.conditionId(for: draft.condition) ?? draft.condition],
                           id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }

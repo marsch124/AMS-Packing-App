@@ -381,7 +381,7 @@ extension Library {
     /// Also the things on NO template — a thing with a schedule is looked after
     /// whether or not it is packed, and the web app keeps such things since v175 —
     /// and never a thing "not in use" (retired), which the kit no longer counts
-    /// either. Until 0.6x a loose thing never showed on Care or its calendar, while
+    /// either. Until 0.62 a loose thing never showed on Care or its calendar, while
     /// a retired one still counted as needing care (the spec pass, 5 Oct 2026).
     /// Each template is named as he sees it: his bag list is "Bags", never the
     /// stored "Containers" (his words rule, 27 Sep 2026).

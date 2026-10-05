@@ -61,7 +61,7 @@ final class SyncCheckTests: XCTestCase {
         XCTAssertEqual(c.notSent, ["items": 1, "entries": 2], "records with no trace, or to be sent again")
         XCTAssertEqual(SyncCheck.state(usesICloud: true, check: c), .stuck)
         XCTAssertEqual(c.attempts.count, 5)
-        XCTAssertTrue(c.details(device: "iPhone", version: "0.6x (1)").contains("Failed sends since the last good one: 2"))
+        XCTAssertTrue(c.details(device: "iPhone", version: "0.62 (1)").contains("Failed sends since the last good one: 2"))
     }
 
     /// A failure that a later success of the same kind has put right is no problem.

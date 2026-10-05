@@ -31,7 +31,7 @@ template). This document covers:
 How one reaches them: the tab bar (`RootView.TabBar`, `tab-care`, `tab-actions`); the Trips screen's red
 "N to do" chip (`events-todos`) switches to the To do tab; the global search (`search-open`, also on Care and
 To do) opens a thing's page directly. Choosing a to-do in the search closes the search and opens the To do
-tab, from whichever tab it was opened (0.6x: `model.tabToOpen`, see the Home spec, section 15). There is no Shortcut and no menu command for anything in this area.
+tab, from whichever tab it was opened (0.62: `model.tabToOpen`, see the Home spec, section 15). There is no Shortcut and no menu command for anything in this area.
 
 Every change goes through `LibraryModel.change { … }` (`App/Sources/Store/LibraryModel.swift`): the closure
 edits a copy of the `Library`, the whole library is cut into records (`Library.records()`,
@@ -45,11 +45,11 @@ Shared building blocks referred to below (defined outside this area, summarised 
 
 | Piece | File | What it looks like / does |
 |---|---|---|
-| `HeaderButtonStyle(tint:filled:)` | `Buttons.swift` | The Done / Save / Cancel buttons at the top of a sheet. 17 bold (16 until 0.6x, spec 06 §20), one line, capsule, min height 36, padding 14. Filled = white words on the tint; outlined (`filled: false`) = tint words on 10 % tint with a 1.4 stroke. Pressed = 70 % opacity. Never grey (his rule). |
+| `HeaderButtonStyle(tint:filled:)` | `Buttons.swift` | The Done / Save / Cancel buttons at the top of a sheet. 17 bold (16 until 0.62, spec 06 §20), one line, capsule, min height 36, padding 14. Filled = white words on the tint; outlined (`filled: false`) = tint words on 10 % tint with a 1.4 stroke. Pressed = 70 % opacity. Never grey (his rule). |
 | `FieldButtonLabel(title:tint:)` | `Buttons.swift` | The button beside an add-field (New, Add). 16 bold white on a full-colour rounded rectangle (radius 10), min height 44. Always enabled. |
 | `.needsLine($says, typed:, id:)` | `Buttons.swift` | Under an add-row: a red (`AppSection.actions`) 15 bold line saying what a press was missing; it disappears as soon as the typed text changes. |
 | `.clearButton($text, id:)` | `Buttons.swift` | Names a search field `id` and, while it holds text, shows a round ✕ (`id-clear`, label "Clear the search", 36×36 hit area) that empties it and keeps the keyboard. |
-| `SmallDeleteButton(title:id:)` | `SmallDelete.swift` | Right-aligned small red outlined capsule (red words, 1 pt outline in red at 60 %, padding 12, min height 30). Its words are **15** semibold (0.6x: a `size` parameter, 13 by default, that only the grab list's delete set to 15 — gone; "small" is the capsule, not the words). Only ever OPENS a question. |
+| `SmallDeleteButton(title:id:)` | `SmallDelete.swift` | Right-aligned small red outlined capsule (red words, 1 pt outline in red at 60 %, padding 12, min height 30). Its words are **15** semibold (0.62: a `size` parameter, 13 by default, that only the grab list's delete set to 15 — gone; "small" is the capsule, not the words). Only ever OPENS a question. |
 | `HeadingBand(title:tint:id:)` | `Headings.swift` | A heading as a band: a 5×26 capsule in the tint, words 22 heavy in the tint, on a 13 % tint rounded strip. |
 | `HeadingTitle`, `SectionTitle` | `Headings.swift` | 20 heavy with a 4×18 mark; SectionTitle = 18 heavy CAPITALS, kerning 0.8, 16 pt above. |
 | `Pills(title:options:selected:id:tint:heading:choose:)` | `HomeScreen.swift` | A heading (here always `.band`, id `<id>-title`) over wrapping capsules (15 pt, medium; bold when picked), min height 36; picked = filled in the tint with white words; each pill id `<id>-<n>` by POSITION, never by words; picked pills carry the selected trait. Tapping calls `choose(id)` — the caller decides single or multiple choice. |
@@ -85,7 +85,7 @@ keys `owner` and `realmId` are dropped on read and never written (`RESERVED_SYNC
 | `swedish` | String, "" | — | nowhere |
 | `qty` | String, "" | — (loose text) | nowhere on the thing; per template on the membership (table "How many") |
 | `category` | String, `CATEGORY_DEFAULT` "Comfort & misc" | "" → "Comfort & misc" | thing page "Kind of thing" |
-| `container` | String, "Carry-on / hand luggage" | — | thing page "Usually packed in" (also "No bag" = ""); table "Packed in" (his own bags included, 0.6x); bag rename/delete rewrite it |
+| `container` | String, "Carry-on / hand luggage" | — | thing page "Usually packed in" (also "No bag" = ""); table "Packed in" (his own bags included, 0.62); bag rename/delete rewrite it |
 | `phase` | String, "week" | trimmed; empty → `defaultPhaseId()` (first non-task phase of the live timeline); otherwise KEPT even if unknown, cut to 40 UTF-16 units | thing page "When" |
 | `itemType` | "item" | anything but "reminder" → "item" | nowhere |
 | `charging` | Bool, false | truthy | table "Charges" |
@@ -95,17 +95,17 @@ keys `owner` and `realmId` are dropped on read and never written (`RESERVED_SYNC
 | `weather` | [] | filtered to `WEATHER_CONDITION_IDS` (rain, cold, hot, wind, snow) | per template |
 | `sub` | [] | string array | nowhere |
 | `note` | "" | — (loose text) | thing page "Notes"; table "Note". NB a membership's own note WINS on that template (`resolveMembership`: `r.note = mm.note.isEmpty ? base.note : mm.note`) |
-| `weight` | Double grams, 0 = unknown | non-finite or negative → 0 | thing page Weight (decimals, comma or point, 0.6x); table Weight; bag "Empty g" |
+| `weight` | Double grams, 0 = unknown | non-finite or negative → 0 | thing page Weight (decimals, comma or point, 0.62); table Weight; bag "Empty g" |
 | `liquid` | false | truthy | thing page "On a plane"; table |
 | `restricted` | false | truthy | thing page "Not allowed in the cabin"; table "Restricted" |
 | `perNight` | false | truthy | table "Per night" |
 | `consumable` | false | truthy | table "Runs out" |
 | `section`, `kit` | "" | — | per template (contextual) |
 | `packer` | "" | — | table "Packed by" |
-| `storage` | "" | — | thing page "Kept at home" (typed, or a tap on one of his places, 0.6x); table "Storage"; a trip's "Set place" (`Library.setPlace` → `updateThing`, see the Trips spec). `setStorage(id:place:)` exists but no screen calls it (a model test only) |
+| `storage` | "" | — | thing page "Kept at home" (typed, or a tap on one of his places, 0.62); table "Storage"; a trip's "Set place" (`Library.setPlace` → `updateThing`, see the Trips spec). `setStorage(id:place:)` exists but no screen calls it (a model test only) |
 | `photos` | [] | empty strings dropped; more than `MAX_PHOTOS` = **5** → the first five kept; a legacy single `photo` string is folded in when `photos` is empty, then never written | **nowhere** (no native UI adds or removes a thing's photo; bag photos on a trip are a different store) |
 | `thumb` | "" | — | nowhere |
-| `maintenance` | nil | `normalizeMaintenance`; an empty record becomes nil | thing page "Care" (how often + what to do, 0.6x — its log, last service and link are kept); "Done today" logs a service. See Care below |
+| `maintenance` | nil | `normalizeMaintenance`; an empty record becomes nil | thing page "Care" (how often + what to do, 0.62 — its log, last service and link are kept); "Done today" logs a service. See Care below |
 | `stats` | `ItemStats()` | every count ≥ 0, floored | written by the trip review |
 | `color` | "" | — | thing page "Colour"; table "Colour" |
 | `size`, `model`, `serial` | "" | — | table only ("Size", "Model", "Serial") |
@@ -115,7 +115,7 @@ keys `owner` and `realmId` are dropped on read and never written (`RESERVED_SYNC
 | `price` | 0 | non-finite or negative → 0 | nowhere |
 | `currency`, `purchaseLink` | "" | — | nowhere (`CURRENCIES` is offered nowhere natively) |
 | `expiry` | "" | not YYYY-MM-DD → "" | thing page "Valid until" |
-| `condition` | "" | trimmed, cut to 40 units; ANY non-empty id is kept, even one this device does not know | thing page "Condition", table "Condition" and Change all — all write the condition's **id** (the table wrote the label until 0.6x; such things are repaired on load, `repairConditionLabels`) |
+| `condition` | "" | trimmed, cut to 40 units; ANY non-empty id is kept, even one this device does not know | thing page "Condition", table "Condition" and Change all — all write the condition's **id** (the table wrote the label until 0.62; such things are repaired on load, `repairConditionLabels`) |
 | `retired` | false | truthy | nowhere ("Not in use" only comes from the web app) |
 | `retiredReason` | "" | not in `RETIRE_REASON_IDS` → "" | nowhere |
 | `qtyOwned` | 0 | ≥ 0, floored on read | nowhere |
@@ -193,14 +193,14 @@ negative price/qtyOwned clamped, unknown retire reason dropped), `testConsumable
 | `ownerChoices() -> [String]` | What "Whose it is" offers: `owners()` (his Settings → Your choices owners list, A–Z via `namesFromRows`) followed by every trimmed non-empty `ownedBy` of every item, sorted by `jsLocaleCompare`, keeping each name once by `normName` (first spelling met wins). Nobody named anywhere → []. |
 | `owners()` | His owners list only (shared rows kind "owners"), A–Z. |
 | `storagePlaces()` | His places list (kind "places", in his order) or, when he has none, `DEFAULT_STORAGE_LOCATIONS` (12, below). |
-| `people()` | His packers roster (kind "people"); with none, the packers his things name (0.6x); else the two factory packers `DEFAULT_PEOPLE` (`SharedRows.swift`; the invented Kim and Robin since 0.6x). |
+| `people()` | His packers roster (kind "people"); with none, the packers his things name (0.62); else the two factory packers `DEFAULT_PEOPLE` (`SharedRows.swift`; the invented Kim and Robin since 0.62). |
 | `conditions()` | His conditions (kind "conditions") or `DEFAULT_ITEM_CONDITIONS`. |
-| `conditionId(for:)` / `conditionLabel(_:)` (ThingConditions.swift, 0.6x) | What a stored condition means: its id when it IS one of his ids; else the id of the condition whose LABEL it is (by `normName` — how the table stored it before 0.6x); else nil (an unknown id is kept, never "corrected"). `conditionLabel` = that condition's label, or the stored text itself. |
-| `repairConditionLabels() -> Int` (0.6x) | Every thing whose condition is no id of his but IS one of his labels gets that condition's id; nothing else is touched (idempotent, the same answer on every device). `LibraryModel.reload()` runs it through `change` after every read of the store, so a repaired thing is written once. |
-| `templatesForThings()` (Bags.swift, 0.6x) | Every template but his bag list: the templates a thing's page and the table put a thing on or take it off. |
-| `bagNames()` (Bags.swift, 0.6x) | `containerNames` over his RESOLVED bag list(s): the 17 built-in names, then his own bags not among them. The one answer for the thing page's "Usually packed in", the table's "Packed in" and Change all. |
-| `usesOf(kind)` | How many items name each place / owner / packer / condition / phase (by `normName`) — and, for a phase, the trips and templates that hold it, counted apart (a `ChoiceUse`, 0.6x) — so Settings can refuse to remove one in use and say why. |
-| `followThing(id:today:) -> Int` | His decision on test I.7 (1 Oct 2026, release 0.45): a change to a thing reaches trips still ahead — status not "done", not reviewed, and either no start date or an end date (or the start, when there is no end) ≥ today — and on them only lines of that thing (`sourceItemId == id`) that are not ticked, not custom and not edited on the trip. Each such line is rebuilt as a new trip would build it (`buildTotalEntries` over the resolved templates, so a template's own bag still wins; the fresh line from the same `sourceListId` first), keeping its id, tick, set-aside, `used` and its own `extra` marks (way home, used up, maintenance note — 0.6x) — the line's other data are the fresh line's. Without `today` it uses `Library.localToday()`, the device's own date (0.6x; it was the UTC date); `updateThing` and `renameThing` never pass one. Returns the number of lines changed. |
+| `conditionId(for:)` / `conditionLabel(_:)` (ThingConditions.swift, 0.62) | What a stored condition means: its id when it IS one of his ids; else the id of the condition whose LABEL it is (by `normName` — how the table stored it before 0.62); else nil (an unknown id is kept, never "corrected"). `conditionLabel` = that condition's label, or the stored text itself. |
+| `repairConditionLabels() -> Int` (0.62) | Every thing whose condition is no id of his but IS one of his labels gets that condition's id; nothing else is touched (idempotent, the same answer on every device). `LibraryModel.reload()` runs it through `change` after every read of the store, so a repaired thing is written once. |
+| `templatesForThings()` (Bags.swift, 0.62) | Every template but his bag list: the templates a thing's page and the table put a thing on or take it off. |
+| `bagNames()` (Bags.swift, 0.62) | `containerNames` over his RESOLVED bag list(s): the 17 built-in names, then his own bags not among them. The one answer for the thing page's "Usually packed in", the table's "Packed in" and Change all. |
+| `usesOf(kind)` | How many items name each place / owner / packer / condition / phase (by `normName`) — and, for a phase, the trips and templates that hold it, counted apart (a `ChoiceUse`, 0.62) — so Settings can refuse to remove one in use and say why. |
+| `followThing(id:today:) -> Int` | His decision on test I.7 (1 Oct 2026, release 0.45): a change to a thing reaches trips still ahead — status not "done", not reviewed, and either no start date or an end date (or the start, when there is no end) ≥ today — and on them only lines of that thing (`sourceItemId == id`) that are not ticked, not custom and not edited on the trip. Each such line is rebuilt as a new trip would build it (`buildTotalEntries` over the resolved templates, so a template's own bag still wins; the fresh line from the same `sourceListId` first), keeping its id, tick, set-aside, `used` and its own `extra` marks (way home, used up, maintenance note — 0.62) — the line's other data are the fresh line's. Without `today` it uses `Library.localToday()`, the device's own date (0.62; it was the UTC date); `updateThing` and `renameThing` never pass one. Returns the number of lines changed. |
 
 **Data.** Items → `items` records; memberships → `memberships` records (parent = template id); kits → `kits`
 records; shared rows (owners/places/people/conditions) → `shared` records (`places:garage`-style keys).
@@ -218,13 +218,13 @@ list's own A–Z then one not on the list; empty library → []); `ThingFollowsT
 `testAChangeToAThingReachesOnlyWhatIsStillUndecided`, `testARenameAndAnEditedOrSetAsideLineAreHandledRightly`,
 `testABagChosenForOneTemplateStillWins`; `HealthTests.testThingsOnNoListAreNotAWorry`.
 
-Model tests of the 0.6x additions (`ThingsAndCareFixesTests`): `testTheBagNamesOfferedIncludeHisOwnBags`,
+Model tests of the 0.62 additions (`ThingsAndCareFixesTests`): `testTheBagNamesOfferedIncludeHisOwnBags`,
 `testHisBagListIsNotATemplateAThingIsTickedOnto`, `testAConditionStoredAsItsLabelIsRepairedToItsId` (a label →
 its id; an id and an unknown value untouched; a second run changes nothing; then To buy offers it and Your
 choices counts it), `testHisOwnConditionIsRepairedByItsOwnLabel`. UI `testAConditionStoredTheOldWayIsRepairedOnLoad`
 (`-uiTestingOldConditions`: the sample with the Goggles' condition stored as "Needs replacing" — To buy offers them).
 
-The notes a template keeps for a thing (0.6x, `RowNotesTests`): `testATemplatesOwnNoteForAThingIsListed` (trimmed;
+The notes a template keeps for a thing (0.62, `RowNotesTests`): `testATemplatesOwnNoteForAThingIsListed` (trimmed;
 a row without a note of its own is not listed), `testANoteTheThingAlreadySaysIsNotRepeated`,
 `testEveryTemplateIsListedInItsOrderAndOneNoteOnce` (Hiking before Swim; the thing twice on Hiking with one note →
 once; an unknown thing → []). UI `testAThingsPageShowsTheNotesItsTemplatesKeep` (a note typed on the Swim
@@ -233,7 +233,7 @@ the thing's own note).
 
 **Not covered by a test.** `setOnTemplate` order placement (bottom of the template); `deleteThing` leaving
 to-dos/buy lines that name the thing; `renameThing` to a different capitalisation of its own name.
-(`followThing`'s local day is pinned by `ThingFollowsTests.testStillAheadGoesByTheDayWhereHeIs`, 0.6x.)
+(`followThing`'s local day is pinned by `ThingFollowsTests.testStillAheadGoesByTheDayWhereHeIs`, 0.62.)
 
 ---
 
@@ -375,13 +375,13 @@ table on the Mac, a window).
    "Your things" (18 bold ink), the number of ALL items `library.items.count` (16 bold muted, monospaced), a
    chevron. Opens Your things with an empty search. The door counts what Your things lists — every thing,
    bags and "not in use" ones included — while the line above and the kit's "things" count only things in use
-   (decided in the 0.6x spec pass: each number counts what its own screen shows; "not in use" comes only from
+   (decided in the 0.62 spec pass: each number counts what its own screen shows; "not in use" comes only from
    the web app).
 3. **"Bags" door** (`care-bags`): "Bags" (17 bold) + the number of bags (15 heavy muted) over "How much each may
-   carry, and what goes in it" (15 medium muted, wrapping — 0.6x: 13, one line). Opens Your bags.
+   carry, and what goes in it" (15 medium muted, wrapping — 0.62: 13, one line). Opens Your bags.
 4. **"All your things · table" door** (`care-table`): "All your things · table" (17 bold) over "Weight and where
    each one lives, filled in row by row" (15 medium muted, wrapping). Both doors have 8 pt above and below their
-   words (0.6x). Opens the table (a sheet on the iPhone, its own
+   words (0.62). Opens the table (a sheet on the iPhone, its own
    window on the Mac — `openWindow(id: "things-table")`).
 5. **Summary** (`care-summary`, 17 heavy): `CareScreen.summary(rows:overdue:soon:)` — "Nothing has a care
    schedule yet." when there are no care rows at all; "All up to date" when none is overdue or due soon;
@@ -404,7 +404,7 @@ table on the Mac, a window).
 
 **Behaviour.**
 - All numbers come from `Library.careRows(today: Today.local)` and `Library.kitStats(today:)`, recomputed on
-  every redraw. `careRows` (0.6x) = `maintenanceList` over the resolved templates — each named as he sees it,
+  every redraw. `careRows` (0.62) = `maintenanceList` over the resolved templates — each named as he sees it,
   his bag list "Bags" — plus a nameless list of the things on NO template (`thingsOnNoList`), with "not in use"
   (retired) things left out. So a thing with a schedule shows whether or not it is packed, and the Care
   summary, the calendar and the dashboard's "need care / due soon" count the same things.
@@ -459,7 +459,7 @@ placed first, it kept the rows below it from being built at all on the Mac's sho
 
 ## Care records and their status (PackingCore/Care.swift; Library.careRows / logCare)
 
-**Constants.** `MAINTENANCE_INTERVALS` (the thing page's Care pills since 0.6x, 0 shown as "None"): 0 "No schedule (reference only)", 30
+**Constants.** `MAINTENANCE_INTERVALS` (the thing page's Care pills since 0.62, 0 shown as "None"): 0 "No schedule (reference only)", 30
 "Every month", 90 "Every 3 months", 182 "Every 6 months", 365 "Every year", 730 "Every 2 years".
 `MAINTENANCE_SOON_DAYS` = 14. `MAINTENANCE_UPCOMING_DAYS` = 60.
 
@@ -511,7 +511,7 @@ missing. `Library.logCare(itemId:on:note:)` applies it to the catalogue item; fa
 `testTheFirstNAMEDTemplateNamesTheRowButTheFirstTemplateKeepsTheListId`,
 `testRowsOfOneStateGoSoonestDueFirstThenByName`, `testLogMaintenanceAnOlderServiceMovesLastDoneBackAndANonDateMeansToday`.
 
-**Native editing (0.6x).** The thing's page has a "Care" block: how often (`MAINTENANCE_INTERVALS`, "None" for
+**Native editing (0.62).** The thing's page has a "Care" block: how often (`MAINTENANCE_INTERVALS`, "None" for
 0) and what to do (the notes). Saving changes the record only when either differs; its log, last service and
 link stay. The link has no editor. Model: `ThingsAndCareFixesTests.testCareListsAThingOnNoTemplateAndLeavesOutOneNotInUse`
 (a loose thing is a row with no template named, counted overdue, on the calendar; a retired one is not there),
@@ -541,7 +541,7 @@ overdue line (which switches to the List, where overdue services are).
    medium otherwise; white when something is due), and under it the count (15 heavy, white 90 %; 1 pt apart) when > 0;
    background = the worst state's colour when something is due (overdue red, soon orange, ok green/events),
    otherwise the card colour; border = ink 2 pt on the picked day, orange 2 pt on today, else the line colour
-   1 pt; radius 8; min height 46. (0.6x: weekdays 11, day 14, count 10, min height 40.)
+   1 pt; radius 8; min height 46. (0.62: weekdays 11, day 14, count 10, min height 40.)
 4. Under the grid, when a day is picked: "`<day> <Month>` · `N`" (`care-cal-day`, 15 heavy muted, e.g.
    "25 September · 1"), then one `CareRow` per service due that day (ids `care-row-900`, `care-row-901`… with
    their "Done today" `care-row-90N-done`), or "Nothing due that day." (15 medium muted). When no day is picked:
@@ -591,7 +591,7 @@ rings, never art".
 **What is on screen** (14 pt between blocks):
 1. **Four figures** in one row, each a card (radius 12, padding 4 × 6, min height 58; the four equally tall): the
    number (22 heavy, monospaced, 1 line, may shrink to 70 % — never under 15) over a word (15 bold muted, centred,
-   wrapping onto a second line rather than shrinking; 0.6x: 12, one line, the number shrinking to 60 %):
+   wrapping onto a second line rather than shrinking; 0.62: 12, one line, the number shrinking to 60 %):
    - `kit-things`: things (non-retired), word "things", violet (templates colour);
    - `kit-weight`: `KitDashboard.kilos(totalGrams)` ("—" when 0, "N g" under 1000 g, else "%.1f kg"), word
      "in total", blue (home colour);
@@ -611,7 +611,7 @@ rings, never art".
    max(3, 44 × count ÷ tallest), orange when > 0 else the line colour), each over a 3-letter month name (15 bold
    muted) — the month `n` months from now in the DEVICE's locale (`setLocalizedDateFormatFromTemplate("MMM")`,
    first 3 characters) — where twelve of them fit (the Mac), else its first letter (an iPhone gives a month 27 pt
-   and "Sep" at 15 needs 30; `ViewThatFits`, 0.6x — the months were 10; block 66 tall); the block's id `kit-year`, accessibility label "Care due over the next twelve months".
+   and "Sep" at 15 needs 30; `ViewThatFits`, 0.62 — the months were 10; block 66 tall); the block's id `kit-year`, accessibility label "Care due over the next twelve months".
 6. **"WORTH KNOWING"** (`kit-tips-heading`), when there are tips: up to 4 tips (`kit-tip-N`), each a 6 pt orange
    dot and the sentence (15 medium ink, wrapping).
 
@@ -621,11 +621,11 @@ storage non-empty; `withCare` = a care record whose trimmed notes are non-empty 
 `neverUsed` = names of things with `stats.packed > 0` and `stats.used == 0`. From `careRows` (templates and things
 on no template, retired things left out): `overdue`, `soon`, and `dueByMonth[m] += 1` for every row with days ≥ 0
 whose next due date falls `m` CALENDAR months after today's month, 0…11 (this month is 0; a service in the
-thirteenth month or later is on no bar). Until 0.6x the bars were 30-day blocks from today, the last one holding
+thirteenth month or later is on no bar). Until 0.62 the bars were 30-day blocks from today, the last one holding
 everything from day 330 on. `heaviest` =
 live weighed things by weight descending, first 8 (`name`, `grams`, `place`). `places` = live things grouped by
 trimmed storage ("Nowhere said" when empty), count and sum of max(0, weight), sorted by count descending then
-label. `lists` = every resolved template (his bag list as "Bags", 0.6x) with its row count and the sum
+label. `lists` = every resolved template (his bag list as "Bags", 0.62) with its row count and the sum
 of its rows' weights (no quantities), sorted by weight descending. `unweighed` = things − weighed,
 `withoutPlace` = things − withPlace, `totalKilos` = grams ÷ 1000 rounded to 0.1 (used only by tests).
 
@@ -652,7 +652,7 @@ along and came home unused").
 **Not covered by a test.** The place and template bars; the year-ahead bars and their labels; the cut to 4 tips
 (tips 5 and 6 can be hidden); tapping "Nowhere said".
 
-**Traps and history.** The month labels name calendar months, and since 0.6x the bars count calendar months too
+**Traps and history.** The month labels name calendar months, and since 0.62 the bars count calendar months too
 (they counted 30-day blocks from today). The labels use the device's clock and locale, the counts the day passed
 in; the two agree except around midnight.
 
@@ -697,7 +697,7 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
 - Tap a row → the thing's page (`ThingEditor`) as a sheet over this one.
 - New (or Return in the field): a blank or all-space name → "Type a name first." under the row (cleared as soon
   as the field changes). Otherwise `addThing(name:)`. Refused because a thing of that name exists (by `normName`):
-  "You already have a thing called that." under the row, and the typed name STAYS (as Your bags does; 0.6x —
+  "You already have a thing called that." under the row, and the typed name STAYS (as Your bags does; 0.62 —
   the field used to empty without a word). Made: the field is emptied; if the
   current search would hide it, the search is emptied; its id goes to the front of "Just added" (a re-add of the
   same id is moved, not doubled); it is lit; 1.6 s later the light fades over 0.6 s (instantly with Reduce
@@ -756,7 +756,7 @@ apart; a field 6 pt under its heading):
    radius 10, 1 pt line), placeholder "Name".
 3. **Notes** — band "Notes" (`thing-heading-notes`); a vertically growing field (`thing-notes`), placeholder
    "Anything worth remembering", 1 to 8 lines, 18 medium, min height 46. (A note written on site lands on a line
-   of its own under the old text.) Under it (0.6x), one line per note a template keeps for this thing on its own
+   of its own under the old text.) Under it (0.62), one line per note a template keeps for this thing on its own
    row: "On the <template> template: <note>" (15 medium muted, wraps, `thing-row-note-N`), from
    `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
@@ -764,14 +764,14 @@ apart; a field 6 pt under its heading):
 4. **Kept at home** — band (`thing-heading-kept`); free-text field (`thing-storage`), placeholder "e.g. Hall
    closet"; under it his places (`storagePlaces()`, his order) as pills (`thing-place-N`, 15 pt, 36 tall,
    orange when lit, selected trait): a tap puts that place in the field; the pill matching the field (by
-   `normName`) is lit. Typing stays free — a new place is just typed (0.6x: a tap spells a known place the way
+   `normName`) is lit. Typing stays free — a new place is just typed (0.62: a tap spells a known place the way
    the table's Storage menu does).
 5. **Kind of thing** — pills band "Kind of thing" (`thing-category-title`), one pill per `CATEGORIES` entry
    (`thing-category-0` … `-11`; Electronics is `-7`), orange; single choice; the thing's category is lit.
 6. **Usually packed in** — pills band (`thing-bag-title`): `bagNames()` = the 17 built-in names, then his own
    bags whose name is not already among them (compared lower-cased), in his bag list's order (`thing-bag-N`;
    "Checked luggage" is `-2`); then the bag the thing names when it is none of those (so it is seen, lit);
-   then **"No bag"** LAST (value "" — the same "no bag" a bag's delete can leave; 0.6x). Single choice; a bag
+   then **"No bag"** LAST (value "" — the same "no bag" a bag's delete can leave; 0.62). Single choice; a bag
    named in other capitals lights the offered spelling (`ThingEditor.bagChoices`).
 7. **On a plane** — band (`thing-heading-plane`); two switches (orange tint): "Liquid" / "In the cabin: 100 ml at
    most, in the clear bag." (`thing-liquid`) and "Not allowed in the cabin" / "A knife, tools, gas — it goes in
@@ -792,12 +792,12 @@ apart; a field 6 pt under its heading):
     particular"; `thing-owner-0`), then each owner once (`thing-owner-1`…). Every owner named on a thing is offered,
     but once per `normName`, in the FIRST spelling met (his owners list before the things' names) — so a thing
     saying "kim" while "Kim" is offered shows no pill lit (the value compared is the exact text). With nobody
-    named anywhere (0.6x): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
+    named anywhere (0.62): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
     choices." (`thing-owner-none`, 15 medium muted) — it used to vanish.
 11. **Condition** — pills band (`thing-condition-title`): "Not said" (value "") then each live condition by
     label, storing its id (`thing-condition-N`). The lit pill is `conditionId(for:)` of the stored value, so a
     thing still holding a label lights its condition too.
-11a. **Care** (0.6x) — pills band "Care" (`thing-care-title`): "None" (0), "Every month" (30), "Every 3 months"
+11a. **Care** (0.62) — pills band "Care" (`thing-care-title`): "None" (0), "Every month" (30), "Every 3 months"
     (90), "Every 6 months" (182), "Every year" (365), "Every 2 years" (730) (`thing-care-0`…`-5`; an interval
     of his own, e.g. 45 from the web app, adds "Every 45 days"); under it a growing field "What to do, e.g. Wax
     the leather" (`thing-care-notes`, 1–6 lines, 18 medium) — the care notes.
@@ -827,7 +827,7 @@ The headings are `HeadingBand`s in orange (violet for On these templates); the p
 **Behaviour.**
 - On appear the page copies the CATALOGUE item (not a template's resolved row) into a draft, and the set of
   template ids it has memberships on. Everything edits the draft; nothing is stored before Save.
-- Weight field (0.6x): its own text, filled on appear with `amountText(weight)` ("" for 0, whole grams without
+- Weight field (0.62): its own text, filled on appear with `amountText(weight)` ("" for 0, whole grams without
   a point, otherwise up to two decimals — 88.7 stays "88.7"); typing is never rewritten, so "12," and "12."
   survive. Read on Save by `readAmount`: a comma or a point, empty = 0, anything else (letters, a minus,
   "1e3") = not a number. Untouched, the stored weight is kept exactly.
@@ -867,7 +867,7 @@ was); `testANoteMadeOnSiteReachesTheThing` (Notes hold "old note\nOn site D Mon 
 `testARowOpensItsThingAndComesBackToTheSameSpot` (Colour from the table). Model: `DateWordsTests`
 (`distanceWords`, `addMonths`, every quick choice reads back as itself from every day of two years).
 
-UI (0.6x) `testAThingsPageTakesDecimalsAPlaceNoBagAndCare` ("abc" → the weight line and the page stays; "12,5"
+UI (0.62) `testAThingsPageTakesDecimalsAPlaceNoBagAndCare` ("abc" → the weight line and the page stays; "12,5"
 kept while typing and read back as "12.5"; the first place pill fills the field and is lit; "No bag" is the
 last bag pill and stays lit; Every month + what to do → Care says "1 due soon"); `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`
 (every owner blanked by Change all → `thing-owner-none` names Your choices);
@@ -901,12 +901,12 @@ A trip's bag ("Goes in the cabin", `BagCabinRow`) can also MAKE a bag (see a bag
 1. Header: "Your bags" (22 heavy orange), the count (`yourbags-count`, 15 heavy muted), "Done" (filled).
 2. Fixed (does not scroll — his ask 26 Sep 2026, "keep the header row visible"): "Give a bag its max weight and
    every trip shows how full it is." (15 medium muted), then the column names right-aligned over the fields:
-   "MAX KG" (64 wide), "LITRES" (64), "EMPTY G" (76) (15 heavy muted, kerning 0.4, one line; 0.6x: 10 pt, and
+   "MAX KG" (64 wide), "LITRES" (64), "EMPTY G" (76) (15 heavy muted, kerning 0.4, one line; 0.62: 10 pt, and
    the Empty column 70 — too narrow for "EMPTY G" at 15; one combined element
    `yourbags-columns`); a 1 pt line under.
 3. Scrolling: one row per bag (min height 46, 4 pt above and below, line under):
    - the name button (`bag-N-name`): the name (15 semibold, up to 2 lines, never shrunk) and under it the glance
-     line (15 medium muted, wrapping; 0.6x: the name shrank to 80 % and the line was 12, shrinking to 85 %) — "`N` thing(s)" and/or "last trip `<weight>`" joined " · " (`BagsCard.kilos`: "N g" under
+     line (15 medium muted, wrapping; 0.62: the name shrank to 80 % and the line was 12, shrinking to 85 %) — "`N` thing(s)" and/or "last trip `<weight>`" joined " · " (`BagsCard.kilos`: "N g" under
      1000 g, else "%.1f kg"), also the button's accessibility value; a small chevron. Opens the bag's page.
    - three number fields (`bag-N-maxkg` 64 wide, `bag-N-litres` 64, `bag-N-empty` 76; 15 semibold monospaced,
      right-aligned, height 34, card, radius 8). Max kg and litres show "" when 0, else the number without a
@@ -919,7 +919,7 @@ A trip's bag ("Goes in the cabin", `BagCabinRow`) can also MAKE a bag (see a bag
 - Numbers are SAVED AS TYPED (`onChange` of the text): trimmed, a comma read as a point; empty → 0;
   unreadable → no change; a value different from the stored one → `setBag(id:maxKg:/capacityL:/emptyGrams:)`,
   which stores max(0, value) through `updateThing` (so `followThing` runs). The fields are filled from the bag
-  when the row first appears, and follow the bag afterwards (0.6x): when a number changes elsewhere — on the
+  when the row first appears, and follow the bag afterwards (0.62): when a number changes elsewhere — on the
   bag's own page, a sheet over this one — the row shows it as soon as that page closes, unless the field
   already says that number (so what he is typing in the row is never rewritten).
 - Add (or Return): normalised name empty → "Type a name first."; a BAG of that name exists → "You already have a
@@ -978,7 +978,7 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    one (trimmed), "Rename" appears beside it (`bag-rename`, 15 bold white on orange). "Done" (filled) right. A
    refusal shows under it in red (`bag-problem`, 15 semibold): "A bag needs a name." or "You already have
    something called that."
-2. **Numbers:** "MAX KG", "LITRES", "EMPTY G" (15 heavy muted, kerning 0.4; 11 until 0.6x) over fields `bag-detail-maxkg`,
+2. **Numbers:** "MAX KG", "LITRES", "EMPTY G" (15 heavy muted, kerning 0.4; 11 until 0.62) over fields `bag-detail-maxkg`,
    `bag-detail-litres`, `bag-detail-empty` (17 semibold monospaced, height 40) — saved as typed, same rules as
    Your bags.
 3. **Goes in the cabin** switch (`bag-detail-cabin`, orange): "Goes in the cabin" / "Carry-on. On a plane trip,
@@ -1003,7 +1003,7 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    - **Also on templates as a thing** (`listsHoldingBag`): "The `<name>` is also on your `A and B` template(s), as
      something you pack." (`bag-delete-lists`).
    - Buttons: "Keep it" (`bag-delete-no`, closes the question and forgets the choice). Right side: while a used
-     bag has no choice yet, "Delete" (`bag-delete-yes`, full red like every main button — 0.6x; it was a faded
+     bag has no choice yet, "Delete" (`bag-delete-yes`, full red like every main button — 0.62; it was a faded
      "Choose first" that did nothing): pressed, it deletes nothing and says under the buttons, in red, "Choose
      where its things go first — another bag, or No bag." (`bag-delete-needs`, 15 bold; gone once a bag or No
      bag is picked, or on Keep it). Ready and on no template: one button `bag-delete-yes` — "Delete the bag"
@@ -1080,14 +1080,14 @@ window.
    column that is still a column — "`<Column>`: `<answers>` ✕" (15 bold orange on 14 % orange — the ✕ a 13 black
    mark; id `table-pill-<safe key>`, accessibility label = the words) — then "Clear" (`table-filters-clear`, 15 bold red).
    Tapping a pill removes that column's filter; Clear removes all.
-5. **"Sorted by …"** (`table-sorted-by`, 15 semibold muted, wrapping as far as it needs — 0.6x: 14, 2 lines at most), only when there is more than one
+5. **"Sorted by …"** (`table-sorted-by`, 15 semibold muted, wrapping as far as it needs — 0.62: 14, 2 lines at most), only when there is more than one
    level: "Sorted by `Name` ▲, then `Hiking · section` ▼" (each level's title and arrow, joined ", then ").
 6. **The ticked bar** (only while anything is ticked, or a Change all can still be undone): "`N` ticked"
    (`table-chosen-count`, 15 heavy orange) — "`N` ticked · `H` not shown" when `H` ticked things are hidden by
-   the search, a chip or a filter (0.6x) — "Change all" (`table-change-all`, 15 bold white on orange capsule),
+   the search, a chip or a filter (0.62) — "Change all" (`table-change-all`, 15 bold white on orange capsule),
    "Clear" (`table-clear-chosen`, 15 bold muted); right: after a Change all, "Undo" (`table-undo`, 15 bold red,
    red outlined capsule); and on a line of its own under them what the change was, "`N` changed: `<sentence>`"
-   — e.g. "2 changed: Condition → New" (`table-said`, 15 semibold muted, up to 2 lines; 0.6x — it said only
+   — e.g. "2 changed: Condition → New" (`table-said`, 15 semibold muted, up to 2 lines; 0.62 — it said only
    "`N` changed").
 7. A divider, then **the grid** — one `ScrollView` that scrolls both ways, holding a `LazyVStack` with a pinned
    section header:
@@ -1096,19 +1096,19 @@ window.
      templates" (15 heavy orange, kerning 0.4, padding 7 × 3, id `table-band-<n>-<group>`); over a run too narrow
      for its title the title wraps (never cut) and the other bands stay seated on their column names. A band's
      title holds still inside its run while the grid scrolls sideways (offset = min(max(0, scrolled − band
-     start), max(0, band width − 175)); 175 = room for the longest title at 15). (0.6x: 11 heavy, 20 tall, one
+     start), max(0, band width − 175)); 175 = room for the longest title at 15). (0.62: 11 heavy, 20 tall, one
      line, 130.)
    - **Column-name row** (at least 32 tall; every heading as tall as the tallest): the "tick everything shown" box (`table-pick-all`, label "Tick everything
      shown"; an 18 pt outlined box with a dash) — if every shown row is already ticked it unticks them, else it
      ticks them all; "Thing" (`table-head-name`, 15 heavy muted, ▲ or ▼ in orange when the table is sorted by
      name — the arrow a 9 black mark); then one heading per column (`table-head-<column id>`), its title (15 heavy
      muted, wrapping onto a second line — a template's long name — rather than shrinking; padding 6 × 4) and ▲/▼
-     when it is the first sort level (0.6x: 12 heavy, 1 line, shrinking to 70 %); a 1 pt line at each column's right edge; a 1 pt line under
+     when it is the first sort level (0.62: 12 heavy, 1 line, shrinking to 70 %); a 1 pt line at each column's right edge; a 1 pt line under
      the row.
-   - **Rows** (`table-row-N`, 44 tall — 34 until 0.6x, room for two lines of 15 — alternating background, a 1 pt
+   - **Rows** (`table-row-N`, 44 tall — 34 until 0.62, room for two lines of 15 — alternating background, a 1 pt
      line under each): the name cell — the
      tick box (`table-N-pick`, 18 pt, filled orange when ticked, no tick mark: "the colour is enough" — his
-     words; selected trait), the name (`table-N-name`, 15 semibold, up to 2 lines, never shrunk — 0.6x: 14, 1 line, shrinking to 80 %),
+     words; selected trait), the name (`table-N-name`, 15 semibold, up to 2 lines, never shrunk — 0.62: 14, 1 line, shrinking to 80 %),
      and the open arrow (`table-N-open`, an orange chevron in a 26 × 44 area, label "Open `<name>`", tooltip on the Mac) — then
      one cell per chosen column (see Table columns).
 8. When no row is shown, under the grid (`table-none`, 16 medium muted): "Nothing matches these filters." (any
@@ -1121,20 +1121,20 @@ window.
   then `Library.passes`) → the sort (`Library.sortThings` with the first level `SortLevel(key: sortBy,
   descending:)` followed by the stored "then by" levels, any level whose key `Library.tableKnows` no longer
   dropped).
-- **Forgetting what is gone (0.6x):** on appear, and whenever the templates change (here, or on the other
+- **Forgetting what is gone (0.62):** on appear, and whenever the templates change (here, or on the other
   device), a stored filter or sort level naming a template that is gone (or his bag list) is dropped from
   `ams.table.filters` / `ams.table.sort` (back to "name", ▲) / `ams.table.then` (`forgetWhatIsGone`).
 - **A heading press** (`turn(key)`): the same key again turns it over; another key becomes the first level,
   ascending; the "then by" levels lose any level with that key.
 - **Ticks:** `chosen` holds ids and is kept while he searches or filters, so ticked rows that are now hidden
   stay ticked (the count and Change all include them) — on purpose ("narrow with a chip, then take the lot"),
-  and the bar says how many are not shown (decided in the 0.6x spec pass: say it, do not drop his ticks).
+  and the bar says how many are not shown (decided in the 0.62 spec pass: say it, do not drop his ticks).
 - **Open arrow:** opens the thing's page as a sheet; the table underneath is not rebuilt, so it stays scrolled
   where it was; Save or Cancel comes back to the same spot.
 - **Change all:** opens `BulkChange` with the ticked things. When it returns a change: the ticked things as they
   are now are kept as `wasBefore`, the bar says "`N` changed: `<sentence>`", every ticked thing gets
   `updateThing` with the change (one commit), and the things as the change left them are kept as `madeAs`.
-  **Undo** = `Library.undoChange(before:after:)` (one commit, 0.6x): for each thing, only the fields the change
+  **Undo** = `Library.undoChange(before:after:)` (one commit, 0.62): for each thing, only the fields the change
   altered, and only where the thing still holds what the change wrote, go back — a cell edited on those things
   since, or the same field set again by hand, stays (Undo used to write each thing back WHOLE). Then it forgets
   them. Only the last Change all can be undone; a second Change all replaces the kept copy; closing the table
@@ -1159,7 +1159,7 @@ shown Colour column; Done closes); `testManyThingsAreChangedAtOnceAndCanBePutBac
 `testTheTableFiltersByAnyColumn`; `testTheTableSortsByLevels`; `testTheTableTakesTheColumnsHeChooses`;
 `testWhatBelongsToAListIsEditedPerList`.
 
-UI (0.6x): `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight` (two ticked, a search shows one → "2 ticked ·
+UI (0.62): `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight` (two ticked, a search shows one → "2 ticked ·
 1 not shown"), `testATemplateDeletedTakesItsFilterAndColumnAlong`, `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`
 (`table-pick-all` ticks all ten). Model: `ThingsAndCareFixesTests.testUndoPutsBackOnlyWhatChangeAllChanged`.
 
@@ -1204,36 +1204,36 @@ its words in on the Mac).
 | **Group "On these templates"** (`listColumns`) | | | |
 | `list:<template id>` | the template's name | 120 | tick: on this template |
 
-Each width holds its title at 15 heavy plus the sort arrow (0.6x: Weight 74, Liquid 62, Charges 68, Restricted
+Each width holds its title at 15 heavy plus the sort arrow (0.62: Weight 74, Liquid 62, Charges 68, Restricted
 78, Runs out 72, Per night 74, How many 92 and the template columns 100 held them only at 12, shrinking).
 
 The template columns follow `Library.templates` order (after a load, sorted by template id — for ids this app
-makes, roughly creation order), and are `templatesForThings()`: never his bag list (0.6x — a tick there made a
+makes, roughly creation order), and are `templatesForThings()`: never his bag list (0.62 — a tick there made a
 thing a bag, and an untick dropped a bag from the bag list without `deleteBag`'s question; a bag is made and
 deleted on Your bags). The Filter and Sort sheets offer the same templates. Starting columns (`startingColumns`, when he has chosen nothing): weight,
 storage, container, ownedBy, packer, condition, listQty. `TableColumns.ids(stored, library)` drops stored ids
-that are no longer columns (a deleted template) BEFORE anything counts them (0.6x), and gives the starting
-columns when none is left. Row height 44 (`TableColumns.rowHeight`; 34 until 0.6x).
+that are no longer columns (a deleted template) BEFORE anything counts them (0.62), and gives the starting
+columns when none is left. Row height 44 (`TableColumns.rowHeight`; 34 until 0.62).
 
 **The answers for choice columns (`Answers2`, worked out ONCE per redraw and handed to every cell):** each a
 `Choice {value, label}` — what is stored and what he reads. places = `storagePlaces()`; bags = `bagNames()`
-(his own bags too, 0.6x); owners = `ownerChoices()` (every owner his things name, as the thing's page offers —
-0.6x); people = `people()` names; conditions = `conditions()` as {id, label} (the ID is stored, 0.6x); plus a
+(his own bags too, 0.62); owners = `ownerChoices()` (every owner his things name, as the thing's page offers —
+0.62); people = `people()` names; conditions = `conditions()` as {id, label} (the ID is stored, 0.62); plus a
 map from a stored condition (id, or label by `normName`) to its label; every membership as
 "itemId|templateId", memberships by thing, each template's sections and shown name.
 
 **Each cell** (`Cell`, id `table-N-<column id>`, the column's width × 44, a 1 pt line at its right; the words in
-a box are 15 medium — 14 until 0.6x):
+a box are 15 medium — 14 until 0.62):
 - **Number** (weight): a text box showing `amountText` (whole grams without a point, else up to two decimals —
-  0.6x; it showed the rounded whole grams) or "" for 0; a blank cell is tinted orange 10 % while not being typed
-  in; text that is not a number tints it red 18 % (0.6x). Saved on Return or when the box loses focus through
+  0.62; it showed the rounded whole grams) or "" for 0; a blank cell is tinted orange 10 % while not being typed
+  in; text that is not a number tints it red 18 % (0.62). Saved on Return or when the box loses focus through
   `readAmount` (a comma or a point; empty = 0); not a number or negative → not saved (the typed text stays,
-  red); a value equal to the stored one is not written (0.6x: tapping into 88.7 and out wrote 89). When the
+  red); a value equal to the stored one is not written (0.62: tapping into 88.7 and out wrote 89). When the
   thing changes elsewhere the box follows (unless it is being typed in).
 - **Words** (colour, size, maker, model, serial, note): a text box; saved on Return or leaving, trimmed, only
   when different from the stored (trimmed) value.
 - **Choice** (storage, packed in, owner, packed by, condition): a borderless menu showing the stored value — for
-  a condition its label (0.6x) — or "—" (15, up to 2 lines, never shrunk — 13 shrinking to 75 % until 0.6x; "—" bold orange on an orange 10 % tint); the menu lists the
+  a condition its label (0.62) — or "—" (15, up to 2 lines, never shrunk — 13 shrinking to 75 % until 0.62; "—" bold orange on an orange 10 % tint); the menu lists the
   answers' labels, a divider, and "Leave blank". Choosing writes the answer's VALUE (for a condition its id)
   through `updateThing`. Accessibility value = what the cell shows.
 - **Tick** (liquid … per night): a 20 pt rounded box, filled orange when on (no mark); a tap flips it through
@@ -1253,7 +1253,7 @@ text box; the first takes "3" and keeps it after closing and reopening),
 `testARowOpensItsThingAndComesBackToTheSameSpot` (the Colour box shows the colour set on the page),
 `testManyThingsAreChangedAtOnceAndCanBePutBack` (Condition cells).
 
-UI (0.6x) `testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (through Change all, which offers the
+UI (0.62) `testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (through Change all, which offers the
 same `Answers2`: his own bag after the seventeen, Kim and Robin as owners, Needs replacing stored so the cell reads
 it, the page lights it and To buy offers the thing); `testTheBagListIsNoColumnOfTheTable` (`-uiTestingChecks`:
 three template columns in Filter and in Columns, not four).
@@ -1271,14 +1271,14 @@ Opened by "Columns" (`table-columns`) as a sheet (container `columns-detail`; Ma
 "Columns" (20 heavy orange) and "Done" (`columns-done`, filled). "SHOWING, IN THIS ORDER" (15 heavy muted,
 kerning 0.6): one row per shown column of `TableColumns.ids` — live ids only (min height 44, line under): its
 title (16 semibold), an up arrow (`columns-<key>-up`, disabled on the first row; `<key>` = `TableKeys.safe`, so a
-template column is `list-<n>` — 0.6x), a down arrow (`columns-<key>-down`, disabled on the last) — each a
+template column is `list-<n>` — 0.62), a down arrow (`columns-<key>-down`, disabled on the last) — each a
 22 pt drawn chevron pressed anywhere in a 44 × 44 square (his ask, 4 Oct 2026: "These arrows are rather
 difficult to hit") — and "Hide" (`columns-<id>-hide`, 15 bold red, at least 52 × 44). "NOT SHOWING": every other
 column, a row with its title (16 medium muted) and "Show" (15 bold orange), the whole row a button
 (`columns-<key>-show`). Up/down swap neighbours; Show appends at the end; Hide removes — except the LAST column,
 which cannot be hidden (an empty list would mean "nothing chosen" and bring the starting columns back). Every
 change is written at once to `ams.table.columns` — live ids only, so a gone template's id is forgotten at the
-next change (0.6x; it kept an invisible place that arrows and "the last column" counted).
+next change (0.62; it kept an invisible place that arrows and "the last column" counted).
 Tests: `testTheTableTakesTheColumnsHeChooses` (arrows and Hide at least 44 × 44; hiding six and showing Liquid;
 the grid has Liquid and not Storage), `testManyThingsAreChangedAtOnceAndCanBePutBack`,
 `testARowOpensItsThingAndComesBackToTheSameSpot`. Not tested: up/down order.
@@ -1313,7 +1313,7 @@ and, when anything is ticked, "Any — clear this one" (`filter-<safe>-clear`, 1
   labelled with its STORED value — the normalised text (lower-cased), or "Blank" for "" (also for Owner, where
   the live answer says "Both have one").
 - A stored filter whose column no longer exists (a deleted template's `list:<id>`, or his bag list's) is no
-  longer applied, counted or offered (`Library.liveFilters`), and the table drops it from what is kept (0.6x;
+  longer applied, counted or offered (`Library.liveFilters`), and the table drops it from what is kept (0.62;
   it went on hiding every row with no pill to say why).
 - The narrow field keeps answers whose normalised label contains the normalised text.
 - Ticking toggles the value in that column's set; an empty set removes the column's filter. Stored as JSON
@@ -1391,7 +1391,7 @@ blank goes LAST whichever way the level runs (the point of sorting by a column i
 - `section:<id>` → nil when not on that template; else "%04d" of the template's own section order (the lowest
   index among its memberships there), with "on it, no section" = the number of sections (after its sections).
 Comparison: level by level with `jsLocaleCompare(…, sensitivity: .base)` — the order Your things and the
-templates use, so å, ä, ö and é sit where they do there (0.6x; it was plain code-point order) — at most the first
+templates use, so å, ä, ö and é sit where they do there (0.62; it was plain code-point order) — at most the first
 3 levels; then the normalised name the same way, and code-point order only between names that compare equal.
 No levels = by name. A level whose key the table no longer knows (a deleted template) is dropped before sorting.
 
@@ -1423,7 +1423,7 @@ trait); under the chosen one its values, each a row "→ `<value>`" (15 semibold
 - choice columns: each answer of `Answers2` by its label (`bulk-value-<n>`; a condition stores its id) then
   "Leave blank" (`bulk-value-blank`);
 - ticks: "Yes" (`bulk-value-yes`), "No" (`bulk-value-no`);
-- words: a text box (`bulk-text`) and "Leave blank" (when the trimmed text is empty — spaces alone too, 0.6x) or
+- words: a text box (`bulk-text`) and "Leave blank" (when the trimmed text is empty — spaces alone too, 0.62) or
   "Set to “`x`”" (`bulk-apply`);
 - number (weight): a text box and "Leave blank" or "Set to `x` g" (`bulk-apply`; `x` = `amountText` of what was
   read, or the typed text when it is no number); under it, after a refused press, "Type a weight in grams, like
@@ -1433,13 +1433,13 @@ Per-template columns are never offered (they do not belong to the thing).
 **Behaviour.** Choosing a value hands back the change (and a sentence such as "Condition → New", "Liquid: yes",
 "Colour cleared", "Weight → 250 g") and closes; the table then applies it to every ticked thing, says the
 sentence, and offers Undo (see the table). Number: `readAmount` — empty → 0 ("Weight cleared"); a negative
-number or text that is not a number → REFUSED: the sheet stays and says so under the button (0.6x; a typo was
+number or text that is not a number → REFUSED: the sheet stays and says so under the button (0.62; a typo was
 written as 0 to every ticked thing, and a negative did nothing without a word).
 
 **Tests.** UI `testManyThingsAreChangedAtOnceAndCanBePutBack` (no bar before ticking; "2 ticked"; the sheet says
 "Change 2 things"; Condition → the first answer changes rows 0 and 1, not row 2; Undo puts both back).
 
-UI (0.6x) `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight` (spaces in Colour offer "Leave blank"; "abc"
+UI (0.62) `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight` (spaces in Colour offer "Leave blank"; "abc"
 in Weight → `bulk-needs`, the sheet stays; Cancel; the Map's weight still 60);
 `testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (the said line).
 
@@ -1493,7 +1493,7 @@ is `@State`: every time the tab is built again it starts on "To do".
      step's label (`phaseLabel`: a step this device does not know is shown by its raw id) — red while a high
      one is open, muted otherwise. At the right a ✕ (`action-N-remove`, label
      "Remove", 24 pt mark in a 40 × 40 area). A 1 pt line under each row.
-3. After a ✕ (0.6x): above the add row, "Removed “`<text>`”" (`action-undo-says`, 15 semibold muted, 1 line)
+3. After a ✕ (0.62): above the add row, "Removed “`<text>`”" (`action-undo-says`, 15 semibold muted, 1 line)
    and "Undo" (`action-undo`, 15 bold red, red outlined capsule, min height 36) — until it is used, another
    to-do is removed, or the screen is rebuilt.
 4. The add row at the BOTTOM: "Add a to-do" (`action-add-text`, 17 medium, min height 44), "!" (`action-add-high`,
@@ -1504,11 +1504,11 @@ is `@State`: every time the tab is built again it starts on "To do".
 - Tapping a row flips it: `setActionDone(!done, id:)` sets `done`, `doneAt` = now (ISO) or "", `updatedAt` = now.
 - ✕ removes the to-do at once (`removeLine(id:)`) and offers Undo, which puts the very same line back under
   its own id (`putBackLine`). His rule is that things, bags, templates and trips ask before they go; a line of
-  a quick list goes at once but can be brought back (decided in the 0.6x spec pass — asking each time would
+  a quick list goes at once but can be brought back (decided in the 0.62 spec pass — asking each time would
   make the list slow).
 - Add / Return: blank or all-space → "Type a to-do first."; else `addAction(text:priority:)` with priority "high"
   when "!" is on, "normal" otherwise; then the field is emptied and "!" turned off.
-- Each side has its own add text (0.6x; one shared `text` showed a half-typed to-do on To buy too). Both live
+- Each side has its own add text (0.62; one shared `text` showed a half-typed to-do on To buy too). Both live
   in `ActionsScreen`, so a half-typed line survives a look at the other side.
 - There is no way here to edit a to-do's text, priority, thing, step or date after it is made.
 
@@ -1550,7 +1550,7 @@ missing; the line goes on typing; "1 …" counted; ticking → "All done…"; th
 chip appear and it opens this tab); `testTheBuyListOffersWhatIsWornOutAndKeepsTheToDosSeparate` (buy lines never
 appear here: "Nothing to do.").
 
-UI (0.6x) `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval` (a half-typed to-do is not on To buy and is still
+UI (0.62) `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval` (a half-typed to-do is not on To buy and is still
 there on return; ✕ then Undo on each side). Model `ThingsAndCareFixesTests.testALineRemovedComesBackWithUndoAndItsReminderIsNamed`.
 
 **Not covered by a test.** "!" (high priority) and the second line; the sort beyond what the model test pins.
@@ -1575,13 +1575,13 @@ and taking it up stops it being offered (0.3, 23 Sep 2026; the web app's pre-tri
 4. When there are offers: "Worth buying" (`buy-offers`, 15 heavy muted, 18 pt above), then each offer as a button
    (`buy-offer-N`): a red "+" (22 heavy), the thing's name (`buy-offer-N-name`, 17 medium) over the reason
    (`buy-offer-N-why`, 15 semibold; red for "Needs replacing" and "Expired", muted otherwise).
-5. After a ✕ (0.6x): "Removed “`<text>`”" (`buy-undo-says`) and "Undo" (`buy-undo`), as on To do.
+5. After a ✕ (0.62): "Removed “`<text>`”" (`buy-undo-says`) and "Undo" (`buy-undo`), as on To do.
 6. The add row at the BOTTOM: "Add something to buy" (`buy-add-text`), "Add" (`buy-add`, red); needs line
    `buy-add-needs` "Type what to buy first."
 
 **Behaviour.**
 - Tapping a line flips bought / not bought (`setActionDone`); a line sent to Reminders ticks or unticks its
-  reminder too (0.6x, below). ✕ removes the line (`removeLine`) and takes its reminder out of Reminders;
+  reminder too (0.62, below). ✕ removes the line (`removeLine`) and takes its reminder out of Reminders;
   Undo brings the line back, not sent (its reminder is gone), so Send offers it again.
 - Tapping an offer → `addToBuyList(suggestion)` = `addAction(text: thing's name, kind: "shopping", itemId:,
   itemName:)`; the offer disappears because the thing is now on the OPEN list.
@@ -1610,7 +1610,7 @@ sample's Map, "Needs replacing"; taking it makes `buy-0` "Map", "1 to buy", and 
 canister" typed → "2 to buy"; ticking one → "1 to buy"; the To do side still "Nothing to do.");
 `testEveryAddButtonIsReadyAndSaysWhatIsMissing`.
 
-UI (0.6x) `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval` (✕ on a buy line and Undo).
+UI (0.62) `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval` (✕ on a buy line and Undo).
 
 **Not covered by a test.** "Expired" and "Replace soon" offers in the UI; "All bought." (only via the Reminders
 test on the iPhone).
@@ -1651,7 +1651,7 @@ to change tabs between To Buy and To Do for it to update", 0.55). Dated the day 
   access already granted. It takes the sent lines that are still open, asks Reminders which of those reminders
   are completed (`calendarItems(withExternalIdentifier:)`), and ticks those lines (`takeBought(reminderIds:)` →
   `setActionDone(true)`); it returns how many. A line is never un-ticked by a reminder.
-- **Kept in step (0.6x).** A sent line ticked or unticked HERE ticks or unticks its reminder
+- **Kept in step (0.62).** A sent line ticked or unticked HERE ticks or unticks its reminder
   (`ShopReminders.setDone`; `Library.reminderOf(actionId:)`), so a line unticked here after the shop ticked it
   is not ticked again at the next read back. A sent line removed here takes its reminder out of Reminders
   (`ShopReminders.remove`, the id from `removeLine`). Each time the Reminders block appears it also asks which
@@ -1707,95 +1707,95 @@ Tags: [bug] the code does something wrong · [rule-break] against one of his sta
 comment, doc or guide text disagrees with the code, or code that is dead · [untested] behaviour no test
 pins · [idea] a gap worth deciding on.
 
-1. [bug] Resolved in 0.6x: the table and Change all offer `Library.bagNames()` — his own bags after the built-in
+1. [bug] Resolved in 0.62: the table and Change all offer `Library.bagNames()` — his own bags after the built-in
    names, the same answer as the thing's page (`testTheBagNamesOfferedIncludeHisOwnBags`, UI
    `testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy`).
-2. [bug] Resolved in 0.6x: the table and Change all store the condition's ID and show its label; things stored with
+2. [bug] Resolved in 0.62: the table and Change all store the condition's ID and show its label; things stored with
    a label are repaired on every read of the store (`repairConditionLabels`, run by `LibraryModel.reload`); the
    thing's page lights a stored label too; the comment's example says "Needs replacing"
    (`testAConditionStoredAsItsLabelIsRepairedToItsId`, UI `testAConditionStoredTheOldWayIsRepairedOnLoad`).
-3. [bug] Resolved in 0.6x: the table and Change all offer `ownerChoices()` (every owner his things name); with
+3. [bug] Resolved in 0.62: the table and Change all offer `ownerChoices()` (every owner his things name); with
    nobody named anywhere the thing's page keeps "Whose it is" and says the names come from Settings → Your choices
    (UI `testTheTableOffersHisOwnBags…`, `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`).
-4. [bug] Resolved in 0.6x: his bag list is no table column, filter or sort key (`templatesForThings()`); a bag is
+4. [bug] Resolved in 0.62: his bag list is no table column, filter or sort key (`templatesForThings()`); a bag is
    made and deleted on Your bags only (`testHisBagListIsNotATemplateAThingIsTickedOnto`, UI
    `testTheBagListIsNoColumnOfTheTable`).
-5. [rule-break] Resolved in 0.6x: the dashboard's template weights and a care row name his bag list "Bags"
+5. [rule-break] Resolved in 0.62: the dashboard's template weights and a care row name his bag list "Bags"
    (`shownName`) (`testCareAndTheDashboardSayBagsNeverContainers`).
-6. [bug] Resolved in 0.6x: the weight field keeps what he types and is read on Save by `readAmount` (a comma or a
+6. [bug] Resolved in 0.62: the weight field keeps what he types and is read on Save by `readAmount` (a comma or a
    point, decimals); shown with `amountText` (88.7 stays 88.7); an unreadable weight saves nothing and says so
    under the field; the table's weight cell shows decimals too and writes only a real change
    (`testAnAmountTakesACommaOrAPointAndRefusesWhatIsNotANumber`, UI
    `testAThingsPageTakesDecimalsAPlaceNoBagAndCare`).
-7. [rule-break] Resolved in 0.6x: New on a name he has says "You already have a thing called that." and keeps the
+7. [rule-break] Resolved in 0.62: New on a name he has says "You already have a thing called that." and keeps the
    typed name (UI `testANewThingWithANameHeHasSaysSo`).
-8. [bug] Resolved in 0.6x: the bar says "`N` changed: `<sentence>`" on a line of its own, 15 pt (UI
+8. [bug] Resolved in 0.62: the bar says "`N` changed: `<sentence>`" on a line of its own, 15 pt (UI
    `testTheTableOffersHisOwnBags…`).
-9. [bug] Resolved in 0.6x: a weight that is not a number, or a negative one, is refused with "Type a weight in
+9. [bug] Resolved in 0.62: a weight that is not a number, or a negative one, is refused with "Type a weight in
    grams, like 250 or 12,5." under the button; spaces alone read "Leave blank" (UI
    `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight`).
-10. [bug] Resolved in 0.6x: Undo puts back only the fields Change all altered, and only where they still hold what
+10. [bug] Resolved in 0.62: Undo puts back only the fields Change all altered, and only where they still hold what
     it wrote (`Library.undoChange`, `testUndoPutsBackOnlyWhatChangeAllChanged`).
-11. [idea] Resolved in 0.6x (the gentlest version): ticks still survive the search and filters — on purpose,
+11. [idea] Resolved in 0.62 (the gentlest version): ticks still survive the search and filters — on purpose,
     "narrow with a chip, then take the lot" — and the bar now says how many ticked things are not shown ("2 ticked
     · 1 not shown") (UI `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight`).
-12. [bug] Resolved in 0.6x: filters and sort levels for a template that is gone are neither applied nor counted
+12. [bug] Resolved in 0.62: filters and sort levels for a template that is gone are neither applied nor counted
     (`liveFilters`, `tableKnows`) and are dropped from what the table keeps
     (`testAFilterForADeletedTemplateIsForgotten`, UI `testATemplateDeletedTakesItsFilterAndColumnAlong`).
-13. [bug] Resolved in 0.6x: `TableColumns.ids` drops gone ids before anything counts them and falls back to the
+13. [bug] Resolved in 0.62: `TableColumns.ids` drops gone ids before anything counts them and falls back to the
     starting columns when none is left; the picker writes live ids only (UI
     `testATemplateDeletedTakesItsFilterAndColumnAlong`).
-14. [bug] Resolved in 0.6x: `careRows` also lists things on no template and leaves out "not in use" ones, so the
+14. [bug] Resolved in 0.62: `careRows` also lists things on no template and leaves out "not in use" ones, so the
     list, the calendar, the summary and the dashboard agree
     (`testCareListsAThingOnNoTemplateAndLeavesOutOneNotInUse`).
-15. [bug] Resolved in 0.6x: the year-ahead bars count calendar months, this month first; a service in the
+15. [bug] Resolved in 0.62: the year-ahead bars count calendar months, this month first; a service in the
     thirteenth month is on no bar (`testTheYearAheadCountsCalendarMonths`).
-16. [doc] Resolved in 0.6x (decided, no change in the app): each number counts what its own screen shows — the
+16. [doc] Resolved in 0.62 (decided, no change in the app): each number counts what its own screen shows — the
     "Your things" door everything Your things lists, the Care line and the kit only things in use ("not in use"
     comes only from the web app). Said under The Care tab.
-17. [idea] Resolved in 0.6x (in part): the thing's page edits a care schedule and care notes ("Care"), so Care is
+17. [idea] Resolved in 0.62 (in part): the thing's page edits a care schedule and care notes ("Care"), so Care is
     no longer only the web app's records (UI `testAThingsPageTakesDecimalsAPlaceNoBagAndCare`). Left on purpose:
     photos of a thing, price, currency, dates bought/warranty, quantity owned, charge type, "not in use" and the
     care link — nothing he has asked for, and the web app still edits them; size, model, serial, packer, runs out,
     per night and charges stay in the table, where they are edited already.
-18. [bug] Resolved in 0.6x: the thing page lists, under its own Notes, every note its templates keep for it
+18. [bug] Resolved in 0.62: the thing page lists, under its own Notes, every note its templates keep for it
     on their rows ("On the <template> template: <note>", `thing-row-note-N`; `Library.rowNotes`) — a row's note
     still wins on its template, and the thing's own note stays the thing's (model `RowNotesTests`, UI
     `testAThingsPageShowsTheNotesItsTemplatesKeep`).
-19. [idea] Resolved in 0.6x: "Usually packed in" ends with "No bag" (value ""), and a bag name not among the
+19. [idea] Resolved in 0.62: "Usually packed in" ends with "No bag" (value ""), and a bag name not among the
     offered ones is shown as a pill of its own, lit (UI `testAThingsPageTakesDecimalsAPlaceNoBagAndCare`).
-20. [idea] Resolved in 0.6x (the gentlest version): Kept at home stays a text field, with his places as pills under
+20. [idea] Resolved in 0.62 (the gentlest version): Kept at home stays a text field, with his places as pills under
     it — a tap spells a known place the way the table does (UI `testAThingsPageTakesDecimalsAPlaceNoBagAndCare`).
-21. [bug] Resolved in 0.6x: each side has its own add text (UI `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval`).
-22. [rule-break] Resolved in 0.6x (decided: Undo rather than a question — a quick list that asked each time would
+21. [bug] Resolved in 0.62: each side has its own add text (UI `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval`).
+22. [rule-break] Resolved in 0.62 (decided: Undo rather than a question — a quick list that asked each time would
     be slow): ✕ removes at once and "Removed “…” · Undo" brings the line back
     (`testALineRemovedComesBackWithUndoAndItsReminderIsNamed`, UI
     `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval`).
-23. [bug] Resolved in 0.6x: a line removed here takes its reminder out; ticking or unticking here ticks or unticks
+23. [bug] Resolved in 0.62: a line removed here takes its reminder out; ticking or unticking here ticks or unticks
     its reminder; a line whose reminder was deleted in Reminders is offered by Send again (only on his press)
     (`testALineWhoseReminderWasDeletedThereCanBeSentAgain`, UI `testWhatWasTickedInTheShopIsTickedOnReturn`,
     `testALineWhoseReminderWasDeletedCanBeSentAgain`).
-24. [bug] Resolved in 0.6x: confirmed (the row kept the old number), and each row now follows its bag's numbers
+24. [bug] Resolved in 0.62: confirmed (the row kept the old number), and each row now follows its bag's numbers
     unless the field already says them (UI `testYourBagsShowsANumberChangedOnTheBagsPage`).
-25. [bug] **`followThing` used the UTC date.** Resolved in 0.6x (the trips area, F036): it goes by
+25. [bug] **`followThing` used the UTC date.** Resolved in 0.62 (the trips area, F036): it goes by
     `Library.localToday()`, the device's own date.
-26. [bug] Resolved in 0.6x: the table sorts with `jsLocaleCompare` (base), as Your things and the templates do
+26. [bug] Resolved in 0.62: the table sorts with `jsLocaleCompare` (base), as Your things and the templates do
     (`testTheTableSortsAccentedNamesAsYourThingsDoes`).
-27. [doc] Resolved in 0.6x: `KitDashboard`'s comments say it is the foot of the tab and that template bars are not
+27. [doc] Resolved in 0.62: `KitDashboard`'s comments say it is the foot of the tab and that template bars are not
     buttons; `headHeight` is gone; `CareScreen` says "a sheet"; `deleteBag`'s doc comment is back above `deleteBag`
     (the `@discardableResult` was already on it).
-28. [doc] Resolved in 0.6x (decided: kept): these ports stay — the parity tool (`Core/Sources/parity`) checks them
+28. [doc] Resolved in 0.62 (decided: kept): these ports stay — the parity tool (`Core/Sources/parity`) checks them
     against the web app, which is still in use during the change-over, and a rewrite should start from them;
     `Library.setStorage` stays as the plain setter its model test pins. Nothing on screen depends on them.
-29. [rule-break] Resolved in 0.6x: the bag delete's main button is full red ("Delete"); pressed before a bag is
+29. [rule-break] Resolved in 0.62: the bag delete's main button is full red ("Delete"); pressed before a bag is
     chosen it says "Choose where its things go first — another bag, or No bag." under it (UI
     `testABagIsRenamedAndDeletedFromItsPage`).
 30. [untested] **Escape on the Mac**: no screen in this area declares a keyboard shortcut (`.cancelAction` /
     `.defaultAction` / `onExitCommand`); whether Escape closes a sheet is SwiftUI's default and is not tested.
-31. **Resolved in 0.6x** — ~~A to-do found by the search goes nowhere.~~ `SearchScreen.chose` closes the
+31. **Resolved in 0.62** — ~~A to-do found by the search goes nowhere.~~ `SearchScreen.chose` closes the
     search and sets `model.tabToOpen = .actions`; the frame opens the To do tab. Pinned by
     `testASearchedToDoOpensTheToDoTab` (Home spec).
-32. **Resolved in 0.6x** — ~~Small type (his floor is 15 pt): "Delete thing" / "Delete bag" 13, the bag glance
+32. **Resolved in 0.62** — ~~Small type (his floor is 15 pt): "Delete thing" / "Delete bag" 13, the bag glance
     line 12, Your bags' column names 10, the bag page's number titles 11, the table's cells 13–14, headings 12 and
     bands 11, the kit figures' words 12 and the year-ahead months 10, the calendar's weekday row 11 and counts 10,
     the Care doors' second lines 13.~~ Every one is 15 now (F073), and the layouts make room instead of shrinking:
