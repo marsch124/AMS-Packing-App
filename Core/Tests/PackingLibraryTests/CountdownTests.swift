@@ -81,6 +81,18 @@ final class CountdownTests: XCTestCase {
         XCTAssertTrue(lib.reminderPlan(today: "2026-10-01").allSatisfy { $0.tripId == later }, "a reviewed trip still reminds")
     }
 
+    /// A trip marked done but never reviewed — only data from elsewhere can be so
+    /// (a saved review here sets both) — is behind him: no countdown, no reminders.
+    func testATripMarkedDoneIsNoCountdownEvenUnreviewed() {
+        var lib = library()
+        let soon = trip(&lib, "Soon", "2026-10-21", "2026-10-28")
+        let n = lib.trips.firstIndex { $0.id == soon }!
+        lib.trips[n].status = "done"
+        XCTAssertTrue(lib.trips[n].reviewedAt.isEmpty)
+        XCTAssertNil(lib.nextTrip(today: "2026-10-01"), "a trip marked done is counted down")
+        XCTAssertTrue(lib.reminderPlan(today: "2026-10-01").isEmpty, "a trip marked done still reminds")
+    }
+
     func testDaysAreCountedOnTheCalendar() {
         XCTAssertEqual(Library.ymd("2026-10-21", plusDays: -7), "2026-10-14")
         XCTAssertEqual(Library.ymd("2026-03-01", plusDays: -1), "2026-02-28")

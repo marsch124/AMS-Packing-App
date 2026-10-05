@@ -30,9 +30,8 @@ template). This document covers:
 
 How one reaches them: the tab bar (`RootView.TabBar`, `tab-care`, `tab-actions`); the Trips screen's red
 "N to do" chip (`events-todos`) switches to the To do tab; the global search (`search-open`, also on Care and
-To do) opens a thing's page directly. Choosing a to-do in the search only CLOSES the search: `SearchScreen`
-calls its `go(.actions)`, but no screen passes a `go` (the default does nothing), so the tab does not change
-(see Open questions). There is no Shortcut and no menu command for anything in this area.
+To do) opens a thing's page directly. Choosing a to-do in the search closes the search and opens the To do
+tab, from whichever tab it was opened (0.6x: `model.tabToOpen`, see the Home spec, section 15). There is no Shortcut and no menu command for anything in this area.
 
 Every change goes through `LibraryModel.change { … }` (`App/Sources/Store/LibraryModel.swift`): the closure
 edits a copy of the `Library`, the whole library is cut into records (`Library.records()`,
@@ -1659,9 +1658,9 @@ pins · [idea] a gap worth deciding on.
     drawn faded.
 30. [untested] **Escape on the Mac**: no screen in this area declares a keyboard shortcut (`.cancelAction` /
     `.defaultAction` / `onExitCommand`); whether Escape closes a sheet is SwiftUI's default and is not tested.
-31. [bug] **A to-do found by the search goes nowhere**: `SearchScreen.chose` closes the search and calls
-    `go(.actions)`, but every caller builds `SearchScreen()` without a `go`, so the To do tab never opens. Not
-    tested (`testOneSearchReachesEverything` opens only a thing).
+31. **Resolved in 0.6x** — ~~A to-do found by the search goes nowhere.~~ `SearchScreen.chose` closes the
+    search and sets `model.tabToOpen = .actions`; the frame opens the To do tab. Pinned by
+    `testASearchedToDoOpensTheToDoTab` (Home spec).
 32. [rule-break] **Small type** (his floor is 15 pt): "Delete thing" / "Delete bag" 13 (`SmallDeleteButton`'s
     default; only the grab list's delete passes 15), the bag glance line 12, Your bags' column names 10, the
     bag page's number titles 11, the table's cells 13–14, headings 12 and bands 11, the kit figures' words 12

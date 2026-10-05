@@ -328,7 +328,8 @@ his iPhone and his Mac both reminding him would be the same news twice."
   `#2f9e63` ("Green when on, like every switch he knows: the Settings slate read as 'off'"). Its label: **"Remind me
   to pack"** (18 bold ink) and **"On this device, at 9 in the morning of the day each packing step is due — a week
   ahead, the day before, the morning."** (14 muted, wraps).
-- If the system refused permission: **"This device does not allow the app to remind you. Allow it in the device's
+- If the system refused permission — or (0.6x) the switch is on but the app's notifications are switched off in
+  the device's Settings — **"This device does not allow the app to remind you. Allow it in the device's
   Settings, under Notifications."** (15 semibold red, id `settings-reminders-refused`).
 - Else, if on: **"Next: <d Mon> · <trip name> — <says>"**, e.g. "Next: 14 Oct · Sunny weeks — ≥1 week ahead: 12 to
   pack", or, with nothing ahead, **"Nothing to remind you of yet: no trip with dates ahead."** (15 semibold, Settings
@@ -337,14 +338,17 @@ his iPhone and his Mac both reminding him would be the same news twice."
 **Behaviour.** Turning it on runs, in a Task: `askToShow()` (under the UI tests: always yes; otherwise
 authorized/provisional → yes, denied → no, not determined → the system's permission question for alert + sound);
 then `on = want && ok`, `refused = want && !ok`, then `reschedule(library)`. Turning it off: `on = false`,
-`refused = false`, reschedule (which removes them). `refused` is not stored: leaving Settings forgets it.
+`refused = false`, reschedule (which removes them). `refused` is not stored: leaving Settings forgets it. Since
+0.6x the card also looks up, whenever it is shown and whenever the app comes back to the front, whether the
+device allows reminders now (`PackingReminders.allowed()`, which never asks him); switched on but not allowed, it
+shows the red line instead of "Next" (Home spec, section 14).
 
 `reschedule(library)` (skipped entirely under the UI tests): removes every pending notification whose id starts
 `packing-`; stops if the switch is off or permission is not authorized/provisional; otherwise adds one
 notification per entry of `upcoming(library)`: title = trip name, body = `says`, default sound,
 `userInfo["tripId"]`, id `packing-<tripId>-<YYYY-MM-DD>`, a non-repeating calendar trigger at 09:00 local on that
-day. It runs when the switch changes and whenever the library settles after a change (`RootView`: the library
-publisher debounced 2 s). A notification arriving while the app is open shows as banner + list + sound; tapping
+day. It runs when the switch changes, whenever the library settles after a change (`RootView`: the library
+publisher debounced 2 s), and (0.6x) whenever the app comes back to the front. A notification arriving while the app is open shows as banner + list + sound; tapping
 one switches to Home and sets `model.tripToOpen`, which opens that trip.
 
 `upcoming(library, now:)` = `library.reminderPlan(today: Today.local)` filtered to moments (09:00 local of the
@@ -1153,8 +1157,10 @@ ignores size limits on the content."
 **`RootView`.** `VStack(spacing: 0)`: the current section's screen, at most 720 wide ("the web app's column, on the
 Mac"), centred; under it the tab bar; `Theme.bg` behind, ignoring safe areas. Starts on Home. On appear: the
 reminders' tap handler (→ Home + `tripToOpen`) and `PackingReminders.start()`. The library publisher, debounced 2 s:
-reschedule reminders and update the Shortcuts parameters. Scene becomes active: read back Reminders ticks. A Shortcut
-asking for a grab list, the grab menu or a trip switches to Home.
+reschedule reminders and update the Shortcuts parameters. Scene becomes active: read back Reminders ticks and
+(0.6x) reschedule the packing reminders. A Shortcut asking for a grab list, the grab menu or a trip switches to
+Home; `model.tabToOpen` (0.6x; Search's to-do) switches to that tab. Under the UI tests only, a return from the
+background plays the `-…OnReturn` arguments below.
 
 **`SectionScreen`.** By `(model.state, section)`: `.failed(why)` on any tab → the reason, 17 semibold, red, centred,
 id `library-problem`; `(.empty, .home)` → `FirstRunView`; `(.ready, …)` → the tab's screen; `(.ready|.empty, .settings)`
@@ -1185,6 +1191,8 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | (none) | SwiftData; iCloud when the Info.plist key `PackingUsesICloud` is "YES" | a failure to open → `.failed("The library could not be opened: …")` |
 | `-openGrab <label or title>`, `-openGrabMenu`, `-openNextTrip` | (testing only) play a Shortcut | |
 | `-pretendShopTicks` | (ShopReminders) pretend ticks in Reminders | |
+| `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings | 0.6x |
+| `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.6x |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |
 
 Under testing, `usesICloud` is false, the forecast is `InventedForecast`, the rescue copies are deleted at launch,
@@ -1556,7 +1564,8 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
 26. [doc] **The Reminders card's sub-line** names "a week ahead, the day before, the morning" but reminders also come
     for Preparations (30 days ahead) and any other step with lead days ≥ 0.
 27. [bug] **`RemindersCard.refused` is not remembered**: after leaving Settings the "not allowed" line is gone while
-    the switch is off, and nothing says why turning it on does nothing.
+    the switch is off. (Partly met in 0.6x: switched ON but blocked by the device, the line now shows every time —
+    Home spec, item 13. Turning the switch on again still says why at that moment.)
 28. [idea] **Template covers can still show an emoji** (data from the web app) when a template has no icon, despite
     "no emoji" — deliberate per the comment ("His covers are his data"), noted for a rewrite.
 29. [rule-break] **The public repository holds real first names**: `DEFAULT_PEOPLE` in `SharedRows.swift` (the two

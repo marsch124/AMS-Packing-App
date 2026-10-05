@@ -149,10 +149,17 @@ struct ShareScreen: View {
                             .accessibilityIdentifier("share-copy")
                             .accessibilityValue(copied ? "copied" : "")
                         }
-                    } else {
+                    } else if offer.file != nil {
                         Text("This is too big for a link. Share it as a file instead.")
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                             .accessibilityIdentifier("share-toolong")
+                    } else {
+                        // No link and no file: a template or a grab list with nothing on
+                        // it. It said "too big … share it as a file" until 5 Oct 2026 —
+                        // the wrong reason, and there is no file for these.
+                        Text("There is nothing on it to share yet.")
+                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .accessibilityIdentifier("share-empty")
                     }
                     if let url = fileURL {
                         ShareLink(item: url) {

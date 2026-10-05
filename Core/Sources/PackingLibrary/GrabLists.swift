@@ -19,6 +19,13 @@ public struct GrabDefinition: Equatable, Sendable {
     public var items: [String]
 }
 
+/// The drawings this app has for a grab list (`GrabDoodle`), and the tones it
+/// colours one in (`GrabTone`). A list received from elsewhere that names anything
+/// else is given the standard look a new list gets — no drawing (it wears its
+/// initial) and blue — rather than a runner it never was (5 Oct 2026).
+public let GRAB_ICONS: Set<String> = ["swim", "bike", "run", "swim-sun", "bike-sun", "run-sun"]
+public let GRAB_TONES: Set<String> = ["blue", "yellow", "green", "red", "purple", "teal"]
+
 /// The factory six, in the order of the Home buttons.
 public let GRAB_FACTORY: [GrabDefinition] = [
     GrabDefinition(id: "swim", label: "Swim", title: "Indoor swim", tone: "blue", icon: "swim",
@@ -78,6 +85,12 @@ public struct GrabState: Equatable, Codable, Sendable {
         return !a.isEmpty && a.allSatisfy(done.contains)
     }
     public func missing(_ items: [String]) -> [String] { active(items).filter { !done.contains($0) } }
+    /// What the counter says, for the list AS IT STANDS — "<in hand> of <active>",
+    /// "· <skipped> skipped". Counted against the list itself, not the session's own
+    /// names: a list edited on the other device while it is open here no longer
+    /// reads "8 of 7" (5 Oct 2026).
+    public func inHand(_ items: [String]) -> Int { active(items).filter(done.contains).count }
+    public func skippedCount(_ items: [String]) -> Int { items.filter(skipped.contains).count }
 
     /// Tap on a name: a skipped thing comes back; otherwise it is ticked or unticked.
     public func tapped(_ name: String, now: Date = Date()) -> GrabState {
@@ -128,6 +141,17 @@ extension Library {
         rows[0].order = Double(at)   // the Home-row order, as the web app keeps it
         shared.removeAll { $0.kind == "grab" && $0.id == rows[0].id }
         shared.append(rows[0])
+        return true
+    }
+
+    /// What the editor's Save does: the list's things AND its "1 in 10" marks, both
+    /// or neither. A list with nothing left on it is refused whole — until 5 Oct 2026
+    /// the things were refused but the marks were still written, with no name left to
+    /// mark, so every mark on the list was lost and nothing was said.
+    @discardableResult
+    public mutating func saveGrabEdit(id: String, items: [String], sometimes names: [String]) -> Bool {
+        guard saveGrabList(id: id, items: items) else { return false }
+        setSometimes(listId: id, names: names)
         return true
     }
 }

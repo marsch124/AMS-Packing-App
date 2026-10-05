@@ -32,6 +32,9 @@ final class LibraryModel: ObservableObject {
     @Published var grabToOpen: String?
     /// The Action button's "Choose a grab list": Home shows the menu of grab lists.
     @Published var grabMenuOpen = false
+    /// A tab asked for from inside a window — a to-do found by Search lives on To do.
+    /// The frame switches to it and clears it.
+    @Published var tabToOpen: AppSection?
 
     private let store: LibraryStore
     private var held: [StoredRecord] = []

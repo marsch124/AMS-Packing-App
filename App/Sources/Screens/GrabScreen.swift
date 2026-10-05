@@ -85,13 +85,6 @@ final class GrabStore {
     private var memory: [String: GrabState] = [:]
     init(persistent: Bool) { self.persistent = persistent }
 
-    func state(_ id: String, items: [String]) -> GrabState {
-        let raw: GrabState?
-        if persistent, let data = UserDefaults.standard.data(forKey: "ams.grab.\(id)") {
-            raw = try? JSONDecoder().decode(GrabState.self, from: data)
-        } else { raw = memory[id] }
-        return (raw ?? GrabState()).current(for: items)
-    }
     /// What this device holds for a list, RAW — the library decides what a new
     /// session should look like (the "only sometimes" defaults).
     func held(_ id: String) -> GrabState? {
@@ -173,9 +166,16 @@ struct GrabScreen: View {
     /// The list as it was, while its sheet slides away after Delete — so the
     /// screen does not turn into another list on the way out.
     @State private var leaving: GrabDefinition?
+    /// The list as last seen. If it goes while open — deleted on the other device, or
+    /// lost to a later write from there — the screen closes showing THIS, never
+    /// another list: until 5 Oct 2026 it turned into Indoor swim, and the next tick
+    /// was saved onto the swim list.
+    @State private var lastSeen: GrabDefinition?
+    /// What Save was missing, said under it (a list with nothing on it is not saved).
+    @State private var saveNeeds = ""
 
     private var list: GrabDefinition {
-        leaving ?? model.library.grabList(id: listId) ?? GRAB_FACTORY[0]
+        leaving ?? model.library.grabList(id: listId) ?? lastSeen ?? GRAB_FACTORY[0]
     }
     /// One he made himself — the only kind that can be deleted. The original six
     /// can be taken off Home, never thrown away.
@@ -205,12 +205,23 @@ struct GrabScreen: View {
                         .accessibilityIdentifier("grab-done")
                 }
             }
+            // Save pressed on a list with nothing on it says so right under it, in
+            // red, and the editor stays open (5 Oct 2026: it closed and said nothing).
+            .needsLine($saveNeeds, typed: draft, id: "grab-save-needs")
             .padding(16)
             // The count stays in sight while the list scrolls under it (his test B.2:
             // "When scrolling, the counter moves out of sight").
             if !editing { counter(items: items, complete: complete) }
             if editing { editor } else { KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 6) {
+                    if items.isEmpty {
+                        // A list just made has nothing on it yet: say how to fill it.
+                        Text("Nothing on this list yet. Press Edit to put things on it.")
+                            .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, 12)
+                            .accessibilityIdentifier("grab-empty")
+                    }
                     ForEach(Array(items.enumerated()), id: \.offset) { n, name in
                         let ticked = state.done.contains(name)
                         let skipped = state.skipped.contains(name)
@@ -251,7 +262,9 @@ struct GrabScreen: View {
                     Button {
                         if complete { flash = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { dismiss() }; return }
                         let missing = state.missing(items)
-                        if missing.isEmpty { message = "Nothing left to take — everything is skipped." }
+                        // An empty list is not "everything skipped" (5 Oct 2026).
+                        if items.isEmpty { message = "Nothing on this list yet. Press Edit to put things on it." }
+                        else if missing.isEmpty { message = "Nothing left to take — everything is skipped." }
                         else if missing.count <= 3 { message = "Still missing: \(missing.joined(separator: ", "))." }
                         else { message = "\(missing.count) things still missing." }
                     } label: {
@@ -264,16 +277,22 @@ struct GrabScreen: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .padding(.top, 14)
                     .accessibilityIdentifier("grab-ready")
-                    if !state.done.isEmpty || !state.skipped.isEmpty {
-                        Button { change { _ in GrabState() } } label: {
+                    // Start over goes back to how the list opens — what he takes only
+                    // sometimes set aside again (until 5 Oct 2026 it brought those back
+                    // into the count until the list was opened again). So it is offered
+                    // only when the list differs from that.
+                    if !state.done.isEmpty || Set(state.skipped) != Set(fresh.skipped) {
+                        Button { change { _ in fresh } } label: {
                             Text("Start over").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.muted)
                                 .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("grab-reset")
                     }
-                    Text("Tap each thing as you pick it up — or tap ⊘ to leave something behind, just this once. Ticks and skips clear themselves after 6 hours.")
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.muted).padding(.top, 8)
+                    // The six hours run from the LAST tap — a list he is still ticking is
+                    // still the same outing — and the words now say so (5 Oct 2026).
+                    Text("Tap each thing as you pick it up — or tap ⊘ to leave something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap.")
+                        .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted).padding(.top, 8)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             } }
@@ -289,8 +308,14 @@ struct GrabScreen: View {
         .onAppear {
             // Starts from what he takes only sometimes — already skipped, out of
             // the count — unless a session is already under way.
-            state = model.library.openingState(listId: list.id, held: GrabStore.shared.held(list.id))
-            GrabStore.shared.save(list.id, state)
+            state = model.library.openingState(listId: listId, held: GrabStore.shared.held(listId))
+            GrabStore.shared.save(listId, state)
+        }
+        // Gone while open (the other device deleted it, or wrote over it): close,
+        // still showing it, rather than become another list.
+        .onChange(of: model.library.grabList(id: listId), initial: true) { _, now in
+            if let now { lastSeen = now }
+            else if leaving == nil, let lastSeen { leaving = lastSeen; dismiss() }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("grab-detail")
@@ -420,6 +445,7 @@ struct GrabScreen: View {
         draft = list.items
         draftSometimes = Set(model.library.sometimes(listId: listId).map(normName))
         newThing = ""
+        saveNeeds = ""
         askingToDelete = false
         editing = true
     }
@@ -440,23 +466,31 @@ struct GrabScreen: View {
     private func saveEdits() {
         let items = draft
         let sometimes = items.filter { draftSometimes.contains(normName($0)) }
+        let markedBefore = model.library.sometimes(listId: listId)
         // One door for every list, his own ones too (they were thrown away here
-        // until 4 Oct 2026: the door took the original six only).
-        model.change {
-            _ = $0.saveGrabList(id: listId, items: items)
-            _ = $0.setSometimes(listId: listId, names: sometimes)
-        }
+        // until 4 Oct 2026: the door took the original six only). The things and the
+        // marks are saved together or not at all.
+        var saved = false
+        model.change { saved = $0.saveGrabEdit(id: listId, items: items, sometimes: sometimes) }
+        guard saved else { saveNeeds = "Put at least one thing on the list first."; return }
         editing = false
         askingToDelete = false
-        // The list changed under the session: start it again from the defaults.
-        state = model.library.openingState(listId: listId, held: nil)
+        // Today's ticks stay (5 Oct 2026: every Save started over, even with nothing
+        // changed); only what the edit changed is applied to them.
+        state = model.library.stateAfterEdit(listId: listId, held: state, markedBefore: markedBefore)
         GrabStore.shared.save(listId, state)
     }
+
+    /// The list as it opens: what he takes only sometimes already set aside.
+    private var fresh: GrabState { model.library.openingState(listId: listId, held: nil) }
 
     /// The pinned line under the title: how many are in hand, a bar that fills in
     /// the list's colour — or, when all are there, the list's colour itself.
     @ViewBuilder private func counter(items: [String], complete: Bool) -> some View {
         let active = state.active(items).count
+        // Counted against the list as it stands (an edit from the other device can
+        // arrive while it is open: it read "8 of 7").
+        let inHand = state.inHand(items), skipped = state.skippedCount(items)
         VStack(alignment: .leading, spacing: 6) {
             if complete {
                 Text("All there — go!")
@@ -465,14 +499,14 @@ struct GrabScreen: View {
                     .background(RoundedRectangle(cornerRadius: 12).fill(tint))
                     .accessibilityIdentifier("grab-allthere")
             } else {
-                Text("\(state.done.count) of \(active) in hand" + (state.skipped.isEmpty ? "" : " · \(state.skipped.count) skipped"))
+                Text("\(inHand) of \(active) in hand" + (skipped == 0 ? "" : " · \(skipped) skipped"))
                     .font(.system(size: 18, weight: .heavy).monospacedDigit()).foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("grab-count")
                 GeometryReader { g in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Theme.line)
                         Capsule().fill(tint)
-                            .frame(width: active == 0 ? 0 : g.size.width * Double(state.done.count) / Double(active))
+                            .frame(width: active == 0 ? 0 : g.size.width * Double(inHand) / Double(active))
                     }
                 }
                 .frame(height: 8)
@@ -522,7 +556,7 @@ struct GrabScreen: View {
         let was = state.isComplete(list.items)
         state = body(state)
         message = ""
-        GrabStore.shared.save(list.id, state)
+        GrabStore.shared.save(listId, state)
         if !was && state.isComplete(list.items) {
             flash = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { flash = false }

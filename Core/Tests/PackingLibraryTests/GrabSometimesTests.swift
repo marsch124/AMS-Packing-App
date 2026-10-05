@@ -113,6 +113,42 @@ final class GrabSometimesTests: XCTestCase {
         XCTAssertEqual(again.at, mine.at, "the session was restarted")
     }
 
+    /// Save in the editor keeps today's ticks (until 5 Oct 2026 every Save — even
+    /// one with nothing changed — started the session over, ticks gone).
+    func testSavingAnEditKeepsTodaysTicks() {
+        var lib = library()
+        var today = lib.openingState(listId: swimId, held: nil)
+        today = today.tapped("Goggles").skipToggled("Towel")
+
+        // Nothing changed: exactly as it was.
+        XCTAssertEqual(lib.stateAfterEdit(listId: swimId, held: today, markedBefore: []), today,
+                       "Save with nothing changed lost today's ticks")
+
+        // A thing he has just marked "1 in 10" is set aside now — unless it is in his
+        // hand already; the ticks stay.
+        _ = lib.setSometimes(listId: swimId, names: ["Wetsuit", "Goggles"])
+        let marked = lib.stateAfterEdit(listId: swimId, held: today, markedBefore: [])
+        XCTAssertEqual(marked.done, ["Goggles"], "the tick went")
+        XCTAssertEqual(Set(marked.skipped), ["Towel", "Wetsuit"], "the new mark was not applied, or took what was in hand")
+
+        // Unmarked again: it comes back into the count.
+        _ = lib.setSometimes(listId: swimId, names: ["Goggles"])
+        let unmarked = lib.stateAfterEdit(listId: swimId, held: marked, markedBefore: ["Wetsuit", "Goggles"])
+        XCTAssertEqual(unmarked.skipped, ["Towel"], "an unmarked thing stayed out of the count")
+
+        // A thing edited off the list goes from the session.
+        _ = lib.saveGrabList(id: swimId, items: ["Swim trunks", "Wetsuit", "Safety buoy", "Towel"])
+        XCTAssertEqual(lib.stateAfterEdit(listId: swimId, held: unmarked, markedBefore: ["Goggles"]).done, [],
+                       "a thing no longer on the list is still ticked")
+
+        // No session under way (or a stale one): the defaults, as an opening.
+        _ = lib.setSometimes(listId: swimId, names: ["Safety buoy"])
+        XCTAssertEqual(lib.stateAfterEdit(listId: swimId, held: nil, markedBefore: []).skipped, ["Safety buoy"])
+        var old = today
+        old.at = Date().addingTimeInterval(-24 * 3600)
+        XCTAssertEqual(lib.stateAfterEdit(listId: swimId, held: old, markedBefore: []).done, [], "yesterday's ticks came back")
+    }
+
     func testTheDefaultsTravelInABackup() {
         var lib = library()
         _ = lib.setSometimes(listId: swimId, names: ["Wetsuit", "Safety buoy"])

@@ -55,7 +55,7 @@ extension Library {
         // rides beside the grab lists rather than inside them.
         var sometimesJSON: [String: JSONValue] = [:]
         for (listId, names) in sometimesByList() where !names.isEmpty { sometimesJSON[listId] = JSONValue(names) }
-        // His own grab lists and which six he keeps on Home — ours, kept in `meta`,
+        // His own grab lists and which eight he keeps on Home — ours, kept in `meta`,
         // and carried here so a restore brings them back.
         var ours: [String: JSONValue] = [:]
         let own = ownGrabLists()

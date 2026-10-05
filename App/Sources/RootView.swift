@@ -8,6 +8,9 @@ struct RootView: View {
     @State private var section: AppSection = .home
     @EnvironmentObject var model: LibraryModel
     @Environment(\.scenePhase) private var scenePhase
+    /// The app went to the background since it was last in front (the UI tests play
+    /// "something happened while he was away" on its return).
+    @State private var wasAway = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,11 +37,44 @@ struct RootView: View {
         // Back from the shop: what was ticked in Reminders is ticked here (field test 8.4).
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await ShopReminders.shared.readBack(into: model) } }
+            // Back in front — perhaps from the device's Settings, where reminders were
+            // allowed again: put the packing reminders right at once, not at the next
+            // change of the library.
+            if phase == .active { Task { await PackingReminders.shared.reschedule(model.library) } }
+            if phase == .background { wasAway = true }
+            if phase == .active, wasAway {
+                wasAway = false
+                if AMSPackingApp.testing { RootView.playWhatHappenedWhileAway(model) }
+            }
         }
         // A Shortcut asked for a grab list or a trip: both open on Home.
         .onChange(of: model.grabToOpen, initial: true) { _, id in if id != nil { section = .home } }
         .onChange(of: model.grabMenuOpen, initial: true) { _, open in if open { section = .home } }
         .onChange(of: model.tripToOpen, initial: true) { _, id in if id != nil { section = .home } }
+        // A window sent him to a tab (Search → a to-do → To do).
+        .onChange(of: model.tabToOpen) { _, tab in
+            guard let tab else { return }
+            section = tab
+            model.tabToOpen = nil
+        }
+    }
+
+    /// UI tests only: what reaches the app from outside while it is in the
+    /// background, played when it comes back to the front — as a Shortcut or the
+    /// Action button would (`-openGrabOnReturn <word>`), a tapped packing reminder
+    /// (`-openNextTripOnReturn`), or the other device's later write that no longer
+    /// holds his own grab lists (`-dropOwnGrabListsOnReturn`).
+    private static func playWhatHappenedWhileAway(_ model: LibraryModel) {
+        let args = ProcessInfo.processInfo.arguments
+        if let n = args.firstIndex(of: "-openGrabOnReturn"), n + 1 < args.count {
+            model.grabToOpen = model.library.allGrabLists().first { $0.label == args[n + 1] || $0.title == args[n + 1] }?.id
+        }
+        if args.contains("-openNextTripOnReturn"), let next = model.library.nextTrip(today: Today.local) {
+            PackingReminders.shared.open?(next.id)
+        }
+        if args.contains("-dropOwnGrabListsOnReturn") {
+            model.change { $0.meta[GRAB_OWN_META] = nil }
+        }
     }
 }
 

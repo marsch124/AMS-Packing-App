@@ -49,6 +49,30 @@ final class GrabListsTests: XCTestCase {
         XCTAssertEqual(s.current(for: items, now: now), GrabState(done: ["Shoes"], skipped: ["Cap"], at: s.at), "an item edited away is dropped")
         XCTAssertEqual(s.current(for: items, now: now.addingTimeInterval(7 * 3600)), GrabState(), "a previous workout's ticks are gone")
     }
+
+    /// The six hours count from his LAST tap, as the screen now says: a list he is
+    /// still ticking is the same outing, and must not empty itself under his hand.
+    func testTheSixHoursCountFromTheLastTap() {
+        let items = ["Shoes", "Cap"]
+        let start = Date()
+        let s = GrabState().tapped("Shoes", now: start).tapped("Cap", now: start.addingTimeInterval(5 * 3600))
+        XCTAssertEqual(s.current(for: items, now: start.addingTimeInterval(10 * 3600)).done, ["Shoes", "Cap"],
+                       "the ticks cleared six hours after the FIRST tap, under his hand")
+        XCTAssertEqual(s.current(for: items, now: start.addingTimeInterval(12 * 3600)), GrabState(),
+                       "the ticks outlived six hours after the last tap")
+    }
+
+    /// The counter reads the list as it stands: a name no longer on it (edited away
+    /// on the other device while the list is open here) is not "in hand" — it used
+    /// to say "8 of 7".
+    func testTheCountIsOfTheListAsItStands() {
+        let s = GrabState(done: ["Shoes", "Cap", "Old towel"], skipped: ["Gone", "Sunglasses"], at: Date())
+        let items = ["Shoes", "Cap", "Sunglasses"]
+        XCTAssertEqual(s.inHand(items), 2, "a name no longer on the list was counted in hand")
+        XCTAssertEqual(s.active(items).count, 2)
+        XCTAssertEqual(s.skippedCount(items), 1, "a name no longer on the list was counted skipped")
+        XCTAssertTrue(s.isComplete(items))
+    }
 }
 
 final class GrabEditingTests: XCTestCase {
@@ -71,5 +95,23 @@ final class GrabEditingTests: XCTestCase {
         lib.shared = grabToRows([GrabList(json: ["id": "run-out", "items": ["Shoes"], "label": "Trail"])])
         XCTAssertTrue(lib.saveGrabList(id: "run-out", items: ["Shoes", "Cap"]))
         XCTAssertEqual(lib.grabLists()[5].label, "Trail")
+    }
+
+    /// Save with every name blanked is refused WHOLE: the list's "1 in 10" marks stay
+    /// too. Until 5 Oct 2026 the things were refused but the marks were wiped.
+    func testARefusedSaveKeepsTheMarks() {
+        var lib = Library()
+        XCTAssertTrue(lib.saveGrabEdit(id: "swim-out", items: GRAB_FACTORY[3].items, sometimes: ["Safety buoy"]))
+        XCTAssertEqual(lib.sometimes(listId: "swim-out"), ["Safety buoy"])
+        let before = lib
+        XCTAssertFalse(lib.saveGrabEdit(id: "swim-out", items: ["", "  "], sometimes: []), "a list with nothing on it was saved")
+        XCTAssertEqual(lib.sometimes(listId: "swim-out"), ["Safety buoy"], "a refused save deleted the marks")
+        XCTAssertEqual(lib, before, "a refused save changed something")
+        // His own lists the same way.
+        let padel = lib.addGrabList(label: "Padel")!
+        XCTAssertTrue(lib.saveGrabEdit(id: padel.id, items: ["Racket", "Spare grip"], sometimes: ["Spare grip"]))
+        XCTAssertFalse(lib.saveGrabEdit(id: padel.id, items: [" "], sometimes: []))
+        XCTAssertEqual(lib.sometimes(listId: padel.id), ["Spare grip"])
+        XCTAssertEqual(lib.grabList(id: padel.id)?.items, ["Racket", "Spare grip"])
     }
 }

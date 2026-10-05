@@ -150,4 +150,18 @@ final class SharingTests: XCTestCase {
         XCTAssertNil(Library.readShared("hello there"), "any text read as something")
         XCTAssertNil(Library.readShared("   "))
     }
+
+    /// A shared grab list keeps a drawing and a colour this app has; anything else
+    /// becomes the look a new list gets — its initial, in blue. (Until 5 Oct 2026 an
+    /// unknown drawing showed as the runner and an unknown colour as slate.)
+    func testAReceivedGrabListGetsTheStandardLookForWhatIsUnknown() {
+        var me = Library()
+        let known = me.importGrab(GrabShare(name: "Lake", icon: "swim-sun", tone: "teal", items: ["Wetsuit"]))
+        XCTAssertEqual(known?.icon, "swim-sun")
+        XCTAssertEqual(known?.tone, "teal")
+        let odd = me.importGrab(GrabShare(name: "Kite", icon: "kite", tone: "magenta", items: ["Board"]))
+        XCTAssertEqual(odd?.icon, "", "an unknown drawing was kept (it shows as the runner)")
+        XCTAssertEqual(odd?.tone, "blue", "an unknown colour was kept (it shows as slate)")
+        XCTAssertEqual(me.ownGrabLists().map(\.icon), ["swim-sun", ""])
+    }
 }

@@ -154,6 +154,44 @@ final class GrabCollectionTests: XCTestCase {
         XCTAssertEqual(lib.homeGrabLists().last?.id, golf.id)
     }
 
+    /// A deleted list leaves nothing behind in the arrangement — not even in the
+    /// record of lists sent off Home, which a backup carries (it stayed there until
+    /// 5 Oct 2026).
+    func testADeletedListLeavesNoTraceInTheArrangement() {
+        var lib = Library()
+        let padel = lib.addGrabList(label: "Padel", items: ["Racket"])!
+        _ = lib.setHomeGrabLists(Array(GRAB_FACTORY.map(\.id).prefix(5)))
+        XCTAssertTrue(lib.offHomeIds().contains(padel.id))
+        XCTAssertTrue(lib.deleteOwnGrabList(id: padel.id))
+        XCTAssertEqual(lib.offHomeIds(), ["run-out"], "the deleted list is still in the off-Home record")
+        let back = Importer.library(from: BackupFile(json: try! JSONValue.parse(lib.backupData()))).0
+        XCTAssertFalse(back.offHomeIds().contains(padel.id), "the deleted list rides in a backup")
+    }
+
+    /// Make refuses a name a grab list already has — on its tile or as its title,
+    /// whatever the case and spacing.
+    func testANameAlreadyInUseIsTaken() {
+        var lib = Library()
+        XCTAssertTrue(lib.grabListNameTaken("swim"), "the tile word of an original list")
+        XCTAssertTrue(lib.grabListNameTaken("  Indoor   SWIM "), "the title of an original list")
+        XCTAssertFalse(lib.grabListNameTaken("Padel"))
+        XCTAssertFalse(lib.grabListNameTaken("   "))
+        _ = lib.addGrabList(label: "Padel")
+        XCTAssertTrue(lib.grabListNameTaken("padel"), "his own list's name")
+    }
+
+    /// Every list can be taken off Home — Home then shows none, and they all wait,
+    /// whole, until he puts one back.
+    func testEveryListCanWaitOffHome() {
+        var lib = Library()
+        XCTAssertTrue(lib.setHomeGrabLists([]))
+        XCTAssertTrue(lib.homeGrabLists().isEmpty, "a list stayed on Home")
+        XCTAssertEqual(lib.waitingGrabLists().map(\.id), GRAB_FACTORY.map(\.id))
+        XCTAssertTrue(Library(records: lib.records()).homeGrabLists().isEmpty, "the empty Home did not survive the store")
+        XCTAssertTrue(lib.setHomeGrabLists(["bike"]))
+        XCTAssertEqual(lib.homeGrabLists().map(\.id), ["bike"])
+    }
+
     /// A list he made himself is filled through the same door as the original six
     /// (the editor's Save) — and it sticks, through the store, like theirs. Until 4
     /// Oct 2026 that door took the original six only, so "Make" gave a list with no

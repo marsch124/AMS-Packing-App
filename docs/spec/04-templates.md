@@ -1282,8 +1282,9 @@ deciding before a rewrite.
    (`importTemplate(…named:)`; `testASharedTemplateIsNotAddedUnderANameHeHas`, the share UI test).
 6. [bug] **Importing links takes the sender's spelling** — Resolved in 0.6x: a linked row takes HIS spelling of the
    thing's name before the save (`testALinkedThingKeepsHisSpelling`).
-7. [bug] **Sharing an empty template**: `shareLink` is nil, and the share sheet then says "This is too big
-   for a link. Share it as a file instead." — the wrong reason, and there is no file for a template.
+7. **Resolved in 0.6x** — ~~Sharing an empty template says "too big for a link".~~ With no link and no file
+   the share sheet says "There is nothing on it to share yet." (`share-empty`; the Home spec's fix for the
+   empty grab list, the same screen). Not pinned for a template in the UI.
 8. [bug] **`suggestedIcon`'s "train" rule** — Resolved in 0.6x: train and tent are whole words now ("Strength
    training" → strength, "Campus" → nothing; `testATrainAndATentNeedTheirWholeWord`).
 9. [bug] **"Same as the thing (X)"** — Resolved in 0.6x: the first pill says "Same as the template (<its bag>)" on a
