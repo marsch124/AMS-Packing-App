@@ -296,7 +296,7 @@ struct OpenSharedScreen: View {
                                 .accessibilityIdentifier("shared-replace-no")
                             Button {
                                 let id = mine.id
-                                model.change { _ = $0.importTemplate(l, replacing: id) }
+                                model.change { _ = $0.replaceTemplate(id: id, with: l) }
                                 finish("Replaced your \(mine.name). Trips that use it keep working.")
                             } label: {
                                 Text("Replace").font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
@@ -306,6 +306,12 @@ struct OpenSharedScreen: View {
                             .buttonStyle(.plain).focusEffectDisabled()
                             .accessibilityIdentifier("shared-replace-yes")
                         }
+                        // What Replace does, before he says yes (the spec pass, 2026-10-05:
+                        // it used to take his icon, sections, bags and answers without a word).
+                        Text(model.library.replaceWords(id: mine.id, with: l))
+                            .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("shared-replace-says")
                     } else {
                         Button("Replace your \(mine.name) instead") { askingToReplace = true }
                             .buttonStyle(.plain).focusEffectDisabled()
