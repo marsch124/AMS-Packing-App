@@ -6507,4 +6507,51 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertNil(find(app, "template-detail"), "Escape made the template")
         XCTAssertEqual(words(summary), counted, "Escape made a template")
     }
+
+    /// Settings has ONE sheet with two destinations (spec 06 item 18: two `.sheet`s on
+    /// one view, the trap met in Search). Each door opens its own window, one after the
+    /// other, twice — and Cancel on the restore says so under Save.
+    func testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let status = app.staticTexts["backup-status"]
+        for _ in 0..<2 {
+            tap(app, id: "settings-lists")
+            XCTAssertTrue(appears(app, "lists-detail", timeout: 5), "Your choices did not open")
+            XCTAssertNil(find(app, "restore-detail"), "the restore opened for Your choices")
+            tap(app, id: "lists-done")
+            XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+            tap(app, id: "backup-restore")
+            XCTAssertTrue(appears(app, "restore-detail", timeout: 5), "the restore did not open after Your choices")
+            XCTAssertNil(find(app, "lists-detail"), "Your choices opened for the restore")
+            tap(app, id: "restore-cancel")
+            XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+            XCTAssertTrue(waitUntil { self.words(status) == "Nothing was replaced." }, "Cancel said: '\(words(status))'")
+        }
+    }
+
+    #if os(iOS)
+    /// Swiping the restore away (the iPhone) is a no, and the line under Save says so,
+    /// as Cancel does (spec 06 item 17: it went on saying nothing at all).
+    func testARestoreSwipedAwaySaysNothingWasReplaced() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let things = app.staticTexts["device-count-items"]
+        XCTAssertTrue(waitUntil { self.words(things) == "10" })
+        let status = app.staticTexts["backup-status"]
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        XCTAssertNotEqual(words(status), "Nothing was replaced.")
+        guard let sheet = find(app, "restore-detail") else { return XCTFail("no restore to swipe") }
+        sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05))
+            .press(forDuration: 0.05, thenDragTo: sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)))
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5), "the swipe did not close the restore")
+        XCTAssertTrue(waitUntil { self.words(status) == "Nothing was replaced." },
+                      "swiped away, the line says: '\(words(status))'")
+        XCTAssertEqual(words(things), "10", "the swipe replaced the library")
+        shot(app, "restore-swiped-away")
+    }
+    #endif
 }
