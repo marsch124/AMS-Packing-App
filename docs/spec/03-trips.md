@@ -983,9 +983,11 @@ Keep in Refine, cabin changes):
   bump the trip's `updatedAt`. `resolvedTemplates()` is computed once per call, only when some trip
   has an open line of the thing.
 - Ticked lines, edited lines, typed lines and finished or reviewed trips keep what they were packed with.
+- A row of a template saved in its row editor runs it too (`saveRow`, spec 04 §7 — the spec pass, 5 Oct 2026):
+  the row's own bag, When, how many, note and "Only on" reach the same open lines.
 
 ### Tests
-Model `ThingFollowsTests` (3 tests), `ThingsTests.testYourThingsListsEverythingAndARenameReachesEveryList`
+Model `ThingFollowsTests` (3 tests), `TemplateRowsTests.testARowChangeReachesATripStillAhead`, `ThingsTests.testYourThingsListsEverythingAndARenameReachesEveryList`
 (a past trip keeps the old name). UI `testAChangeToAThingReachesATripStillAhead`.
 
 ---

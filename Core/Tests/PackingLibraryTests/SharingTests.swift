@@ -58,7 +58,9 @@ final class SharingTests: XCTestCase {
         var me = library()
         let things = me.items.count
         XCTAssertEqual(me.templateNamed("swim")?.id, me.templates[0].id, "his Swim is not found by name")
-        let made = try XCTUnwrap(me.importTemplate(shared))
+        // He has a Swim already: as a new one it takes a name of its own (the spec pass).
+        let made = try XCTUnwrap(me.importTemplate(shared, named: me.freeTemplateName(shared.name)))
+        XCTAssertEqual(made.name, "Swim 2")
         XCTAssertNotEqual(made.id, me.templates[0].id, "a new template took his old one's id")
         XCTAssertEqual(me.items.count, things + 1, "only Fins is new to him")
         XCTAssertEqual(me.items.first { $0.name == "Towel" }?.weight, 340, "the sender's weight overwrote his Towel")
@@ -70,6 +72,61 @@ final class SharingTests: XCTestCase {
         let replaced = try XCTUnwrap(me.importTemplate(shared, replacing: old))
         XCTAssertEqual(replaced.id, old, "Replace did not keep the template's id")
         XCTAssertEqual(me.resolvedTemplate(id: old)?.items.map(\.name).sorted(), ["Fins", "Goggles", "Towel"])
+    }
+
+    /// As a NEW template a shared one needs a name he does not have yet — New and
+    /// Rename refuse a second of one name too, and Worth a look reads two as "two
+    /// libraries may have met" (the spec pass, 5 Oct 2026).
+    func testASharedTemplateIsNotAddedUnderANameHeHas() throws {
+        var me = library()
+        let link = try XCTUnwrap(me.shareLink(templateId: me.templates[0].id))
+        guard case .template(let shared)? = Library.readShared(link) else { return XCTFail("not read as a template") }
+        let before = me
+        XCTAssertNil(me.importTemplate(shared), "a second Swim was made")
+        XCTAssertEqual(me, before, "a refused import changed something")
+        let made = try XCTUnwrap(me.importTemplate(shared, named: " Swim club "))
+        XCTAssertEqual(made.name, "Swim club")
+        XCTAssertTrue(me.worries().isEmpty, "\(me.worries())")
+        XCTAssertNil(me.importTemplate(shared, named: "swim CLUB"), "a name he has, given as the new one")
+    }
+
+    /// A thing he has is linked — and keeps HIS spelling of its name.
+    func testALinkedThingKeepsHisSpelling() throws {
+        var sender = Library()
+        var list = newList(name: "Pool", group: "WET")
+        list.items = [newItem(name: "towel"), newItem(name: "Kickboard")]
+        sender.saveTemplate(list)
+        let link = try XCTUnwrap(sender.shareLink(templateId: sender.templates[0].id))
+        guard case .template(let shared)? = Library.readShared(link) else { return XCTFail("not read as a template") }
+        var me = library()
+        XCTAssertNotNil(me.importTemplate(shared))
+        XCTAssertEqual(me.items.filter { normName($0.name) == "towel" }.map(\.name), ["Towel"], "his Towel was renamed")
+    }
+
+    /// The finding of the spec pass: a shared always-packed template KEEPS its role as
+    /// a new one (said on the screen before he adds it), so every new trip packs it;
+    /// Replace keeps where HIS template lives, so his activity never becomes one.
+    func testASharedAlwaysPackedTemplateStaysOneButReplaceKeepsHisPlace() throws {
+        var sender = Library()
+        var base = newList(name: "Swim", role: "base")
+        base.items = [newItem(name: "Fins")]
+        sender.saveTemplate(base)
+        let link = try XCTUnwrap(sender.shareLink(templateId: sender.templates[0].id))
+        guard case .template(let shared)? = Library.readShared(link) else { return XCTFail("not read as a template") }
+        XCTAssertEqual(shared.role, "base")
+
+        var me = library()
+        let added = try XCTUnwrap(me.importTemplate(shared, named: "Pool base"))
+        XCTAssertEqual(added.role, "base", "as a new one it is no longer always packed")
+        let trip = me.createTrip(newEvent(name: "Any trip", startDate: "2026-11-01", endDate: "2026-11-02"))
+        XCTAssertTrue(trip.entries.contains { $0.name == "Fins" }, "a new always-packed template is not packed on every trip")
+
+        let mine = me.templates.first { $0.name == "Swim" }!
+        let replaced = try XCTUnwrap(me.importTemplate(shared, replacing: mine.id))
+        XCTAssertEqual(replaced.id, mine.id)
+        XCTAssertEqual(replaced.role, "", "Replace turned his activity into an always-packed template")
+        XCTAssertEqual(replaced.group, "WET", "Replace moved his template out of its area")
+        XCTAssertEqual(me.resolvedTemplate(id: mine.id)?.items.map(\.name), ["Fins"])
     }
 
     /// A grab list arrives in Grab Lists, waiting, not on Home.

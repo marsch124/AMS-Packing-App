@@ -25,10 +25,9 @@ struct NewList: View {
     @State private var needs = ""
     @FocusState private var writing: Bool
 
-    private var taken: Bool {
-        let wanted = normName(name)
-        return !wanted.isEmpty && library.templates.contains { normName($0.name) == wanted }
-    }
+    /// The bag list's stored name ("Containers") is not one he sees, so it is not
+    /// taken (the spec pass, 5 Oct 2026).
+    private var taken: Bool { library.templateNameTaken(name) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -89,14 +88,11 @@ struct NewList: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .padding(.top, 24)
                     .accessibilityIdentifier("newlist-make")
-                    if !needs.isEmpty {
-                        Text(needs)
-                            .font(.system(size: 15, weight: .bold)).foregroundStyle(AppSection.actions.color)
-                            .frame(maxWidth: .infinity).padding(.top, 8)
-                            .accessibilityIdentifier("newlist-needs")
-                    }
+                    // What a press was missing — gone as soon as the name changes, as
+                    // under every other field (the spec pass, 5 Oct 2026).
+                    .needsLine($needs, typed: name, id: "newlist-needs")
+                    .padding(.top, 24)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -109,8 +105,6 @@ struct NewList: View {
         .frame(minWidth: 440, minHeight: 480)
         #endif
     }
-
-    private var canMake: Bool { !jsTrim(name).isEmpty && !taken }
 
     private func areaRow(_ id: String, _ label: String) -> some View {
         Button { group = id } label: {

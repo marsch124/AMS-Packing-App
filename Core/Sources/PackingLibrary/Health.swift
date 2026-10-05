@@ -40,8 +40,11 @@ extension Library {
     public func worries() -> [Worry] {
         var out: [Worry] = []
 
-        // Two templates of the same name: the shape both accidents took.
-        let twiceNamed = repeatedNames(templates.map(\.name))
+        // Two templates of the same name: the shape both accidents took. The bag
+        // list is counted apart: its stored name is never shown, so a template he
+        // calls "Containers" is not a second bag list (the spec pass, 5 Oct 2026) —
+        // while two bag lists still are.
+        let twiceNamed = repeatedNames(templates.map { (kind: $0.role == CONTAINER_ROLE ? "bags" : "", name: $0.name) })
         if !twiceNamed.isEmpty {
             let n = twiceNamed.count
             out.append(Worry(says: "\(n) template name\(n == 1 ? "" : "s") appear\(n == 1 ? "s" : "") twice."
@@ -70,15 +73,16 @@ extension Library {
         return out
     }
 
-    /// The names that appear more than once, in the order they first appear.
-    private func repeatedNames(_ all: [String]) -> [String] {
-        var seen: [String: Int] = [:], order: [String] = []
-        for name in all {
-            let key = normName(name)
-            guard !key.isEmpty else { continue }
-            if seen[key] == nil { order.append(name) }
+    /// The names that appear more than once among those of one kind, in the order
+    /// they first appear.
+    private func repeatedNames(_ all: [(kind: String, name: String)]) -> [String] {
+        var seen: [String: Int] = [:], order: [(key: String, name: String)] = []
+        for (kind, name) in all {
+            guard !normName(name).isEmpty else { continue }
+            let key = kind + "|" + normName(name)
+            if seen[key] == nil { order.append((key, name)) }
             seen[key, default: 0] += 1
         }
-        return order.filter { (seen[normName($0)] ?? 0) > 1 }
+        return order.filter { (seen[$0.key] ?? 0) > 1 }.map(\.name)
     }
 }

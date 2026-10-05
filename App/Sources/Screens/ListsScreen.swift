@@ -147,7 +147,9 @@ struct ListsScreen: View {
             case .conditions: _ = lib.setConditions(lib.conditions() + [newCondition(name, lib.conditions().map(\.id))])
             case .phases:
                 var list = lib.timeline()
-                list.append(newPhase(name, list.map(\.id)))
+                // Its colour from the app's own cover colours: the web app's pick made
+                // the eighth step teal (his colour notes: "Not teal"; the spec pass).
+                list.append(lib.newStep(named: name))
                 _ = lib.setTimeline(list)
             }
         }

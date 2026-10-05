@@ -4,21 +4,26 @@ import PackingLibrary
 
 /// The Templates tab: every template, grouped the way he organises his life —
 /// always packed, by transport, then his activity groups.
-extension TemplatesScreen {
-    static let cateringShort = ["self": "Self-sufficient", "eatout": "Eating out", "mixed": "Mix of both"]
-
-    /// "Only on: Summer · Plane" — what a row on a template is limited to, or "".
-    static func tags(_ item: Item) -> String {
-        let all = item.seasons + item.contexts + item.transports + item.catering.map { cateringShort[$0] ?? $0 }
-        return all.isEmpty ? "" : "Only on: " + all.joined(separator: " \u{00B7} ")
-    }
-}
-
 struct TemplatesScreen: View {
     @EnvironmentObject var model: LibraryModel
-    @State private var open: PackList?
-    @State private var making = false
-    @State private var searching = false
+    /// What the tab has open. ONE sheet with a destination, not three sheets (a
+    /// template, Search, New): SwiftUI does not reliably present a second sheet on a
+    /// view while the first is still closing — the trap met in Search (0.17), and
+    /// flagged here by the spec pass (5 Oct 2026).
+    @State private var opened: Opened?
+    /// A template just made: opened as soon as New has closed.
+    @State private var madeNow: String?
+
+    enum Opened: Identifiable, Equatable {
+        case template(String), search, new
+        var id: String {
+            switch self {
+            case .template(let id): return "template:" + id
+            case .search: return "search"
+            case .new: return "new"
+            }
+        }
+    }
 
     /// One activity area (GA, WET…, or Always packed, By transport, Other) and its
     /// templates. The template's stored field is still called `group`, as the web app
@@ -43,20 +48,21 @@ struct TemplatesScreen: View {
         return groupHeading(code, area.title)
     }
 
-    /// "15 lists · 431 things · 4 trips packed from them"
+    /// "15 templates · 431 things · 4 trips packed from them" — the things ON them
+    /// and the trips packed FROM them, so the words match the numbers (the spec pass:
+    /// it counted every thing he owns and every trip).
     static func summary(_ lists: [PackList], _ library: Library) -> String {
-        let things = library.items.count
-        let trips = library.trips.count
-        var parts = ["\(lists.count) template\(lists.count == 1 ? "" : "s")",
-                     "\(things) thing\(things == 1 ? "" : "s")"]
-        if trips > 0 { parts.append("\(trips) trip\(trips == 1 ? "" : "s") packed from them") }
+        let n = library.templateSummary(lists)
+        var parts = ["\(n.templates) template\(n.templates == 1 ? "" : "s")",
+                     "\(n.things) thing\(n.things == 1 ? "" : "s")"]
+        if n.trips > 0 { parts.append("\(n.trips) trip\(n.trips == 1 ? "" : "s") packed from them") }
         return parts.joined(separator: " · ")
     }
 
     var body: some View {
-        let areas = TemplatesScreen.activityAreas(model.library.resolvedTemplates())
+        let areas = TemplatesScreen.activityAreas(model.library.shownTemplates())
         let flat = areas.flatMap(\.lists)
-        let use = model.library.templateUse()
+        let use = model.library.templateUse(today: Today.local)
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
@@ -69,8 +75,8 @@ struct TemplatesScreen: View {
                             .accessibilityIdentifier("templates-summary")
                     }
                     Spacer(minLength: 8)
-                    SearchButton { searching = true }
-                    Button { making = true } label: {
+                    SearchButton { opened = .search }
+                    Button { opened = .new } label: {
                         Text("+ New")
                             .font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
                             .padding(.horizontal, 14).frame(minHeight: 36)
@@ -97,7 +103,7 @@ struct TemplatesScreen: View {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
                               spacing: 8) {
                         ForEach(area.lists, id: \.id) { list in
-                            Button { open = list } label: { TemplateCard(list: list, use: use[list.id]) }
+                            Button { opened = .template(list.id) } label: { TemplateCard(list: list, use: use[list.id]) }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
                         }
@@ -107,14 +113,20 @@ struct TemplatesScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
-        .sheet(item: $open) { list in TemplateDetail(listId: list.id).environmentObject(model) }
-        .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
-        .sheet(isPresented: $making) {
-            NewList(made: { list in
-                model.change { $0.saveTemplate(list) }
-                // Straight into it: a list he cannot see the inside of is not made yet.
-                open = list
-            }, library: model.library)
+        .sheet(item: $opened, onDismiss: {
+            // Straight into a template just made: a list he cannot see the inside of
+            // is not made yet. Opened once New has gone, never on top of it.
+            if let id = madeNow { madeNow = nil; opened = .template(id) }
+        }) { destination in
+            switch destination {
+            case .template(let id): TemplateDetail(listId: id).environmentObject(model)
+            case .search: SearchScreen().environmentObject(model)
+            case .new:
+                NewList(made: { list in
+                    model.change { $0.saveTemplate(list) }
+                    madeNow = list.id
+                }, library: model.library)
+            }
         }
     }
 }
@@ -139,7 +151,7 @@ struct TemplateCard: View {
             Text(list.name)
                 .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-            Text(TemplateCard.lastTaken(use))
+            Text(Library.TemplateUse.line(use, today: Today.local))
                 .font(.system(size: 12, weight: .medium))
                 // Quiet, not invisible: the divider colour could not be read on
                 // either a white or a black background.
@@ -155,36 +167,22 @@ struct TemplateCard: View {
     }
 }
 
-extension TemplateCard {
-    /// "Last taken: Göteborg, 2 days ago" — or the plain truth that it has never
-    /// been out.
-    static func lastTaken(_ use: Library.TemplateUse?) -> String {
-        guard let use, use.trips > 0 else { return "Never taken along" }
-        guard !use.lastTrip.isEmpty else { return "Taken on \(use.trips) trip\(use.trips == 1 ? "" : "s")" }
-        // The WHEN first: it is the part that is always worth reading, and the part
-        // that still shows when a long trip name is cut off.
-        let ago = use.lastDate.isEmpty ? "" : countdownLabel(daysUntil(use.lastDate, Today.local))
-        return ago.isEmpty ? "Last: \(use.lastTrip)" : "\(ago) · \(use.lastTrip)"
-    }
-}
-
-/// A template's face: ITS colour, and the cover HE chose if he chose one —
-/// otherwise its initial. (His covers are his data; the app adds no art of its own.)
+/// A template's face: ITS colour, and the icon he chose — or the one its name
+/// suggests (approved 2 Oct 2026) — drawn in the app's own hand; else its first
+/// letter. Never an emoji, even one a template brought from the web app.
 struct Cover: View {
     let list: PackList
     var size: Double = 40
 
     var body: some View {
-        // His icon, or the one suggested for its name (approved 2 Oct 2026); else
-        // the first letter, as before. White on the template's own colour.
+        // White on the template's own colour (never teal: his colour notes).
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28).fill(Color(hexString: listColor(list)))
+            RoundedRectangle(cornerRadius: size * 0.28).fill(Color(hexString: Library.coverColour(list)))
             if let icon = TemplateIcons.icon(Library.icon(of: list)) {
                 IconMark(path: icon.path, size: size * 0.66).foregroundStyle(.white)
             } else {
-                let glyph = list.emoji.isEmpty ? String(list.name.prefix(1)).uppercased() : list.emoji
-                Text(glyph)
-                    .font(.system(size: size * (list.emoji.isEmpty ? 0.46 : 0.52), weight: .heavy))
+                Text(Library.coverLetter(list))
+                    .font(.system(size: size * 0.46, weight: .heavy))
                     .foregroundStyle(.white)
             }
         }
@@ -238,7 +236,7 @@ struct IconPickerScreen: View {
         let list = model.library.resolvedTemplate(id: templateId) ?? newList()
         let now = Library.icon(of: list)
         let chosen = model.library.chosenIcon(templateId: templateId)
-        let tint = Color(hexString: listColor(list))
+        let tint = Color(hexString: Library.coverColour(list))
         let rows = stride(from: 0, to: TemplateIcons.all.count, by: columns).map {
             Array(TemplateIcons.all[$0..<min($0 + columns, TemplateIcons.all.count)])
         }
@@ -259,10 +257,10 @@ struct IconPickerScreen: View {
                         choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint) {
                             if let s = Library.suggestedIcon(for: list), let icon = TemplateIcons.icon(s) {
                                 IconMark(path: icon.path, size: 30)
-                            } else { Text(String(list.name.prefix(1)).uppercased()).font(.system(size: 22, weight: .heavy)) }
+                            } else { Text(Library.coverLetter(list)).font(.system(size: 22, weight: .heavy)) }
                         } pick: { pick(nil) }
                         choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint) {
-                            Text(String(list.name.prefix(1)).uppercased()).font(.system(size: 22, weight: .heavy))
+                            Text(Library.coverLetter(list)).font(.system(size: 22, weight: .heavy))
                         } pick: { pick(Library.letterIcon) }
                     }
                     SectionTitle(title: "All icons")
@@ -332,6 +330,9 @@ struct TemplateDetail: View {
     @State private var renaming: String?
     @FocusState private var writingName: Bool
     @State private var askingToDelete = false
+    /// Choosing the template's activity area again (the spec pass, 5 Oct 2026: New
+    /// asks for it, and nothing could put a wrong answer right).
+    @State private var choosingArea = false
     /// The row whose ✕ was pressed — it asks first (his test H.5).
     @State private var takingOff: TakingOff?
     /// How the things are grouped (his test H.3: "group and sort the items in a
@@ -472,8 +473,9 @@ struct TemplateDetail: View {
                                                         .filter { !$0.isEmpty }.joined(separator: " · "))
                                                     .font(.system(size: 13)).foregroundStyle(Theme.muted).lineLimit(1)
                                             }
-                                            // Only on some trips, said on the row (field test 4.4, 3 Oct 2026).
-                                            let tags = TemplatesScreen.tags(item)
+                                            // Only on some trips, said on the row (field test 4.4, 3 Oct 2026)
+                                            // — only what a trip reads on this template.
+                                            let tags = Library.onlyOnWords(item, on: list)
                                             if !tags.isEmpty {
                                                 Text(tags).font(.system(size: 13, weight: .semibold))
                                                     .foregroundStyle(AppSection.templates.color).lineLimit(1)
@@ -560,9 +562,16 @@ struct TemplateDetail: View {
                 .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
                 .padding(.horizontal, 16).padding(.bottom, 10)
+            } else if choosingArea {
+                areaCard(list)
             } else {
-                SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
-                    .padding(.horizontal, 16).padding(.bottom, 8)
+                HStack(spacing: 8) {
+                    // Only an activity template lives in an area; always packed and
+                    // transport templates are filed by what they do.
+                    if list.role.isEmpty { areaDoor(list) }
+                    SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 8)
             }
         }
         .background(Theme.bg.ignoresSafeArea())
@@ -579,9 +588,7 @@ struct TemplateDetail: View {
 
     /// Is this name free — nobody else's, and not blank?
     private func nameFree(_ wanted: String, _ list: PackList) -> Bool {
-        let clean = normName(wanted)
-        guard !clean.isEmpty else { return false }
-        return !model.library.templates.contains { $0.id != listId && normName($0.name) == clean }
+        !normName(wanted).isEmpty && !model.library.templateNameTaken(wanted, except: listId)
     }
 
     private func saveName(_ list: PackList) {
@@ -593,6 +600,59 @@ struct TemplateDetail: View {
         model.change { _ = $0.renameTemplate(id: listId, to: wanted) }
         renaming = nil
         writingName = false
+    }
+
+    /// The area it lives in, as a quiet button beside Delete — rarely wanted, never
+    /// in the way of the rows.
+    private func areaDoor(_ list: PackList) -> some View {
+        Button { withAnimation(.easeOut(duration: 0.15)) { choosingArea = true } } label: {
+            Text("Activity area: \(list.group.isEmpty ? "none" : list.group)")
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(AppSection.templates.color)
+                .lineLimit(1)
+                .frame(minHeight: 36).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("template-area")
+        .accessibilityValue(list.group.isEmpty ? "none" : list.group)
+    }
+
+    /// The question New asks, asked again: one press files it, and the card goes.
+    private func areaCard(_ list: PackList) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("In which activity area should it live?")
+                    .font(.system(size: 16, weight: .heavy)).foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button("Cancel") { choosingArea = false }
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .accessibilityIdentifier("template-area-cancel")
+            }
+            .padding(.bottom, 6)
+            ForEach(GROUPS.map { ($0.id, "\($0.id) · \($0.label)") } + [("", "No activity area")], id: \.0) { id, label in
+                let on = list.group == id
+                Button {
+                    model.change { _ = $0.setTemplateArea(id: listId, area: id) }
+                    choosingArea = false
+                } label: {
+                    HStack {
+                        Text(label)
+                            .font(.system(size: 16, weight: on ? .heavy : .medium))
+                            .foregroundStyle(on ? AppSection.templates.color : Theme.ink)
+                        Spacer()
+                    }
+                    .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                .accessibilityIdentifier("template-area-\(id.isEmpty ? "none" : id)")
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.templates.color, lineWidth: 1))
+        .padding(.horizontal, 16).padding(.bottom, 10)
     }
 
     /// "Take it off?" — in the middle of the screen, the rest dimmed: his ask (test
@@ -648,6 +708,12 @@ struct TemplateDetail: View {
     private func add() {
         let name = newName
         guard !jsTrim(name).isEmpty else { addNeeds = "Type a thing first."; return }
+        // Typed again, a thing already here would sit on the template twice — a slip,
+        // so it is said instead (the spec pass, 5 Oct 2026).
+        guard !model.library.isOnTemplate(templateId: listId, name: name) else {
+            addNeeds = "\u{201C}\(jsTrim(name))\u{201D} is already on this template."
+            return
+        }
         model.change { _ = $0.addToTemplate(templateId: listId, name: name) }
         newName = ""
         // A search left on would hide the new thing unless its name happens to match
@@ -672,6 +738,9 @@ struct RowEditor: View {
     @State private var note = ""
     @State private var section = ""
     @State private var newSectionName = ""
+    /// A section typed here, waiting for Save: it is made only then, so Cancel leaves
+    /// the template as it was (the spec pass, 5 Oct 2026 — it used to stay behind).
+    @State private var pendingSection = ""
     /// What Add was missing, said under the field (never a grey button).
     @State private var sectionNeeds = ""
     /// Only on some trips (his ask, 2 Oct 2026): none = always comes along.
@@ -680,9 +749,13 @@ struct RowEditor: View {
     @State private var transports: Set<String> = []
     @State private var catering: Set<String> = []
 
+    /// The pill of a section typed here and not made yet.
+    static let newSectionKey = "\u{0}new-section"
+
     var body: some View {
         let found = model.library.row(templateId: templateId, memId: memId)
         let thing = found?.thing ?? Item()
+        let stored = found?.membership ?? Membership()
         let list = model.library.templates.first { $0.id == templateId } ?? newList()
         VStack(spacing: 0) {
             HStack {
@@ -709,14 +782,18 @@ struct RowEditor: View {
                             .accessibilityIdentifier("row-thing-name")
                         Text("On \(list.name)").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
-                    Pills(title: "Bag on this template", options: [("", "Same as the thing (\(thing.container))")]
+                    // The first pill says where a blank bag REALLY goes: the template's own
+                    // bag when it came with one, else the thing's (the spec pass).
+                    Pills(title: "Bag on this template", options: [("", model.library.sameBagWords(templateId: templateId, thing: thing))]
                             + containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
                           selected: [bag], id: "row-bag", tint: AppSection.templates.color, heading: .band) { bag = $0 }
                     Pills(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
                             + PHASES.map { ($0.id, $0.label) },
                           selected: [when], id: "row-when", tint: AppSection.templates.color, heading: .band) { when = $0 }
-                    if !list.sections.isEmpty {
-                        Pills(title: "Section of this template", options: [("", "No section")] + list.sections.map { ($0.id, $0.name) },
+                    if !list.sections.isEmpty || !pendingSection.isEmpty {
+                        Pills(title: "Section of this template",
+                              options: [("", "No section")] + list.sections.map { ($0.id, $0.name) }
+                                + (pendingSection.isEmpty ? [] : [(RowEditor.newSectionKey, pendingSection)]),
                               selected: [section], id: "row-section", tint: AppSection.templates.color, heading: .band) { section = $0 }
                     }
                     VStack(alignment: .leading, spacing: 6) {
@@ -729,13 +806,15 @@ struct RowEditor: View {
                     }
                     .needsLine($sectionNeeds, typed: newSectionName, id: "row-section-add-needs")
                     }
+                    // Blank shows, in grey, what the thing itself says — so a blank field
+                    // never looks as if the thing's note had gone.
                     VStack(alignment: .leading, spacing: 6) {
                         HeadingBand(title: "How many", tint: AppSection.templates.color, id: "row-heading-qty")
-                        field($qty, "e.g. 2, or 2 pairs", "row-qty")
+                        field($qty, RowEditor.sameAs(thing.qty, else: "e.g. 2, or 2 pairs"), "row-qty")
                     }
                     VStack(alignment: .leading, spacing: 6) {
                         HeadingBand(title: "Note", tint: AppSection.templates.color, id: "row-heading-note")
-                        field($note, "e.g. with the red filter", "row-note")
+                        field($note, RowEditor.sameAs(thing.note, else: "e.g. with the red filter"), "row-note")
                     }
                     Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
                         .font(.system(size: 14)).foregroundStyle(Theme.muted)
@@ -749,16 +828,19 @@ struct RowEditor: View {
                             .font(.system(size: 15, weight: .medium)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, -6)
-                        Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: seasons,
+                        // A word the app does not know (a web-app "summer") is a pill of its
+                        // own after the app's words: kept on Save, and switched off like any.
+                        Pills(title: "Season", options: RowEditor.words(SEASONS, stored.seasons), selected: seasons,
                               id: "row-seasons", tint: AppSection.templates.color) { toggle(&seasons, $0) }
                         // Context narrows only workout (WET) templates, as the trip builder reads it.
                         if contextApplies(list) {
-                            Pills(title: "Context", options: CONTEXTS.map { ($0, $0) }, selected: contexts,
+                            Pills(title: "Context", options: RowEditor.words(CONTEXTS, stored.contexts), selected: contexts,
                                   id: "row-contexts", tint: AppSection.templates.color) { toggle(&contexts, $0) }
                         }
-                        Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: transports,
+                        Pills(title: "Transport", options: RowEditor.words(TRANSPORTS, stored.transports), selected: transports,
                               id: "row-transports", tint: AppSection.templates.color) { toggle(&transports, $0) }
-                        Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
+                        Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) }
+                                + Library.unknownConditions(stored.catering, CATERING.map(\.id)).map { ($0, $0) },
                               selected: catering, id: "row-catering", tint: AppSection.templates.color) { toggle(&catering, $0) }
                     }
                 }
@@ -790,30 +872,47 @@ struct RowEditor: View {
             .accessibilityIdentifier(id)
     }
 
+    /// A section of that name already on the template is simply chosen; a new one
+    /// waits for Save.
     private func addSection() {
-        let name = newSectionName
-        guard !jsTrim(name).isEmpty else { sectionNeeds = "Type the section's name first."; return }
-        var made: TemplateSection?
-        model.change { made = $0.addSection(templateId: templateId, name: name) }
-        if let made = made { section = made.id }
+        let name = jsTrim(newSectionName)
+        guard !name.isEmpty else { sectionNeeds = "Type the section's name first."; return }
+        let sections = model.library.templates.first { $0.id == templateId }?.sections ?? []
+        if let there = sections.first(where: { normName($0.name) == normName(name) }) {
+            section = there.id
+            pendingSection = ""
+        } else {
+            pendingSection = name
+            section = RowEditor.newSectionKey
+        }
         newSectionName = ""
+    }
+
+    /// The pills of one "Only on" kind: the app's words, then any stored word it
+    /// does not know.
+    static func words(_ vocabulary: [String], _ stored: [String]) -> [(id: String, label: String)] {
+        (vocabulary + Library.unknownConditions(stored, vocabulary)).map { ($0, $0) }
+    }
+
+    /// A blank field's grey words: the thing's own answer when it has one.
+    static func sameAs(_ own: String, else example: String) -> String {
+        let first = own.split(separator: "\n").first.map(String.init) ?? ""
+        return jsTrim(first).isEmpty ? example : "Same as the thing: \(jsTrim(first))"
     }
 
     private func toggle(_ set: inout Set<String>, _ value: String) {
         if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
 
+    /// The model decides what is stored (`Library.saveRow`): the app's own words in
+    /// the app's order, words it does not know kept, answers equal to the thing's
+    /// left blank, a new section made now — and trips still ahead follow.
     private func save() {
-        let (b, w, q, n, s) = (bag, when, qty, note, section)
-        // In the app's own order, so the stored lists read the same every time.
-        let se = SEASONS.filter(seasons.contains), co = CONTEXTS.filter(contexts.contains)
-        let tr = TRANSPORTS.filter(transports.contains), ca = CATERING.map(\.id).filter(catering.contains)
-        model.change {
-            _ = $0.updateMembership(memId: memId) { m in
-                m.container = b; m.phase = w; m.qty = jsTrim(q); m.note = jsTrim(n); m.section = s
-                m.seasons = se; m.contexts = co; m.transports = tr; m.catering = ca
-            }
-        }
+        let fresh = section == RowEditor.newSectionKey
+        let answers = Library.RowAnswers(bag: bag, when: when, qty: qty, note: note,
+                                         section: fresh ? "" : section, newSection: fresh ? pendingSection : "",
+                                         seasons: seasons, contexts: contexts, transports: transports, catering: catering)
+        model.change { _ = $0.saveRow(templateId: templateId, memId: memId, answers) }
         dismiss()
     }
 }

@@ -69,23 +69,44 @@ extension Library {
 
     /// A shared template, as a new one — or in place of one of his with the same
     /// name (keeping its id, so trips still know it). A thing he already has, by
-    /// name, is LINKED, not overwritten: his weight, bag, brand and notes stay his;
-    /// only things new to him take the sender's details.
+    /// name, is LINKED, not overwritten: his weight, bag, brand, notes — and the way
+    /// he spells its name — stay his; only things new to him take the sender's details.
+    ///
+    /// As a NEW template it needs a name he does not have yet (`named`, else the
+    /// sender's): two templates of one name is what Worth a look reads as "two
+    /// libraries may have met", and New and Rename refuse it too — so this refuses
+    /// it (nil) and the screen asks for another name (the spec pass, 5 Oct 2026).
+    ///
+    /// REPLACING one of his keeps where his lives — always packed, by transport or
+    /// his activity area — so replacing his Hiking with a shared always-packed list
+    /// never turns his Hiking into one that every trip packs.
     @discardableResult
-    public mutating func importTemplate(_ shared: SharedList, replacing id: String? = nil) -> PackList? {
+    public mutating func importTemplate(_ shared: SharedList, replacing id: String? = nil, named: String? = nil) -> PackList? {
         var partial: [String: JSONValue] = [:]
-        if let id, let old = templates.first(where: { $0.id == id }) {
+        let old = id.flatMap { id in templates.first { $0.id == id } }
+        if let old {
             partial["id"] = .string(old.id)
             partial["createdAt"] = .string(old.createdAt)
         }
         var list = listFromShare(shared, partial: .object(partial))
+        if old == nil, let named, !jsTrim(named).isEmpty { list.name = jsTrim(named) }
         guard !jsTrim(list.name).isEmpty else { return nil }
-        var mine: [String: String] = [:]
-        for i in items where mine[normName(i.name)] == nil { mine[normName(i.name)] = i.id }
+        if let old {
+            list.role = old.role
+            list.group = old.group
+            list.transport = old.transport
+        } else if templateNameTaken(list.name) {
+            return nil
+        }
+        var mine: [String: Item] = [:]
+        for i in items where mine[normName(i.name)] == nil { mine[normName(i.name)] = i }
         for n in list.items.indices {
             if let have = mine[normName(list.items[n].name)] {
-                list.items[n].itemId = have
+                list.items[n].itemId = have.id
                 list.items[n].link = true
+                // A link still carries a name, and the save writes it onto the thing:
+                // the sender's "towel" would have renamed his "Towel" (the spec pass).
+                list.items[n].name = have.name
             }
         }
         saveTemplate(list)

@@ -164,10 +164,12 @@ membership's `phase`. Nothing else is counted (not to-dos, not trip lines for th
      (a–z and 0–9 kept, every other run of characters becomes one "-", at most 24 characters), or
      `cond-<base-36 timestamp>` when the slug is empty; on a clash `-2`, `-3`, …; label = trimmed name cut to 60
      UTF-16 units; tone "" (no badge); `replace` false.
-   - phases: `list = timeline(); list.append(newPhase(name, list.map(\.id))); setTimeline(list)` — id from
+   - phases: `list = timeline(); list.append(newStep(named: name)); setTimeline(list)` — `newPhase` with: id from
      `jsSlug` (or `phase-<base-36 timestamp>`), clash → `-2`…; label ≤ 60; hint ""; emoji the default 📦 (data
-     only, never drawn by this app); colour `TEMPLATE_COLORS[count % 10]` (with the factory 7 that is index 7,
-     `#14b8a6`); `task` false; `leadDays` 0; appended at the end (order = count, then renumbered).
+     only, never drawn by this app); colour `COVER_COLOURS[count % 10]` — the web app's `TEMPLATE_COLORS` with cyan
+     → orange and teal → indigo (spec 04 §3), so with the factory 7 the eighth is indigo `#4f46e5`, no longer teal
+     `#14b8a6` ("Not teal", spec 04's pass, 5 Oct 2026); `task` false; `leadDays` 0; appended at the end (order =
+     count, then renumbered).
 4. The field is emptied.
 
 What happens to odd input: for places, owners and packers a name that equals an existing one after `normName` is
@@ -719,7 +721,9 @@ device that looked empty merged with an older iCloud copy). Shipped 0.5; the pho
 - Last: "A backup and then "Restore from a file…" puts a library back exactly as the file has it." (14 medium muted).
 
 **The worries** (`Library.worries()`, in this order):
-1. Template names that appear more than once (compared by `normName`; names in first-seen spelling and order):
+1. Template names that appear more than once (compared by `normName`, the bag list counted apart — its stored
+   "Containers" is never shown, so a template he calls that is no twin; two bag lists still are — spec 04's pass;
+   names in first-seen spelling and order):
    "<n> template name(s) appear(s) twice. Two libraries may have met on this account." — names listed, no repair.
 2. Memberships pointing at a template that no longer exists: "<n> thing sits / things sit on a list that no longer
    exists." — no names, no repair.

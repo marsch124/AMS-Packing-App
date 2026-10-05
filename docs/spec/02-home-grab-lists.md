@@ -1468,7 +1468,7 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
 | Part | Heading | Searched fields | Order | Shown | Under-line |
 |---|---|---|---|---|---|
 | things | "THINGS" | name, Swedish name | library item order | first **30**; then "…and <N> more. Say more of the name." (`search-things-more`) | storage place (if any) · the Swedish name (only when the Swedish name matched) · "on no template" or "on <k> template(s)"; k = the thing's membership records, the bags list included |
-| lists | "TEMPLATES" | name | `resolvedTemplates()` order, bags list excluded | all | "<k> thing(s)" |
+| lists | "TEMPLATES" | name | `shownTemplates()` — the templates the Templates tab shows: bags list and the web app's loose bin excluded (the loose bin since spec 04's pass, 5 Oct 2026) | all | "<k> thing(s)" |
 | trips | "TRIPS" | name, destination | library trip order | all | destination · `countdownLabel(daysUntil(start, today))`: "Today", "Tomorrow", "Yesterday", "in N days", "N days ago"; empty parts dropped |
 | todos | "TO-DOS" | text, the linked thing's name | `sortedActions()` | all | "done" or "still to do" |
 

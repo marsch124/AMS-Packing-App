@@ -20,7 +20,11 @@ struct PickThingsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
-    @State private var picked: Set<String> = []
+    /// What he ticked, in the order he ticked it — the order they land on the
+    /// template (a set put them on in no particular order; the spec pass, 5 Oct 2026).
+    @State private var picked: [String] = []
+    /// What Add was missing, said under the title (never a grey button).
+    @State private var addNeeds = ""
     @AppStorage("ams.pick.grouping") private var groupingRaw = ThingGrouping.kind.rawValue
     /// The groups folded away, remembered on this device as the trip's are — per way
     /// of grouping ("Kind", "From where"…), one "grouping|heading" per line, so a fold
@@ -60,6 +64,7 @@ struct PickThingsScreen: View {
                     .buttonStyle(HeaderButtonStyle(tint: violet, filled: true)).focusEffectDisabled()
                     .accessibilityIdentifier("pick-add")
             }
+            .needsLine($addNeeds, typed: picked, id: "pick-add-needs")
             .padding(16)
             VStack(alignment: .leading, spacing: 10) {
                 TextField("Search your things, or type a new one", text: $query)
@@ -220,13 +225,14 @@ struct PickThingsScreen: View {
     private func row(_ thing: Item, n: Int, on: Bool, grouping: ThingGrouping) -> some View {
         let ticked = picked.contains(thing.id)
         let violet = AppSection.templates.color
-        // What the row says beside the name: the thing's other answer, never the one
-        // it is grouped by.
+        // What the row says beside the name: grouped by From where, its bag; grouped
+        // any other way, where it is kept at home — or its bag when no place is set
+        // (under Into that is the bag it is grouped by: better than saying nothing).
         let aside = grouping == .fromWhere ? thing.container
             : (jsTrim(thing.storage).isEmpty ? thing.container : thing.storage)
         return Button {
             guard !on else { return }
-            if ticked { picked.remove(thing.id) } else { picked.insert(thing.id) }
+            if ticked { picked.removeAll { $0 == thing.id } } else { picked.append(thing.id) }
         } label: {
             HStack(spacing: 12) {
                 ZStack {
@@ -261,8 +267,8 @@ struct PickThingsScreen: View {
     }
 
     private func putOn() {
-        guard !picked.isEmpty else { return }
-        let ids = Array(picked)
+        guard !picked.isEmpty else { addNeeds = "Tick the things to put on first."; return }
+        let ids = picked
         model.change { _ = $0.putOnTemplate(templateId: templateId, itemIds: ids) }
         dismiss()
     }

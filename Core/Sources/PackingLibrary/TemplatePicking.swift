@@ -23,7 +23,11 @@ public enum ThingGrouping: String, CaseIterable, Sendable {
     }
 
     /// Group `items` this way. Titles are what the screen shows over each group;
-    /// inside a group the things read A–Z. "Not said" groups come last.
+    /// "not said" groups come last. Inside a group the things read A–Z — except by
+    /// Section, where they keep the template's own order (his order, as the trip
+    /// reads it). The template page groups When with `entriesByPhase` itself, so
+    /// there too the rows keep the template's order; only the picker's When is A–Z,
+    /// to find a thing among all he owns (decided by the spec pass, 5 Oct 2026).
     public func groups(_ items: [Item], sections: [TemplateSection] = []) -> [(title: String, items: [Item])] {
         let az: ([Item]) -> [Item] = { $0.stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) }) }
         switch self {
