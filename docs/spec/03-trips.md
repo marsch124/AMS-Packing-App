@@ -1574,7 +1574,7 @@ share sheet (id `share-screen`, Mac minimum 480 × 560): title "Share “<name>�
 (`share-done`); the QR code (white card, max 260 pt, id `share-qr`) or "Too long for a QR code. Send the
 link instead." (`share-qr-toolong`); the link (13 monospaced, 3 lines, middle-truncated, selectable,
 `share-link`); **Send…** (system share, `share-send`) and **Copy link** → "Copied" (`share-copy`, value
-"copied"); without a link "This is too big for a link. Share it as a file instead." (`share-toolong`);
+"copied"); without a link (a trip offers a file) "This is too big for a link. Share it as a file instead." (`share-toolong`);
 **Share as a file** (`share-file`); "The link opens in the web app, and in this app under Settings → Open
 a shared link."
 

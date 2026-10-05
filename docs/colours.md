@@ -16,7 +16,8 @@ light one.
 | Settings  | slate  | `#64748b` |
 
 Red `#dc3d43` is also the colour of a problem message (first run, a failed
-restore, a grab list that cannot be saved).
+restore, a grab list that cannot be saved — "Put at least one thing on the list
+first.", under its Save).
 
 ## Page and text — `App/Sources/Theme.swift`
 
@@ -33,6 +34,11 @@ Each is a light / dark pair, never a single hex.
 ## Grab list tones — `App/Sources/Screens/GrabScreen.swift`
 
 Mid-tones on purpose, so they read on the light card and the dark one alike.
+They are the workout colours' FAMILY (Swim blue, Bike yellow, Run green), not
+their exact fills: a tile is a coloured drawing and outline on the card, and the
+bright pill fills — the yellow above all — would not read as a line on the light
+card (decided 5 Oct 2026). A list received with a tone not listed here becomes
+blue, the tone Make gives.
 
 | Tone   | Hex       | The built-in lists wearing it |
 |--------|-----------|-------------------------------|
@@ -42,14 +48,15 @@ Mid-tones on purpose, so they read on the light card and the dark one alike.
 | red    | `#cf5b52` |                               |
 | purple | `#8a63c9` |                               |
 | teal   | `#17969b` |                               |
-| other  | `#64748b` |                               |
+| other  | `#64748b` | (none arrives since 5 Oct 2026; a factory row from the web app could carry one) |
 
 ## Workout pills (WET) — decided 28 September 2026, not built yet
 
 WET = workout, exercise, training. On **Create new trip** and **Trip
 settings**, each WET template gets its own colour, so a sport is recognised by
 its colour before its name is read. The same sport keeps the same colour in
-the grab lists and in AMS Workout Sync.
+AMS Workout Sync, and the same colour family in the grab lists (their mid-tones,
+above).
 
 | Pill        | Colour      | Fill      | Text on it |
 |-------------|-------------|-----------|------------|
