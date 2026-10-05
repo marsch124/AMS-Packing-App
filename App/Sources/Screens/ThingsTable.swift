@@ -168,7 +168,9 @@ struct ThingsTable: View {
     /// the left the same way a row's does.
     private func heading(_ columns: [TableColumns.Column], _ rowsNow: [Item]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 0) {
+            // Bottom-aligned: when one band's title takes two lines, the others still
+            // sit right on their column names (top-aligned left a gap under them).
+            HStack(alignment: .bottom, spacing: 0) {
                 Color.clear.frame(width: nameWidth, height: 26)
                 ForEach(TableColumns.bands(columns)) { band in
                     // The title holds still inside its own run of columns instead of

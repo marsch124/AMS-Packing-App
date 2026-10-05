@@ -90,7 +90,7 @@ struct CareScreen: View {
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 52)
+                    .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 52)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
@@ -111,7 +111,7 @@ struct CareScreen: View {
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 52)
+                    .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 52)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                     .contentShape(Rectangle())
