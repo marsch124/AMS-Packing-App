@@ -22,6 +22,9 @@ jobs:
       # network — a release is the wrong moment to find one malformed (5 Oct 2026).
       - name: The release script's own check
         run: python3 tools/release-to-testers.py --self-check
+      # The UI tests run in groups side by side (below): every test in exactly one group.
+      - name: Every UI test is in one group
+        run: python3 tools/ui-shard.py --check
 
   parity:
     # The Swift model and the web app's model answer the same 200-odd questions
@@ -45,7 +48,14 @@ jobs:
         run: PARITY_MODEL="$PWD/web-app/js/model.js" tools/parity/run.sh --invented
 
   iphone:
-    name: UI tests — iPhone
+    name: UI tests — iPhone (${{ matrix.group }} of 3)
+    # Three groups side by side, about 47 minutes of tests each (tools/ui-shard.py): one
+    # after another they took 148 minutes in 0.63's release (his ask, 6 Oct 2026). Three
+    # iPhone and two Mac groups are the five Mac machines GitHub gives a free account at once.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3]
     # macos-26 with the newest Xcode, like the Mac job and like the build that ships:
     # on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator — a pairing no
     # TestFlight build ever has — and the template search's ✕ failed there twice
@@ -56,7 +66,8 @@ jobs:
     # 2026-10-02 (0.46: 67 tests, ~50 minutes). Room to grow again.
     # 120: at 108 UI tests (0.58, 4 Oct 2026) the iPhone job passed every one and was
     # cancelled at 80 minutes while the quick model tests were still finishing.
-    timeout-minutes: 180
+    # 180 while the suite ran as one job; a group now needs about an hour.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -106,12 +117,12 @@ jobs:
 
       - name: UI tests on the iPhone simulator
         run: |
-          xcodebuild test \
+          xcodebuild test $(python3 tools/ui-shard.py iphone ${{ matrix.group }} 3) \
             -project AMSPacking.xcodeproj \
             -scheme AMSPacking \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -derivedDataPath build \
-            -resultBundlePath TestResults-iPhone.xcresult \
+            -resultBundlePath TestResults-iPhone-${{ matrix.group }}.xcresult \
             -collect-test-diagnostics never \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 480 \
@@ -123,19 +134,25 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: TestResults-iPhone
-          path: TestResults-iPhone.xcresult
+          name: TestResults-iPhone-${{ matrix.group }}
+          path: TestResults-iPhone-${{ matrix.group }}.xcresult
 
   mac:
-    name: UI tests — Mac
+    name: UI tests — Mac (${{ matrix.group }} of 2)
+    # Two groups side by side, about 51 minutes of tests each (tools/ui-shard.py); one
+    # after another, 101 minutes in 0.63's release.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
     # macos-26, not macos-15: his Mac runs macOS 26, and on the runner's older
     # SwiftUI a click on a pill "succeeded" and selected nothing, three runs in
     # a row, while the same test is green here every time.
     runs-on: macos-26
     # 120, the same room as the iPhone job: the Mac runs the same 110-odd UI tests and,
     # since 0.62, both bundles of model tests as well (the iPhone job outgrew 80 minutes
-    # at 108 UI tests, 0.58, 4 Oct 2026).
-    timeout-minutes: 180
+    # at 108 UI tests, 0.58, 4 Oct 2026). 180 while it ran as one job; a group needs about an hour.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -146,12 +163,12 @@ jobs:
         run: |
           # Signed "to run locally" (-): a Mac app cannot be driven unsigned,
           # and the runner has no developer certificate.
-          xcodebuild test \
+          xcodebuild test $(python3 tools/ui-shard.py mac ${{ matrix.group }} 2) \
             -project AMSPacking.xcodeproj \
             -scheme AMSPacking \
             -destination "platform=macOS" \
             -derivedDataPath build \
-            -resultBundlePath TestResults-Mac.xcresult \
+            -resultBundlePath TestResults-Mac-${{ matrix.group }}.xcresult \
             -collect-test-diagnostics never \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 300 \
@@ -164,5 +181,5 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: TestResults-Mac
-          path: TestResults-Mac.xcresult
+          name: TestResults-Mac-${{ matrix.group }}
+          path: TestResults-Mac-${{ matrix.group }}.xcresult

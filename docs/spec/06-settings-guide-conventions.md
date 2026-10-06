@@ -1613,18 +1613,28 @@ so a change to `project.yml` is committed together with the regenerated files. "
 
 "Every push runs the suite — the model's own tests, then the UI tests on the iPhone AND on the Mac … A red run means
 the build is not fit to install." Triggers: push, pull_request, manual, and `workflow_call` (the TestFlight workflow
-runs it first). Four jobs, in parallel:
+runs it first). Four jobs, in parallel — the two UI jobs since 0.65 each as a matrix of groups (below), so seven
+machines in all:
 
 | Job | Runner | Timeout | What it does |
 |---|---|---|---|
-| `core` — The model (Core package) | macos-15 | 15 min | `cd Core && swift test` (both model test targets); then (0.62) `python3 tools/release-to-testers.py --self-check` — the "What to Test" requests checked without the network (§28) |
+| `core` — The model (Core package) | macos-15 | 15 min | `cd Core && swift test` (both model test targets); then (0.62) `python3 tools/release-to-testers.py --self-check` — the "What to Test" requests checked without the network (§28); (0.65) `python3 tools/ui-shard.py --check` — every UI test in exactly one group, with each group's minutes |
 | `parity` — Parity with the web app's model | macos-15 | 20 min | checks out the web app's repository into `web-app/`, Node 22, `PARITY_MODEL=$PWD/web-app/js/model.js tools/parity/run.sh --invented` (§31) |
-| `iphone` — UI tests — iPhone | macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 180 min (120 until 0.63 — 0.63's run on GitHub stopped at 158 of 167 tests) | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test` with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone.xcresult` |
-| `mac` — UI tests — Mac | macos-26 | 180 min (120 until 0.63; its own comment since 0.62) | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
+| `iphone` — UI tests — iPhone (N of 3) | matrix `group: [1, 2, 3]`, `fail-fast: false`; macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 120 min per group (0.65; 180 for the single job in 0.63–0.64, 120 before — 0.63's run on GitHub stopped at 158 of 167 tests) | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test $(python3 tools/ui-shard.py iphone N 3)` — that group's `-only-testing:` lines — with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone-N.xcresult` (artifact `TestResults-iPhone-N`) |
+| `mac` — UI tests — Mac (N of 2) | matrix `group: [1, 2]`, `fail-fast: false`; macos-26 | 120 min per group (0.65; 180 in 0.63–0.64, 120 before; its own comment since 0.62) | xcodegen; `xcodebuild test $(python3 tools/ui-shard.py mac N 2) -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac-N.xcresult` (artifact `TestResults-Mac-N`) |
 
 Timeout history (comments): 30 min outgrown at 48 tests (0.25), 55 nearly outgrown at 67 tests (0.46), 120 since 108
 UI tests (0.58) when the iPhone job passed every test and was cancelled at 80 minutes. Both UI jobs also run both
-model bundles since 0.62 (§26).
+model bundles since 0.62 (§26) — since 0.65 in group 1 only (`-only-testing:PackingCoreTests`, `-only-testing:PackingLibraryTests`).
+
+**The groups (0.65, `tools/ui-shard.py`)** — his ask, 6 Oct 2026, after 0.63's release run took 164 minutes (iPhone job
+148, Mac 101, upload 15). The tests are read from `UITests/AMSPackingUITests.swift` itself (`func test…()`), so a new
+test is never left out. Each costs its seconds on GitHub from `tools/ui-test-times.json` (0.63's release run, per
+platform); a test not yet measured costs the median; a test measured on one platform only (an `#if os(...)` test)
+costs 1 s on the other. Longest first, each into the group with the least so far (ties: the lower group). Three
+iPhone and two Mac groups because a free account gets five macOS machines at once; the model and parity jobs take a
+minute each. At 0.63's times: iPhone 3 × ~47 min, Mac 2 × ~51 min of tests, plus each group's own build. The
+TestFlight job still `needs: tests` — every group must pass.
 
 ## 28. Shipping to TestFlight (`.github/workflows/testflight.yml`, `tools/release-to-testers.py`, `TESTFLIGHT.md`)
 
