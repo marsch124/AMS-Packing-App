@@ -28,12 +28,19 @@ final class ThingsAndCareFixesTests: XCTestCase {
 
     // MARK: Bags in the table
 
-    func testTheBagNamesOfferedIncludeHisOwnBags() {
-        let lib = library()
-        let names = lib.bagNames()
-        XCTAssertEqual(Array(names.prefix(CONTAINERS.count)), CONTAINERS, "the built-in names lead")
-        XCTAssertEqual(names.last, "Sit bag", "his own bag is not offered — only the built-in names")
-        XCTAssertEqual(names, containerNames(lib.resolvedTemplates()), "the table and the thing's page must offer the same bags")
+    /// His bags and nothing else (his word, 6 Oct 2026: "No Triathlon bag in the Bag
+    /// List … why does it not disappear?"); the built-in names only while he has none.
+    func testTheBagsOfferedAreHisOwnAndOnlyHis() {
+        var lib = library()
+        XCTAssertEqual(lib.bagNames(), lib.bags().map(\.name), "the bags offered are not exactly the ones on Your bags")
+        XCTAssertTrue(lib.bagNames().contains("Sit bag"), "his own bag is not offered")
+        XCTAssertFalse(lib.bagNames().contains("Triathlon bag"), "a built-in bag he does not have is offered")
+        // One he deletes is offered no more.
+        let sit = lib.bags().first { $0.name == "Sit bag" }!.id
+        XCTAssertTrue(lib.deleteBag(id: sit, moveTo: ""))
+        XCTAssertFalse(lib.bagNames().contains("Sit bag"), "a deleted bag is still offered")
+        // With no bags of his own, a first thing still has somewhere to go.
+        XCTAssertEqual(Library().bagNames(), CONTAINERS)
     }
 
     func testHisBagListIsNotATemplateAThingIsTickedOnto() {

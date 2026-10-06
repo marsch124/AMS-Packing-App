@@ -48,13 +48,18 @@ extension Library {
         return resolvedTemplate(id: list.id)?.items ?? []
     }
 
-    /// Every bag a thing can be "usually packed in": the built-in names, then his own
-    /// bags that are not among them, in his bag list's order. ONE answer for the
-    /// thing's page and the table alike — the table asked `containerNames(templates)`,
-    /// the shells, and so offered only the built-in names, never one of his own (the
-    /// spec pass, 5 Oct 2026; the same trap as `bagLimits` above).
+    /// Every bag a thing can be "usually packed in": HIS bags — the ones on Your bags,
+    /// in that list's order, each once — and nothing else. His word (6 Oct 2026): "No
+    /// Triathlon bag in the Bag List … why does it not disappear?" Until 0.64 the web
+    /// app's 17 built-in names (`CONTAINERS`) always came first, so a bag he never had,
+    /// or had deleted, was still offered. A library with no bags of its own yet is
+    /// offered the built-in names, so a first thing still has somewhere to go. ONE
+    /// answer for the thing's page, a template's row, the table and Change all.
+    /// (`containerNames`, the web app's own answer, stays as it is for the parity check.)
     public func bagNames() -> [String] {
-        containerNames(templates.filter { $0.role == CONTAINER_ROLE }.map(resolved))
+        var seen = Set<String>()
+        let mine = bags().map { jsTrim($0.name) }.filter { !$0.isEmpty && seen.insert(normName($0)).inserted }
+        return mine.isEmpty ? CONTAINERS : mine
     }
 
     /// The templates a thing is put on or taken off from its own page and from the

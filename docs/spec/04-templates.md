@@ -725,10 +725,7 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
   1. The thing's name — 26 heavy ink, wraps, id `row-thing-name`; "On <template name>" — 15 semibold muted.
   2. **"Bag on this template"** (heading band, id `row-bag-title`): pills `row-bag-0` = what a blank bag really
      means (`sameBagWords`): "Same as the template (<its own bag>)" on a template that came with a default bag,
-     else "Same as the thing (<the thing's own bag>)"; then `row-bag-1…` = `containerNames(resolvedTemplates())` (the 17 built-in names —
-     Toiletry bag, Carry-on / hand luggage, Checked luggage, Hiking backpack, Climbing backpack, Golf bag,
-     Triathlon bag, Swim bag, Duffel bag, Day pack, Bellroy backpack, Tech pouch, Electronics bag, Cool box,
-     Handbag, RV storage box, Other — then his own bags from the bag list, de-duplicated case-insensitively). One
+     else "Same as the thing (<the thing's own bag>)"; then `row-bag-1…` = `bagNames()` — his own bags, in his bag list's order (the 17 built-in names only while he has none; 0.64 — until then always the built-in names first, then his own). One
      choice.
   3. **"When, on this template"** (band, `row-when-title`): `row-when-0` = "Same as the thing (<phase label>)", then
      the live timeline (`PHASES`, his own steps if he changed them). One choice.

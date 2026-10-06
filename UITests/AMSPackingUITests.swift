@@ -6751,4 +6751,29 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "restore-swiped-away")
     }
     #endif
+
+    // MARK: - Only his own bags (0.64)
+
+    /// A thing is offered his own bags and No bag — never a built-in name he does not
+    /// have. His word (6 Oct 2026): "No Triathlon bag in the Bag List … why does it not
+    /// disappear?" — and "Carry-on luggage is renamed to Hand Luggage but is still
+    /// 'Carry-on / hand luggage' in the list".
+    func testAThingIsOfferedOnlyHisOwnBags() {
+        let app = launch("-uiTestingChecks")        // the sample with one bag of his own
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Map", into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let first = app.buttons["thing-bag-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "no bag offered at all")
+        bringIntoView(app, first)
+        XCTAssertEqual(words(first), "Carry-on / hand luggage", "his own bag does not lead")
+        XCTAssertEqual(words(app.buttons["thing-bag-1"]), "No bag")
+        XCTAssertFalse(app.buttons["thing-bag-2"].exists,
+                       "a bag he does not have is offered: '\(words(app.buttons["thing-bag-2"]))'")
+        shot(app, "thing-only-his-bags")
+    }
 }
+

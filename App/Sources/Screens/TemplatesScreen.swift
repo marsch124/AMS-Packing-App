@@ -1029,7 +1029,7 @@ struct RowEditor: View {
                     // The first pill says where a blank bag REALLY goes: the template's own
                     // bag when it came with one, else the thing's (the spec pass).
                     Pills(title: "Bag on this template", options: [("", model.library.sameBagWords(templateId: templateId, thing: thing))]
-                            + containerNames(model.library.resolvedTemplates()).map { ($0, $0) },
+                            + model.library.bagNames().map { ($0, $0) },
                           selected: [bag], id: "row-bag", tint: AppSection.templates.color, heading: .band) { bag = $0 }
                     Pills(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
                             + PHASES.map { ($0.id, $0.label) },
