@@ -983,8 +983,10 @@ the folder is emptied at launch.
 `rescue-heading`), then a card list, one row per copy, newest first: the moment written as **"23 September, 01:04"**
 (16 medium ink; `RescueNames.when` — the file name's world time said in this device's time zone (0.62; until then the
 world time as it was, an hour or two off and near midnight the wrong day), day number, English month name,
-hours:minutes; an unexpected name is shown as it is) and **"Look at it"** (15 bold slate); min height 44; hairline under each; id `rescue-row-<n>`.
-Tapping reads the file and goes through exactly the same `offer` → comparison sheet → confirm path as a chosen
+hours:minutes; an unexpected name is shown as it is) and **"Look at it"** — since 0.63 a button of its own (outlined
+`HeaderButtonStyle` in the Settings slate, id `rescue-row-<n>`); 5 pt above and below; hairline under each. Until 0.63 the
+whole row was one plain button (min height 44, slimmed to `Metrics.tap` in 0.62), and on the Mac a click on the slim row
+did nothing (GitHub's Mac run, 6 Oct 2026). Pressing it reads the file and goes through exactly the same `offer` → comparison sheet → confirm path as a chosen
 file (an unreadable copy says "That is not an AMS Packing backup file.").
 
 **Tests.** UI `testTheCopyKeptBeforeARestoreBringsEverythingBack` (no heading before any restore; after one: heading,

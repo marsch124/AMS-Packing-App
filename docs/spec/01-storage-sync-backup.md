@@ -527,7 +527,7 @@ File name: `Library.backupFileName(on: Today.local)` = `ams-packing-list-backup-
 
 **What is on screen — the Settings parts.**
 - "Restore from a file…" — full width, min height 48, 17 bold slate text on `Theme.card` with a 1-pt line border, corner 12, id `backup-restore`. Pressing it first resets the status line to its default sentence.
-- "Kept before a restore" — shown only when this device has rescue copies: heading 15 heavy muted (top padding 10, id `rescue-heading`), then a card with one row per copy, newest first (min height 44, divider): the moment ("22 September, 23:04", 16 medium ink) and "Look at it" (15 bold slate); id `rescue-row-0`, `rescue-row-1`, ….
+- "Kept before a restore" — shown only when this device has rescue copies: heading 15 heavy muted (top padding 10, id `rescue-heading`), then a card with one row per copy, newest first (divider): the moment ("22 September, 23:04", Callout ink) and "Look at it" — a button of its own since 0.63 (outlined, Settings slate; spec 06 §15); id `rescue-row-0`, `rescue-row-1`, ….
 
 **What is on screen — `RestoreSheet`** (min frame 420 × 520 on the Mac only — 0.62; until then on the iPhone too, wider than its screen; background `Theme.bg`, id `restore-detail`; header padding 16, then a `KeyboardAwayScroll` column, spacing 10, padding 16 sides / 24 bottom; the column titles 6 pt, the footnote 4 pt and the red button 10 pt further down):
 1. Header: "Restore from a file" (22 heavy ink) · "Cancel" (`HeaderButtonStyle`, slate outline: 17 bold — the style's own, 16 until 0.62, when it overrode the 17 bold the caller attaches (spec 06 §20); id `restore-cancel`; Escape presses it — `.keyboardShortcut(.cancelAction)`, 0.62; no key presses Replace).
