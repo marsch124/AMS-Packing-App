@@ -3903,8 +3903,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(day.waitForExistence(timeout: 5), "no day \(d.day!) on the calendar")
         XCTAssertTrue(waitUntil { (day.value as? String) == "1 due" },
                       "the boots are not on the day they fall due: '\(day.value as? String ?? "")'")
-        // Brought fully into view first: on GitHub's iPhone 17 the day sat under the top of
-        // the screen and the tap was refused (0.63, 6 Oct 2026).
+        // The list keeps the place the overdue row scrolled it to, and on GitHub's iPhone 17
+        // the calendar's first week then sat under the Care heading, where a tap is refused
+        // (0.63, 6 Oct 2026): back to the top first, then the day, brought into view.
+        for _ in 0..<3 where !day.isHittable {
+            if let list = biggestList(app), list.exists { list.swipeDown() }
+            usleep(400_000)
+        }
         tapVisible(app, day)
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-day"]).hasSuffix("· 1") },
                       "the day does not list what is due: '\(words(app.staticTexts["care-cal-day"]))'")
