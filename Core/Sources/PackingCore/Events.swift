@@ -131,6 +131,14 @@ public struct TripEvent: JSONModel, Hashable, Sendable {
     public var transport: String
     public var season: String
     public var contexts: [String]
+    /// The Context PER WORKOUT (0.67, his ask: "it could be outdoors Run and indoors
+    /// Swim"): a template id → the contexts that narrow THAT template's things. A WET
+    /// template with an entry here is narrowed by its own entry (an empty one narrows
+    /// nothing); one without falls back to the trip-wide `contexts` — so every trip made
+    /// before 0.67, and the web app's, builds exactly as it did (`contextsFor`).
+    /// Native only — the web app has no such field. Written to the JSON only when it
+    /// holds something, so a trip without it reads and writes byte for byte as before.
+    public var activityContexts: [String: [String]]
     /// Weather conditions "forced on" for this trip (rain/cold/…) — pulls in that
     /// tagged gear as a precaution, regardless of forecast.
     public var weatherOn: [String]
@@ -168,6 +176,7 @@ public struct TripEvent: JSONModel, Hashable, Sendable {
         transport: String = "Car",
         season: String = "Summer",
         contexts: [String] = [],
+        activityContexts: [String: [String]] = [:],
         weatherOn: [String] = [],
         catering: String = "mixed",
         startDate: String = "",
@@ -186,7 +195,8 @@ public struct TripEvent: JSONModel, Hashable, Sendable {
         extra: [String: JSONValue] = [:]
     ) {
         self.id = id; self.name = name; self.mode = mode; self.activities = activities
-        self.transport = transport; self.season = season; self.contexts = contexts; self.weatherOn = weatherOn
+        self.transport = transport; self.season = season; self.contexts = contexts
+        self.activityContexts = activityContexts; self.weatherOn = weatherOn
         self.catering = catering; self.startDate = startDate; self.endDate = endDate; self.nights = nights
         self.laundry = laundry; self.destination = destination; self.weather = weather; self.geo = geo
         self.entries = entries; self.status = status; self.reviewedAt = reviewedAt
@@ -198,6 +208,7 @@ public struct TripEvent: JSONModel, Hashable, Sendable {
         "id", "name", "mode", "activities", "transport", "season", "contexts", "weatherOn", "catering",
         "startDate", "endDate", "nights", "laundry", "destination", "weather", "geo", "entries",
         "status", "reviewedAt", "generatedAt", "createdAt", "updatedAt",
+        ACTIVITY_CONTEXTS_KEY,
     ]
 
     /// `coerceEvent(json)`. NOTE a field the JSON does not carry gets `coerceEvent`'s
@@ -214,6 +225,7 @@ public struct TripEvent: JSONModel, Hashable, Sendable {
             transport: jsStringOr(o["transport"]),
             season: jsStringOr(o["season"]),
             contexts: asStringArray(o["contexts"]),
+            activityContexts: coerceActivityContexts(json: o[ACTIVITY_CONTEXTS_KEY]),
             weatherOn: asStringArray(o["weatherOn"]),
             catering: jsStringOr(o["catering"]),
             startDate: jsStringOr(o["startDate"]),
@@ -239,6 +251,11 @@ public struct TripEvent: JSONModel, Hashable, Sendable {
         o["id"] = .string(id); o["name"] = .string(name); o["mode"] = .string(mode)
         o["activities"] = JSONValue(activities); o["transport"] = .string(transport); o["season"] = .string(season)
         o["contexts"] = JSONValue(contexts); o["weatherOn"] = JSONValue(weatherOn); o["catering"] = .string(catering)
+        // Only when it holds something: a trip without it is written exactly as before
+        // (and as the web app writes it — the parity checker compares the two).
+        if !activityContexts.isEmpty {
+            o[ACTIVITY_CONTEXTS_KEY] = .object(activityContexts.mapValues { JSONValue($0) })
+        }
         o["startDate"] = .string(startDate); o["endDate"] = .string(endDate)
         o["nights"] = .number(Double(nights)); o["laundry"] = .bool(laundry)
         o["destination"] = .string(destination)
@@ -262,7 +279,21 @@ public func coerceEvent(_ event: TripEvent) -> TripEvent {
     // Conditions "forced on" for this trip: pack that tagged gear regardless of forecast/season.
     e.weatherOn = e.weatherOn.filter { WEATHER_CONDITION_IDS.contains($0) }
     e.geo = coerceGeo(e.geo)
+    e.activityContexts = e.activityContexts.filter { !$0.key.isEmpty }
     return e
+}
+
+/// The JSON key of `TripEvent.activityContexts` (native only, 0.67).
+public let ACTIVITY_CONTEXTS_KEY = "activityContexts"
+
+/// `activityContexts` read from JSON: an object of template id → a list of contexts.
+/// Anything else (absent, null, an array, a number) is no entries at all; a key that is
+/// empty is dropped; a value that is not a list of words is an empty list (`asStringArray`).
+public func coerceActivityContexts(json v: JSONValue?) -> [String: [String]] {
+    guard let o = v?.objectValue else { return [:] }
+    var out: [String: [String]] = [:]
+    for (k, val) in o where !k.isEmpty { out[k] = asStringArray(val) }
+    return out
 }
 /// `coerceEvent(e)` for raw JSON. nil when it is not an object.
 public func coerceEvent(json e: JSONValue?) -> TripEvent? {
@@ -279,6 +310,7 @@ public func newEvent(
     transport: String = "Car",
     season: String = "Summer",
     contexts: [String] = [],
+    activityContexts: [String: [String]] = [:],
     weatherOn: [String] = [],
     catering: String = "mixed",
     startDate: String = "",
@@ -297,7 +329,8 @@ public func newEvent(
     extra: [String: JSONValue] = [:]
 ) -> TripEvent {
     coerceEvent(TripEvent(id: id, name: name, mode: mode, activities: activities, transport: transport,
-                          season: season, contexts: contexts, weatherOn: weatherOn, catering: catering,
+                          season: season, contexts: contexts, activityContexts: activityContexts,
+                          weatherOn: weatherOn, catering: catering,
                           startDate: startDate, endDate: endDate, nights: nights, laundry: laundry,
                           destination: destination, weather: weather, geo: geo, entries: entries,
                           status: status, reviewedAt: reviewedAt, generatedAt: generatedAt,

@@ -65,7 +65,7 @@ extension Library {
     /// It arrives QUICK (the spec pass, 5 Oct 2026): its list is what was sent, and
     /// Trip settings' Save keeps it as it came. Quick means his own always-packed and
     /// transport templates do not pour in on top of it at the first Save; a template he
-    /// ticks there adds to it, and switching Quick off brings in the rest — his choice,
+    /// ticks there adds to it, and picking Full trip brings in the rest — his choice,
     /// in plain sight.
     @discardableResult
     public mutating func importTrip(_ trip: TripEvent) -> TripEvent {

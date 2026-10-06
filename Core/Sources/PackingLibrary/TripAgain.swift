@@ -21,7 +21,8 @@ extension Library {
         let n = jsTrim(name)
         guard !n.isEmpty else { return nil }
         var copy = newEvent(name: n, mode: old.mode, activities: old.activities, transport: old.transport,
-                            season: old.season, contexts: old.contexts, weatherOn: old.weatherOn,
+                            season: old.season, contexts: old.contexts,
+                            activityContexts: old.activityContexts, weatherOn: old.weatherOn,
                             catering: old.catering, laundry: old.laundry, destination: old.destination)
         copy.extra[LAUNDRY_NIGHTS_KEY] = old.extra[LAUNDRY_NIGHTS_KEY]
         // A clean list (the spec pass, 5 Oct 2026): what was decided ON the old trip
