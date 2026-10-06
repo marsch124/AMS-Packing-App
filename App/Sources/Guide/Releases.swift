@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.66", date: "6 Oct 2026", title: "Column widths",
+                new: ["All your things \u{00B7} table: make a column wider or narrower \u{2014} drag the short line at the right edge of its heading, the Thing column too. Each keeps its width; a double tap on the line puts back its own."]),
         Release(version: "0.65", date: "6 Oct 2026", title: "A table without air",
                 changed: ["All your things \u{00B7} table: no air between the lines \u{2014} each row is as tall as its words, with smaller tick boxes; the open arrow sits on the name's line, and a short table starts at the top of its window."]),
         Release(version: "0.64", date: "6 Oct 2026", title: "Drop-downs, your own bags, and sections",

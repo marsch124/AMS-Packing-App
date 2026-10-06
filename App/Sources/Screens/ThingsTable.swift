@@ -35,6 +35,12 @@ struct ThingsTable: View {
 
     /// The columns he has chosen, in his order, as ids. Empty = the sensible start.
     @AppStorage("ams.table.columns") private var chosenColumns = ""
+    /// His own column widths, "id=points;…" (0.66, `TableColumns.widths`).
+    @AppStorage("ams.table.widths") private var widthsStored = ""
+    /// A column whose line is being dragged: drawn at `width` while the drag lasts,
+    /// and kept only when it ends — one write, not one per point moved.
+    private struct Resize: Equatable { let id: String; let start: CGFloat; var width: CGFloat }
+    @State private var resizing: Resize?
     @AppStorage("ams.table.sort") private var sortBy = "name"
     @AppStorage("ams.table.down") private var descending = false
     /// The sort levels under the first ("then by"), and the column filters — kept
@@ -66,7 +72,7 @@ struct ThingsTable: View {
     private static let filters: [(id: String, label: String)] =
         [("", "All"), ("weight", "No weight"), ("place", "No place")]
 
-    private var nameWidth: CGFloat {
+    private var startingNameWidth: CGFloat {
         #if os(macOS)
         return 210
         #else
@@ -74,8 +80,67 @@ struct ThingsTable: View {
         #endif
     }
 
+    private var nameWidth: CGFloat {
+        if let r = resizing, r.id == "name" { return r.width }
+        return TableColumns.widths(widthsStored)["name"].map { TableColumns.clamp($0, name: true) } ?? startingNameWidth
+    }
+
+    /// His chosen columns at the widths he gave them — the one being dragged at its
+    /// width of the moment.
+    private func sized(_ columns: [TableColumns.Column]) -> [TableColumns.Column] {
+        let widths = TableColumns.widths(widthsStored)
+        return columns.map { column in
+            var column = column
+            if let r = resizing, r.id == column.id { column.width = r.width }
+            else if let w = widths[column.id] { column.width = TableColumns.clamp(w) }
+            return column
+        }
+    }
+
+    /// The line at a heading's right edge: drag it to make the column wider or narrower
+    /// (the rows follow as it moves); a double tap puts back the column's own width.
+    /// Its touch area is 14 wide, inside the column, so the next heading keeps its own.
+    private func resizeLine(_ id: String, title: String, width: CGFloat) -> some View {
+        let name = id == "name"
+        return Color.clear
+            .frame(width: 14, height: 26)
+            .overlay(alignment: .trailing) {
+                Capsule().fill(resizing?.id == id ? AppSection.care.color : Theme.muted.opacity(0.45))
+                    .frame(width: 2, height: 12)
+                    .padding(.trailing, 3)
+            }
+            .contentShape(Rectangle())
+            #if os(macOS)
+            .pointerStyle(.columnResize)
+            #endif
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                    .onChanged { drag in
+                        if resizing?.id != id { resizing = Resize(id: id, start: width, width: width) }
+                        resizing?.width = TableColumns.clamp((resizing?.start ?? width) + drag.translation.width, name: name)
+                    }
+                    .onEnded { _ in
+                        guard let r = resizing, r.id == id else { return }
+                        var widths = TableColumns.widths(widthsStored)
+                        widths[id] = r.width
+                        widthsStored = TableColumns.store(widths)
+                        resizing = nil
+                    }
+            )
+            .onTapGesture(count: 2) {
+                var widths = TableColumns.widths(widthsStored)
+                widths[id] = nil
+                widthsStored = TableColumns.store(widths)
+            }
+            .accessibilityElement()
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("Width of \(title)")
+            .accessibilityIdentifier("table-resize-\(id)")
+            .help("Drag to make \(title) wider or narrower; double-click for its own width")
+    }
+
     var body: some View {
-        let columns = TableColumns.chosen(chosenColumns, library: model.library)
+        let columns = sized(TableColumns.chosen(chosenColumns, library: model.library))
         let answers = TableColumns.Answers2(model.library)
         let rows = things()
         let filters = TableKeys.filters(filtersStored, model.library)
@@ -222,8 +287,9 @@ struct ThingsTable: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .offset(x: across).zIndex(2)
                 .accessibilityIdentifier("table-head-name")
+                .overlay(alignment: .trailing) { resizeLine("name", title: "Thing", width: nameWidth) }
+                .offset(x: across).zIndex(2)
 
                 ForEach(columns) { column in
                     Button { turn(column.id) } label: {
@@ -243,6 +309,7 @@ struct ThingsTable: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
                     .accessibilityIdentifier("table-head-\(column.id)")
+                    .overlay(alignment: .trailing) { resizeLine(column.id, title: column.title, width: column.width) }
                 }
             }
             Rectangle().fill(Theme.line).frame(height: 1)

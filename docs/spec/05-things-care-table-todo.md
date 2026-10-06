@@ -1211,7 +1211,17 @@ Its sheets (Filter, Sort, Columns, Change, a thing) do close with Escape, on the
      ticks them all; "Thing" (`table-head-name`, 12 heavy muted, ▲ or ▼ in orange when the table is sorted by
      name); then one heading per column (`table-head-<column id>`), its title (12 heavy muted, 1 line, may shrink
      to 70 %) and ▲/▼ when it is the first sort level; a 1 pt line at each column's right edge; a 1 pt line under
-     the row.
+     the row. **Widths (0.66, his ask 6 Oct 2026: "Please make it possible to adjust the column width"):** at the
+     right edge of "Thing" and of every heading, inside the column, a 14 × 26 touch area (`table-resize-<column
+     id>`, `table-resize-name` for Thing; a button to accessibility, label "Width of <title>", tooltip "Drag to make
+     <title> wider or narrower; double-click for its own width"; on the Mac the column-resize pointer) showing a
+     2 × 12 capsule, muted at 45 %, orange while dragged. Dragging it (a high-priority drag, so the grid does not
+     scroll instead) sets the column to its width at the start plus the drag's sideways distance, clamped to 44–600
+     (Thing 120–600); the heading, the band over it and every row follow while it moves (`resizing`), and the width
+     is written once, when the drag ends, to `@AppStorage("ams.table.widths")` as "id=points;…" (`TableColumns.widths`
+     / `store`, rounded to whole points; "name" = Thing). A double tap (double-click) removes that column's entry:
+     its own width again. A column never dragged keeps its own width (the `Column` widths below; Thing 210 on the
+     Mac, 172 on the iPhone). A `-uiTesting` launch forgets the widths with the other table settings.
    - **Rows** (`table-row-N`, `TableColumns.rowHeight` tall — since 0.65 22 on the Mac, 28 on the iPhone, his ask
      "Please take away all the air in between the lines" (6 Oct 2026); 34 on both until then — alternating
      background, a 1 pt line under each): the name cell — the tick box (`table-N-pick`, `TableColumns.box`: 14 pt on
@@ -1325,7 +1335,10 @@ a tick cell's box is `TableColumns.box` (14 / 18; 20 before). Test `testTheTable
 second row starts at most `rowHeight` below the first (and no more than 6 less), the first name fits its row, and
 the Thing heading is less than 90 points under Filter. The grid's scroll view has `.defaultScrollAnchor(.topLeading)`
 (0.65): a scroll view that scrolls both ways centres content shorter than itself, and a short table floated in the
-middle of the window (226 points under Filter with the sample's ten things).
+middle of the window (226 points under Filter with the sample's ten things). Test
+`testATableColumnIsDraggedWiderAndKeepsItsWidth` (0.66): Weight's line dragged 80 to the right makes its heading
+more than 50 wider, the first row's weight ends with it; Thing's line dragged 60 makes Thing more than 30 wider;
+both widths are there when the table opens again; a double tap on Weight's line gives it its own width back.
 
 **The answers for choice columns (`Answers2`, worked out ONCE per redraw and handed to every cell):** each a
 `Choice {value, label}` — what is stored and what he reads. places = `storagePlaces()`; bags = `bagNames()`

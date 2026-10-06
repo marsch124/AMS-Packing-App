@@ -40,7 +40,8 @@ enum TableColumns {
     struct Column: Identifiable {
         let id: String
         let title: String
-        let width: CGFloat
+        /// Its own width, or the one he dragged it to (0.66, `widths`).
+        var width: CGFloat
         let kind: Kind
         /// Which heading band it sits under.
         var group = "The thing itself"
@@ -55,6 +56,31 @@ enum TableColumns {
         /// How far from the left of the grid this run of columns begins, so its
         /// title can hold still inside it while the grid travels.
         let start: CGFloat
+    }
+
+    /// His own column widths (his ask, 6 Oct 2026: "Please make it possible to adjust the
+    /// column width"), dragged at a heading's right edge and kept on the device as
+    /// "id=points;id=points" — "name" for the Thing column. A column he never dragged
+    /// keeps its own width; a double tap on the line forgets his.
+    static func widths(_ stored: String) -> [String: CGFloat] {
+        var out: [String: CGFloat] = [:]
+        for part in stored.split(separator: ";") {
+            let pair = part.split(separator: "=", maxSplits: 1)
+            if pair.count == 2, let points = Double(pair[1]), points.isFinite, points > 0 {
+                out[String(pair[0])] = CGFloat(points)
+            }
+        }
+        return out
+    }
+
+    static func store(_ widths: [String: CGFloat]) -> String {
+        widths.keys.sorted().map { "\($0)=\(Int(widths[$0]!.rounded()))" }.joined(separator: ";")
+    }
+
+    /// How narrow and how wide a column may be dragged: a tick column still shows its
+    /// box, and the Thing column its name's first letters beside the box and arrow.
+    static func clamp(_ points: CGFloat, name: Bool = false) -> CGFloat {
+        min(600, max(name ? 120 : 44, points))
     }
 
     static func bands(_ columns: [Column]) -> [Band] {
