@@ -18,6 +18,14 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.67", date: "7 Oct 2026", title: "Your field test: lines without air, an open calendar",
+                new: ["Create new trip: the calendar is always open \u{2014} tap the first day, then the last; Create waits for the last day and says so. Clear dates beside the range leaves the trip without dates. In Trip settings, tap the dates to change them.",
+                      "Each workout has its own Indoor / Outdoor / Race: Run outdoors and Swim indoors on the same trip \u{2014} on Create new trip and in Trip settings."],
+                changed: ["Full trip or Quick is a choice right under the trip's name, with a line saying what Quick leaves out. The Dates switch is gone.",
+                          "Lines without air: a trip's packing list, a template's things, To do, To buy and a grab list show each line as tall as its words \u{2014} far more on one screen.",
+                          "Settings: What's new, How it works, Your first real trip and Open a shared link sit together in one card, and the cards are closer. The grab buttons on Home are one slim line each.",
+                          "Every screen's top line is tidied: the title and the buttons beside it sit on one line, and the empty strip at the top is gone. On Home, Grab and go is the first line.",
+                          "Share's arrow sits in the middle of its button. While arranging a template, a heading's \u{2261} is purple on a soft purple patch and a thing's \u{2261} light grey, so they are easy to tell apart."]),
         Release(version: "0.66", date: "6 Oct 2026", title: "Column widths",
                 new: ["All your things \u{00B7} table: make a column wider or narrower \u{2014} drag the short line at the right edge of its heading, the Thing column too. Each keeps its width; a double tap on the line puts back its own."]),
         Release(version: "0.65", date: "6 Oct 2026", title: "A table without air",
