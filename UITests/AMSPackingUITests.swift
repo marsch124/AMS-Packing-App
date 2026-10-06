@@ -7409,6 +7409,29 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(first.frame.minY, screenTop(app, "settings") - 2, "Your choices reaches up into the status bar / the window buttons' strip")
     }
 
+    #if os(macOS)
+    /// The Mac's main window has no title bar (0.67): it still moves when the empty part
+    /// of the strip where the title bar was is dragged — here halfway across Home's
+    /// strip, between Grab and go and the search — and goes back the same way.
+    func testTheWindowMovesByItsEmptyStrip() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertTrue(app.staticTexts["home-grab-heading"].waitForExistence(timeout: 5))
+        let window = app.windows.firstMatch
+        guard let lights = windowButtons(app) else { return XCTFail("the window shows no buttons") }
+        let before = window.frame
+        let strip = window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: lights.midY - before.minY))
+        strip.press(forDuration: 0.3, thenDragTo: strip.withOffset(CGVector(dx: -80, dy: 40)))
+        XCTAssertTrue(waitUntil { abs(window.frame.minX - before.minX) > 40 },
+                      "the window did not move when its strip was dragged: \(before) → \(window.frame)")
+        shot(app, "window-moved")
+        let moved = window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: lights.midY - before.minY))
+        moved.press(forDuration: 0.3, thenDragTo: moved.withOffset(CGVector(dx: 80, dy: -40)))
+    }
+    #endif
+
     /// His note on 0.63, "The area above Grab and go is underused": Grab and go is
     /// Home's first line, with its search and Grab Lists beside it, and the grab lists
     /// start right under it — no empty band above the heading.

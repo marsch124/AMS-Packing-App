@@ -1326,8 +1326,7 @@ macOS 26) — and how far a header must step in so its title starts just after t
   padding); page }` with the top safe area ignored, so the header is PINNED in the strip and the page scrolls under
   it — nothing ever slides beneath the window buttons. On the iPhone it does nothing: there the page puts the header
   in itself as its first line (`#if !os(macOS)`). Home, Trips, Templates and Care build their header once
-  (`grabHeader`, `header(…)`) and use it both ways; their scroll content has 6–8 pt more at its top on the Mac,
-  where the header no longer gives it.
+  (`grabHeader`, `header(…)`) and use it both ways. On the Mac 6 pt follow the header (below).
 - `headerLine()` (View extension, used by `ScreenHeader`'s row and To do's first line): on the Mac the line steps
   in by `lead` and is at least the strip's height tall, so it is centred on the traffic lights' line; on the
   iPhone it is `Metrics.tap` tall with `Metrics.screenTop` above. To do's whole screen ignores the top safe area on
@@ -1336,9 +1335,15 @@ macOS 26) — and how far a header must step in so its title starts just after t
 - Moving the window: `TitleBarDrag` (RootView) — a clear layer the strip's size with `WindowDragGesture()` (and
   `allowsWindowActivationEvents`), BEHIND the page and in front of the background colour, so a header's buttons
   take their own clicks and only the strip's empty parts (all of it on a tab with no header) move the window.
-  `.windowBackgroundDragBehavior(.disabled)`. 🪤 With `.enabled` instead (the first try), GitHub's Mac run saw a
-  click on Grab Lists and on To buy taken for a drag: the window jumped aside and the button never heard it,
-  while the search and + New worked.
+  `.windowBackgroundDragBehavior(.disabled)`: a drag on a page's empty space does not carry the window. UI
+  `testTheWindowMovesByItsEmptyStrip` (Mac only) drags Home's strip halfway across and sees the window move.
+- 🪤 **The page under a pinned header must not touch the strip.** `headerOnTheMac` puts 6 pt under the header
+  (To do's first line has the same), and the page's scroll views have no top edge effect on macOS 26
+  (`titleBarSafeScroll()`: `.scrollEdgeEffectHidden(true, for: .top)`). On GitHub's Mac run (6 Oct 2026) a
+  click on Grab Lists (Home) and on To buy (To do) — the two pages whose header is ONE line, so their scroll view
+  began exactly at the strip's foot — never arrived, while the search and + New on Templates and the map on Trips
+  (a summary line under the title) worked. Both changes went in together and all clicks arrived after; which of
+  the two did it was not separated.
 - Sheets are unchanged: they come down over the page as before.
 - Tests (Mac branch of `testEveryTabsHeaderIsOnOneCentreLine` and `testHomeLeadsWithGrabAndGoAtTheTop`): each
   tab's title within 2 pt of the window buttons' line (`XCUIIdentifierCloseWindow`, `…MinimizeWindow`,
