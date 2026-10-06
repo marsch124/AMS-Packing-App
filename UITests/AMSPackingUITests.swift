@@ -4273,6 +4273,7 @@ final class AMSPackingUITests: XCTestCase {
         let row = app.buttons["rescue-row-0"]
         print("PROBE status='\(words(app.staticTexts["backup-status"]))' sheets=\(app.sheets.count) rowHittable=\(row.exists && row.isHittable) rowFrame=\(row.exists ? row.frame : .zero) window=\(app.windows.firstMatch.frame)")
         print("PROBE tree:\n" + app.windows.firstMatch.debugDescription.split(separator: "\n").filter { $0.contains("rescue") || $0.contains("restore") || $0.contains("Sheet") || $0.contains("backup-status") }.joined(separator: "\n"))
+        print("PROBE log='\(words(app.staticTexts["probe-log"]))'")
         XCTAssertTrue(opened, "the copy's restore did not open")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "10" },
                       "the copy does not hold what was here: '\(words(app.staticTexts["restore-file-items"]))'")

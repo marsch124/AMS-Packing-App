@@ -20,6 +20,10 @@ struct SettingsScreen: View {
     /// are opened one after the other by `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`.
     @State private var lists = false
     @State private var pending: PendingRestore?
+    // PROBE (probe branch only)
+    @State private var probeId = Int.random(in: 100...999)
+    nonisolated(unsafe) static var probeLog = ""
+    static func log(_ t: String) { probeLog += " " + t }
     @State private var picking = false
     @State private var copies: [URL] = RescueCopies.all()
 
@@ -28,6 +32,8 @@ struct SettingsScreen: View {
 
 
     var body: some View {
+        VStack(spacing: 0) {
+        Text(SettingsScreen.probeLog).font(.caption2).accessibilityIdentifier("probe-log")
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 10) {
                 Button { lists = true } label: {
@@ -158,7 +164,7 @@ struct SettingsScreen: View {
                         .accessibilityIdentifier("rescue-heading")
                     VStack(spacing: 0) {
                         ForEach(Array(copies.enumerated()), id: \.offset) { n, copy in
-                            Button { status += " |clicked"; offer(RescueCopies.read(copy) ?? Data()) } label: {
+                            Button { SettingsScreen.log("clicked#\(probeId)"); offer(RescueCopies.read(copy) ?? Data()) } label: {
                                 HStack {
                                     Text(RescueCopies.when(copy))
                                         .font(.system(.callout)).foregroundStyle(Theme.ink)
@@ -214,13 +220,17 @@ struct SettingsScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
+        }
+        .onAppear { SettingsScreen.log("appear#\(probeId)") }
+        .onDisappear { SettingsScreen.log("disappear#\(probeId)") }
         .sheet(isPresented: $lists) { ListsScreen().environmentObject(model) }
         // A restore closed without an answer (swiped away) answers "no" from inside the
         // sheet (RestoreSheet's onDisappear), so this sheet is exactly 0.61's.
         .sheet(item: $pending) { waiting in
             RestoreSheet(file: waiting.library, device: model.library) { yes in
                 pending = nil
-                guard yes else { status += " |answered-no"; return }
+                SettingsScreen.log("answer#\(probeId):\(yes)")
+                guard yes else { status = "Nothing was replaced."; return }
                 do {
                     try model.restore(waiting.library)
                     copies = RescueCopies.all()
@@ -257,7 +267,7 @@ struct SettingsScreen: View {
         do {
             let (library, _) = try model.inspectBackup(data)
             pending = PendingRestore(library: library)
-            status += " |pending"
+            SettingsScreen.log("pending#\(probeId)")
         } catch {
             status = error.localizedDescription
         }
