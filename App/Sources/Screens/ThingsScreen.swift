@@ -208,6 +208,14 @@ struct ThingEditor: View {
     /// The care schedule (days, 0 = none) and care notes, edited here since 0.62.
     @State private var careEvery = 0
     @State private var careNotes = ""
+    /// The section chosen on each template it is on (template id → a section id, "" =
+    /// none, `RowEditor.newSectionKey` = one typed here), and what each showed when the
+    /// page opened — Save writes only those he changed.
+    @State private var sections: [String: String] = [:]
+    @State private var sectionsAtOpen: [String: String] = [:]
+    /// A section typed here, per template, waiting for Save: made only then, so Cancel
+    /// leaves the template as it was (as in the row editor).
+    @State private var newSections: [String: String] = [:]
 
     var body: some View {
         let templates = model.library.templatesForThings()
@@ -269,6 +277,7 @@ struct ThingEditor: View {
                           id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
                         if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
                     }
+                    sectionChoices(templates)
                     // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
                     Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
@@ -331,6 +340,8 @@ struct ThingEditor: View {
                 careNotes = it.maintenance?.notes ?? ""
             }
             onLists = Set(model.library.memberships.filter { $0.itemId == itemId }.map(\.templateId))
+            for t in onLists { sections[t] = model.library.thingSection(itemId: itemId, templateId: t) }
+            sectionsAtOpen = sections
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-detail")
@@ -380,6 +391,50 @@ struct ThingEditor: View {
             } else {
                 SmallDeleteButton(title: "Delete thing", id: "thing-delete") { askingToDelete = true }
             }
+        }
+    }
+
+    /// Its Section on each template it is on — his ask (6 Oct 2026), to set a thing's
+    /// section "already in this view": sections "give a visual structure to the packing".
+    /// A section belongs to a template, so there is one drop-down per template ticked
+    /// above (one ticked in this edit too), in the same order, each named for its
+    /// template: "No section", that template's sections in its order, and at the foot
+    /// "A new section". On a template twice, it is the first place's section (the
+    /// template's own row sets any other). The pills above stay pills: several at once.
+    @ViewBuilder private func sectionChoices(_ templates: [PackList]) -> some View {
+        let ticked = templates.enumerated().filter { onLists.contains($0.element.id) }
+        if !ticked.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(ticked, id: \.element.id) { pair in
+                    sectionChoice(pair.element, n: pair.offset)
+                }
+            }
+        }
+    }
+
+    private func sectionChoice(_ t: PackList, n: Int) -> some View {
+        let typed = newSections[t.id] ?? ""
+        return DropDown(title: "Section on \(t.name)", heading: .title,
+                        options: t.sections.map { ($0.id, $0.name) } + (typed.isEmpty ? [] : [(RowEditor.newSectionKey, typed)]),
+                        selected: sections[t.id] ?? "", id: DropDownIds(stringLiteral: "thing-section-\(n)"),
+                        tint: AppSection.templates.color, blank: "No section",
+                        newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") {
+                            newSection($0, on: t.id)
+                        }) { sections[t.id] = $0 }
+    }
+
+    /// A section typed at the foot of a template's list: one of that name already on
+    /// the template is simply chosen; a new one waits for Save.
+    private func newSection(_ typed: String, on templateId: String) {
+        let name = jsTrim(typed)
+        guard !name.isEmpty else { return }
+        let have = model.library.templates.first { $0.id == templateId }?.sections ?? []
+        if let there = have.first(where: { normName($0.name) == normName(name) }) {
+            sections[templateId] = there.id
+            newSections[templateId] = nil
+        } else {
+            newSections[templateId] = name
+            sections[templateId] = RowEditor.newSectionKey
         }
     }
 
@@ -587,6 +642,7 @@ struct ThingEditor: View {
         let d = draft
         let lists = onLists
         let every = careEvery, notes = jsTrim(careNotes)
+        let chosen = sections, atOpen = sectionsAtOpen, typed = newSections
         model.change { lib in
             _ = lib.updateThing(id: itemId) { thing in
                 thing.storage = jsTrim(d.storage)
@@ -614,6 +670,16 @@ struct ThingEditor: View {
             }
             for t in lib.templatesForThings() {
                 _ = lib.setOnTemplate(itemId: itemId, templateId: t.id, on: lists.contains(t.id))
+            }
+            // Its section on each template it is on now — only where he changed it; the
+            // model makes a typed one, and the trips still ahead follow, as after a row
+            // is saved in the row editor.
+            for t in lib.templatesForThings() where lists.contains(t.id) {
+                let pick = chosen[t.id] ?? ""
+                guard pick != (atOpen[t.id] ?? "") else { continue }
+                let fresh = pick == RowEditor.newSectionKey
+                _ = lib.setThingSection(itemId: itemId, templateId: t.id, section: fresh ? "" : pick,
+                                        newSection: fresh ? (typed[t.id] ?? "") : "")
             }
         }
         dismiss()

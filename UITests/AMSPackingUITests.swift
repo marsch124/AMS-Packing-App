@@ -768,10 +768,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(progress).hasPrefix("\(total)/\(total)") || (progress.value as? String) == "all packed" },
                       "not everything is ticked: '\(words(progress))'")
 
-        // Through every sorting and back: each row must still show its tick.
-        for view in [1, 2, 3, 0] {
-            tap(app, id: "trip-view-\(view)")
-            XCTAssertTrue(waitUntil { app.buttons["trip-view-\(view)"].isSelected })
+        // Through every sorting and back — Section too (0.64), chosen from the Sorting
+        // drop-down: each row must still show its tick.
+        for view in [1, 2, 3, 4, 0] {
+            choose(app, "trip-view", view)
             for n in 0..<total {
                 XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil), "line \(n + 1) never appeared")
                 XCTAssertTrue(waitUntil(timeout: 3) { self.isOn(app.buttons["trip-line-\(n)"]) },
@@ -937,8 +937,7 @@ final class AMSPackingUITests: XCTestCase {
             tap(app, id: "trip-add")
         }
         XCTAssertTrue(waitUntil { self.words(progress).hasSuffix("/\(total + 2)") }, "the two lines were not added")
-        tap(app, id: "trip-view-2")
-        XCTAssertTrue(waitUntil { app.buttons["trip-view-2"].isSelected })
+        choose(app, "trip-view", 2)                               // From where
         func headings() -> [String] { (0..<12).map { app.staticTexts["trip-group-\($0)-label"] }.filter { $0.exists }.map { self.words($0) } }
 
         // "No place set" is the last section: travel down it — in the TRIP's list, not
@@ -1523,7 +1522,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-add")
         XCTAssertTrue(waitUntil { self.words(progress) == "0/8" }, "the typed line was not added: '\(words(progress))'")
         hideKeyboard(app)
-        tap(app, id: "trip-view-2")                              // From where
+        choose(app, "trip-view", 2)                               // From where
         XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-place"), "no Set place on the typed line")
         tap(app, id: "trip-line-7-place")
         XCTAssertTrue(appears(app, "trip-place-panel", timeout: 5))
@@ -3923,11 +3922,13 @@ final class AMSPackingUITests: XCTestCase {
                       "Today did not pick today: '\(words(app.staticTexts["care-cal-day"]))'")
     }
 
-    /// His marks (2026-09-25): "Sorting" on the left, the buttons on the same line to
-    /// its right — When · Into · From where · Category. "Into" sorts by the bag a
-    /// thing goes into; "From where" by where it is kept at home, "so that I can
-    /// pick all stuff from a specific location when packing".
-    func testTheTripSaysSortingBesideItsThreeButtons() {
+    /// His marks (2026-09-25): "Sorting" on the left, its choice on the same line to its
+    /// right. Since 0.64 the choice is ONE drop-down — When · Into · From where · Category
+    /// · Section: five pills do not fit an iPhone's line, and he asked for drop-downs
+    /// everywhere (6 Oct 2026). "Into" sorts by the bag a thing goes into; "From where" by
+    /// where it is kept at home, "so that I can pick all stuff from a specific location
+    /// when packing".
+    func testTheTripSaysSortingBesideItsDropDown() {
         let app = launch()
         tab(app, "events")
         tap(app, id: "trip-row-0")
@@ -3935,33 +3936,77 @@ final class AMSPackingUITests: XCTestCase {
         let label = app.staticTexts["trip-view-label"]
         XCTAssertTrue(label.waitForExistence(timeout: 5), "no Sorting label")
         XCTAssertEqual(words(label), "Sorting")
-        let buttons = (0..<4).map { app.buttons["trip-view-\($0)"] }
-        XCTAssertTrue(buttons[0].waitForExistence(timeout: 5) && buttons.allSatisfy { $0.exists }, "the four buttons are missing")
-        XCTAssertEqual(buttons.map { words($0) }, ["When", "Into", "From where", "Category"])
-        XCTAssertLessThan(label.frame.maxX, buttons[0].frame.minX, "Sorting is not to the LEFT of the buttons")
-        XCTAssertLessThan(abs(label.frame.midY - buttons[0].frame.midY), 10, "Sorting is not on the SAME line as the buttons")
-        XCTAssertLessThan(abs(buttons[3].frame.midY - buttons[0].frame.midY), 10, "the buttons are not on one line")
+        let field = app.buttons["trip-view"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Sorting is not a drop-down")
+        XCTAssertFalse(app.buttons["trip-view-0"].exists, "the sortings are out before the list is opened")
+        XCTAssertLessThan(label.frame.maxX, field.frame.minX, "Sorting is not to the LEFT of its field")
+        XCTAssertLessThan(abs(label.frame.midY - field.frame.midY), 10, "Sorting is not on the SAME line as its field")
         let sheet = find(app, "trip-detail")?.frame ?? app.windows.firstMatch.frame
-        XCTAssertLessThanOrEqual(buttons[3].frame.maxX, sheet.maxX + 1, "the last button runs off the screen")
+        XCTAssertLessThanOrEqual(field.frame.maxX, sheet.maxX + 1, "the field runs off the screen")
         XCTAssertGreaterThanOrEqual(label.frame.minX, sheet.minX - 1, "Sorting is pushed off the screen")
         let screen = app.windows.firstMatch.frame
-        XCTAssertTrue(screen.contains(label.frame) && screen.contains(buttons[3].frame), "the Sorting row runs off the screen")
-        XCTAssertTrue(buttons[0].isSelected, "When is not the starting sort")
+        XCTAssertTrue(screen.contains(label.frame) && screen.contains(field.frame), "the Sorting row runs off the screen")
+        XCTAssertEqual(chosen(app, "trip-view"), "When", "When is not the starting sort")
+
+        // The list: the five sortings, When ticked, every row on the screen.
+        openDropDown(app, "trip-view")
+        let rows = (0..<5).map { app.buttons["trip-view-\($0)"] }
+        XCTAssertTrue(rows[4].waitForExistence(timeout: 5), "Section is not offered")
+        XCTAssertEqual(rows.map { words($0) }, ["When", "Into", "From where", "Category", "Section"])
+        XCTAssertFalse(app.buttons["trip-view-5"].exists, "more than five sortings")
+        XCTAssertTrue(isOn(rows[0]), "When is not the ticked row")
+        XCTAssertTrue(rows.allSatisfy { screen.contains($0.frame) }, "a sorting runs off the screen")
+        shot(app, "trip-sorting-open")
+        closeDropDown(app, "trip-view")
 
         let first = app.staticTexts["trip-group-0-label"]
         XCTAssertTrue(first.waitForExistence(timeout: 5), "no first heading")
         let byWhen = words(first)
-        tap(app, id: "trip-view-1")
-        XCTAssertTrue(waitUntil { app.buttons["trip-view-1"].isSelected }, "Into did not become the sort")
+        choose(app, "trip-view", 1)
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-group-0-label"]) != byWhen },
                       "Into did not re-sort the trip: still '\(byWhen)'")
 
         // From where: the headings are the places things are KEPT (the sample's are these).
         let places: Set<String> = ["Bathroom cabinet", "Chest of drawers", "Garage", "Hall closet", "No place set"]
-        tap(app, id: "trip-view-2")
-        XCTAssertTrue(waitUntil { app.buttons["trip-view-2"].isSelected }, "From where did not become the sort")
+        choose(app, "trip-view", 2)
         XCTAssertTrue(waitUntil { places.contains(self.words(app.staticTexts["trip-group-0-label"])) },
                       "From where does not group by where things are kept: '\(words(app.staticTexts["trip-group-0-label"]))'")
+    }
+
+    /// Sorted by Section (0.64, his ask of 6 Oct 2026 — sections "give a visual structure
+    /// to the packing"): the lines under their templates' section names, in the order
+    /// they first come, "Everything else" last. Folding and ticking a whole section work
+    /// as under any sorting. The sample's trip, packed from Hiking in sections: Clothes,
+    /// Lights (the spare batteries — the base template's Headlamp wins over Hiking's),
+    /// and Everything else.
+    func testATripSortedBySectionReadsUnderItsSections() {
+        let app = launch("-uiTestingSections")
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/9" }, "the sectioned sample's trip: '\(words(progress))'")
+        XCTAssertEqual(choose(app, "trip-view", 4), "Section")
+        func heading(_ g: Int) -> String { words(app.staticTexts["trip-group-\(g)-label"]) }
+        XCTAssertTrue(waitUntil { heading(0) == "Clothes" }, "the first heading is not the first section met: '\(heading(0))'")
+        XCTAssertTrue(waitUntil { heading(1) == "Lights" }, "no Lights heading: '\(heading(1))'")
+        shot(app, "trip-sorted-by-section")
+
+        // Lights: one tick takes its one line; folding hides it, opening shows it again.
+        tap(app, id: "trip-group-1-all")
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/9" }, "ticking Lights did not tick its line: '\(words(progress))'")
+        XCTAssertTrue(app.buttons["trip-line-7"].exists, "the batteries are not shown under Lights")
+        XCTAssertTrue(isOn(app.buttons["trip-line-7"]), "the batteries were not ticked with their section")
+        tap(app, id: "trip-group-1-fold")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-line-7"].exists }, "Lights did not fold away")
+        tap(app, id: "trip-group-1-fold")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-7"].exists }, "Lights did not open again")
+
+        // Everything else, last.
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-group-2-fold"), "no third heading")
+        XCTAssertTrue(waitUntil { heading(2) == "Everything else" }, "the last heading is not Everything else: '\(heading(2))'")
+        XCTAssertFalse(app.buttons["trip-group-3-fold"].exists, "a heading after Everything else")
+        shot(app, "trip-sorted-by-section-end")
     }
 
     /// After a trip: mark what went unused, add what was missed, save — the trip
@@ -6993,5 +7038,160 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(keptAtHome(app), "Not said", "Not said did not clear the place")
         tap(app, id: "thing-cancel")
     }
-}
 
+    // MARK: - A thing's section on each template (0.64)
+
+    /// Open a thing's page from Your things, found by its name.
+    private func openThing(_ app: XCUIApplication, _ name: String) {
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type(name, into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+    }
+
+    /// Hiking's page, read by its sections: the words of each heading ("# Lights"), and
+    /// of each row under it, top to bottom (Hiking is the second template A–Z).
+    private func hikingBySection(_ app: XCUIApplication) -> [String] {
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) != "" }, "Hiking has no headings")
+        var out: [(y: CGFloat, said: String)] = []
+        for g in 0..<4 where app.staticTexts["template-group-\(g)"].exists {
+            let e = app.staticTexts["template-group-\(g)"]
+            out.append((e.frame.minY, "# " + words(e)))
+        }
+        for n in 0..<8 where app.buttons["template-item-\(n)"].exists {
+            let e = app.buttons["template-item-\(n)"]
+            out.append((e.frame.minY, words(e)))
+        }
+        return out.sorted { $0.y < $1.y }.map(\.said)
+    }
+
+    /// The heading a row of Hiking's page sits under, found by the start of its words.
+    private func heading(of thing: String, in page: [String]) -> String {
+        guard let at = page.firstIndex(where: { $0.hasPrefix(thing) }) else { return "(not on the page)" }
+        return page[..<at].last { $0.hasPrefix("# ") }.map { String($0.dropFirst(2)) } ?? "(under no heading)"
+    }
+
+    /// His ask (6 Oct 2026): set a thing's section "already in this view" — its page.
+    /// Under On these templates, one Section drop-down per template it is on, named for
+    /// it; one ticked in this edit gets its own. Chosen and saved, the thing sits under
+    /// that heading on the template's page — and on the trip still ahead, sorted by
+    /// Section, as after a row is saved in the row editor.
+    func testAThingsPageSetsItsSectionOnATemplate() {
+        let app = launch()
+        openThing(app, "Map")                                     // on Hiking only
+        let hiking = app.buttons["thing-section-1"]
+        XCTAssertTrue(hiking.waitForExistence(timeout: 5), "no Section for Hiking on the thing's page")
+        XCTAssertFalse(app.buttons["thing-section-0"].exists, "a Section for a template it is not on (Common base)")
+        XCTAssertFalse(app.buttons["thing-section-2"].exists, "a Section for a template it is not on (Swim)")
+        XCTAssertEqual(words(app.staticTexts["thing-section-1-title"]), "Section on Hiking")
+        XCTAssertEqual(chosen(app, "thing-section-1"), "No section")
+        XCTAssertLessThan(app.buttons["thing-lists-2"].frame.maxY, hiking.frame.minY, "the Section is not under the templates")
+        // Ticked in this edit: its Section is there at once, and goes when unticked.
+        select(app, app.buttons["thing-lists-2"])
+        XCTAssertTrue(app.buttons["thing-section-2"].waitForExistence(timeout: 5), "no Section for a template ticked now")
+        XCTAssertEqual(words(app.staticTexts["thing-section-2-title"]), "Section on Swim")
+        tapVisible(app, app.buttons["thing-lists-2"])
+        XCTAssertTrue(waitUntil { !app.buttons["thing-section-2"].exists }, "the Section stayed for an unticked template")
+
+        // The list: No section, Hiking's one section, and the foot for a new one.
+        openDropDown(app, "thing-section-1")
+        XCTAssertTrue(isOn(app.buttons["thing-section-1-none"]), "No section is not the ticked row")
+        XCTAssertEqual(words(app.buttons["thing-section-1-0"]), "Lights")
+        XCTAssertFalse(app.buttons["thing-section-1-1"].exists, "a section Hiking does not have")
+        XCTAssertTrue(app.textFields["thing-section-1-new"].exists, "no A new section at the foot")
+        closeDropDown(app, "thing-section-1")
+        XCTAssertEqual(choose(app, "thing-section-1", 0), "Lights")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        let page = hikingBySection(app)
+        XCTAssertEqual(heading(of: "Map", in: page), "Lights", "the Map is not under Lights on Hiking: \(page)")
+        XCTAssertEqual(heading(of: "Headlamp", in: page), "Lights", "the Headlamp left Lights: \(page)")
+        XCTAssertEqual(heading(of: "Hiking boots", in: page), "Everything else", "the boots moved: \(page)")
+        shot(app, "thing-section-on-the-template")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        // The trip still ahead follows: its Map line is under Lights now.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        choose(app, "trip-view", 4)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-group-0-label"]) == "Lights" },
+                      "the trip did not follow: '\(words(app.staticTexts["trip-group-0-label"]))'")
+        XCTAssertTrue(words(app.buttons["trip-line-6"]).contains("Map"), "line 7 is not the Map: '\(words(app.buttons["trip-line-6"]))'")
+        XCTAssertLessThan(app.buttons["trip-line-6"].frame.minY, app.staticTexts["trip-group-1-label"].frame.minY,
+                          "the Map is not under Lights on the trip")
+    }
+
+    /// "A new section" on a thing's page is made when the thing is SAVED — Cancel leaves
+    /// the template as it was — and then holds the thing on that template's page; the
+    /// page opens on it again. The picture: a thing on two templates, one Section open.
+    func testAThingsPageMakesANewSectionOnSave() {
+        let app = launch()
+        openThing(app, "Headlamp")                                // on Common base and Hiking
+        XCTAssertTrue(app.buttons["thing-section-0"].waitForExistence(timeout: 5), "no Section for Common base")
+        XCTAssertEqual(chosen(app, "thing-section-0"), "No section")
+        XCTAssertEqual(chosen(app, "thing-section-1"), "Lights", "Hiking's Section does not show the Headlamp's")
+        bringIntoView(app, app.buttons["thing-section-1"])
+        shot(app, "thing-sections")
+        openDropDown(app, "thing-section-1")
+        XCTAssertTrue(isOn(app.buttons["thing-section-1-0"]), "Lights is not the ticked row")
+        shot(app, "thing-sections-open")
+        closeDropDown(app, "thing-section-1")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        replace("Map", in: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+
+        func newSection(_ name: String) {
+            openDropDown(app, "thing-section-1")
+            type(name, into: app.textFields["thing-section-1-new"])
+            tap(app, id: "thing-section-1-add")
+            XCTAssertTrue(disappears(app, "thing-section-1-list", timeout: 5), "the list did not close after Add")
+            hideKeyboard(app)
+            XCTAssertTrue(waitUntil { self.chosen(app, "thing-section-1") == name },
+                          "the typed section is not chosen: '\(chosen(app, "thing-section-1"))'")
+        }
+        // Added with nothing typed, it says what is missing.
+        openDropDown(app, "thing-section-1")
+        tapInList(app, "thing-section-1-add")
+        XCTAssertTrue(app.staticTexts["thing-section-1-add-needs"].waitForExistence(timeout: 5), "Add with nothing typed said nothing")
+        closeDropDown(app, "thing-section-1")
+        newSection("Navigation")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        openDropDown(app, "thing-section-1")
+        XCTAssertTrue(app.buttons["thing-section-1-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["thing-section-1-1"].exists, "Cancel left the typed section on Hiking")
+        closeDropDown(app, "thing-section-1")
+
+        newSection("Navigation")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-section-1") == "Navigation" }, "the new section was not kept")
+        XCTAssertTrue(isChosen(app, "thing-section-1", 1), "Navigation is not Hiking's second section, ticked")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        let page = hikingBySection(app)
+        XCTAssertEqual(heading(of: "Map", in: page), "Navigation", "the Map is not under its new section: \(page)")
+        XCTAssertEqual(page.filter { $0 == "# Navigation" }.count, 1, "the section was made twice: \(page)")
+        XCTAssertEqual(heading(of: "Headlamp", in: page), "Lights")
+    }
+}

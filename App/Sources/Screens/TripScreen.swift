@@ -17,7 +17,8 @@ struct TripScreen: View {
     /// His "When" colours are HIS — pale or bright — so they are made readable for
     /// the screen they land on ("Bad text color twice", 2026-09-26).
     @Environment(\.colorScheme) private var scheme
-    /// When / Where / Category — remembered on this device, as the web app does.
+    /// When / Into / From where / Category / Section — remembered on this device, as
+    /// the web app does.
     @AppStorage("ams.view") private var view = "when"
     /// Sections folded away — his ask (2026-09-26): "the list is extremely long".
     /// Remembered per trip and per sorting, one "trip|sorting|heading" per line.
@@ -44,7 +45,11 @@ struct TripScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
     // where it is kept at home — "so that I can pick all stuff from a specific location".
-    static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"), ("category", "Category")]
+    // Section since 0.64 (his ask, 6 Oct 2026): sections "give a visual structure to the
+    // packing" — the lines under their templates' section NAMES, in the order they first
+    // come, "Everything else" last (`groupBySection`).
+    static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"),
+                                                       ("category", "Category"), ("section", "Section")]
 
     /// Laundry is on AND the trip is long enough for it to cap anything.
     private func washes(_ trip: TripEvent) -> Bool { laundryWashes(trip) }
@@ -67,31 +72,15 @@ struct TripScreen: View {
         foldedRaw = TripFolds.toggled(foldedRaw, foldKey(label), trips: Set(model.library.trips.map(\.id)))
     }
 
-    private var sortingLabel: some View {
-        Text("Sorting")
-            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-            .lineLimit(1).fixedSize()
-            .accessibilityIdentifier("trip-view-label")
-    }
-
-    /// When · Into · From where · Category — `compact` trims the padding and type a touch.
-    @ViewBuilder private func sortButtons(compact: Bool) -> some View {
-        ForEach(Array(TripScreen.views.enumerated()), id: \.element.id) { n, o in
-            let on = view == o.id
-            Button { view = o.id } label: {
-                Text(o.label)
-                    .font(.system(compact ? .footnote : .subheadline, weight: .semibold))
-                    .foregroundStyle(on ? Color.white : Theme.ink)
-                    .lineLimit(1).fixedSize()
-                    .padding(.horizontal, compact ? 8 : 14).frame(minHeight: Metrics.chip)
-                    .background(Capsule().fill(on ? AppSection.events.color : Theme.bg))
-                    .overlay(Capsule().stroke(on ? AppSection.events.color : Theme.line, lineWidth: 1))
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("trip-view-\(n)")
-            .accessibilityAddTraits(on ? .isSelected : [])
-        }
+    /// Sorting: ONE drop-down since 0.64 — five pills do not fit an iPhone's line, and he
+    /// asked for drop-downs everywhere (6 Oct 2026). "Sorting" stays to the left of its
+    /// field, on the same line (his marks, 2026-09-25). Its rows keep the pills' ids,
+    /// `trip-view-0…4`; the field is `trip-view`, the word `trip-view-label`.
+    private var sorting: some View {
+        DropDown(title: "Sorting", heading: .beside, options: TripScreen.views.map { ($0.id, $0.label) },
+                 selected: TripScreen.views.contains { $0.id == view } ? view : "when",
+                 id: DropDownIds(field: "trip-view", list: "trip-view-list", row: "trip-view", title: "trip-view-label"),
+                 tint: AppSection.events.color) { view = $0 }
     }
 
     var body: some View {
@@ -159,19 +148,10 @@ struct TripScreen: View {
                     .padding(.horizontal, 16).padding(.bottom, 8)
                     .accessibilityIdentifier("trip-rebuilt")
             }
-            // His marks (2026-09-25): "Sorting" on the left, the buttons on the same line —
-            // now four of them. They fit on the Mac and a wide iPhone; a narrower screen
-            // gets slimmer buttons, and failing that "Sorting" moves just above them.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) { sortingLabel; Spacer(minLength: 8); sortButtons(compact: false) }
-                HStack(spacing: 6) { sortingLabel; Spacer(minLength: 6); sortButtons(compact: true) }
-                VStack(alignment: .leading, spacing: 6) {
-                    sortingLabel
-                    HStack(spacing: 6) { sortButtons(compact: true) }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
+            // His marks (2026-09-25): "Sorting" on the left, the choice on the same line.
+            sorting
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
             KeyboardAwayScroll {
                 // The card is deliberately OUTSIDE the lazy stack: a lazy row is
                 // thrown away and rebuilt as it scrolls off, which loses what he

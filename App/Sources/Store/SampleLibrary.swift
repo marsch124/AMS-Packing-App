@@ -169,6 +169,9 @@ enum SampleLibrary {
     /// (`-uiTestingSections`), for arranging a template: Lights (Headlamp, Spare
     /// batteries), Clothes (Hiking boots, Rain jacket, Wool socks), and the Map
     /// under no heading. Two things are new here, so the other tests' counts stay.
+    /// Its trip is packed from Hiking as it now reads (0.64), so the trip sorted by
+    /// Section has headings: Clothes, Lights, and Everything else — the base
+    /// template's Headlamp wins over Hiking's, so the Lights line is the batteries.
     static func sectioned() -> Library {
         var lib = make()
         guard let hiking = lib.templates.first(where: { $0.name == "Hiking" }),
@@ -184,6 +187,7 @@ enum SampleLibrary {
                 }
             }
         }
+        if !lib.trips.isEmpty { lib.trips[0].entries = buildTotalEntries(lib.trips[0], lib.resolvedTemplates()) }
         return lib
     }
 

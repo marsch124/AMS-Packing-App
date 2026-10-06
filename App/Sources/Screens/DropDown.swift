@@ -38,15 +38,24 @@ struct DropDownNew {
     let add: (String) -> Void
 }
 
+/// How a drop-down's heading reads. A band of its own over the field (the thing's
+/// page, a template's row); a heading inside a block that already has one (a thing's
+/// Section on each of its templates, under "On these templates"); or a word to the
+/// LEFT of the field on the same line (the trip's Sorting — his marks of 2026-09-25,
+/// "Sorting" on the left, kept when its pills became a drop-down, 6 Oct 2026).
+enum DropDownHeading { case band, title, beside }
+
 struct DropDown: View {
     let title: String?
+    let heading: DropDownHeading
     let options: [(value: String, label: String)]
     let selected: String
     let ids: DropDownIds
     let tint: Color
-    /// A first row that means "nothing said" (value ""), named `<row>-none`. Only
-    /// Kept at home has one; elsewhere such a row is simply the first option, as its
-    /// pill was.
+    /// A first row that means "nothing said" (value ""), named `<row>-none`. Kept at
+    /// home has one, and a thing's Section on each template ("No section", 0.64 — no
+    /// pills came before it, so its sections are counted from 0); elsewhere such a row
+    /// is simply the first option, as its pill was.
     let blank: String?
     /// A chosen value that is none of the rows (kept from before, or from the web app)
     /// gets a row of its own at the end, `<row>-other`, ticked — so it is seen and can
@@ -62,11 +71,13 @@ struct DropDown: View {
     @State private var typed = ""
     @State private var needs = ""
 
-    init(title: String?, options: [(value: String, label: String)], selected: String, id: DropDownIds,
+    init(title: String?, heading: DropDownHeading = .band, options: [(value: String, label: String)],
+         selected: String, id: DropDownIds,
          tint: Color = AppSection.care.color, blank: String? = nil, other: Bool = false,
          same: @escaping (String, String) -> Bool = { $0 == $1 }, newEntry: DropDownNew? = nil,
          choose: @escaping (String) -> Void) {
-        self.title = title; self.options = options; self.selected = selected; self.ids = id
+        self.title = title; self.heading = heading
+        self.options = options; self.selected = selected; self.ids = id
         self.tint = tint; self.blank = blank; self.other = other; self.same = same
         self.newEntry = newEntry; self.choose = choose
     }
@@ -83,10 +94,26 @@ struct DropDown: View {
         other && !same("", selected) && !options.contains { same($0.value, selected) }
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if let title { HeadingBand(title: title, tint: tint, id: ids.title) }
-            field
+    @ViewBuilder var body: some View {
+        switch heading {
+        case .beside:
+            HStack(spacing: 10) {
+                if let title {
+                    Text(title)
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .lineLimit(1).fixedSize()
+                        .accessibilityIdentifier(ids.title)
+                }
+                field
+            }
+        case .band, .title:
+            VStack(alignment: .leading, spacing: 6) {
+                if let title {
+                    if heading == .title { HeadingTitle(title: title, tint: tint, id: ids.title) }
+                    else { HeadingBand(title: title, tint: tint, id: ids.title) }
+                }
+                field
+            }
         }
     }
 
