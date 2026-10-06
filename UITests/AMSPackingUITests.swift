@@ -92,6 +92,14 @@ final class AMSPackingUITests: XCTestCase {
     /// Selected — and there to ask. Same reason as `words`.
     private func isOn(_ e: XCUIElement) -> Bool { e.exists && e.isSelected }
 
+    /// The copy of a row that is on screen. After the sorting changes, the Mac's list can
+    /// keep the row it showed before far below its window — unticked, not hittable — beside
+    /// the real one (GitHub's Mac, 6 Oct 2026: two "trip-line-7", at y 625 ticked and y 1450
+    /// not). So a check asks the one that can be tapped; nil = none on screen.
+    private func shownRow(_ app: XCUIApplication, _ id: String) -> XCUIElement? {
+        app.buttons.matching(identifier: id).allElementsBoundByIndex.first { $0.exists && $0.isHittable }
+    }
+
     /// Keeps a picture of the screen when asked to: the folder in SHOTS_DIR, which
     /// xcodebuild hands the runner when the line starts `TEST_RUNNER_SHOTS_DIR=<folder>`.
     /// No test switches to night mode: put the simulator in dark mode first
@@ -3995,19 +4003,12 @@ final class AMSPackingUITests: XCTestCase {
         // Lights: one tick takes its one line; folding hides it, opening shows it again.
         tap(app, id: "trip-group-1-all")
         XCTAssertTrue(waitUntil { self.words(progress) == "1/9" }, "ticking Lights did not tick its line: '\(words(progress))'")
-        XCTAssertTrue(app.buttons["trip-line-7"].exists, "the batteries are not shown under Lights")
-        // The Mac's list shows the line twice while the tick animates (GitHub's Mac probe,
-        // 6 Oct 2026: "Multiple matching elements"), so ask the first one until it settles.
-        sleep(2)
-        print("PROBE-A11Y-1 \(app.buttons.matching(identifier: "trip-line-7").debugDescription)")
-        print("PROBE-A11Y-2 \(app.descendants(matching: .any).matching(identifier: "trip-line-7").debugDescription)")
-        let all7 = app.buttons.matching(identifier: "trip-line-7").allElementsBoundByIndex
-        print("PROBE-A11Y-3 " + all7.map { "sel=\($0.isSelected) hit=\($0.isHittable) frame=\($0.frame) label=\($0.label) value=\(String(describing: $0.value))" }.joined(separator: " | "))
-        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-line-7"].firstMatch) }, "the batteries were not ticked with their section")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7") != nil }, "the batteries are not shown under Lights")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7")?.isSelected == true }, "the batteries were not ticked with their section")
         tap(app, id: "trip-group-1-fold")
-        XCTAssertTrue(waitUntil { !app.buttons["trip-line-7"].exists }, "Lights did not fold away")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7") == nil }, "Lights did not fold away")
         tap(app, id: "trip-group-1-fold")
-        XCTAssertTrue(waitUntil { app.buttons["trip-line-7"].exists }, "Lights did not open again")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7") != nil }, "Lights did not open again")
 
         // Everything else, last.
         XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-group-2-fold"), "no third heading")
@@ -4328,15 +4329,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["rescue-heading"].waitForExistence(timeout: 5), "nothing was kept")
         XCTAssertTrue(app.buttons["rescue-row-0"].exists, "the copy is not offered")
         XCTAssertFalse(app.buttons["rescue-row-1"].exists, "more copies than restores")
-        // PROBE: does the window still take clicks? Restore from a file… again.
-        bringIntoView(app, app.buttons["backup-restore"])
-        tap(app, id: "backup-restore")
-        let other = appears(app, "restore-detail", timeout: 5)
-        print("PROBE other-button-opened=\(other) status='\(words(app.staticTexts["backup-status"]))'")
-        if other { tap(app, id: "restore-cancel"); _ = disappears(app, "restore-detail", timeout: 5)
-            print("PROBE after-cancel status='\(words(app.staticTexts["backup-status"]))'") }
         bringIntoView(app, app.buttons["rescue-row-0"])
-        print("PROBE before-click status='\(words(app.staticTexts["backup-status"]))'")
         shot(app, "rescue-copy")
         // 🪤 On the Mac the list can still be gliding when the click comes, and the click
         // then lands where the row WAS (GitHub's Mac run, 6 Oct 2026: on the heading
@@ -4348,11 +4341,6 @@ final class AMSPackingUITests: XCTestCase {
             tap(app, id: "rescue-row-0")
             opened = appears(app, "restore-detail", timeout: 4)
         }
-        // PROBE: what the Mac shows after the click.
-        let row = app.buttons["rescue-row-0"]
-        print("PROBE status='\(words(app.staticTexts["backup-status"]))' sheets=\(app.sheets.count) rowHittable=\(row.exists && row.isHittable) rowFrame=\(row.exists ? row.frame : .zero) window=\(app.windows.firstMatch.frame)")
-        print("PROBE tree:\n" + app.windows.firstMatch.debugDescription.split(separator: "\n").filter { $0.contains("rescue") || $0.contains("restore") || $0.contains("Sheet") || $0.contains("backup-status") }.joined(separator: "\n"))
-        print("PROBE log='\(words(app.staticTexts["probe-log"]))'")
         XCTAssertTrue(opened, "the copy's restore did not open")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "10" },
                       "the copy does not hold what was here: '\(words(app.staticTexts["restore-file-items"]))'")
