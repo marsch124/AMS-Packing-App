@@ -158,7 +158,7 @@ struct SettingsScreen: View {
                         .accessibilityIdentifier("rescue-heading")
                     VStack(spacing: 0) {
                         ForEach(Array(copies.enumerated()), id: \.offset) { n, copy in
-                            Button { offer(RescueCopies.read(copy) ?? Data()) } label: {
+                            Button { status = "PROBE clicked"; offer(RescueCopies.read(copy) ?? Data()) } label: {
                                 HStack {
                                     Text(RescueCopies.when(copy))
                                         .font(.system(.callout)).foregroundStyle(Theme.ink)
@@ -253,6 +253,7 @@ struct SettingsScreen: View {
         do {
             let (library, _) = try model.inspectBackup(data)
             pending = PendingRestore(library: library)
+            if status == "PROBE clicked" { status = "PROBE pending set" }
         } catch {
             status = error.localizedDescription
         }
