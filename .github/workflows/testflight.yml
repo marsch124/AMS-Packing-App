@@ -40,7 +40,9 @@ jobs:
     name: Build and send to TestFlight
     needs: tests
     runs-on: macos-26
-    timeout-minutes: 60
+    # 120 since 0.67: archive and upload take ~20 minutes, and the release step now
+    # waits up to 90 for Apple to show both builds.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:

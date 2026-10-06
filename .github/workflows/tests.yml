@@ -3,6 +3,11 @@ name: Tests
 # Every push runs the suite — the model's own tests, then the UI tests on the
 # iPhone AND on the Mac, because he uses this app on both. A red run means the
 # build is not fit to install.
+#
+# FIVE jobs, the five Mac machines a free account gets at once (0.67): three iPhone
+# groups and two Mac groups. The model's tests ride in Mac group 1 and the parity
+# check in Mac group 2 — as jobs of their own they made seven, and on 0.66's
+# release one Mac group waited 40 minutes for a free machine.
 on:
   push:
   pull_request:
@@ -10,43 +15,6 @@ on:
   workflow_call:      # the TestFlight workflow runs this suite first
 
 jobs:
-  core:
-    name: The model (Core package)
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Model tests
-        run: cd Core && swift test
-      # The "What to Test" requests the TestFlight release makes, checked without the
-      # network — a release is the wrong moment to find one malformed (5 Oct 2026).
-      - name: The release script's own check
-        run: python3 tools/release-to-testers.py --self-check
-      # The UI tests run in groups side by side (below): every test in exactly one group.
-      - name: Every UI test is in one group
-        run: python3 tools/ui-shard.py --check
-
-  parity:
-    # The Swift model and the web app's model answer the same 200-odd questions
-    # about an INVENTED backup; every answer must be identical. (On his real data
-    # the same check runs on his Mac — that file never leaves it.) The web app's
-    # model is taken from its own repository, so a change THERE that the Swift
-    # model has not followed turns this red.
-    name: Parity with the web app's model
-    runs-on: macos-15
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: marsch124/AMS-Packing
-          path: web-app
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Both models, answer by answer
-        run: PARITY_MODEL="$PWD/web-app/js/model.js" tools/parity/run.sh --invented
-
   iphone:
     name: UI tests — iPhone (${{ matrix.group }} of 3)
     # Three groups side by side, about 47 minutes of tests each (tools/ui-shard.py): one
@@ -155,6 +123,42 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+
+      # Group 1 also runs the model's own tests (until 0.67 the "core" job).
+      - name: Model tests
+        if: matrix.group == 1
+        run: cd Core && swift test
+      # The "What to Test" requests the TestFlight release makes, checked without the
+      # network — a release is the wrong moment to find one malformed (5 Oct 2026).
+      - name: The release script's own check
+        if: matrix.group == 1
+        run: python3 tools/release-to-testers.py --self-check
+      # The UI tests run in groups side by side: every test in exactly one group.
+      - name: Every UI test is in one group
+        if: matrix.group == 1
+        run: python3 tools/ui-shard.py --check
+
+      # Group 2 also checks parity (until 0.67 the "parity" job): the Swift model and
+      # the web app's model answer the same 200-odd questions about an INVENTED
+      # backup, and every answer must be identical. (On his real data the same check
+      # runs on his Mac — that file never leaves it.) The web app's model is taken
+      # from its own repository, so a change THERE that the Swift model has not
+      # followed turns this red.
+      - name: The web app's model
+        if: matrix.group == 2
+        uses: actions/checkout@v4
+        with:
+          repository: marsch124/AMS-Packing
+          path: web-app
+      - name: Node for the web app's model
+        if: matrix.group == 2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Parity with the web app's model
+        if: matrix.group == 2
+        run: PARITY_MODEL="$PWD/web-app/js/model.js" tools/parity/run.sh --invented
+
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate the project

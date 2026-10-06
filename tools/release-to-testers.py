@@ -191,21 +191,23 @@ def main() -> None:
     # 🪤 0.27 (build 33, 2026-09-27): the old loop gave up after five minutes with ONE
     # build and released only that — the Mac's copy appeared minutes later and never
     # reached his Mac. Now it waits up to 30 minutes for BOTH, and checks afterwards.
+    # 0.65 (build 87, 6 Oct 2026): the iPhone's copy appeared after 31 minutes, one
+    # minute too late — 90 minutes since 0.67.
     def builds_of_this_version():
         code, builds = call("GET", "/v1/builds" + q({"filter[app]": app_id, "filter[version]": version, "limit": 10}))
         return [b for b in builds.get("data", []) if b["attributes"].get("version") == version]
 
     build_ids = []
-    for attempt in range(60):
+    for attempt in range(180):
         mine = builds_of_this_version()
         print(f"attempt {attempt + 1}: " + ", ".join(f"{b['id'][:8]} {b['attributes'].get('processingState')}" for b in mine))
         ready = [b["id"] for b in mine if b["attributes"].get("processingState") in ("VALID", "PROCESSING")]
         if len(ready) >= 2:
             build_ids = ready
             break
-        if ready and attempt >= 59:
+        if ready and attempt >= 179:
             build_ids = ready
-            print(f"::warning::only {len(ready)} of 2 builds of {version} appeared in 30 minutes — "
+            print(f"::warning::only {len(ready)} of 2 builds of {version} appeared in 90 minutes — "
                   "the other device will not get this version")
             break
         print(f"waiting for Apple to finish processing {version} (need the iPhone AND the Mac build)...")
