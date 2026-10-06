@@ -546,11 +546,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (63 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (64 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.64 | 6 Oct 2026 | Drop-downs, your own bags, and sections | N3 C3 | every pick-one list on a thing's page and a template's row is a `DropDown` (§ DropDown); Kept at home from his places (a new place joins Your choices); a trip sorts by Section from one Sorting drop-down; a thing's Section on each template set from its page (spec 05); Usually packed in = his own bags only (`bagNames()`); the thing's page in his order; the cabin switches without explanations; guide: Packing a trip's Sorting line, the template row's drop-downs, Care's three thing-page lines |
 | 0.63 | 5 Oct 2026 | Arrange a template | N1 | Arrange on a template: drag headings and things (its things come along), rename and remove a heading; new trips pack in the new order (spec 04 §6a, §13a) |
 | 0.62 | 5 Oct 2026 | The big check-up: everything we found, put right | N7 C26 F12 | the fix-everything program: every finding of specs 01–06 dealt with (each chapter's open questions say how); Apple's standard text styles and slim controls throughout (§21), one-line rows in Your things and Search; Escape on the Mac everywhere, Owners from his things, the reminders line kept; rename and reorder in Your choices; template notes on a thing's page; Care schedules; Pack weather gear anyway; 0.59's Worth a look line moved from Changed to New |
 | 0.61 | 5 Oct 2026 | Your own grab lists, and a restore that brings back everything | N1 C5 | own grab lists can be filled, keep their ticks and be deleted; Off Home really takes a list off Home; Make says where the list went; restore accepts a cabin bag and brings back every note |
