@@ -1337,8 +1337,9 @@ macOS 26) — and how far a header must step in so its title starts just after t
   `.windowBackgroundDragBehavior(.disabled)`: a drag on a page's empty space does not carry the window. UI
   `testTheWindowMovesByItsEmptyStrip` (Mac only) drags Home's strip halfway across and sees the window move (and
   drags it back). A `WindowDragGesture` layer behind the strip was tried first and taken out: on GitHub's Mac run
-  the window moved just the same without it. Seen red with a planted fault: the header row made to claim the
-  strip (a tap gesture over its whole width).
+  the window moved just the same without it — and still did with a tap or a drag gesture planted over the whole
+  header row: the Mac moves a window by its title bar region whatever lies there. Seen red with the window made
+  unmovable (`isMovable = false`): "the window did not move when its strip was dragged".
 - 🪤 **The page under a pinned header must not touch the strip.** `headerOnTheMac` puts 6 pt under the header
   (To do's first line has the same), and the page's scroll views have no top edge effect on macOS 26
   (`titleBarSafeScroll()`: `.scrollEdgeEffectHidden(true, for: .top)`). On GitHub's Mac run (6 Oct 2026) a
@@ -1350,7 +1351,9 @@ macOS 26) — and how far a header must step in so its title starts just after t
 - Tests (Mac branch of `testEveryTabsHeaderIsOnOneCentreLine` and `testHomeLeadsWithGrabAndGoAtTheTop`): each
   tab's title within 2 pt of the window buttons' line (`XCUIIdentifierCloseWindow`, `…MinimizeWindow`,
   `…ZoomWindow`, `…FullScreenWindow` — the green one is "full screen" on macOS 26 — as one box) and starting at
-  least 6 pt after them; nothing above the window's top; Settings' first
+  least 6 pt after them (seen red on GitHub's Mac with the step-in planted at 0: "home: the title starts at 168.0,
+  on or too near the window buttons", and the same on Trips, Templates, Care and To do); nothing above the window's
+  top; Settings' first
   card under the strip (its foot worked out from the buttons, which sit in its middle); Home's first tile less than
   16 pt under Grab and go and less than 50 pt under the window's top. Mac pictures came from the probe workflow
   (`mac-probe.yml`, on a probe branch only).
