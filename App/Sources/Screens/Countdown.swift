@@ -78,7 +78,7 @@ struct RemindersCard: View {
 
     var body: some View {
         let next = PackingReminders.upcoming(model.library).first
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Toggle(isOn: Binding(get: { on }, set: { want in
                 Task {
                     let ok = want ? await PackingReminders.shared.askToShow() : false
@@ -111,7 +111,8 @@ struct RemindersCard: View {
                     .accessibilityIdentifier("settings-reminders-next")
             }
         }
-        .padding(14)
+        // Settings' cards are compact (14 points inside until 0.67).
+        .padding(.horizontal, 12).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))

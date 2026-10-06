@@ -20,26 +20,21 @@ struct BuyList: View {
         let offers = model.library.buySuggestions(today: Today.local)
         VStack(spacing: 0) {
             KeyboardAwayScroll {
-                LazyVStack(alignment: .leading, spacing: 4) {
+                // No space between lines: each is as tall as its words (`Metrics.line`), as on
+                // To do (44 points top to top until 0.67).
+                LazyVStack(alignment: .leading, spacing: 0) {
                     Text(lines.isEmpty ? "Nothing to buy." : (open == 0 ? "All bought." : "\(open) to buy"))
                         .font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
-                        .padding(.top, 14)
+                        .padding(.top, 12).padding(.bottom, 4)
                         .accessibilityIdentifier("buy-count")
                     // To buy → Apple Reminders (his idea 9), to take to the shop.
-                    if !lines.isEmpty { RemindersSend().environmentObject(model) }
+                    if !lines.isEmpty { RemindersSend().environmentObject(model).padding(.bottom, 6) }
 
                     ForEach(Array(lines.enumerated()), id: \.element.id) { n, line in
                         HStack(spacing: 4) {
                             Button { tick(line) } label: {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle().stroke(AppSection.actions.color, lineWidth: 2).frame(width: 26, height: 26)
-                                        if line.done {
-                                            Circle().fill(AppSection.actions.color).frame(width: 26, height: 26)
-                                            Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                                                .frame(width: 26, height: 26)
-                                        }
-                                    }
+                                HStack(spacing: 8) {
+                                    TickCircle(on: line.done, tint: AppSection.actions.color)
                                     Text(line.text)
                                         .font(.system(.body))
                                         .foregroundStyle(line.done ? Theme.muted : Theme.ink)
@@ -47,7 +42,7 @@ struct BuyList: View {
                                         .accessibilityIdentifier("buy-\(n)-name")
                                     Spacer(minLength: 8)
                                 }
-                                .padding(.vertical, 5).contentShape(Rectangle())
+                                .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("buy-\(n)")
@@ -55,8 +50,8 @@ struct BuyList: View {
                             Button { remove(line) } label: {
                                 SVGPath.path("M6 6L18 18M18 6L6 18")
                                     .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-                                    .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                                    .frame(width: 40, height: 40).contentShape(Rectangle())
+                                    .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
+                                    .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
                             .accessibilityIdentifier("buy-\(n)-remove")
@@ -67,14 +62,14 @@ struct BuyList: View {
 
                     if !offers.isEmpty {
                         Text("Worth buying").font(.system(.subheadline, weight: .semibold))
-                            .foregroundStyle(Theme.muted).padding(.top, 18)
+                            .foregroundStyle(Theme.muted).padding(.top, 12).padding(.bottom, 2)
                             .accessibilityIdentifier("buy-offers")
                         ForEach(Array(offers.enumerated()), id: \.element.item.id) { n, offer in
                             Button { model.change { _ = $0.addToBuyList(offer) } } label: {
-                                HStack(spacing: 12) {
-                                    Text("+").font(.system(.title3, weight: .bold))
-                                        .foregroundStyle(AppSection.actions.color).frame(width: 26)
-                                    VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 8) {
+                                    Text("+").font(.system(.body, weight: .bold))
+                                        .foregroundStyle(AppSection.actions.color).frame(width: Metrics.mark)
+                                    VStack(alignment: .leading, spacing: 0) {
                                         Text(offer.item.name).font(.system(.body))
                                             .foregroundStyle(Theme.ink)
                                             .accessibilityIdentifier("buy-offer-\(n)-name")
@@ -85,7 +80,7 @@ struct BuyList: View {
                                     }
                                     Spacer(minLength: 8)
                                 }
-                                .padding(.vertical, 5).contentShape(Rectangle())
+                                .padding(.vertical, 3).frame(minHeight: Metrics.line).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("buy-offer-\(n)")

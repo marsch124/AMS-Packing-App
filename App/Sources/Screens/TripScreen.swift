@@ -170,7 +170,8 @@ struct TripScreen: View {
                     onSiteDoor(trip)
                         .padding(.top, 6).padding(.horizontal, 16)
                 }
-                LazyVStack(alignment: .leading, spacing: 4) {
+                // No space between lines: each is as tall as its words (`Metrics.line`).
+                LazyVStack(alignment: .leading, spacing: 0) {
                     // One level of groups; inside a group the lines keep the trip's own order.
                     // (The web app nests: When → by bag inside; the others → by When inside.)
                     ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { g, group in
@@ -187,10 +188,10 @@ struct TripScreen: View {
                                 Button { toggleFold(group.label) } label: {
                                     SVGPath.path("M9 6l6 6-6 6")
                                         .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                                        .frame(width: 20, height: 20)
+                                        .onGrid(Metrics.glyph)
                                         .rotationEffect(.degrees(folded ? 0 : 90))
                                         .foregroundStyle(Theme.ink)
-                                        .frame(width: 34, height: 36).contentShape(Rectangle())
+                                        .frame(width: Metrics.lineButton - 6, height: Metrics.line).contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("trip-group-\(g)-fold")
@@ -209,23 +210,15 @@ struct TripScreen: View {
                                 // rule forbids (the spec pass, 5 Oct 2026) — the space stays, so the
                                 // heading does not jump.
                                 if mine.isEmpty {
-                                    Color.clear.frame(width: 40, height: 36)
+                                    Color.clear.frame(width: Metrics.lineButton, height: Metrics.line)
                                 } else {
                                     Button {
                                         model.change { lib in
                                             for line in mine { _ = lib.setChecked(!sectionDone, tripId: tripId, entryId: line.id) }
                                         }
                                     } label: {
-                                        ZStack {
-                                            Circle().stroke(sectionDone ? AppSection.events.color : Theme.line, lineWidth: 1.6)
-                                                .frame(width: 20, height: 20)
-                                            if sectionDone {
-                                                Circle().fill(AppSection.events.color).frame(width: 20, height: 20)
-                                                Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                                                    .frame(width: 20, height: 20)
-                                            }
-                                        }
-                                        .frame(width: 40, height: 36).contentShape(Rectangle())
+                                        TickCircle(on: sectionDone, tint: AppSection.events.color, ring: sectionDone ? nil : Theme.line)
+                                            .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain).focusEffectDisabled()
                                     .accessibilityIdentifier("trip-group-\(g)-all")
@@ -233,13 +226,15 @@ struct TripScreen: View {
                                     .accessibilityAddTraits(sectionDone ? .isSelected : [])
                                 }
                             }
-                            .padding(.top, 12)
+                            // A little air above a heading, none under it (12 points above,
+                            // and 36-point buttons, until 0.67).
+                            .padding(.top, 6)
                             if !folded {
                             ForEach(group.entries, id: \.id) { line in
                                 let n = index[line.id] ?? 0
                                 let aside = isSetAside(line)
                                 let needsPlace = view == "stored" && group.label == "No place set"
-                                VStack(alignment: .leading, spacing: 6) {
+                                VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 4) {
                                     Button {
                                         if !aside { model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) } }
@@ -255,8 +250,9 @@ struct TripScreen: View {
                                     Button {
                                         model.change { _ = $0.setAside(!aside, tripId: tripId, entryId: line.id) }
                                     } label: {
-                                        AsideMark(back: aside)
-                                            .frame(width: 40, height: 40)
+                                        // As tall as the line, no taller; wide enough to hit.
+                                        AsideMark(back: aside).onGrid(Metrics.glyph)
+                                            .frame(width: Metrics.lineButton, height: Metrics.line)
                                             .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain).focusEffectDisabled()
@@ -270,12 +266,12 @@ struct TripScreen: View {
                                         Button { placing = line.id; newPlace = ""; placeNeeds = "" } label: {
                                             Text("Set place").font(.system(.footnote, weight: .semibold))
                                                 .foregroundStyle(AppSection.events.color)
-                                                .padding(.horizontal, 10).frame(minHeight: 30)
+                                                .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
                                                 .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
                                                 .contentShape(Capsule())
                                         }
                                         .buttonStyle(.plain).focusEffectDisabled()
-                                        .padding(.leading, 44).padding(.bottom, 4)
+                                        .padding(.leading, Metrics.mark + 8).padding(.bottom, 4)
                                         .accessibilityIdentifier("trip-line-\(n)-place")
                                     }
                                 }
@@ -448,7 +444,7 @@ struct TripScreen: View {
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color.opacity(0.5), lineWidth: 1))
-        .padding(.leading, 44).padding(.bottom, 6)
+        .padding(.leading, Metrics.mark + 8).padding(.bottom, 6)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("trip-place-panel")
     }
@@ -563,19 +559,13 @@ struct PackLine: View {
     var body: some View {
         let aside = isSetAside(line)
         let qty = effectiveQty(line, nights)
-        // Slim rows, a small tick circle (his word, 5 Oct 2026: "slimmer rows in the
-        // trip, smaller tick circles and less space between lines").
-        HStack(spacing: 10) {
-            ZStack {
-                Circle().stroke(aside ? Theme.line : tint, lineWidth: 1.6).frame(width: 20, height: 20)
-                if line.checked && !aside {
-                    Circle().fill(tint).frame(width: 20, height: 20)
-                    Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .frame(width: 20, height: 20)
-                }
-            }
-            .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 1) {
+        // A line as tall as its words (`Metrics.line`, 30 / 22 top to top), a small tick
+        // circle (`Metrics.mark`). His words, 5 Oct 2026: "slimmer rows in the trip,
+        // smaller tick circles and less space between lines"; 6 Oct, testing 0.63: "Far
+        // too much space between the lines" — 44 points top to top until 0.67.
+        HStack(spacing: 8) {
+            TickCircle(on: line.checked && !aside, tint: tint, ring: aside ? Theme.line : nil)
+            VStack(alignment: .leading, spacing: 0) {
                 Text(line.name)
                     .font(.system(.body))
                     .foregroundStyle(aside ? Theme.muted : (line.checked ? Theme.muted : Theme.ink))
@@ -590,7 +580,7 @@ struct PackLine: View {
                 Text("×\(qty.rounded() == qty ? String(Int(qty)) : String(qty))")
                     .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                 if washed && line.perNight {
-                    LaundryMark().frame(width: 18, height: 18).foregroundStyle(Theme.muted)
+                    LaundryMark().onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
                 }
             }
             if showBag {
@@ -599,9 +589,34 @@ struct PackLine: View {
                     .frame(maxWidth: 150, alignment: .trailing)
             }
         }
-        .padding(.vertical, 5)
+        // A hair above and below, so a name on two lines keeps off the hairline.
+        .padding(.vertical, 2)
+        .frame(minHeight: Metrics.line)
         .contentShape(Rectangle())
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+    }
+}
+
+/// The round tick of a list's line — a ring, or filled with a white tick — as wide as
+/// `Metrics.mark` (18 on the iPhone, 14 on the Mac; until 0.67 a trip's was 20, a
+/// to-do's and a grab list's 26). Drawn, like every mark in this app.
+struct TickCircle: View {
+    let on: Bool
+    let tint: Color
+    /// The empty ring's colour when it is not the tint (a line set aside: the hairline's).
+    var ring: Color? = nil
+
+    var body: some View {
+        let s = Metrics.mark
+        ZStack {
+            Circle().stroke(ring ?? tint, lineWidth: 1.6)
+            if on {
+                Circle().fill(tint)
+                Tick().stroke(Color.white, style: StrokeStyle(lineWidth: s / 10, lineCap: .round, lineJoin: .round))
+            }
+        }
+        .frame(width: s, height: s)
+        .accessibilityHidden(true)
     }
 }
 

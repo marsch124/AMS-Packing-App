@@ -1611,16 +1611,22 @@ is `@State`: every time the tab is built again it starts on "To do".
 1. Top row (16 pt sides, 12 top): two equal-width side buttons "To do" (`actions-tab-todo`) and "To buy"
    (`actions-tab-buy`) — 17 bold, min height 44, radius 10; the side showing is filled red with white words and
    carries the selected trait, the other is ink on the card with a 1 pt line — and the magnifier (`search-open`).
-2. On the To do side, a scrolling list (`LazyVStack`, 4 pt spacing):
-   - The count (`actions-count`, 16 bold muted, monospaced): "Nothing to do." (no to-dos), "All done." (all
-     ticked), else "`N` to do".
+2. On the To do side, a scrolling list (`LazyVStack`, **no spacing** — 4 until 0.67):
+   - The count (`actions-count`, Callout semibold muted, monospaced; 12 above and 4 below — 14 and none until
+     0.67): "Nothing to do." (no to-dos), "All done." (all ticked), else "`N` to do".
+   - **A to-do is as tall as its words** (0.67): at least **`Metrics.line` — 30 pt on the iPhone, 22 on the
+     Mac** — top to top (44 until 0.67). His words, 6 Oct 2026, testing 0.63: "Far too much line space in the
+     To Do tab."
    - One row per to-do in `sortedActions(kind: "todo")` order: the row button (`action-N`, selected trait when
-     done) — a 26 pt circle with a red 2 pt ring; when done, a filled red circle with a white drawn tick; the
-     text (17, medium; regular, muted and struck through when done); and, when the to-do has a thing, high
-     priority or a "When" step, a second line (13 semibold) joining with " · " "High", the thing's name and the
-     step's label (`phaseLabel`: a step this device does not know is shown by its raw id) — red while a high
-     one is open, muted otherwise. At the right a ✕ (`action-N-remove`, label
-     "Remove", 24 pt mark in a 40 × 40 area). A 1 pt line under each row.
+     done), 8 pt between its parts (12 until 0.67) — a `TickCircle` of `Metrics.mark` (18 / 14; 26 until 0.67):
+     a red 1.6-pt ring; when done, a filled red circle with a white drawn tick; the text (Body; muted and struck
+     through when done); and, when the to-do has a thing, high priority or a "When" step, a second line right
+     under it (Footnote semibold) joining with " · " "High", the thing's name and the step's label
+     (`phaseLabel`: a step this device does not know is shown by its raw id) — red while a high one is open,
+     muted otherwise; 2 pt above and below the words (5 until 0.67). At the right a ✕ (`action-N-remove`, label
+     "Remove"), drawn on the 24-pt grid and shown at `Metrics.glyph` (20 / 16) in a `Metrics.lineButton` ×
+     `Metrics.line` area — 40 × 30 on the iPhone, 30 × 22 on the Mac (24 pt in 40 × 40 until 0.67). A 1 pt
+     line under each row.
 3. After a ✕ (0.62): above the add row, "Removed “`<text>`”" (`action-undo-says`, 15 semibold muted, 1 line)
    and "Undo" (`action-undo`, 15 bold red, red outlined capsule, min height 36) — until it is used, another
    to-do is removed, or the screen is rebuilt.
@@ -1672,7 +1678,10 @@ exactly as the web app keeps them, so both come through a backup either way.
 **Tests.** Model `ActionsTests`: `testActionKindDefaultsToTodoKeepsAValidShoppingKind`,
 `testCompareActionsOpenFirstHighFirstSoonerFirstNewestFirst`, `testCoerceActionRules`; `CreateTripTests`
 `testToDosAreAddedTickedAndOrderedTheWebAppsWay` (trimmed; high before normal; open before done; `doneAt` set;
-blank refused; one record per to-do). UI `testAToDoIsAddedAndTicked` (Add is enabled when empty and says what is
+blank refused; one record per to-do). UI `testToDoAndToBuyLinesSitTight` (0.67: three to-dos typed and added —
+`action-0…2` at most `Metrics.line`, 30 / 22, top to top and at least 8 less; `action-0-remove` no taller than a
+line; then three lines to buy — `buy-0…2` the same; pictures `tight-todo`, `tight-buy`; seen red on 0.66's sizes: "a
+to-do takes 44.0 points, top to top; at most 30.0"); `testAToDoIsAddedAndTicked` (Add is enabled when empty and says what is
 missing; the line goes on typing; "1 …" counted; ticking → "All done…"; the tick survives leaving the tab);
 `testEveryTabOpensItsScreen` (the tab says "To do"); `testEachTripSaysWhereItHasGotTo` (a to-do makes the Trips
 chip appear and it opens this tab); `testTheBuyListOffersWhatIsWornOutAndKeepsTheToDosSeparate` (buy lines never
@@ -1696,13 +1705,17 @@ and taking it up stops it being offered (0.3, 23 Sep 2026; the web app's pre-tri
 **What is on screen** (a scrolling list, then the add row):
 1. The count (`buy-count`, 16 bold muted): "Nothing to buy." (no lines), "All bought." (all ticked), else "`N` to
    buy".
-2. When there is at least one line: the Reminders block (`RemindersSend`, below).
-3. One row per line in `buyList()` order (= `sortedActions(kind: "shopping")`): the row button (`buy-N`, selected
-   trait when bought) with the same red circle tick as a to-do and the text (`buy-N-name`, 17; struck through
-   and muted when bought) — no second line; ✕ (`buy-N-remove`, label "Remove `<text>`") deletes at once.
-4. When there are offers: "Worth buying" (`buy-offers`, 15 heavy muted, 18 pt above), then each offer as a button
-   (`buy-offer-N`): a red "+" (22 heavy), the thing's name (`buy-offer-N-name`, 17 medium) over the reason
-   (`buy-offer-N-why`, 14 semibold; red for "Needs replacing" and "Expired", muted otherwise).
+2. When there is at least one line: the Reminders block (`RemindersSend`, below), 6 pt above the lines.
+3. One row per line in `buyList()` order (= `sortedActions(kind: "shopping")`), built exactly like a to-do (0.67:
+   at least `Metrics.line` — 30 / 22 — top to top, no spacing; 44 until then): the row button (`buy-N`, selected
+   trait when bought) with the same red `TickCircle` as a to-do and the text (`buy-N-name`, Body; struck through
+   and muted when bought) — no second line; ✕ (`buy-N-remove`, label "Remove `<text>`", the to-do's size)
+   deletes at once. The count (`buy-count`) has 12 above and 4 below, like To do's.
+4. When there are offers: "Worth buying" (`buy-offers`, Subheadline semibold muted, 12 pt above and 2 below — 18
+   above until 0.67), then each offer as a button (`buy-offer-N`), 8 pt between its parts: a red "+" (Body bold,
+   `Metrics.mark` wide — 22 heavy in 26 until 0.67), the thing's name (`buy-offer-N-name`, Body) right over the
+   reason (`buy-offer-N-why`, Footnote semibold; red for "Needs replacing" and "Expired", muted otherwise); 3 pt
+   above and below (5 until 0.67), at least `Metrics.line` tall.
 5. After a ✕ (0.62): "Removed “`<text>`”" (`buy-undo-says`) and "Undo" (`buy-undo`), as on To do.
 6. The add row at the BOTTOM: "Add something to buy" (`buy-add-text`), "Add" (`buy-add`, red); needs line
    `buy-add-needs` "Type what to buy first."

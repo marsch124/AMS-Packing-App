@@ -68,4 +68,29 @@ enum Metrics {
     /// 2026), "These arrows are rather difficult to hit. Could you please enlarge the
     /// hotspots". The arrows themselves stay small; only the area that takes the tap is.
     static let fingertip: CGFloat = 44
+
+    // A line of a list — a trip's, a template's, a to-do, a line to buy, a grab list's:
+    // as tall as its words and a hair, the feel of the table "without air" he loved the
+    // same day. His words (6 Oct 2026, testing 0.63): "Far too much space between the
+    // lines … Change this dramatically, not only a bit." Until 0.67 a trip's line took
+    // 44 points top to top, a template's 42, a to-do 44, a grab list's 46 — on both.
+    #if os(macOS)
+    static let line: CGFloat = 22     // a line, top to top (a longer name still wraps)
+    static let mark: CGFloat = 14     // its tick circle
+    static let glyph: CGFloat = 16    // its ✕ or ⊘, drawn on the 24-point grid
+    static let lineButton: CGFloat = 30   // the width that takes a press on ✕ or ⊘
+    #else
+    static let line: CGFloat = 30
+    static let mark: CGFloat = 18
+    static let glyph: CGFloat = 20
+    static let lineButton: CGFloat = 40
+    #endif
+}
+
+extension View {
+    /// A mark drawn on the 24-point grid, shown `size` points across: framed at 24 so
+    /// it stays in the middle (framed smaller, it hangs off-centre), then scaled.
+    func onGrid(_ size: CGFloat) -> some View {
+        frame(width: 24, height: 24).scaleEffect(size / 24).frame(width: size, height: size)
+    }
 }

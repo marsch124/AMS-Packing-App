@@ -7310,4 +7310,181 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(page.filter { $0 == "# Navigation" }.count, 1, "the section was made twice: \(page)")
         XCTAssertEqual(heading(of: "Headlamp", in: page), "Lights")
     }
+
+    // MARK: Lines without air (his field test of 0.63, 6 Oct 2026)
+
+    /// A list's line, top to top: as tall as its words and a hair — the feel of the table
+    /// he got "without air" the same day (22 / 28), with the list's own body text. Until
+    /// 0.67 a trip's line took 44 points, a template's 42, a to-do 44, a grab list's 46.
+    /// A tile or a standard button: `Metrics.tap`.
+    #if os(macOS)
+    private let tightLine: CGFloat = 22
+    private let tightTile: CGFloat = 26
+    /// What's new and the doors under it, top to top (a title and a line under it).
+    private let doorPitch: CGFloat = 46
+    #else
+    private let tightLine: CGFloat = 30
+    private let tightTile: CGFloat = 36
+    private let doorPitch: CGFloat = 52
+    #endif
+
+    /// The frames of the rows called `ids` that are on screen, top to bottom.
+    private func rowFrames(_ app: XCUIApplication, _ ids: [String]) -> [CGRect] {
+        ids.compactMap { shownRow(app, $0)?.frame }.sorted { $0.minY < $1.minY }
+    }
+
+    /// The smallest distance, top to top, between two neighbouring rows of `ids`.
+    private func pitch(_ app: XCUIApplication, _ ids: [String]) -> CGFloat {
+        let f = rowFrames(app, ids)
+        print("TIGHT rows \(ids.first ?? "") … : \(f.map { "\(Int($0.minY))+\(Int($0.height))" })")
+        return zip(f, f.dropFirst()).map { $1.minY - $0.minY }.filter { $0 > 1 }.min() ?? .infinity
+    }
+
+    /// The air between a heading and the bottom of the last row above it.
+    private func airAbove(_ heading: XCUIElement, rows: [CGRect]) -> CGFloat {
+        let above = rows.map(\.maxY).filter { $0 <= heading.frame.minY + 1 }.max() ?? -.infinity
+        return heading.frame.minY - above
+    }
+
+    /// His words (6 Oct 2026, a trip's packing list): "Far too much space between the
+    /// lines." A line is as tall as its words — 30 points top to top on the iPhone, 22 on
+    /// the Mac (44 on both until 0.67) — ⊘ no taller than its line, and a heading close
+    /// under the line above it (25 points of air until 0.67).
+    func testATripsLinesSitTightUnderTheirHeadings() {
+        let app = launch("-uiTestingSections")
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertEqual(choose(app, "trip-view", 4), "Section")
+        let lines = (0..<9).map { "trip-line-\($0)" }
+        let label = app.staticTexts["trip-group-1-label"]
+        XCTAssertTrue(waitUntil { self.rowFrames(app, lines).count >= 3 && label.exists }, "fewer than three lines, or no second heading")
+        shot(app, "tight-trip")
+        let p = pitch(app, lines)
+        XCTAssertLessThanOrEqual(p, tightLine + 0.5, "a line takes \(p) points, top to top; at most \(tightLine)")
+        XCTAssertGreaterThanOrEqual(p, tightLine - 8, "lines of \(p) points: the words no longer fit")
+        let air = airAbove(label, rows: rowFrames(app, lines))
+        XCTAssertLessThanOrEqual(air, 14, "\(air) points of air above the Lights heading")
+        let aside = shownRow(app, "trip-line-0-aside")
+        XCTAssertNotNil(aside, "the first line has no ⊘")
+        XCTAssertLessThanOrEqual(aside?.frame.height ?? 99, tightLine + 0.5, "⊘ is \(aside?.frame.height ?? 0) points tall")
+        XCTAssertGreaterThanOrEqual(aside?.frame.width ?? 0, 28, "⊘ is too narrow to hit: \(aside?.frame.width ?? 0)")
+    }
+
+    /// His words (6 Oct 2026): "Far too much line spacing between the items in a template
+    /// … Change this dramatically, not only a bit." A row is as tall as its words (42
+    /// points top to top until 0.67), ✕ beside the bag on the row's own line, and a
+    /// heading close under the row above it (22 points of air until 0.67).
+    func testATemplatesRowsSitTight() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        let rows = (0..<6).map { "template-item-\($0)" }
+        let heading = app.staticTexts["template-group-1"]
+        XCTAssertTrue(waitUntil { self.rowFrames(app, rows).count >= 3 && heading.exists }, "fewer than three rows, or no second heading")
+        shot(app, "tight-template")
+        let p = pitch(app, rows)
+        XCTAssertLessThanOrEqual(p, tightLine + 0.5, "a row takes \(p) points, top to top; at most \(tightLine)")
+        XCTAssertGreaterThanOrEqual(p, tightLine - 8, "rows of \(p) points: the words no longer fit")
+        let row = app.buttons["template-item-0"], cross = app.buttons["template-item-0-remove"]
+        XCTAssertTrue(row.exists && cross.exists, "no first row with its ✕")
+        XCTAssertLessThan(abs(cross.frame.midY - row.frame.midY), 2, "✕ is not on its row's line: \(cross.frame) vs \(row.frame)")
+        XCTAssertLessThanOrEqual(cross.frame.height, tightLine + 0.5, "✕ is \(cross.frame.height) points tall")
+        let air = airAbove(heading, rows: rowFrames(app, rows))
+        XCTAssertLessThanOrEqual(air, 12, "\(air) points of air above the second heading")
+    }
+
+    /// His words (6 Oct 2026): "Far too much line space in the To Do tab." A to-do and a
+    /// line to buy are as tall as their words (44 points top to top until 0.67).
+    func testToDoAndToBuyLinesSitTight() {
+        let app = launch()
+        tab(app, "actions")
+        XCTAssertTrue(appears(app, "screen-actions"))
+        for text in ["Book the ferry", "Charge the lamp", "Print the map"] {
+            type(text, into: app.textFields["action-add-text"])
+            tap(app, id: "action-add")
+        }
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "3 to do" },
+                      "not three to-dos: '\(words(app.staticTexts["actions-count"]))'")
+        hideKeyboard(app)
+        shot(app, "tight-todo")
+        let todo = pitch(app, (0..<3).map { "action-\($0)" })
+        let cross = app.buttons["action-0-remove"].frame.height
+
+        tap(app, id: "actions-tab-buy")
+        for text in ["Milk", "Bread", "Sun cream"] {
+            type(text, into: app.textFields["buy-add-text"])
+            tap(app, id: "buy-add")
+        }
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "3 to buy" },
+                      "not three to buy: '\(words(app.staticTexts["buy-count"]))'")
+        hideKeyboard(app)
+        shot(app, "tight-buy")
+        let buy = pitch(app, (0..<3).map { "buy-\($0)" })
+
+        XCTAssertLessThanOrEqual(todo, tightLine + 0.5, "a to-do takes \(todo) points, top to top; at most \(tightLine)")
+        XCTAssertGreaterThanOrEqual(todo, tightLine - 8, "to-dos of \(todo) points: the words no longer fit")
+        XCTAssertLessThanOrEqual(cross, tightLine + 0.5, "✕ is \(cross) points tall")
+        XCTAssertLessThanOrEqual(buy, tightLine + 0.5, "a line to buy takes \(buy) points, top to top; at most \(tightLine)")
+        XCTAssertGreaterThanOrEqual(buy, tightLine - 8, "lines of \(buy) points: the words no longer fit")
+    }
+
+    /// His words (6 Oct 2026, Settings, the gaps between the cards marked): "Far too much
+    /// space in the settings tab." What's new, How it works, Your first real trip and Open
+    /// a shared link are rows of ONE card with a hairline between them, as in the iPhone's
+    /// own Settings (four cards, 70 points top to top, until 0.67), and the cards sit
+    /// closer (10 points apart until 0.67).
+    func testSettingsDoorsAreRowsOfOneCard() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let ids = ["settings-whatsnew", "settings-howitworks", "settings-firsttrip", "settings-openshared"]
+        XCTAssertTrue(waitUntil { ids.allSatisfy { app.buttons[$0].exists } }, "a door is missing")
+        shot(app, "tight-settings")
+        for (a, b) in zip(ids, ids.dropFirst()) {
+            let upper = app.buttons[a].frame, lower = app.buttons[b].frame
+            print("TIGHT \(a) \(upper) · \(b) \(lower)")
+            XCTAssertLessThanOrEqual(lower.minY - upper.maxY, 1.5, "\(lower.minY - upper.maxY) points between \(a) and \(b): not rows of one card")
+            XCTAssertLessThanOrEqual(lower.minY - upper.minY, doorPitch, "\(b) is \(lower.minY - upper.minY) points under \(a); at most \(doorPitch)")
+        }
+        let lists = app.buttons["settings-lists"]
+        let card = find(app, "settings-reminders-card")
+        XCTAssertTrue(lists.exists && card != nil, "no Your choices, or no Remind me to pack")
+        let between = (card?.frame.minY ?? 99) - lists.frame.maxY
+        XCTAssertLessThanOrEqual(between, 8.5, "\(between) points between two cards")
+        // Still doors: each one opens its page.
+        tap(app, id: "settings-firsttrip")
+        XCTAssertTrue(app.buttons["guide-done"].waitForExistence(timeout: 5), "Your first real trip did not open")
+        tap(app, id: "guide-done")
+        XCTAssertTrue(waitUntil { !app.buttons["guide-done"].exists }, "the page did not close")
+    }
+
+    /// His words (6 Oct 2026, a grab list): "Far too big buttons." Its lines are as tall
+    /// as their words (46 points top to top until 0.67), ⊘ no taller, Ready to go a
+    /// standard button (40 points tall on the iPhone, 30 on the Mac, until 0.67), and the
+    /// grab tiles on Home slim (50 and 40 until 0.67).
+    func testAGrabListAndItsTilesAreSmall() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertTrue(app.buttons["grab-0"].waitForExistence(timeout: 5), "no grab tiles on Home")
+        shot(app, "tight-home-tiles")
+        let tile = app.buttons["grab-0"].frame.height
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail"), "the grab list did not open")
+        let rows = (0..<7).map { "grab-item-\($0)" }
+        XCTAssertTrue(waitUntil { self.rowFrames(app, rows).count >= 3 }, "fewer than three lines")
+        shot(app, "tight-grab")
+        let p = pitch(app, rows)
+        let skip = app.buttons["grab-skip-0"].frame.height
+        let ready = app.buttons["grab-ready"]
+        XCTAssertTrue(ready.waitForExistence(timeout: 5), "no Ready to go")
+        bringIntoView(app, ready)
+        shot(app, "tight-grab-foot")
+
+        XCTAssertLessThanOrEqual(tile, tightTile + 0.5, "a grab tile is \(tile) points tall; at most \(tightTile)")
+        XCTAssertGreaterThanOrEqual(tile, tightTile - 6, "a grab tile of \(tile) points is too small to hit")
+        XCTAssertLessThanOrEqual(p, tightLine + 0.5, "a line takes \(p) points, top to top; at most \(tightLine)")
+        XCTAssertGreaterThanOrEqual(p, tightLine - 8, "lines of \(p) points: the words no longer fit")
+        XCTAssertLessThanOrEqual(skip, tightLine + 0.5, "⊘ is \(skip) points tall")
+        XCTAssertLessThanOrEqual(ready.frame.height, tightTile + 0.5, "Ready to go is \(ready.frame.height) points tall; at most \(tightTile)")
+    }
 }

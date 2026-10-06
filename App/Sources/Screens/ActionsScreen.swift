@@ -36,23 +36,20 @@ struct ActionsScreen: View {
                 BuyList(text: $buyText).environmentObject(model)
             } else {
             KeyboardAwayScroll {
-                LazyVStack(alignment: .leading, spacing: 4) {
+                // No space between to-dos: each is as tall as its words (`Metrics.line`). His
+                // words (6 Oct 2026, testing 0.63): "Far too much line space in the To Do tab"
+                // — 44 points top to top, with a 26-point circle, until 0.67.
+                LazyVStack(alignment: .leading, spacing: 0) {
                     Text(todos.isEmpty ? "Nothing to do." : (open == 0 ? "All done." : "\(open) to do"))
                         .font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
-                        .padding(.top, 14)
+                        .padding(.top, 12).padding(.bottom, 4)
                         .accessibilityIdentifier("actions-count")
                     ForEach(Array(todos.enumerated()), id: \.element.id) { n, a in
                         HStack(spacing: 4) {
                             Button { model.change { _ = $0.setActionDone(!a.done, id: a.id) } } label: {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle().stroke(AppSection.actions.color, lineWidth: 2).frame(width: 26, height: 26)
-                                        if a.done {
-                                            Circle().fill(AppSection.actions.color).frame(width: 26, height: 26)
-                                            Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round)).frame(width: 26, height: 26)
-                                        }
-                                    }
-                                    VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 8) {
+                                    TickCircle(on: a.done, tint: AppSection.actions.color)
+                                    VStack(alignment: .leading, spacing: 0) {
                                         Text(a.text)
                                             .font(.system(.body))
                                             .foregroundStyle(a.done ? Theme.muted : Theme.ink)
@@ -66,7 +63,7 @@ struct ActionsScreen: View {
                                     }
                                     Spacer(minLength: 8)
                                 }
-                                .padding(.vertical, 5).contentShape(Rectangle())
+                                .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("action-\(n)")
@@ -74,8 +71,8 @@ struct ActionsScreen: View {
                             Button { remove(a) } label: {
                                 SVGPath.path("M6 6L18 18M18 6L6 18")
                                     .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-                                    .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                                    .frame(width: 40, height: 40).contentShape(Rectangle())
+                                    .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
+                                    .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
                             .accessibilityIdentifier("action-\(n)-remove")

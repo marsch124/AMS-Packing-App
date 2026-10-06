@@ -724,17 +724,22 @@ everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the cho
 2. **Weather card** (always) — own section below.
 3. **Bags card** (only when some bag has lines AND weight or a scale reading) — own section below.
 4. **On site door** (only once On site has begun) — see "On site".
-5. **The groups** (a lazy stack), one per non-empty group of `groupBy(view, trip.entries)`; `g` = the
-   group's position in that list:
-   - Heading row (top padding 12): fold arrow (drawn chevron 20 pt in 34×36, pointing right when folded,
+5. **The groups** (a lazy stack with **no spacing** — 4 until 0.67), one per non-empty group of
+   `groupBy(view, trip.entries)`; `g` = the group's position in that list:
+   - Heading row (top padding **6** — 12 until 0.67, his words of 6 Oct 2026, "Far too much space between the
+     lines"; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
+     fold arrow (drawn chevron at `Metrics.glyph`, 20 / 16, with `onGrid`, in a `Metrics.lineButton` − 6 ×
+     `Metrics.line` target — 34×36 and 20 pt until 0.67; pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
      (15 heavy; sorted When: the colour of the FIRST line's phase made readable; otherwise green; id
      `trip-group-<g>-label`; tapping the words folds too); the count "ticked/packable" (13 bold mono
-     muted, set-aside lines excluded); and at the right the **whole-section tick**: a 24 pt circle
-     (2 pt `Theme.line` outline, or filled green with a white tick when every packable line of the
-     section is ticked) in a 40×36 target, id `trip-group-<g>-all`, label "Tick all of <heading>" /
-     "Untick <heading>", `.isSelected` when done. When every line of the section is set aside there is
-     nothing to tick: the button is not drawn (an empty 40×36 keeps the heading still) — 0.62; until
+     muted, set-aside lines excluded); and at the right the **whole-section tick**: a `TickCircle` of
+     `Metrics.mark` (18 / 14; 20 until 0.67) — a `Theme.line` ring, or filled green with a white tick when
+     every packable line of the section is ticked — in a `Metrics.lineButton` × `Metrics.line` target (40 × 30
+     on the iPhone, 30 × 22 on the Mac; 40×36 until 0.67), so it sits above the lines' ⊘; id
+     `trip-group-<g>-all`, label "Tick all of <heading>" / "Untick <heading>", `.isSelected` when done. When
+     every line of the section is set aside there is nothing to tick: the button is not drawn (an empty target
+     of the same size keeps the heading still) — 0.62; until
      then it sat there switched off and faded, against his rule. A press sets EVERY packable line of the section to "ticked" — or, when
      all were ticked, to "unticked" — in one `model.change`, one `setChecked` per line.
    - When not folded, its lines (see "A line" below).
@@ -759,22 +764,33 @@ blink; skipped with Reduce Motion. The progress text turns green and carries the
 
 ### A line
 
-`HStack` of two buttons (top-level row id is the line's button):
+`HStack` of two buttons, 4 pt apart (top-level row id is the line's button). **A line is as tall as its
+words** (0.67): at least **`Metrics.line` — 30 pt on the iPhone, 22 on the Mac** — top to top, no space between
+lines; a name on two lines grows it. His words, 6 Oct 2026, testing 0.63: "Far too much space between the lines"
+(44 top to top until 0.67: a 40-pt ⊘ and 4 pt between lines; 5 Oct he had asked for "slimmer rows in the trip,
+smaller tick circles and less space between lines").
 - **The line** (`PackLine`), id **`trip-line-<n>` where n is the line's index in `trip.entries`** (the
   list order, independent of sorting); accessibility value = "×4 · laundry" / "×7" / ""; `.isSelected`
-  when ticked. Content: a 26 pt circle — stroke 2 pt in the line's phase colour (graphic-readable), or
-  `Theme.line` when set aside; filled with a white tick when ticked and not set aside; the name (17,
-  medium; regular and muted when ticked; muted and struck through — 3 px his call in the comment, drawn
-  with `.strikethrough` — when set aside; up to 2 lines); "Bought on site" (13 bold green) under the
-  name when marked; at the right "×N" (15 bold mono muted) when the quantity > 1, plus the washtub when
-  laundry washes and the line is per night; then the bag name (14 muted, one line, max 150 pt wide) —
-  except when sorted Into. 9 pt vertical padding, a hairline under it.
+  when ticked. Content, 8 pt apart (10 until 0.67): a `TickCircle` of **`Metrics.mark` — 18 pt on the
+  iPhone, 14 on the Mac** (20 until 0.67; 26 before 0.62) — a 1.6-pt ring in the line's phase colour
+  (graphic-readable), or `Theme.line` when set aside; filled with a white tick when ticked and not set aside;
+  the name (Body; muted when ticked; muted and struck through — 3 px his call in the comment, drawn with
+  `.strikethrough` — when set aside; up to 2 lines); "Bought on site" (Footnote semibold green) right under
+  the name when marked; at the right "×N" (Subheadline semibold mono muted) when the quantity > 1, plus the
+  washtub at `Metrics.glyph` when laundry washes and the line is per night; then the bag name (Footnote muted,
+  one line, max 150 pt wide) — except when sorted Into. 2 pt above and below the words (5 until 0.67), at
+  least `Metrics.line` tall, a hairline under it.
   Tap: toggles `checked` (`Library.setChecked`) — **a set-aside line does not tick**.
-- **⊘ / ↻** (`AsideMark`, 24 pt drawn, muted, 40×40 target), id `trip-line-<n>-aside`, label
-  "Not this time" / "Take it this time": one tap toggles `skipped` (`Library.setAside`), no
-  confirmation (his call). Setting aside also takes the line's tick (0.62); taken back, it is unticked.
-- Sorted **From where**, under each line of the group **"No place set"**: **Set place** (13 bold green
-  capsule outline, indented 44), id `trip-line-<n>-place` — see "Set place".
+- **⊘ / ↻** (`AsideMark`, drawn on the 24-pt grid, stroked 1.8, muted, shown at `Metrics.glyph` — 20 / 16 —
+  with `onGrid`), in a **`Metrics.lineButton` × `Metrics.line`** target — 40 × 30 on the iPhone, 30 × 22 on
+  the Mac (24 pt in 40 × 40 until 0.67): as tall as the line, no taller, generous across; id
+  `trip-line-<n>-aside`, label "Not this time" / "Take it this time": one tap toggles `skipped`
+  (`Library.setAside`), no confirmation (his call). Setting aside also takes the line's tick (0.62); taken
+  back, it is unticked.
+- Sorted **From where**, under each line of the group **"No place set"**: **Set place** (Footnote semibold
+  green capsule outline, `Metrics.chip` tall, indented `Metrics.mark` + 8 so it starts under the name — 44 and
+  30 tall until 0.67), 4 pt under the line (6 until 0.67), id `trip-line-<n>-place` — see "Set place". The
+  place panel is indented the same.
 
 Each row view is keyed by "id|checked|aside|group|placing|qtyNights", so it is rebuilt whenever its
 tick, set-aside, group, place panel or night count changes (bug B1, his Mac 2026-09-26: a row showed no
@@ -855,7 +871,11 @@ with no thing behind it changes alone. A place not in his list (normName) is app
   counts at once ("1/8"), shows "Bought on site", goes on the way home, and begins On site.
 
 ### Tests (the trip screen)
-UI: `testATickCountsAndStays`, `testEveryRowShowsTheTickTheTripHolds` (every sorting — Section too since 0.64,
+UI: `testATripsLinesSitTightUnderTheirHeadings` (0.67, `-uiTestingSections`, sorted by Section: the lines on screen
+`trip-line-0…8` at most `Metrics.line` — 30 on the iPhone, 22 on the Mac — top to top and at least 8 less, so the
+words still fit; the Lights heading `trip-group-1-label` at most 14 pt under the line above it; `trip-line-0-aside`
+no taller than a line and at least 28 wide; picture `tight-trip`; seen red on 0.66's sizes: "a line takes 44.0
+points, top to top; at most 30.0"), `testATickCountsAndStays`, `testEveryRowShowsTheTickTheTripHolds` (every sorting — Section too since 0.64,
 each chosen from the drop-down — every row shows its tick), `testASectionFoldsAndStaysFolded`,
 `testAPlaceIsSetFromTheTrip` (From where chosen from the drop-down), `testTheTripSaysSortingBesideItsDropDown`
 (0.64; until then `testTheTripSaysSortingBesideItsThreeButtons`: "Sorting" left of the field `trip-view` on the

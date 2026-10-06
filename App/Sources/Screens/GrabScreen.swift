@@ -112,27 +112,30 @@ struct GrabButtons: View {
     var prefix = "grab"
     let open: (GrabDefinition) -> Void
     private let perRow = 4
+    /// The doodle beside the name, and the tile: a standard button's height
+    /// (`Metrics.tap`, 36 / 26). Until 0.67 the doodle sat ABOVE the name, 24 points
+    /// (20 on the Mac), in a tile 50 points tall (40 on the Mac).
     #if os(macOS)
-    static let doodle: CGFloat = 20
-    static let height: CGFloat = 40
+    static let doodle: CGFloat = 18
     #else
-    static let doodle: CGFloat = 24
-    static let height: CGFloat = 50
+    static let doodle: CGFloat = 22
     #endif
+    static let height: CGFloat = Metrics.tap
 
     var body: some View {
         let rows = stride(from: 0, to: lists.count, by: perRow).map { Array(lists.enumerated())[$0..<min($0 + perRow, lists.count)] }
         // Small tiles (his word, 5 Oct 2026: "You can even make the grab lists buttons
-        // smaller"); smaller again on the Mac.
+        // smaller"; 6 Oct, testing 0.63: "Far too big buttons"): one line each, the
+        // doodle beside the name.
         VStack(spacing: 6) {
             ForEach(rows.indices, id: \.self) { r in
                 HStack(spacing: 6) {
                     ForEach(Array(rows[r]), id: \.element.id) { n, d in
                         Button { open(d) } label: {
-                            VStack(spacing: 2) {
+                            HStack(spacing: 4) {
                                 GrabDoodle(icon: d.icon, size: GrabButtons.doodle, initial: d.label).foregroundStyle(GrabTone.color(d.tone))
                                 Text(d.label).font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.ink)
-                                    .lineLimit(1).minimumScaleFactor(0.8)
+                                    .lineLimit(1).minimumScaleFactor(0.7)
                             }
                             .padding(.horizontal, 4)
                             .frame(maxWidth: .infinity, minHeight: GrabButtons.height)
@@ -223,7 +226,7 @@ struct GrabScreen: View {
             // "When scrolling, the counter moves out of sight").
             if !editing { counter(items: items, complete: complete) }
             if editing { editor } else { KeyboardAwayScroll {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 0) {
                     if items.isEmpty {
                         // A list just made has nothing on it yet: say how to fill it.
                         Text("Nothing on this list yet. Press Edit to put things on it.")
@@ -232,19 +235,16 @@ struct GrabScreen: View {
                             .padding(.vertical, 5)
                             .accessibilityIdentifier("grab-empty")
                     }
+                    // Lines as tall as their words (`Metrics.line`), no space between them —
+                    // his words (6 Oct 2026, testing 0.63): "Far too big buttons" (46 points
+                    // top to top, a 26-point circle, until 0.67).
                     ForEach(Array(items.enumerated()), id: \.offset) { n, name in
                         let ticked = state.done.contains(name)
                         let skipped = state.skipped.contains(name)
                         HStack(spacing: 4) {
                             Button { change { $0.tapped(name) } } label: {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle().stroke(skipped ? Theme.line : tint, lineWidth: 2).frame(width: 26, height: 26)
-                                        if ticked {
-                                            Circle().fill(tint).frame(width: 26, height: 26)
-                                            Tick().stroke(Color.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round)).frame(width: 26, height: 26)
-                                        }
-                                    }
+                                HStack(spacing: 8) {
+                                    TickCircle(on: ticked, tint: tint, ring: skipped ? Theme.line : nil)
                                     Text(name)
                                         .font(.system(.body, weight: ticked ? .regular : .semibold))
                                         .foregroundStyle(skipped || ticked ? Theme.muted : Theme.ink)
@@ -255,13 +255,14 @@ struct GrabScreen: View {
                                             .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                                     }
                                 }
-                                .padding(.vertical, 5).contentShape(Rectangle())
+                                .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("grab-item-\(n)")
                             .accessibilityAddTraits(ticked ? .isSelected : [])
                             Button { change { $0.skipToggled(name) } } label: {
-                                AsideMark(back: skipped).frame(width: 40, height: 40).contentShape(Rectangle())
+                                AsideMark(back: skipped).onGrid(Metrics.glyph)
+                                    .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
                             .accessibilityIdentifier("grab-skip-\(n)")
@@ -278,14 +279,15 @@ struct GrabScreen: View {
                         else if missing.count <= 3 { message = "Still missing: \(missing.joined(separator: ", "))." }
                         else { message = "\(missing.count) things still missing." }
                     } label: {
+                        // A standard button's height (`Metrics.row` until 0.67).
                         Text("Ready to go")
                             .font(.system(.body, weight: .semibold)).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
+                            .frame(maxWidth: .infinity, minHeight: Metrics.tap)
                             .background(RoundedRectangle(cornerRadius: 12).fill(tint))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .padding(.top, 14)
+                    .padding(.top, 12)
                     .accessibilityIdentifier("grab-ready")
                     // Start over goes back to how the list opens — what he takes only
                     // sometimes set aside again (until 5 Oct 2026 it brought those back
@@ -294,9 +296,10 @@ struct GrabScreen: View {
                     if !state.done.isEmpty || Set(state.skipped) != Set(fresh.skipped) {
                         Button { change { _ in fresh } } label: {
                             Text("Start over").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.muted)
-                                .frame(maxWidth: .infinity, minHeight: Metrics.tap).contentShape(Rectangle())
+                                .frame(maxWidth: .infinity, minHeight: Metrics.compact).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
+                        .padding(.top, 4)
                         .accessibilityIdentifier("grab-reset")
                     }
                     // The six hours run from the LAST tap — a list he is still ticking is
@@ -304,7 +307,7 @@ struct GrabScreen: View {
                     Text("Tap each thing as you pick it up — or tap ⊘ to leave something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted).padding(.top, 8)
                 }
-                .padding(.horizontal, 16).padding(.bottom, 24)
+                .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 24)
             } }
         }
         .background(Theme.bg.ignoresSafeArea())
