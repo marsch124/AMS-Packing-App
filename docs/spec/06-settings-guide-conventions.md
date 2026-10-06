@@ -564,11 +564,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (66 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (67 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.67 | 7 Oct 2026 | Your field test: lines without air, an open calendar | N2 C6 | his ten points on the field-test page (6 Oct, testing 0.63): Create new trip's month grid always open, Create waits for the last day, Clear dates, no Dates switch; Full trip \| Quick under the name; Context per workout (`activityContexts`, spec 01/03); list lines `Metrics.line` 30 / 22 (trip, template, To do, To buy, grab list), Settings' doors one card, slim grab tiles; one centre line for every tab header (`ScreenHeader`), Home leads with Grab and go, `Metrics.screenTop`; the Mac's main window without a title bar, its headers in the strip after the window buttons (`Metrics.windowButtons`); Share's mark centred (`GridShape`); Arrange's two grips; GitHub on five machines, the release waits 90 minutes (§27, §28) |
 | 0.66 | 6 Oct 2026 | Column widths | N1 | the things table's columns (and Thing) are dragged wider or narrower at their heading's right edge, kept in `ams.table.widths`, a double tap puts one back (spec 05); guide: a line after the Care topic's table line |
 | 0.65 | 6 Oct 2026 | A table without air | C1 | the things table's rows `TableColumns.rowHeight` 22 on the Mac / 28 on the iPhone (34 before), boxes 14 / 18, the open arrow centred, the grid anchored top-left (spec 05); not in the app: GitHub runs the UI tests in 3 iPhone + 2 Mac groups side by side (§27), the fifth Escape test runs on the Mac only, the TestFlight log step can no longer fail a release (§28) |
 | 0.64 | 6 Oct 2026 | Drop-downs, your own bags, and sections | N3 C3 | every pick-one list on a thing's page and a template's row is a `DropDown` (§ DropDown); Kept at home from his places (a new place joins Your choices); a trip sorts by Section from one Sorting drop-down; a thing's Section on each template set from its page (spec 05); Usually packed in = his own bags only (`bagNames()`); the thing's page in his order; the cabin switches without explanations; guide: Packing a trip's Sorting line, the template row's drop-downs, Care's three thing-page lines |

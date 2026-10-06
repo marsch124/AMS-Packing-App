@@ -25,6 +25,7 @@ enum Releases {
                           "Lines without air: a trip's packing list, a template's things, To do, To buy and a grab list show each line as tall as its words \u{2014} far more on one screen.",
                           "Settings: What's new, How it works, Your first real trip and Open a shared link sit together in one card, and the cards are closer. The grab buttons on Home are one slim line each.",
                           "Every screen's top line is tidied: the title and the buttons beside it sit on one line, and the empty strip at the top is gone. On Home, Grab and go is the first line.",
+                          "On the Mac the window has no title bar any more: each tab's title and buttons sit up beside the three window buttons, so the screen starts higher. Drag that top strip to move the window.",
                           "Share's arrow sits in the middle of its button. While arranging a template, a heading's \u{2261} is purple on a soft purple patch and a thing's \u{2261} light grey, so they are easy to tell apart."]),
         Release(version: "0.66", date: "6 Oct 2026", title: "Column widths",
                 new: ["All your things \u{00B7} table: make a column wider or narrower \u{2014} drag the short line at the right edge of its heading, the Thing column too. Each keeps its width; a double tap on the line puts back its own."]),
