@@ -21,7 +21,6 @@ jobs:
           xcodebuild test -project AMSPacking.xcodeproj -scheme AMSPacking -destination "platform=macOS" \
             -derivedDataPath build -resultBundlePath Probe-Mac.xcresult -collect-test-diagnostics never \
             -only-testing:$T/testATripSortedBySectionReadsUnderItsSections \
-            -only-testing:$T/testEveryRowShowsTheTickTheTripHolds \
             CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
       - name: Keep the results
         if: always()
