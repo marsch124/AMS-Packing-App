@@ -1306,7 +1306,11 @@ picture of Trips — every tab built this row itself, aligned on the title's fir
 so a 36-pt icon button stood up from the baseline about 10 pt higher than the title, and left an empty band at the
 top of every tab ("The area above Grab and go is underused"). UI `testEveryTabsHeaderIsOnOneCentreLine` checks on
 Home, Trips, Templates, Care and To do that every button of the line sits within 1.5 pt of the title's centre line
-and nothing reaches above the top of the screen (the iPhone's status bar, the Mac's title bar; 2 pt allowed). On
+and nothing reaches above the top of the screen (the iPhone's status bar, the Mac's title bar; 2 pt allowed), and
+that Settings' first card (`settings-lists`) does not either; it keeps a picture of each tab ("header-<tab>"). The
+top of the screen is the screen's own frame, but at least the foot of the iPhone's status bar (the scroll view
+reaches up under it) — on the Mac, should the screen reach under the title bar, the bar's foot worked out from the
+traffic lights. On
 0.66 it was red on four tabs (the magnifier 10–11 pt off everywhere, Home's Grab Lists and Templates' + New 2.5 pt);
 planted again by aligning `ScreenHeader`'s row on `.firstTextBaseline`, the same four.
 

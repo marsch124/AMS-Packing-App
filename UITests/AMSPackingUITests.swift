@@ -7374,6 +7374,12 @@ final class AMSPackingUITests: XCTestCase {
                     "\(name): \(id) reaches above the screen's top (\(icon.frame.minY) < \(top))")
             }
         }
+        // Settings has no header line; its first card starts where the others' first line does.
+        tab(app, "settings")
+        let first = app.buttons["settings-lists"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "Settings has no Your choices")
+        shot(app, "header-settings")
+        XCTAssertGreaterThanOrEqual(first.frame.minY, screenTop(app, "settings") - 2, "Your choices reaches above the screen's top")
     }
 
     /// His note on 0.63, "The area above Grab and go is underused": Grab and go is
