@@ -1205,6 +1205,12 @@ pill carries the shortcut and Done gives it up, so Escape ends Arrange (a headin
 dropped) and a second Escape closes the page; meanwhile the page cannot be swiped away (`interactiveDismissDisabled`),
 so the iPhone's own ⌘. does not close it first.
 
+**Escape tests on the iPhone** (0.63): the four window-by-window Escape tests (`testEscapeClosesTheTripsWindows`,
+`testEscapeEndsArrangingWithoutSavingAHeading`, `testEscapeClosesSettingsWindowsAndNeverReplaces`,
+`testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving`) skip on the iPhone (`XCTSkip("Escape is checked on the Mac")`):
+GitHub's iPhone (iOS 26, on-screen keyboard) did not deliver ⌘. there; the Mac run checks every one.
+`testEscapeCancelsAThingAndClosesCaresWindows` still runs on both.
+
 **Tests.** `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (Your things New + the line goes after typing, Your bags,
 To buy, Grab Lists Make, a grab list's Add, Your choices' first Add, a template's Add, Rename to another template's
 name, a row's new section, the trip Weather button; each must exist, be ENABLED, and answer on `<id>-needs`; all
@@ -1537,8 +1543,8 @@ runs it first). Four jobs, in parallel:
 |---|---|---|---|
 | `core` — The model (Core package) | macos-15 | 15 min | `cd Core && swift test` (both model test targets); then (0.62) `python3 tools/release-to-testers.py --self-check` — the "What to Test" requests checked without the network (§28) |
 | `parity` — Parity with the web app's model | macos-15 | 20 min | checks out the web app's repository into `web-app/`, Node 22, `PARITY_MODEL=$PWD/web-app/js/model.js tools/parity/run.sh --invented` (§31) |
-| `iphone` — UI tests — iPhone | macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 120 min | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test` with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone.xcresult` |
-| `mac` — UI tests — Mac | macos-26 | 120 min (its own comment since 0.62 — it was a copy of the iPhone job's) | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
+| `iphone` — UI tests — iPhone | macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 180 min (120 until 0.63 — 0.63's run on GitHub stopped at 158 of 167 tests) | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test` with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone.xcresult` |
+| `mac` — UI tests — Mac | macos-26 | 180 min (120 until 0.63; its own comment since 0.62) | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
 
 Timeout history (comments): 30 min outgrown at 48 tests (0.25), 55 nearly outgrown at 67 tests (0.46), 120 since 108
 UI tests (0.58) when the iPhone job passed every test and was cancelled at 80 minutes. Both UI jobs also run both
