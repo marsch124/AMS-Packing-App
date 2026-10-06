@@ -1,0 +1,34 @@
+# A short run of chosen Mac UI tests, on a probe branch only — so a Mac-only
+# failure can be checked in minutes without taking over the owner's screen.
+name: Mac probe
+on:
+  push:
+    branches: ['probe/**']
+jobs:
+  mac:
+    name: Mac probe
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate the project
+        run: xcodegen generate
+      - name: Chosen UI tests on the Mac
+        run: |
+          T=AMSPackingUITests/AMSPackingUITests
+          xcodebuild test -project AMSPacking.xcodeproj -scheme AMSPacking -destination "platform=macOS" \
+            -derivedDataPath build -resultBundlePath Probe-Mac.xcresult -collect-test-diagnostics never \
+            -only-testing:$T/testWhatsNewStartsWithThisVersion \
+            -only-testing:$T/testTheCopyKeptBeforeARestoreBringsEverythingBack \
+            -only-testing:$T/testAHeadingIsDraggedWithItsThings \
+            -only-testing:$T/testAThingIsDraggedUnderAnotherHeading \
+            -only-testing:$T/testEscapeEndsArrangingWithoutSavingAHeading \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Probe-Mac
+          path: Probe-Mac.xcresult
