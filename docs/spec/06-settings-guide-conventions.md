@@ -61,8 +61,8 @@ order in the code:
 `.fileImporter` (open a `.json`); `.fileExporter` (save the
 backup) — system windows, each opened only by its own button. The guide doors and the shared-link door own their OWN
 sheets (`GuideDoors`, `OpenSharedDoor`) because "several sheets on one view is a trap met in Search" (GuideScreen.swift
-comment). A restore swiped away on the iPhone answers "no" from inside the sheet (`RestoreSheet`'s `onDisappear`,
-0.63), so the status line says "Nothing was replaced." (§14).
+comment). Every answer to a restore comes from inside the sheet once it has gone (`RestoreSheet`'s `onDisappear`, 0.63), a
+swipe-away answering "no", so the status line says "Nothing was replaced." (§14).
 
 **State held by the screen** (`@State`, lost when the tab is left): `exporting`, `saving` (the backup document, built when Save is pressed — 0.62), `status` (the line under Save),
 `lists` (Your choices open), `pending: PendingRestore?` (the file already read and checked, waiting for his yes),
@@ -926,7 +926,7 @@ the live "When" steps and conditions as they were): parse the JSON and require
 **The sheet** (container id `restore-detail`; `.frame(minWidth: 420, minHeight: 520)` on the Mac only — 0.62; on the
 iPhone it was wider than the screen and its edges were cut off):
 - Header: **"Restore from a file"** (22 heavy ink) and **Cancel** (outlined `HeaderButtonStyle`, slate, id
-  `restore-cancel`) → `answer(false)` + dismiss. Escape presses it (⌘. on an iPhone keyboard — 0.62); Return
+  `restore-cancel`) → closes the sheet; the answer "no" is given once it has gone. Escape presses it (⌘. on an iPhone keyboard — 0.62); Return
   presses nothing, so no key ever replaces.
 - "Everything on this device is replaced by what the file holds." (16 medium ink).
 - Column heads **"The file"** and **"Now"** (15 heavy muted, 70 wide, right-aligned).
@@ -938,16 +938,18 @@ iPhone it was wider than the screen and its edges were cut off):
   there are more than three, else "." (16 semibold red, id `restore-fewer`).
 - "A copy of what is on this device now is written first, so there is a way back." (15 medium muted).
 - **"Replace everything on this device"** — full width, min height 52, red fill, 17 bold white, id
-  `restore-confirm` → `answer(true)` + dismiss.
+  `restore-confirm` → closes the sheet; the answer "yes" is given once it has gone.
 
-**After the answer** (`pending = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
+**After the answer** — given by `RestoreSheet`'s `onDisappear`, i.e. only once the sheet has GONE (0.63: on the Mac,
+restoring while the sheet was still closing left it attached but invisible, and Settings took no more clicks — the
+kept copy's row did nothing, found on GitHub's Mac run) — (`pending = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
 (1) `RescueCopies.write(current)` — BEFORE anything is replaced; (2) `commit(Importer.restoring(imported, over:
 current))` — the record difference between what was held and the file's library (with the devices' check-ins kept,
 0.62) is applied to the store (everything else not in the file is deleted); (3) `reload()`. Then `copies` is re-read
 and status = "Restored from the file: <n> template(s), <n> thing(s) and <n> trip(s). A copy of what was here is kept
 on this device." (the counts since 0.62); an error → its description. Dismissing the sheet any other way — swiping it
-down on the iPhone — answers "no" as the sheet goes: `RestoreSheet` keeps `answered` (set by Cancel and Replace)
-and its `onDisappear` calls `answer(false)` when neither was pressed, so the status says what Cancel says: "Nothing
+down on the iPhone — answers "no": `RestoreSheet` keeps `choice` (set by Cancel or Replace, nil otherwise) and its
+`onDisappear` calls `answer(choice ?? false)`, so the status says what Cancel says: "Nothing
 was replaced." (0.63; in 0.62 it was the sheet's `onDismiss`, dropped because of the Mac — item 18; until then the
 status said nothing — Open questions 17).
 
