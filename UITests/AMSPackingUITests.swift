@@ -92,6 +92,14 @@ final class AMSPackingUITests: XCTestCase {
     /// Selected — and there to ask. Same reason as `words`.
     private func isOn(_ e: XCUIElement) -> Bool { e.exists && e.isSelected }
 
+    /// The copy of a row that is on screen. After the sorting changes, the Mac's list can
+    /// keep the row it showed before far below its window — unticked, not hittable — beside
+    /// the real one (GitHub's Mac, 6 Oct 2026: two "trip-line-7", at y 625 ticked and y 1450
+    /// not). So a check asks the one that can be tapped; nil = none on screen.
+    private func shownRow(_ app: XCUIApplication, _ id: String) -> XCUIElement? {
+        app.buttons.matching(identifier: id).allElementsBoundByIndex.first { $0.exists && $0.isHittable }
+    }
+
     /// Keeps a picture of the screen when asked to: the folder in SHOTS_DIR, which
     /// xcodebuild hands the runner when the line starts `TEST_RUNNER_SHOTS_DIR=<folder>`.
     /// No test switches to night mode: put the simulator in dark mode first
@@ -3995,14 +4003,12 @@ final class AMSPackingUITests: XCTestCase {
         // Lights: one tick takes its one line; folding hides it, opening shows it again.
         tap(app, id: "trip-group-1-all")
         XCTAssertTrue(waitUntil { self.words(progress) == "1/9" }, "ticking Lights did not tick its line: '\(words(progress))'")
-        XCTAssertTrue(app.buttons["trip-line-7"].exists, "the batteries are not shown under Lights")
-        // The Mac's list shows the line twice while the tick animates (GitHub's Mac probe,
-        // 6 Oct 2026: "Multiple matching elements"), so ask the first one until it settles.
-        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-line-7"].firstMatch) }, "the batteries were not ticked with their section")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7") != nil }, "the batteries are not shown under Lights")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7")?.isSelected == true }, "the batteries were not ticked with their section")
         tap(app, id: "trip-group-1-fold")
-        XCTAssertTrue(waitUntil { !app.buttons["trip-line-7"].exists }, "Lights did not fold away")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7") == nil }, "Lights did not fold away")
         tap(app, id: "trip-group-1-fold")
-        XCTAssertTrue(waitUntil { app.buttons["trip-line-7"].exists }, "Lights did not open again")
+        XCTAssertTrue(waitUntil { self.shownRow(app, "trip-line-7") != nil }, "Lights did not open again")
 
         // Everything else, last.
         XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-group-2-fold"), "no third heading")
