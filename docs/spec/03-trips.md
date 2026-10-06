@@ -168,9 +168,19 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off.) Until 0.67: a "Quick" switch at the
    end of the Dates line (id `trip-quick`) and, only while it was on, a green framed note
    (`QuickNote`, id `trip-quick-note`, his test C.7) — both gone.
-3. **Date range picker** — always there (0.67; until then only while a "Dates" switch, id
-   `trip-dates`, was on — the switch is gone). Its grid starts CLOSED; with no day picked the field
-   says "Add dates". See the next section.
+3. **Dates: the month grid itself, always OPEN** (`DateRangePicker(inline: true, grid: "trip-range")`,
+   0.67 — his words: "I would like the date picker to be present all the time, and then take away the
+   Dates checkbox", then the same evening "always having the date picker OPEN in Create new Trip").
+   No field, no OK, no Cancel: the heading "Dates" (Subheadline semibold blue, id `trip-dates-title`),
+   the month (two side by side when ≥ 600 wide — the Mac), only the weeks the month needs, day cells
+   `Metrics.compact` tall (32 / Mac 24), 2 pt between rows; under it one line — "No dates" (muted),
+   "Now tap the last day" (muted) or "9 Oct – 11 Oct · 2 nights" (ink; Subheadline semibold mono, id
+   `trip-range-summary`) — with **Clear dates** beside it on the right while there are dates (id
+   `trip-range-clear`). The first tap is the first day, the second the last — set at once. Grid ids
+   `trip-range-day-YYYY-MM-DD`, `trip-range-title-<n>`, `trip-range-prev`, `trip-range-next` (Trip
+   settings' grid keeps `range-*`; the two would otherwise share names while Trip settings is open over
+   Home). Until 0.67: a "Dates" switch (`trip-dates`) showing the field and its grid. See the next
+   section.
 5. **One block of pills per activity group** that has templates, in `GROUPS` order (GA, WET, OE) — and,
    last, **"OTHER TEMPLATES"** for templates with no activity area (0.62; see "Templates offered").
    Heading: `groupHeading(id, label)` = "GA · GOAL ACTIVITY", "WET · WORKOUT, EXERCISE & TRAINING",
@@ -223,8 +233,11 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
 
 - **Still needed** (`needs()`): name blank (jsTrim) AND no template → "Give the trip a name and pick
   at least one template."; name blank → "Give the trip a name."; no template → "Pick at least one
-  template."; else "". The line appears only after a press of Create; from then on it follows every
-  change of the name or the template pills, and disappears when nothing is missing.
+  template."; else "" — and, after any of these, "Tap the trip's last day — the same day again for a
+  day trip." while only the first day is tapped (0.67: Create never makes a day trip by accident; the
+  grid tells Home through `onWaiting`). The line appears only after a press of Create; from then on it
+  follows every change of the name, the template pills or the grid, and disappears when nothing is
+  missing.
 - **Create** with something missing: nothing is made; the line says what; a missing name focuses the
   name field.
 - **Create** with name + ≥1 template: a draft `newEvent(name: jsTrim(name), mode: quick ? "quick" :
@@ -238,7 +251,7 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   `Library.createTrip(draft)` then: `coerceEvent`, an id if empty, `nights = nightsBetween(start,
   end) ?? 0`, `entries = buildTotalEntries(trip, resolvedTemplates())`, `generatedAt = createdAt =
   updatedAt = now`, appended to `trips`.
-- After creating: name, templates, each workout's contexts, the dates (back to "Add dates"), Quick (back
+- After creating: name, templates, each workout's contexts, the dates (back to "No dates"), Quick (back
   to Full trip), Laundry and laundry nights are reset;
   **Transport, Season, Food and the two dates are NOT reset** (they stay as last chosen until the
   view is rebuilt). The new trip opens as a sheet. Kept so on purpose (the spec pass, 5 Oct 2026):
@@ -248,8 +261,9 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   and its weather card asks "Where is this trip?" first thing; Trip settings has Place too.
 - Date strings: `HomeScreen.ymd` formats in the device's time zone, Gregorian, en_US_POSIX — the
   picker's dates are local midnights, so the day picked is the day stored.
-- Initial dates (before any pick): NONE — the field says "Add dates" and a trip created without a
-  tapped day has no dates (0.67; the same as the old Dates switch left off). The two `Date`s behind it
+- Initial dates (before any pick): NONE — the line under the grid says "No dates" and a trip created
+  without a tapped day has no dates (0.67; the same as the old Dates switch left off). The grid opens
+  on this month. The two `Date`s behind it
   start at now and now + 2 × 86 400 s but are stored only once a day has been tapped. The date picker
   here uses the default tint (blue, `AppSection.home.color`); Trip settings passes green.
 
@@ -274,8 +288,13 @@ a sheet window.
 ### Tests
 UI: `testHomeBuildsATrip` (Create never greyed; early press says "Give the trip a name and pick at
 least one template.", then "Pick at least one template." after typing; the line goes; the trip opens
-with lines; it is listed as `trip-row-1`), `testDatesArePickedLikeBooking` (the field says "No dates"
-before a tap), `testContextSitsUnderTheWorkouts` (Context absent until a WET pill, below the workouts,
+with lines; it is listed as `trip-row-1`), `testDatesArePickedLikeBooking` (0.67: the grid open at once,
+no field, "No dates"; first day → "Now tap the last day", last day → "<d> – <d> · 2 nights" with no OK; a
+tap after a range starts a new one, an earlier day becomes the first; Create with only the first day says
+"last day" and makes nothing; the last day tapped, the line goes and the trip keeps its dates — red with
+the grid hidden until a tap: "the month grid is not open on Create new trip", and with Create not waiting
+for the last day: "Create with only a first day did not ask for the last: ''"),
+`testContextSitsUnderTheWorkouts` (Context absent until a WET pill, below the workouts,
 above Transport, Swim's pills `trip-context-1-*` set in > 24 pt), `testTheDateGridCanBeLeftAndQuickSaysSo`
 (the Quick line is there with Full trip AND with Quick picked), `testABagOnTheTripSaysWhetherItGoesInTheCabin`
 (`trip-kind-note` contains "Transport still counts"), **0.67:** `testFullTripOrQuickIsChosenUnderTheName`
@@ -315,19 +334,23 @@ out of this date"); OK/Cancel and staying open after the last day from the field
 ("When I choose the end date, don't just pop out back, but stay there and present an OK button or a
 cancel button", 0.56). Replaced the two From/To date wheels (0.21). **Always on the form since 0.67**
 — his words (6 Oct 2026): "I would like the date picker to be present all the time, and then take away
-the Dates checkbox." — with a no-dates state ("Add dates") and **Clear dates** in the grid, which took
-over the one thing the switch did that nothing else could: take a trip's dates away.
+the Dates checkbox." — with a no-dates state and **Clear dates**, which took over the one thing the
+switch did that nothing else could: take a trip's dates away. The same evening, for Create new trip:
+"always having the date picker OPEN in Create new Trip" — the **inline** grid.
 
-**How it is reached and left.** Always on Create new trip (under Full trip | Quick) and in Trip settings
-(under Place), its grid CLOSED in both (`open` defaults to false since 0.67; until then Create new trip
-opened it at once, under a Dates switch). The field toggles the grid; OK, Cancel and Clear dates close it.
+**How it is reached and left.** Two forms of one view:
+- **Inline** (`inline: true`, Create new trip, under Full trip | Quick): the grid itself, always open —
+  no field, no OK or Cancel; described under Create new trip, item 3. It shares the month, the day
+  cells and the tapping rules below; it adds `onWaiting` (Home's Create waits for the last day).
+- **With a field** (Trip settings, under Place): the field below, its grid CLOSED (`open` defaults to
+  false). The field toggles the grid; OK, Cancel and Clear dates close it. (Until 0.67 Create new trip
+  had this form too, its grid opened at once under a Dates switch.)
 
 ### What is on screen
 
-1. **The field** (a button, id `<id>-field`: `trip-dates-field` on Create new trip, `tripset-dates-field`
-   in Trip settings — 0.67: Home's field is now always there, and on the Mac its window stays in the
-   tree behind the Trip settings sheet, so one id would name two fields; the parameter `id`, default
-   "trip-dates"): calendar mark (24 pt, tint), a small caption "Dates" — or "Now tap the last day"
+1. **The field** (the field form only — Trip settings; a button, id `<id>-field` = `tripset-dates-field`:
+   the parameter `id`, default "trip-dates", which the inline grid uses only for its heading
+   `trip-dates-title`. Until 0.67 the field was `trip-dates-field` in both places): calendar mark (24 pt, tint), a small caption "Dates" — or "Now tap the last day"
    while waiting for the last day — (Footnote semibold muted), then (Body semibold, one line, scales to
    0.8; id `<id>-label`): **"Add dates" in the tint while the trip has none** (0.67), else
    "Sat 26 Sep — Sun 27 Sep" in ink (em dash with spaces), or only the first day while waiting; on the
@@ -336,7 +359,7 @@ opened it at once, under a Dates switch). The field toggles the grid; OK, Cancel
    `Theme.line` closed. Accessibility **value** = "No dates" (none yet), "Sat 26 Sep — Sun 27 Sep · 1
    night", or only the first day while waiting — the Mac folds the texts into the button, so tests read
    the value.
-2. **The grid** (when open), a card (padding 12, corner 12):
+2. **The grid** (when open), a card (padding 12, corner 12) — ids `<grid>-…`, `grid` = "range" here:
    - One month, or **two side by side when the grid is at least 600 pt wide** (measured with
      `onGeometryChange`; in practice the Mac). With one month both arrows sit on it; with two, ‹ on
      the first and › on the second.
@@ -387,6 +410,8 @@ opened it at once, under a Dates switch). The field toggles the grid; OK, Cancel
 - Words are fixed English on every device ("Sat 26 Sep", "January"…), not the device language.
 - With no Dates switch (0.67) the picker lives as long as its form; Create new trip resets only its
   `dated` after a create (the two `Date`s stay, unseen until a day is tapped).
+- **Inline:** a tap is final at once (no OK); Clear dates leaves the grid open; the first month shown is
+  the first day's, or this month with no dates; the arrows page from there.
 
 ### Data
 Binds two `Date`s and `dated` (Bool: whether the trip has dates at all, 0.67) owned by the parent. A tapped day is the local midnight of that day; the parent's
@@ -396,17 +421,21 @@ now), which is harmless because only the day is ever compared (`startOfDay`) or 
 device time zone. Tint: a parameter (default blue; Trip settings passes green).
 
 ### iPhone vs Mac
-Two months when ≥ 600 pt wide (Mac windows), one on the iPhone. Otherwise identical.
+Two months when ≥ 600 pt wide (Mac windows — Create new trip's inline grid too), one on the iPhone. Day
+cells `Metrics.compact`: 32 / Mac 24. Otherwise identical.
 
 ### Tests
-UI: `testDatesAreAlwaysThereAndCanBeCleared` (0.67: the field there from the start saying "No dates",
-no `trip-dates` / `tripset-dates` switch, grid closed; picked then Clear dates on Create new trip → "No
-dates" and the grid closed; a trip made so has none in Trip settings; dates given there and saved, then
+UI: `testDatesAreAlwaysThereAndCanBeCleared` (0.67: on Create new trip the grid open from the start —
+red with it hidden until a tap: "the month grid is not open on Create new trip" — no switch, no field,
+"No dates", no Clear dates; picked then Clear dates → "No dates" and the grid still open; a trip made so
+has none in Trip settings, which has no `tripset-dates` switch; dates given there and saved, then
 Clear dates and saved → "No dates" — red with Clear dates not clearing: "Clear dates did not take them
-away: 'Fri 9 Oct — Sun 11 Oct · 2 nights'"), `testDatesArePickedLikeBooking` (first then last day, value strings, "2 nights", "1 night", a day
-before the first becomes the first, OK closes, the trip keeps the dates — its row writes them "27 Sep 2026" although the app runs American-set (`-AppleLocale en_US`), `testTheDateGridCanBeLeftAndQuickSaysSo` (OK
-before the last day keeps the grid and shows `range-needs`; Cancel restores the value — since 0.67 that is
-"No dates", the trip having had none),
+away: …'" — seen with the field form, before the grid on Home became inline), `testDatesArePickedLikeBooking`
+(the inline grid: first then last day, "2 nights", "1 night", a day before the first becomes the first,
+Create waits for the last day, the trip keeps the dates — its row writes them "27 Sep 2026" although the app
+runs American-set (`-AppleLocale en_US`). **The four tests below run in Trip settings since 0.67** (the field,
+OK and Cancel live there; `openTripSettingsDates` opens the sample trip's): `testTheDateGridCanBeLeftAndQuickSaysSo`
+(OK before the last day keeps the grid and shows `range-needs`; Cancel restores the trip's dates),
 `testTheDateGridWaitsForOK` (after the last day the grid stays, summary "3 Nov – 13 Nov · 10 nights"
 form, OK keeps), `testTheDateGridStartsOverAndCancelPutsItBack`, `testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill`
 (the field with only the first day keeps the grid and shows `range-needs`; with a whole range it closes;

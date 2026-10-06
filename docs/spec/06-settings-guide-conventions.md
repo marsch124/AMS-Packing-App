@@ -649,8 +649,9 @@ no entry shows no marker anywhere (and fails the test).
    (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on
    Home — when full, you pick which one steps back; Make refuses a name already in use (0.62). (3) The countdown to the next trip under the grab lists; tap
    opens the trip. (4) Create new trip: name, then Full trip or Quick (Quick = only the ticked templates, no common
-   base or transport kit, said in the line under it); the dates (tap the field, first day, last day; the line says
-   range and nights; OK keeps, Cancel restores, Clear dates leaves none; no day tapped = no dates) (0.67). (5) Create trip is always ready; what is missing is said under it.
+   base or transport kit, said in the line under it); the dates in the calendar that is always open (first day,
+   last day, set at once; the line under it says range and nights; Clear dates leaves none; no day tapped = no
+   dates; Trip settings has the field with OK and Cancel) (0.67). (5) Create trip is always ready; what is missing is said under it.
    (6) So is every Add, New, Make, Weather: empty press adds nothing and a short red line says what is missing,
    gone as soon as you type. (7) Pick templates, Transport, Season, Food; workout colours (Swim blue, Bike yellow,
    Run green, Strength orange, Breath work lavender, Mobility pink); each picked workout its own Context line
@@ -1436,7 +1437,7 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
    separate elements; and a button inside a button never reaches the tree at all on either platform. So a text a
    test must read lives OUTSIDE the Button/Toggle, side by side with it (the trip section name beside its fold arrow;
    *Remind me to pack*'s next line under the Toggle; the What's-new version as a plain text), or the button exposes it
-   as its `accessibilityValue` (`trip-dates-field`), or a non-control box puts it in its LABEL — the Mac drops the
+   as its `accessibilityValue` (`tripset-dates-field`), or a non-control box puts it in its LABEL — the Mac drops the
    value of a box that is not a control (`loop-step-<n>`). Rows that are buttons are read through `app.buttons[id]`.
 2. The Mac reports a text's words as its VALUE, the iPhone as its LABEL — the tests' `words()` reads both.
 3. A Toggle is a switch on the iPhone and a check box on the Mac; a dropdown is a button on the iPhone and a pop-up
@@ -1806,7 +1807,7 @@ one more added at a time"; every test is seen to fail before it is committed (RE
 | `report` | TAP-REPORT: the element's state, `trip-create`'s state, window and scroll frames, the first 8 000 characters of the tree, a screenshot; fails. |
 | `waitUntil(timeout = 5, ok)` | polls every 0.2 s, one last check at the end. |
 | `switchNamed` / `isSwitchOn` / `setSwitch` | a switch (iPhone) or check box (Mac); on = value "1"/true; set by tapping (iPhone: at 95 % of the width, on the switch not its words), up to 3 times. |
-| `dayFromToday`, `pickDay`, `pickDates` | the month grid: `pickDates` first taps `trip-dates-field` (always there since 0.67; it switched Dates on before); page with `range-next`/`range-prev` towards the month, tap `range-day-YYYY-MM-DD`, OK with `range-ok`. |
+| `dayFromToday`, `pickDay(…, grid:)`, `pickDates`, `openTripSettingsDates` | the month grids: `pickDay` pages with `<grid>-next`/`<grid>-prev` towards the month and taps `<grid>-day-YYYY-MM-DD` — `grid` "range" (Trip settings', default) or "trip-range" (Create new trip's, always open since 0.67); `pickDates` taps two days in Create new trip's grid and waits for "… night(s)" under it (no OK there); `openTripSettingsDates` opens the sample trip's Trip settings and its grid (the field, OK `range-ok` and Cancel live there). |
 
 Traps recorded with them: the hardware keyboard exists locally but not on GitHub's simulator, so a control under the
 on-screen keyboard takes no tap while looking hittable; `scrollViews.firstMatch` is the screen BEHIND an open sheet,

@@ -656,9 +656,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-events"))
         XCTAssertTrue(app.buttons["trip-row-1"].waitForExistence(timeout: 5), "the new trip is not listed beside the sample one")
     }
-    /// The trip's dates, Booking.com's way — his example (2026-09-26): one field,
-    /// a month grid, tap the first day and then the last; a tap before the first
-    /// starts again; and the trip made keeps the dates he picked.
+    /// The trip's dates, Booking.com's way — his example (2026-09-26): a month grid,
+    /// tap the first day and then the last; a tap before the first starts again; and
+    /// the trip made keeps the dates he picked. On Create new trip the grid is always
+    /// open (0.67): no field, no OK — and Create waits for the last day.
     func testDatesArePickedLikeBooking() {
         // An American-set device writes "Oct 1, 2026" its own way — the trip row must not.
         let app = launch("-uiTesting", ["-AppleLocale", "en_US"])
@@ -670,64 +671,57 @@ final class AMSPackingUITests: XCTestCase {
             let c = cal.dateComponents([.year, .month, .day], from: d)
             return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
         }
-        let wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
         let mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        func pretty(_ d: Date) -> String {
-            let c = cal.dateComponents([.weekday, .day, .month], from: d)
-            return "\(wd[c.weekday! - 1]) \(c.day!) \(mo[c.month! - 1])"
+        func short(_ d: Date) -> String {
+            let c = cal.dateComponents([.day, .month], from: d)
+            return "\(c.day!) \(mo[c.month! - 1])"
         }
-        let months = ["January", "February", "March", "April", "May", "June", "July",
-                      "August", "September", "October", "November", "December"]
-        /// Bring a day's month on screen: page towards it from the month showing.
-        func pick(_ d: Date) {
-            let id = "range-day-\(ymd(d))"
-            for _ in 0..<3 where !app.buttons[id].exists {
-                let shown = words(app.staticTexts["range-title-0"]).split(separator: " ")
-                let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
-                let y = Int(shown.last ?? "") ?? 0
-                let c = cal.dateComponents([.year, .month], from: d)
-                tap(app, id: (c.year! * 12 + c.month!) > (y * 12 + m) ? "range-next" : "range-prev")
-            }
-            tap(app, id: id)
-        }
+        func pick(_ d: Date) { pickDay(app, d, grid: "trip-range") }
 
-        // The field is there from the start (0.67: no Dates switch); a tap opens the grid.
-        // It says its dates as its VALUE — the Mac folds a button's texts into it.
-        let field = app.buttons["trip-dates-field"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "no date field on Create new trip")
-        func says() -> String { field.value as? String ?? "" }
+        // The month grid is OPEN on the form from the start (0.67, his words: "always having
+        // the date picker OPEN in Create new Trip") — no field, no OK; the line under it
+        // says what is set.
+        XCTAssertTrue(app.staticTexts["trip-range-title-0"].waitForExistence(timeout: 5), "the month grid is not open on Create new trip")
+        XCTAssertFalse(app.buttons["trip-dates-field"].exists, "Create new trip still has a field to open the grid")
+        let summary = app.staticTexts["trip-range-summary"]
+        func says() -> String { words(summary) }
         XCTAssertEqual(says(), "No dates", "a new trip starts with dates nobody picked")
-        tap(app, id: "trip-dates-field")
-        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
 
-        // First day, then last day.
+        // First day, then last day — set at once.
         pick(day(3))
-        XCTAssertTrue(waitUntil { says() == pretty(day(3)) }, "the first day is not shown: '\(says())'")
-        XCTAssertFalse(says().contains("night"), "nights counted before the last day was picked: '\(says())'")
+        XCTAssertTrue(waitUntil { says() == "Now tap the last day" }, "the first day did not ask for the last: '\(says())'")
+        XCTAssertTrue(isOn(app.buttons["trip-range-day-\(ymd(day(3)))"]), "the first day is not marked")
         pick(day(5))
-        XCTAssertTrue(waitUntil { says() == "\(pretty(day(3))) — \(pretty(day(5))) · 2 nights" },
-                      "the range is not shown: '\(says())'")
-        // It waits for OK (their field test, Oct 2026).
-        tap(app, id: "range-ok")
-        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "OK did not close the grid")
+        XCTAssertTrue(waitUntil { says() == "\(short(day(3))) \u{2013} \(short(day(5))) \u{00B7} 2 nights" },
+                      "the range is not set: '\(says())'")
+        XCTAssertFalse(app.buttons["trip-range-ok"].exists || app.buttons["range-ok"].exists, "there is an OK to press")
 
-        // Open it again: a new first day — and a day BEFORE it, while the last day is
-        // awaited, becomes the new first day rather than an end before the start.
-        tap(app, id: "trip-dates-field")
-        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the field did not open the grid again")
+        // A tap after a whole range starts a new one — and a day BEFORE its first, while the
+        // last day is awaited, becomes the new first day rather than an end before the start.
         pick(day(2))
-        XCTAssertTrue(waitUntil { says() == pretty(day(2)) }, "a new first day is not shown: '\(says())'")
+        XCTAssertTrue(waitUntil { says() == "Now tap the last day" }, "a tap after a whole range did not start a new one: '\(says())'")
         pick(day(1))
-        XCTAssertTrue(waitUntil { says() == pretty(day(1)) }, "an earlier day did not become the first day: '\(says())'")
-        pick(day(2))
-        XCTAssertTrue(waitUntil { says() == "\(pretty(day(1))) — \(pretty(day(2))) · 1 night" }, "'\(says())'")
-        tap(app, id: "range-ok")
-        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "OK did not close the grid")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-range-day-\(ymd(day(1)))"]) }, "an earlier day did not become the first day")
+        XCTAssertFalse(isOn(app.buttons["trip-range-day-\(ymd(day(2)))"]), "the day before stayed marked")
 
-        // The trip made keeps them.
+        // Create with only the first day: nothing is made, and it says what is missing
+        // (his rule for a main button) — never a day trip by accident.
         type("Dated trip", into: app.textFields["trip-name"])
+        hideKeyboard(app)
         select(app, app.buttons["trip-activity-0"])
         let create = app.buttons["trip-create"]
+        tapVisible(app, create)
+        let needs = app.staticTexts["trip-create-needs"]
+        XCTAssertTrue(waitUntil { self.words(needs).contains("last day") }, "Create with only a first day did not ask for the last: '\(words(needs))'")
+        XCTAssertNil(find(app, "trip-detail"), "a trip was made with only its first day")
+        pick(day(2))
+        XCTAssertTrue(waitUntil { says() == "\(short(day(1))) \u{2013} \(short(day(2))) \u{00B7} 1 night" }, "'\(says())'")
+        XCTAssertTrue(waitUntil { !needs.exists }, "the line stayed after the last day was tapped")
+        bringIntoView(app, app.staticTexts["trip-kind-note"])      // the whole grid in sight
+        shot(app, "home-grid-range")
+
+        // The trip made keeps them.
+        // The trip made keeps them.
         tapVisible(app, create)
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
         tap(app, id: "trip-done")
@@ -1566,25 +1560,23 @@ final class AMSPackingUITests: XCTestCase {
     /// one height — six rows every month — so OK never moves under his finger.
     func testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill() {
         let app = launch()
-        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        tap(app, id: "trip-dates-field")
+        openTripSettingsDates(app)                  // the field and its OK live there since 0.67
         let grid = app.staticTexts["range-title-0"]
-        XCTAssertTrue(grid.waitForExistence(timeout: 5), "the month grid did not open")
-        let field = app.buttons["trip-dates-field"]
+        let field = app.buttons["tripset-dates-field"]
         func says() -> String { field.value as? String ?? "" }
 
         pickDay(app, dayFromToday(3))
-        tap(app, id: "trip-dates-field")
+        tap(app, id: "tripset-dates-field")
         XCTAssertTrue(app.staticTexts["range-needs"].waitForExistence(timeout: 5), "the field closed the grid with only the first day")
         XCTAssertTrue(grid.exists, "the grid closed with only the first day")
         shot(app, "date-field-needs")
         pickDay(app, dayFromToday(5))
-        tap(app, id: "trip-dates-field")
+        tap(app, id: "tripset-dates-field")
         XCTAssertTrue(waitUntil { !grid.exists }, "the field did not close the grid on a whole range")
         XCTAssertTrue(says().hasSuffix("2 nights"), "the range was not kept: '\(says())'")
 
         // Six rows, whatever the month: OK stays where it was, month after month.
-        tap(app, id: "trip-dates-field")
+        tap(app, id: "tripset-dates-field")
         XCTAssertTrue(grid.waitForExistence(timeout: 5), "the field did not open the grid again")
         let ok = app.buttons["range-ok"]
         XCTAssertTrue(ok.waitForExistence(timeout: 5))
@@ -2598,7 +2590,8 @@ final class AMSPackingUITests: XCTestCase {
 
     /// His test comments on Create new trip (2026-09-28): the date grid has a way
     /// out that puts the dates back (C.2), and Quick says what it means (C.7) — since
-    /// 0.67 in one quiet line under Full trip | Quick, there whichever is picked.
+    /// 0.67 in one quiet line under Full trip | Quick, there whichever is picked. (The
+    /// grid with its Cancel is Trip settings' since 0.67: Create new trip's is always open.)
     func testTheDateGridCanBeLeftAndQuickSaysSo() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
@@ -2610,14 +2603,10 @@ final class AMSPackingUITests: XCTestCase {
         select(app, app.buttons["trip-kind-full"])
         XCTAssertTrue(note.exists, "the line went when Full trip was picked")
 
-        tap(app, id: "trip-dates-field")
-        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
-        let field = app.buttons["trip-dates-field"]
+        openTripSettingsDates(app)
+        let field = app.buttons["tripset-dates-field"]
         let before = field.value as? String ?? ""
-        let cal = Calendar.current
-        let d = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: 1, to: Date())!)
-        let tomorrow = String(format: "range-day-%04d-%02d-%02d", d.year!, d.month!, d.day!)
-        if app.buttons[tomorrow].exists { tap(app, id: tomorrow) } else { tap(app, id: "range-next"); tap(app, id: tomorrow) }
+        pickDay(app, dayFromToday(1))
         XCTAssertTrue(waitUntil { (field.value as? String ?? "") != before }, "picking a first day changed nothing")
         // OK before the last day: the grid stays and says what is missing (his rule for
         // a main button, 2026-09-26 — never grey, and pressed too early it says why).
@@ -2644,10 +2633,9 @@ final class AMSPackingUITests: XCTestCase {
             let c = cal.dateComponents([.day, .month], from: dayFromToday(n))
             return "\(c.day!) \(mo[c.month! - 1])"
         }
-        tap(app, id: "trip-dates-field")
+        openTripSettingsDates(app)                  // the grid with OK is Trip settings' since 0.67
         let grid = app.staticTexts["range-title-0"]
-        XCTAssertTrue(grid.waitForExistence(timeout: 5), "the month grid did not open")
-        let field = app.buttons["trip-dates-field"]
+        let field = app.buttons["tripset-dates-field"]
         let summary = app.staticTexts["range-summary"]
         func says() -> String { field.value as? String ?? "" }
 
@@ -2679,15 +2667,19 @@ final class AMSPackingUITests: XCTestCase {
             let c = cal.dateComponents([.day, .month], from: dayFromToday(n))
             return "\(c.day!) \(mo[c.month! - 1])"
         }
-        pickDates(app, from: 3, to: 13)
+        openTripSettingsDates(app)                  // the grid with OK and Cancel is Trip settings' since 0.67
+        pickDay(app, dayFromToday(3))
+        pickDay(app, dayFromToday(13))
+        tap(app, id: "range-ok")
         let grid = app.staticTexts["range-title-0"]
-        let field = app.buttons["trip-dates-field"]
+        let field = app.buttons["tripset-dates-field"]
         let summary = app.staticTexts["range-summary"]
         func says() -> String { field.value as? String ?? "" }
+        XCTAssertTrue(waitUntil { !grid.exists }, "OK did not close the grid")
         let kept = says()
         XCTAssertTrue(kept.hasSuffix("10 nights"), "'\(kept)'")
 
-        tap(app, id: "trip-dates-field")
+        tap(app, id: "tripset-dates-field")
         XCTAssertTrue(grid.waitForExistence(timeout: 5), "the field did not open the grid again")
         pickDay(app, dayFromToday(5))
         pickDay(app, dayFromToday(7))
@@ -2832,7 +2824,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(isOn(quick), "Quick is picked from the start")
         XCTAssertFalse(app.switches["trip-quick"].exists || app.checkBoxes["trip-quick"].exists, "the Quick switch is still there")
         // Under the name, before the dates; its line under it.
-        let name = app.textFields["trip-name"], dates = app.buttons["trip-dates-field"]
+        let name = app.textFields["trip-name"], dates = app.staticTexts["trip-dates-title"]
         let note = app.staticTexts["trip-kind-note"]
         XCTAssertTrue(note.exists, "Quick does not say what it leaves out")
         XCTAssertGreaterThan(full.frame.minY, name.frame.maxY, "the choice is not under the name")
@@ -2869,23 +2861,26 @@ final class AMSPackingUITests: XCTestCase {
     func testDatesAreAlwaysThereAndCanBeCleared() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        let field = app.buttons["trip-dates-field"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "the date field is not there from the start")
-        func says() -> String { field.value as? String ?? "" }
-        XCTAssertEqual(says(), "No dates", "a new trip starts with dates nobody picked")
+        // The grid itself, open, with nothing tapped (his words that evening: "always having
+        // the date picker OPEN in Create new Trip") — no switch, no field, no OK.
+        XCTAssertTrue(app.staticTexts["trip-range-title-0"].waitForExistence(timeout: 5),
+                      "the month grid is not open on Create new trip")
         XCTAssertFalse(app.switches["trip-dates"].exists || app.checkBoxes["trip-dates"].exists, "the Dates switch is still there")
-        XCTAssertFalse(app.staticTexts["range-title-0"].exists, "the grid is open before the field is tapped")
-        shot(app, "home-dates-field")
+        XCTAssertFalse(app.buttons["trip-dates-field"].exists, "a field still has to be tapped to open the grid")
+        let summary = app.staticTexts["trip-range-summary"]
+        func says() -> String { words(summary) }
+        XCTAssertEqual(says(), "No dates", "a new trip starts with dates nobody picked")
+        XCTAssertFalse(app.buttons["trip-range-clear"].exists, "Clear dates is offered with no dates to clear")
+        shot(app, "home-dates-grid")
 
-        // Picked, then cleared again, on Create new trip.
+        // Picked, then cleared again, on Create new trip — the grid stays.
         pickDates(app, from: 3, to: 5)
         XCTAssertTrue(says().hasSuffix("2 nights"), "'\(says())'")
-        tap(app, id: "trip-dates-field")
-        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5))
+        bringIntoView(app, summary)
         shot(app, "home-clear-dates")
-        tap(app, id: "range-clear")
+        tap(app, id: "trip-range-clear")
         XCTAssertTrue(waitUntil { says() == "No dates" }, "Clear dates did not take them away: '\(says())'")
-        XCTAssertFalse(app.staticTexts["range-title-0"].exists, "Clear dates left the grid open")
+        XCTAssertTrue(app.staticTexts["trip-range-title-0"].exists, "Clear dates closed the grid")
 
         // A trip made so has no dates — Trip settings says so, with no switch either.
         type("Some day", into: app.textFields["trip-name"])
@@ -3245,32 +3240,44 @@ final class AMSPackingUITests: XCTestCase {
         return cal.date(byAdding: .day, value: n, to: cal.startOfDay(for: Date()))!
     }
 
-    /// Tap a day in the open month grid, paging towards its month first.
-    private func pickDay(_ app: XCUIApplication, _ d: Date) {
+    /// Tap a day in a month grid, paging towards its month first. `grid` names it: "range"
+    /// (Trip settings', opened from its field) or "trip-range" (Create new trip's, always
+    /// open since 0.67).
+    private func pickDay(_ app: XCUIApplication, _ d: Date, grid: String = "range") {
         let cal = Calendar.current
         let c = cal.dateComponents([.year, .month, .day], from: d)
-        let id = String(format: "range-day-%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        let id = String(format: "\(grid)-day-%04d-%02d-%02d", c.year!, c.month!, c.day!)
         let months = ["January", "February", "March", "April", "May", "June", "July",
                       "August", "September", "October", "November", "December"]
         for _ in 0..<3 where !app.buttons[id].exists {
-            let shown = words(app.staticTexts["range-title-0"]).split(separator: " ")
+            let shown = words(app.staticTexts["\(grid)-title-0"]).split(separator: " ")
             let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
             let y = Int(shown.last ?? "") ?? 0
-            tap(app, id: (c.year! * 12 + c.month!) > (y * 12 + m) ? "range-next" : "range-prev")
+            tap(app, id: (c.year! * 12 + c.month!) > (y * 12 + m) ? "\(grid)-next" : "\(grid)-prev")
         }
         tap(app, id: id)
     }
 
-    /// Dates on Create new trip: today + `a` to today + `b`, picked in the grid and
-    /// kept with OK (the grid waits for it since their field test, Oct 2026). The field
-    /// is always there (0.67); a tap opens the grid.
+    /// Dates on Create new trip: today + `a` to today + `b`, tapped in its always-open
+    /// grid (0.67) — set at once, no OK.
     private func pickDates(_ app: XCUIApplication, from a: Int, to b: Int) {
-        tap(app, id: "trip-dates-field")
+        pickDay(app, dayFromToday(a), grid: "trip-range")
+        pickDay(app, dayFromToday(b), grid: "trip-range")
+        let summary = app.staticTexts["trip-range-summary"]
+        XCTAssertTrue(waitUntil { self.words(summary).contains("night") }, "the range was not set: '\(words(summary))'")
+    }
+
+    /// The sample trip's Trip settings, its date grid open (the field, OK and Cancel live
+    /// there since 0.67 — Create new trip's grid is always open, without them).
+    private func openTripSettingsDates(_ app: XCUIApplication) {
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "tripset-dates-field")
         XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the month grid did not open")
-        pickDay(app, dayFromToday(a))
-        pickDay(app, dayFromToday(b))
-        tap(app, id: "range-ok")
-        XCTAssertTrue(waitUntil { !app.staticTexts["range-title-0"].exists }, "OK did not close the grid")
     }
 
     /// A grab list counts what is in hand, refuses "Ready to go" while something

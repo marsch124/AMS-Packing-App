@@ -19,6 +19,8 @@ struct HomeScreen: View {
     @State private var name = ""
     /// Whether the trip gets dates — set by tapping a day, taken away by Clear dates.
     @State private var hasDates = false
+    /// The first day is tapped and the last is not yet: Create waits for it.
+    @State private var pickingEnd = false
     @State private var start = Date()
     @State private var end = Date().addingTimeInterval(2 * 86400)
     @State private var transport = "Car"
@@ -109,11 +111,14 @@ struct HomeScreen: View {
                     // Quick check box to be placed somewhere else - more thought through".
                     // A two-way choice that says what it leaves out, not a lone switch.
                     TripKindChoice(quick: $quick, id: "trip-kind")
-                    // Always there (0.67) — his words: "I would like the date picker to be
-                    // present all the time, and then take away the Dates checkbox."
-                    // Booking.com's way, his example (2026-09-26): one field, a month grid,
-                    // first day then last day; no day tapped = a trip without dates.
-                    DateRangePicker(start: $start, end: $end, dated: $hasDates)
+                    // The month grid itself, always open (0.67) — his words: "I would like the
+                    // date picker to be present all the time, and then take away the Dates
+                    // checkbox", and then "always having the date picker OPEN in Create new
+                    // Trip". First day, then last day, set at once; no day tapped = no dates.
+                    DateRangePicker(start: $start, end: $end, dated: $hasDates, inline: true, grid: "trip-range") { waiting in
+                        pickingEnd = waiting
+                        if !stillNeeded.isEmpty { stillNeeded = needs() }
+                    }
 
                     ForEach(choices, id: \.group.id) { choice in
                         // Numbered across ALL groups, so "trip-activity-0" names one pill.
@@ -227,15 +232,19 @@ struct HomeScreen: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
     }
 
-    private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty }
+    private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty && !pickingEnd }
 
     /// What is still missing before a trip can be made, in his words — "" when nothing.
     private func needs() -> String {
         let noName = jsTrim(name).isEmpty, noList = activities.isEmpty
-        if noName && noList { return "Give the trip a name and pick at least one template." }
-        if noName { return "Give the trip a name." }
-        if noList { return "Pick at least one template." }
-        return ""
+        var said: [String] = []
+        if noName && noList { said.append("Give the trip a name and pick at least one template.") }
+        else if noName { said.append("Give the trip a name.") }
+        else if noList { said.append("Pick at least one template.") }
+        // Only the first day tapped: never a day trip by accident (the spec pass, 5 Oct
+        // 2026 — a grid closed on its first day stored one).
+        if pickingEnd { said.append("Tap the trip's last day \u{2014} the same day again for a day trip.") }
+        return said.joined(separator: " ")
     }
 
     private func create(_ flat: [PackList]) {
