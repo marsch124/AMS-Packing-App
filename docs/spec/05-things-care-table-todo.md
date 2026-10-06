@@ -761,15 +761,31 @@ apart; a field 6 pt under its heading):
    `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
    twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.
-4. **Kind of thing** — pills band "Kind of thing" (`thing-category-title`), one pill per `CATEGORIES` entry
-   (`thing-category-0` … `-11`; Electronics is `-7`), orange; single choice; the thing's category is lit.
-5. **Whose it is** — pills band (`thing-owner-title`) when `ownerChoices()` is not empty: first
-    "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026, replacing "Nobody's in
-    particular"; `thing-owner-0`), then each owner once (`thing-owner-1`…). Every owner named on a thing is offered,
-    but once per `normName`, in the FIRST spelling met (his owners list before the things' names) — so a thing
-    saying "kim" while "Kim" is offered shows no pill lit (the value compared is the exact text). With nobody
-    named anywhere (0.62): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
-    choices." (`thing-owner-none`, 15 medium muted) — it used to vanish.
+**Drop-downs (0.64).** Every PICK-ONE list on this page — Kind of thing, Whose it is, Kept at home, Usually
+packed in, When, Condition, Care — is a drop-down (`DropDown`, spec 06 §21), his word of 6 Oct 2026: "I like the
+dropdown for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere? I think it would lend
+itself perfectly for 'usually packed in', 'Kind of thing' etc." Under its heading band sits a field-like button
+(`thing-<list>`; its value = the words of the choice that stands, its label = the heading) showing the choice and
+a ▾; a tap opens the list beside it — a popover on the iPhone as on the Mac, placed by the system where there is
+room (under a field near the top, over one near the bottom) — container `thing-<list>-list`, one row per choice
+named `thing-<list>-<n>` exactly as its pill was (so `thing-category-7` is still Electronics), the chosen row
+ticked (a drawn tick in orange, selected trait). A tap on a row takes it and closes the list; nothing is stored
+before Save, as before. A blank choice (value "": "Both have one", "No bag", "Not said") is in grey on the field and
+in the list. Until 0.64 each of these lists was a row of pills. On these templates, where several may be ticked,
+stays pills.
+
+4. **Kind of thing** — drop-down (0.64; band `thing-category-title`, field `thing-category`, list
+   `thing-category-list`): one row per `CATEGORIES` entry (`thing-category-0` … `-11`; Electronics is `-7`); single
+   choice; the thing's category is ticked. A category that is none of these (from the web app) is shown on the
+   field and on a row of its own at the end, ticked (`thing-category-other`).
+5. **Whose it is** — drop-down (0.64; band `thing-owner-title`, field `thing-owner`, list `thing-owner-list`) when
+    `ownerChoices()` is not empty: first "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026,
+    replacing "Nobody's in particular"; `thing-owner-0`, grey), then each owner once (`thing-owner-1`…). Every owner
+    named on a thing is offered, but once per `normName`, in the FIRST spelling met (his owners list before the
+    things' names) — the value compared is the exact text, so a thing saying "kim" while "Kim" is offered shows
+    "kim" on the field and on a row of its own, ticked (`thing-owner-other`; until 0.64 no pill was lit). With
+    nobody named anywhere (0.62): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
+    choices." (`thing-owner-none`, 15 medium muted) — it used to vanish; no drop-down then.
 6. **On these templates** — pills band in VIOLET (templates colour, `thing-lists-title`): every template except
     the bag list (`templatesForThings()`), A–Z (`jsLocaleCompare`, base sensitivity) (`thing-lists-N`; with the sample: Common base 0,
     Hiking 1, Swim 2); several may be lit; a tap toggles.
@@ -777,33 +793,43 @@ apart; a field 6 pt under its heading):
     tap this thing." (`thing-tags-hint`, 15 medium muted).
 8. **Kept at home** — band (`thing-heading-kept`); since 0.64 CHOSEN, never typed (his word, 6 Oct 2026: "Can we
    turn Kept at home into a drop-down … so that we have a list to choose from? If we write it this way, it's a
-   possibility that the naming convention skews"): a field-like button (`thing-storage`, value = the place, "Not
-   said" in muted when none, a ▾ mark) that opens a list beside it (a popover, also on the iPhone —
-   `presentationCompactAdaptation(.popover)`; container `thing-places`): "Not said" (`thing-place-none`), his places
-   in his order (`storagePlaces()`, `thing-place-N`), the place the thing already names when it is none of his
-   (`thing-place-other`); the chosen one ticked (selected trait); a tap takes it and closes the list. At its foot "A
-   new place" (`thing-place-new`) and Add (`thing-place-add`; blank → "Type the place first." under it,
-   `thing-place-add-needs`): `Library.addPlace` puts it on Your choices' places — or, when he has it already (same
-   `choiceKey`), returns his own spelling — and the thing takes it. Until 0.64: a free-text field with his places as
-   pills under it.
-9. **Usually packed in** — pills band (`thing-bag-title`): `bagNames()` = his own bags, in his bag list's order
-   (the 17 built-in names only while he has none — then "Checked luggage" is `-2`; 0.64) (`thing-bag-N`); then the bag the thing names when it is none of those (so it is seen, lit);
-   then **"No bag"** LAST (value "" — the same "no bag" a bag's delete can leave; 0.62). Single choice; a bag
-   named in other capitals lights the offered spelling (`ThingEditor.bagChoices`).
-10. **When** — pills band (`thing-when-title`), one pill per live `PHASES` step (id and label; `thing-when-N`).
+   possibility that the naming convention skews"). The first drop-down, which the others copy — rebuilt on
+   `DropDown` the same release, its names kept: a field-like button (`thing-storage`, value = the words shown: the
+   place, or "Not said" (grey) when none; a ▾ mark) that opens a list beside it (container `thing-places`): "Not
+   said" (`thing-place-none`, the component's `blank` row), his places in his order (`storagePlaces()`,
+   `thing-place-N`), the place the thing already names when it is none of his — compared by `normName` — at the end
+   (`thing-place-other`, the component's `other` row); the chosen one ticked; a tap takes it and closes the list.
+   At its foot (the component's new-entry foot) "A new place" (`thing-place-new`) and Add (`thing-place-add`; blank
+   → "Type the place first." under it, `thing-place-add-needs`): `Library.addPlace` puts it on Your choices'
+   places — or, when he has it already (same `choiceKey`), returns his own spelling — the thing takes it and the
+   list closes. Until 0.64: a free-text field with his places as pills under it. (In the first 0.64 build its value
+   was the stored place, "" for none; on the component it is the words shown, "Not said". Its list was fixed ABOVE
+   the field; it now goes where there is room.)
+9. **Usually packed in** — drop-down (0.64; band `thing-bag-title`, field `thing-bag`, list `thing-bag-list`):
+   `bagNames()` = his own bags, in his bag list's order (the 17 built-in names only while he has none — then
+   "Checked luggage" is `-2`; 0.64) (`thing-bag-N`); then the bag the thing names when it is none of those (a row
+   in the count, ticked — not the component's `other` row, so the ids stay as the pills' were); then **"No bag"**
+   LAST (value "", grey — the same "no bag" a bag's delete can leave; 0.62). Single choice; a bag named in other
+   capitals ticks the offered spelling (`ThingEditor.bagChoices`). A long list (17 bags) scrolls inside the list,
+   which opens scrolled to the ticked row.
+10. **When** — drop-down (0.64; band `thing-when-title`, field `thing-when`, list `thing-when-list`), one row per
+    live `PHASES` step (id stored, label shown; `thing-when-N`). A thing with no step, or one this device does not
+    know, ticks no row; the field then says "Not said" (grey) or the raw id.
 11. **Weight** — band "Weight, in grams (0 = not known)" (`thing-heading-weight`); field (`thing-weight`),
     placeholder "0"; when Save found it unreadable, "The weight must be a number of grams, like 250 or 12,5."
     under it in red (`thing-weight-problem`, 15 semibold; gone as he types).
 12. **Brand** — band (`thing-heading-brand`); field (`thing-brand`), placeholder "e.g. " and a clothing brand
     (see the code).
 13. **Colour** — band (`thing-heading-colour`); field (`thing-colour`), placeholder "e.g. Black".
-14. **Condition** — pills band (`thing-condition-title`): "Not said" (value "") then each live condition by
-    label, storing its id (`thing-condition-N`). The lit pill is `conditionId(for:)` of the stored value, so a
-    thing still holding a label lights its condition too.
-11a. **Care** (0.62) — pills band "Care" (`thing-care-title`): "None" (0), "Every month" (30), "Every 3 months"
-    (90), "Every 6 months" (182), "Every year" (365), "Every 2 years" (730) (`thing-care-0`…`-5`; an interval
-    of his own, e.g. 45 from the web app, adds "Every 45 days"); under it a growing field "What to do, e.g. Wax
-    the leather" (`thing-care-notes`, 1–6 lines, 18 medium) — the care notes.
+14. **Condition** — drop-down (0.64; band `thing-condition-title`, field `thing-condition`, list
+    `thing-condition-list`): "Not said" (value "", grey; `thing-condition-0`) then each live condition by label,
+    storing its id (`thing-condition-N`). The ticked row is `conditionId(for:)` of the stored value, so a thing still
+    holding a label ticks its condition too.
+11a. **Care** (0.62; a drop-down since 0.64: band "Care" `thing-care-title`, field `thing-care`, list
+    `thing-care-list`): "None" (0), "Every month" (30), "Every 3 months" (90), "Every 6 months" (182), "Every year"
+    (365), "Every 2 years" (730) (`thing-care-0`…`-5`; an interval of his own, e.g. 45 from the web app, adds the row
+    "Every 45 days"); under the field a growing field "What to do, e.g. Wax the leather" (`thing-care-notes`, 1–6
+    lines, 18 medium) — the care notes.
 15. **On a plane** — band (`thing-heading-plane`); two switches (orange tint): "Liquid" (`thing-liquid`) and "Not allowed in the
    cabin" (`thing-restricted`), Callout semibold — their words only since 0.64 (his word, 6 Oct 2026: "Delete the
    explanations for liquid and not allowed in the cabin"; they said "In the cabin: 100 ml at most, in the clear bag."
@@ -831,7 +857,9 @@ UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's p
     "A", "A and B", "A, B and C"); "Keep it" (`thing-delete-no`, 16 bold ink) closes the question; "Delete the
     thing" (`thing-delete-yes`, 16 heavy white on a red capsule, min height 40).
 
-The headings are `HeadingBand`s in orange (violet for On these templates); the pills 15 pt and 36 tall.
+The headings are `HeadingBand`s in orange (violet for On these templates); a drop-down's field is Body, `Metrics.tap`
+tall (36 on the iPhone, 26 on the Mac), card-filled with a hairline like the text fields; the pills of On these
+templates Subheadline, `Metrics.chip` tall.
 
 **Behaviour.**
 - On appear the page copies the CATALOGUE item (not a template's resolved row) into a draft, and the set of
@@ -859,9 +887,16 @@ extra key is preserved untouched (the draft is the whole item).
 
 **iPhone vs Mac.** Mac: at least 520 × 600. The date picker is the platform's compact picker.
 
-**Tests.** UI `testWhoseItIsOffersEachOwnerOnce` (`thing-owner-0` reads "Both have one"; Notes lie between Name
-and Kept at home by frame; offered owners exactly ["Kim", "Robin"]; the "Kind of thing" heading ≥ 25 pt tall and
-a pill ≥ 36); `testValidUntilSaysHowFarAwayAndOffersQuickSpans` (no words without a date; Add a date → "today";
+**Tests.** UI (0.64) `testThePickOneListsAreDropDownsThatChooseAndKeep` (on the Headlamp: all seven pick-one
+lists are fields whose rows are not out before opening, On these templates is still pills; the Bag list opened and
+photographed; Kind of thing row 7, Whose it is row 2, When row 3, Condition row 2 chosen — each list closes and its
+field shows the row's words; saved and reopened, the four fields still say them and When's row 3 is ticked; then the
+same on a template's row, spec 04 §7). The UI helpers `openDropDown`, `choose(app, prefix, n)` (opens, taps, sees
+the list close and the field show the row's words, answers them), `chosen` (the field's value), `isChosen(app,
+prefix, n)` (opens, reads the row's selected trait, closes on the ticked row) and `closeDropDown` are what every
+test below uses to pick or read one of these. `testWhoseItIsOffersEachOwnerOnce` (Notes lie between Name and Kept
+at home by frame; the "Kind of thing" heading ≥ 15 pt tall over a drop-down field `Metrics.tap` tall, less than 6
+over; opened, `thing-owner-0` reads "Both have one" and the owners offered are exactly ["Kim", "Robin"]); `testValidUntilSaysHowFarAwayAndOffersQuickSpans` (no words without a date; Add a date → "today";
 the five quick pills read "in 1 month", "in 6 months", "in 1 year", "in 5 years", "in 10 years"; saved +1 year
 reads back and its pill is lit; Remove the date → no words); `testAThingsOwnDetailsAndItsListsAreChanged`
 (Electronics and the Swim template are kept); `testAChangeToAThingReachesATripStillAhead` (a new bag reaches the
@@ -877,14 +912,19 @@ was); `testANoteMadeOnSiteReachesTheThing` (Notes hold "old note\nOn site D Mon 
 (`distanceWords`, `addMonths`, every quick choice reads back as itself from every day of two years).
 
 UI (0.62) `testAThingsPageTakesDecimalsAPlaceNoBagAndCare` ("abc" → the weight line and the page stays; "12,5"
-kept while typing and read back as "12.5"; the first place pill fills the field and is lit; "No bag" is the
-last bag pill and stays lit; Every month + what to do → Care says "1 due soon"); `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`
+kept while typing and read back as "12.5"; the first of his places, chosen from Kept at home's list, is taken and
+kept; "No bag" is the last row of Usually packed in, chosen, and still ticked when reopened; Every month (`thing-care-1`)
++ what to do → kept, and Care says "1 due soon"); `testAThingIsOfferedOnlyHisOwnBags` (0.64, -uiTestingChecks: the
+opened bag list is his one bag then "No bag", nothing more); `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen`
+(0.64: every heading in his order; a new place made at the list's foot is taken, joins his places and is ticked;
+"Not said" chosen → the field says "Not said"); `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`
 (every owner blanked by Change all → `thing-owner-none` names Your choices);
-`testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (a condition set in the table lights
+`testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (a condition set in the table ticks
 `thing-condition-4`).
 
-**Not covered by a test.** The rename refusal messages; Brand; When; the hint and footer texts; that a bag has
-no Delete; an interval of his own ("Every 45 days").
+**Not covered by a test.** The rename refusal messages; Brand; the hint and footer texts; that a bag has
+no Delete; an interval of his own ("Every 45 days"); a drop-down's `-other` row for a kind of thing or an owner
+none of the rows (no sample thing has one); where the system puts a list (under or over its field).
 
 **`distanceWords(from:to:)` and `addMonths` (PackingLibrary/DateWords.swift).** "today", "tomorrow", "in `D`
 days" (2–13), then whole weeks "in `W` weeks" up to two whole calendar months (with "in 1 month" for a month
@@ -1254,8 +1294,10 @@ text box; the first takes "3" and keeps it after closing and reopening),
 `testManyThingsAreChangedAtOnceAndCanBePutBack` (Condition cells).
 
 UI (0.62) `testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (through Change all, which offers the
-same `Answers2`: his own bag after the seventeen, Kim and Robin as owners, Needs replacing stored so the cell reads
-it, the page lights it and To buy offers the thing); `testTheBagListIsNoColumnOfTheTable` (`-uiTestingChecks`:
+same `Answers2`: his own bag and nothing else once he has one — `bulk-value-0` "Sit bag", no `bulk-value-1` (0.64;
+until then his own bag after the seventeen, and the test was not changed with `bagNames` until the drop-downs
+pass) — Kim and Robin as owners, Needs replacing stored so the cell reads it, the page ticks it in Condition's
+drop-down and To buy offers the thing); `testTheBagListIsNoColumnOfTheTable` (`-uiTestingChecks`:
 three template columns in Filter and in Columns, not four).
 
 **Not covered by a test.** Choice menus themselves (no test opens one); the Section menu; the "On a template"

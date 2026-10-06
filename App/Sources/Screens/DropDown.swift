@@ -94,7 +94,7 @@ struct DropDown: View {
     /// A blank choice ("Not said", "Same as the thing …") is in grey, as a field's own
     /// grey words are.
     private var field: some View {
-        Button { open = true } label: {
+        Button { putKeyboardAway(); open = true } label: {
             HStack(spacing: 8) {
                 Text(shown)
                     .font(.body).foregroundStyle(same("", selected) ? Theme.muted : Theme.ink)
@@ -198,6 +198,15 @@ struct DropDown: View {
         }
         .needsLine($needs, typed: typed, id: "\(ids.row)-add-needs")
         .padding(.top, 8)
+    }
+
+    /// A field being typed in (the weight, a new place) keeps the keyboard up on the
+    /// iPhone, and a list opened under it was squeezed into the space above the keys —
+    /// so opening one puts the keyboard away first, as a choice is made by tapping.
+    private func putKeyboardAway() {
+        #if os(iOS)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
     }
 
     private func add(_ new: DropDownNew) {

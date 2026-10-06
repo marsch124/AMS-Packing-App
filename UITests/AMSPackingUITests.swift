@@ -6164,11 +6164,13 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "table-0-pick")
         tap(app, id: "table-change-all")
         XCTAssertTrue(appears(app, "bulk-detail", timeout: 5), "the change sheet did not open")
-        // Packed in: the seventeen built-in bags, then his own.
+        // Packed in: his own bags only, once he has one (0.64, `bagNames`) — the seventeen
+        // built-in names are no longer offered before it.
         tap(app, id: "bulk-field-container")
-        XCTAssertTrue(app.buttons["bulk-value-17"].waitForExistence(timeout: 5), "his own bag is not offered")
-        XCTAssertTrue(words(app.buttons["bulk-value-17"]).contains("Sit bag"),
-                      "the bag after the built-in ones is not his: '\(words(app.buttons["bulk-value-17"]))'")
+        XCTAssertTrue(app.buttons["bulk-value-0"].waitForExistence(timeout: 5), "his own bag is not offered")
+        XCTAssertTrue(words(app.buttons["bulk-value-0"]).contains("Sit bag"),
+                      "the bag offered is not his: '\(words(app.buttons["bulk-value-0"]))'")
+        XCTAssertFalse(app.buttons["bulk-value-1"].exists, "a bag he does not have is offered: '\(words(app.buttons["bulk-value-1"]))'")
         // Owner: the two names his things carry, though the Settings list is empty.
         tap(app, id: "bulk-field-ownedBy")
         XCTAssertTrue(app.buttons["bulk-value-1"].waitForExistence(timeout: 5), "the owners his things name are not offered")
@@ -6377,7 +6379,7 @@ final class AMSPackingUITests: XCTestCase {
         let place = app.buttons["thing-place-0"]
         let placeName = words(place)
         shot(app, "thing-places")
-        tap(app, id: "thing-place-0")
+        tapInList(app, "thing-place-0")
         XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "the list did not close on a choice")
         XCTAssertEqual(keptAtHome(app), placeName, "the place was not taken")
         // No bag: the last row of Usually packed in.
@@ -6808,7 +6810,7 @@ final class AMSPackingUITests: XCTestCase {
         let row = app.buttons["\(prefix)-\(n)"]
         XCTAssertTrue(row.waitForExistence(timeout: 5), "\(prefix) has no row \(n)")
         let said = words(row)
-        tap(app, id: "\(prefix)-\(n)")
+        tapInList(app, "\(prefix)-\(n)")
         XCTAssertTrue(disappears(app, "\(prefix)-list", timeout: 5), "\(prefix)'s list did not close on a choice")
         XCTAssertTrue(waitUntil { self.chosen(app, prefix) == said },
                       "\(prefix) does not show the choice '\(said)': '\(chosen(app, prefix))'")
@@ -6830,11 +6832,23 @@ final class AMSPackingUITests: XCTestCase {
         return on
     }
 
+    /// Tap a row of an open drop-down's list. Not `tap(app, id:)`: its scrolling swipes
+    /// the list, and a swipe on a popover's list fails on the iPhone ("visible frame is
+    /// empty") — while XCUITest's own tap brings a row the list has scrolled away back
+    /// into view first. (A list opens at its ticked row, so the first row can be out of
+    /// sight, and a long one's last always is.)
+    private func tapInList(_ app: XCUIApplication, _ id: String) {
+        let row = app.buttons[id]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no \(id) in the open list")
+        _ = waitUntil(timeout: 3) { row.exists && self.settled(row) }
+        row.tap()
+    }
+
     /// Close an open list without changing anything: a tap on the ticked row.
     private func closeDropDown(_ app: XCUIApplication, _ prefix: String) {
         let ticked = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND selected == true", "\(prefix)-")).firstMatch
         guard ticked.waitForExistence(timeout: 3) else { return XCTFail("\(prefix)'s list has no ticked row to close it with") }
-        tap(app, id: ticked.identifier)
+        tapInList(app, ticked.identifier)
         XCTAssertTrue(disappears(app, "\(prefix)-list", timeout: 5), "\(prefix)'s list did not close")
     }
 
@@ -6974,7 +6988,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(last), "Attic shelf", "the new place did not join his places")
         XCTAssertTrue(isOn(last), "the thing's place is not ticked in the list")
         shot(app, "thing-kept-at-home-list")
-        tap(app, id: "thing-place-none")
+        tapInList(app, "thing-place-none")
         XCTAssertTrue(disappears(app, "thing-places", timeout: 5))
         XCTAssertEqual(keptAtHome(app), "Not said", "Not said did not clear the place")
         tap(app, id: "thing-cancel")

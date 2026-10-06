@@ -373,8 +373,9 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   its editor; then Remove is refused with `lists-problem` and the row stays).
   `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (`list-places-add` pressed empty answers on
   `list-places-add-needs`). `testTheEditorsLeadWithTheirHeadings` (all five `choices-heading-*`).
-  `testWhoseItIsOffersEachOwnerOnce` (on a thing: `thing-owner-0` reads "Both have one", then exactly "Kim",
-  "Robin"; Notes sit between Name and Kept at home; a 22-pt heading line is ≥ 25 tall, a pill ≥ 36).
+  `testWhoseItIsOffersEachOwnerOnce` (on a thing, with its Whose it is list opened (0.64): `thing-owner-0` reads
+  "Both have one", then exactly "Kim", "Robin"; Notes sit between Name and Kept at home; the heading line is ≥ 15
+  tall over a drop-down field `Metrics.tap` tall).
   0.62: `testOwnersAreTheNamesHisThingsCarry` (the sample stores no owners: the Owners part reads Kim, Robin and no
   third; ✕ on Kim → "Kim is still used by 5 things, so it stays."), `testEscapeClosesSettingsWindowsAndNeverReplaces`
   (a place typed and not added, then Escape: closed, and no 13th place).
@@ -1220,7 +1221,7 @@ failures are listed in one message). `testHomeBuildsATrip` (Create trip enabled,
 `testABagIsRenamedAndDeletedFromItsPage`. **Colour cannot be tested**: "A colour cannot be read by a test; being
 pressable and answering can."
 
-## 21. Type, headings, pills and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `Pills`/`FlowRow` in `HomeScreen.swift`)
+## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 
 **Origin.** His word, 5 Oct 2026: "make things smaller so that the app is efficient, fluid, and Apple-standard",
 and "make the buttons even slimmer, smaller when possible"; "less space between blocks on the forms and slimmer
@@ -1297,6 +1298,60 @@ for a toned pill, in its tone (1.8 pt). Id `<id>-<startIndex + position>` — "i
 picked pills carry the `.isSelected` trait (what tests read). `ContextPills` puts Context (Indoor, Outdoor, Race) as a
 `.question` row indented 18 with a 3-pt grey line down its side, in the Settings slate.
 
+**`DropDown` (0.64, `Screens/DropDown.swift`)** — ONE pick-one list: a heading band over a field-like button that
+opens its choices as a list beside it. His word, 6 Oct 2026, after Kept at home became the first: "I like the
+dropdown for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere? I think it would lend
+itself perfectly for 'usually packed in', 'Kind of thing' etc." Used for every pick-one list on a thing's page (Kind
+of thing, Whose it is, Kept at home, Usually packed in, When, Condition, Care — spec 05) and on a template's row
+(Bag, When, Section — spec 04 §7). Lists where SEVERAL may be picked stay `Pills` (On these templates; a row's
+Season, Context, Transport, Food), and so do the short toggles of Create new trip and Trip settings (a few words
+each, seen at a glance, one tap).
+
+`DropDown(title:, options:, selected:, id:, tint = Care orange, blank = nil, other = false, same = exact,
+newEntry = nil, choose:)`:
+- `title: String?` — the heading, a `HeadingBand` in the tint (none when nil).
+- `options: [(value: String, label: String)]` — the rows, in order; `value` is what is stored, `label` what is read.
+- `selected: String` — the value that stands; `choose(value)` is called when a row is tapped (the caller keeps the
+  value in its own draft — nothing is stored before the page's Save).
+- `id: DropDownIds` — the names of its parts. A string literal is a prefix: the field `<prefix>`, the list
+  `<prefix>-list`, the rows `<prefix>-<n>` (the position in `options`, from 0 — the SAME ids the pills had, so a
+  test that named a pill names the same row), the heading `<prefix>-title`. Kept at home, which came first, passes
+  its own: `DropDownIds(field: "thing-storage", list: "thing-places", row: "thing-place", title: "thing-heading-kept")`.
+- `blank: String?` — words for a first row meaning "nothing said" (value ""), named `<row>-none`, before the
+  options (only Kept at home's "Not said"; elsewhere such a row is simply option 0, as its pill was).
+- `other: Bool` — when the value that stands is not blank and none of the rows, a row of its own at the END, its
+  words = the value, ticked, named `<row>-other`; for lists whose values are words (Kind of thing, Whose it is, Kept
+  at home, a row's Bag) — an id (a When step, a section, a condition) would read as nonsense.
+- `same: (String, String) -> Bool` — when two values are one choice: exact; Kept at home compares by `normName`.
+- `newEntry: DropDownNew?` — a foot under the rows: `DropDownNew(placeholder:, button = "Add", needs:, add:)` — a
+  field (`<row>-new`) and the button (`<row>-add`, `FieldButtonLabel` in the tint, never grey); Add or Return with
+  nothing typed (after `jsTrim`) shows `needs` under them (`<row>-add-needs`, `NeedsLine`, gone as he types) and
+  the list stays open; otherwise `add(trimmed words)` is called, the field empties and the list closes. Kept at
+  home: "A new place" / "Type the place first."; a row's Section: "A new section" / "Type the section's name first.".
+
+What it draws:
+- **The field**: the words of the choice that stands — the matching row's label; with a `blank` row and a blank
+  value, its words; with nothing matching, the value itself, or "Not said" when it is blank — in Body, ink, or
+  muted when the value is blank (value "", e.g. "Both have one", "No bag", "Same as the thing …"), one line,
+  truncated at the end; then a drawn ▾ (`M6 9l6 6 6-6`, 1.8 stroke, 16 × 16, muted). Padding 12 sideways, min
+  height `Metrics.tap` (36 iPhone / 26 Mac), `Theme.card` fill, radius 10, a 1-pt `line` border — like the text
+  fields around it. Accessibility: label = the title (the words when there is none), VALUE = the words shown (what
+  tests read), id = the field id. A tap opens the list.
+- **The list**: a popover (`presentationCompactAdaptation(.popover)`, so the iPhone shows a popover too, not a
+  sheet) with NO arrow edge given, so the system puts it where there is room — under a field near the top of the
+  page, over one near the bottom (the first Kept at home fixed it above its field: on a row's Bag, near the top,
+  it was squeezed to three rows). Inside: a `ScrollView` (padding 12; min width 280, ideal 320, max height 440;
+  `Theme.bg` behind) holding, top to bottom, the `blank` row, the options, the `other` row and the foot; it opens
+  scrolled to the ticked row (centred), so the tick is seen in a long list. Container: `.contain`, id = the list
+  id.
+- **A row**: its label in Body (muted for the value "", ink otherwise; wraps rather than cut), a spacer, and for
+  the chosen one a drawn `Tick` in the tint (2-pt stroke, 18 × 18); 6 pt above and below, min height
+  `Metrics.tap`, FILLED with `Theme.bg` and shaped as a whole rectangle — on the Mac a slim whole-row plain button
+  with nothing behind its words once took no clicks; a 1-pt `line` under it. The chosen row carries the
+  `.isSelected` trait. A tap calls `choose(value)` and closes the list.
+- Closing the list any other way (a tap outside, Escape on the Mac) chooses nothing and drops what was typed in
+  the foot.
+
 **`FlowRow(spacing = 8)`** — a `Layout` that places children left to right at their natural size and wraps to a new
 row when the next one would pass the right edge; row height = tallest child; reported width = the proposed width
 (10 000 if none).
@@ -1310,8 +1365,13 @@ above and below (10–12 before; 3 where it was 6, 4 where it was 8): "less air 
 Search show a thing's name and its details on one line.
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
-trip, Trip settings, the review and Your choices exists; photographs each), `testWhoseItIsOffersEachOwnerOnce` (0.62: a
-heading line at least 15 tall over pills of `Metrics.chip` — 28 on the iPhone, 22 on the Mac — and under 34), `testContextSitsUnderTheWorkouts`.
+trip, Trip settings, the review and Your choices exists; When's drop-down field exists; photographs each),
+`testWhoseItIsOffersEachOwnerOnce` (0.64: a heading line at least 15 tall over a drop-down field of `Metrics.tap` —
+36 on the iPhone, 26 on the Mac — and less than 6 more; until 0.64 over pills of `Metrics.chip`),
+`testContextSitsUnderTheWorkouts`; the drop-down itself: `testThePickOneListsAreDropDownsThatChooseAndKeep` (0.64:
+every pick-one list of the thing's page and a row is a field whose rows are out only once opened; a tap on a row
+closes the list and the field shows its words; Save keeps it; the kept row is the ticked one), with the UI helpers
+`openDropDown`, `choose`, `chosen`, `isChosen`, `closeDropDown` (spec 05, A thing's page, Tests).
 
 ## 22. Scrolling and the keyboard (`KeyboardAwayScroll` in `Theme.swift`)
 
@@ -1333,7 +1393,9 @@ its words, "so rewording a button can never turn the suite red".
 - A sheet or page is a container named `<thing>-detail` or `<thing>-screen` (`lists-detail`, `restore-detail`,
   `things-detail`, `trip-detail`, `tripset-screen`, `loop-screen`, `guide-whatsnew`…); its buttons
   `<thing>-done`, `-cancel`, `-save`, `-confirm` (the `-cancel`, or else the `-done`, is the one Escape presses, §20).
-- Rows and pills by POSITION: `<prefix>-row-<n>`, `<pill id>-<n>`, `guide-release-<n>`, `guide-topic-<n>`,
+- Rows and pills by POSITION: `<prefix>-row-<n>`, `<pill id>-<n>`, a drop-down's rows `<prefix>-<n>` (0.64, the ids
+  its pills had; with `<prefix>` its field, `<prefix>-list` its open list, `<prefix>-none` / `-other` / `-new` /
+  `-add` / `-add-needs` its extra rows and foot, §21), `guide-release-<n>`, `guide-topic-<n>`,
   `word-<n>`, `quickstart-step-<n>`, `loop-step-<n>`, `health-<n>`, `rescue-row-<n>`.
 - Per-table numbers by table raw value: `device-count-<table>`, `restore-file-<table>`, `restore-now-<table>`.
 - Derived parts: `<pill id>-title` (a pill row's heading), `<button id>-needs` (§20), `<field id>-clear` (§20),
@@ -1355,7 +1417,8 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
    value of a box that is not a control (`loop-step-<n>`). Rows that are buttons are read through `app.buttons[id]`.
 2. The Mac reports a text's words as its VALUE, the iPhone as its LABEL — the tests' `words()` reads both.
 3. A Toggle is a switch on the iPhone and a check box on the Mac; a dropdown is a button on the iPhone and a pop-up
-   button on the Mac (`switchNamed`, `cellSays`).
+   button on the Mac (`switchNamed`, `cellSays`) — the table's menus; the app's own `DropDown` (§21) is a plain
+   button on both, read through `app.buttons[id]` and its value.
 4. A bare `Map` is reported as its own element kind on the Mac: name a container around it (`map-view`).
 5. Window sizes under tests (§24): the main window is SET to 760 × 674 — GitHub's Mac runner's window, "read off its
    TAP-REPORT" — so a control below the fold there is below the fold here too; the things-table window opens at
@@ -1729,7 +1792,8 @@ UI (`AMSPackingUITests`): `testAAAWarmsUpTheSimulator`, `testStartsOnHomeAndName
 `testHisOwnListsAreAddedAndProtectedWhileInUse`, `testWhoseItIsOffersEachOwnerOnce`,
 `testEveryAddButtonIsReadyAndSaysWhatIsMissing`, `testTheEditorsLeadWithTheirHeadings`, `testTheCrossEmptiesASearch`,
 `testTheCrossKeepsTheKeyboard`, `testATripIsDeletedOnlyAfterAsking` (photo count in Settings),
-`testATripIsSharedAndOpenedAgain` and `testATemplateAndAGrabListAreSharedAndOpenedAgain` (the door); 0.62:
+`testATripIsSharedAndOpenedAgain` and `testATemplateAndAGrabListAreSharedAndOpenedAgain` (the door);
+`testThePickOneListsAreDropDownsThatChooseAndKeep` (0.64, `DropDown`, §21); 0.62:
 `testYourChoicesSaysWhyRightWhereItWasPressed`, `testAChoiceIsRenamedAndMovedAndItsThingsFollow`,
 `testTheWayHomeIsSearched` (its ✕ is the shared one); 0.62: `testRemindersSayWhenTheDeviceBlocksThem` (switched off
 too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`,
