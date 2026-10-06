@@ -77,10 +77,29 @@ extension View {
     func headerOnTheMac<Header: View>(@ViewBuilder _ header: () -> Header) -> some View {
         #if os(macOS)
         VStack(spacing: 0) {
-            header().padding(.horizontal, 16)
-            self
+            // 6 under the header, so the page's scroll view never touches the strip:
+            // 🪤 where it did (Home and To do, whose header is one line), a click on a
+            // header button in the strip never arrived (GitHub's Mac run, 6 Oct 2026),
+            // while Trips and Templates — a summary line under the title — were fine.
+            header().padding(.horizontal, 16).padding(.bottom, 6)
+            self.titleBarSafeScroll()
         }
         .ignoresSafeArea(.container, edges: .top)
+        #else
+        self
+        #endif
+    }
+
+    /// The Mac: no edge effect at the top of this page's scroll views (macOS 26 draws
+    /// one where a scroll view meets the title bar region; the header sits there now).
+    @ViewBuilder
+    func titleBarSafeScroll() -> some View {
+        #if os(macOS)
+        if #available(macOS 26.0, *) {
+            self.scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            self
+        }
         #else
         self
         #endif

@@ -191,9 +191,6 @@ struct CareScreen: View {
                     .padding(.top, 18)
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
-            #if os(macOS)
-            .padding(.top, 6)                 // under the pinned header, as on the iPhone
-            #endif
         }
         .headerOnTheMac { header(stats) }
         .sheet(item: $opening) { ask in ThingsScreen(searching: ask.search).environmentObject(model) }

@@ -139,9 +139,6 @@ struct EventsScreen: View {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
-            #if os(macOS)
-            .padding(.top, 8)                 // under the pinned header, as on the iPhone
-            #endif
         }
         .headerOnTheMac { header(cards: cards, toDos: toDos) }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }

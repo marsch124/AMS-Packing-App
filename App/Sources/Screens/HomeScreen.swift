@@ -194,9 +194,6 @@ struct HomeScreen: View {
                 .padding(.top, 8)
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
-            #if os(macOS)
-            .padding(.top, 6)                 // under the pinned header, as on the iPhone
-            #endif
         }
         .headerOnTheMac { grabHeader }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }

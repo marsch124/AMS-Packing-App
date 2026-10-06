@@ -35,6 +35,9 @@ struct ActionsScreen: View {
             // on the traffic lights' line in the window's title bar strip on the Mac.
             .headerLine()
             .padding(.horizontal, 16)
+            #if os(macOS)
+            .padding(.bottom, 6)                      // the page below never touches the strip (ScreenHeader.swift)
+            #endif
             if buying {
                 BuyList(text: $buyText).environmentObject(model)
             } else {
@@ -125,6 +128,7 @@ struct ActionsScreen: View {
             }
         }
         #if os(macOS)
+        .titleBarSafeScroll()
         .ignoresSafeArea(.container, edges: .top)     // its first line sits in the title bar strip
         #endif
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
