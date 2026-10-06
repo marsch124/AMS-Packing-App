@@ -1211,7 +1211,9 @@ so the iPhone's own ⌘. does not close it first.
 `testEscapeEndsArrangingWithoutSavingAHeading`, `testEscapeClosesSettingsWindowsAndNeverReplaces`,
 `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving`) skip on the iPhone (`XCTSkip("Escape is checked on the Mac")`):
 GitHub's iPhone (iOS 26, on-screen keyboard) did not deliver ⌘. there; the Mac run checks every one.
-`testEscapeCancelsAThingAndClosesCaresWindows` still runs on both.
+Since 0.65 the fifth, `testEscapeCancelsAThingAndClosesCaresWindows`, too: the local iPhone 17 passed it at 15:00 and
+refused ⌘. at 18:10 on the same code (6 Oct 2026). On an iPhone, ⌘. needs a hardware keyboard; the screens answer it
+as before, and nothing of it is checked on the iPhone any more.
 
 **Tests.** `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (Your things New + the line goes after typing, Your bags,
 To buy, Grab Lists Make, a grab list's Add, Your choices' first Add, a template's Add, Rename to another template's

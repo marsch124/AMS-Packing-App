@@ -1212,10 +1212,14 @@ Its sheets (Filter, Sort, Columns, Change, a thing) do close with Escape, on the
      name); then one heading per column (`table-head-<column id>`), its title (12 heavy muted, 1 line, may shrink
      to 70 %) and ▲/▼ when it is the first sort level; a 1 pt line at each column's right edge; a 1 pt line under
      the row.
-   - **Rows** (`table-row-N`, 34 tall, alternating background, a 1 pt line under each): the name cell — the
-     tick box (`table-N-pick`, 18 pt, filled orange when ticked, no tick mark: "the colour is enough" — his
+   - **Rows** (`table-row-N`, `TableColumns.rowHeight` tall — since 0.65 22 on the Mac, 28 on the iPhone, his ask
+     "Please take away all the air in between the lines" (6 Oct 2026); 34 on both until then — alternating
+     background, a 1 pt line under each): the name cell — the tick box (`table-N-pick`, `TableColumns.box`: 14 pt on
+     the Mac, 18 on the iPhone (18 on both until 0.65), filled orange when ticked, no tick mark: "the colour is enough" — his
      words; selected trait), the name (`table-N-name`, 14 semibold, 1 line, may shrink to 80 %), and the open
-     arrow (`table-N-open`, an orange chevron in a 26 × 34 area, label "Open `<name>`", tooltip on the Mac) — then
+     arrow (`table-N-open`, the orange chevron drawn on its 24-point grid, framed at 24 and scaled by `box`/18 —
+     0.78 on the Mac, 1 on the iPhone — so it sits on the name's line (0.65; in a 14-point frame it hung 5 points
+     low), in a 26-wide, row-tall area, label "Open `<name>`", tooltip on the Mac) — then
      one cell per chosen column (see Table columns).
 8. When no row is shown, under the grid (`table-none`, 16 medium muted): "Nothing matches these filters." (any
    column filter on) — else "Nothing matches." (quick chip All) — else "Nothing missing that — all filled in."
@@ -1316,7 +1320,12 @@ thing a bag, and an untick dropped a bag from the bag list without `deleteBag`'s
 deleted on Your bags). The Filter and Sort sheets offer the same templates. Starting columns (`startingColumns`, when he has chosen nothing): weight,
 storage, container, ownedBy, packer, condition, listQty. `TableColumns.ids(stored, library)` drops stored ids
 that are no longer columns (a deleted template) BEFORE anything counts them (0.62), and gives the starting
-columns when none is left. Row height 34 (`TableColumns.rowHeight`).
+columns when none is left. Row height `TableColumns.rowHeight` (0.65: 22 on the Mac, 28 on the iPhone; 34 before);
+a tick cell's box is `TableColumns.box` (14 / 18; 20 before). Test `testTheTableRowsHaveNoAirBetweenThem`: the
+second row starts at most `rowHeight` below the first (and no more than 6 less), the first name fits its row, and
+the Thing heading is less than 90 points under Filter. The grid's scroll view has `.defaultScrollAnchor(.topLeading)`
+(0.65): a scroll view that scrolls both ways centres content shorter than itself, and a short table floated in the
+middle of the window (226 points under Filter with the sample's ten things).
 
 **The answers for choice columns (`Answers2`, worked out ONCE per redraw and handed to every cell):** each a
 `Choice {value, label}` — what is stored and what he reads. places = `storagePlaces()`; bags = `bagNames()`

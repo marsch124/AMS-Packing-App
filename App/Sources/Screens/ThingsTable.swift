@@ -111,6 +111,10 @@ struct ThingsTable: View {
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.x } action: { _, x in
                 across = max(0, x)
             }
+            // A scroll view that scrolls both ways centres a grid shorter than itself: with
+            // a few things the table floated in the middle of the window (0.65). It starts
+            // at the top left, under the tools.
+            .defaultScrollAnchor(.topLeading)
             if rows.isEmpty {
                 Text(!filters.isEmpty ? "Nothing matches these filters." : only.isEmpty ? "Nothing matches." : "Nothing missing that — all filled in.")
                     .font(.system(.callout)).foregroundStyle(Theme.muted)
@@ -530,10 +534,15 @@ struct ThingsTable: View {
                     // Open the thing itself. Its own button, so the name stays words
                     // a test can read (a button folds its words in on the Mac).
                     Button(action: open) {
+                        // The drawing is on a 24-point grid (the chevron spans 9–15 across, 6–18
+                        // down), so it is framed at 24 to sit in the middle of its row — in a
+                        // 14-point frame it hung 5 points low (his picture, 6 Oct 2026) — and
+                        // scaled with the boxes: 0.78 on the Mac, 1 on the iPhone.
                         SVGPath.path("M9 6l6 6-6 6")
                             .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
                             .foregroundStyle(AppSection.care.color)
-                            .frame(width: TableColumns.box - 4, height: TableColumns.box - 4)
+                            .frame(width: 24, height: 24)
+                            .scaleEffect(TableColumns.box / 18)
                             .frame(width: 26, height: TableColumns.rowHeight)
                             .contentShape(Rectangle())
                     }
