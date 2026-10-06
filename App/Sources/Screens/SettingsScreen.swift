@@ -158,23 +158,19 @@ struct SettingsScreen: View {
                         .accessibilityIdentifier("rescue-heading")
                     VStack(spacing: 0) {
                         ForEach(Array(copies.enumerated()), id: \.offset) { n, copy in
-                            Button { offer(RescueCopies.read(copy) ?? Data()) } label: {
-                                HStack {
-                                    Text(RescueCopies.when(copy))
-                                        .font(.system(.callout)).foregroundStyle(Theme.ink)
-                                    Spacer()
-                                    Text("Look at it").font(.system(.subheadline, weight: .semibold))
-                                        .foregroundStyle(AppSection.settings.color)
-                                }
-                                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                                // Filled with the card's own colour, so the whole row takes a
-                                // click: on the Mac a click on its empty middle did nothing —
-                                // the words alone were the button (GitHub's Mac run, 6 Oct 2026).
-                                .background(Theme.card)
-                                .contentShape(Rectangle())
+                            // The date, and "Look at it" as a button of its own. Until 0.63 the
+                            // whole row was one plain button, and on the Mac a click on it did
+                            // nothing once the row was slim (GitHub's Mac run, 6 Oct 2026).
+                            HStack {
+                                Text(RescueCopies.when(copy))
+                                    .font(.system(.callout)).foregroundStyle(Theme.ink)
+                                Spacer()
+                                Button("Look at it") { offer(RescueCopies.read(copy) ?? Data()) }
+                                    .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: false))
+                                    .focusEffectDisabled()
+                                    .accessibilityIdentifier("rescue-row-\(n)")
                             }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("rescue-row-\(n)")
+                            .padding(.horizontal, 12).padding(.vertical, 5)
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                         }
                     }
