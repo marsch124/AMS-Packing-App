@@ -5344,7 +5344,12 @@ final class AMSPackingUITests: XCTestCase {
 
         // A double tap on the line: its own width again.
         #if os(macOS)
-        app.buttons["table-resize-weight"].doubleClick()
+        // 🪤 On the Mac the line answers SwiftUI's clicks but XCUITest calls it "not hittable"
+        // (GitHub's Mac, 6 Oct 2026: the reopened window's line, 14 × 26) — so the window is
+        // brought forward with a harmless click on its count, then the line's point is
+        // double-clicked.
+        app.staticTexts["table-count"].click()
+        app.buttons["table-resize-weight"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).doubleClick()
         #else
         app.buttons["table-resize-weight"].doubleTap()
         #endif
