@@ -5298,6 +5298,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThan(top.frame.minY - app.buttons["table-filter"].frame.maxY, 90,
                           "the grid floats \(top.frame.minY - app.buttons["table-filter"].frame.maxY) points below the tools")
         shot(app, "table-slim")
+        let picture = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        picture.name = "table-slim"; picture.lifetime = .keepAlways; add(picture)
     }
 
     func testTheTableSortsAndSaves() {
