@@ -749,6 +749,20 @@ go" (`TripScreen`), the trip review (`ReviewScreen`) and Pack to go home (`WayHo
 (iPhone) a swipe down = Cancel. Only the thing's page closes, not the screen it was opened from. The screen behind is not
 rebuilt, so it is exactly where it was (the table keeps its scroll position).
 
+**Drop-downs (0.64).** Every PICK-ONE list on this page — Kind of thing, Whose it is, Kept at home, Usually
+packed in, When, Condition, Care — is a drop-down (`DropDown`, spec 06 §21), his word of 6 Oct 2026: "I like the
+dropdown for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere? I think it would lend
+itself perfectly for 'usually packed in', 'Kind of thing' etc." Under its heading band sits a field-like button
+(`thing-<list>`; its value = the words of the choice that stands, its label = the heading; Kept at home keeps the
+names it had, item 8) showing the choice and a ▾; a tap puts the keyboard away (iPhone) and opens the list beside
+it — a popover on the iPhone as on the Mac, placed by the system above or below the field, wherever it fits (a
+field near the top opens downwards), scrolled to the ticked row — container `thing-<list>-list`, one row per choice
+named `thing-<list>-<n>` exactly as its pill was (so `thing-category-7` is still Electronics), the chosen row
+ticked (a drawn tick in orange, selected trait). A tap on a row takes it and closes the list; nothing is stored
+before Save, as before. A blank choice (value "": "Both have one", "No bag", "Not said") is in grey on the field and
+in the list. Until 0.64 each of these lists was a row of pills. On these templates, where several may be ticked,
+stays pills.
+
 **What is on screen, top to bottom** (accessibility container `thing-detail`; 16 pt padding; headings 22 pt
 apart; a field 6 pt under its heading):
 1. Top bar: "Cancel" (outlined, muted) left; "Save" (filled orange) right.
@@ -761,19 +775,6 @@ apart; a field 6 pt under its heading):
    `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
    twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.
-**Drop-downs (0.64).** Every PICK-ONE list on this page — Kind of thing, Whose it is, Kept at home, Usually
-packed in, When, Condition, Care — is a drop-down (`DropDown`, spec 06 §21), his word of 6 Oct 2026: "I like the
-dropdown for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere? I think it would lend
-itself perfectly for 'usually packed in', 'Kind of thing' etc." Under its heading band sits a field-like button
-(`thing-<list>`; its value = the words of the choice that stands, its label = the heading) showing the choice and
-a ▾; a tap opens the list beside it — a popover on the iPhone as on the Mac, placed by the system where there is
-room (the system picks above or below the field; a field near the top opens downwards) — container `thing-<list>-list`, one row per choice
-named `thing-<list>-<n>` exactly as its pill was (so `thing-category-7` is still Electronics), the chosen row
-ticked (a drawn tick in orange, selected trait). A tap on a row takes it and closes the list; nothing is stored
-before Save, as before. A blank choice (value "": "Both have one", "No bag", "Not said") is in grey on the field and
-in the list. Until 0.64 each of these lists was a row of pills. On these templates, where several may be ticked,
-stays pills.
-
 4. **Kind of thing** — drop-down (0.64; band `thing-category-title`, field `thing-category`, list
    `thing-category-list`): one row per `CATEGORIES` entry (`thing-category-0` … `-11`; Electronics is `-7`); single
    choice; the thing's category is ticked. A category that is none of these (from the web app) is shown on the
