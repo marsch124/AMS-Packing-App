@@ -20,11 +20,8 @@ jobs:
           T=AMSPackingUITests/AMSPackingUITests
           xcodebuild test -project AMSPacking.xcodeproj -scheme AMSPacking -destination "platform=macOS" \
             -derivedDataPath build -resultBundlePath Probe-Mac.xcresult -collect-test-diagnostics never \
-            -only-testing:$T/testWhatsNewStartsWithThisVersion \
             -only-testing:$T/testTheCopyKeptBeforeARestoreBringsEverythingBack \
-            -only-testing:$T/testAHeadingIsDraggedWithItsThings \
-            -only-testing:$T/testAThingIsDraggedUnderAnotherHeading \
-            -only-testing:$T/testEscapeEndsArrangingWithoutSavingAHeading \
+            -only-testing:$T/testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything \
             CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
       - name: Keep the results
         if: always()
