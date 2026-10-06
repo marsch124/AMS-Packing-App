@@ -11,9 +11,13 @@ struct GuideDoors: View {
     @State private var page: Page?
 
     var body: some View {
-        VStack(spacing: 10) {
+        // Rows of one card in Settings, a hairline between them (0.67; until then each
+        // door was a card of its own, 10 points from the next).
+        VStack(spacing: 0) {
             door("What's new", Releases.all.first.map { "\($0.version) · \($0.title)" } ?? "", "settings-whatsnew") { page = .whatsNew }
+            CardHairline()
             door("How it works", "The whole app in plain words, screen by screen", "settings-howitworks") { page = .howItWorks }
+            CardHairline()
             door("Your first real trip", "In 6 steps, from a backup to the review", "settings-firsttrip") { page = .firstTrip }
         }
         .sheet(item: $page) { p in
@@ -27,19 +31,7 @@ struct GuideDoors: View {
 
     private func door(_ title: String, _ line: String, _ id: String, _ open: @escaping () -> Void) -> some View {
         Button(action: open) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                    Text(line).font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                }
-                Spacer()
-                SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-            }
-            .padding(.horizontal, 14).frame(minHeight: 60)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-            .contentShape(Rectangle())
+            SettingsDoorLabel(title: title, line: line)
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier(id)

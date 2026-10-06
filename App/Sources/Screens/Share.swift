@@ -422,20 +422,9 @@ struct OpenSharedDoor: View {
     @State private var open = false
 
     var body: some View {
+        // The last row of the card of doors in Settings (0.67; a card of its own until then).
         Button { open = true } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Open a shared link").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                    Text("A trip, template or grab list someone shared").font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                }
-                Spacer()
-                SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-            }
-            .padding(.horizontal, 14).frame(minHeight: 60)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-            .contentShape(Rectangle())
+            SettingsDoorLabel(title: "Open a shared link", line: "A trip, template or grab list someone shared")
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("settings-openshared")

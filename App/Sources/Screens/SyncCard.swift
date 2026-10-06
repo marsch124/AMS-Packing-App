@@ -30,7 +30,8 @@ struct SyncCard: View {
         let c = check
         let state = SyncCheck.state(usesICloud: model.usesICloud, check: c)
         let stuck = state == .stuck
-        VStack(alignment: .leading, spacing: 8) {
+        // Compact, as Settings' cards are (8 points between its lines, 14 inside, until 0.67).
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Text("iCloud sync").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 Spacer()
@@ -77,7 +78,7 @@ struct SyncCard: View {
             }
             if !said.isEmpty { quiet(said, id: "sync-said") }
         }
-        .padding(14)
+        .padding(.horizontal, 12).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(stuck ? AppSection.actions.color : Theme.line, lineWidth: 1))

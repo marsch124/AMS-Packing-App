@@ -29,26 +29,18 @@ struct SettingsScreen: View {
 
     var body: some View {
         KeyboardAwayScroll {
-            VStack(alignment: .leading, spacing: 10) {
+            // The cards 8 points apart, and the doors that only open a page are rows of
+            // ONE card — his words (6 Oct 2026, testing 0.63, the gaps between the cards
+            // marked): "Far too much space in the settings tab." (Until 0.67 every door was
+            // a card of its own, 60 points tall, and the cards stood 10 points apart.)
+            VStack(alignment: .leading, spacing: 8) {
                 Button { lists = true } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Your choices").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                            Text("Storage places, owners, packers, conditions, \"When\" steps")
-                                .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                        }
-                        Spacer()
-                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                    }
-                    .padding(.horizontal, 14).frame(minHeight: 60)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                    .contentShape(Rectangle())
+                    SettingsDoorLabel(title: "Your choices", line: "Storage places, owners, packers, conditions, \"When\" steps")
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.top, 14)
                 .accessibilityIdentifier("settings-lists")
+                .settingsCard()
+                .padding(.top, 12)
 
                 // Remind me to pack (his idea 7) — per device, off until he says.
                 RemindersCard().environmentObject(model)
@@ -57,11 +49,15 @@ struct SettingsScreen: View {
                 // what is stuck and why — and Sync now, which the other device then shows.
                 SyncCard().environmentObject(model)
 
-                // What's new and How it works — his standing rule from the web apps.
-                GuideDoors()
-
-                // A link or code someone shared — the web app's "Paste a shared link".
-                OpenSharedDoor().environmentObject(model)
+                // What's new and How it works — his standing rule from the web apps — and a
+                // link or code someone shared (the web app's "Paste a shared link"): the
+                // doors that open a page, rows of one card, as in the iPhone's own Settings.
+                VStack(spacing: 0) {
+                    GuideDoors()
+                    CardHairline()
+                    OpenSharedDoor().environmentObject(model)
+                }
+                .settingsCard()
 
                 // Only when there is something to say. Both times this library went
                 // wrong, nothing on screen said so and the counts alone knew.
@@ -105,7 +101,7 @@ struct SettingsScreen: View {
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color.opacity(0.5), lineWidth: 1))
-                    .padding(.top, 14)
+                    .padding(.top, 6)
                 }
 
                 // Lower down, his test K.2 (1 Oct 2026): "Move down, back up, and restore to
@@ -178,7 +174,7 @@ struct SettingsScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                 }
 
-                Text("This device holds").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted).padding(.top, 14)
+                Text("This device holds").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted).padding(.top, 10)
                 VStack(spacing: 0) {
                     ForEach(model.library.counts, id: \.table) { row in
                         HStack {
@@ -279,6 +275,46 @@ struct SettingsScreen: View {
         case .photos: return "Photos"
         case .meta: return "Notes about the library"
         }
+    }
+}
+
+/// A door in Settings: its name, a line under it, and the arrow — one row of a card,
+/// as in the iPhone's own Settings (`settingsCard`; rows of one card are parted by a
+/// `CardHairline`). Filled with the card's colour, so the whole row takes a press, on
+/// the Mac too. Until 0.67 each door was a card of its own, at least 60 points tall.
+struct SettingsDoorLabel: View {
+    let title: String
+    let line: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text(line).font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: Metrics.row, alignment: .leading)
+        .background(Theme.card)
+        .contentShape(Rectangle())
+    }
+}
+
+/// The line between two rows of one card in Settings, starting where the words do.
+struct CardHairline: View {
+    var body: some View {
+        Theme.line.frame(height: 1).padding(.leading, 12).background(Theme.card)
+    }
+}
+
+extension View {
+    /// A card in Settings: the card's colour, rounded, a hairline round it.
+    func settingsCard() -> some View {
+        clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
     }
 }
 

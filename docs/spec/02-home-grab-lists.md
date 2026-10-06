@@ -327,12 +327,14 @@ the buttons a bit so they are thinner … four on each row … two rows". They w
   With every list taken off, Home shows the "Grab and go" row and, instead of tiles, the
   `home-grab-none` line that leads to Grab Lists (section 3; 0.62).
 - A short last row is padded with invisible equal-width spacers, so every tile has the same width.
-- Each tile is a plain button:
-  - the list's drawing (`GrabDoodle`) at **24 pt** on the iPhone, **20** on the Mac (`GrabButtons.doodle`; 36
-    until 0.62 — his word, 5 Oct 2026: "You can even make the grab lists buttons smaller"), in the list's tone colour;
-  - 2 pt below it, `label` in **Caption semibold**, `ink`, one line, scaling to 80 %;
-  - 4 pt side padding, full width, minimum height **50** on the iPhone, **40** on the Mac (`GrabButtons.height`;
-    68 until 0.62), `card` fill, corner radius 10;
+- Each tile is a plain button, **one line** since 0.67 — his words, 6 Oct 2026, testing 0.63: "Far too
+  big buttons" (and 5 Oct: "You can even make the grab lists buttons smaller"):
+  - the list's drawing (`GrabDoodle`) at **22 pt** on the iPhone, **18** on the Mac (`GrabButtons.doodle`),
+    in the list's tone colour, and **beside it** (4 pt between) `label` in **Caption semibold**, `ink`, one
+    line, scaling to 70 % (80 % until 0.67). Until 0.67 the drawing sat ABOVE the word, 24 pt (20 on the
+    Mac; 36 until 0.62), 2 pt above it;
+  - 4 pt side padding, full width, minimum height **`Metrics.tap`: 36** on the iPhone, **26** on the Mac
+    (`GrabButtons.height`; 50 / 40 until 0.67, 68 until 0.62), `card` fill, corner radius 10;
   - a 1.2-pt stroke in the tone colour at 50 % opacity.
 - Identifier `grab-<n>`, where n is the **position** (0…7), never the name.
 - Accessibility label = `title` (for example "Indoor swim"); the visible word is `label` ("Swim"). The
@@ -649,27 +651,34 @@ device's own working state.
        `inHand / active` of the width (0 when nothing is active). The bar is hidden from accessibility.
    - **Complete:** a 52-tall tone-filled rounded bar saying **"All there — go!"** (20 pt heavy white,
      `grab-allthere`) replaces both.
-3. The scrolling list, one row per item in list order (6 pt spacing, 16 pt side and 24 pt bottom
-   padding), with a hairline under each row. A list with nothing on it (one just made) shows instead
+3. The scrolling list, one row per item in list order (**no** spacing between rows since 0.67 — 6 until
+   then; 4 pt top, 16 pt side and 24 pt bottom padding), with a hairline under each row. A list with nothing on it (one just made) shows instead
    "Nothing on this list yet. Press Edit to put things on it." (17 pt semibold `ink`, 12 pt above and
    below, `grab-empty`; 0.62).
-   - The row button (`grab-item-<n>`, the `.isSelected` trait when ticked):
-     - a 26-pt circle: tone outline, or a `line` outline when skipped; ticked = filled tone with a
-       white tick (stroke 2.4);
-     - the name at 18 pt, semibold, or regular when ticked; `muted` when ticked or skipped, else `ink`;
+   - **A row is as tall as its words** (0.67): at least **`Metrics.line` — 30 pt on the iPhone, 22 on the
+     Mac** — top to top, with 2 pt above and below the words (46 top to top until 0.67: 5 pt padding
+     round a 26-pt circle, a 40-pt ⊘ and 6 pt between rows). His words, 6 Oct 2026: "Far too big buttons."
+   - The row button (`grab-item-<n>`, the `.isSelected` trait when ticked), 8 pt between its parts:
+     - a `TickCircle` (TripScreen.swift) **`Metrics.mark` across — 18 pt on the iPhone, 14 on the Mac**
+       (26 until 0.67): tone outline (1.6), or a `line` outline when skipped; ticked = filled tone with a
+       white tick (stroke a tenth of the circle);
+     - the name in **Body**, semibold, or regular when ticked; `muted` when ticked or skipped, else `ink`;
        struck through in `muted` when skipped;
      - when skipped, at the right: **"only sometimes"** if the name (by `normName`) is marked only
-       sometimes for this list, else **"not this time"** (13 pt semibold `muted`);
-     - 11 pt vertical padding.
-   - The skip button (`grab-skip-<n>`), 40 × 40: `AsideMark` (shared with the trip screen), a 24-pt
-     drawing stroked 1.8 in `muted`: the ⊘ (a circle with a slash); when skipped, the ↻ (an arrow round).
-     Accessibility label "Leave <name> behind, just this once" or "Take <name> along after all".
+       sometimes for this list, else **"not this time"** (Footnote semibold `muted`).
+   - The skip button (`grab-skip-<n>`), **`Metrics.lineButton` wide (40 / 30) and as tall as the line**
+     (40 × 40 until 0.67): `AsideMark` (shared with the trip screen), drawn on the 24-pt grid, stroked 1.8
+     in `muted` and shown at **`Metrics.glyph` (20 / 16)** with `onGrid` (24 until 0.67): the ⊘ (a circle
+     with a slash); when skipped, the ↻ (an arrow round). Accessibility label "Leave <name> behind, just
+     this once" or "Take <name> along after all".
    - Rows are keyed by their position (`id: \.offset`).
-4. **"Ready to go"** (`grab-ready`), 14 pt above: full width, 52 tall, a radius-12 rounded rectangle
-   filled with the tone, 18 pt bold white. **Never grey.**
+4. **"Ready to go"** (`grab-ready`), 12 pt above (14 until 0.67): full width, **`Metrics.tap` tall — 36
+   on the iPhone, 26 on the Mac** (`Metrics.row`, 40 / 30, until 0.67), a radius-12 rounded rectangle
+   filled with the tone, Body semibold white. **Never grey.**
 5. **"Start over"** (`grab-reset`): only when the list differs from how it opens — something ticked, or
    the skipped names not exactly the "only sometimes" ones (0.62; before, whenever anything was ticked or
-   skipped). 16 pt semibold `muted`, 44 tall.
+   skipped). Callout semibold `muted`, **`Metrics.compact` tall (32 / 24)**, 4 pt under Ready to go
+   (`Metrics.tap` tall, nothing between, until 0.67).
 6. A footer, **15 pt** medium `muted`, 8 pt above: "Tap each thing as you pick it up — or tap ⊘ to leave
    something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap."
    (0.62: it said "after 6 hours", 14 pt.)
@@ -732,6 +741,11 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
   - `grab-ready` shows `grab-message` and `grab-notyet` and the screen stays open;
   - `grab-message-ok` closes the card;
   - `grab-reset` → "0 of" with no "skipped"; `grab-done` closes.
+- UI `testAGrabListAndItsTilesAreSmall` (0.67): `grab-0` on Home is at most `Metrics.tap` tall (36 / 26)
+  and at least 6 less; in Indoor swim the rows `grab-item-0…6` are at most `Metrics.line` (30 / 22) top to
+  top and at least 8 less; `grab-skip-0` is no taller than a line; `grab-ready` is at most `Metrics.tap`
+  tall. Pictures `tight-home-tiles`, `tight-grab`, `tight-grab-foot`. Seen red on 0.66's sizes: "a grab
+  tile is 50.0 points tall; at most 36.0".
 - UI `testAShortcutOpensAGrabListOrTheNextTrip`: `-openGrab Bike` opens `grab-detail`.
 - UI `testTheActionButtonMenuOpensTheChosenGrabList`: a menu tile opens `grab-detail`.
 - UI `testTicksOnHisOwnGrabListSurviveClosingIt`: a list made with Make ("Golf": Clubs, Balls) is filled
@@ -1162,7 +1176,7 @@ grab list" opens the app here: every grab list as a big tile, and one tap opens 
 **What is on screen.**
 - "Which grab list?" (24 pt heavy, Home blue) and Close; 14 pt between this row and the tiles.
 - Then a plain `ScrollView` (not the keyboard-dismissing one) of `GrabButtons` with prefix `grab-menu`, so
-  tiles are `grab-menu-0…`. The tiles hold
+  tiles are `grab-menu-0…` — the same one-line tiles as Home's (section 4; slim since 0.67). The tiles hold
   **Home's lists first (in Home order), then all the others in `allGrabLists()` order**, four per row,
   with no limit on the number. So a waiting list — one sent off Home, or made while Home was full — can be
   opened (ticked, edited, deleted) here without first being put on Home (as, since 0.62, in Grab Lists).

@@ -473,7 +473,11 @@ struct TemplateDetail: View {
                 arrangeList(list)
             } else {
                 KeyboardAwayScroll {
-                    LazyVStack(alignment: .leading, spacing: 6) {
+                    // No space between rows: each is as tall as its words (`Metrics.line`).
+                    // His words (6 Oct 2026, testing 0.63): "Far too much line spacing between
+                    // the items in a template … Change this dramatically, not only a bit" —
+                    // 42 points top to top until 0.67.
+                    LazyVStack(alignment: .leading, spacing: 0) {
                         // A search that finds nothing says so, quietly, where the rows were.
                         if !q.isEmpty && groups.isEmpty {
                             Text("Nothing on this template is called that.")
@@ -483,17 +487,18 @@ struct TemplateDetail: View {
                                 .accessibilityIdentifier("template-find-none")
                         }
                         ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
+                            // Less air above a heading (16 points and a 6-point gap until 0.67).
                             Text(group.title)
                                 .font(.headline)
                                 .foregroundStyle(group.colour ?? AppSection.templates.color)
-                                .padding(.top, 16)
+                                .padding(.top, 10).padding(.bottom, 2)
                                 .accessibilityIdentifier("template-group-\(g)")
                             ForEach(group.items, id: \.memId) { item in
                                 let n = index[item.memId ?? ""] ?? 0
                                 HStack(spacing: 4) {
                                     Button { editingRow = item.memId } label: {
                                         HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
+                                            VStack(alignment: .leading, spacing: 0) {
                                                 Text(item.name).font(.system(.body)).foregroundStyle(Theme.ink)
                                                 if !item.qty.isEmpty || !item.note.isEmpty {
                                                     Text([item.qty.isEmpty ? "" : "×\(item.qty)", item.note]
@@ -511,17 +516,18 @@ struct TemplateDetail: View {
                                             Spacer(minLength: 8)
                                             Text(item.container).font(.system(.subheadline)).foregroundStyle(Theme.muted).lineLimit(1)
                                         }
-                                        .padding(.vertical, 3).contentShape(Rectangle())
+                                        .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("template-item-\(n)")
                                     Button {
                                         if let mid = item.memId { withAnimation(.easeOut(duration: 0.15)) { takingOff = TakingOff(memId: mid, name: item.name) } }
                                     } label: {
+                                        // ✕ beside the bag, on the row's own line, no taller than it.
                                         SVGPath.path("M6 6L18 18M18 6L6 18")
                                             .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-                                            .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-                                            .frame(width: 40, height: 36).contentShape(Rectangle())
+                                            .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
+                                            .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain).focusEffectDisabled()
                                     .accessibilityIdentifier("template-item-\(n)-remove")

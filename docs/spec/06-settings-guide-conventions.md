@@ -37,23 +37,33 @@ compared by eye." Everything else was added later; the order was rearranged by h
 down, back up, and restore to the bottom or at least further down"), recorded in Release 0.46 ("Settings: Save a
 backup and Restore are further down, under Your choices, What's new and How it works").
 
-**Layout.** One `KeyboardAwayScroll` (see §22) holding a `VStack(alignment: .leading, spacing: 14)`, padded 16
-left/right and 24 at the bottom, inside the app's 720-point column (`RootView`). Top to bottom, exactly in this
-order in the code:
+**Layout.** One `KeyboardAwayScroll` (see §22) holding a `VStack(alignment: .leading, spacing: 8)` — the cards **8
+points apart** (0.67; 10 until then, 14 before 0.62) — padded 16 left/right and 24 at the bottom, inside the app's
+720-point column (`RootView`). His words (6 Oct 2026, testing 0.63, the gaps between the cards marked in orange):
+"Far too much space in the settings tab." Top to bottom, exactly in this order in the code:
 
 | # | Element | Shown when | Id |
 |---|---|---|---|
-| 1 | *Your choices* door (§2) | always; 14 pt extra space above it | `settings-lists` |
+| 1 | *Your choices* door (§2), a card of one row | always; 12 pt extra space above it (14 until 0.67) | `settings-lists` |
 | 2 | *Remind me to pack* card (§3) | always | `settings-reminders-card` |
 | 3 | *iCloud sync* card (§4) | always | `sync-card` |
-| 4 | Three guide doors: *What's new*, *How it works*, *Your first real trip* (§5) | always | `settings-whatsnew`, `settings-howitworks`, `settings-firsttrip` |
-| 5 | *Open a shared link* door (§11) | always | `settings-openshared` |
-| 6 | *Worth a look* card (§12) | only when `library.worries()` is not empty | `health-heading`, `health-<n>` … |
-| 7 | Heading *BACKUP* (§13) | always | `backup-heading` |
-| 8 | *Save a backup…* button + status line (+ "Last saved from this …" once saved here, 0.62) | always | `backup-save`, `backup-status`, `backup-last` |
-| 9 | *Restore from a file…* button (§14) | always | `backup-restore` |
-| 10 | *Kept before a restore* list (§15) | only when a rescue copy exists on this device | `rescue-heading`, `rescue-row-<n>` |
-| 11 | *This device holds* table + footer (sync mode, version) (§16), and under it where the library came from (0.62) | always; the line only for a library brought in from a file | `device-count-<table>`, `device-import` |
+| 4 | ONE card of four door rows (0.67; four cards 10 apart until then): *What's new*, *How it works*, *Your first real trip* (§5) and *Open a shared link* (§11), a `CardHairline` between them | always | `settings-whatsnew`, `settings-howitworks`, `settings-firsttrip`, `settings-openshared` |
+| 5 | *Worth a look* card (§12) | only when `library.worries()` is not empty; 6 pt extra above it (14 until 0.67) | `health-heading`, `health-<n>` … |
+| 6 | Heading *BACKUP* (§13) | always | `backup-heading` |
+| 7 | *Save a backup…* button + status line (+ "Last saved from this …" once saved here, 0.62) | always | `backup-save`, `backup-status`, `backup-last` |
+| 8 | *Restore from a file…* button (§14) | always | `backup-restore` |
+| 9 | *Kept before a restore* list (§15) | only when a rescue copy exists on this device | `rescue-heading`, `rescue-row-<n>` |
+| 10 | *This device holds* table + footer (sync mode, version) (§16), and under it where the library came from (0.62); its heading 10 pt extra above (14 until 0.67) | always; the line only for a library brought in from a file | `device-count-<table>`, `device-import` |
+
+**A door row and a card** (0.67, SettingsScreen.swift). `SettingsDoorLabel(title:, line:)` is every door's face: the
+title (Body semibold ink) over its line (Footnote muted, one line, cut with "…"), 0 pt between, a spacer, and the
+chevron (`"M9 6l6 6-6 6"`, stroke 1.8, muted) shown at `Metrics.glyph` (20 / 16) with `onGrid`; 12 pt side and 6 pt
+top and bottom padding, at least `Metrics.row` tall (40 / 30), full width, **filled with `Theme.card`** and shaped as
+a whole rectangle, so the whole row takes a press on the Mac too (a slim whole-row plain button with nothing behind its
+words once took no clicks — §15). On the iPhone a door row is 48 tall, 49 top to top with the hairline (70 until
+0.67: 60-tall cards 10 apart). `CardHairline` is a 1-pt `line` from 12 pt in (where the words start), on the card's
+colour — as in the iPhone's own Settings. `.settingsCard()` clips its content to a radius-12 rounded rectangle and
+draws a 1-pt `line` round it.
 
 **Sheets and windows owned by the screen itself.** Two sheets, as in 0.61: `.sheet(isPresented: lists)` →
 `ListsScreen`, and `.sheet(item: pending)` → `RestoreSheet` (0.62 tried ONE sheet with a destination, and with an
@@ -74,7 +84,12 @@ Restore opens the Files browser / an Open panel. Sheets on the Mac get minimum s
 
 **Tests.** `testSettingsOffersABackup` (the device check exists; *Save a backup* sits BELOW *Your choices*;
 pressing it says "Choosing…"; on the Mac a Save window opens and Escape closes it), `testEveryTabOpensItsScreen`
-(tab ids and `screen-settings`). Each card's own tests are in its section.
+(tab ids and `screen-settings`), `testSettingsDoorsAreRowsOfOneCard` (0.67: `settings-whatsnew`,
+`settings-howitworks`, `settings-firsttrip` and `settings-openshared` are rows of one card — at most 1.5 pt between
+one and the next, at most 52 pt top to top on the iPhone and 46 on the Mac; `settings-reminders-card` at most 8.5 pt
+under `settings-lists`; `settings-firsttrip` still opens its page and `guide-done` closes it; picture
+`tight-settings`. Seen red on 0.66: "10.0 points between settings-whatsnew and settings-howitworks: not rows of one
+card"). Each card's own tests are in its section.
 
 **Traps.** Until 0.62 the backup JSON was built inside `body` (`BackupDocument(data: model.library.backupData())` was an
 argument of `.fileExporter`), i.e. on every redraw of Settings — including all photo data. Now it is built when Save is pressed.
@@ -95,11 +110,11 @@ two of explanations for each choice … so that this is totally clear to the use
 bands in 0.57 (field test 3 Oct 2026: headings "dominant").
 
 ### 2.2 The door on Settings
-A full-width card button: title **"Your choices"** (18 bold, `Theme.ink`), under it **"Storage places, owners,
-packers, conditions, "When" steps"** (14, `Theme.muted`, one line — truncated with "…" if too narrow), a drawn
-chevron on the right (`SVGPath "M9 6l6 6-6 6"`, stroke 1.8, round caps, 24×24, muted). Card: minimum height 60,
-14 horizontal padding, `Theme.card` fill, corner radius 12, 1-pt `Theme.line` border; whole card tappable; plain
-style; `.focusEffectDisabled()`; id `settings-lists`. Tap → `lists = true` → sheet.
+A card of one door row (`SettingsDoorLabel` in `.settingsCard()`, §1; 0.67): title **"Your choices"** (Body
+semibold, `Theme.ink`), under it **"Storage places, owners, packers, conditions, "When" steps"** (Footnote,
+`Theme.muted`, one line — truncated with "…" if too narrow), a drawn chevron on the right. At least `Metrics.row`
+tall (minimum height 60 with 14 horizontal padding until 0.67); whole row tappable; plain style;
+`.focusEffectDisabled()`; id `settings-lists`. Tap → `lists = true` → sheet.
 
 ### 2.3 How it is reached and left
 Reached only through the door. Left with **Done** (top right, `HeaderButtonStyle(tint: settings slate, filled:
@@ -405,8 +420,8 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
 packing step falls due, the trip's name and what is left. "Per device and off until he turns it on in Settings —
 his iPhone and his Mac both reminding him would be the same news twice."
 
-**On screen** (a card: padding 14, card fill, radius 12, 1-pt line border, container id
-`settings-reminders-card`):
+**On screen** (a card: padding 12 at the sides and 10 above and below — 14 all round until 0.67 — its lines 6 apart
+(8 until 0.67), card fill, radius 12, 1-pt line border, container id `settings-reminders-card`):
 - A `Toggle` (id `settings-reminders`; a switch on the iPhone, a check box on the Mac), tinted Trips green
   `#2f9e63` ("Green when on, like every switch he knows: the Settings slate read as 'off'"). Its label: **"Remind me
   to pack"** (18 bold ink) and **"On this device, at 9 in the morning of each day a packing step is due —
@@ -473,6 +488,8 @@ scheduling (skipped under tests), a tapped notification opening the trip, the 09
 
 Full behaviour belongs to the storage/sync chapter and `docs/store.md`; here only what Settings shows.
 Origin: field test 3 Oct 2026 ("we need to get the sync going because I need to work from the Mac"), 0.54.
+A card like Remind me to pack's: padding 12 at the sides and 10 above and below, its lines **4** apart (0.67; 14 and 8
+until then).
 
 - Header: **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
   (muted fill) when this build keeps its library on the device only (`model.usesICloud == false`, always so under
@@ -506,8 +523,9 @@ Origin: field test 3 Oct 2026 ("we need to get the sync going because I need to 
 until 0.23"; *Your first real trip* got its own door in 0.56 because they asked to keep it where they can read it
 again (field test 3 Oct 2026: "Please save this in the app … so that we can choose to read that later as well").
 
-**On screen.** A `VStack(spacing: 10)` of three doors, each built exactly like the *Your choices* door (title 18
-bold ink, one muted 14-pt line truncated to one line, chevron, min height 60, card, radius 12):
+**On screen.** A `VStack(spacing: 0)` of three door rows (`SettingsDoorLabel`, §1), a `CardHairline` between them —
+the top three rows of Settings' card of doors, whose fourth is *Open a shared link* (§11); Settings wraps them in
+`.settingsCard()`. Until 0.67 each was a card of its own (min height 60, 10 apart).
 
 | Door | Line under it | Id | Opens |
 |---|---|---|---|
@@ -820,9 +838,11 @@ Shipped in 0.41.
 
 The door only (the sheet `OpenSharedScreen`, container `shared-screen`, belongs to the sharing chapter; its Done,
 `shared-done`, is pressed by Escape too since 0.62). Built like
-the other doors: **"Open a shared link"** (18 bold), **"A trip, template or grab list someone shared"** (14 muted,
-one line), chevron; id `settings-openshared`; it owns its sheet. Origin: 0.38 — the web app's "Paste a shared link".
-Tests: `testATripIsSharedAndOpenedAgain`, `testATemplateAndAGrabListAreSharedAndOpenedAgain` (both enter here).
+the other doors (`SettingsDoorLabel`, §1): **"Open a shared link"**, **"A trip, template or grab list someone
+shared"**, chevron; id `settings-openshared`; it owns its sheet. Since 0.67 the last row of the card of doors, under a
+`CardHairline` (a card of its own until then). Origin: 0.38 — the web app's "Paste a shared link".
+Tests: `testATripIsSharedAndOpenedAgain`, `testATemplateAndAGrabListAreSharedAndOpenedAgain` (both enter here),
+`testSettingsDoorsAreRowsOfOneCard` (0.67, §1).
 
 ---
 
@@ -1286,6 +1306,22 @@ Buttons have 12 pt side padding (14–16 before); the field button (Add, New, Ma
 keeps its size on both: `Metrics.fingertip` = 44, the touch area of the table's column arrows and Hide (his ask, 4 Oct
 2026: "These arrows are rather difficult to hit") — the arrows are drawn 22 within it.
 
+**A list's line** (0.67) — a trip's lines, a template's rows, To do and To buy, a grab list's lines: as tall as its
+words and a hair, the feel of the table "without air" (spec 05). His words, 6 Oct 2026, testing 0.63: "Far too much
+space between the lines … Change this dramatically, not only a bit."
+
+| Name | iPhone | Mac | Used for (until 0.67) |
+|---|---|---|---|
+| `line` | 30 | 22 | the least height of a line, top to top — no spacing between lines; the words have 2 pt above and below, so a name on two lines grows the line (trip 44, template 42, To do 44, grab list 46) |
+| `mark` | 18 | 14 | the tick circle of a line, `TickCircle` (trip 20; To do, To buy and grab list 26) |
+| `glyph` | 20 | 16 | ✕, ⊘/↻, the fold arrow and the washtub on a line (22–24) |
+| `lineButton` | 40 | 30 | the width that takes a press on ✕, ⊘ or a heading's tick-all; its height is the line's (40 × 40 or 40 × 36) |
+
+`onGrid(size)` (a `View` extension in Theme.swift) shows a mark drawn on the 24-point grid at `size`: framed at 24 so it
+stays in the middle, then scaled — framed smaller, a 24-grid drawing hangs off-centre. `TickCircle(on:, tint:, ring:)`
+(TripScreen.swift) is the one round tick of every such line: a 1.6-pt ring in the tint (or `ring`, the hairline colour
+for a line set aside or skipped), filled with a white tick (stroke a tenth of its width) when on.
+
 **Headings.**
 - **`HeadingBand(title:, tint = Care orange, id:)`** — a block's heading: Headline in the tint, full width, wraps,
   never cut. No strip, no mark (0.62; until then a 22-heavy title on a tinted strip with a capsule mark).
@@ -1381,12 +1417,16 @@ row when the next one would pass the right edge; row height = tallest child; rep
 (10 000 if none).
 
 **Spacing.** The thing editor, the row editor and a bag's page: blocks 12 apart (22, 20 and 18 before). Create new
-trip, Trip settings and Settings' cards: 10 (14 before). A trip's lines: a 20-pt tick circle (26 before; 1.6-pt
-ring, 2-pt tick), 10 pt between circle and words, 5 pt above and below a line (9 before); a section's tick-all
-circle 20 (24 before). Every list's rows — to-dos and buy lines, Care, grab lists, Your choices, On site and the way
-home, the picker, Search, the table's filter and sort lists, a template's rows, Your things, the weather lines — 5 pt
-above and below (10–12 before; 3 where it was 6, 4 where it was 8): "less air between the lines". Your things and
-Search show a thing's name and its details on one line.
+trip and Trip settings: 10 (14 before); Settings' cards: 8 (0.67; 10 before, 14 before 0.62). **A list's line since
+0.67** — a trip's lines, a template's rows, to-dos and buy lines, a grab list's lines: no spacing between lines, each
+at least `Metrics.line` (30 / 22) tall with 2 pt above and below its words, a `TickCircle` of `Metrics.mark` (18 / 14),
+8 pt between circle and words, ✕ and ⊘ `Metrics.lineButton` × `Metrics.line` (the table above). Until 0.67: a trip's
+line had a 20-pt tick circle (1.6-pt ring, 2-pt tick), 10 pt between circle and words, 5 pt above and below, a 40 × 40
+⊘ and 4 pt between lines (44 top to top); a section's tick-all circle 20; to-dos, buy lines and grab lists a 26-pt
+circle, 5 pt above and below and a 40 × 40 ✕ or ⊘; a template's rows 3 pt above and below, a 40 × 36 ✕ and 6 between.
+The other lists — Care, Your choices, On site and the way home, the picker, Search, the table's filter and sort
+lists, Your things, the weather lines — 5 pt above and below (10–12 before; 3 where it was 6, 4 where it was 8): "less
+air between the lines". Your things and Search show a thing's name and its details on one line.
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
 trip, Trip settings, the review and Your choices exists; When's drop-down field exists; photographs each),
@@ -1836,7 +1876,12 @@ UI (`AMSPackingUITests`): `testAAAWarmsUpTheSimulator`, `testStartsOnHomeAndName
 too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`,
 `testARestoreSwipedAwaySaysNothingWasReplaced` (iPhone), and Escape everywhere:
 `testEscapeClosesSettingsWindowsAndNeverReplaces`, `testEscapeCancelsAThingAndClosesCaresWindows`,
-`testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (with the trips' `testEscapeClosesTheTripsWindows`, spec 03).
+`testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (with the trips' `testEscapeClosesTheTripsWindows`, spec 03);
+0.67: `testSettingsDoorsAreRowsOfOneCard` (§1), and the lines without air of §21 — `testATripsLinesSitTightUnderTheirHeadings`
+(spec 03), `testATemplatesRowsSitTight` (spec 04), `testToDoAndToBuyLinesSitTight` (spec 05),
+`testAGrabListAndItsTilesAreSmall` (spec 02) — whose limits are the test file's `tightLine` (30 / 22), `tightTile`
+(36 / 26) and `doorPitch` (52 / 46), measured top to top by the helpers `rowFrames` and `pitch` (the rows on screen,
+by `shownRow`) and `airAbove` (a heading to the bottom of the row above it).
 
 Model: `SettingsListsTests` (14 since 0.62), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
 `ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (4 since 0.62), `BackupTests` (library, 5),

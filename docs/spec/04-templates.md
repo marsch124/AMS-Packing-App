@@ -444,21 +444,31 @@ side 16, top 6):
 - Beside it, **"<found> of <all>"** — 15 bold monospaced muted, id `template-find-count` — only while the query is
   not blank AND finds something ("'0 of 4' would say again what the line under it says").
 
-**The rows** (`KeyboardAwayScroll` + `LazyVStack(spacing: 6)`, side 16, bottom 24) — while arranging, the
-arranging list (§6a) stands in their place:
+**The rows** (`KeyboardAwayScroll` + `LazyVStack(spacing: 0)` — 6 until 0.67 — side 16, bottom 24) — while
+arranging, the arranging list (§6a) stands in their place. **A row is as tall as its words** (0.67): at least
+**`Metrics.line` — 30 pt on the iPhone, 22 on the Mac** — top to top, no space between rows (42 until 0.67). His
+words, 6 Oct 2026, testing 0.63: "Far too much line spacing between the items in a template … Change this
+dramatically, not only a bit."
 - A query that finds nothing: "Nothing on this template is called that." — 16 medium muted, 16 above, id
   `template-find-none`.
-- For each group, its **heading**: the title in capitals, 18 heavy, kerning 0.8, 16 above; colour = the phase's
+- For each group, its **heading**: the title in Headline (not capitals since 0.62), **10 above and 2 below** (16
+  above, and 6 between it and each neighbour, until 0.67 — so the heading's words now stand 10 pt under the row
+  above, 22 until then); colour = the phase's
   colour made readable (When grouping) or violet (other groupings); id `template-group-<g>` (g = position of the
   group on screen).
 - Under it each **row** (HStack spacing 4, a hairline under it):
-  - A button (id `template-item-<n>`) holding: the thing's name (17 medium ink); a second line when it has a
-    quantity or note: `"×<qty>"` and the note joined by " · " (13 regular muted, 1 line); a third line when the row
-    is limited: **`"Only on: <tags>"`** (13 semibold violet, 1 line; `Library.onlyOnWords(row, on: template)` —
-    Context listed only on a WET template, where a trip reads it); and on the right the bag the row resolves to
-    (`item.container`, 15 regular muted, 1 line). Vertical padding 6. Tap → the row editor (§7) as a sheet.
-  - The **✕** — a drawn cross 22 pt (stroke 1.8, muted) in a 40 × 36 hit area; id `template-item-<n>-remove`;
-    label "Take <name> off this template". Tap → the take-off question (below), with a 0.15 s ease-out.
+  - A button (id `template-item-<n>`) holding: the thing's name (Body ink); right under it (0 apart — 2 until
+    0.67) a second line when it has a quantity or note: `"×<qty>"` and the note joined by " · " (Footnote muted, 1
+    line); a third line when the row is limited: **`"Only on: <tags>"`** (Footnote semibold violet, 1 line;
+    `Library.onlyOnWords(row, on: template)` — Context listed only on a WET template, where a trip reads it); and on
+    the right the bag the row resolves to (`item.container`, Subheadline muted, 1 line). 2 pt above and below the
+    words (3 until 0.67), at least `Metrics.line` tall; a row with a second or third line grows. Tap → the row
+    editor (§7) as a sheet.
+  - The **✕** — a drawn cross on the 24-pt grid (stroke 1.8, muted) shown at `Metrics.glyph` — 20 / 16 — with
+    `onGrid` (22 pt until 0.67), in a **`Metrics.lineButton` × `Metrics.line`** hit area — 40 × 30 on the iPhone,
+    30 × 22 on the Mac (40 × 36 until 0.67) — so it is never taller than its row and sits beside the bag, on the
+    row's own line; id `template-item-<n>-remove`; label "Take <name> off this template". Tap → the take-off
+    question (below), with a 0.15 s ease-out.
   - n = the row's position **as read**, top to bottom across all shown groups (keyed by membership id).
   - Each row view is given the identity `"<memId>#<n>"` (see Traps).
 
@@ -549,7 +559,11 @@ Same content; Mac min size 480 × 600. The header holds cover, name field, Renam
 both.
 
 ### Tests
-- UI: `testATemplateOpensAndCloses`; `testAThingAddedToATemplateStays` (Hiking has 4 rows; "Gaiters" added →
+- UI: `testATemplatesRowsSitTight` (0.67, `-uiTestingSections`, Hiking: the rows `template-item-0…5` on screen at
+  most `Metrics.line` — 30 / 22 — top to top and at least 8 less; `template-item-0-remove` centred on its row's line
+  (within 2 pt) and no taller than a line; the second heading `template-group-1` at most 12 pt under the row above;
+  picture `tight-template`; seen red on 0.66's sizes: "a row takes 41.67 points, top to top; at most 30.0");
+  `testATemplateOpensAndCloses`; `testAThingAddedToATemplateStays` (Hiking has 4 rows; "Gaiters" added →
   `template-item-4`, survives close/reopen; ✕ asks first, Keep it keeps, Take it off removes, the other rows stay);
   `testATemplatesThingsGroupTheWaysATripSorts` (a sectioned template starts on Section, first heading "Lights";
   A–Z is one group "A–Z"; Into's first heading "Carry-on / hand luggage" — headings in Headline, not capitals, since 0.62);
