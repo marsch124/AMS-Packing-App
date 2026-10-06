@@ -5291,6 +5291,12 @@ final class AMSPackingUITests: XCTestCase {
         let name = app.staticTexts["table-0-name"]
         XCTAssertTrue(name.exists, "the first row has no name")
         XCTAssertLessThanOrEqual(name.frame.height, pitch, "the name is taller than its row")
+        // The grid starts under the tools, not in the middle of the window (with the
+        // sample's ten things it floated there).
+        let top = app.buttons["table-head-name"]
+        XCTAssertTrue(top.exists, "no Thing heading")
+        XCTAssertLessThan(top.frame.minY - app.buttons["table-filter"].frame.maxY, 90,
+                          "the grid floats \(top.frame.minY - app.buttons["table-filter"].frame.maxY) points below the tools")
         shot(app, "table-slim")
     }
 
