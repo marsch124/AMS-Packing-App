@@ -3996,7 +3996,9 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-group-1-all")
         XCTAssertTrue(waitUntil { self.words(progress) == "1/9" }, "ticking Lights did not tick its line: '\(words(progress))'")
         XCTAssertTrue(app.buttons["trip-line-7"].exists, "the batteries are not shown under Lights")
-        XCTAssertTrue(isOn(app.buttons["trip-line-7"]), "the batteries were not ticked with their section")
+        // The Mac's list shows the line twice while the tick animates (GitHub's Mac probe,
+        // 6 Oct 2026: "Multiple matching elements"), so ask the first one until it settles.
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-line-7"].firstMatch) }, "the batteries were not ticked with their section")
         tap(app, id: "trip-group-1-fold")
         XCTAssertTrue(waitUntil { !app.buttons["trip-line-7"].exists }, "Lights did not fold away")
         tap(app, id: "trip-group-1-fold")
