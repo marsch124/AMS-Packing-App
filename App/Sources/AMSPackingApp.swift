@@ -15,6 +15,11 @@ struct AMSPackingApp: App {
         }
         #if os(macOS)
         .defaultSize(width: 760, height: 900)
+        // No title bar (0.67, his note on 0.63: the strip at the top was "underused"): the
+        // tab's own header sits on the traffic lights' line (`TitleBarStrip`). The window
+        // is still moved by dragging its empty background, as it was by its title bar.
+        .windowStyle(.hiddenTitleBar)
+        .windowBackgroundDragBehavior(.enabled)
         #endif
 
         #if os(macOS)

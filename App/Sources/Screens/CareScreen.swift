@@ -32,6 +32,17 @@ struct CareScreen: View {
     /// "list" or "calendar", remembered on this device.
     @AppStorage("ams.care.view") private var careView = "list"
 
+    /// "Care", with the search beside it on ONE centre line (ScreenHeader; his note on
+    /// 0.63): the tab's first line on the iPhone, pinned in the window's title bar strip on
+    /// the Mac.
+    private func header(_ stats: Library.KitStats) -> some View {
+        ScreenHeader(title: "Care", tint: AppSection.care.color, id: "care-heading",
+                     line: CareScreen.line(stats), lineId: "care-line") {
+            SearchButton { searching = true }
+        }
+        .padding(.bottom, 2)
+    }
+
     var body: some View {
         let today = Today.local
         let rows = model.library.careRows(today: today)
@@ -42,12 +53,11 @@ struct CareScreen: View {
         let stats = model.library.kitStats(today: today)
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 6) {
-                // Title and search on ONE centre line (ScreenHeader; his note on 0.63).
-                ScreenHeader(title: "Care", tint: AppSection.care.color, id: "care-heading",
-                             line: CareScreen.line(stats), lineId: "care-line") {
-                    SearchButton { searching = true }
-                }
-                .padding(.bottom, 2)
+                // On the Mac the header is pinned in the window's title bar strip
+                // instead (`headerOnTheMac`, below).
+                #if !os(macOS)
+                header(stats)
+                #endif
 
                 // Everything he owns, on a list or not — the web app's "Your things".
                 Button { opening = ThingsRequest(search: "") } label: {
@@ -181,7 +191,11 @@ struct CareScreen: View {
                     .padding(.top, 18)
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
+            #if os(macOS)
+            .padding(.top, 6)                 // under the pinned header, as on the iPhone
+            #endif
         }
+        .headerOnTheMac { header(stats) }
         .sheet(item: $opening) { ask in ThingsScreen(searching: ask.search).environmentObject(model) }
         .sheet(isPresented: $table) { ThingsTable().environmentObject(model) }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }

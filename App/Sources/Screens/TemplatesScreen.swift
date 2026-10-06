@@ -59,28 +59,37 @@ struct TemplatesScreen: View {
         return parts.joined(separator: " · ")
     }
 
+    /// "Your templates", with the search and + New beside it — on ONE centre line
+    /// (ScreenHeader; his note on 0.63, "Overall, icons are not aligned"): the tab's first
+    /// line on the iPhone, pinned in the window's title bar strip on the Mac.
+    private func header(_ flat: [PackList]) -> some View {
+        ScreenHeader(title: "Your templates", tint: AppSection.templates.color, id: "templates-heading",
+                     line: TemplatesScreen.summary(flat, model.library), lineId: "templates-summary") {
+            SearchButton { opened = .search }
+            Button { opened = .new } label: {
+                Text("+ New")
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                    .background(Capsule().fill(AppSection.templates.color))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("templates-new")
+        }
+        .padding(.bottom, 4)
+    }
+
     var body: some View {
         let areas = TemplatesScreen.activityAreas(model.library.shownTemplates())
         let flat = areas.flatMap(\.lists)
         let use = model.library.templateUse(today: Today.local)
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
-                // Title, search and + New on ONE centre line (ScreenHeader; his note on
-                // 0.63, "Overall, icons are not aligned").
-                ScreenHeader(title: "Your templates", tint: AppSection.templates.color, id: "templates-heading",
-                             line: TemplatesScreen.summary(flat, model.library), lineId: "templates-summary") {
-                    SearchButton { opened = .search }
-                    Button { opened = .new } label: {
-                        Text("+ New")
-                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
-                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                            .background(Capsule().fill(AppSection.templates.color))
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("templates-new")
-                }
-                .padding(.bottom, 4)
+                // On the Mac the header is pinned in the window's title bar strip
+                // instead (`headerOnTheMac`, below).
+                #if !os(macOS)
+                header(flat)
+                #endif
                 // What his trip reviews say a list carries for nothing (roadmap stop E).
                 RefineDoor().environmentObject(model)
                     .padding(.bottom, 4)
@@ -105,7 +114,11 @@ struct TemplatesScreen: View {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
+            #if os(macOS)
+            .padding(.top, 8)                 // under the pinned header, as on the iPhone
+            #endif
         }
+        .headerOnTheMac { header(flat) }
         .sheet(item: $opened, onDismiss: {
             // Straight into a template just made: a list he cannot see the inside of
             // is not made yet. Opened once New has gone, never on top of it.

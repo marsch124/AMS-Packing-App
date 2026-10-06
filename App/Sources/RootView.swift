@@ -13,9 +13,28 @@ struct RootView: View {
     @State private var wasAway = false
 
     var body: some View {
+        #if os(macOS)
+        // The window has no title bar (0.67): its strip holds each tab's header. How tall
+        // it is — the window's top safe area — and how far a header steps in to clear the
+        // window buttons, from the column's left edge (the column is centred).
+        GeometryReader { geo in
+            let column = min(geo.size.width, RootView.column)
+            page.environment(\.titleBarStrip, TitleBarStrip(
+                height: geo.safeAreaInsets.top,
+                lead: max(0, Metrics.windowButtons - (geo.size.width - column) / 2 - 16)))
+        }
+        #else
+        page
+        #endif
+    }
+
+    /// The web app's column, on the Mac.
+    static let column: CGFloat = 720
+
+    private var page: some View {
         VStack(spacing: 0) {
             SectionScreen(section: section, go: { section = $0 })
-                .frame(maxWidth: 720)                 // the web app's column, on the Mac
+                .frame(maxWidth: RootView.column)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             TabBar(section: $section)
         }

@@ -54,19 +54,11 @@ struct HomeScreen: View {
                 // lined up on the heading's baseline, so the search button stood up above
                 // it and left an empty band at the top).
                 VStack(alignment: .leading, spacing: 6) {
-                    ScreenHeader(title: "Grab and go", tint: Theme.ink, id: "home-grab-heading",
-                                 font: .system(.title3, weight: .bold)) {
-                        SearchButton { searching = true }
-                        // This door opens the grab lists — not the templates (whose screen
-                        // is "Your templates"). His note on the Mac: "Your Grab Lists".
-                        Button { showingGrabLists = true } label: {
-                            Text("Grab Lists")
-                                .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
-                                .frame(minHeight: Metrics.tap).contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("grab-lists")
-                    }
+                    // On the Mac the header is pinned in the window's title bar strip
+                    // instead (`headerOnTheMac`, below).
+                    #if !os(macOS)
+                    grabHeader
+                    #endif
                     // Home holds eight (4 × 2) — HIS, in his order; a free place takes only a
                     // list new since he last arranged Home (GrabCollection.swift).
                     let onHome = model.library.homeGrabLists()
@@ -202,7 +194,11 @@ struct HomeScreen: View {
                 .padding(.top, 8)
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
+            #if os(macOS)
+            .padding(.top, 6)                 // under the pinned header, as on the iPhone
+            #endif
         }
+        .headerOnTheMac { grabHeader }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id })) { o in
             TripScreen(tripId: o.id).environmentObject(model)
@@ -233,6 +229,24 @@ struct HomeScreen: View {
     }
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
+
+    /// Grab and go, with the search and Grab Lists beside it: Home's first line on the
+    /// iPhone, pinned in the window's title bar strip on the Mac.
+    private var grabHeader: some View {
+        ScreenHeader(title: "Grab and go", tint: Theme.ink, id: "home-grab-heading",
+                     font: .system(.title3, weight: .bold)) {
+            SearchButton { searching = true }
+            // This door opens the grab lists — not the templates (whose screen
+            // is "Your templates"). His note on the Mac: "Your Grab Lists".
+            Button { showingGrabLists = true } label: {
+                Text("Grab Lists")
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
+                    .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("grab-lists")
+        }
+    }
 
     /// Something asked from outside — a Shortcut, the Action button, a tapped packing
     /// reminder — while one of Home's own windows is up (Grab Lists, Search, a trip,

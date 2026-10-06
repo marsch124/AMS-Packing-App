@@ -31,8 +31,10 @@ struct ActionsScreen: View {
                 Spacer()
                 SearchButton { searching = true }
             }
-            // At the same height as every tab's first line (Metrics.screenTop, 0.67).
-            .padding(.horizontal, 16).padding(.top, Metrics.screenTop)
+            // Where every tab's first line is (0.67): under the status bar on the iPhone,
+            // on the traffic lights' line in the window's title bar strip on the Mac.
+            .headerLine()
+            .padding(.horizontal, 16)
             if buying {
                 BuyList(text: $buyText).environmentObject(model)
             } else {
@@ -122,6 +124,9 @@ struct ActionsScreen: View {
             .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
+        #if os(macOS)
+        .ignoresSafeArea(.container, edges: .top)     // its first line sits in the title bar strip
+        #endif
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
     }
 

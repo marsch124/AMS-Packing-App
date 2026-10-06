@@ -77,4 +77,9 @@ enum Metrics {
     /// title's baseline stood a 36-pt search button up above that — his note on 0.63
     /// (6 Oct 2026), "The area above Grab and go is underused".
     static let screenTop: CGFloat = 4
+    /// The Mac: where a tab's title may start, from the window's LEFT EDGE — just after
+    /// the three window buttons, whose right edge is at 68 on macOS 26 (measured on his
+    /// screenshot of 0.63; the system's own title started at 84). The window has no
+    /// title bar since 0.67: its header sits on the buttons' line.
+    static let windowButtons: CGFloat = 78
 }

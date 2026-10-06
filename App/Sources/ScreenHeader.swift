@@ -11,6 +11,9 @@ import SwiftUI
 /// for every tab now (Home, Trips, Templates, Care), centred; checked on each tab by
 /// `testEveryTabsHeaderIsOnOneCentreLine`. To do's first line (To do · To buy ·
 /// search) was centred already and starts at the same height; Settings has none.
+///
+/// On the Mac the header is pinned in the window's title bar strip instead (see
+/// `TitleBarStrip`, `headerOnTheMac`); on the iPhone it scrolls with the page.
 struct ScreenHeader<Trailing: View>: View {
     let title: String
     let tint: Color
@@ -33,13 +36,74 @@ struct ScreenHeader<Trailing: View>: View {
                 Spacer(minLength: 8)
                 trailing()
             }
-            .frame(minHeight: Metrics.tap)
+            .headerLine()
             if let line {
                 Text(line)
                     .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier(lineId)
             }
         }
-        .padding(.top, Metrics.screenTop)
+    }
+}
+
+/// The Mac's main window has no title bar of its own (0.67, `.hiddenTitleBar`; his note
+/// on 0.63: the strip at the top was "underused" — his boxes covered the title bar too).
+/// The strip where it was — the traffic lights' line — holds the tab's header. RootView
+/// measures it: how tall it is (the window's top safe area: 32 on macOS 26) and how far
+/// a header must step in so its title starts just after the three window buttons
+/// (`Metrics.windowButtons` from the window's left edge, less the column's own margin).
+struct TitleBarStrip: Equatable {
+    var height: CGFloat = 0
+    var lead: CGFloat = 0
+}
+
+private struct TitleBarStripKey: EnvironmentKey {
+    static let defaultValue = TitleBarStrip()
+}
+
+extension EnvironmentValues {
+    var titleBarStrip: TitleBarStrip {
+        get { self[TitleBarStripKey.self] }
+        set { self[TitleBarStripKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// A page and its header. On the iPhone the header is the page's first line and
+    /// scrolls with it — the page puts it there itself, and this does nothing. On the Mac
+    /// it is pinned in the window's title bar strip, on the traffic lights' line, and the
+    /// page scrolls under it: nothing ever slides beneath the window buttons.
+    @ViewBuilder
+    func headerOnTheMac<Header: View>(@ViewBuilder _ header: () -> Header) -> some View {
+        #if os(macOS)
+        VStack(spacing: 0) {
+            header().padding(.horizontal, 16)
+            self
+        }
+        .ignoresSafeArea(.container, edges: .top)
+        #else
+        self
+        #endif
+    }
+
+    /// A tab's first line: on the iPhone `Metrics.tap` tall, `Metrics.screenTop` under the
+    /// status bar; on the Mac as tall as the title bar strip, so it is centred on the
+    /// traffic lights' line, and stepped in past the window buttons.
+    func headerLine() -> some View { modifier(HeaderLine()) }
+}
+
+private struct HeaderLine: ViewModifier {
+    @Environment(\.titleBarStrip) private var strip
+
+    func body(content: Content) -> some View {
+        #if os(macOS)
+        content
+            .padding(.leading, strip.lead)
+            .frame(minHeight: max(strip.height, Metrics.tap))
+        #else
+        content
+            .frame(minHeight: Metrics.tap)
+            .padding(.top, Metrics.screenTop)
+        #endif
     }
 }
