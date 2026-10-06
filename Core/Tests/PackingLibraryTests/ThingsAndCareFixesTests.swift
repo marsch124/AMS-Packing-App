@@ -43,6 +43,17 @@ final class ThingsAndCareFixesTests: XCTestCase {
         XCTAssertEqual(Library().bagNames(), CONTAINERS)
     }
 
+    /// Kept at home's "A new place" (6 Oct 2026): it joins Your choices once, spelt his way.
+    func testANewPlaceJoinsHisPlacesOnceAndInHisSpelling() {
+        var lib = library()
+        let before = lib.storagePlaces()
+        XCTAssertEqual(lib.addPlace("  Attic shelf "), "Attic shelf")
+        XCTAssertEqual(lib.storagePlaces(), before + ["Attic shelf"])
+        XCTAssertEqual(lib.addPlace("attic SHELF"), "Attic shelf", "a place he has came back in another spelling")
+        XCTAssertEqual(lib.storagePlaces().filter { $0 == "Attic shelf" }.count, 1, "the same place was added twice")
+        XCTAssertNil(lib.addPlace("   "))
+    }
+
     func testHisBagListIsNotATemplateAThingIsTickedOnto() {
         let lib = library()
         XCTAssertEqual(lib.templates.count, 2)

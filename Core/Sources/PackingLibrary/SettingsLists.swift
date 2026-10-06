@@ -263,6 +263,19 @@ extension Library {
         }
     }
 
+    /// A place made from a thing's Kept at home (6 Oct 2026): it joins Your choices,
+    /// so it is spelt one way everywhere. A name he already has is not added again —
+    /// his list's own spelling comes back, and that is what the thing takes. nil for
+    /// a blank name.
+    @discardableResult
+    public mutating func addPlace(_ name: String) -> String? {
+        let clean = jsTrim(name)
+        guard !clean.isEmpty else { return nil }
+        if let have = existingChoice("places", clean) { return have }
+        setNames("places", storagePlaces() + [clean])
+        return clean
+    }
+
     // MARK: - Writing a list back
 
     @discardableResult

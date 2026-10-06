@@ -761,21 +761,54 @@ apart; a field 6 pt under its heading):
    `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
    twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.
-4. **Kept at home** — band (`thing-heading-kept`); free-text field (`thing-storage`), placeholder "e.g. Hall
-   closet"; under it his places (`storagePlaces()`, his order) as pills (`thing-place-N`, 15 pt, 36 tall,
-   orange when lit, selected trait): a tap puts that place in the field; the pill matching the field (by
-   `normName`) is lit. Typing stays free — a new place is just typed (0.62: a tap spells a known place the way
-   the table's Storage menu does).
-5. **Kind of thing** — pills band "Kind of thing" (`thing-category-title`), one pill per `CATEGORIES` entry
+4. **Kind of thing** — pills band "Kind of thing" (`thing-category-title`), one pill per `CATEGORIES` entry
    (`thing-category-0` … `-11`; Electronics is `-7`), orange; single choice; the thing's category is lit.
-6. **Usually packed in** — pills band (`thing-bag-title`): `bagNames()` = his own bags, in his bag list's order
+5. **Whose it is** — pills band (`thing-owner-title`) when `ownerChoices()` is not empty: first
+    "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026, replacing "Nobody's in
+    particular"; `thing-owner-0`), then each owner once (`thing-owner-1`…). Every owner named on a thing is offered,
+    but once per `normName`, in the FIRST spelling met (his owners list before the things' names) — so a thing
+    saying "kim" while "Kim" is offered shows no pill lit (the value compared is the exact text). With nobody
+    named anywhere (0.62): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
+    choices." (`thing-owner-none`, 15 medium muted) — it used to vanish.
+6. **On these templates** — pills band in VIOLET (templates colour, `thing-lists-title`): every template except
+    the bag list (`templatesForThings()`), A–Z (`jsLocaleCompare`, base sensitivity) (`thing-lists-N`; with the sample: Common base 0,
+    Hiking 1, Swim 2); several may be lit; a tap toggles.
+7. "Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and
+    tap this thing." (`thing-tags-hint`, 15 medium muted).
+8. **Kept at home** — band (`thing-heading-kept`); since 0.64 CHOSEN, never typed (his word, 6 Oct 2026: "Can we
+   turn Kept at home into a drop-down … so that we have a list to choose from? If we write it this way, it's a
+   possibility that the naming convention skews"): a field-like button (`thing-storage`, value = the place, "Not
+   said" in muted when none, a ▾ mark) that opens a list beside it (a popover, also on the iPhone —
+   `presentationCompactAdaptation(.popover)`; container `thing-places`): "Not said" (`thing-place-none`), his places
+   in his order (`storagePlaces()`, `thing-place-N`), the place the thing already names when it is none of his
+   (`thing-place-other`); the chosen one ticked (selected trait); a tap takes it and closes the list. At its foot "A
+   new place" (`thing-place-new`) and Add (`thing-place-add`; blank → "Type the place first." under it,
+   `thing-place-add-needs`): `Library.addPlace` puts it on Your choices' places — or, when he has it already (same
+   `choiceKey`), returns his own spelling — and the thing takes it. Until 0.64: a free-text field with his places as
+   pills under it.
+9. **Usually packed in** — pills band (`thing-bag-title`): `bagNames()` = his own bags, in his bag list's order
    (the 17 built-in names only while he has none — then "Checked luggage" is `-2`; 0.64) (`thing-bag-N`); then the bag the thing names when it is none of those (so it is seen, lit);
    then **"No bag"** LAST (value "" — the same "no bag" a bag's delete can leave; 0.62). Single choice; a bag
    named in other capitals lights the offered spelling (`ThingEditor.bagChoices`).
-7. **On a plane** — band (`thing-heading-plane`); two switches (orange tint): "Liquid" / "In the cabin: 100 ml at
-   most, in the clear bag." (`thing-liquid`) and "Not allowed in the cabin" / "A knife, tools, gas — it goes in
-   the hold." (`thing-restricted`); title 16 semibold, explanation 14 muted.
-8. **Valid until** — band (`thing-heading-valid`):
+10. **When** — pills band (`thing-when-title`), one pill per live `PHASES` step (id and label; `thing-when-N`).
+11. **Weight** — band "Weight, in grams (0 = not known)" (`thing-heading-weight`); field (`thing-weight`),
+    placeholder "0"; when Save found it unreadable, "The weight must be a number of grams, like 250 or 12,5."
+    under it in red (`thing-weight-problem`, 15 semibold; gone as he types).
+12. **Brand** — band (`thing-heading-brand`); field (`thing-brand`), placeholder "e.g. " and a clothing brand
+    (see the code).
+13. **Colour** — band (`thing-heading-colour`); field (`thing-colour`), placeholder "e.g. Black".
+14. **Condition** — pills band (`thing-condition-title`): "Not said" (value "") then each live condition by
+    label, storing its id (`thing-condition-N`). The lit pill is `conditionId(for:)` of the stored value, so a
+    thing still holding a label lights its condition too.
+11a. **Care** (0.62) — pills band "Care" (`thing-care-title`): "None" (0), "Every month" (30), "Every 3 months"
+    (90), "Every 6 months" (182), "Every year" (365), "Every 2 years" (730) (`thing-care-0`…`-5`; an interval
+    of his own, e.g. 45 from the web app, adds "Every 45 days"); under it a growing field "What to do, e.g. Wax
+    the leather" (`thing-care-notes`, 1–6 lines, 18 medium) — the care notes.
+15. **On a plane** — band (`thing-heading-plane`); two switches (orange tint): "Liquid" (`thing-liquid`) and "Not allowed in the
+   cabin" (`thing-restricted`), Callout semibold — their words only since 0.64 (his word, 6 Oct 2026: "Delete the
+   explanations for liquid and not allowed in the cabin"; they said "In the cabin: 100 ml at most, in the clear bag."
+   and "A knife, tools, gas — it goes in the hold.").
+16. **Valid until** — band (`thing-heading-valid`):
    - No date: the pill "Add a date" (`thing-expiry-add`; 15 bold orange, orange 1.4 outline, min height 36) →
      sets the date to TODAY.
    - With a date: a compact date picker (`thing-expiry`) and "Remove the date" (`thing-expiry-clear`, 15
@@ -785,35 +818,12 @@ apart; a field 6 pt under its heading):
      date to `addMonths(today, 1/6/12/60/120)`; the pill equal to the current date is filled orange with white
      bold words and the selected trait.
    - Always: "The trip warns before it runs out — a document (Documents & money) six months ahead." (14 muted).
-9. **When** — pills band (`thing-when-title`), one pill per live `PHASES` step (id and label; `thing-when-N`).
-10. **Whose it is** — pills band (`thing-owner-title`) when `ownerChoices()` is not empty: first
-    "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026, replacing "Nobody's in
-    particular"; `thing-owner-0`), then each owner once (`thing-owner-1`…). Every owner named on a thing is offered,
-    but once per `normName`, in the FIRST spelling met (his owners list before the things' names) — so a thing
-    saying "kim" while "Kim" is offered shows no pill lit (the value compared is the exact text). With nobody
-    named anywhere (0.62): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
-    choices." (`thing-owner-none`, 15 medium muted) — it used to vanish.
-11. **Condition** — pills band (`thing-condition-title`): "Not said" (value "") then each live condition by
-    label, storing its id (`thing-condition-N`). The lit pill is `conditionId(for:)` of the stored value, so a
-    thing still holding a label lights its condition too.
-11a. **Care** (0.62) — pills band "Care" (`thing-care-title`): "None" (0), "Every month" (30), "Every 3 months"
-    (90), "Every 6 months" (182), "Every year" (365), "Every 2 years" (730) (`thing-care-0`…`-5`; an interval
-    of his own, e.g. 45 from the web app, adds "Every 45 days"); under it a growing field "What to do, e.g. Wax
-    the leather" (`thing-care-notes`, 1–6 lines, 18 medium) — the care notes.
-12. **Weight** — band "Weight, in grams (0 = not known)" (`thing-heading-weight`); field (`thing-weight`),
-    placeholder "0"; when Save found it unreadable, "The weight must be a number of grams, like 250 or 12,5."
-    under it in red (`thing-weight-problem`, 15 semibold; gone as he types).
-13. **Brand** — band (`thing-heading-brand`); field (`thing-brand`), placeholder "e.g. " and a clothing brand
-    (see the code).
-14. **Colour** — band (`thing-heading-colour`); field (`thing-colour`), placeholder "e.g. Black".
-15. **On these templates** — pills band in VIOLET (templates colour, `thing-lists-title`): every template except
-    the bag list (`templatesForThings()`), A–Z (`jsLocaleCompare`, base sensitivity) (`thing-lists-N`; with the sample: Common base 0,
-    Hiking 1, Swim 2); several may be lit; a tap toggles.
-16. "Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and
-    tap this thing." (`thing-tags-hint`, 15 medium muted).
 17. When a save was refused: the problem in red (`thing-problem`, 15 semibold): "A thing needs a name." or "You
     already have a thing called that."
 18. "A change here reaches every template it is on. Past trips keep what they were packed with." (14 muted).
+(The order is his, 6 Oct 2026, release 0.64: Kind of thing after Notes, Whose it is under it, On these templates
+moved up, When with Usually packed in, Condition under Colour, On a plane and Valid until at the foot.
+UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's place.)
 19. **Delete** — absent for a bag (a bag is deleted on its own page). Otherwise the small "Delete thing"
     (`thing-delete`); pressed, it becomes a card (card colour, red 1 pt border, radius 12): "Delete
     “`<name being edited>`”?" (16 heavy) and "It is on none of your templates. Trips you already packed keep it."

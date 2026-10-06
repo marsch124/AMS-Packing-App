@@ -205,6 +205,10 @@ struct ThingEditor: View {
     @State private var weightText = ""
     /// What was wrong with the weight when Save was pressed, said under the field.
     @State private var weightProblem = ""
+    /// Kept at home's list is open; what is typed as a new place; what Add was missing.
+    @State private var choosingPlace = false
+    @State private var newPlace = ""
+    @State private var placeNeeds = ""
     /// The care schedule (days, 0 = none) and care notes, edited here since 0.62.
     @State private var careEvery = 0
     @State private var careNotes = ""
@@ -240,27 +244,11 @@ struct ThingEditor: View {
                         notesField
                         rowNotes
                     }
-                    labelled("Kept at home") {
-                        field($draft.storage, "e.g. Hall closet", "thing-storage")
-                        places
-                    }
+                    // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
+                    // where it lives and goes and when, the details, and last what a flight and a
+                    // date ask of it.
                     Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
                           id: "thing-category", tint: AppSection.care.color, heading: .band) { draft.category = $0 }
-                    Pills(title: "Usually packed in", options: bag.options,
-                          selected: [bag.selected], id: "thing-bag", tint: AppSection.care.color, heading: .band) { draft.container = $0 }
-                    // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
-                    VStack(alignment: .leading, spacing: 8) {
-                        HeadingBand(title: "On a plane", id: "thing-heading-plane")
-                        Toggle(isOn: $draft.liquid) { flagWords("Liquid", "In the cabin: 100 ml at most, in the clear bag.") }
-                            .tint(AppSection.care.color)
-                            .accessibilityIdentifier("thing-liquid")
-                        Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin", "A knife, tools, gas — it goes in the hold.") }
-                            .tint(AppSection.care.color)
-                            .accessibilityIdentifier("thing-restricted")
-                    }
-                    labelled("Valid until") { validUntil }
-                    Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
-                          id: "thing-when", tint: AppSection.care.color, heading: .band) { draft.phase = $0 }
                     if !owners.isEmpty {
                         // No owner means each has one of their own — his words (4 Oct 2026):
                         // "Replace 'Nobody's in particular' with 'Both have one'".
@@ -278,12 +266,23 @@ struct ThingEditor: View {
                                 .accessibilityIdentifier("thing-owner-none")
                         }
                     }
-                    // The condition's ID is what is stored; a thing still holding a label
-                    // (stored by the table before 0.62) lights its pill all the same.
-                    Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
-                          selected: [model.library.conditionId(for: draft.condition) ?? draft.condition],
-                          id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }
-                    careFields
+                    Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
+                          id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
+                        if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
+                    }
+                    // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
+                    Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("thing-tags-hint")
+                    // Chosen from his places, never typed (6 Oct 2026, his word: "Can we turn Kept
+                    // at home into a drop-down … so that we have a list to choose from? If we write
+                    // it this way, it's a possibility that the naming convention skews.")
+                    labelled("Kept at home") { keptAtHome }
+                    Pills(title: "Usually packed in", options: bag.options,
+                          selected: [bag.selected], id: "thing-bag", tint: AppSection.care.color, heading: .band) { draft.container = $0 }
+                    Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
+                          id: "thing-when", tint: AppSection.care.color, heading: .band) { draft.phase = $0 }
                     labelled("Weight, in grams (0 = not known)") {
                         field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight")
                         if !weightProblem.isEmpty {
@@ -296,15 +295,23 @@ struct ThingEditor: View {
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand") }
                     labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
-                    Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
-                          id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
-                        if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
+                    // The condition's ID is what is stored; a thing still holding a label
+                    // (stored by the table before 0.62) lights its pill all the same.
+                    Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
+                          selected: [model.library.conditionId(for: draft.condition) ?? draft.condition],
+                          id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }
+                    careFields
+                    // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
+                    VStack(alignment: .leading, spacing: 8) {
+                        HeadingBand(title: "On a plane", id: "thing-heading-plane")
+                        Toggle(isOn: $draft.liquid) { flagWords("Liquid") }
+                            .tint(AppSection.care.color)
+                            .accessibilityIdentifier("thing-liquid")
+                        Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin") }
+                            .tint(AppSection.care.color)
+                            .accessibilityIdentifier("thing-restricted")
                     }
-                    // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
-                    Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
-                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("thing-tags-hint")
+                    labelled("Valid until") { validUntil }
                     if !problem.isEmpty {
                         Text(problem).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("thing-problem")
@@ -377,29 +384,100 @@ struct ThingEditor: View {
         }
     }
 
-    /// His places under the field, a tap away (the table offers them as a menu).
-    /// Typing stays free — a new place is just typed — but a tap spells a known one
-    /// the same way every time, so Kept at home and the table's Storage agree (the
-    /// spec pass, 5 Oct 2026). The one the field holds is lit.
-    private var places: some View {
-        FlowRow(spacing: 6) {
-            ForEach(Array(model.library.storagePlaces().enumerated()), id: \.offset) { n, place in
-                let on = normName(place) == normName(draft.storage)
-                Button { draft.storage = place } label: {
-                    Text(place)
-                        .font(.system(.subheadline, weight: on ? .semibold : .regular))
-                        .foregroundStyle(on ? Color.white : Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                        .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
-                        .overlay(Capsule().stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("thing-place-\(n)")
-                .accessibilityAddTraits(on ? .isSelected : [])
+    /// Kept at home: a field-like button that opens his places, as a list beside it —
+    /// chosen, never typed (6 Oct 2026). "Not said" first, then his places in his order
+    /// (Your choices), then the one the thing already names when it is none of his (from
+    /// before 0.64, kept and ticked); at the foot "A new place", which joins Your choices
+    /// so it is spelt one way everywhere.
+    @ViewBuilder private var keptAtHome: some View {
+        Button { choosingPlace = true } label: {
+            HStack(spacing: 8) {
+                Text(draft.storage.isEmpty ? "Not said" : draft.storage)
+                    .font(.body).foregroundStyle(draft.storage.isEmpty ? Theme.muted : Theme.ink)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                SVGPath.path("M6 9l6 6 6-6")
+                    .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 16, height: 16).foregroundStyle(Theme.muted)
             }
+            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            .contentShape(Rectangle())
         }
-        .padding(.top, 2)
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("thing-storage")
+        .accessibilityValue(draft.storage)
+        .popover(isPresented: $choosingPlace, arrowEdge: .bottom) {
+            placeList
+                .presentationCompactAdaptation(.popover)
+        }
+    }
+
+    private var placeList: some View {
+        let places = model.library.storagePlaces()
+        let unknown = !draft.storage.isEmpty && !places.contains { normName($0) == normName(draft.storage) }
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                placeRow("Not said", value: "", id: "thing-place-none")
+                ForEach(Array(places.enumerated()), id: \.offset) { n, place in
+                    placeRow(place, value: place, id: "thing-place-\(n)")
+                }
+                if unknown { placeRow(draft.storage, value: draft.storage, id: "thing-place-other") }
+                HStack(spacing: 8) {
+                    TextField("A new place", text: $newPlace)
+                        .textFieldStyle(.plain)
+                        .font(.body).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.bg))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
+                        .onSubmit { addPlace() }
+                        .accessibilityIdentifier("thing-place-new")
+                    Button { addPlace() } label: { FieldButtonLabel(title: "Add", tint: AppSection.care.color) }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("thing-place-add")
+                }
+                .needsLine($placeNeeds, typed: newPlace, id: "thing-place-add-needs")
+                .padding(.top, 8)
+            }
+            .padding(12)
+        }
+        .frame(minWidth: 280, idealWidth: 320, maxHeight: 440)
+        .background(Theme.bg)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("thing-places")
+    }
+
+    private func placeRow(_ label: String, value: String, id: String) -> some View {
+        let on = normName(value) == normName(draft.storage)
+        return Button { draft.storage = value; choosingPlace = false } label: {
+            HStack(spacing: 8) {
+                Text(label).font(.body).foregroundStyle(value.isEmpty ? Theme.muted : Theme.ink)
+                Spacer(minLength: 8)
+                if on {
+                    Tick().stroke(AppSection.care.color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        .frame(width: 18, height: 18)
+                }
+            }
+            .padding(.vertical, 6).frame(minHeight: Metrics.tap)
+            .background(Theme.bg)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        .accessibilityIdentifier(id)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// "A new place": made in Your choices (or, when he already has it, his own
+    /// spelling of it), and taken by this thing.
+    private func addPlace() {
+        guard !jsTrim(newPlace).isEmpty else { placeNeeds = "Type the place first."; return }
+        var made: String?
+        model.change { made = $0.addPlace(newPlace) }
+        if let made { draft.storage = made }
+        newPlace = ""
+        choosingPlace = false
     }
 
     /// Care: how often the thing is looked after, and what to do. Care listed only
@@ -502,12 +580,10 @@ struct ThingEditor: View {
         ("+1 month", 1), ("+6 months", 6), ("+1 year", 12), ("+5 years", 60), ("+10 years", 120),
     ]
 
-    private func flagWords(_ title: String, _ says: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-            Text(says).font(.system(.footnote)).foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    /// A switch's words — no explanation under them (his word, 6 Oct 2026: "Delete the
+    /// explanations for liquid and not allowed in the cabin").
+    private func flagWords(_ title: String) -> some View {
+        Text(title).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
     }
 
     private static func formatter() -> DateFormatter {

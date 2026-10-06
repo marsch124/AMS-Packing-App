@@ -2293,7 +2293,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "wayhome-line-0-open")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Open did not open the thing")
         shot(app, "way-home-open-thing")
-        replace("Safe", in: app.textFields["thing-storage"])
+        newPlace(app, "Safe")
         tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Save did not close the thing")
         XCTAssertTrue(waitUntil { (search.value as? String ?? "").contains("pass") }, "the search was lost on the way back")
@@ -2303,7 +2303,7 @@ final class AMSPackingUITests: XCTestCase {
         // The change reached the thing itself; Cancel comes back the same way.
         tap(app, id: "wayhome-line-0-open")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Open did not open the thing a second time")
-        XCTAssertTrue(waitUntil { (app.textFields["thing-storage"].value as? String) == "Safe" }, "the change did not reach the thing")
+        XCTAssertTrue(waitUntil { self.keptAtHome(app) == "Safe" }, "the change did not reach the thing")
         tap(app, id: "thing-cancel")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Cancel did not close the thing")
         XCTAssertTrue(waitUntil { (search.value as? String ?? "").contains("pass") && app.buttons["wayhome-line-0"].exists },
@@ -4042,7 +4042,7 @@ final class AMSPackingUITests: XCTestCase {
         // No owner = each has one (his words, 4 Oct 2026), not "Nobody's in particular".
         XCTAssertEqual(words(app.buttons["thing-owner-0"]), "Both have one")
         // Notes sit right under the name, before Kept at home (his ask, 4 Oct 2026).
-        let name = app.textFields["thing-name"].frame, storage = app.textFields["thing-storage"].frame
+        let name = app.textFields["thing-name"].frame, storage = app.buttons["thing-storage"].frame
         let notes = app.descendants(matching: .any).matching(identifier: "thing-notes").firstMatch.frame
         XCTAssertTrue(name.maxY <= notes.minY && notes.maxY <= storage.minY,
                       "Notes are not between Name and Kept at home: name \(name.maxY), notes \(notes.minY)–\(notes.maxY), kept at home \(storage.minY)")
@@ -5594,7 +5594,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].exists })
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        replace("Garage shelf", in: app.textFields["thing-storage"])
+        newPlace(app, "Garage shelf")
         tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         // The sheet covers the tab bar: close it, or the next tap lands on the sheet.
@@ -5689,7 +5689,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].exists })
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        XCTAssertEqual(app.textFields["thing-storage"].value as? String, "Hall cupboard", "the thing kept the old name")
+        XCTAssertEqual(keptAtHome(app), "Hall cupboard", "the thing kept the old name")
     }
 
     // MARK: - Long lists made easier (their field test, 3 Oct 2026)
@@ -6363,13 +6363,14 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(find(app, "thing-detail") != nil, "it closed as if saved")
         replace("12,5", in: weight)
         XCTAssertEqual(weight.value as? String, "12,5", "the comma did not survive the typing")
-        // The first of his places, a tap away.
+        // The first of his places, chosen from Kept at home's list (6 Oct 2026).
+        openPlaces(app)
         let place = app.buttons["thing-place-0"]
-        bringIntoView(app, place)
         let placeName = words(place)
-        select(app, place)
-        XCTAssertEqual(app.textFields["thing-storage"].value as? String, placeName, "the place was not put in the field")
         shot(app, "thing-places")
+        tap(app, id: "thing-place-0")
+        XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "the list did not close on a choice")
+        XCTAssertEqual(keptAtHome(app), placeName, "the place was not taken")
         // No bag: the last pill of Usually packed in.
         let noBag = (0..<40).map { app.buttons["thing-bag-\($0)"] }.last { $0.exists }!
         XCTAssertTrue(words(noBag).contains("No bag"), "'\(words(noBag))'")
@@ -6390,7 +6391,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         bringIntoView(app, app.textFields["thing-weight"])
         XCTAssertEqual(app.textFields["thing-weight"].value as? String, "12.5", "the decimal weight did not keep")
-        XCTAssertTrue(isOn(app.buttons["thing-place-0"]), "the place is not lit")
+        XCTAssertEqual(keptAtHome(app), placeName, "the place was not kept")
         XCTAssertTrue(isOn(noBag), "No bag is not lit")
         XCTAssertTrue(isOn(app.buttons["thing-care-1"]), "the care schedule was not kept")
         tap(app, id: "thing-cancel")
@@ -6752,6 +6753,30 @@ final class AMSPackingUITests: XCTestCase {
     }
     #endif
 
+    // MARK: - Kept at home is chosen (0.64)
+
+    /// The thing's Kept at home, as he reads it.
+    private func keptAtHome(_ app: XCUIApplication) -> String {
+        let b = app.buttons["thing-storage"]
+        return b.exists ? (b.value as? String ?? "") : ""
+    }
+
+    /// Open Kept at home's list (6 Oct 2026: chosen, never typed).
+    private func openPlaces(_ app: XCUIApplication) {
+        let b = app.buttons["thing-storage"]
+        bringIntoView(app, b)
+        tapVisible(app, b)
+        XCTAssertTrue(appears(app, "thing-places", timeout: 5), "Kept at home did not open its list")
+    }
+
+    /// A new place, made from the thing's page.
+    private func newPlace(_ app: XCUIApplication, _ name: String) {
+        openPlaces(app)
+        type(name, into: app.textFields["thing-place-new"])
+        tap(app, id: "thing-place-add")
+        XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "the list did not close after Add")
+    }
+
     // MARK: - Only his own bags (0.64)
 
     /// A thing is offered his own bags and No bag — never a built-in name he does not
@@ -6774,6 +6799,50 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["thing-bag-2"].exists,
                        "a bag he does not have is offered: '\(words(app.buttons["thing-bag-2"]))'")
         shot(app, "thing-only-his-bags")
+    }
+
+    /// A thing's page in his order (6 Oct 2026): Name, Notes, Kind of thing, Whose it is,
+    /// On these templates, Kept at home, Usually packed in, When, Weight, Brand, Colour,
+    /// Condition, Care, On a plane, Valid until — and On a plane's switches carry their
+    /// words only. Kept at home is chosen from a list, and a new place made there joins
+    /// Your choices.
+    func testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let order = ["thing-heading-name", "thing-heading-notes", "thing-category-title", "thing-owner-title",
+                     "thing-lists-title", "thing-heading-kept", "thing-bag-title", "thing-when-title",
+                     "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-condition-title",
+                     "thing-care-title", "thing-heading-plane", "thing-heading-valid"]
+        let tops = order.map { id -> CGFloat in
+            let e = app.descendants(matching: .any).matching(identifier: id).firstMatch
+            XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id)")
+            return e.frame.minY
+        }
+        for k in 1..<order.count {
+            XCTAssertLessThan(tops[k - 1], tops[k], "\(order[k - 1]) does not come before \(order[k])")
+        }
+        // The switches say only what they are.
+        let liquid = app.descendants(matching: .any).matching(identifier: "thing-liquid").firstMatch
+        bringIntoView(app, liquid)
+        XCTAssertFalse(words(liquid).contains("100 ml"), "Liquid still explains itself: '\(words(liquid))'")
+        XCTAssertFalse(words(app.descendants(matching: .any).matching(identifier: "thing-restricted").firstMatch).contains("hold"),
+                       "Not allowed in the cabin still explains itself")
+        // Kept at home: chosen, and a new place joins Your choices.
+        newPlace(app, "Attic shelf")
+        XCTAssertEqual(keptAtHome(app), "Attic shelf")
+        openPlaces(app)
+        let last = (0..<60).map { app.buttons["thing-place-\($0)"] }.last { $0.exists }!
+        XCTAssertEqual(words(last), "Attic shelf", "the new place did not join his places")
+        XCTAssertTrue(isOn(last), "the thing's place is not ticked in the list")
+        shot(app, "thing-kept-at-home-list")
+        tap(app, id: "thing-place-none")
+        XCTAssertTrue(disappears(app, "thing-places", timeout: 5))
+        XCTAssertEqual(keptAtHome(app), "", "Not said did not clear the place")
+        tap(app, id: "thing-cancel")
     }
 }
 
