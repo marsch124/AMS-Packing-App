@@ -17,9 +17,9 @@ struct AMSPackingApp: App {
         .defaultSize(width: 760, height: 900)
         // No title bar (0.67, his note on 0.63: the strip at the top was "underused"): the
         // tab's own header sits on the traffic lights' line (`TitleBarStrip`). The window
-        // is moved by dragging the empty parts of that strip, as by its title bar
-        // (`TitleBarDrag` in RootView, checked by `testTheWindowMovesByItsEmptyStrip`), not
-        // by its whole background: a drag on a page's empty space should not carry the window.
+        // still moves when the empty parts of that strip are dragged, as by its title bar —
+        // the Mac does that itself (`testTheWindowMovesByItsEmptyStrip`) — but not by the
+        // rest of its background: a drag on a page's empty space should not carry it.
         .windowStyle(.hiddenTitleBar)
         .windowBackgroundDragBehavior(.disabled)
         #endif

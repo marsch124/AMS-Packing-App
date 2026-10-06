@@ -1332,11 +1332,13 @@ macOS 26) — and how far a header must step in so its title starts just after t
   iPhone it is `Metrics.tap` tall with `Metrics.screenTop` above. To do's whole screen ignores the top safe area on
   the Mac, so its To do · To buy · search line sits in the strip, after the buttons. Settings, the first-run doors,
   the placeholder and the library problem keep the safe area: they start under the strip.
-- Moving the window: `TitleBarDrag` (RootView) — a clear layer the strip's size with `WindowDragGesture()` (and
-  `allowsWindowActivationEvents`), BEHIND the page and in front of the background colour, so a header's buttons
-  take their own clicks and only the strip's empty parts (all of it on a tab with no header) move the window.
+- Moving the window: the empty parts of the strip (all of it on a tab with no header) move the window when
+  dragged, as the title bar did — the Mac does that itself: nothing of the page claims those points.
   `.windowBackgroundDragBehavior(.disabled)`: a drag on a page's empty space does not carry the window. UI
-  `testTheWindowMovesByItsEmptyStrip` (Mac only) drags Home's strip halfway across and sees the window move.
+  `testTheWindowMovesByItsEmptyStrip` (Mac only) drags Home's strip halfway across and sees the window move (and
+  drags it back). A `WindowDragGesture` layer behind the strip was tried first and taken out: on GitHub's Mac run
+  the window moved just the same without it. Seen red with a planted fault: the header row made to claim the
+  strip (a tap gesture over its whole width).
 - 🪤 **The page under a pinned header must not touch the strip.** `headerOnTheMac` puts 6 pt under the header
   (To do's first line has the same), and the page's scroll views have no top edge effect on macOS 26
   (`titleBarSafeScroll()`: `.scrollEdgeEffectHidden(true, for: .top)`). On GitHub's Mac run (6 Oct 2026) a

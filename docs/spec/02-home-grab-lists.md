@@ -148,7 +148,7 @@ marks "On this device".
 **iPhone vs Mac.**
 - Mac: the window has **no title bar** (0.67, `.windowStyle(.hiddenTitleBar)`): each tab's header sits in the strip
   where it was, on the traffic lights' line, clear of the buttons; the empty parts of the strip move the window
-  (`TitleBarDrag`; spec 06, "The Mac: the header in the title bar strip").
+  (spec 06, "The Mac: the header in the title bar strip").
 - Mac: the window has `minWidth 480, idealWidth 760, minHeight 600, idealHeight 900` and
   `.defaultSize(760 × 900)`. Under UI tests (`AMSPackingApp.testing` = any launch argument starting
   `-uiTesting`) every titled window is **set** to 760 × 674 on appear, keeping its top edge. That is
