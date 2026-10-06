@@ -17,9 +17,12 @@ struct AMSPackingApp: App {
         .defaultSize(width: 760, height: 900)
         // No title bar (0.67, his note on 0.63: the strip at the top was "underused"): the
         // tab's own header sits on the traffic lights' line (`TitleBarStrip`). The window
-        // is still moved by dragging its empty background, as it was by its title bar.
+        // is moved by dragging the empty parts of that strip, as by its title bar
+        // (`TitleBarDrag` in RootView). 🪤 NOT by `.windowBackgroundDragBehavior(.enabled)`:
+        // with it, a click on Grab Lists or To buy in the strip was taken for a drag — the
+        // window jumped aside and the button never heard it (GitHub's Mac run, 6 Oct 2026).
         .windowStyle(.hiddenTitleBar)
-        .windowBackgroundDragBehavior(.enabled)
+        .windowBackgroundDragBehavior(.disabled)
         #endif
 
         #if os(macOS)

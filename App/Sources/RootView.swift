@@ -38,6 +38,9 @@ struct RootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             TabBar(section: $section)
         }
+        #if os(macOS)
+        .background { TitleBarDrag() }             // behind the headers, in front of the colour
+        #endif
         .background(Theme.bg.ignoresSafeArea())
         // Packing reminders (his idea 7): a tapped one opens its trip on Home; and
         // whenever the library settles after a change, the waiting ones are put right.
@@ -143,6 +146,26 @@ private struct SectionScreen: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+#if os(macOS)
+/// The strip where the title bar was moves the window when dragged, as the title bar
+/// did (0.67). It lies BEHIND the page, so a header's buttons take their own clicks:
+/// only the strip's empty parts — and the whole strip on a tab with no header — are this.
+private struct TitleBarDrag: View {
+    @Environment(\.titleBarStrip) private var strip
+
+    var body: some View {
+        Color.clear
+            .frame(height: strip.height)
+            .contentShape(Rectangle())
+            .gesture(WindowDragGesture())
+            .allowsWindowActivationEvents(true)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .ignoresSafeArea(.container, edges: .top)
+            .accessibilityHidden(true)
+    }
+}
+#endif
 
 private struct TabBar: View {
     @Binding var section: AppSection
