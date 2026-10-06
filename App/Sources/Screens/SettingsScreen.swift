@@ -20,10 +20,6 @@ struct SettingsScreen: View {
     /// are opened one after the other by `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`.
     @State private var lists = false
     @State private var pending: PendingRestore?
-    /// A restore offered and not yet answered. A sheet swiped away (the iPhone) —
-    /// or closed any way but its two buttons — then says what Cancel says: until
-    /// 5 Oct 2026 the line under Save went on saying nothing.
-    @State private var unanswered = false
     @State private var picking = false
     @State private var copies: [URL] = RescueCopies.all()
 
@@ -215,11 +211,10 @@ struct SettingsScreen: View {
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
         .sheet(isPresented: $lists) { ListsScreen().environmentObject(model) }
-        .sheet(item: $pending, onDismiss: {
-            if unanswered { unanswered = false; status = "Nothing was replaced." }
-        }) { waiting in
+        // A restore closed without an answer (swiped away) answers "no" from inside the
+        // sheet (RestoreSheet's onDisappear), so this sheet is exactly 0.61's.
+        .sheet(item: $pending) { waiting in
             RestoreSheet(file: waiting.library, device: model.library) { yes in
-                unanswered = false
                 pending = nil
                 guard yes else { status = "Nothing was replaced."; return }
                 do {
@@ -258,7 +253,6 @@ struct SettingsScreen: View {
         do {
             let (library, _) = try model.inspectBackup(data)
             pending = PendingRestore(library: library)
-            unanswered = true
         } catch {
             status = error.localizedDescription
         }
