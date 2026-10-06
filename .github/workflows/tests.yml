@@ -61,19 +61,36 @@ jobs:
         run: |
           # Naming one device breaks when GitHub rotates the runner image. Take
           # the highest numbered iPhone, so it is both present and predictable.
-          LINE=$(xcrun simctl list devices available \
-            | grep -E "^ +iPhone [0-9]" | sort -V | tail -1)
-          if [ -z "$LINE" ]; then
-            LINE=$(xcrun simctl list devices available | grep -E "^ +iPhone" | tail -1)
+          # 🪤 0.67 (7 Oct 2026): `simctl` listed an iPhone 17 that xcodebuild then
+          # "could not find" — group 3 stopped before its first test. So ask
+          # xcodebuild itself which iPhones it can test on with the chosen Xcode,
+          # and fall back to simctl only if that says nothing.
+          UDID=$(xcodebuild -showdestinations -project AMSPacking.xcodeproj -scheme AMSPacking 2>/dev/null | python3 -c '
+          import re, sys
+          best = None
+          for line in sys.stdin:
+              m = re.search(r"platform:iOS Simulator,.*?id:([0-9A-F-]{36}), OS:([0-9.]+), name:iPhone (\d+) \}", line)
+              if m:
+                  key = (int(m.group(3)), [int(x) for x in m.group(2).split(".")])
+                  if best is None or key > best[0]:
+                      best = (key, m.group(1), "iPhone " + m.group(3) + ", iOS " + m.group(2))
+          if best: print(best[1], best[2])
+          ')
+          NAME=$(echo "$UDID" | cut -d" " -f2-)
+          UDID=$(echo "$UDID" | cut -d" " -f1)
+          if [ -z "$UDID" ]; then
+            LINE=$(xcrun simctl list devices available \
+              | grep -E "^ +iPhone [0-9]" | sort -V | tail -1)
+            UDID=$(echo "$LINE" | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
+            NAME=$(echo "$LINE" | sed -E 's/ *\(.*//')
           fi
-          UDID=$(echo "$LINE" | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
           if [ -z "$UDID" ]; then
             echo "::error::no iPhone simulator on this runner"
-            xcrun simctl list devices available
+            xcodebuild -showdestinations -project AMSPacking.xcodeproj -scheme AMSPacking
             exit 1
           fi
           echo "SIM_UDID=$UDID" >> $GITHUB_ENV
-          echo "Using simulator:$(echo "$LINE" | sed -E 's/ *\(.*//')"
+          echo "Using simulator: $NAME"
 
       - name: Wake the simulator before the first test
         # 0.46 (2026-10-02): a cold simulator cost the FIRST test 95 seconds
