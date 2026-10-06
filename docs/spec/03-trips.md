@@ -8,8 +8,8 @@ name, optional dates and place, the templates it is built from, and the **list h
 set of self-contained *lines* (`Item` values in `trip.entries`) copied from those templates when the
 trip is made. This file covers the whole life of a trip:
 
-- **Plan** — *Create new trip* on the Home tab (name, Dates, Quick, templates, Context, Transport,
-  Season, Food, Laundry) and how the list is built from the templates.
+- **Plan** — *Create new trip* on the Home tab (name, Full trip | Quick, Dates, templates, Context per
+  workout, Transport, Season, Food, Laundry) and how the list is built from the templates.
 - **Pack** — the Trips tab (`EventsScreen`), the trip screen (`TripScreen`): ticking, "not this
   time", sorting When / Into / From where / Category / Section (Section and the Sorting drop-down since
   0.64), folding, Set place, adding a thing,
@@ -57,7 +57,8 @@ trip *Weekend in the hills* (Hiking + base, always 30–32 days from the day the
 | `activities` | [String] | template ids ticked for this trip, in the order offered |
 | `transport` | "Car" (default) \| "Plane" \| "RV" (`TRANSPORTS`) | |
 | `season` | "Summer" (default) \| "Winter" (`SEASONS`) | |
-| `contexts` | [String] ⊆ "Indoor","Outdoor","Race" (`CONTEXTS`) | narrows WET templates only |
+| `contexts` | [String] ⊆ "Indoor","Outdoor","Race" (`CONTEXTS`) | the trip-wide Context: narrows a WET template that has NO entry in `activityContexts` (every trip made before 0.67, and the web app's). Since 0.67 the screens write here every context picked for ANY workout (`WorkoutContexts.union`) — what a device still on 0.66, or the web app, reads |
+| `activityContexts` | [String: [String]], [:] — **native only (0.67)** | Context PER WORKOUT, template id → its contexts (his ask, 6 Oct 2026: "it could be outdoors Run and indoors Swim"). A WET template with an entry is narrowed by ITS entry (an empty entry narrows nothing); without one, by `contexts` (`contextsFor`). JSON key `activityContexts` (`ACTIVITY_CONTEXTS_KEY`), an object of lists; written ONLY when not empty, so a trip without it reads and writes exactly as before (the parity checker stays 211/211). Read by `coerceActivityContexts`: anything but an object = no entries; an empty id is dropped; a value that is not a list = an empty list. Carried by the sync records (the trip head is its JSON), backups, a shared link or file, and Start again |
 | `weatherOn` | [String] ⊆ rain/cold/hot/wind/snow | conditions "forced on": weather-tagged gear is packed regardless of forecast. Filtered to `WEATHER_CONDITION_IDS` by `coerceEvent`. Set in Trip settings, "Pack weather gear anyway" (0.62) |
 | `catering` | "mixed" (default) \| "self" \| "eatout" (`CATERING`) | the "Food" pills |
 | `startDate`, `endDate` | "YYYY-MM-DD" or "" | |
@@ -140,7 +141,12 @@ Create." (`App/Sources/Screens/HomeScreen.swift`). Dates like Booking.com (his e
 0.21); Dates and Quick on one line (0.16); short food words (0.16); the Create button always in full
 colour (his words 2026-09-26: "The create button is something that is central to the whole app, and
 you make it grayed out.", 0.26); workout colours and Context set in under them (2026-09-28, 0.40);
-Laundry (0.35) with a nights choice (0.47); headings dominant (field test 3 Oct 2026, 0.57).
+Laundry (0.35) with a nights choice (0.47); headings dominant (field test 3 Oct 2026, 0.57). **0.67**
+(his test of 0.63, 6 Oct 2026): the date picker always there, no Dates switch ("I would like the date
+picker to be present all the time, and then take away the Dates checkbox."); Quick as Full trip | Quick
+under the name ("I would like the Quick check box to be placed somewhere else - more thought
+through."); Context per workout ("the same context menu is needed for all WET activities. Example: it
+could be outdoors Run and indoors Swim.").
 
 **How it is reached and left.** Home tab, under the grab lists and the countdown card. It is not a
 sheet; *Create trip* makes the trip and opens it at once as a sheet (`opened = made.id`).
@@ -152,14 +158,29 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
 1. **Name field** — placeholder "Name your trip", 20 semibold ink, min height 48, `Theme.bg` fill,
    corner 10; a 2 pt red border only while the "still needed" message mentions "name". Id `trip-name`.
    Gets keyboard focus when Create is pressed without a name.
-2. **One line with two switches:** Toggle **"Dates"** (16 semibold) id `trip-dates`; Toggle
-   **"Quick"** (16 semibold) id `trip-quick`.
-3. **Quick note** (only while Quick is on), id `trip-quick-note`: "Quick: only the templates you
-   tick — no common base, no transport kit. Transport still counts: pick Plane and the cabin is
-   checked." 15 semibold green on 12 % green, 1.2 pt green stroke, corner 10. (Green, not grey: his
-   test C.7. The last sentence: field test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off.)
-4. **Date range picker** (only while Dates is on) — see the next section. On Home it opens its month
-   grid immediately.
+2. **Full trip | Quick** (`TripKindChoice`, 0.67) — a two-way choice in one capsule track (`Theme.bg`
+   fill, 1 pt `Theme.line` stroke, 2 pt inner padding, at most 360 wide): two equal segments "Full
+   trip" (id `trip-kind-full`) and "Quick" (id `trip-kind-quick`), Subheadline — semibold white on a
+   blue capsule when picked, regular ink on nothing when not; min height `Metrics.chip` (28 / Mac 22);
+   the picked one carries `.isSelected`. Full trip is picked to begin with. Under it, always (whichever
+   is picked), one quiet line (Footnote, muted, id `trip-kind-note`): "Quick packs only the templates
+   you tick — no common base, no transport kit. Transport still counts." (The last sentence: field
+   test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off.) Until 0.67: a "Quick" switch at the
+   end of the Dates line (id `trip-quick`) and, only while it was on, a green framed note
+   (`QuickNote`, id `trip-quick-note`, his test C.7) — both gone.
+3. **Dates: the month grid itself, always OPEN** (`DateRangePicker(inline: true, grid: "trip-range")`,
+   0.67 — his words: "I would like the date picker to be present all the time, and then take away the
+   Dates checkbox", then the same evening "always having the date picker OPEN in Create new Trip").
+   No field, no OK, no Cancel: the heading "Dates" (Subheadline semibold blue, id `trip-dates-title`),
+   the month (two side by side when ≥ 600 wide — the Mac), only the weeks the month needs, day cells
+   `Metrics.compact` tall (32 / Mac 24), 2 pt between rows; under it one line — "No dates" (muted),
+   "Now tap the last day" (muted) or "9 Oct – 11 Oct · 2 nights" (ink; Subheadline semibold mono, id
+   `trip-range-summary`) — with **Clear dates** beside it on the right while there are dates (id
+   `trip-range-clear`). The first tap is the first day, the second the last — set at once. Grid ids
+   `trip-range-day-YYYY-MM-DD`, `trip-range-title-<n>`, `trip-range-prev`, `trip-range-next` (Trip
+   settings' grid keeps `range-*`; the two would otherwise share names while Trip settings is open over
+   Home). Until 0.67: a "Dates" switch (`trip-dates`) showing the field and its grid. See the next
+   section.
 5. **One block of pills per activity group** that has templates, in `GROUPS` order (GA, WET, OE) — and,
    last, **"OTHER TEMPLATES"** for templates with no activity area (0.62; see "Templates offered").
    Heading: `groupHeading(id, label)` = "GA · GOAL ACTIVITY", "WET · WORKOUT, EXERCISE & TRAINING",
@@ -172,11 +193,20 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    colours by normName with spaces removed: swim #0a84ff/white text, bike #ffd60a/#3d3000,
    run #30d158/#0b3a17, strength #ff8c1a/#4a2300, breathwork #bf9cff/#2e1a5c,
    mobility #ff6fa8/#5a0f2e; others (and GA/OE) use violet. Multi-select toggles.
-6. **Context** (only when at least one WET template is ticked), placed DIRECTLY under the WET pill
-   block — so above the OE block when there is one, not after all the groups — set in 18 pt with a
-   3 pt `Theme.line` bar down its left side (10 pt gap): question heading "Context" (17 heavy ink), id
-   `trip-context-title`; pills Indoor, Outdoor, Race (`trip-context-0…2`), slate tint
-   (`AppSection.settings.color` #64748b), multi-select (`ContextPills`).
+6. **Context, per workout** (`WorkoutContexts`, 0.67; only when at least one WET template is ticked),
+   placed DIRECTLY under the WET pill block — so above the OE block when there is one, not after all
+   the groups — set in 18 pt with a 3 pt `Theme.line` bar down its left side (10 pt gap): question
+   heading "Context" (Subheadline semibold ink), id `trip-context-title`; then ONE LINE PER TICKED
+   WORKOUT, in the order offered: the workout's name (Subheadline semibold, in its `WorkoutTone`
+   colour made readable — darkened on a light screen, lightened on a dark one, `readableHex` — or ink
+   for a workout with no colour; up to 2 lines, scales to 0.8; a column `Metrics.contextName` wide,
+   72 / Mac 64), id `trip-context-<n>-name`, then its own pills Indoor, Outdoor, Race (Subheadline,
+   semibold when picked; padding 10 sideways, min height `Metrics.chip`; picked = slate
+   `AppSection.settings.color` #64748b fill and white words; not picked = `Theme.bg`, 1 pt line), ids
+   `trip-context-<n>-0…2`, several at once, picked = `.isSelected`. **n = the workout's own number
+   among the template pills** (`trip-activity-<n>`), so Swim's line in the sample is
+   `trip-context-1-*`. Each line's picks are its own. Until 0.67 one set of pills
+   (`trip-context-0…2`, `ContextPills`) narrowed every workout.
 7. **Transport** pills Car, Plane, RV (`trip-transport-0…2`), single choice, blue; heading id
    `trip-transport-title`.
 8. **Season** pills Summer, Winter (`trip-season-0…1`); heading id `trip-season-title`.
@@ -203,20 +233,26 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
 
 - **Still needed** (`needs()`): name blank (jsTrim) AND no template → "Give the trip a name and pick
   at least one template."; name blank → "Give the trip a name."; no template → "Pick at least one
-  template."; else "". The line appears only after a press of Create; from then on it follows every
-  change of the name or the template pills, and disappears when nothing is missing.
+  template."; else "" — and, after any of these, "Tap the trip's last day — the same day again for a
+  day trip." while only the first day is tapped (0.67: Create never makes a day trip by accident; the
+  grid tells Home through `onWaiting`). The line appears only after a press of Create; from then on it
+  follows every change of the name, the template pills or the grid, and disappears when nothing is
+  missing.
 - **Create** with something missing: nothing is made; the line says what; a missing name focuses the
   name field.
 - **Create** with name + ≥1 template: a draft `newEvent(name: jsTrim(name), mode: quick ? "quick" :
   "trip")` gets transport, season, catering, laundry, `extra.laundryNights = laundryNights`,
-  `activities` = the ticked template ids **in the order offered** (not tap order), `contexts` =
-  `CONTEXTS` filtered to the ticked ones (Indoor, Outdoor, Race order) — kept even if no WET template
-  is ticked any more (they are then hidden but still saved; harmless, context only narrows WET
-  templates). With Dates on: `startDate = ymd(start)`, `endDate = ymd(max(start, end))`.
+  `activities` = the ticked template ids **in the order offered** (not tap order),
+  `activityContexts` = an entry for EVERY ticked WET template (`WorkoutContexts.stored`: its picks in
+  `CONTEXTS` order, Indoor, Outdoor, Race; nothing picked = an empty entry, which narrows nothing) —
+  picks for a workout ticked off again are not saved — and `contexts` = every context picked for any
+  workout (`WorkoutContexts.union`, for a device still on 0.66 and the web app). With dates picked:
+  `startDate = ymd(start)`, `endDate = ymd(max(start, end))`; with none, both stay "".
   `Library.createTrip(draft)` then: `coerceEvent`, an id if empty, `nights = nightsBetween(start,
   end) ?? 0`, `entries = buildTotalEntries(trip, resolvedTemplates())`, `generatedAt = createdAt =
   updatedAt = now`, appended to `trips`.
-- After creating: name, templates, contexts, Dates, Quick, Laundry and laundry nights are reset;
+- After creating: name, templates, each workout's contexts, the dates (back to "No dates"), Quick (back
+  to Full trip), Laundry and laundry nights are reset;
   **Transport, Season, Food and the two dates are NOT reset** (they stay as last chosen until the
   view is rebuilt). The new trip opens as a sheet. Kept so on purpose (the spec pass, 5 Oct 2026):
   the next trip is usually the same car and the same season, and the pills show the answers before
@@ -225,10 +261,11 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   and its weather card asks "Where is this trip?" first thing; Trip settings has Place too.
 - Date strings: `HomeScreen.ymd` formats in the device's time zone, Gregorian, en_US_POSIX — the
   picker's dates are local midnights, so the day picked is the day stored.
-- Initial dates (before any pick): start = now, end = now + 2 × 86 400 s (both carry the current
-  clock time, not midnight; only their day is stored). Switching Dates on and creating without
-  touching the grid gives a 2-night trip starting today. The date picker here uses the default tint
-  (blue, `AppSection.home.color`); Trip settings passes green.
+- Initial dates (before any pick): NONE — the line under the grid says "No dates" and a trip created
+  without a tapped day has no dates (0.67; the same as the old Dates switch left off). The grid opens
+  on this month. The two `Date`s behind it
+  start at now and now + 2 × 86 400 s but are stored only once a day has been tapped. The date picker
+  here uses the default tint (blue, `AppSection.home.color`); Trip settings passes green.
 
 **Model rule vs screen rule.** The model (`createTrip`) needs no template: a full ("trip") trip with
 no ticked template still gets the base and transport templates. The screen always requires one.
@@ -251,16 +288,35 @@ a sheet window.
 ### Tests
 UI: `testHomeBuildsATrip` (Create never greyed; early press says "Give the trip a name and pick at
 least one template.", then "Pick at least one template." after typing; the line goes; the trip opens
-with lines; it is listed as `trip-row-1`), `testDatesArePickedLikeBooking`,
-`testContextSitsUnderTheWorkouts` (Context absent until a WET pill, below the workouts, above
-Transport, pills set in > 24 pt), `testTheDateGridCanBeLeftAndQuickSaysSo` (Quick note only while
-on), `testABagOnTheTripSaysWhetherItGoesInTheCabin` (Quick note contains "Transport still counts"),
+with lines; it is listed as `trip-row-1`), `testDatesArePickedLikeBooking` (0.67: the grid open at once,
+no field, "No dates"; first day → "Now tap the last day", last day → "<d> – <d> · 2 nights" with no OK; a
+tap after a range starts a new one, an earlier day becomes the first; Create with only the first day says
+"last day" and makes nothing; the last day tapped, the line goes and the trip keeps its dates — red with
+the grid hidden until a tap: "the month grid is not open on Create new trip", and with Create not waiting
+for the last day: "Create with only a first day did not ask for the last: ''"),
+`testContextSitsUnderTheWorkouts` (Context absent until a WET pill, below the workouts,
+above Transport, Swim's pills `trip-context-1-*` set in > 24 pt), `testTheDateGridCanBeLeftAndQuickSaysSo`
+(the Quick line is there with Full trip AND with Quick picked), `testABagOnTheTripSaysWhetherItGoesInTheCabin`
+(`trip-kind-note` contains "Transport still counts"), **0.67:** `testFullTripOrQuickIsChosenUnderTheName`
+(Full trip picked to begin with, no `trip-quick` switch, the choice under the name and before the dates
+with its line under it; a Quick Hiking trip is 0/4; Trip settings shows Quick, and Full trip there makes
+it 0/7 — red with Quick ignored on Create: "Quick did not leave out the common base: '0/7'"),
+`testDatesAreAlwaysThereAndCanBeCleared` (below), `testEachWorkoutHasItsOwnContext` (`-uiTestingWorkouts`:
+a Quick trip of Swim indoors and Run outdoors is 0/5 — Goggles, Swim cap, Towel, Trail shoes, Running cap;
+each line keeps its own picks; Trip settings shows them, Swim outdoors brings the Wetsuit, 0/6, and does
+not touch Run — red with every workout given all the picks: "each workout was not packed by its own
+Context: '0/7'"),
 `testLaundryCountsPerNightThingsFourNightsAtMost`, `testTheEditorsLeadWithTheirHeadings` (heading ids
 exist), `testATemplateWithNoActivityAreaGoesOnATrip` (a "No activity area" template is `trip-activity-2`,
 a Quick trip is made of it). Model: `CreateTripTests.testATripIsBuiltFromItsTemplatesAndTheBase`,
-`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder` (GA, WET, then "Other templates").
-**Not covered:** that Transport/Season/Food survive a create; context kept with no WET ticked;
-the 2-night default; the red name border.
+`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder` (GA, WET, then "Other templates");
+`WorkoutContextsTests` (PackingCore, 0.67: each workout narrowed by its own; the fallback to the trip's
+`contexts`; an empty entry narrows nothing; an entry for a non-WET template changes nothing; the JSON round
+trip, no key when empty, junk read as nothing; a shared file and link carry it) and
+`WorkoutContextsLibraryTests` (made, changed in Trip settings with 1 added / 1 removed, kept by the sync
+records and a backup, copied by Start again).
+**Not covered:** that Transport/Season/Food survive a create; that a workout's picks are dropped when it
+is ticked off before Create; the trip-wide `contexts` written as the union; the red name border.
 
 ### Traps and history
 - The heading of every group shares one identifier (`trip-activity-title`); tests use `firstMatch`.
@@ -276,22 +332,34 @@ the 2-night default; the red name border.
 Monday first: tap the first day, then the last." Cancel added for his test C.2 (0.40: "I do not come
 out of this date"); OK/Cancel and staying open after the last day from the field test, Oct 2026
 ("When I choose the end date, don't just pop out back, but stay there and present an OK button or a
-cancel button", 0.56). Replaced the two From/To date wheels (0.21).
+cancel button", 0.56). Replaced the two From/To date wheels (0.21). **Always on the form since 0.67**
+— his words (6 Oct 2026): "I would like the date picker to be present all the time, and then take away
+the Dates checkbox." — with a no-dates state and **Clear dates**, which took over the one thing the
+switch did that nothing else could: take a trip's dates away. The same evening, for Create new trip:
+"always having the date picker OPEN in Create new Trip" — the **inline** grid.
 
-**How it is reached and left.** Shown under the Dates switch on Create new trip (grid OPEN at once)
-and in Trip settings (grid CLOSED, `open: false`). The field toggles the grid; OK and Cancel close it.
+**How it is reached and left.** Two forms of one view:
+- **Inline** (`inline: true`, Create new trip, under Full trip | Quick): the grid itself, always open —
+  no field, no OK or Cancel; described under Create new trip, item 3. It shares the month, the day
+  cells and the tapping rules below; it adds `onWaiting` (Home's Create waits for the last day).
+- **With a field** (Trip settings, under Place): the field below, its grid CLOSED (`open` defaults to
+  false). The field toggles the grid; OK, Cancel and Clear dates close it. (Until 0.67 Create new trip
+  had this form too, its grid opened at once under a Dates switch.)
 
 ### What is on screen
 
-1. **The field** (a button, id `trip-dates-field` in BOTH places): calendar mark (24 pt, tint), a
-   small caption "Dates" — or "Now tap the last day" while waiting for the last day — (13 semibold
-   muted), the dates (17 bold ink, one line, scales to 0.8; id `trip-dates-label`):
-   "Sat 26 Sep — Sun 27 Sep" (em dash with spaces), or only the first day while waiting; on the right
-   the nights "1 night" / "N nights" (15 semibold muted, id `trip-dates-nights`), hidden while
-   waiting. Min height 56, `Theme.bg`, corner 10; border 2 pt tint while open, 1 pt `Theme.line`
-   closed. Accessibility **value** = "Sat 26 Sep — Sun 27 Sep · 1 night" (or only the first day while
-   waiting) — the Mac folds the texts into the button, so tests read the value.
-2. **The grid** (when open), a card (padding 12, corner 12):
+1. **The field** (the field form only — Trip settings; a button, id `<id>-field` = `tripset-dates-field`:
+   the parameter `id`, default "trip-dates", which the inline grid uses only for its heading
+   `trip-dates-title`. Until 0.67 the field was `trip-dates-field` in both places): calendar mark (24 pt, tint), a small caption "Dates" — or "Now tap the last day"
+   while waiting for the last day — (Footnote semibold muted), then (Body semibold, one line, scales to
+   0.8; id `<id>-label`): **"Add dates" in the tint while the trip has none** (0.67), else
+   "Sat 26 Sep — Sun 27 Sep" in ink (em dash with spaces), or only the first day while waiting; on the
+   right the nights "1 night" / "N nights" (Subheadline semibold muted, id `<id>-nights`), shown only
+   with whole dates. Min height 56, `Theme.bg`, corner 10; border 2 pt tint while open, 1 pt
+   `Theme.line` closed. Accessibility **value** = "No dates" (none yet), "Sat 26 Sep — Sun 27 Sep · 1
+   night", or only the first day while waiting — the Mac folds the texts into the button, so tests read
+   the value.
+2. **The grid** (when open), a card (padding 12, corner 12) — ids `<grid>-…`, `grid` = "range" here:
    - One month, or **two side by side when the grid is at least 600 pt wide** (measured with
      `onGeometryChange`; in practice the Mac). With one month both arrows sit on it; with two, ‹ on
      the first and › on the second.
@@ -305,27 +373,34 @@ and in Trip settings (grid CLOSED, `open: false`). The field toggles the grid; O
      the range, or today. First and last day: filled tint rounded rectangle (corner 8), white
      number. Days between: a 14 % tint band edge to edge (the ends carry half-bands so the range
      reads as one stretch). Today (not an end): a 1.5 pt tint ring. Past days: muted number but
-     still tappable. Id `range-day-YYYY-MM-DD`; ends carry `.isSelected`.
-   - Under the grid one line (id `range-summary`, 18 heavy mono, one line): "3 Nov – 5 Nov · 2 nights"
-     (en dash, middle dot), or "Now tap the last day" (muted) while waiting. When OK was pressed while
+     still tappable. Id `range-day-YYYY-MM-DD`; ends carry `.isSelected`. With no dates yet no day is
+     marked (only today's ring).
+   - Under the grid one line (id `range-summary`, Body semibold mono, one line): "3 Nov – 5 Nov · 2 nights"
+     (en dash, middle dot), "Now tap the last day" (muted) while waiting, or "Tap the first day, then
+     the last" (muted) while the trip has no dates (0.67). When OK was pressed while
      waiting, this line is REPLACED by "Tap the last day first — the same day again for a day trip."
      (16 bold red, id `range-needs`).
+   - Left, only while there are dates (0.67): **Clear dates** (Subheadline semibold muted, plain, min
+     height `Metrics.header`, id `range-clear`) — quiet, and away from OK: Airbnb's place for it.
    - Right-aligned: **Cancel** (outlined, id `range-cancel`) and **OK** (filled, min width 44, id
      `range-ok`). OK is never disabled.
 
 ### Behaviour
 
-- Opening (field tap): `month = ""` (shows the month of the first day), remembers the dates as they
-  were (`before`), clears the OK-too-soon state. On Create new trip the grid is open from the start
-  and `before` is taken on appear.
-- **Tap a day** (`pick`): clears OK-too-soon. If waiting for the last day and the day ≥ the first day
+- Opening (field tap): `month = ""` (shows the month of the first day) — or, with no dates yet, this
+  month (0.67) — remembers the dates as they were AND whether there were any (`before`), clears the
+  OK-too-soon state. (A picker made with `open: true` takes `before` on appear; neither form does
+  since 0.67.)
+- **Tap a day** (`pick`): clears OK-too-soon; the trip has dates from now on (`dated = true`). If waiting for the last day and the day ≥ the first day
   → it becomes the last day, waiting ends. Otherwise (no range yet, a day BEFORE the first while
   waiting, or any tap after a whole range) → start = end = that day, waiting for the last day.
   Tapping the first day again while waiting = a day trip (0 nights).
 - **OK**: while waiting → stays open, shows the `range-needs` line; otherwise closes, keeping the
   dates.
-- **Cancel**: puts back the dates from when the grid opened (even after a whole new range), stops
-  waiting, closes.
+- **Cancel**: puts back the dates from when the grid opened (even after a whole new range) — and an
+  undated trip stays undated — stops waiting, closes.
+- **Clear dates** (0.67): no dates at all (`dated = false`), stops waiting, closes; the field says "Add
+  dates" again, and Create / Save stores none ("" and "", 0 nights). What switching Dates off did.
 - **Field tap while open**: the same as **OK** (0.62) — with only the first day picked the grid stays
   open and shows `range-needs`; with a whole range it closes, keeping it. (Until then it closed at once,
   leaving a one-day trip and "Now tap the last day" on the field.)
@@ -333,22 +408,34 @@ and in Trip settings (grid CLOSED, `open: false`). The field toggles the grid; O
 - Nights: whole calendar days between the local midnights of start and end (DST-safe), never below 0;
   "1 night" singular.
 - Words are fixed English on every device ("Sat 26 Sep", "January"…), not the device language.
-- Switching Dates off removes the picker; switching it on again creates a fresh one (state reset).
+- With no Dates switch (0.67) the picker lives as long as its form; Create new trip resets only its
+  `dated` after a create (the two `Date`s stay, unseen until a day is tapped).
+- **Inline:** a tap is final at once (no OK); Clear dates leaves the grid open; the first month shown is
+  the first day's, or this month with no dates; the arrows page from there.
 
 ### Data
-Binds two `Date`s owned by the parent. A tapped day is the local midnight of that day; the parent's
+Binds two `Date`s and `dated` (Bool: whether the trip has dates at all, 0.67) owned by the parent. A tapped day is the local midnight of that day; the parent's
 initial values may carry a clock time (Home: now / now + 2 days; Trip settings on an undated trip:
 now), which is harmless because only the day is ever compared (`startOfDay`) or stored
 (`HomeScreen.ymd`). Writes nothing itself. Calendar: Gregorian, Monday first (`firstWeekday = 2`),
 device time zone. Tint: a parameter (default blue; Trip settings passes green).
 
 ### iPhone vs Mac
-Two months when ≥ 600 pt wide (Mac windows), one on the iPhone. Otherwise identical.
+Two months when ≥ 600 pt wide (Mac windows — Create new trip's inline grid too), one on the iPhone. Day
+cells `Metrics.compact`: 32 / Mac 24. Otherwise identical.
 
 ### Tests
-UI: `testDatesArePickedLikeBooking` (first then last day, value strings, "2 nights", "1 night", a day
-before the first becomes the first, OK closes, the trip keeps the dates — its row writes them "27 Sep 2026" although the app runs American-set (`-AppleLocale en_US`), `testTheDateGridCanBeLeftAndQuickSaysSo` (OK
-before the last day keeps the grid and shows `range-needs`; Cancel restores the value),
+UI: `testDatesAreAlwaysThereAndCanBeCleared` (0.67: on Create new trip the grid open from the start —
+red with it hidden until a tap: "the month grid is not open on Create new trip" — no switch, no field,
+"No dates", no Clear dates; picked then Clear dates → "No dates" and the grid still open; a trip made so
+has none in Trip settings, which has no `tripset-dates` switch; dates given there and saved, then
+Clear dates and saved → "No dates" — red with Clear dates not clearing: "Clear dates did not take them
+away: …'" — seen with the field form, before the grid on Home became inline), `testDatesArePickedLikeBooking`
+(the inline grid: first then last day, "2 nights", "1 night", a day before the first becomes the first,
+Create waits for the last day, the trip keeps the dates — its row writes them "27 Sep 2026" although the app
+runs American-set (`-AppleLocale en_US`). **The four tests below run in Trip settings since 0.67** (the field,
+OK and Cancel live there; `openTripSettingsDates` opens the sample trip's): `testTheDateGridCanBeLeftAndQuickSaysSo`
+(OK before the last day keeps the grid and shows `range-needs`; Cancel restores the trip's dates),
 `testTheDateGridWaitsForOK` (after the last day the grid stays, summary "3 Nov – 13 Nov · 10 nights"
 form, OK keeps), `testTheDateGridStartsOverAndCancelPutsItBack`, `testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill`
 (the field with only the first day keeps the grid and shows `range-needs`; with a whole range it closes;
@@ -440,8 +527,10 @@ For each template in that order, for each RESOLVED row (see below):
 2. skip a retired thing ("Not in use");
 3. skip unless `itemMatchesEvent(row, event, template)`: each of seasons, transports, catering —
    an empty tag list = always; otherwise the trip's value must be in it (a trip with no value passes);
-   contexts — ONLY for a template whose group is "WET": empty row contexts = always, a trip with no
-   contexts = always, otherwise any overlap. (So Indoor+Outdoor on the trip takes both.)
+   contexts — ONLY for a template whose group is "WET": the contexts asked for are THAT template's
+   entry in `activityContexts` when it has one, else the trip-wide `contexts` (`contextsFor`, 0.67);
+   empty row contexts = always, no contexts asked for = always, otherwise any overlap. (So Indoor+Outdoor
+   takes both; Run outdoors and Swim indoors on one trip each take their own.)
 4. **weather gear**: a row with weather tags is held back unless one of its tags is in the trip's
    `weatherOn`; it is offered by the weather card instead.
 5. de-duplicate by key `normName(name) + "|" + container` (bag compared exactly, case-sensitive):
@@ -926,7 +1015,8 @@ Clear asks, Keep them keeps, Clear the ticks → 0/7, Clear disappears). Model
 **Purpose and origin.** "A trip's settings, changed after it is made — the gap list's first High item
 (2026-09-27)" (0.32). A pen, not a gear (tests C.3, D.1; 0.40). The place added for his test G.6 ("the
 place is not shown in the edit view", 0.40). Save in a bar at the bottom, always in sight (0.34; "the
-cloud test lost it" 2026-09-27).
+cloud test lost it" 2026-09-27). 0.67: the same three changes as Create new trip — Full trip | Quick under
+the name, the date picker always there (Clear dates instead of a Dates switch), Context per workout.
 
 **How it is reached and left.** The pen beside the trip's count (`trip-settings`) opens it as a sheet
 (`TripSettingsDoor` owns the sheet because the trip screen already has one for the review). Left with
@@ -940,12 +1030,19 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
 - Header: **Cancel** (outlined muted, id `tripset-cancel`), title "Trip settings" (22 heavy ink), an
   empty 56 pt spacer.
 - Name field (placeholder "Name your trip", 20 semibold, card fill, line stroke), id `tripset-name`.
+- **Full trip | Quick** (`TripKindChoice`, 0.67) as on Create new trip but GREEN: ids `tripset-kind-full`,
+  `tripset-kind-quick`, the line `tripset-kind-note`. (Until 0.67 a "Quick" switch `tripset-quick` and a
+  green note `tripset-quick-note` while on.)
 - Heading **"Place"** (`HeadingTitle`, green, id `tripset-heading-place`) and a field with an example
   placeholder ("Where the trip goes, e.g. <a town>", 18 medium), id `tripset-place`.
-- **Dates** (id `tripset-dates`) and **Quick** (id `tripset-quick`) switches; Quick note (id
-  `tripset-quick-note`); the date picker with its grid CLOSED (same ids `trip-dates-field`, `range-*`).
+- The date picker, always (0.67; until then only under a **Dates** switch, id `tripset-dates`, gone), green,
+  its grid CLOSED: field id `tripset-dates-field` (value "No dates" for an undated trip), grid ids `range-*`.
+  **Clear dates** (`range-clear`) in the grid is how a trip's dates are taken away now — the switch was the
+  only way before, so it is kept as a small action rather than lost.
 - The template pill groups (ids `tripset-activity-<n>`, same numbering as Create new trip, "OTHER
-  TEMPLATES" last; heading id `tripset-activity-title`), Context (`tripset-context-*`), Transport,
+  TEMPLATES" last; heading id `tripset-activity-title`), Context per workout (`WorkoutContexts`, 0.67:
+  `tripset-context-title`, a line per ticked workout `tripset-context-<n>-name` with its pills
+  `tripset-context-<n>-0…2`, n = its `tripset-activity-<n>`), Transport,
   Season, **Pack weather gear anyway** (0.62: pills Rain, Cold, Heat, Wind, Snow — `WEATHER_CONDITIONS`,
   ids `tripset-weather-0…4`, heading `tripset-weather-title`, blue, several at once — the trip's
   `weatherOn`: his gear tagged for a picked condition comes onto the list whatever the forecast; the
@@ -957,12 +1054,15 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   **Save changes** (18 bold white on green, min height 52, id `tripset-save`), never disabled.
 
 ### Behaviour
-- **Load** (once, on appear): name, place = `destination`, Dates on iff `startDate` non-empty, start =
+- **Load** (once, on appear): name, place = `destination`, dated iff `startDate` non-empty, start =
   start date (or today), end = end date (or the start), Quick iff mode "quick", laundry, laundry nights
-  (`laundryNights(trip)`), templates = `trip.activities`, contexts, transport/season/food (empty →
+  (`laundryNights(trip)`), templates = `trip.activities`, each template's contexts = its own entry in
+  `activityContexts`, else the trip-wide `contexts` (0.67: what its things are narrowed by now — so a trip
+  made before 0.67 shows its one Context on every workout, and a Save without a change rebuilds the same
+  list), the trip's own `activityContexts` kept aside for the templates not shown, transport/season/food (empty →
   "Car"/"Summer"/"mixed"), weather anyway = `trip.weatherOn`; the trip's template ids this screen does
   not offer (a template deleted since, or the sender's templates on a trip someone sent) are noted
-  (`unshown`). Switching Dates on for an undated trip shows today — today, 0 nights.
+  (`unshown`). An undated trip's field says "Add dates"; its grid opens on this month.
 - **Still needed** (same words as Create new trip) is computed on Save; after that it follows the
   template pills (not the name field).
 - **Save**: nothing missing → `Library.changeTrip(id:)` with: name, place (trimmed; **a NEW place
@@ -970,8 +1070,11 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   the new place up), mode, `activities` = the ticked ids that are offered templates, in the order
   offered, THEN the trip's ids this screen does not show, as they were (0.62: they were dropped — a Quick
   trip whose template was deleted lost its Save without a word, `changeTrip` refusing a Quick trip with
-  no template), contexts (CONTEXTS order), transport, season, catering, `weatherOn` (`WEATHER_CONDITION_IDS`
-  order), laundry, `extra.laundryNights`, dates (Dates off → both "").
+  no template), `activityContexts` (0.67: an entry for every ticked offered WET template —
+  `WorkoutContexts.stored`, nothing picked = empty — plus, as they were, the entries of the ticked
+  templates this screen does not show), `contexts` = every context in those entries (`WorkoutContexts.union`),
+  transport, season, catering, `weatherOn` (`WEATHER_CONDITION_IDS` order), laundry, `extra.laundryNights`,
+  dates (no dates — never picked, or Clear dates — → both "").
   `changeTrip`: trims the name; refuses (nil, nothing changed) a blank name, or a QUICK trip with no
   templates; `nights = nightsBetween ?? 0`; `entries = regenerated(trip)`; `updatedAt = now`; returns
   `TripRebuilt(added:removed:)` = line ids new / gone. The sheet then closes and the trip says what
@@ -1005,15 +1108,20 @@ is the same.", still 1/7), `testWeatherGearCanBePackedAnyway` (Rain picked, save
 `testATripsSettingsAreChangedAfterItIsMade` (starts from the trip; rename to "Hills and lake",
 place kept, adding Swim → "1/10" with the tick kept and "Saved: 3 new"; blank name refused under Save
 with "name" in the message; Cancel changes nothing), `testLaundryCountsPerNightThingsFourNightsAtMost`,
-`testATripChecksTheCabinAndTheDatesBeforeYouGo` (Car via Trip settings removes cabin checks).
-Model: `ChangeTripTests.testAChangedTripRebuildsAndKeepsWhatHeDid` ((2 added, 1 removed), ticked and
+`testATripChecksTheCabinAndTheDatesBeforeYouGo` (Car via Trip settings removes cabin checks); 0.67:
+`testFullTripOrQuickIsChosenUnderTheName` (Quick shown; Full trip saved brings the common base, 0/4 → 0/7),
+`testDatesAreAlwaysThereAndCanBeCleared` (no `tripset-dates` switch; dates given and saved; Clear dates and
+saved → "No dates"), `testEachWorkoutHasItsOwnContext` (each workout's picks shown; Swim changed alone).
+Model: `WorkoutContextsLibraryTests` (a change of one workout's Context rebuilds 1 added / 1 removed),
+`ChangeTripTests.testAChangedTripRebuildsAndKeepsWhatHeDid` ((2 added, 1 removed), ticked and
 typed lines stay, name trimmed, nights 3, refusals),
 `testAThingOnTheTripTwiceKeepsBothLinesAndTheirTicks`, `testATripSomeoneSentKeepsItsListOnSave` (kept, not
 doubled, his templates join only when ticked or Quick goes off), `testWeatherGearForcedOnComesWithTheList`,
 `LibraryTests.testRegeneratingNeverDropsTheLinesOfADeletedTemplate`,
 `testRegeneratingStillDropsWhatALivingTemplateNoLongerHas`, `OnTheTripTests.testABoughtOnSiteLineIsInHandMarkedAndKept`
 (a rebuild keeps bought-on-site lines), `TripChecksTests.testABagNameOnTheTripCanBeSaidToGoInTheCabin`.
-**Not covered:** a new place clearing weather/geo; Quick/Food changes through the screen.
+**Not covered:** a new place clearing weather/geo; Food changes through the screen; the entries of a
+template this screen does not show being kept on Save.
 
 ### Traps and history
 - 0.39 crash fix (E.6): see regenerated step 2/4.
@@ -1039,7 +1147,7 @@ ended up, after a week of corrections."
 
 ### Behaviour
 `Library.startAgain(from:name:)`: trims the name (blank → nil); copies mode, activities, transport,
-season, contexts, weatherOn, catering, laundry, destination and `extra.laundryNights`; NOT the dates,
+season, contexts, `activityContexts` (each workout's Context, 0.67), weatherOn, catering, laundry, destination and `extra.laundryNights`; NOT the dates,
 weather, map point, status or review. Every line copied with a new id, `checked = false`,
 `skipped = false`, `used = nil`, and its marks `packedAt`, `boughtThere`, `packedHome`, `usedUp`,
 `homeNote` removed (0.62: a copied bought-on-site mark made the new trip stand at On site at once);
@@ -1714,7 +1822,11 @@ a shared link."
 - Bundle (`buildTripBundle`): `{app: "ams-packing-list", kind: "trip", version: 1, exportedAt, event}`,
   keys in the web app's order; each line "slimmed": drops `id, sourceListId, sourceItemId, stats,
   checked, used, custom` and the sync keys `owner`/`realmId`, drops default values, keeps `ownedBy` only
-  when it is a name, sub-items as words. The trip's own fields and extra keys travel as they are.
+  when it is a name, sub-items as words. The trip's own fields and extra keys travel as they are —
+  `activityContexts` too (0.67; after the web app's keys, which is where a key it does not know is
+  written), so the receiver's Trip settings shows each workout's Context and a rebuild keeps it. Its ids
+  are the SENDER's templates, like `activities`; a received trip's entries for templates the receiver does
+  not have are kept as they came on Save.
 - File: the bundle pretty-printed, named "<name> trip.json" (via `workbookFileName`), written to the
   temporary folder when the sheet appears.
 - Receiving (Settings → Open a shared link, Settings spec): `parseTripBundle` gives a new trip id,
@@ -1722,7 +1834,7 @@ a shared link."
   `Library.importTrip` takes `justTheList` again (a link made before 0.62 still carries the marks) and
   appends it **Quick** (0.62) — its list is what was sent: Trip settings' Save keeps it as it came (see
   `regenerated`), his own always-packed and transport templates do not pour in on top, a template he ticks
-  adds to it, and switching Quick off brings in the rest. Only `updatedAt` is re-set; no duplicate check —
+  adds to it, and picking Full trip brings in the rest. Only `updatedAt` is re-set; no duplicate check —
   adding the same link twice gives two trips. A pasted text is tried as a grab list, then a template, then a trip (a
   `#/t/<code>` found anywhere in the text, else the whole text as the code). The card reads "A TRIP"
   (12 heavy muted, `shared-kind`), the name ("Untitled trip" when empty; 18 bold, `shared-name`),
@@ -1830,19 +1942,22 @@ spec pass (0.62, section "Trips: the spec pass" in the file): testEscapeClosesTh
 testATripSomeoneSentKeepsItsListOnSave, testASetAsideLineIsNotPacked,
 testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen, testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill,
 testABagWithNothingWeighedIsOnTheTrip, testWeatherGearCanBePackedAnyway, testATemplateWithNoActivityAreaGoesOnATrip,
-testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only).
+testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only) — and 0.67:
+testFullTripOrQuickIsChosenUnderTheName, testDatesAreAlwaysThereAndCanBeCleared, testEachWorkoutHasItsOwnContext.
 UI launch modes used: `-uiTesting` (sample), `-uiTestingChecks` (a plane trip "Sunny weeks" 20–34 days
 out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passport day 180),
 `-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-uiTestingSections` (Hiking in
-two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings), `-openNextTrip`. Under the
+two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings),
+`-uiTestingWorkouts` (0.67: the sample plus a WET template Run — Trail shoes Outdoor, Treadmill towel Indoor,
+Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-openNextTrip`. Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
 
-**Model (PackingLibraryTests):** CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
+**Model (PackingLibraryTests):** WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
 LoopTests, OnSiteTests, OnTheTripTests, RefineTests, TripAgainTests, TripBulkTests, TripCardsTests,
 TripChecksTests, TripEditsTests, SetPlaceTests, ChangeTripTests, TripWeatherTests, WayHomeTests,
 WeighingTests, TravelYearTests, PhotoTidyTests, CountdownTests, ThingFollowsTests, RowTagsTests,
 BagsTests/BagNotesTests (trip parts), LibraryTests (records, regenerate), WorkbookTests, SharingTests.
-**(PackingCoreTests):** TripBuildingTests, TripEventsTests, CountingTests, ResolveTests, WeatherTests,
+**(PackingCoreTests):** TripBuildingTests, WorkoutContextsTests (0.67), TripEventsTests, CountingTests, ResolveTests, WeatherTests,
 DatesTests, PhasesTests, GroupingTests, EventsTests, TripSharingTests.
 
 ---

@@ -648,12 +648,14 @@ no entry shows no marker anywhere (and fails the test).
    the last tap (0.62). (2) Grab Lists: the ones on Home
    (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on
    Home — when full, you pick which one steps back; Make refuses a name already in use (0.62). (3) The countdown to the next trip under the grab lists; tap
-   opens the trip. (4) Create new trip: name, Dates (first day, last day; the line says range and nights; OK keeps,
-   Cancel restores), Quick in green while on. (5) Create trip is always ready; what is missing is said under it.
+   opens the trip. (4) Create new trip: name, then Full trip or Quick (Quick = only the ticked templates, no common
+   base or transport kit, said in the line under it); the dates in the calendar that is always open (first day,
+   last day, set at once; the line under it says range and nights; Clear dates leaves none; no day tapped = no
+   dates; Trip settings has the field with OK and Cancel) (0.67). (5) Create trip is always ready; what is missing is said under it.
    (6) So is every Add, New, Make, Weather: empty press adds nothing and a short red line says what is missing,
    gone as soon as you type. (7) Pick templates, Transport, Season, Food; workout colours (Swim blue, Bike yellow,
-   Run green, Strength orange, Breath work lavender, Mobility pink); Context (Indoor, Outdoor, Race) set in under
-   them; templates without an activity area come last, under Other templates (0.62). (8) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
+   Run green, Strength orange, Breath work lavender, Mobility pink); each picked workout its own Context line
+   (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other templates (0.62). (8) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
    ×4 · laundry with a washtub. (9) This Device: how many trips, things and templates.
 1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Check before you go
    (cabin red/orange, expiry six months ahead for passports/IDs); the pen opens Trip settings (every field it holds, Pack weather gear anyway included;
@@ -791,7 +793,7 @@ Shipped in 0.41.
 | 5 | Common base | Templates | The template that comes along on every trip: passport, phone charger and the like. |
 | 6 | Transport kit | Templates | What a way of travelling adds to a trip: the Car, Plane or RV things. |
 | 7 | Quick | Home | A trip with only the templates you tick — no common base, no transport kit. |
-| 8 | Context | Home | Indoor, Outdoor or Race: how a workout is done. It adds what that setting needs. |
+| 8 | Context | Home | Indoor, Outdoor or Race: how a workout is done, picked for each workout on its own. It adds what that setting needs. |
 | 9 | Thing | Care | One thing you own, in Your things on Care. It can be on many templates; a change to it reaches all of them. |
 | 10 | Kit | Care | All your things together — what Care counts and weighs. |
 | 11 | Cabin bag | Care | A bag that goes on board with you — Goes in the cabin, on the bag's page. On a plane trip it is checked for liquids and things not allowed. |
@@ -1278,6 +1280,7 @@ semibold (the `size` parameter of `SmallDeleteButton` is gone).
 | `compact` | 32 | 24 | smaller buttons (40) |
 | `chip` | 28 | 22 | pills (36) |
 | `header` | 30 | 24 | Done, Cancel, Share … at the top of a page (`HeaderButtonStyle`, 36) |
+| `contextName` | 72 | 64 | a WIDTH, not a height: the workout's name before its own Context pills (`WorkoutContexts`, 0.67 — new) |
 
 Buttons have 12 pt side padding (14–16 before); the field button (Add, New, Make) a corner radius of 8. One exception
 keeps its size on both: `Metrics.fingertip` = 44, the touch area of the table's column arrows and Hide (his ask, 4 Oct
@@ -1300,8 +1303,12 @@ a heading (band / title / question, id `<id>-title`) over pills in a `FlowRow(sp
 semibold when picked, regular when not; padding 12 sideways, min height `Metrics.chip`; picked = filled with its tone
 or the tint, white (or the tone's dark) words; not picked = `Theme.bg` fill, ink words, outlined in `line` (1 pt) or,
 for a toned pill, in its tone (1.8 pt). Id `<id>-<startIndex + position>` — "its position — never its words";
-picked pills carry the `.isSelected` trait (what tests read). `ContextPills` puts Context (Indoor, Outdoor, Race) as a
-`.question` row indented 18 with a 3-pt grey line down its side, in the Settings slate.
+picked pills carry the `.isSelected` trait (what tests read). `WorkoutContexts` (0.67; `ContextPills` until then)
+puts Context under the workouts, indented 18 with a 3-pt grey line down its side: a `.question` heading "Context",
+then one line per ticked workout — its name in its colour made readable (`WorkoutTone.words`, `readableHex`), in a
+`Metrics.contextName` column (72 / Mac 64) — and its own Indoor, Outdoor, Race pills in the Settings slate
+(padding 10). **`TripKindChoice`** (0.67): two answers in one capsule track — Full trip | Quick — the picked one
+filled with the tint, `.isSelected`; a muted Footnote line under it.
 
 **`DropDown` (0.64, `Screens/DropDown.swift`)** — ONE pick-one list: a heading band over a field-like button that
 opens its choices as a list beside it. His word, 6 Oct 2026, after Kept at home became the first: "I like the
@@ -1430,7 +1437,7 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
    separate elements; and a button inside a button never reaches the tree at all on either platform. So a text a
    test must read lives OUTSIDE the Button/Toggle, side by side with it (the trip section name beside its fold arrow;
    *Remind me to pack*'s next line under the Toggle; the What's-new version as a plain text), or the button exposes it
-   as its `accessibilityValue` (`trip-dates-field`), or a non-control box puts it in its LABEL — the Mac drops the
+   as its `accessibilityValue` (`tripset-dates-field`), or a non-control box puts it in its LABEL — the Mac drops the
    value of a box that is not a control (`loop-step-<n>`). Rows that are buttons are read through `app.buttons[id]`.
 2. The Mac reports a text's words as its VALUE, the iPhone as its LABEL — the tests' `words()` reads both.
 3. A Toggle is a switch on the iPhone and a check box on the Mac; a dropdown is a button on the iPhone and a pop-up
@@ -1803,7 +1810,7 @@ one more added at a time"; every test is seen to fail before it is committed (RE
 | `report` | TAP-REPORT: the element's state, `trip-create`'s state, window and scroll frames, the first 8 000 characters of the tree, a screenshot; fails. |
 | `waitUntil(timeout = 5, ok)` | polls every 0.2 s, one last check at the end. |
 | `switchNamed` / `isSwitchOn` / `setSwitch` | a switch (iPhone) or check box (Mac); on = value "1"/true; set by tapping (iPhone: at 95 % of the width, on the switch not its words), up to 3 times. |
-| `dayFromToday`, `pickDay`, `pickDates` | the month grid: page with `range-next`/`range-prev` towards the month, tap `range-day-YYYY-MM-DD`, OK with `range-ok`. |
+| `dayFromToday`, `pickDay(…, grid:)`, `pickDates`, `openTripSettingsDates` | the month grids: `pickDay` pages with `<grid>-next`/`<grid>-prev` towards the month and taps `<grid>-day-YYYY-MM-DD` — `grid` "range" (Trip settings', default) or "trip-range" (Create new trip's, always open since 0.67); `pickDates` taps two days in Create new trip's grid and waits for "… night(s)" under it (no OK there); `openTripSettingsDates` opens the sample trip's Trip settings and its grid (the field, OK `range-ok` and Cancel live there). |
 
 Traps recorded with them: the hardware keyboard exists locally but not on GitHub's simulator, so a control under the
 on-screen keyboard takes no tap while looking hittable; `scrollViews.firstMatch` is the screen BEHIND an open sheet,

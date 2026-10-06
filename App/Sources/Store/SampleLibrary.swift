@@ -191,6 +191,26 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with a second workout and things for one context only
+    /// (`-uiTestingWorkouts`), for Context PER WORKOUT (0.67): Run — Trail shoes
+    /// (Outdoor), Treadmill towel (Indoor), Running cap (any) — and a Wetsuit (Outdoor)
+    /// on Swim. A Quick trip of Swim indoors and Run outdoors is then five lines:
+    /// Goggles, Swim cap, Towel, Trail shoes, Running cap. One Context for both (the old
+    /// way, Indoor and Outdoor) would be all seven.
+    static func workouts() -> Library {
+        var lib = make()
+        var run = newList(name: "Run", group: "WET")
+        run.items = [newItem(name: "Trail shoes", contexts: ["Outdoor"]),
+                     newItem(name: "Treadmill towel", contexts: ["Indoor"]),
+                     newItem(name: "Running cap")]
+        lib.saveTemplate(run)
+        if let swim = lib.templates.first(where: { $0.name == "Swim" }), var full = lib.resolvedTemplate(id: swim.id) {
+            full.items.append(newItem(name: "Wetsuit", contexts: ["Outdoor"]))
+            lib.saveTemplate(full)
+        }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that

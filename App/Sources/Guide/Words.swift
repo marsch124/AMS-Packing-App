@@ -18,7 +18,7 @@ enum Words {
         Entry(term: "Common base", meaning: "The template that comes along on every trip: passport, phone charger and the like.", section: .templates),
         Entry(term: "Transport kit", meaning: "What a way of travelling adds to a trip: the Car, Plane or RV things.", section: .templates),
         Entry(term: "Quick", meaning: "A trip with only the templates you tick — no common base, no transport kit.", section: .home),
-        Entry(term: "Context", meaning: "Indoor, Outdoor or Race: how a workout is done. It adds what that setting needs.", section: .home),
+        Entry(term: "Context", meaning: "Indoor, Outdoor or Race: how a workout is done, picked for each workout on its own. It adds what that setting needs.", section: .home),
         Entry(term: "Thing", meaning: "One thing you own, in Your things on Care. It can be on many templates; a change to it reaches all of them.", section: .care),
         Entry(term: "Kit", meaning: "All your things together — what Care counts and weighs.", section: .care),
         Entry(term: "Cabin bag", meaning: "A bag that goes on board with you \u{2014} Goes in the cabin, on the bag's page. On a plane trip it is checked for liquids and things not allowed.", section: .care),

@@ -28,11 +28,21 @@ public func contextApplies(_ list: PackList?) -> Bool {
     return list.group == "WET"
 }
 
+/// The Context that narrows THIS template's things on the trip (0.67, his ask: "it
+/// could be outdoors Run and indoors Swim"): the template's own entry in the trip's
+/// `activityContexts` when it has one — an empty entry narrows nothing — else the
+/// trip-wide `contexts`, which is all a trip made before 0.67 (or by the web app)
+/// carries, so such a trip builds exactly as it did.
+public func contextsFor(_ event: TripEvent, _ list: PackList?) -> [String] {
+    if let id = list?.id, let own = event.activityContexts[id] { return own }
+    return event.contexts
+}
+
 public func itemMatchesEvent(_ item: Item, _ event: TripEvent, _ list: PackList? = nil) -> Bool {
     dimOk(item.seasons, event.season)
         && dimOk(item.transports, event.transport)
         && dimOk(item.catering, event.catering)
-        && (contextApplies(list) ? contextsOk(item.contexts, event.contexts) : true)
+        && (contextApplies(list) ? contextsOk(item.contexts, contextsFor(event, list)) : true)
 }
 
 // MARK: - Total List generation
@@ -93,7 +103,8 @@ public func listsForEvent(_ event: TripEvent, _ lists: [PackList]) -> [PackList]
     for l in all where l.role.isEmpty { tickable[l.id] = l }
     let ticked = event.activities.compactMap { tickable[$0] }
     // Quick mode: just the ticked activity lists — no common base, no transport kit.
-    // (Items are still narrowed by the trip's Indoor/Outdoor context, season, etc.)
+    // (Items are still narrowed by the trip's Indoor/Outdoor context — per workout
+    // since 0.67, `contextsFor` — season, etc.)
     let chosen: [PackList] = event.mode == "quick"
         ? ticked
         : all.filter { $0.role == "base" }

@@ -17,14 +17,18 @@ struct HomeScreen: View {
 
     @EnvironmentObject var model: LibraryModel
     @State private var name = ""
+    /// Whether the trip gets dates — set by tapping a day, taken away by Clear dates.
     @State private var hasDates = false
+    /// The first day is tapped and the last is not yet: Create waits for it.
+    @State private var pickingEnd = false
     @State private var start = Date()
     @State private var end = Date().addingTimeInterval(2 * 86400)
     @State private var transport = "Car"
     @State private var season = "Summer"
     @State private var catering = "mixed"
     @State private var activities: Set<String> = []
-    @State private var contexts: Set<String> = []
+    /// Indoor / Outdoor / Race PER WORKOUT (0.67): template id → its contexts.
+    @State private var workoutContexts: [String: Set<String>] = [:]
     @State private var quick = false
     @State private var laundry = false
     @State private var laundryNights = LAUNDRY_CAP_NIGHTS
@@ -103,28 +107,17 @@ struct HomeScreen: View {
                         .onChange(of: name) { _, _ in if !stillNeeded.isEmpty { stillNeeded = needs() } }
                         .accessibilityIdentifier("trip-name")
 
-                    // Two answers about the SHAPE of the trip, on one line: his ask.
-                    HStack(spacing: 12) {
-                        Toggle(isOn: $hasDates) {
-                            Text("Dates").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                        }
-                        .fixedSize()
-                        .accessibilityIdentifier("trip-dates")
-                        Spacer(minLength: 8)
-                        Toggle(isOn: $quick) {
-                            Text("Quick").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                        }
-                        .fixedSize()
-                        .accessibilityIdentifier("trip-quick")
-                    }
-                    // The explanation only when it is on, so the line stays short.
-                    // In GREEN, like the switch that brought it (his test C.7: grey, "you
-                    // almost don't see it, so you don't see that anything has changed").
-                    if quick { QuickNote(id: "trip-quick-note") }
-                    if hasDates {
-                        // Booking.com's way, his example (2026-09-26): one field, a month grid,
-                        // first day then last day.
-                        DateRangePicker(start: $start, end: $end)
+                    // What KIND of trip, first, under the name — his ask (6 Oct 2026): "the
+                    // Quick check box to be placed somewhere else - more thought through".
+                    // A two-way choice that says what it leaves out, not a lone switch.
+                    TripKindChoice(quick: $quick, id: "trip-kind")
+                    // The month grid itself, always open (0.67) — his words: "I would like the
+                    // date picker to be present all the time, and then take away the Dates
+                    // checkbox", and then "always having the date picker OPEN in Create new
+                    // Trip". First day, then last day, set at once; no day tapped = no dates.
+                    DateRangePicker(start: $start, end: $end, dated: $hasDates, inline: true, grid: "trip-range") { waiting in
+                        pickingEnd = waiting
+                        if !stillNeeded.isEmpty { stillNeeded = needs() }
                     }
 
                     ForEach(choices, id: \.group.id) { choice in
@@ -138,8 +131,9 @@ struct HomeScreen: View {
                             if !stillNeeded.isEmpty { stillNeeded = needs() }
                         }
                         if choice.group.id == "WET" && anyWorkout {
-                            ContextPills(selected: contexts, id: "trip-context") { id in
-                                if contexts.contains(id) { contexts.remove(id) } else { contexts.insert(id) }
+                            WorkoutContexts(workouts: WorkoutContexts.ticked(choice.lists, activities, flat),
+                                            selected: workoutContexts, id: "trip-context") { workout, context in
+                                workoutContexts[workout, default: []].formSymmetricDifference([context])
                             }
                         }
                     }
@@ -238,15 +232,19 @@ struct HomeScreen: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
     }
 
-    private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty }
+    private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty && !pickingEnd }
 
     /// What is still missing before a trip can be made, in his words — "" when nothing.
     private func needs() -> String {
         let noName = jsTrim(name).isEmpty, noList = activities.isEmpty
-        if noName && noList { return "Give the trip a name and pick at least one template." }
-        if noName { return "Give the trip a name." }
-        if noList { return "Pick at least one template." }
-        return ""
+        var said: [String] = []
+        if noName && noList { said.append("Give the trip a name and pick at least one template.") }
+        else if noName { said.append("Give the trip a name.") }
+        else if noList { said.append("Pick at least one template.") }
+        // Only the first day tapped: never a day trip by accident (the spec pass, 5 Oct
+        // 2026 — a grid closed on its first day stored one).
+        if pickingEnd { said.append("Tap the trip's last day \u{2014} the same day again for a day trip.") }
+        return said.joined(separator: " ")
     }
 
     private func create(_ flat: [PackList]) {
@@ -263,14 +261,15 @@ struct HomeScreen: View {
         draft.laundry = laundry
         draft.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(laundryNights))
         draft.activities = flat.map(\.id).filter { activities.contains($0) }   // in the order offered
-        draft.contexts = CONTEXTS.filter { contexts.contains($0) }
+        draft.activityContexts = WorkoutContexts.stored(draft.activities, flat, workoutContexts)
+        draft.contexts = WorkoutContexts.union(draft.activityContexts)
         if hasDates {
             draft.startDate = HomeScreen.ymd(start)
             draft.endDate = HomeScreen.ymd(max(start, end))
         }
         var made: TripEvent?
         model.change { made = $0.createTrip(draft) }
-        name = ""; activities = []; contexts = []; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
+        name = ""; activities = []; workoutContexts = [:]; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
         opened = made?.id
     }
 
@@ -382,22 +381,50 @@ struct CountTile: View {
     }
 }
 
-/// What Quick means, shown while it is on — green like the switch, framed so the
-/// change is seen (his test C.7).
-struct QuickNote: View {
+/// Full trip | Quick — the KIND of trip, as a two-way choice under the name (0.67, his
+/// ask: "the Quick check box to be placed somewhere else - more thought through").
+/// Until then a "Quick" switch sat at the end of the Dates line, its meaning in a green
+/// box that appeared only while it was on (his test C.7). Now both answers are always in
+/// sight, the picked one filled, and one quiet line under them says what Quick leaves out.
+/// Ids: `<id>-full`, `<id>-quick` (the picked one `.isSelected`), `<id>-note`.
+struct TripKindChoice: View {
+    @Binding var quick: Bool
     let id: String
+    var tint: Color = AppSection.home.color
+
     var body: some View {
-        // Field test 5.1/6.1 (3 Oct 2026): the old words made Transport look switched
-        // off, the trip stayed "Car", and the plane's cabin check never ran.
-        Text("Quick: only the templates you tick \u{2014} no common base, no transport kit. Transport still counts: pick Plane and the cabin is checked.")
-            .font(.system(.subheadline, weight: .semibold))
-            .foregroundStyle(AppSection.events.color)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 12).padding(.vertical, 9)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 10).fill(AppSection.events.color.opacity(0.12)))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color, lineWidth: 1.2))
-            .accessibilityIdentifier(id)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 2) {
+                segment("Full trip", picked: !quick, id: "\(id)-full") { quick = false }
+                segment("Quick", picked: quick, id: "\(id)-quick") { quick = true }
+            }
+            .padding(2)
+            .background(Capsule().fill(Theme.bg))
+            .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
+            .frame(maxWidth: 360)
+            // Field test 5.1/6.1 (3 Oct 2026): words that made Transport look switched
+            // off left the trip on "Car" and the plane's cabin check never ran — so the
+            // line says Transport still counts.
+            Text("Quick packs only the templates you tick \u{2014} no common base, no transport kit. Transport still counts.")
+                .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("\(id)-note")
+        }
+    }
+
+    private func segment(_ words: String, picked: Bool, id: String, _ pick: @escaping () -> Void) -> some View {
+        Button(action: pick) {
+            Text(words)
+                .font(.system(.subheadline, weight: picked ? .semibold : .regular))
+                .foregroundStyle(picked ? Color.white : Theme.ink)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, minHeight: Metrics.chip)
+                .background(Capsule().fill(picked ? tint : Color.clear))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+        .accessibilityAddTraits(picked ? .isSelected : [])
     }
 }
 
@@ -413,32 +440,108 @@ struct PillTone {
 /// docs/colours.md. Yellow and the light ones carry dark words: white is
 /// unreadable on them. He does not like teal.
 enum WorkoutTone {
-    static func of(_ name: String) -> PillTone? {
+    /// Fill and words, by the workout's name.
+    private static func pair(_ name: String) -> (fill: UInt32, ink: UInt32)? {
         switch normName(name).filter({ !$0.isWhitespace }) {
-        case "swim": return PillTone(fill: Color(hex: 0x0a84ff), ink: .white)
-        case "bike": return PillTone(fill: Color(hex: 0xffd60a), ink: Color(hex: 0x3d3000))
-        case "run": return PillTone(fill: Color(hex: 0x30d158), ink: Color(hex: 0x0b3a17))
-        case "strength": return PillTone(fill: Color(hex: 0xff8c1a), ink: Color(hex: 0x4a2300))
-        case "breathwork": return PillTone(fill: Color(hex: 0xbf9cff), ink: Color(hex: 0x2e1a5c))
-        case "mobility": return PillTone(fill: Color(hex: 0xff6fa8), ink: Color(hex: 0x5a0f2e))
+        case "swim": return (0x0a84ff, 0xffffff)
+        case "bike": return (0xffd60a, 0x3d3000)
+        case "run": return (0x30d158, 0x0b3a17)
+        case "strength": return (0xff8c1a, 0x4a2300)
+        case "breathwork": return (0xbf9cff, 0x2e1a5c)
+        case "mobility": return (0xff6fa8, 0x5a0f2e)
         default: return nil
         }
     }
+
+    static func of(_ name: String) -> PillTone? {
+        pair(name).map { PillTone(fill: Color(hex: $0.fill), ink: Color(hex: $0.ink)) }
+    }
+
+    /// The workout's colour as WORDS on the card (the per-workout Context lines, 0.67):
+    /// its hue, darkened on a light screen or lightened on a dark one until it reads —
+    /// the way his own colours are written (`readableHex`; Bike's bright yellow is
+    /// unreadable on white as it is). Nil for a template with no colour of its own.
+    static func words(_ name: String, dark: Bool) -> Color? {
+        pair(name).map { Color(hexString: readableHex(String(format: "#%06x", $0.fill), dark: dark)) }
+    }
 }
 
-/// Indoor / Outdoor / Race — set in under the workouts, with a line down its side,
-/// so it reads as belonging to them (his ask, 2026-09-28), in a quiet grey: it
-/// describes the workouts rather than being one.
-struct ContextPills: View {
-    let selected: Set<String>
+/// Indoor / Outdoor / Race PER WORKOUT (0.67) — his ask: "the same context menu is
+/// needed for all WET activities. Example: it could be outdoors Run and indoors Swim."
+/// Set in under the workouts, with a line down its side, so it reads as belonging to
+/// them (his ask, 2026-09-28), in a quiet grey: it describes the workouts rather than
+/// being one. One compact line per TICKED workout: its name in its own colour, then its
+/// own three pills. Until 0.67 one Indoor/Outdoor/Race set narrowed every workout.
+///
+/// Ids, by the workout's place among the template pills (`<activity id>-<n>`):
+/// `<id>-<n>-name` (its name), `<id>-<n>-0…2` (Indoor, Outdoor, Race; picked = `.isSelected`);
+/// the heading `<id>-title`.
+struct WorkoutContexts: View {
+    struct Workout: Identifiable { let id: String; let name: String; let index: Int }
+    let workouts: [Workout]
+    let selected: [String: Set<String>]
     let id: String
-    let choose: (String) -> Void
+    let choose: (_ workout: String, _ context: String) -> Void
+    @Environment(\.colorScheme) private var scheme
+
+    /// The ticked templates of one group (the WET one), in the order offered, each with
+    /// its place among ALL the template pills — the number its pill carries.
+    static func ticked(_ lists: [PackList], _ ticked: Set<String>, _ flat: [PackList]) -> [Workout] {
+        lists.filter { ticked.contains($0.id) }.map { l in
+            Workout(id: l.id, name: l.name, index: flat.firstIndex { $0.id == l.id } ?? 0)
+        }
+    }
+
+    /// What the trip stores (`activityContexts`): an entry for EVERY ticked workout,
+    /// nothing picked = an empty one (narrows nothing) — in `CONTEXTS` order.
+    static func stored(_ activities: [String], _ flat: [PackList], _ picked: [String: Set<String>]) -> [String: [String]] {
+        let workouts = Set(flat.filter { $0.group == "WET" }.map(\.id))
+        var out: [String: [String]] = [:]
+        for a in activities where workouts.contains(a) {
+            out[a] = CONTEXTS.filter { picked[a, default: []].contains($0) }
+        }
+        return out
+    }
+
+    /// The trip-wide `contexts`: every context picked for any workout — what a device
+    /// still on 0.66, or the web app, reads (this build narrows each workout by its own).
+    static func union(_ perWorkout: [String: [String]]) -> [String] {
+        CONTEXTS.filter { c in perWorkout.values.contains { $0.contains(c) } }
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             RoundedRectangle(cornerRadius: 1.5).fill(Theme.line).frame(width: 3)
-            Pills(title: "Context", options: CONTEXTS.map { ($0, $0) }, selected: selected, id: id,
-                  tint: AppSection.settings.color, heading: .question, choose: choose)
+            VStack(alignment: .leading, spacing: 6) {
+                HeadingTitle(title: "Context", tint: AppSection.settings.color, id: "\(id)-title", question: true)
+                ForEach(workouts) { w in
+                    HStack(alignment: .center, spacing: 8) {
+                        Text(w.name)
+                            .font(.system(.subheadline, weight: .semibold))
+                            .foregroundStyle(WorkoutTone.words(w.name, dark: scheme == .dark) ?? Theme.ink)
+                            .lineLimit(2).minimumScaleFactor(0.8)
+                            .frame(width: Metrics.contextName, alignment: .leading)
+                            .accessibilityIdentifier("\(id)-\(w.index)-name")
+                        FlowRow(spacing: 6) {
+                            ForEach(Array(CONTEXTS.enumerated()), id: \.element) { k, c in
+                                let on = selected[w.id, default: []].contains(c)
+                                Button { choose(w.id, c) } label: {
+                                    Text(c)
+                                        .font(.system(.subheadline, weight: on ? .semibold : .regular))
+                                        .foregroundStyle(on ? Color.white : Theme.ink)
+                                        .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                                        .background(Capsule().fill(on ? AppSection.settings.color : Theme.bg))
+                                        .overlay(Capsule().stroke(on ? AppSection.settings.color : Theme.line, lineWidth: 1))
+                                        .contentShape(Capsule())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("\(id)-\(w.index)-\(k)")
+                                .accessibilityAddTraits(on ? .isSelected : [])
+                            }
+                        }
+                    }
+                }
+            }
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.leading, 18)

@@ -25,7 +25,13 @@ struct TripSettingsScreen: View {
     @State private var laundry = false
     @State private var laundryNights = LAUNDRY_CAP_NIGHTS
     @State private var activities: Set<String> = []
-    @State private var contexts: Set<String> = []
+    /// Indoor / Outdoor / Race PER WORKOUT (0.67): template id → its contexts. A trip
+    /// made before 0.67 opens with each workout showing the trip-wide ones — what its
+    /// list was built with — so a Save without a change rebuilds the same list.
+    @State private var workoutContexts: [String: Set<String>] = [:]
+    /// The trip's own per-workout entries when the screen opened: kept on Save for the
+    /// templates this screen does not show (`unshown`).
+    @State private var storedContexts: [String: [String]] = [:]
     @State private var transport = "Car"
     @State private var season = "Summer"
     @State private var catering = "mixed"
@@ -73,6 +79,8 @@ struct TripSettingsScreen: View {
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .accessibilityIdentifier("tripset-name")
+                    // Full trip | Quick under the name, as on Create new trip (0.67).
+                    TripKindChoice(quick: $quick, id: "tripset-kind", tint: AppSection.events.color)
                     // A heading like the pills' headings below (field test, 3 Oct 2026).
                     VStack(alignment: .leading, spacing: 6) {
                         HeadingTitle(title: "Place", tint: AppSection.events.color, id: "tripset-heading-place")
@@ -84,21 +92,9 @@ struct TripSettingsScreen: View {
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                             .accessibilityIdentifier("tripset-place")
                     }
-                    HStack(spacing: 12) {
-                        Toggle(isOn: $hasDates) {
-                            Text("Dates").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                        }
-                        .fixedSize()
-                        .accessibilityIdentifier("tripset-dates")
-                        Spacer(minLength: 8)
-                        Toggle(isOn: $quick) {
-                            Text("Quick").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                        }
-                        .fixedSize()
-                        .accessibilityIdentifier("tripset-quick")
-                    }
-                    if quick { QuickNote(id: "tripset-quick-note") }
-                    if hasDates { DateRangePicker(start: $start, end: $end, tint: AppSection.events.color, open: false) }
+                    // Always there, as on Create new trip (0.67). The Dates switch was also the
+                    // only way to take a trip's dates away: that is Clear dates in the grid now.
+                    DateRangePicker(start: $start, end: $end, dated: $hasDates, tint: AppSection.events.color, id: "tripset-dates")
                     ForEach(choices, id: \.group.id) { choice in
                         Pills(title: groupHeading(choice.group.id, choice.group.label),
                               options: choice.lists.map { ($0.id, $0.name) },
@@ -109,8 +105,9 @@ struct TripSettingsScreen: View {
                             if !stillNeeded.isEmpty { stillNeeded = needs() }
                         }
                         if choice.group.id == "WET" && anyWorkout {
-                            ContextPills(selected: contexts, id: "tripset-context") { id in
-                                if contexts.contains(id) { contexts.remove(id) } else { contexts.insert(id) }
+                            WorkoutContexts(workouts: WorkoutContexts.ticked(choice.lists, activities, flat),
+                                            selected: workoutContexts, id: "tripset-context") { workout, context in
+                                workoutContexts[workout, default: []].formSymmetricDifference([context])
                             }
                         }
                     }
@@ -251,7 +248,11 @@ struct TripSettingsScreen: View {
         laundry = t.laundry
         laundryNights = PackingCore.laundryNights(t)
         activities = Set(t.activities)
-        contexts = Set(t.contexts)
+        storedContexts = t.activityContexts
+        // What each workout's things are narrowed by now (`contextsFor`): its own entry,
+        // else the trip-wide contexts.
+        workoutContexts = Dictionary(t.activities.map { ($0, Set(t.activityContexts[$0] ?? t.contexts)) },
+                                     uniquingKeysWith: { first, _ in first })
         transport = t.transport.isEmpty ? "Car" : t.transport
         season = t.season.isEmpty ? "Summer" : t.season
         catering = t.catering.isEmpty ? "mixed" : t.catering
@@ -264,7 +265,8 @@ struct TripSettingsScreen: View {
     /// Everything the screen can change, in one comparable piece.
     private func snapshot() -> [String] {
         [name, place, "\(hasDates)", HomeScreen.ymd(start), HomeScreen.ymd(end), "\(quick)", "\(laundry)",
-         "\(laundryNights)", activities.sorted().joined(separator: ","), contexts.sorted().joined(separator: ","),
+         "\(laundryNights)", activities.sorted().joined(separator: ","),
+         activities.sorted().map { "\($0):\(workoutContexts[$0, default: []].sorted().joined(separator: "+"))" }.joined(separator: ","),
          transport, season, catering, weatherOn.sorted().joined(separator: ",")]
     }
 
@@ -283,7 +285,10 @@ struct TripSettingsScreen: View {
         // The ticked ones in the order offered — then the trip's templates this screen
         // does not show, as they were (see `unshown`).
         let acts = flat.map(\.id).filter { activities.contains($0) } + unshown.filter { activities.contains($0) }
-        let ctx = CONTEXTS.filter { contexts.contains($0) }
+        // Each ticked workout its own; a template not shown here keeps its entry as it was.
+        var perWorkout = WorkoutContexts.stored(acts, flat, workoutContexts)
+        for id in unshown where activities.contains(id) { if let kept = storedContexts[id] { perWorkout[id] = kept } }
+        let ctx = WorkoutContexts.union(perWorkout)
         let wx = WEATHER_CONDITION_IDS.filter { weatherOn.contains($0) }
         let tr = transport, se = season, ca = catering, la = laundry, pl = jsTrim(place), ln = laundryNights
         var result: Library.TripRebuilt?
@@ -295,6 +300,7 @@ struct TripSettingsScreen: View {
                 if pl != jsTrim(t.destination) { t.destination = pl; t.weather = nil; t.geo = nil }
                 t.mode = q ? "quick" : "trip"
                 t.activities = acts
+                t.activityContexts = perWorkout
                 t.contexts = ctx
                 t.transport = tr
                 t.season = se
