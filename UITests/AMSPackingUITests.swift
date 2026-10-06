@@ -4249,6 +4249,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["rescue-heading"].waitForExistence(timeout: 5), "nothing was kept")
         XCTAssertTrue(app.buttons["rescue-row-0"].exists, "the copy is not offered")
         XCTAssertFalse(app.buttons["rescue-row-1"].exists, "more copies than restores")
+        // PROBE: does the window still take clicks? Restore from a file… again.
+        bringIntoView(app, app.buttons["backup-restore"])
+        tap(app, id: "backup-restore")
+        let other = appears(app, "restore-detail", timeout: 5)
+        print("PROBE other-button-opened=\(other) status='\(words(app.staticTexts["backup-status"]))'")
+        if other { tap(app, id: "restore-cancel"); _ = disappears(app, "restore-detail", timeout: 5)
+            print("PROBE after-cancel status='\(words(app.staticTexts["backup-status"]))'") }
         bringIntoView(app, app.buttons["rescue-row-0"])
         shot(app, "rescue-copy")
         // 🪤 On the Mac the list can still be gliding when the click comes, and the click
