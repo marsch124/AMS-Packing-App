@@ -845,10 +845,10 @@ final class AMSPackingUITests: XCTestCase {
         let top = app.staticTexts["guide-release-0-version"]
         XCTAssertTrue(top.waitForExistence(timeout: 5), "What's new lists no version")
         XCTAssertEqual(words(top), version, "What's new does not start with this version — write its line in Releases.swift")
-        // The newest entry can be longer than the screen (0.62's is), and the list builds a
-        // card only near the screen: scroll to the second before asking for it.
-        XCTAssertTrue(scrollUntil(app, "guide-release-1", near: "guide-release-0", tries: 20), "only one version listed")
-        XCTAssertTrue(app.staticTexts["guide-release-1-version"].exists, "the second version has no number")
+        // Every card is built at once (a VStack since 0.62), so the second version is
+        // there however long the newest entry is. (scrollUntil looked for the card as an
+        // "other" element — on the Mac a container is a "group", and it never matched.)
+        XCTAssertTrue(app.staticTexts["guide-release-1-version"].waitForExistence(timeout: 5), "only one version listed")
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-whatsnew", timeout: 5))
 
@@ -3325,7 +3325,17 @@ final class AMSPackingUITests: XCTestCase {
         let a = grip(app, from), b = grip(app, to)
         XCTAssertTrue(a.waitForExistence(timeout: 5), "no \(from)")
         XCTAssertTrue(b.exists, "no \(to)")
+        #if os(macOS)
+        // 🪤 On the Mac a drop at a row's MIDDLE goes BELOW it (GitHub's Mac run, 6 Oct
+        // 2026: Clothes dropped on Lights' grip landed under Lights). Moving up, aim at
+        // the target's top edge; moving down, at its bottom edge.
+        let up = b.frame.midY < a.frame.midY
+        let start = a.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = b.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.05 : 0.95))
+        start.press(forDuration: 1.0, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.8)
+        #else
         a.press(forDuration: 1.0, thenDragTo: b, withVelocity: .slow, thenHoldForDuration: 0.8)
+        #endif
     }
 
     /// The names of the things while arranging, top to bottom.
@@ -4235,8 +4245,17 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["rescue-row-1"].exists, "more copies than restores")
         bringIntoView(app, app.buttons["rescue-row-0"])
         shot(app, "rescue-copy")
-        tap(app, id: "rescue-row-0")
-        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        // 🪤 On the Mac the list can still be gliding when the click comes, and the click
+        // then lands where the row WAS (GitHub's Mac run, 6 Oct 2026: on the heading
+        // above it). Let it settle, click, and once more if nothing opened.
+        var opened = false
+        for _ in 0..<3 where !opened {
+            usleep(600_000)
+            bringIntoView(app, app.buttons["rescue-row-0"])
+            tap(app, id: "rescue-row-0")
+            opened = appears(app, "restore-detail", timeout: 4)
+        }
+        XCTAssertTrue(opened, "the copy's restore did not open")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["restore-file-items"]) == "10" },
                       "the copy does not hold what was here: '\(words(app.staticTexts["restore-file-items"]))'")
         tap(app, id: "restore-confirm")

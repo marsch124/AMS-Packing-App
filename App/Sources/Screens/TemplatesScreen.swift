@@ -703,6 +703,10 @@ struct TemplateDetail: View {
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 1)
         .background(Theme.bg)
+        #if os(macOS)
+        // The Mac's list takes Escape for itself as well when it has focus.
+        .onExitCommand { endArranging() }
+        #endif
         .accessibilityIdentifier("arrange-list")
     }
 
@@ -776,6 +780,12 @@ struct TemplateDetail: View {
                         .stroke(headingNeeds.isEmpty ? Theme.line : AppSection.actions.color, lineWidth: 1))
                     .focused($writingHeading)
                     .onSubmit { saveHeading(section) }
+                    #if os(macOS)
+                    // 🪤 On the Mac a text field takes Escape for itself, so the Arrange
+                    // pill's shortcut never heard it (GitHub's Mac run, 6 Oct 2026): end
+                    // Arrange here too — the half-typed name dropped, never saved.
+                    .onExitCommand { endArranging() }
+                    #endif
                     .accessibilityIdentifier("arrange-heading-field")
                 Button { saveHeading(section) } label: { FieldButtonLabel(title: "Save", tint: tint) }
                     .buttonStyle(.borderless).focusEffectDisabled()
