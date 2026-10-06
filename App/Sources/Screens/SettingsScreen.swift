@@ -167,6 +167,10 @@ struct SettingsScreen: View {
                                         .foregroundStyle(AppSection.settings.color)
                                 }
                                 .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                                // Filled with the card's own colour, so the whole row takes a
+                                // click: on the Mac a click on its empty middle did nothing —
+                                // the words alone were the button (GitHub's Mac run, 6 Oct 2026).
+                                .background(Theme.card)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
