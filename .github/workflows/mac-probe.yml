@@ -20,33 +20,8 @@ jobs:
           T=AMSPackingUITests/AMSPackingUITests
           xcodebuild test -project AMSPacking.xcodeproj -scheme AMSPacking -destination "platform=macOS" \
             -derivedDataPath build -resultBundlePath Probe-Mac.xcresult -collect-test-diagnostics never \
-            -only-testing:$T/testABagWithNothingWeighedIsOnTheTrip \
-            -only-testing:$T/testAChangeToAThingReachesATripStillAhead \
-            -only-testing:$T/testAChoiceIsRenamedAndMovedAndItsThingsFollow \
-            -only-testing:$T/testAPlaceIsSetFromTheTrip \
-            -only-testing:$T/testARestoreSwipedAwaySaysNothingWasReplaced \
-            -only-testing:$T/testARowOfAListHasItsOwnAnswers \
-            -only-testing:$T/testASectionTypedInARowIsMadeOnlyOnSave \
-            -only-testing:$T/testAThingIsOfferedOnlyHisOwnBags \
-            -only-testing:$T/testAThingOpensFromTheWayHomeAndComesBack \
-            -only-testing:$T/testAThingsOwnDetailsAndItsListsAreChanged \
-            -only-testing:$T/testAThingsPageMakesANewSectionOnSave \
-            -only-testing:$T/testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen \
-            -only-testing:$T/testAThingsPageSetsItsSectionOnATemplate \
-            -only-testing:$T/testAThingsPageTakesDecimalsAPlaceNoBagAndCare \
             -only-testing:$T/testATripSortedBySectionReadsUnderItsSections \
-            -only-testing:$T/testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving \
-            -only-testing:$T/testEveryAddButtonIsReadyAndSaysWhatIsMissing \
             -only-testing:$T/testEveryRowShowsTheTickTheTripHolds \
-            -only-testing:$T/testHisOwnListsAreAddedAndProtectedWhileInUse \
-            -only-testing:$T/testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen \
-            -only-testing:$T/testTheEditorsLeadWithTheirHeadings \
-            -only-testing:$T/testThePickOneListsAreDropDownsThatChooseAndKeep \
-            -only-testing:$T/testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy \
-            -only-testing:$T/testTheTripSaysSortingBesideItsDropDown \
-            -only-testing:$T/testWhoseItIsOffersEachOwnerOnce \
-            -only-testing:$T/testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed \
-            -only-testing:$T/testWhatsNewStartsWithThisVersion \
             CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
       - name: Keep the results
         if: always()
