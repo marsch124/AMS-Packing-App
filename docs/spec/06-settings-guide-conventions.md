@@ -1288,7 +1288,7 @@ semibold (the `size` parameter of `SmallDeleteButton` is gone).
 | `chip` | 28 | 22 | pills (36) |
 | `header` | 30 | 24 | Done, Cancel, Share … at the top of a page (`HeaderButtonStyle`, 36) |
 | `screenTop` | 4 | — | from the top of a tab (under the iPhone's status bar) to its first line (0.67; 14 on most tabs, 12 on To do before). On the Mac the first line sits in the title bar strip instead (below) |
-| `windowButtons` | — | 78 | the Mac: where a tab's title may start, from the window's LEFT EDGE — after the three window buttons, whose right edge is at 68 on macOS 26 (measured on his 0.63 picture; the system's own title started at 84) |
+| `windowButtons` | — | 80 | the Mac: where a tab's title may start, from the window's LEFT EDGE — after the three window buttons, whose green one ends at 68 on macOS 26 (measured on his 0.63 picture; its accessibility frame ends at 70; the system's own title started at 84) |
 
 Buttons have 12 pt side padding (14–16 before); the field button (Add, New, Make) a corner radius of 8. One exception
 keeps its size on both: `Metrics.fingertip` = 44, the touch area of the table's column arrows and Hide (his ask, 4 Oct
@@ -1320,7 +1320,7 @@ main window (`WindowGroup`) has **no title bar**: `.windowStyle(.hiddenTitleBar)
 its own. `RootView` measures the strip with a `GeometryReader` — its height is the window's top safe area (32 on
 macOS 26) — and how far a header must step in so its title starts just after the three window buttons:
 `lead = max(0, Metrics.windowButtons − (window width − column) / 2 − 16)`, where the column is `RootView.column` =
-720, centred, and 16 the page's side padding (42 in a 760-wide window). Both travel down in the environment as
+720, centred, and 16 the page's side padding (44 in a 760-wide window). Both travel down in the environment as
 `TitleBarStrip(height:, lead:)` (ScreenHeader.swift).
 - `headerOnTheMac { header }` (View extension): on the Mac the page becomes `VStack(spacing: 0) { header (16 side
   padding); page }` with the top safe area ignored, so the header is PINNED in the strip and the page scrolls under
@@ -1347,7 +1347,8 @@ macOS 26) — and how far a header must step in so its title starts just after t
 - Sheets are unchanged: they come down over the page as before.
 - Tests (Mac branch of `testEveryTabsHeaderIsOnOneCentreLine` and `testHomeLeadsWithGrabAndGoAtTheTop`): each
   tab's title within 2 pt of the window buttons' line (`XCUIIdentifierCloseWindow`, `…MinimizeWindow`,
-  `…ZoomWindow`, as one box) and starting at least 8 pt after them; nothing above the window's top; Settings' first
+  `…ZoomWindow`, `…FullScreenWindow` — the green one is "full screen" on macOS 26 — as one box) and starting at
+  least 6 pt after them; nothing above the window's top; Settings' first
   card under the strip (its foot worked out from the buttons, which sit in its middle); Home's first tile less than
   16 pt under Grab and go and less than 50 pt under the window's top. Mac pictures came from the probe workflow
   (`mac-probe.yml`, on a probe branch only).

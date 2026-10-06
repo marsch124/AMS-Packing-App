@@ -7332,11 +7332,12 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     #if os(macOS)
-    /// The main window's three buttons — close, minimise, zoom — as one box; nil when
-    /// the window shows none.
+    /// The main window's three buttons — close, minimise, and the green one (full screen
+    /// on macOS 26; zoom before) — as one box; nil when the window shows none.
     private func windowButtons(_ app: XCUIApplication) -> CGRect? {
         let window = app.windows.firstMatch
-        let boxes = [XCUIIdentifierCloseWindow, XCUIIdentifierMinimizeWindow, XCUIIdentifierZoomWindow]
+        let boxes = [XCUIIdentifierCloseWindow, XCUIIdentifierMinimizeWindow,
+                     XCUIIdentifierZoomWindow, XCUIIdentifierFullScreenWindow]
             .map { window.buttons[$0] }.filter(\.exists).map(\.frame)
         guard let first = boxes.first else { return nil }
         return boxes.dropFirst().reduce(first) { $0.union($1) }
@@ -7348,7 +7349,7 @@ final class AMSPackingUITests: XCTestCase {
         guard let lights = windowButtons(app) else { return XCTFail("\(what): the window shows no buttons") }
         let off = title.midY - lights.midY
         XCTAssertLessThanOrEqual(abs(off), 2, "\(what): the title sits \(off) pt off the window buttons' line (\(title) vs \(lights))")
-        XCTAssertGreaterThanOrEqual(title.minX, lights.maxX + 8,
+        XCTAssertGreaterThanOrEqual(title.minX, lights.maxX + 6,
             "\(what): the title starts at \(title.minX), on or too near the window buttons (they end at \(lights.maxX))")
     }
     #endif

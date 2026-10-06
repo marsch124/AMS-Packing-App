@@ -320,7 +320,7 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
 - UI `testHomeLeadsWithGrabAndGoAtTheTop` (0.67): on the iPhone, measured from the foot of the status bar,
   Grab and go's words begin less than 24 pt down and not above it (−2 pt allowed), the first tile is less than
   14 pt under the heading and begins less than 60 pt down. On the Mac Grab and go is on the window buttons'
-  line (within 2 pt) and starts 8 pt or more after them; the first tile is less than 16 pt under it and less than
+  line (within 2 pt) and starts 6 pt or more after them; the first tile is less than 16 pt under it and less than
   50 pt under the window's top. Seen red with the old 14-pt top planted:
   "an empty band of 28.0 pt above Grab and go"; on 0.66 it said 39.0.
 - UI `testEveryTabsHeaderIsOnOneCentreLine` (0.67, spec 06): `search-open` and `grab-lists` on the centre
