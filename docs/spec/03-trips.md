@@ -11,7 +11,8 @@ trip is made. This file covers the whole life of a trip:
 - **Plan** — *Create new trip* on the Home tab (name, Dates, Quick, templates, Context, Transport,
   Season, Food, Laundry) and how the list is built from the templates.
 - **Pack** — the Trips tab (`EventsScreen`), the trip screen (`TripScreen`): ticking, "not this
-  time", sorting When / Into / From where / Category, folding, Set place, adding a thing,
+  time", sorting When / Into / From where / Category / Section (Section and the Sorting drop-down since
+  0.64), folding, Set place, adding a thing,
   Tick everything / Clear every tick, Check before you go, the weather card, the Bags card (luggage
   scale, cabin, photos), Trip settings, Start a new trip from this one, Save as Excel, Share, Delete.
 - **On site** — the On site page (bought, left, maintenance notes) and Pack to go home.
@@ -665,7 +666,8 @@ When/Where/Category), "Sorting" left of its buttons (0.19), Where → **Into** a
 (his words 2026-09-25, 0.20), folding (his ask 2026-09-26 "the list is extremely long", 0.23), Set place
 (0.25), Delete trip (0.24), Trip settings (0.32, a pen since 0.40), Tick everything / Clear every tick
 (0.36), Excel (0.35) and Share (0.38) side by side (his test D.22), Bought on site (0.52/0.56), On site
-door (0.57).
+door (0.57), Sorting as ONE drop-down with a fifth sorting, **Section** (0.64 — his ask of 6 Oct 2026: he
+likes sections because "it gives a visual structure to the packing", and asked for drop-downs everywhere).
 
 **How it is reached and left.** Opened as a sheet from a Trips row, from Home after Create trip, the
 countdown card, a reminder, a Shortcut, or Search. Left with **Done** (`trip-done`) or by swiping the
@@ -700,12 +702,22 @@ list."; (0, g) "Saved: g no longer on the list."; (a, g) "Saved: a new, g no lon
 Start again: "New trip from “<old name>”: N things, nothing ticked. Its dates are under the pen."
 It stays until the sheet is closed.
 
-**Sorting row** (`ViewThatFits`, the first that fits): "Sorting" (15 heavy muted, id
-`trip-view-label`) on the left and four capsule buttons on the same line — **When**, **Into**,
-**From where**, **Category** (ids `trip-view-0…3`; 15 pt, semibold/bold when chosen, padding 14, min
-height 36; chosen = white on a green capsule; not chosen = ink on `Theme.bg` with a 1 pt `Theme.line`
-outline; `.isSelected` on the chosen one); if they do not fit, the same with 14 pt and padding 8
-(spacing 6); failing that, "Sorting" above the buttons (still 14 pt).
+**Sorting row** (0.64; padding 16 sideways): "Sorting" on the left and, on the SAME line to its right, ONE
+drop-down (`DropDown`, spec 06 §21, with `heading: .beside`) holding the five sortings — **When**, **Into**,
+**From where**, **Category**, **Section**. Five pills do not fit an iPhone's line, and he asked for drop-downs
+everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the choice beside it) are kept.
+- "Sorting": Subheadline semibold, muted, one line, never squeezed (`fixedSize`); id `trip-view-label`.
+- The field, 10 to its right, takes the rest of the line: the chosen sorting's words in Body ink and a drawn ▾
+  (`Metrics.tap` tall, card fill, radius 10, a hairline border); id `trip-view`; accessibility label "Sorting",
+  value = the chosen sorting's words (what tests read). A stored value that is none of the five (it cannot be,
+  but a device keeps it) shows and ticks When, which is what `groupBy` does with it.
+- A tap opens the list as a popover beside the field (on the iPhone too; the system puts it above or below,
+  wherever it fits — under the field, near the top of the screen): container `trip-view-list`, five rows
+  `trip-view-0…4` (When, Into, From where, Category, Section — the ids the pills had, Section the new 4), the
+  chosen one with a green tick and the selected trait. A tap on a row sorts the trip at once (stored in
+  `ams.view`) and closes the list; the ticked row closes it unchanged.
+- Until 0.64: four capsule pills on the line (`ViewThatFits`: full size; slimmer; or "Sorting" above them), the
+  chosen one white on green with the selected trait.
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
 1. **Check before you go** card (only when something needs him) — own section below.
@@ -780,9 +792,28 @@ each device keeps its own. Within every group the lines keep the trip's list ord
 | Into | `container` | bag (empty → "Other") | `CONTAINERS` order, then others A–Z (localeCompare) | bag name |
 | From where | `stored` | `storage` (trimmed, exact text) | A–Z (localeCompare); "No place set" last | place |
 | Category | `category` | category (empty → "Comfort & misc") | `CATEGORIES` order, then others A–Z | category |
+| Section (0.64) | `section` | the line's `section` (trimmed): the section's NAME on the template the line came from | first appearance in the trip's list order; "Everything else" (lines with no section) last | section name |
 
-The model's `groupBy` also knows "section" (trip lines by section name, "Everything else" last); the app
-does not offer it.
+**Section** (0.64; until then the model's `groupBy` knew "section" and the app did not offer it) uses
+PackingCore's `groupBySection`, unchanged. What it reads:
+- A line carries its section's display NAME, copied when the line was made (`entryFromItem`: the section of the
+  line's place on the template it came FROM), so same-named sections of two templates are ONE heading ("Lights"
+  on Hiking and on Camping), and the headings come in the order their first lines come in the trip — which is the
+  order of the templates (`listsForEvent`: base, transport, then the ticked ones) and, within one, the template's
+  row order (`order`; Arrange renumbers the rows so that this reads as the template's page does).
+- A thing on two templates feeds ONE line — the first template wins the de-duplication (`buildTotalEntries`,
+  name + bag) — so its heading is its section on THAT template: the sample's Headlamp, on the base template and
+  under Lights on Hiking, sits under "Everything else".
+- Lines added on the trip (typed, Bought on site) have no section: "Everything else".
+- A trip made before a section was given keeps its lines' words: a section set later — on a row (`saveRow`) or on
+  the thing's page (`setThingSection`, 0.64, spec 05) — reaches only the lines `followThing` rebuilds: on trips
+  still ahead (not reviewed, not over), lines not ticked, not added by hand and not changed on the trip; ticked
+  lines and past trips keep their old heading. A section RENAMED on the template does not reach a trip
+  (`renameSection`: a line's words are frozen like everything else on it), and Trip settings' Save keeps every
+  line it already had as it was (`regenerated`); an open line takes the new name only when `followThing` rebuilds
+  it — after a change to its thing or its row.
+- Everything else on the screen behaves as under any sorting: green headings, the count, the whole-section tick,
+  folding (keys `<trip>|section|<name>`), the bag name on each line.
 
 ### Folding
 
@@ -824,10 +855,17 @@ with no thing behind it changes alone. A place not in his list (normName) is app
   counts at once ("1/8"), shows "Bought on site", goes on the way home, and begins On site.
 
 ### Tests (the trip screen)
-UI: `testATickCountsAndStays`, `testEveryRowShowsTheTickTheTripHolds` (every sorting, every row shows its
-tick), `testASectionFoldsAndStaysFolded`, `testAPlaceIsSetFromTheTrip`, `testTheTripSaysSortingBesideItsThreeButtons`
-(words When/Into/From where/Category, one line, When first, Into re-sorts, From where headings are the
-sample's places), `testAWholeSectionIsTickedInOnePress`, `testTheScreenSaysSoWhenEverythingIsPacked`,
+UI: `testATickCountsAndStays`, `testEveryRowShowsTheTickTheTripHolds` (every sorting — Section too since 0.64,
+each chosen from the drop-down — every row shows its tick), `testASectionFoldsAndStaysFolded`,
+`testAPlaceIsSetFromTheTrip` (From where chosen from the drop-down), `testTheTripSaysSortingBesideItsDropDown`
+(0.64; until then `testTheTripSaysSortingBesideItsThreeButtons`: "Sorting" left of the field `trip-view` on the
+same line, neither off the screen; no row out before it is opened; the list reads When/Into/From where/Category/
+Section with no sixth, When ticked, every row on the screen; Into re-sorts, From where headings are the sample's
+places), `testATripSortedBySectionReadsUnderItsSections` (0.64, `-uiTestingSections`: 0/9; Section chosen; the
+headings Clothes, Lights, Everything else and no fourth; Lights' one press ticks its line (1/9, `trip-line-7`, the
+spare batteries, ticked); folding Lights hides the line and opening shows it), `testAThingsPageSetsItsSectionOnATemplate`
+(0.64, spec 05: the Map put under Lights on Hiking from its page → the trip, sorted by Section, has it under
+Lights), `testAWholeSectionIsTickedInOnePress`, `testTheScreenSaysSoWhenEverythingIsPacked`,
 `testAThingTypedWhilePackingJoinsTheTrip` (Add never disabled, `trip-add-needs`), `testSomethingBoughtOnSiteGoesOnTheList`
 (the button appears only after typing, "1/8", "Bought on site" on line 7), `testAChangeToAThingReachesATripStillAhead`,
 `testASetAsideLineIsNotPacked` (⊘ takes the tick, a set-aside line does not tick, ↻ brings it back unticked,
@@ -837,11 +875,12 @@ Model: `CustomLineTests.testATypedThingJoinsTheTripAndSurvivesARegenerate`, `Set
 `TripCardsTests.testEverythingDecidedIsPacked`, `OnTheTripTests.testABoughtOnSiteLineIsInHandMarkedAndKept`,
 `testTheStoredMarkKeepsItsFirstName`, `CountingTests.testProgress*`, `GroupingTests` (groupBy, container, category, storage).
 Model: `TripEditsTests.testATripsFoldsGoWithIt`, `ReviewTests.testASetAsideLineNeverCountsAsPacked`.
-**Not covered by any test:** the gradient sweep/Reduce Motion; the `ViewThatFits` fall-backs; the
-placeholder for a vanished trip.
+**Not covered by any test:** the gradient sweep/Reduce Motion; the placeholder for a vanished trip; a stored
+sorting that is none of the five.
 
 ### iPhone vs Mac
-Same view. Mac minimum 520 × 640. The sorting row's fall-backs matter on narrow iPhones.
+Same view. Mac minimum 520 × 640. The Sorting row is one line on both (since 0.64 there are no fall-backs:
+the field takes what the word leaves). The Sorting list is a popover on both.
 
 ### Traps and history
 - 🪤 The cards (checks, weather, bags) sit OUTSIDE the lazy stack: a lazy row is thrown away and rebuilt
@@ -1781,7 +1820,8 @@ testABagOnTheTripSaysWhetherItGoesInTheCabin, testATripIsSavedAsExcel, testTheDa
 testTheDateGridWaitsForOK, testTheDateGridStartsOverAndCancelPutsItBack, testContextSitsUnderTheWorkouts,
 testEverythingIsTickedAndClearedAtOnce, testWeatherAddAllTakesEverything, testTheMapShowsWhereTheTripsWent,
 testATripIsSharedAndOpenedAgain, testAThingTypedWhilePackingJoinsTheTrip, testAChangeToAThingReachesATripStillAhead,
-testTheTripSaysSortingBesideItsThreeButtons, testATripReviewIsSavedAndTheMissedThingIsFiled,
+testTheTripSaysSortingBesideItsDropDown, testATripSortedBySectionReadsUnderItsSections (0.64),
+testAThingsPageSetsItsSectionOnATemplate (0.64), testATripReviewIsSavedAndTheMissedThingIsFiled,
 testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing, testTheScreenSaysSoWhenEverythingIsPacked,
 testEachTripSaysWhereItHasGotTo, testAWholeSectionIsTickedInOnePress, testTheReviewSaysWhereAThingWentAndLetsHimFixIt,
 testABagsLimitReachesTheTrip, testEveryAddButtonIsReadyAndSaysWhatIsMissing (weather-look),
@@ -1793,7 +1833,8 @@ testABagWithNothingWeighedIsOnTheTrip, testWeatherGearCanBePackedAnyway, testATe
 testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only).
 UI launch modes used: `-uiTesting` (sample), `-uiTestingChecks` (a plane trip "Sunny weeks" 20–34 days
 out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passport day 180),
-`-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-openNextTrip`. Under the
+`-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-uiTestingSections` (Hiking in
+two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings), `-openNextTrip`. Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
 
 **Model (PackingLibraryTests):** CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
@@ -1845,7 +1886,8 @@ pins · [idea] a gap worth deciding on.
     (steady, as `monthGrid` meant); the model's calendar functions stay the web app's, parity-checked, unused.
 16. [doc] **Ported but unused in the app.** Resolved in 0.62 (decided, nothing changes): they stay in
     PackingCore, held to the web app by the parity checker; not shown because he chose the four sortings
-    (When, Into, From where, Category — 2026-09-25), the loop strip already says Review once a trip is over,
+    (When, Into, From where, Category — 2026-09-25; a fifth, Section, is offered since 0.64, his ask of
+    6 Oct 2026, so `groupBySection` is used now), the loop strip already says Review once a trip is over,
     and a line's note, packer and kit would crowd a line.
 17. [bug] **Two "first" rules for duplicate trip ids.** Resolved in 0.62: `Library.trip(_:)` takes the
     first, as everything else does.

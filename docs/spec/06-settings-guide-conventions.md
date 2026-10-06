@@ -373,8 +373,9 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   its editor; then Remove is refused with `lists-problem` and the row stays).
   `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (`list-places-add` pressed empty answers on
   `list-places-add-needs`). `testTheEditorsLeadWithTheirHeadings` (all five `choices-heading-*`).
-  `testWhoseItIsOffersEachOwnerOnce` (on a thing: `thing-owner-0` reads "Both have one", then exactly "Kim",
-  "Robin"; Notes sit between Name and Kept at home; a 22-pt heading line is ≥ 25 tall, a pill ≥ 36).
+  `testWhoseItIsOffersEachOwnerOnce` (on a thing, with its Whose it is list opened (0.64): `thing-owner-0` reads
+  "Both have one", then exactly "Kim", "Robin"; Notes sit between Name and Kept at home; the heading line is ≥ 15
+  tall over a drop-down field `Metrics.tap` tall).
   0.62: `testOwnersAreTheNamesHisThingsCarry` (the sample stores no owners: the Owners part reads Kim, Robin and no
   third; ✕ on Kim → "Kim is still used by 5 things, so it stays."), `testEscapeClosesSettingsWindowsAndNeverReplaces`
   (a place typed and not added, then Escape: closed, and no 13th place).
@@ -545,11 +546,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (63 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (64 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.64 | 6 Oct 2026 | Drop-downs, your own bags, and sections | N3 C3 | every pick-one list on a thing's page and a template's row is a `DropDown` (§ DropDown); Kept at home from his places (a new place joins Your choices); a trip sorts by Section from one Sorting drop-down; a thing's Section on each template set from its page (spec 05); Usually packed in = his own bags only (`bagNames()`); the thing's page in his order; the cabin switches without explanations; guide: Packing a trip's Sorting line, the template row's drop-downs, Care's three thing-page lines |
 | 0.63 | 5 Oct 2026 | Arrange a template | N1 | Arrange on a template: drag headings and things (its things come along), rename and remove a heading; new trips pack in the new order (spec 04 §6a, §13a) |
 | 0.62 | 5 Oct 2026 | The big check-up: everything we found, put right | N7 C26 F12 | the fix-everything program: every finding of specs 01–06 dealt with (each chapter's open questions say how); Apple's standard text styles and slim controls throughout (§21), one-line rows in Your things and Search; Escape on the Mac everywhere, Owners from his things, the reminders line kept; rename and reorder in Your choices; template notes on a thing's page; Care schedules; Pack weather gear anyway; 0.59's Worth a look line moved from Changed to New |
 | 0.61 | 5 Oct 2026 | Your own grab lists, and a restore that brings back everything | N1 C5 | own grab lists can be filled, keep their ticks and be deleted; Off Home really takes a list off Home; Make says where the list went; restore accepts a cabin bag and brings back every note |
@@ -983,8 +985,10 @@ the folder is emptied at launch.
 `rescue-heading`), then a card list, one row per copy, newest first: the moment written as **"23 September, 01:04"**
 (16 medium ink; `RescueNames.when` — the file name's world time said in this device's time zone (0.62; until then the
 world time as it was, an hour or two off and near midnight the wrong day), day number, English month name,
-hours:minutes; an unexpected name is shown as it is) and **"Look at it"** (15 bold slate); min height 44; hairline under each; id `rescue-row-<n>`.
-Tapping reads the file and goes through exactly the same `offer` → comparison sheet → confirm path as a chosen
+hours:minutes; an unexpected name is shown as it is) and **"Look at it"** — since 0.63 a button of its own (outlined
+`HeaderButtonStyle` in the Settings slate, id `rescue-row-<n>`); 5 pt above and below; hairline under each. Until 0.63 the
+whole row was one plain button (min height 44, slimmed to `Metrics.tap` in 0.62), and on the Mac a click on the slim row
+did nothing (GitHub's Mac run, 6 Oct 2026). Pressing it reads the file and goes through exactly the same `offer` → comparison sheet → confirm path as a chosen
 file (an unreadable copy says "That is not an AMS Packing backup file.").
 
 **Tests.** UI `testTheCopyKeptBeforeARestoreBringsEverythingBack` (no heading before any restore; after one: heading,
@@ -1203,6 +1207,12 @@ pill carries the shortcut and Done gives it up, so Escape ends Arrange (a headin
 dropped) and a second Escape closes the page; meanwhile the page cannot be swiped away (`interactiveDismissDisabled`),
 so the iPhone's own ⌘. does not close it first.
 
+**Escape tests on the iPhone** (0.63): the four window-by-window Escape tests (`testEscapeClosesTheTripsWindows`,
+`testEscapeEndsArrangingWithoutSavingAHeading`, `testEscapeClosesSettingsWindowsAndNeverReplaces`,
+`testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving`) skip on the iPhone (`XCTSkip("Escape is checked on the Mac")`):
+GitHub's iPhone (iOS 26, on-screen keyboard) did not deliver ⌘. there; the Mac run checks every one.
+`testEscapeCancelsAThingAndClosesCaresWindows` still runs on both.
+
 **Tests.** `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (Your things New + the line goes after typing, Your bags,
 To buy, Grab Lists Make, a grab list's Add, Your choices' first Add, a template's Add, Rename to another template's
 name, a row's new section, the trip Weather button; each must exist, be ENABLED, and answer on `<id>-needs`; all
@@ -1212,7 +1222,7 @@ failures are listed in one message). `testHomeBuildsATrip` (Create trip enabled,
 `testABagIsRenamedAndDeletedFromItsPage`. **Colour cannot be tested**: "A colour cannot be read by a test; being
 pressable and answering can."
 
-## 21. Type, headings, pills and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `Pills`/`FlowRow` in `HomeScreen.swift`)
+## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 
 **Origin.** His word, 5 Oct 2026: "make things smaller so that the app is efficient, fluid, and Apple-standard",
 and "make the buttons even slimmer, smaller when possible"; "less space between blocks on the forms and slimmer
@@ -1289,6 +1299,72 @@ for a toned pill, in its tone (1.8 pt). Id `<id>-<startIndex + position>` — "i
 picked pills carry the `.isSelected` trait (what tests read). `ContextPills` puts Context (Indoor, Outdoor, Race) as a
 `.question` row indented 18 with a 3-pt grey line down its side, in the Settings slate.
 
+**`DropDown` (0.64, `Screens/DropDown.swift`)** — ONE pick-one list: a heading band over a field-like button that
+opens its choices as a list beside it. His word, 6 Oct 2026, after Kept at home became the first: "I like the
+dropdown for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere? I think it would lend
+itself perfectly for 'usually packed in', 'Kind of thing' etc." Used for every pick-one list on a thing's page (Kind
+of thing, Whose it is, Kept at home, Usually packed in, When, Condition, Care, and — 0.64 — the Section on each
+template it is on — spec 05), on a template's row (Bag, When, Section — spec 04 §7) and, since 0.64, a trip's
+Sorting (spec 03: five pills no longer fit an iPhone's line). Lists where SEVERAL may be picked stay `Pills` (On
+these templates; a row's Season, Context, Transport, Food), and so do the short toggles of Create new trip and Trip
+settings (a few words each, seen at a glance, one tap).
+
+`DropDown(title:, heading = .band, options:, selected:, id:, tint = Care orange, blank = nil, other = false,
+same = exact, newEntry = nil, choose:)`:
+- `title: String?` — the heading's words (no heading when nil).
+- `heading: DropDownHeading` (0.64) — how the title reads: `.band` — a `HeadingBand` in the tint over the field (every
+  drop-down until 0.64); `.title` — a `HeadingTitle` in the tint over the field (Subheadline semibold): a heading
+  inside a block that already has one — a thing's "Section on <template>" under its On these templates band;
+  `.beside` — the words to the LEFT of the field on the same line (Subheadline semibold, muted, one line, never
+  squeezed: `fixedSize`; 10 apart; the field takes the rest of the line) — the trip's "Sorting", kept where his marks
+  of 2026-09-25 put it when its pills became a drop-down. In all three the title's id is `ids.title`.
+- `options: [(value: String, label: String)]` — the rows, in order; `value` is what is stored, `label` what is read.
+- `selected: String` — the value that stands; `choose(value)` is called when a row is tapped (the caller keeps the
+  value in its own draft — nothing is stored before the page's Save).
+- `id: DropDownIds` — the names of its parts. A string literal is a prefix: the field `<prefix>`, the list
+  `<prefix>-list`, the rows `<prefix>-<n>` (the position in `options`, from 0 — the SAME ids the pills had, so a
+  test that named a pill names the same row), the heading `<prefix>-title`. Kept at home, which came first, passes
+  its own: `DropDownIds(field: "thing-storage", list: "thing-places", row: "thing-place", title: "thing-heading-kept")`.
+- `blank: String?` — words for a first row meaning "nothing said" (value ""), named `<row>-none`, before the
+  options (Kept at home's "Not said", and since 0.64 a thing's Section's "No section" — new, so no pill ids to keep,
+  and its sections count from 0; elsewhere such a row is simply option 0, as its pill was — a row's own Section
+  has "No section" as `row-section-0`).
+- `other: Bool` — when the value that stands is not blank and none of the rows, a row of its own at the END, its
+  words = the value, ticked, named `<row>-other`; for lists whose values are words (Kind of thing, Whose it is, Kept
+  at home, a row's Bag) — an id (a When step, a section, a condition) would read as nonsense.
+- `same: (String, String) -> Bool` — when two values are one choice: exact; Kept at home compares by `normName`.
+- `newEntry: DropDownNew?` — a foot under the rows: `DropDownNew(placeholder:, button = "Add", needs:, add:)` — a
+  field (`<row>-new`) and the button (`<row>-add`, `FieldButtonLabel` in the tint, never grey); Add or Return with
+  nothing typed (after `jsTrim`) shows `needs` under them (`<row>-add-needs`, `NeedsLine`, gone as he types) and
+  the list stays open; otherwise `add(trimmed words)` is called, the field empties and the list closes. Kept at
+  home: "A new place" / "Type the place first."; a row's Section and a thing's Section on a template (0.64): "A new
+  section" / "Type the section's name first.".
+
+What it draws:
+- **The field**: the words of the choice that stands — the matching row's label; with a `blank` row and a blank
+  value, its words; with nothing matching, the value itself, or "Not said" when it is blank — in Body, ink, or
+  muted when the value is blank (value "", e.g. "Both have one", "No bag", "Same as the thing …"), one line,
+  truncated at the end; then a drawn ▾ (`M6 9l6 6 6-6`, 1.8 stroke, 16 × 16, muted). Padding 12 sideways, min
+  height `Metrics.tap` (36 iPhone / 26 Mac), `Theme.card` fill, radius 10, a 1-pt `line` border — like the text
+  fields around it. Accessibility: label = the title (the words when there is none), VALUE = the words shown (what
+  tests read), id = the field id. A tap opens the list — on the iPhone after first putting the keyboard away
+  (`resignFirstResponder` sent to the app): with the weight still being typed, a list opened over the keys was
+  squeezed into the space above them, and a test could not reach its last rows.
+- **The list**: a popover (`presentationCompactAdaptation(.popover)`, so the iPhone shows a popover too, not a
+  sheet) with NO arrow edge given, so the system puts it above or below its field, wherever it fits — a field near
+  the top of the page opens downwards; a short list may open above a field in the middle (the first Kept at home fixed it above its field: on a row's Bag, near the top,
+  it was squeezed to three rows). Inside: a `ScrollView` (padding 12; min width 280, ideal 320, max height 440;
+  `Theme.bg` behind) holding, top to bottom, the `blank` row, the options, the `other` row and the foot; it opens
+  scrolled to the ticked row (centred), so the tick is seen in a long list. Container: `.contain`, id = the list
+  id.
+- **A row**: its label in Body (muted for the value "", ink otherwise; wraps rather than cut), a spacer, and for
+  the chosen one a drawn `Tick` in the tint (2-pt stroke, 18 × 18); 6 pt above and below, min height
+  `Metrics.tap`, FILLED with `Theme.bg` and shaped as a whole rectangle — on the Mac a slim whole-row plain button
+  with nothing behind its words once took no clicks; a 1-pt `line` under it. The chosen row carries the
+  `.isSelected` trait. A tap calls `choose(value)` and closes the list.
+- Closing the list any other way (a tap outside, Escape on the Mac) chooses nothing and drops what was typed in
+  the foot.
+
 **`FlowRow(spacing = 8)`** — a `Layout` that places children left to right at their natural size and wraps to a new
 row when the next one would pass the right edge; row height = tallest child; reported width = the proposed width
 (10 000 if none).
@@ -1302,8 +1378,13 @@ above and below (10–12 before; 3 where it was 6, 4 where it was 8): "less air 
 Search show a thing's name and its details on one line.
 
 **Tests.** `testTheEditorsLeadWithTheirHeadings` (every heading id on the thing editor, the row editor, Create new
-trip, Trip settings, the review and Your choices exists; photographs each), `testWhoseItIsOffersEachOwnerOnce` (0.62: a
-heading line at least 15 tall over pills of `Metrics.chip` — 28 on the iPhone, 22 on the Mac — and under 34), `testContextSitsUnderTheWorkouts`.
+trip, Trip settings, the review and Your choices exists; When's drop-down field exists; photographs each),
+`testWhoseItIsOffersEachOwnerOnce` (0.64: a heading line at least 15 tall over a drop-down field of `Metrics.tap` —
+36 on the iPhone, 26 on the Mac — and less than 6 more; until 0.64 over pills of `Metrics.chip`),
+`testContextSitsUnderTheWorkouts`; the drop-down itself: `testThePickOneListsAreDropDownsThatChooseAndKeep` (0.64:
+every pick-one list of the thing's page and a row is a field whose rows are out only once opened; a tap on a row
+closes the list and the field shows its words; Save keeps it; the kept row is the ticked one), with the UI helpers
+`openDropDown`, `choose`, `chosen`, `isChosen`, `closeDropDown` (spec 05, A thing's page, Tests).
 
 ## 22. Scrolling and the keyboard (`KeyboardAwayScroll` in `Theme.swift`)
 
@@ -1325,7 +1406,9 @@ its words, "so rewording a button can never turn the suite red".
 - A sheet or page is a container named `<thing>-detail` or `<thing>-screen` (`lists-detail`, `restore-detail`,
   `things-detail`, `trip-detail`, `tripset-screen`, `loop-screen`, `guide-whatsnew`…); its buttons
   `<thing>-done`, `-cancel`, `-save`, `-confirm` (the `-cancel`, or else the `-done`, is the one Escape presses, §20).
-- Rows and pills by POSITION: `<prefix>-row-<n>`, `<pill id>-<n>`, `guide-release-<n>`, `guide-topic-<n>`,
+- Rows and pills by POSITION: `<prefix>-row-<n>`, `<pill id>-<n>`, a drop-down's rows `<prefix>-<n>` (0.64, the ids
+  its pills had; with `<prefix>` its field, `<prefix>-list` its open list, `<prefix>-none` / `-other` / `-new` /
+  `-add` / `-add-needs` its extra rows and foot, §21), `guide-release-<n>`, `guide-topic-<n>`,
   `word-<n>`, `quickstart-step-<n>`, `loop-step-<n>`, `health-<n>`, `rescue-row-<n>`.
 - Per-table numbers by table raw value: `device-count-<table>`, `restore-file-<table>`, `restore-now-<table>`.
 - Derived parts: `<pill id>-title` (a pill row's heading), `<button id>-needs` (§20), `<field id>-clear` (§20),
@@ -1347,7 +1430,8 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
    value of a box that is not a control (`loop-step-<n>`). Rows that are buttons are read through `app.buttons[id]`.
 2. The Mac reports a text's words as its VALUE, the iPhone as its LABEL — the tests' `words()` reads both.
 3. A Toggle is a switch on the iPhone and a check box on the Mac; a dropdown is a button on the iPhone and a pop-up
-   button on the Mac (`switchNamed`, `cellSays`).
+   button on the Mac (`switchNamed`, `cellSays`) — the table's menus; the app's own `DropDown` (§21) is a plain
+   button on both, read through `app.buttons[id]` and its value.
 4. A bare `Map` is reported as its own element kind on the Mac: name a container around it (`map-view`).
 5. Window sizes under tests (§24): the main window is SET to 760 × 674 — GitHub's Mac runner's window, "read off its
    TAP-REPORT" — so a control below the fold there is below the fold here too; the things-table window opens at
@@ -1535,8 +1619,8 @@ runs it first). Four jobs, in parallel:
 |---|---|---|---|
 | `core` — The model (Core package) | macos-15 | 15 min | `cd Core && swift test` (both model test targets); then (0.62) `python3 tools/release-to-testers.py --self-check` — the "What to Test" requests checked without the network (§28) |
 | `parity` — Parity with the web app's model | macos-15 | 20 min | checks out the web app's repository into `web-app/`, Node 22, `PARITY_MODEL=$PWD/web-app/js/model.js tools/parity/run.sh --invented` (§31) |
-| `iphone` — UI tests — iPhone | macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 120 min | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test` with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone.xcresult` |
-| `mac` — UI tests — Mac | macos-26 | 120 min (its own comment since 0.62 — it was a copy of the iPhone job's) | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
+| `iphone` — UI tests — iPhone | macos-26, newest Xcode on the runner (since 5 Oct 2026: on macos-15 the tests ran under Xcode 16.4 on an iOS 18 simulator, a pairing no shipped build has, and the template search's ✕ failed there) | 180 min (120 until 0.63 — 0.63's run on GitHub stopped at 158 of 167 tests) | xcodegen; picks the highest-numbered available iPhone simulator (`sort -V`), falls back to any iPhone, fails if none; boots it and waits (`bootstatus -b`) — a cold simulator once cost the first test 95 s; `xcodebuild test` with `-collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 480`, unsigned (`CODE_SIGNING_ALLOWED=NO`); on failure uploads `TestResults-iPhone.xcresult` |
+| `mac` — UI tests — Mac | macos-26 | 180 min (120 until 0.63; its own comment since 0.62) | xcodegen; `xcodebuild test -destination platform=macOS`, allowance 300 s per test, signed ad hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile — "a Mac app cannot be driven unsigned"); on failure uploads `TestResults-Mac.xcresult` |
 
 Timeout history (comments): 30 min outgrown at 48 tests (0.25), 55 nearly outgrown at 67 tests (0.46), 120 since 108
 UI tests (0.58) when the iPhone job passed every test and was cancelled at 80 minutes. Both UI jobs also run both
@@ -1721,7 +1805,8 @@ UI (`AMSPackingUITests`): `testAAAWarmsUpTheSimulator`, `testStartsOnHomeAndName
 `testHisOwnListsAreAddedAndProtectedWhileInUse`, `testWhoseItIsOffersEachOwnerOnce`,
 `testEveryAddButtonIsReadyAndSaysWhatIsMissing`, `testTheEditorsLeadWithTheirHeadings`, `testTheCrossEmptiesASearch`,
 `testTheCrossKeepsTheKeyboard`, `testATripIsDeletedOnlyAfterAsking` (photo count in Settings),
-`testATripIsSharedAndOpenedAgain` and `testATemplateAndAGrabListAreSharedAndOpenedAgain` (the door); 0.62:
+`testATripIsSharedAndOpenedAgain` and `testATemplateAndAGrabListAreSharedAndOpenedAgain` (the door);
+`testThePickOneListsAreDropDownsThatChooseAndKeep` (0.64, `DropDown`, §21); 0.62:
 `testYourChoicesSaysWhyRightWhereItWasPressed`, `testAChoiceIsRenamedAndMovedAndItsThingsFollow`,
 `testTheWayHomeIsSearched` (its ✕ is the shared one); 0.62: `testRemindersSayWhenTheDeviceBlocksThem` (switched off
 too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther`,

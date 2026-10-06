@@ -208,6 +208,14 @@ struct ThingEditor: View {
     /// The care schedule (days, 0 = none) and care notes, edited here since 0.62.
     @State private var careEvery = 0
     @State private var careNotes = ""
+    /// The section chosen on each template it is on (template id → a section id, "" =
+    /// none, `RowEditor.newSectionKey` = one typed here), and what each showed when the
+    /// page opened — Save writes only those he changed.
+    @State private var sections: [String: String] = [:]
+    @State private var sectionsAtOpen: [String: String] = [:]
+    /// A section typed here, per template, waiting for Save: made only then, so Cancel
+    /// leaves the template as it was (as in the row editor).
+    @State private var newSections: [String: String] = [:]
 
     var body: some View {
         let templates = model.library.templatesForThings()
@@ -240,32 +248,19 @@ struct ThingEditor: View {
                         notesField
                         rowNotes
                     }
-                    labelled("Kept at home") {
-                        field($draft.storage, "e.g. Hall closet", "thing-storage")
-                        places
-                    }
-                    Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
-                          id: "thing-category", tint: AppSection.care.color, heading: .band) { draft.category = $0 }
-                    Pills(title: "Usually packed in", options: bag.options,
-                          selected: [bag.selected], id: "thing-bag", tint: AppSection.care.color, heading: .band) { draft.container = $0 }
-                    // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
-                    VStack(alignment: .leading, spacing: 8) {
-                        HeadingBand(title: "On a plane", id: "thing-heading-plane")
-                        Toggle(isOn: $draft.liquid) { flagWords("Liquid", "In the cabin: 100 ml at most, in the clear bag.") }
-                            .tint(AppSection.care.color)
-                            .accessibilityIdentifier("thing-liquid")
-                        Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin", "A knife, tools, gas — it goes in the hold.") }
-                            .tint(AppSection.care.color)
-                            .accessibilityIdentifier("thing-restricted")
-                    }
-                    labelled("Valid until") { validUntil }
-                    Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
-                          id: "thing-when", tint: AppSection.care.color, heading: .band) { draft.phase = $0 }
+                    // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
+                    // where it lives and goes and when, the details, and last what a flight and a
+                    // date ask of it.
+                    // Every pick-one list here is a drop-down (his word, 6 Oct 2026: "Can we please
+                    // make these kinds of drop-downs everywhere?"); a kind of thing from the web app
+                    // that is none of the app's is shown on a row of its own.
+                    DropDown(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: draft.category,
+                             id: "thing-category", other: true) { draft.category = $0 }
                     if !owners.isEmpty {
                         // No owner means each has one of their own — his words (4 Oct 2026):
                         // "Replace 'Nobody's in particular' with 'Both have one'".
-                        Pills(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
-                              selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color, heading: .band) { draft.ownedBy = $0 }
+                        DropDown(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
+                                 selected: draft.ownedBy, id: "thing-owner", other: true) { draft.ownedBy = $0 }
                     } else {
                         // Nobody named anywhere yet: the heading stays, and says where the
                         // names come from (it vanished, so the first owner could not be
@@ -278,12 +273,24 @@ struct ThingEditor: View {
                                 .accessibilityIdentifier("thing-owner-none")
                         }
                     }
-                    // The condition's ID is what is stored; a thing still holding a label
-                    // (stored by the table before 0.62) lights its pill all the same.
-                    Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
-                          selected: [model.library.conditionId(for: draft.condition) ?? draft.condition],
-                          id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }
-                    careFields
+                    Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
+                          id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
+                        if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
+                    }
+                    sectionChoices(templates)
+                    // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
+                    Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("thing-tags-hint")
+                    // Chosen from his places, never typed (6 Oct 2026, his word: "Can we turn Kept
+                    // at home into a drop-down … so that we have a list to choose from? If we write
+                    // it this way, it's a possibility that the naming convention skews.")
+                    keptAtHome
+                    DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
+                             selected: bag.selected, id: "thing-bag") { draft.container = $0 }
+                    DropDown(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: draft.phase,
+                             id: "thing-when") { draft.phase = $0 }
                     labelled("Weight, in grams (0 = not known)") {
                         field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight")
                         if !weightProblem.isEmpty {
@@ -296,15 +303,23 @@ struct ThingEditor: View {
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand") }
                     labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
-                    Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
-                          id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
-                        if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
+                    // The condition's ID is what is stored; a thing still holding a label
+                    // (stored by the table before 0.62) lights its pill all the same.
+                    DropDown(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
+                             selected: model.library.conditionId(for: draft.condition) ?? draft.condition,
+                             id: "thing-condition") { draft.condition = $0 }
+                    careFields
+                    // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
+                    VStack(alignment: .leading, spacing: 8) {
+                        HeadingBand(title: "On a plane", id: "thing-heading-plane")
+                        Toggle(isOn: $draft.liquid) { flagWords("Liquid") }
+                            .tint(AppSection.care.color)
+                            .accessibilityIdentifier("thing-liquid")
+                        Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin") }
+                            .tint(AppSection.care.color)
+                            .accessibilityIdentifier("thing-restricted")
                     }
-                    // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
-                    Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
-                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("thing-tags-hint")
+                    labelled("Valid until") { validUntil }
                     if !problem.isEmpty {
                         Text(problem).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("thing-problem")
@@ -325,6 +340,8 @@ struct ThingEditor: View {
                 careNotes = it.maintenance?.notes ?? ""
             }
             onLists = Set(model.library.memberships.filter { $0.itemId == itemId }.map(\.templateId))
+            for t in onLists { sections[t] = model.library.thingSection(itemId: itemId, templateId: t) }
+            sectionsAtOpen = sections
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-detail")
@@ -377,29 +394,67 @@ struct ThingEditor: View {
         }
     }
 
-    /// His places under the field, a tap away (the table offers them as a menu).
-    /// Typing stays free — a new place is just typed — but a tap spells a known one
-    /// the same way every time, so Kept at home and the table's Storage agree (the
-    /// spec pass, 5 Oct 2026). The one the field holds is lit.
-    private var places: some View {
-        FlowRow(spacing: 6) {
-            ForEach(Array(model.library.storagePlaces().enumerated()), id: \.offset) { n, place in
-                let on = normName(place) == normName(draft.storage)
-                Button { draft.storage = place } label: {
-                    Text(place)
-                        .font(.system(.subheadline, weight: on ? .semibold : .regular))
-                        .foregroundStyle(on ? Color.white : Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                        .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
-                        .overlay(Capsule().stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
-                        .contentShape(Capsule())
+    /// Its Section on each template it is on — his ask (6 Oct 2026), to set a thing's
+    /// section "already in this view": sections "give a visual structure to the packing".
+    /// A section belongs to a template, so there is one drop-down per template ticked
+    /// above (one ticked in this edit too), in the same order, each named for its
+    /// template: "No section", that template's sections in its order, and at the foot
+    /// "A new section". On a template twice, it is the first place's section (the
+    /// template's own row sets any other). The pills above stay pills: several at once.
+    @ViewBuilder private func sectionChoices(_ templates: [PackList]) -> some View {
+        let ticked = templates.enumerated().filter { onLists.contains($0.element.id) }
+        if !ticked.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(ticked, id: \.element.id) { pair in
+                    sectionChoice(pair.element, n: pair.offset)
                 }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("thing-place-\(n)")
-                .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
-        .padding(.top, 2)
+    }
+
+    private func sectionChoice(_ t: PackList, n: Int) -> some View {
+        let typed = newSections[t.id] ?? ""
+        return DropDown(title: "Section on \(t.name)", heading: .title,
+                        options: t.sections.map { ($0.id, $0.name) } + (typed.isEmpty ? [] : [(RowEditor.newSectionKey, typed)]),
+                        selected: sections[t.id] ?? "", id: DropDownIds(stringLiteral: "thing-section-\(n)"),
+                        tint: AppSection.templates.color, blank: "No section",
+                        newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") {
+                            newSection($0, on: t.id)
+                        }) { sections[t.id] = $0 }
+    }
+
+    /// A section typed at the foot of a template's list: one of that name already on
+    /// the template is simply chosen; a new one waits for Save.
+    private func newSection(_ typed: String, on templateId: String) {
+        let name = jsTrim(typed)
+        guard !name.isEmpty else { return }
+        let have = model.library.templates.first { $0.id == templateId }?.sections ?? []
+        if let there = have.first(where: { normName($0.name) == normName(name) }) {
+            sections[templateId] = there.id
+            newSections[templateId] = nil
+        } else {
+            newSections[templateId] = name
+            sections[templateId] = RowEditor.newSectionKey
+        }
+    }
+
+    /// Kept at home: chosen from his places, never typed (6 Oct 2026) — the first
+    /// drop-down, which the others copy. "Not said" first, then his places in his order
+    /// (Your choices), then the one the thing already names when it is none of his (from
+    /// before 0.64, kept and ticked); at the foot "A new place", which joins Your choices
+    /// so it is spelt one way everywhere. Its parts keep the names they had before the
+    /// drop-down was made of it.
+    private var keptAtHome: some View {
+        DropDown(title: "Kept at home", options: model.library.storagePlaces().map { ($0, $0) },
+                 selected: draft.storage,
+                 id: DropDownIds(field: "thing-storage", list: "thing-places", row: "thing-place", title: "thing-heading-kept"),
+                 blank: "Not said", other: true, same: { normName($0) == normName($1) },
+                 newEntry: DropDownNew(placeholder: "A new place", needs: "Type the place first.") { typed in
+                     // Made in Your choices — or, when he already has it, his own spelling of it.
+                     var made: String?
+                     model.change { made = $0.addPlace(typed) }
+                     if let made { draft.storage = made }
+                 }) { draft.storage = $0 }
     }
 
     /// Care: how often the thing is looked after, and what to do. Care listed only
@@ -409,8 +464,8 @@ struct ThingEditor: View {
         let standard = MAINTENANCE_INTERVALS.map { ($0.days, $0.days == 0 ? "None" : $0.label) }
         let options = standard + (standard.contains { $0.0 == careEvery } ? [] : [(careEvery, "Every \(careEvery) days")])
         VStack(alignment: .leading, spacing: 6) {
-            Pills(title: "Care", options: options.map { (String($0.0), $0.1) }, selected: [String(careEvery)],
-                  id: "thing-care", tint: AppSection.care.color, heading: .band) { careEvery = Int($0) ?? 0 }
+            DropDown(title: "Care", options: options.map { (String($0.0), $0.1) }, selected: String(careEvery),
+                     id: "thing-care") { careEvery = Int($0) ?? 0 }
             TextField("What to do, e.g. Wax the leather", text: $careNotes, axis: .vertical)
                 .lineLimit(1...6)
                 .textFieldStyle(.plain)
@@ -502,12 +557,10 @@ struct ThingEditor: View {
         ("+1 month", 1), ("+6 months", 6), ("+1 year", 12), ("+5 years", 60), ("+10 years", 120),
     ]
 
-    private func flagWords(_ title: String, _ says: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-            Text(says).font(.system(.footnote)).foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    /// A switch's words — no explanation under them (his word, 6 Oct 2026: "Delete the
+    /// explanations for liquid and not allowed in the cabin").
+    private func flagWords(_ title: String) -> some View {
+        Text(title).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
     }
 
     private static func formatter() -> DateFormatter {
@@ -589,6 +642,7 @@ struct ThingEditor: View {
         let d = draft
         let lists = onLists
         let every = careEvery, notes = jsTrim(careNotes)
+        let chosen = sections, atOpen = sectionsAtOpen, typed = newSections
         model.change { lib in
             _ = lib.updateThing(id: itemId) { thing in
                 thing.storage = jsTrim(d.storage)
@@ -616,6 +670,16 @@ struct ThingEditor: View {
             }
             for t in lib.templatesForThings() {
                 _ = lib.setOnTemplate(itemId: itemId, templateId: t.id, on: lists.contains(t.id))
+            }
+            // Its section on each template it is on now — only where he changed it; the
+            // model makes a typed one, and the trips still ahead follow, as after a row
+            // is saved in the row editor.
+            for t in lib.templatesForThings() where lists.contains(t.id) {
+                let pick = chosen[t.id] ?? ""
+                guard pick != (atOpen[t.id] ?? "") else { continue }
+                let fresh = pick == RowEditor.newSectionKey
+                _ = lib.setThingSection(itemId: itemId, templateId: t.id, section: fresh ? "" : pick,
+                                        newSection: fresh ? (typed[t.id] ?? "") : "")
             }
         }
         dismiss()

@@ -28,12 +28,30 @@ final class ThingsAndCareFixesTests: XCTestCase {
 
     // MARK: Bags in the table
 
-    func testTheBagNamesOfferedIncludeHisOwnBags() {
-        let lib = library()
-        let names = lib.bagNames()
-        XCTAssertEqual(Array(names.prefix(CONTAINERS.count)), CONTAINERS, "the built-in names lead")
-        XCTAssertEqual(names.last, "Sit bag", "his own bag is not offered — only the built-in names")
-        XCTAssertEqual(names, containerNames(lib.resolvedTemplates()), "the table and the thing's page must offer the same bags")
+    /// His bags and nothing else (his word, 6 Oct 2026: "No Triathlon bag in the Bag
+    /// List … why does it not disappear?"); the built-in names only while he has none.
+    func testTheBagsOfferedAreHisOwnAndOnlyHis() {
+        var lib = library()
+        XCTAssertEqual(lib.bagNames(), lib.bags().map(\.name), "the bags offered are not exactly the ones on Your bags")
+        XCTAssertTrue(lib.bagNames().contains("Sit bag"), "his own bag is not offered")
+        XCTAssertFalse(lib.bagNames().contains("Triathlon bag"), "a built-in bag he does not have is offered")
+        // One he deletes is offered no more.
+        let sit = lib.bags().first { $0.name == "Sit bag" }!.id
+        XCTAssertTrue(lib.deleteBag(id: sit, moveTo: ""))
+        XCTAssertFalse(lib.bagNames().contains("Sit bag"), "a deleted bag is still offered")
+        // With no bags of his own, a first thing still has somewhere to go.
+        XCTAssertEqual(Library().bagNames(), CONTAINERS)
+    }
+
+    /// Kept at home's "A new place" (6 Oct 2026): it joins Your choices once, spelt his way.
+    func testANewPlaceJoinsHisPlacesOnceAndInHisSpelling() {
+        var lib = library()
+        let before = lib.storagePlaces()
+        XCTAssertEqual(lib.addPlace("  Attic shelf "), "Attic shelf")
+        XCTAssertEqual(lib.storagePlaces(), before + ["Attic shelf"])
+        XCTAssertEqual(lib.addPlace("attic SHELF"), "Attic shelf", "a place he has came back in another spelling")
+        XCTAssertEqual(lib.storagePlaces().filter { $0 == "Attic shelf" }.count, 1, "the same place was added twice")
+        XCTAssertNil(lib.addPlace("   "))
     }
 
     func testHisBagListIsNotATemplateAThingIsTickedOnto() {

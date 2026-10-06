@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.64", date: "6 Oct 2026", title: "Drop-downs, your own bags, and sections",
+                new: ["Every choose-one list on a thing's page and on a template's row is now a drop-down: tap it, tap your choice. Kept at home is chosen from your places; a new place made there joins Your choices.",
+                      "Trips can be sorted by Section: Sorting is one drop-down with When, Into, From where, Category and Section.",
+                      "A thing's page sets its section on each template it is on \u{2014} or makes a new one \u{2014} without opening the template. Trips still ahead follow."],
+                changed: ["Usually packed in offers only your own bags from Your bags, plus No bag \u{2014} no built-in names you don't have, and a renamed bag shows its new name.",
+                          "A thing's page reads in a new order: Name, Notes, Kind of thing, Whose it is, On these templates, Kept at home, Usually packed in, When, then Weight, Brand, Colour, Condition, Care, and last On a plane and Valid until.",
+                          "Liquid and Not allowed in the cabin without their explanations."]),
         Release(version: "0.63", date: "5 Oct 2026", title: "Arrange a template",
                 new: ["Arrange your templates: on a template, tap Arrange, then hold \u{2261} and drag a heading (its things come along) or a thing to where it belongs \u{2014} even under another heading. Tap a heading's name to rename it or remove it; its things stay. New trips pack in the new order."]),
         Release(version: "0.62", date: "5 Oct 2026", title: "The big check-up: everything we found, put right",

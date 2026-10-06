@@ -17,7 +17,9 @@ A template holds **rows**. A row is a **membership**: the link between ONE *thin
 Care → Your things) and ONE template, carrying what *this template* says about the thing (its bag here, its "When"
 here, its section, how many, a note, and "Only on some trips" conditions). A thing exists once; it can sit on many
 templates, and even twice on one template (e.g. a different "When" each time). Taking a row off a template or
-deleting a template **never deletes a thing**.
+deleting a template **never deletes a thing**. A row's section is set on the row (§7), by dragging it under a
+heading (§6a, Arrange) and — since 0.64 — from the thing's own page, one Section per template it is on (spec 05,
+item 6a: the FIRST place when it is on a template twice).
 
 **How one reaches it.**
 - The **Templates** tab (third tab; `tab-templates`, screen container `screen-templates`; violet `#7c5cd6`).
@@ -680,7 +682,8 @@ thenHoldForDuration: 0.8)` on the grips; they were run on the iPhone simulator o
 
 ### Tests
 - UI (`-uiTestingSections`: the sample with Hiking under Lights (Headlamp, Spare batteries) and Clothes (Hiking
-  boots, Rain jacket, Wool socks), the Map under no heading — `SampleLibrary.sectioned()`):
+  boots, Rain jacket, Wool socks), the Map under no heading — `SampleLibrary.sectioned()`; since 0.64 its trip is
+  packed from Hiking as it then reads, 9 lines, so a trip sorted by Section has headings — spec 03):
   `testArrangeTurnsOnAndOff` (offered by Section and off; on = selected, the hint, headings "Lights"/"Clothes",
   "Everything else", the six things in order, grips on headings and things, no ✕, no Find; a second tap ends it and
   the ✕ comes back; When hides Arrange, Section brings it back; Swim, with no headings, is arranged as one list of
@@ -712,7 +715,10 @@ thenHoldForDuration: 0.8)` on the grips; they were run on the iPhone simulator o
 means 'the same as the thing itself', so a change to the thing still reaches this list." How many and Section
 became per-template in 0.14 (24 Sep 2026). "Only on some trips" is his ask of 2 Oct 2026 ("a towel can be
 summer-only on Beach and always on Swim"). Heading bands: field test 3 Oct 2026 (the headings had been 14 grey,
-smaller than the pills).
+smaller than the pills). Bag, When and Section are drop-downs since 0.64 (his word, 6 Oct 2026: "I like the dropdown
+for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere?"). The same Section can be set
+from the thing's page since 0.64 (his ask, 6 Oct 2026, "already in this view"; spec 05 item 6a) — it stores exactly
+what this editor's Save stores for it, and the trips still ahead follow the same way.
 
 ### How it is reached and left
 Tap a row on a template page. Left by "Cancel" (`row-cancel`, nothing saved; Escape too, 0.62 — the template's page
@@ -723,27 +729,38 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
 - Top row (padding 16): "Cancel" (outlined, muted) · spacer · "Save" (filled violet).
 - Scroll (side 16, bottom 24), blocks 20 apart, each field right under its heading:
   1. The thing's name — 26 heavy ink, wraps, id `row-thing-name`; "On <template name>" — 15 semibold muted.
-  2. **"Bag on this template"** (heading band, id `row-bag-title`): pills `row-bag-0` = what a blank bag really
-     means (`sameBagWords`): "Same as the template (<its own bag>)" on a template that came with a default bag,
-     else "Same as the thing (<the thing's own bag>)"; then `row-bag-1…` = `containerNames(resolvedTemplates())` (the 17 built-in names —
-     Toiletry bag, Carry-on / hand luggage, Checked luggage, Hiking backpack, Climbing backpack, Golf bag,
-     Triathlon bag, Swim bag, Duffel bag, Day pack, Bellroy backpack, Tech pouch, Electronics bag, Cool box,
-     Handbag, RV storage box, Other — then his own bags from the bag list, de-duplicated case-insensitively). One
-     choice.
-  3. **"When, on this template"** (band, `row-when-title`): `row-when-0` = "Same as the thing (<phase label>)", then
-     the live timeline (`PHASES`, his own steps if he changed them). One choice.
-  4. **"Section of this template"** (band, `row-section-title`) — when the template has sections or one was just
-     typed: `row-section-0` = "No section", then the sections in order, then the section typed under "A new
-     section" and not made yet (the last pill). One choice.
-  5. **"A new section"** (band, `row-heading-section-new`): field "e.g. Lights" (`row-section-new`) and "Add"
-     (`row-section-add`); `needsLine` `row-section-add-needs`.
-  6. **"How many"** (band, `row-heading-qty`): field `row-qty`; its grey words (placeholder) "Same as the thing:
+  Items 2–4 are **drop-downs** (0.64, `DropDown`, spec 06 §21) in violet: under the heading band a field-like
+  button (`row-bag`, `row-when`, `row-section`; value = the words of the choice that stands, label = the heading;
+  Body, `Metrics.tap` tall, card fill, hairline, a ▾) that opens its list beside it — a popover on the iPhone as on
+  the Mac, placed by the system above or below its field, wherever it fits (Bag, near the top, opens downwards) — container `row-bag-list`,
+  `row-when-list`, `row-section-list`; one row per choice named as its pill was (`row-bag-<n>` …), the chosen row
+  ticked in violet (selected trait); a tap on a row takes it and closes the list (nothing is stored before Save).
+  A blank choice ("Same as …", "No section") is in grey on the field and in the list. Until 0.64 each was a row of
+  pills; the "Only on some trips" lists, where several may be picked, stay pills.
+  2. **"Bag on this template"** (heading band, id `row-bag-title`; field `row-bag`): `row-bag-0` = what a blank bag
+     really means (`sameBagWords`): "Same as the template (<its own bag>)" on a template that came with a default
+     bag, else "Same as the thing (<the thing's own bag>)"; then `row-bag-1…` = `bagNames()` — his own bags, in his
+     bag list's order (the 17 built-in names only while he has none; 0.64 — until then always the built-in names
+     first, then his own). One choice. A bag the row names that is none of these (a bag since renamed or deleted)
+     is shown on the field and on a row of its own at the end, ticked (`row-bag-other`; 0.64 — no pill was lit
+     before); left alone it is kept on Save.
+  3. **"When, on this template"** (band, `row-when-title`; field `row-when`): `row-when-0` = "Same as the thing
+     (<phase label>)", then the live timeline (`PHASES`, his own steps if he changed them). One choice. A stored step
+     this device does not know ticks no row; the field shows its raw id.
+  4. **"Section of this template"** (band, `row-section-title`; field `row-section`) — ALWAYS there since 0.64 (it
+     was hidden on a template without sections): `row-section-0` = "No section", then the sections in order, then
+     the section typed at the foot and not made yet (the last row). One choice. At the foot of its list (0.64; until
+     then a block of its own, "A new section", band `row-heading-section-new`, under the pills): a field "A new
+     section" (`row-section-new`; it said "e.g. Lights" under the band) and "Add" (`row-section-add`); Add with
+     nothing typed → "Type the section's name first." under it (`row-section-add-needs`); otherwise the section is
+     chosen (see Behaviour) and the list closes. What was typed and not added is dropped when the list closes.
+  5. **"How many"** (band, `row-heading-qty`): field `row-qty`; its grey words (placeholder) "Same as the thing:
      <the thing's own how-many>" when the thing has one, else "e.g. 2, or 2 pairs".
-  7. **"Note"** (band, `row-heading-note`): field `row-note`; placeholder "Same as the thing: <the first line of
+  6. **"Note"** (band, `row-heading-note`): field `row-note`; placeholder "Same as the thing: <the first line of
      the thing's note>" when it has one, else "e.g. with the red filter" — so a blank field never looks as if the
      thing's note had gone.
-  8. "Blank means the same as the thing itself, so a change to the thing still reaches this template." — 14 muted.
-  9. **"Only on some trips"** (band, `row-heading-some`), then "Leave these off and it always comes along. Pick one
+  7. "Blank means the same as the thing itself, so a change to the thing still reaches this template." — 14 muted.
+  8. **"Only on some trips"** (band, `row-heading-some`), then "Leave these off and it always comes along. Pick one
      or more and it comes only on trips that match — on this template." (15 medium muted, pulled 6 pt up), then
      four pill rows with a smaller heading each (`HeadingTitle`, 20 heavy violet after a 4 × 18 violet capsule),
      several choices each; this block's parts are 14 pt apart:
@@ -756,21 +773,24 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
      - After the app's own words, each a stored word the app does not know (a web-app "summer", "Boat") as a pill
        of its own, as stored, lit — so it can be seen and switched off (`Library.unknownConditions`).
 - Field look: 17 medium ink, min height 44, card fill, 10-radius hairline border. Heading band: a 5 × 26 capsule in
-  violet, the title 22 heavy violet, on a 13 % violet strip (radius 10). Pills: 15 (bold when on), min height 36,
-  white on violet when on, ink on `Theme.bg` with a hairline when off; ids are `<id>-<position>`, never words.
+  violet, the title 22 heavy violet, on a 13 % violet strip (radius 10). Pills (Only on some trips): 15 (bold when
+  on), min height 36, white on violet when on, ink on `Theme.bg` with a hairline when off; ids are `<id>-<position>`,
+  never words — as are a drop-down's rows. (Sizes here are the old points; read them through spec 06 §21.)
 
 ### Behaviour
 - On appear the state is loaded from the **membership itself** (not the resolved row): bag = `m.container`, when =
   `m.phase`, qty, note, section, seasons, contexts, transports, catering. A blank membership value selects the
   "Same as the thing" / "No section" pill (and leaves How many / Note blank, showing the thing's own in grey). A
-  stored bag, When or section that is not among the pills selects none, and is kept unchanged on Save. A stored
+  stored When or section that is not among the rows ticks none, and is kept unchanged on Save; a stored bag that is
+  not among them has its own ticked row (`row-bag-other`, 0.64) and is kept the same way. A stored
   **condition** value that is not one of the app's own words (exactly `Summer`/`Winter`, `Indoor`/`Outdoor`/`Race`,
   `Car`/`Plane`/`RV`, `self`/`eatout`/`mixed` — case matters) shows as a lit pill of its own and is **kept** on
   Save unless switched off (until the spec pass, 5 Oct 2026, Save silently dropped it).
-- **Add a section**: blank (after `jsTrim`) → "Type the section's name first."; a section of this template with
-  the same `normName` → that one is chosen; else the name **waits for Save** as the last, chosen pill — nothing is
-  written yet. The field empties. Cancel therefore leaves the template as it was (until the spec pass the section
-  was written at once and stayed behind, empty).
+- **Add a section** (the Section list's foot, 0.64): blank (after `jsTrim`) → "Type the section's name first."
+  under it, the list stays open; a section of this template with the same `normName` → that one is chosen; else the
+  name **waits for Save** as the last, chosen row (the field shows it) — nothing is written yet. The field empties
+  and the list closes. Cancel therefore leaves the template as it was (until the spec pass the section was written
+  at once and stayed behind, empty).
 - **Save** → `Library.saveRow(templateId:memId:_:)` (`TemplateRows.swift`), then dismiss:
   - a section waiting for Save is made (`addSection`: trimmed, an existing one of the same `normName` reused) and
     the row put in it, if its pill is still the chosen one;
@@ -804,13 +824,20 @@ sections, group), `resolvedTemplates()` (bag names), `sameBagWords`. Writes thro
 (`followThing`).
 
 ### Tests
-- UI: `testARowOfAListHasItsOwnAnswers` (Hiking's first row is the sectioned Headlamp and shows "Carry-on"; picking
+- UI: `testThePickOneListsAreDropDownsThatChooseAndKeep` (0.64; on Hiking's Headlamp: Bag, When and Section are
+  fields whose rows are not out before opening, Season is still pills, Section shows "Lights"; the Bag list opened
+  and photographed; `row-bag-3` and `row-when-2` chosen — each list closes and its field shows the row's words;
+  saved and reopened, both fields still say them, `row-bag-3` and Lights (`row-section-1`) are the ticked rows);
+  `testARowOfAListHasItsOwnAnswers` (Hiking's first row is the sectioned Headlamp and shows "Carry-on"; choosing
   `row-bag-4` and a note "with the red filter" → the row shows the note and no longer "Carry-on"; Season Summer kept
-  and the row says "Only on: Summer"; Context not offered on Hiking; the thing's own bag unchanged in Your things);
-  `testTheEditorsLeadWithTheirHeadings` (all ten heading ids exist); `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
-  (`row-section-add` → `row-section-add-needs`); `testASectionTypedInARowIsMadeOnlyOnSave` ("Rig" typed and Added
-  → `row-section-2` chosen; Cancel → gone on reopening; typed again and Saved → a "Rig" heading, and the row in
-  it); `testAThingsNoteIsNotCopiedOntoATemplate` (-uiTestingOnSite: the Passport, with the note "Keep it dry",
+  and the row says "Only on: Summer"; Context not offered on Hiking; the thing's own bag, `thing-bag-1`, still the
+  ticked row in Your things); `testTheEditorsLeadWithTheirHeadings` (all nine heading ids exist — "A new section"'s
+  band went with 0.64); `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (the Section list opened, its
+  `row-section-add` → `row-section-add-needs`); `testASectionTypedInARowIsMadeOnlyOnSave` (Lights offered as
+  `row-section-1` and nothing after it; "Rig" typed at the list's foot and Added → the list closes, the field says
+  "Rig", `row-section-2` is Rig and ticked; Cancel → gone on reopening; typed again and Saved → a "Rig" heading, the
+  row in it, and `row-section-2` ticked); `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (Mac only: "Rig"
+  added at the foot, Escape cancels the row, and reopened the list has no `row-section-2`); `testAThingsNoteIsNotCopiedOntoATemplate` (-uiTestingOnSite: the Passport, with the note "Keep it dry",
   picked onto Hiking → the row shows the note, its `row-note` is empty with the grey words "Same as the thing: Keep
   it dry").
 - Model: `RowEditingTests.testThisListsOwnAnswersStayThisListsOwn` (addSection trims and de-duplicates;
@@ -823,11 +850,17 @@ sections, group), `resolvedTemplates()` (bag names), `sameBagWords`. Writes thro
   does not change), `testOnlyOnSaysWhatATripReadsOnThisTemplate`, `testABlankBagNamesWhereItReallyGoes`.
 - The model classes `TemplateEditingTests`, `ThingEditingTests` and `RowEditingTests` live in
   `PackingLibraryTests/CreateTripTests.swift`.
-- **Not covered:** Food tags on screen; Transport-only tags on their own; a section from another template; an
-  unknown condition's pill on screen (no sample row has one).
+- **Not covered:** Food tags on screen; Transport-only tags on their own; a section from another template on
+  screen (the model reads it as none: `ThingSectionTests.testASectionFromElsewhereReadsAsNone`); an unknown
+  condition's pill on screen (no sample row has one).
+- The same section set from the thing's page (0.64): UI `testAThingsPageSetsItsSectionOnATemplate`,
+  `testAThingsPageMakesANewSectionOnSave` — they read Hiking's page by its headings afterwards (spec 05).
 
 ### Traps
 - 🪤 The Pills' heading must be bigger than the pills (field test 3 Oct): bands 22, inner headings 20, pills 15.
+- 🪤 A drop-down's rows exist only while its list is open: a test opens it first (`openDropDown`, `choose`,
+  `isChosen`) and closes it on the ticked row before tapping anything behind it — on the iPhone a tap outside an
+  open popover only closes the popover.
 - 🪤 A blank bag resolves **template default first**, then the thing (§12) — so the first pill names the template's
   bag when it has one ("Same as the template (X)"); until the spec pass it always named the thing's.
 
@@ -1032,7 +1065,7 @@ overrides), **TRIP LINE** (thing ↔ trip: a frozen copy).
 | `seasons`, `contexts`, `transports`, `catering` | always comes (no restriction) | Any strings kept (not checked against the vocabularies); on resolve they **replace** the thing's own. |
 | `weather` | not conditional gear | Only `rain`, `cold`, `hot`, `wind`, `snow` kept. A tagged row is held back from a trip unless the trip forces that weather on. No UI here. |
 | `container` | the template's `defaultContainer`, then the thing's own bag | Non-string → "". |
-| `section` | no section | A section id of THIS template; no item default. Not carried between templates by id (only by name). |
+| `section` | no section | A section id of THIS template; no item default. Not carried between templates by id (only by name). Written by the row editor's Save (`saveRow`, §7), by Arrange (`moveRow`/`removeSection`, §13a) and, since 0.64, from the thing's page (`setThingSection`, below) — the first place only when the thing is on the template twice. An id that is not one of this template's sections reads as none everywhere (`groupItemsBySection`, `thingSection`) and is kept until something else is chosen. |
 | `kit` | no kit | A kit NAME; no item default. No UI here. |
 | `phase` | the thing's own When | Trimmed, cut to 40 UTF-16 units; an unknown id is **kept** (likely a phase made on the other device); non-string → "". |
 | `itemType` | the thing's own | "item" / "reminder" / "" (anything else → ""). No UI here. |
@@ -1134,6 +1167,16 @@ Takes an edited **resolved** template apart:
 - `saveRow(templateId:memId:_ RowAnswers) -> Bool` (`TemplateRows.swift`) — the row editor's Save (§7): a section
   typed there made now, how many / note "" when equal to the thing's, conditions kept with words unknown to the
   app, then `followThing`. false when that row is not on that template.
+- (0.64, `ThingSections.swift`, for the thing's page — spec 05 item 6a) `firstPlace(itemId:templateId:) ->
+  Membership?` — the thing's first place on that template by `order` (NaN = 0; equal numbers keep the stored
+  order), nil when it is not on it. `thingSection(itemId:templateId:) -> String` — that place's section when it is
+  one of THIS template's, else "". `setThingSection(itemId:templateId:section:newSection: = "") -> Bool` — puts the
+  first place under `section` (an id of this template, or "" = none) or, when `newSection` is not blank after
+  `jsTrim`, under the template's section of that `normName` or a new one (`addSection`); then `followThing(id:)`,
+  as `saveRow` does. Returns whether anything changed; a no-op (nothing written, no section made, no trip touched)
+  when the place is already there, `section` is not one of the template's, the thing is not on it, or the template
+  is unknown. Only `section` changes — not `order` (as in `saveRow`; Arrange is what renumbers). Does not touch the
+  template's `updatedAt` (neither does `addSection`). Model tests `ThingSectionTests` (6; spec 05).
 - `letCopiedAnswersFollowTheirThings() -> Int` — the clean-up of the rows an older build froze: a membership whose
   non-empty `qty` or `note` is EXACTLY its thing's own is set back to "" (nothing on screen changes; a row of his
   own that says something else is kept). Run by `LibraryModel.reload()` on every load, after duplicate records are
