@@ -55,17 +55,18 @@ order in the code:
 | 10 | *Kept before a restore* list (§15) | only when a rescue copy exists on this device | `rescue-heading`, `rescue-row-<n>` |
 | 11 | *This device holds* table + footer (sync mode, version) (§16), and under it where the library came from (0.62) | always; the line only for a library brought in from a file | `device-count-<table>`, `device-import` |
 
-**Sheets and windows owned by the screen itself.** ONE `.sheet(item: open)` with a destination (`Open` = `choices` →
-`ListsScreen`, `restore(PendingRestore)` → `RestoreSheet`; 0.62 — until then two `.sheet`s on the one view, the trap
-the Templates tab left in 0.62, spec 04 item 15); `.fileImporter` (open a `.json`); `.fileExporter` (save the
+**Sheets and windows owned by the screen itself.** Two sheets, as in 0.61: `.sheet(isPresented: lists)` →
+`ListsScreen`, and `.sheet(item: pending)` → `RestoreSheet` (0.62 tried ONE sheet with a destination, and with an
+`onDismiss` on it; on GitHub's Mac run the kept copy's restore then never opened after a first restore — item 18);
+`.fileImporter` (open a `.json`); `.fileExporter` (save the
 backup) — system windows, each opened only by its own button. The guide doors and the shared-link door own their OWN
 sheets (`GuideDoors`, `OpenSharedDoor`) because "several sheets on one view is a trap met in Search" (GuideScreen.swift
-comment). The sheet's `onDismiss`: a restore offered and not answered (`unanswered`) — swiped away on the iPhone —
-sets the status line to "Nothing was replaced." (0.62, §14).
+comment). A restore swiped away on the iPhone answers "no" from inside the sheet (`RestoreSheet`'s `onDisappear`,
+0.63), so the status line says "Nothing was replaced." (§14).
 
 **State held by the screen** (`@State`, lost when the tab is left): `exporting`, `saving` (the backup document, built when Save is pressed — 0.62), `status` (the line under Save),
-`open: Open?` (the sheet's destination — `.restore` carries the file already read and checked, waiting for his yes),
-`unanswered` (a restore offered, neither Cancel nor Replace pressed yet — 0.62), `picking`,
+`lists` (Your choices open), `pending: PendingRestore?` (the file already read and checked, waiting for his yes),
+`picking`,
 `copies: [URL]` (rescue copies, read once when the view is created and again after a restore).
 
 **iPhone vs Mac.** Identical layout. Save opens the Files picker on the iPhone and a real Save panel on the Mac;
@@ -920,8 +921,7 @@ for `.json`. Picked → security-scoped read → `offer(data)`; unreadable → "
 the live "When" steps and conditions as they were): parse the JSON and require
 `BackupFile.looksLikeBackup`, else "That is not an AMS Packing backup file."; import it in memory with
 `Importer.library(from:)`; if the import does not round-trip faithfully, "The import did not come back the same
-(<n> rows differ), so nothing was stored."; otherwise `open = .restore(PendingRestore(library))` and `unanswered =
-true` → the sheet opens. Nothing on the device changes until he confirms.
+(<n> rows differ), so nothing was stored."; otherwise `pending = PendingRestore(library)` → the sheet opens. Nothing on the device changes until he confirms.
 
 **The sheet** (container id `restore-detail`; `.frame(minWidth: 420, minHeight: 520)` on the Mac only — 0.62; on the
 iPhone it was wider than the screen and its edges were cut off):
@@ -940,14 +940,16 @@ iPhone it was wider than the screen and its edges were cut off):
 - **"Replace everything on this device"** — full width, min height 52, red fill, 17 bold white, id
   `restore-confirm` → `answer(true)` + dismiss.
 
-**After the answer** (`unanswered = false` and `open = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
+**After the answer** (`pending = nil` first): no → status "Nothing was replaced."; yes → `model.restore(library)`:
 (1) `RescueCopies.write(current)` — BEFORE anything is replaced; (2) `commit(Importer.restoring(imported, over:
 current))` — the record difference between what was held and the file's library (with the devices' check-ins kept,
 0.62) is applied to the store (everything else not in the file is deleted); (3) `reload()`. Then `copies` is re-read
 and status = "Restored from the file: <n> template(s), <n> thing(s) and <n> trip(s). A copy of what was here is kept
 on this device." (the counts since 0.62); an error → its description. Dismissing the sheet any other way — swiping it
-down on the iPhone — does not call `answer`; the sheet's `onDismiss` finds `unanswered` still true and says what
-Cancel says: "Nothing was replaced." (0.62; until then the status said nothing — Open questions 17).
+down on the iPhone — answers "no" as the sheet goes: `RestoreSheet` keeps `answered` (set by Cancel and Replace)
+and its `onDisappear` calls `answer(false)` when neither was pressed, so the status says what Cancel says: "Nothing
+was replaced." (0.63; in 0.62 it was the sheet's `onDismiss`, dropped because of the Mac — item 18; until then the
+status said nothing — Open questions 17).
 
 **Tests.** UI `testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything` (device 10 things; file 2 vs now 10;
 `restore-fewer` shown; 0.62: the sheet inside the window; Cancel changes nothing; confirm → 2 things, 0 trips, the
