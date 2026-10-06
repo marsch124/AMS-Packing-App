@@ -3914,9 +3914,25 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(day.waitForExistence(timeout: 5), "no day \(d.day!) on the calendar")
         XCTAssertTrue(waitUntil { (day.value as? String) == "1 due" },
                       "the boots are not on the day they fall due: '\(day.value as? String ?? "")'")
-        // Brought fully into view first: on GitHub's iPhone 17 the day sat under the top of
-        // the screen and the tap was refused (0.63, 6 Oct 2026).
+        #if os(iOS)
+        // 🪤 After the overdue row, the page stays scrolled far down — the calendar above
+        // the screen — while XCUITest still reports the day where it was and calls it
+        // hittable; the tap is then refused (GitHub's iPhone 17, 0.63, 6 Oct 2026, seen in
+        // the run's recording). So never ask: swipe the page back to its top, three times.
+        for _ in 0..<3 {
+            app.swipeDown(velocity: .fast)
+            usleep(300_000)
+        }
+        // …and on iPhone 17 XCUITest still calls the day (two lines in a 32-point cell)
+        // not hittable, with nothing over it (its tree, 6 Oct 2026): tap its very point.
+        if day.exists && !day.isHittable {
+            day.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        } else {
+            tapVisible(app, day)
+        }
+        #else
         tapVisible(app, day)
+        #endif
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-day"]).hasSuffix("· 1") },
                       "the day does not list what is due: '\(words(app.staticTexts["care-cal-day"]))'")
         XCTAssertTrue(app.buttons["care-row-900-done"].waitForExistence(timeout: 5), "the boots are not under the day")
@@ -5254,6 +5270,30 @@ final class AMSPackingUITests: XCTestCase {
 
     /// The table is a spreadsheet: a heading sorts by its column and turns over
     /// when pressed again, and a weight typed into a cell reaches the thing.
+    /// His ask (6 Oct 2026, a picture of the Mac's table): "Please take away all the air in
+    /// between the lines." A row is as tall as its words — 22 points on the Mac, 28 on the
+    /// iPhone (34 on both until 0.65) — and the next row starts where it ends.
+    func testTheTableRowsHaveNoAirBetweenThem() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        let first = app.buttons["table-0-pick"], second = app.buttons["table-1-pick"]
+        XCTAssertTrue(waitUntil { first.exists && second.exists && first.frame.height > 0 }, "no first two rows")
+        #if os(macOS)
+        let most: CGFloat = 22
+        #else
+        let most: CGFloat = 28
+        #endif
+        let pitch = second.frame.minY - first.frame.minY
+        XCTAssertLessThanOrEqual(pitch, most + 0.5, "a row takes \(pitch) points, top to top; at most \(most)")
+        XCTAssertGreaterThanOrEqual(pitch, most - 6, "rows of \(pitch) points: the words no longer fit")
+        let name = app.staticTexts["table-0-name"]
+        XCTAssertTrue(name.exists, "the first row has no name")
+        XCTAssertLessThanOrEqual(name.frame.height, pitch, "the name is taller than its row")
+        shot(app, "table-slim")
+    }
+
     func testTheTableSortsAndSaves() {
         let app = launch()
         tab(app, "care")

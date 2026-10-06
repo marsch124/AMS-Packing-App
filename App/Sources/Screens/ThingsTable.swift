@@ -514,7 +514,7 @@ struct ThingsTable: View {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(ticked ? AppSection.care.color : Color.clear)
                             .overlay(RoundedRectangle(cornerRadius: 4).stroke(ticked ? AppSection.care.color : Theme.line, lineWidth: 1.5))
-                            .frame(width: 18, height: 18)
+                            .frame(width: TableColumns.box, height: TableColumns.box)
                             .frame(width: 30, height: TableColumns.rowHeight)
                             .contentShape(Rectangle())
                     }
@@ -533,7 +533,7 @@ struct ThingsTable: View {
                         SVGPath.path("M9 6l6 6-6 6")
                             .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
                             .foregroundStyle(AppSection.care.color)
-                            .frame(width: 14, height: 14)
+                            .frame(width: TableColumns.box - 4, height: TableColumns.box - 4)
                             .frame(width: 26, height: TableColumns.rowHeight)
                             .contentShape(Rectangle())
                     }

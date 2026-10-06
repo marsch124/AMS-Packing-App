@@ -1,0 +1,661 @@
+{
+ "testAAAWarmsUpTheSimulator": {
+  "iphone": 42.7,
+  "mac": 9.6
+ },
+ "testABagIsRenamedAndDeletedFromItsPage": {
+  "iphone": 240.2,
+  "mac": 134.4
+ },
+ "testABagIsWeighedOnTheLuggageScale": {
+  "iphone": 64.3,
+  "mac": 34.1
+ },
+ "testABagOnTheTripSaysWhetherItGoesInTheCabin": {
+  "iphone": 60.7,
+  "mac": 33.2
+ },
+ "testABagSaysWhetherItGoesInTheCabin": {
+  "iphone": 44.6,
+  "mac": 29.7
+ },
+ "testABagWithNothingWeighedIsOnTheTrip": {
+  "iphone": 80.6,
+  "mac": 57.6
+ },
+ "testABagsLimitReachesTheTrip": {
+  "iphone": 72.3,
+  "mac": 56.9
+ },
+ "testAChangeToAThingReachesATripStillAhead": {
+  "iphone": 47.2,
+  "mac": 32.8
+ },
+ "testAChoiceIsRenamedAndMovedAndItsThingsFollow": {
+  "iphone": 81.2,
+  "mac": 56.0
+ },
+ "testAConditionStoredTheOldWayIsRepairedOnLoad": {
+  "iphone": 11.1,
+  "mac": 9.7
+ },
+ "testAGrabListCountsRefusesAndClears": {
+  "iphone": 22.4,
+  "mac": 19.6
+ },
+ "testAGrabListGoneWhileOpenClosesInsteadOfBecomingAnother": {
+  "iphone": 74.2
+ },
+ "testAGrabListIsEditedAndStaysEdited": {
+  "iphone": 27.9,
+  "mac": 18.3
+ },
+ "testAGrabListTakenOffHomeStaysOff": {
+  "iphone": 44.3,
+  "mac": 44.2
+ },
+ "testAGroupOfThingsToChooseFoldsAndSaysWhatItHolds": {
+  "iphone": 41.5,
+  "mac": 25.5
+ },
+ "testAHeadingIsDraggedWithItsThings": {
+  "iphone": 30.1,
+  "mac": 20.7
+ },
+ "testAHeadingIsRemovedAndItsThingsStay": {
+  "iphone": 38.1,
+  "mac": 21.8
+ },
+ "testAHeadingIsRenamed": {
+  "iphone": 48.0,
+  "mac": 32.0
+ },
+ "testALibraryThatHasMetAnotherSaysSo": {
+  "iphone": 17.9,
+  "mac": 11.9
+ },
+ "testALineKeepsANoteForTheWayHome": {
+  "iphone": 67.7,
+  "mac": 41.9
+ },
+ "testALineWhoseReminderWasDeletedCanBeSentAgain": {
+  "iphone": 31.5,
+  "mac": 19.0
+ },
+ "testAListIsRenamedAndAnotherIsDeleted": {
+  "iphone": 55.8,
+  "mac": 29.6
+ },
+ "testANewTemplateAsksForItsActivityArea": {
+  "iphone": 15.8,
+  "mac": 10.0
+ },
+ "testANewThingShowsOnTopUnderJustAdded": {
+  "iphone": 53.7,
+  "mac": 22.8
+ },
+ "testANewThingWithANameHeHasSaysSo": {
+  "iphone": 22.9,
+  "mac": 12.4
+ },
+ "testANewTripStartsFromThisOne": {
+  "iphone": 87.0,
+  "mac": 54.4
+ },
+ "testANoteMadeOnSiteReachesTheThing": {
+  "iphone": 102.5,
+  "mac": 47.3
+ },
+ "testAPackedBagKeepsItsPhoto": {
+  "iphone": 94.7,
+  "mac": 73.8
+ },
+ "testAPlaceIsSetFromTheTrip": {
+  "iphone": 78.1,
+  "mac": 69.1
+ },
+ "testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything": {
+  "iphone": 32.5,
+  "mac": 28.2
+ },
+ "testARestoreSwipedAwaySaysNothingWasReplaced": {
+  "iphone": 22.9
+ },
+ "testARowOfAListHasItsOwnAnswers": {
+  "iphone": 71.5,
+  "mac": 66.2
+ },
+ "testARowOpensItsThingAndComesBackToTheSameSpot": {
+  "iphone": 93.1,
+  "mac": 71.1
+ },
+ "testASearchOpensAFoldedGroupOfThingsToChoose": {
+  "iphone": 29.0,
+  "mac": 25.3
+ },
+ "testASearchedToDoOpensTheToDoTab": {
+  "iphone": 26.2,
+  "mac": 17.0
+ },
+ "testASectionFoldsAndStaysFolded": {
+  "iphone": 29.6,
+  "mac": 26.1
+ },
+ "testASectionTypedInARowIsMadeOnlyOnSave": {
+  "iphone": 72.1,
+  "mac": 50.0
+ },
+ "testASetAsideLineIsNotPacked": {
+  "iphone": 79.6,
+  "mac": 49.1
+ },
+ "testASharedListOfOneSaysOneThing": {
+  "iphone": 271.7,
+  "mac": 51.8
+ },
+ "testAShortcutOpensAGrabListOrTheNextTrip": {
+  "iphone": 15.8,
+  "mac": 6.4
+ },
+ "testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp": {
+  "iphone": 31.7
+ },
+ "testASwipeDownKeepsWhatIsNotSavedYet": {
+  "iphone": 61.8
+ },
+ "testATemplateAndAGrabListAreSharedAndOpenedAgain": {
+  "iphone": 111.4,
+  "mac": 67.4
+ },
+ "testATemplateDeletedTakesItsFilterAndColumnAlong": {
+  "iphone": 191.8,
+  "mac": 169.1
+ },
+ "testATemplateFindsAThingWithoutScrolling": {
+  "iphone": 43.9,
+  "mac": 23.9
+ },
+ "testATemplateMovesToAnotherActivityArea": {
+  "iphone": 26.7,
+  "mac": 27.1
+ },
+ "testATemplateOpensAndCloses": {
+  "iphone": 13.4,
+  "mac": 10.6
+ },
+ "testATemplateWithNoActivityAreaGoesOnATrip": {
+  "iphone": 92.0,
+  "mac": 77.6
+ },
+ "testATemplatesIconIsSuggestedAndCanBeChosen": {
+  "iphone": 39.9,
+  "mac": 32.7
+ },
+ "testATemplatesThingsGroupTheWaysATripSorts": {
+  "iphone": 15.2,
+  "mac": 12.7
+ },
+ "testAThingAddedToATemplateStays": {
+  "iphone": 36.8,
+  "mac": 27.0
+ },
+ "testAThingIsDeletedOnlyAfterAsking": {
+  "iphone": 54.9,
+  "mac": 52.3
+ },
+ "testAThingIsDraggedUnderAnotherHeading": {
+  "iphone": 33.9,
+  "mac": 27.6
+ },
+ "testAThingOpensFromTheWayHomeAndComesBack": {
+  "iphone": 64.7,
+  "mac": 52.1
+ },
+ "testAThingTakenOnlySometimesStartsSkipped": {
+  "iphone": 31.6,
+  "mac": 23.0
+ },
+ "testAThingTypedWhilePackingJoinsTheTrip": {
+  "iphone": 24.4,
+  "mac": 28.4
+ },
+ "testAThingsNoteIsNotCopiedOntoATemplate": {
+  "iphone": 34.3,
+  "mac": 30.8
+ },
+ "testAThingsOwnDetailsAndItsListsAreChanged": {
+  "iphone": 51.0,
+  "mac": 38.3
+ },
+ "testAThingsPageShowsTheNotesItsTemplatesKeep": {
+  "iphone": 49.6,
+  "mac": 39.7
+ },
+ "testAThingsPageTakesDecimalsAPlaceNoBagAndCare": {
+  "iphone": 235.3,
+  "mac": 208.7
+ },
+ "testATickCountsAndStays": {
+  "iphone": 20.7,
+  "mac": 16.2
+ },
+ "testATickSurvivesFolding": {
+  "iphone": 40.8,
+  "mac": 24.1
+ },
+ "testAToDoIsAddedAndTicked": {
+  "iphone": 20.4,
+  "mac": 13.9
+ },
+ "testATripChecksTheCabinAndTheDatesBeforeYouGo": {
+  "iphone": 85.9,
+  "mac": 53.5
+ },
+ "testATripIsDeletedOnlyAfterAsking": {
+  "iphone": 45.2,
+  "mac": 58.3
+ },
+ "testATripIsSavedAsExcel": {
+  "iphone": 16.6,
+  "mac": 19.1
+ },
+ "testATripIsSharedAndOpenedAgain": {
+  "iphone": 49.8,
+  "mac": 37.0
+ },
+ "testATripReviewIsSavedAndTheMissedThingIsFiled": {
+  "iphone": 31.5,
+  "mac": 24.7
+ },
+ "testATripSomeoneSentKeepsItsListOnSave": {
+  "iphone": 66.4,
+  "mac": 61.5
+ },
+ "testATripUnderWayStandsAtOnSite": {
+  "iphone": 22.5,
+  "mac": 16.3
+ },
+ "testATripsSettingsAreChangedAfterItIsMade": {
+  "iphone": 65.9,
+  "mac": 41.3
+ },
+ "testAWholeSectionIsTickedInOnePress": {
+  "iphone": 17.6,
+  "mac": 13.6
+ },
+ "testAnEmptyDeviceShowsTheTwoDoors": {
+  "iphone": 8.1,
+  "mac": 5.1
+ },
+ "testAnEmptyGrabListSaysHowToFillIt": {
+  "iphone": 94.6,
+  "mac": 54.5
+ },
+ "testArrangeTurnsOnAndOff": {
+  "iphone": 42.5,
+  "mac": 35.0
+ },
+ "testCareSaysWhatTheKitAddsUpTo": {
+  "iphone": 26.7,
+  "mac": 22.8
+ },
+ "testCareShowsWhatIsOverdueAndDoneTodayMovesItOn": {
+  "iphone": 18.7,
+  "mac": 10.5
+ },
+ "testChangeAllRefusesANonNumberAndCountsTicksOutOfSight": {
+  "iphone": 64.8,
+  "mac": 44.1
+ },
+ "testContextSitsUnderTheWorkouts": {
+  "iphone": 11.5,
+  "mac": 10.7
+ },
+ "testDatesArePickedLikeBooking": {
+  "iphone": 56.1,
+  "mac": 68.1
+ },
+ "testEachTripSaysWhereItHasGotTo": {
+  "iphone": 39.2,
+  "mac": 23.4
+ },
+ "testEscapeCancelsAThingAndClosesCaresWindows": {
+  "iphone": 55.2,
+  "mac": 39.7
+ },
+ "testEscapeClosesSettingsWindowsAndNeverReplaces": {
+  "iphone": 0.2,
+  "mac": 34.0
+ },
+ "testEscapeClosesTheTripsWindows": {
+  "iphone": 0.1,
+  "mac": 36.8
+ },
+ "testEscapeEndsArrangingWithoutSavingAHeading": {
+  "iphone": 0.1,
+  "mac": 16.6
+ },
+ "testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving": {
+  "iphone": 0.1,
+  "mac": 37.5
+ },
+ "testEveryAddButtonIsReadyAndSaysWhatIsMissing": {
+  "iphone": 164.4,
+  "mac": 102.9
+ },
+ "testEveryDoorOfTheTemplatesTabOpens": {
+  "iphone": 49.1,
+  "mac": 27.3
+ },
+ "testEveryGroupOfThingsToChooseFoldsAndOpensAtOnce": {
+  "iphone": 32.4,
+  "mac": 19.8
+ },
+ "testEveryRowShowsTheTickTheTripHolds": {
+  "iphone": 52.8,
+  "mac": 29.8
+ },
+ "testEveryTabOpensItsScreen": {
+  "iphone": 18.9,
+  "mac": 14.9
+ },
+ "testEverythingIsTickedAndClearedAtOnce": {
+  "iphone": 32.2,
+  "mac": 21.4
+ },
+ "testEverythingIsTickedForTheWayHomeAtOnce": {
+  "iphone": 52.8,
+  "mac": 26.2
+ },
+ "testHeMakesAListOfHisOwn": {
+  "iphone": 37.2,
+  "mac": 18.9
+ },
+ "testHisOwnGrabListIsDeletedAfterAsking": {
+  "iphone": 86.1,
+  "mac": 47.4
+ },
+ "testHisOwnGrabListIsFilledAndStaysFilled": {
+  "iphone": 79.6,
+  "mac": 37.5
+ },
+ "testHisOwnListsAreAddedAndProtectedWhileInUse": {
+  "iphone": 67.7,
+  "mac": 39.9
+ },
+ "testHomeBuildsATrip": {
+  "iphone": 32.9,
+  "mac": 20.6
+ },
+ "testHomeCountsDownToTheNextTrip": {
+  "iphone": 10.9,
+  "mac": 8.3
+ },
+ "testHomeCountsTheTemplatesYourTemplatesShows": {
+  "iphone": 12.2,
+  "mac": 9.0
+ },
+ "testHomeWithEveryGrabListOffSaysWhereTheyAre": {
+  "iphone": 41.4,
+  "mac": 26.2
+ },
+ "testLaundryCountsPerNightThingsFourNightsAtMost": {
+  "iphone": 102.2,
+  "mac": 60.2
+ },
+ "testManyThingsAreChangedAtOnceAndCanBePutBack": {
+  "iphone": 100.3,
+  "mac": 57.8
+ },
+ "testMoreGrabListsThanHomeHolds": {
+  "iphone": 81.9,
+  "mac": 32.4
+ },
+ "testOnSiteHoldsBoughtLeftNotesAndTheWayHome": {
+  "iphone": 76.4,
+  "mac": 49.3
+ },
+ "testOneSearchReachesEverything": {
+  "iphone": 37.5,
+  "mac": 19.8
+ },
+ "testOwnersAreTheNamesHisThingsCarry": {
+  "iphone": 26.7,
+  "mac": 31.6
+ },
+ "testRefineOffersWhatTheReviewsFoundAndKeepAndDropSettleIt": {
+  "iphone": 23.3,
+  "mac": 24.4
+ },
+ "testRemindersSayWhenTheDeviceBlocksThem": {
+  "iphone": 16.4,
+  "mac": 15.1
+ },
+ "testReplacingATemplateSaysWhatItKeeps": {
+  "iphone": 31.6,
+  "mac": 31.6
+ },
+ "testSaveKeepsTodaysTicksAndStartOverSetsAsideWhatIsTakenOnlySometimes": {
+  "iphone": 23.1,
+  "mac": 22.5
+ },
+ "testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen": {
+  "iphone": 72.3,
+  "mac": 68.5
+ },
+ "testSettingsOffersABackup": {
+  "iphone": 13.2,
+  "mac": 15.0
+ },
+ "testSettingsOpensYourChoicesAndTheRestoreOneAfterTheOther": {
+  "iphone": 48.0,
+  "mac": 59.8
+ },
+ "testSettingsTurnsOnPackingReminders": {
+  "iphone": 16.1,
+  "mac": 15.9
+ },
+ "testSomethingBoughtOnSiteGoesOnTheList": {
+  "iphone": 37.0,
+  "mac": 17.0
+ },
+ "testStartsOnHomeAndNamesItsVersion": {
+  "iphone": 7.8,
+  "mac": 5.1
+ },
+ "testSyncNowChecksInFromThisDevice": {
+  "iphone": 10.8,
+  "mac": 10.1
+ },
+ "testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors": {
+  "iphone": 13.0,
+  "mac": 9.2
+ },
+ "testTheActionButtonMenuOpensTheChosenGrabList": {
+  "iphone": 12.3,
+  "mac": 6.8
+ },
+ "testTheBagListIsNoColumnOfTheTable": {
+  "iphone": 59.9,
+  "mac": 27.8
+ },
+ "testTheBuyListGoesToReminders": {
+  "iphone": 29.2,
+  "mac": 20.7
+ },
+ "testTheBuyListOffersWhatIsWornOutAndKeepsTheToDosSeparate": {
+  "iphone": 24.4,
+  "mac": 21.8
+ },
+ "testTheCareCalendarPutsEachServiceOnItsDay": {
+  "iphone": 40.6,
+  "mac": 34.0
+ },
+ "testTheCopyKeptBeforeARestoreBringsEverythingBack": {
+  "iphone": 32.1,
+  "mac": 27.6
+ },
+ "testTheCrossEmptiesASearch": {
+  "iphone": 57.9,
+  "mac": 41.4
+ },
+ "testTheCrossKeepsTheKeyboard": {
+  "iphone": 18.3,
+  "mac": 12.1
+ },
+ "testTheDateGridCanBeLeftAndQuickSaysSo": {
+  "iphone": 36.0,
+  "mac": 39.8
+ },
+ "testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill": {
+  "iphone": 65.3,
+  "mac": 76.7
+ },
+ "testTheDateGridStartsOverAndCancelPutsItBack": {
+  "iphone": 54.9,
+  "mac": 54.6
+ },
+ "testTheDateGridWaitsForOK": {
+  "iphone": 25.9,
+  "mac": 37.9
+ },
+ "testTheEditorsLeadWithTheirHeadings": {
+  "iphone": 131.9,
+  "mac": 121.3
+ },
+ "testTheFirstTripStepsHaveTheirOwnDoor": {
+  "iphone": 14.9,
+  "mac": 10.8
+ },
+ "testTheFoldsOfThingsToChooseAreRemembered": {
+  "iphone": 34.7,
+  "mac": 35.8
+ },
+ "testTheLoopShowsWhereATripStands": {
+  "iphone": 69.4,
+  "mac": 70.0
+ },
+ "testTheMapShowsWhereTheTripsWent": {
+  "iphone": 64.7,
+  "mac": 42.1
+ },
+ "testTheReviewSaysWhereAThingWentAndLetsHimFixIt": {
+  "iphone": 43.0,
+  "mac": 29.1
+ },
+ "testTheScreenSaysSoWhenEverythingIsPacked": {
+  "iphone": 31.4,
+  "mac": 33.8
+ },
+ "testTheTableChipsFindWhatIsMissing": {
+  "iphone": 34.9,
+  "mac": 23.3
+ },
+ "testTheTableFiltersByAnyColumn": {
+  "iphone": 66.8,
+  "mac": 52.2
+ },
+ "testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy": {
+  "iphone": 131.4,
+  "mac": 96.4
+ },
+ "testTheTableSortsAndSaves": {
+  "iphone": 59.7,
+  "mac": 29.2
+ },
+ "testTheTableSortsByLevels": {
+  "iphone": 85.1,
+  "mac": 76.6
+ },
+ "testTheTableTakesTheColumnsHeChooses": {
+  "iphone": 62.6,
+  "mac": 57.7
+ },
+ "testTheTripSaysSortingBesideItsThreeButtons": {
+  "iphone": 23.1,
+  "mac": 26.5
+ },
+ "testTheWayHomeIsPackedFromWhatWent": {
+  "iphone": 50.2,
+  "mac": 44.8
+ },
+ "testTheWayHomeIsSearched": {
+  "iphone": 36.7,
+  "mac": 28.6
+ },
+ "testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing": {
+  "iphone": 26.9,
+  "mac": 19.1
+ },
+ "testThingsHeOwnsArePickedOntoATemplate": {
+  "iphone": 39.1,
+  "mac": 43.0
+ },
+ "testThingsPickedLandInTheOrderTicked": {
+  "iphone": 30.0,
+  "mac": 42.6
+ },
+ "testTicksOnHisOwnGrabListSurviveClosingIt": {
+  "iphone": 47.0,
+  "mac": 46.0
+ },
+ "testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval": {
+  "iphone": 32.8,
+  "mac": 25.5
+ },
+ "testTypingAThingAlreadyOnTheTemplateSaysSo": {
+  "iphone": 29.6,
+  "mac": 20.0
+ },
+ "testUsedUpIsCountedInTheHeadingAndUndone": {
+  "iphone": 43.4,
+  "mac": 31.0
+ },
+ "testValidUntilSaysHowFarAwayAndOffersQuickSpans": {
+  "iphone": 87.2,
+  "mac": 57.2
+ },
+ "testWeatherAddAllTakesEverything": {
+  "iphone": 21.6,
+  "mac": 14.0
+ },
+ "testWeatherGearCanBePackedAnyway": {
+  "iphone": 33.5,
+  "mac": 25.9
+ },
+ "testWhatBelongsToAListIsEditedPerList": {
+  "iphone": 32.3,
+  "mac": 22.2
+ },
+ "testWhatWasTickedInTheShopIsTickedOnReturn": {
+  "iphone": 41.2
+ },
+ "testWhatsNewStartsWithThisVersion": {
+  "iphone": 42.4,
+  "mac": 32.1
+ },
+ "testWhoseItIsOffersEachOwnerOnce": {
+  "iphone": 21.9,
+  "mac": 17.1
+ },
+ "testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed": {
+  "iphone": 59.0,
+  "mac": 46.8
+ },
+ "testWorthALookRemovesAPhotoLeftBehind": {
+  "iphone": 24.9,
+  "mac": 19.7
+ },
+ "testYourBagsShowsANumberChangedOnTheBagsPage": {
+  "iphone": 30.5,
+  "mac": 18.7
+ },
+ "testYourChoicesSaysWhyRightWhereItWasPressed": {
+  "iphone": 56.7,
+  "mac": 43.7
+ },
+ "testYourThingsListsAddsAndRenames": {
+  "iphone": 46.6,
+  "mac": 30.0
+ }
+}

@@ -6,7 +6,16 @@ import PackingLibrary
 /// it is edited. Keeping this beside the screen means a new column is one line
 /// here and nothing anywhere else.
 enum TableColumns {
-    static let rowHeight: CGFloat = 34
+    /// His ask (6 Oct 2026, a picture of the Mac's table): "Please take away all the air
+    /// in between the lines." A row is as tall as its words and no taller; the tick boxes
+    /// and the open arrow shrink with it. (34 on both until 0.65.)
+    #if os(macOS)
+    static let rowHeight: CGFloat = 22
+    static let box: CGFloat = 14
+    #else
+    static let rowHeight: CGFloat = 28
+    static let box: CGFloat = 18
+    #endif
 
     /// Where a choice column gets its list of answers — his own Settings lists,
     /// never a list this app invented.
@@ -288,7 +297,7 @@ struct Cell: View {
                 .fill(on ? AppSection.care.color : Theme.card)
                 .overlay(RoundedRectangle(cornerRadius: 5)
                     .stroke(on ? AppSection.care.color : Theme.line, lineWidth: 1))
-                .frame(width: 20, height: 20)
+                .frame(width: TableColumns.box, height: TableColumns.box)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
         }
