@@ -1217,7 +1217,9 @@ Its sheets (Filter, Sort, Columns, Change, a thing) do close with Escape, on the
      background, a 1 pt line under each): the name cell — the tick box (`table-N-pick`, `TableColumns.box`: 14 pt on
      the Mac, 18 on the iPhone (18 on both until 0.65), filled orange when ticked, no tick mark: "the colour is enough" — his
      words; selected trait), the name (`table-N-name`, 14 semibold, 1 line, may shrink to 80 %), and the open
-     arrow (`table-N-open`, an orange chevron of `box` − 4 in a 26-wide, row-tall area, label "Open `<name>`", tooltip on the Mac) — then
+     arrow (`table-N-open`, the orange chevron drawn on its 24-point grid, framed at 24 and scaled by `box`/18 —
+     0.78 on the Mac, 1 on the iPhone — so it sits on the name's line (0.65; in a 14-point frame it hung 5 points
+     low), in a 26-wide, row-tall area, label "Open `<name>`", tooltip on the Mac) — then
      one cell per chosen column (see Table columns).
 8. When no row is shown, under the grid (`table-none`, 16 medium muted): "Nothing matches these filters." (any
    column filter on) — else "Nothing matches." (quick chip All) — else "Nothing missing that — all filled in."
@@ -1320,7 +1322,10 @@ storage, container, ownedBy, packer, condition, listQty. `TableColumns.ids(store
 that are no longer columns (a deleted template) BEFORE anything counts them (0.62), and gives the starting
 columns when none is left. Row height `TableColumns.rowHeight` (0.65: 22 on the Mac, 28 on the iPhone; 34 before);
 a tick cell's box is `TableColumns.box` (14 / 18; 20 before). Test `testTheTableRowsHaveNoAirBetweenThem`: the
-second row starts at most `rowHeight` below the first (and no more than 6 less), and the first name fits its row.
+second row starts at most `rowHeight` below the first (and no more than 6 less), the first name fits its row, and
+the Thing heading is less than 90 points under Filter. The grid's scroll view has `.defaultScrollAnchor(.topLeading)`
+(0.65): a scroll view that scrolls both ways centres content shorter than itself, and a short table floated in the
+middle of the window (226 points under Filter with the sample's ten things).
 
 **The answers for choice columns (`Answers2`, worked out ONCE per redraw and handed to every cell):** each a
 `Choice {value, label}` — what is stored and what he reads. places = `storagePlaces()`; bags = `bagNames()`
