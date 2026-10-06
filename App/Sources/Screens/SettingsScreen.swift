@@ -40,7 +40,9 @@ struct SettingsScreen: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("settings-lists")
                 .settingsCard()
-                .padding(.top, 12)
+                // Settings has no header line: its first card starts where every tab's
+                // first line does (Metrics.screenTop, 0.67; was 14).
+                .padding(.top, Metrics.screenTop)
 
                 // Remind me to pack (his idea 7) — per device, off until he says.
                 RemindersCard().environmentObject(model)

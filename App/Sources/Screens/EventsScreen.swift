@@ -14,6 +14,34 @@ struct EventsScreen: View {
     /// Set by the Actions chip; the tab bar owns which tab shows.
     var goToActions: () -> Void = {}
 
+    /// "Trips", with the map, the search and the to-do chip beside it: the tab's first
+    /// line on the iPhone, pinned in the window's title bar strip on the Mac.
+    private func header(cards: [Library.TripCard], toDos: Int) -> some View {
+        // Title, map, search and the to-do chip on ONE centre line (ScreenHeader;
+        // his note on 0.63: the pin and the search stood higher than "Trips").
+        return ScreenHeader(title: "Trips", tint: AppSection.events.color, id: "events-heading",
+                            line: EventsScreen.summary(cards), lineId: "events-summary") {
+            WorldMapDoor().environmentObject(model)
+            SearchButton { searching = true }
+            if toDos > 0 {
+                Button(action: goToActions) {
+                    HStack(spacing: 6) {
+                        Text("\(toDos)").font(.system(.callout, weight: .semibold).monospacedDigit())
+                        Text(toDos == 1 ? "to do" : "to do").font(.system(.footnote, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                    .background(Capsule().fill(AppSection.actions.color))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("events-todos")
+                .accessibilityLabel("\(toDos) to do, open the To do tab")
+            }
+        }
+        .padding(.bottom, 4)
+    }
+
     private static let piles: [(Library.TripWhen, String)] =
         // "Been" was not a good word (his test G.1) — he offered "done".
         [(.now, "Now"), (.comingUp, "Coming up"), (.been, "Done")]
@@ -23,34 +51,11 @@ struct EventsScreen: View {
         let toDos = model.library.openToDoCount()
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Trips").font(.system(.title2, weight: .bold)).foregroundStyle(AppSection.events.color)
-                            .accessibilityIdentifier("events-heading")
-                        Text(EventsScreen.summary(cards))
-                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                            .accessibilityIdentifier("events-summary")
-                    }
-                    Spacer()
-                    WorldMapDoor().environmentObject(model)
-                    SearchButton { searching = true }
-                    if toDos > 0 {
-                        Button(action: goToActions) {
-                            HStack(spacing: 6) {
-                                Text("\(toDos)").font(.system(.callout, weight: .semibold).monospacedDigit())
-                                Text(toDos == 1 ? "to do" : "to do").font(.system(.footnote, weight: .semibold))
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 12).frame(minHeight: 34)
-                            .background(Capsule().fill(AppSection.actions.color))
-                            .contentShape(Capsule())
-                        }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("events-todos")
-                        .accessibilityLabel("\(toDos) to do, open the To do tab")
-                    }
-                }
-                .padding(.top, 14).padding(.bottom, 4)
+                // On the Mac the header is pinned in the window's title bar strip
+                // instead (`headerOnTheMac`, below).
+                #if !os(macOS)
+                header(cards: cards, toDos: toDos)
+                #endif
 
                 if cards.isEmpty {
                     Text("No trips yet. Build one on the Home tab.")
@@ -135,6 +140,7 @@ struct EventsScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
         }
+        .headerOnTheMac { header(cards: cards, toDos: toDos) }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(item: Binding(get: { openId.map { Opened(id: $0) } }, set: { openId = $0?.id })) { opened in
             TripScreen(tripId: opened.id).environmentObject(model)

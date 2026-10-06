@@ -7655,4 +7655,195 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThanOrEqual(skip, tightLine + 0.5, "⊘ is \(skip) points tall")
         XCTAssertLessThanOrEqual(ready.frame.height, tightTile + 0.5, "Ready to go is \(ready.frame.height) points tall; at most \(tightTile)")
     }
+
+    // MARK: Headers on one line (0.67 — his notes on 0.63)
+
+    /// Where a tab's page begins for the eye: under the status bar on the iPhone; on
+    /// the Mac under the strip where the title bar was (its header sits IN that strip,
+    /// on the traffic lights' line, 0.67). 🪤 Not the screen's own frame alone: on the
+    /// iPhone its scroll view reaches up under the status bar (minY 0).
+    private func screenTop(_ app: XCUIApplication, _ name: String) -> CGFloat {
+        let screen = find(app, "screen-\(name)")?.frame.minY ?? 0
+        #if os(macOS)
+        // The traffic lights sit in the middle of the strip: its foot is as far under
+        // them as its top is above them.
+        let window = app.windows.firstMatch
+        guard let lights = windowButtons(app) else { return max(screen, window.frame.minY) }
+        return window.frame.minY + 2 * (lights.midY - window.frame.minY)
+        #else
+        let bar = XCUIApplication(bundleIdentifier: "com.apple.springboard").statusBars.firstMatch
+        return max(screen, bar.exists ? bar.frame.maxY : 0)
+        #endif
+    }
+
+    #if os(macOS)
+    /// The main window's three buttons — close, minimise, and the green one (full screen
+    /// on macOS 26; zoom before) — as one box; nil when the window shows none.
+    private func windowButtons(_ app: XCUIApplication) -> CGRect? {
+        let window = app.windows.firstMatch
+        let boxes = [XCUIIdentifierCloseWindow, XCUIIdentifierMinimizeWindow,
+                     XCUIIdentifierZoomWindow, XCUIIdentifierFullScreenWindow]
+            .map { window.buttons[$0] }.filter(\.exists).map(\.frame)
+        guard let first = boxes.first else { return nil }
+        return boxes.dropFirst().reduce(first) { $0.union($1) }
+    }
+
+    /// The Mac (0.67): a header's title sits on the traffic lights' line, in the strip
+    /// where the title bar was — and starts clear of the three buttons.
+    private func checkOnTheLightsLine(_ app: XCUIApplication, _ what: String, _ title: CGRect) {
+        guard let lights = windowButtons(app) else { return XCTFail("\(what): the window shows no buttons") }
+        let off = title.midY - lights.midY
+        XCTAssertLessThanOrEqual(abs(off), 2, "\(what): the title sits \(off) pt off the window buttons' line (\(title) vs \(lights))")
+        XCTAssertGreaterThanOrEqual(title.minX, lights.maxX + 6,
+            "\(what): the title starts at \(title.minX), on or too near the window buttons (they end at \(lights.maxX))")
+    }
+    #endif
+
+    /// A header's title: a heading's words, or (To do) the button that is its title.
+    private func headerTitle(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        let text = app.staticTexts[id]
+        return text.exists ? text : app.buttons[id]
+    }
+
+    /// His note on 0.63, "Overall, icons are not aligned" (the map pin and the search
+    /// stood higher than "Trips"): on every tab the title and the buttons at its right
+    /// share ONE centre line. On the iPhone none of them reaches up into the status bar;
+    /// on the Mac the line IS the traffic lights' line, in the strip where the title bar
+    /// was, and the title starts clear of the window buttons. Settings has no header
+    /// line: its first card starts under the status bar / under the strip.
+    func testEveryTabsHeaderIsOnOneCentreLine() {
+        // Every tab is measured even when one is off, so one red run names them all.
+        continueAfterFailure = true
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let tabs: [(name: String, title: String, icons: [String])] = [
+            ("home", "home-grab-heading", ["search-open", "grab-lists"]),
+            ("events", "events-heading", ["events-map", "search-open", "events-todos"]),
+            ("templates", "templates-heading", ["search-open", "templates-new"]),
+            ("care", "care-heading", ["search-open"]),
+            ("actions", "actions-tab-todo", ["search-open", "actions-tab-buy"]),
+        ]
+        for (name, title, icons) in tabs {
+            tab(app, name)
+            XCTAssertTrue(appears(app, "screen-\(name)", timeout: 5), "no screen-\(name)")
+            XCTAssertTrue(waitUntil { self.headerTitle(app, title).exists }, "\(name): no title \(title)")
+            XCTAssertTrue(app.buttons["search-open"].exists, "\(name): no search")
+            shot(app, "header-\(name)")
+            let t = headerTitle(app, title).frame
+            #if os(macOS)
+            checkOnTheLightsLine(app, name, t)
+            let top = app.windows.firstMatch.frame.minY      // nothing above the window itself
+            #else
+            let top = screenTop(app, name)
+            #endif
+            XCTAssertGreaterThanOrEqual(t.minY, top - 2, "\(name): the title reaches above the screen's top (\(t.minY) < \(top))")
+            for id in icons {
+                let icon = app.buttons[id]
+                guard icon.exists else { continue }          // the to-do chip comes only with to-dos
+                let off = icon.frame.midY - t.midY
+                XCTAssertLessThanOrEqual(abs(off), 1.5,
+                    "\(name): \(id) sits \(off) pt off the title's centre line (\(icon.frame) vs \(t))")
+                XCTAssertGreaterThanOrEqual(icon.frame.minY, top - 2,
+                    "\(name): \(id) reaches above the screen's top (\(icon.frame.minY) < \(top))")
+            }
+        }
+        // Settings has no header line; its first card starts where the others' first line does.
+        tab(app, "settings")
+        let first = app.buttons["settings-lists"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "Settings has no Your choices")
+        shot(app, "header-settings")
+        XCTAssertGreaterThanOrEqual(first.frame.minY, screenTop(app, "settings") - 2, "Your choices reaches up into the status bar / the window buttons' strip")
+    }
+
+    #if os(macOS)
+    /// The Mac's main window has no title bar (0.67): it still moves when the empty part
+    /// of the strip where the title bar was is dragged — here halfway across Home's
+    /// strip, between Grab and go and the search — and goes back the same way.
+    func testTheWindowMovesByItsEmptyStrip() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertTrue(app.staticTexts["home-grab-heading"].waitForExistence(timeout: 5))
+        let window = app.windows.firstMatch
+        guard let lights = windowButtons(app) else { return XCTFail("the window shows no buttons") }
+        let before = window.frame
+        let strip = window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: lights.midY - before.minY))
+        strip.press(forDuration: 0.3, thenDragTo: strip.withOffset(CGVector(dx: -80, dy: 40)))
+        XCTAssertTrue(waitUntil { abs(window.frame.minX - before.minX) > 40 },
+                      "the window did not move when its strip was dragged: \(before) → \(window.frame)")
+        shot(app, "window-moved")
+        let moved = window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: lights.midY - before.minY))
+        moved.press(forDuration: 0.3, thenDragTo: moved.withOffset(CGVector(dx: 80, dy: -40)))
+    }
+    #endif
+
+    /// His note on 0.63, "The area above Grab and go is underused": Grab and go is
+    /// Home's first line, with its search and Grab Lists beside it, and the grab lists
+    /// start right under it — no empty band above the heading.
+    func testHomeLeadsWithGrabAndGoAtTheTop() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let heading = app.staticTexts["home-grab-heading"], first = app.buttons["grab-0"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "Home has no Grab and go")
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "Home has no grab list")
+        shot(app, "home-top")
+        #if os(macOS)
+        // The Mac (0.67): no title bar — Grab and go is ON the traffic lights' line, clear
+        // of the buttons, and the tiles start right under that strip. (0.66: the first tile
+        // 64 pt under the title bar's foot, ~96 under the window's top; now ~38.)
+        checkOnTheLightsLine(app, "Home", heading.frame)
+        let top = app.windows.firstMatch.frame.minY
+        let under = first.frame.minY - heading.frame.maxY
+        XCTAssertLessThan(under, 16, "the grab lists start \(under) pt under Grab and go")
+        let gap = first.frame.minY - top
+        XCTAssertLessThan(gap, 50, "the grab lists start \(gap) pt under the top of the window")
+        #else
+        let top = screenTop(app, "home")
+        let band = heading.frame.minY - top
+        XCTAssertGreaterThanOrEqual(band, -2, "Grab and go reaches above the top of Home (\(heading.frame.minY) < \(top))")
+        // On the iPhone the screen begins 8 pt under the status bar (its safe area),
+        // so the band is that plus the header's own top: 18 pt in 0.67, 39 in 0.66.
+        XCTAssertLessThan(band, 24, "an empty band of \(band) pt above Grab and go")
+        let under = first.frame.minY - heading.frame.maxY
+        XCTAssertLessThan(under, 14, "the grab lists start \(under) pt under Grab and go")
+        // 0.66: 73 pt; 0.67: 54.
+        let gap = first.frame.minY - top
+        XCTAssertLessThan(gap, 60, "the grab lists start \(gap) pt under the top of Home")
+        #endif
+    }
+
+    /// His note on 0.63, "The share button is not aligned with the icon": a template's
+    /// Share pill sits on the centre line of its icon and name, as Done does — and a
+    /// grab list's Share on the line of its Edit and Done. (The share mark inside the
+    /// pill is drawn on that line too; that is seen in the pictures.)
+    func testShareSitsOnItsHeadersCentreLine() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        let cover = app.buttons["template-cover"], share = app.buttons["template-share"]
+        let done = app.buttons["template-detail-done"]
+        XCTAssertTrue(cover.waitForExistence(timeout: 5), "the template has no icon")
+        XCTAssertTrue(share.exists && done.exists, "no Share or Done on the template")
+        for (id, e) in [("template-share", share), ("template-detail-done", done)] {
+            let off = e.frame.midY - cover.frame.midY
+            XCTAssertLessThanOrEqual(abs(off), 1.5, "\(id) sits \(off) pt off the icon's centre line (\(e.frame) vs \(cover.frame))")
+        }
+        shot(app, "share-template-header")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        tab(app, "home")
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        let gShare = app.buttons["grab-share"], gDone = app.buttons["grab-done"], gEdit = app.buttons["grab-edit"]
+        XCTAssertTrue(gShare.waitForExistence(timeout: 5) && gDone.exists && gEdit.exists, "no Share, Edit or Done on the grab list")
+        for (id, e) in [("grab-share", gShare), ("grab-edit", gEdit)] {
+            let off = e.frame.midY - gDone.frame.midY
+            XCTAssertLessThanOrEqual(abs(off), 1.5, "\(id) sits \(off) pt off Done's centre line (\(e.frame) vs \(gDone.frame))")
+        }
+        shot(app, "share-grab-header")
+    }
 }

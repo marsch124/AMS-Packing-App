@@ -176,7 +176,9 @@ struct WorldMapDoor: View {
         Button { open = true } label: {
             SVGPath.path("M12 21s-6.5-6.2-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.8-6.5 11-6.5 11zM12 7.7a2.3 2.3 0 1 0 0 4.6a2.3 2.3 0 1 0 0-4.6")
                 .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round, lineJoin: .round))
-                .frame(width: 26, height: 26)
+                // On its 24-pt grid, like the search beside it: framed at 26 it sat 1 pt
+                // up and to the left of the button's middle.
+                .frame(width: 24, height: 24)
                 .foregroundStyle(AppSection.events.color)
                 .frame(width: Metrics.tap, height: Metrics.tap).contentShape(Rectangle())
         }

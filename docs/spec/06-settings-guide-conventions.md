@@ -44,7 +44,7 @@ points apart** (0.67; 10 until then, 14 before 0.62) — padded 16 left/right an
 
 | # | Element | Shown when | Id |
 |---|---|---|---|
-| 1 | *Your choices* door (§2), a card of one row | always; 12 pt extra space above it (14 until 0.67) | `settings-lists` |
+| 1 | *Your choices* door (§2), a card of one row | always; `Metrics.screenTop` (4 pt) above it — where every tab's first line starts (0.67; 14 before); on the Mac under the empty title bar strip | `settings-lists` |
 | 2 | *Remind me to pack* card (§3) | always | `settings-reminders-card` |
 | 3 | *iCloud sync* card (§4) | always | `sync-card` |
 | 4 | ONE card of four door rows (0.67; four cards 10 apart until then): *What's new*, *How it works*, *Your first real trip* (§5) and *Open a shared link* (§11), a `CardHairline` between them | always | `settings-whatsnew`, `settings-howitworks`, `settings-firsttrip`, `settings-openshared` |
@@ -1087,6 +1087,7 @@ dynamic `NSColor` on the Mac — `bestMatch(from: [.darkAqua, .aqua])` — and a
 | `ink` | `#16232a` | `#e7edee` | text |
 | `muted` | `#5f7078` | `#94a6ac` | secondary text, chevrons, ✕ marks |
 | `line` | `#e2e8ea` | `#26343a` | hairlines and card borders (1 pt) |
+| `faint` | `#a9b5ba` | `#5a6a71` | a mark to be found, not read: a thing's grip ≡ while arranging (0.67) |
 
 **The six sections** (`enum AppSection: String, CaseIterable` — `home, events, templates, care, actions, settings`;
 the same six, order and colours as the web app's tab bar; ONE sRGB hex each, the same in light and dark — mid-tones
@@ -1161,6 +1162,14 @@ Marks are `.accessibilityHidden(true)` where words already say it (Pen, Share, C
 
 **`SectionMark(section, size = 24, weight = 1.9)`** scales the mark by size/24 and strokes it with
 `weight × size/24`. Used in the tab bar, the How-it-works topics, the loop picture and placeholders.
+
+**`GridShape(d:)`** (SVGPath.swift, 0.67) — a 24-grid drawing as a Shape that scales to whatever square it is
+framed in (factor min(width, height)/24) and is centred in it; the stroke width is not scaled. 🪤 A bare
+`SVGPath.path` is drawn at its own coordinates: framed smaller than 24 it hangs off to the bottom right, framed
+bigger it sits up and left. 0.63's Share mark, framed at 18 in a sheet's Share pill, hung 3 pt low with its box
+through the pill's edge (his note "The share buttons is not aligned with the icon"); the grip ≡ (framed 20) sat
+2 pt off; the map pin (26) 1 pt. `ShareMark`, `PenMark` and `GripMark` draw through `GridShape` now; a mark still
+drawn with a bare `SVGPath.path` must be framed at exactly 24 × 24.
 
 **Data emoji.** Emoji that are DATA (a phase's or template's emoji imported from the web app) are not drawn, with one
 exception: a template's `Cover` shows `list.emoji` as text when the template has no icon (his covers "are his data").
@@ -1248,7 +1257,7 @@ failures are listed in one message). `testHomeBuildsATrip` (Create trip enabled,
 `testABagIsRenamedAndDeletedFromItsPage`. **Colour cannot be tested**: "A colour cannot be read by a test; being
 pressable and answering can."
 
-## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
+## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `ScreenHeader.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 
 **Origin.** His word, 5 Oct 2026: "make things smaller so that the app is efficient, fluid, and Apple-standard",
 and "make the buttons even slimmer, smaller when possible"; "less space between blocks on the forms and slimmer
@@ -1301,6 +1310,8 @@ semibold (the `size` parameter of `SmallDeleteButton` is gone).
 | `chip` | 28 | 22 | pills (36) |
 | `header` | 30 | 24 | Done, Cancel, Share … at the top of a page (`HeaderButtonStyle`, 36) |
 | `contextName` | 72 | 64 | a WIDTH, not a height: the workout's name before its own Context pills (`WorkoutContexts`, 0.67 — new) |
+| `screenTop` | 4 | — | from the top of a tab (under the iPhone's status bar) to its first line (0.67; 14 on most tabs, 12 on To do before). On the Mac the first line sits in the title bar strip instead (below) |
+| `windowButtons` | — | 80 | the Mac: where a tab's title may start, from the window's LEFT EDGE — after the three window buttons, whose green one ends at 68 on macOS 26 (measured on his 0.63 picture; its accessibility frame ends at 70; the system's own title started at 84) |
 
 Buttons have 12 pt side padding (14–16 before); the field button (Add, New, Make) a corner radius of 8. One exception
 keeps its size on both: `Metrics.fingertip` = 44, the touch area of the table's column arrows and Hide (his ask, 4 Oct
@@ -1321,6 +1332,70 @@ space between the lines … Change this dramatically, not only a bit."
 stays in the middle, then scaled — framed smaller, a 24-grid drawing hangs off-centre. `TickCircle(on:, tint:, ring:)`
 (TripScreen.swift) is the one round tick of every such line: a 1.6-pt ring in the tint (or `ring`, the hairline colour
 for a line set aside or skipped), filled with a white tick (stroke a tenth of its width) when on.
+
+**The tab header** — **`ScreenHeader(title:, tint:, id:, font = Title 2 bold, line:, lineId:, trailing:)`**
+(ScreenHeader.swift, 0.67): the first line of Home, Trips, Templates and Care. `Metrics.screenTop` above it; one row,
+at least `Metrics.tap` tall, `HStack(alignment: .center, spacing: 8)`: the title (one line, scales to 80 %, id `id`), a
+spacer (≥ 8), then the tab's buttons (`trailing`) — all on ONE centre line. Under the row, when given, the `line`
+(Subheadline, muted, id `lineId`). Used as: Home — "Grab and go", Title 3 bold, ink, with the magnifier and Grab
+Lists; Trips — "Trips", green, map pin, magnifier, the to-do chip, line = the trips summary; Templates — "Your
+templates", violet, magnifier, + New, line = the templates summary; Care — "Care", orange, magnifier, line = the kit
+line. To do's first line (To do · To buy · magnifier) is its own `HStack` (centred, `Metrics.screenTop` above);
+Settings has no header line. History: his note on 0.63 (6 Oct 2026), "Overall, icons are not aligned", with a
+picture of Trips — every tab built this row itself, aligned on the title's first text baseline with 14 pt above it,
+so a 36-pt icon button stood up from the baseline about 10 pt higher than the title, and left an empty band at the
+top of every tab ("The area above Grab and go is underused"). UI `testEveryTabsHeaderIsOnOneCentreLine` checks on
+Home, Trips, Templates, Care and To do that every button of the line sits within 1.5 pt of the title's centre line
+and nothing reaches above the top of the screen (the iPhone's status bar, the Mac's title bar; 2 pt allowed), and
+that Settings' first card (`settings-lists`) does not either; it keeps a picture of each tab ("header-<tab>"). The
+top of the screen is the screen's own frame, but at least the foot of the iPhone's status bar (the scroll view
+reaches up under it) — on the Mac, should the screen reach under the title bar, the bar's foot worked out from the
+traffic lights. On
+0.66 it was red on four tabs (the magnifier 10–11 pt off everywhere, Home's Grab Lists and Templates' + New 2.5 pt);
+planted again by aligning `ScreenHeader`'s row on `.firstTextBaseline`, the same four.
+
+**The Mac: the header in the title bar strip** (0.67; his boxes on the 0.63 picture covered the title bar too). The
+main window (`WindowGroup`) has **no title bar**: `.windowStyle(.hiddenTitleBar)`. The window "All your things" keeps
+its own. `RootView` measures the strip with a `GeometryReader` — its height is the window's top safe area (32 on
+macOS 26) — and how far a header must step in so its title starts just after the three window buttons:
+`lead = max(0, Metrics.windowButtons − (window width − column) / 2 − 16)`, where the column is `RootView.column` =
+720, centred, and 16 the page's side padding (44 in a 760-wide window). Both travel down in the environment as
+`TitleBarStrip(height:, lead:)` (ScreenHeader.swift).
+- `headerOnTheMac { header }` (View extension): on the Mac the page becomes `VStack(spacing: 0) { header (16 side
+  padding); page }` with the top safe area ignored, so the header is PINNED in the strip and the page scrolls under
+  it — nothing ever slides beneath the window buttons. On the iPhone it does nothing: there the page puts the header
+  in itself as its first line (`#if !os(macOS)`). Home, Trips, Templates and Care build their header once
+  (`grabHeader`, `header(…)`) and use it both ways. On the Mac 6 pt follow the header (below).
+- `headerLine()` (View extension, used by `ScreenHeader`'s row and To do's first line): on the Mac the line steps
+  in by `lead` and is at least the strip's height tall, so it is centred on the traffic lights' line; on the
+  iPhone it is `Metrics.tap` tall with `Metrics.screenTop` above. To do's whole screen ignores the top safe area on
+  the Mac, so its To do · To buy · search line sits in the strip, after the buttons. Settings, the first-run doors,
+  the placeholder and the library problem keep the safe area: they start under the strip.
+- Moving the window: the empty parts of the strip (all of it on a tab with no header) move the window when
+  dragged, as the title bar did — the Mac does that itself: nothing of the page claims those points.
+  `.windowBackgroundDragBehavior(.disabled)`: a drag on a page's empty space does not carry the window. UI
+  `testTheWindowMovesByItsEmptyStrip` (Mac only) drags Home's strip halfway across and sees the window move (and
+  drags it back). A `WindowDragGesture` layer behind the strip was tried first and taken out: on GitHub's Mac run
+  the window moved just the same without it — and still did with a tap or a drag gesture planted over the whole
+  header row: the Mac moves a window by its title bar region whatever lies there. Seen red with the window made
+  unmovable (`isMovable = false`): "the window did not move when its strip was dragged".
+- 🪤 **The page under a pinned header must not touch the strip.** `headerOnTheMac` puts 6 pt under the header
+  (To do's first line has the same), and the page's scroll views have no top edge effect on macOS 26
+  (`titleBarSafeScroll()`: `.scrollEdgeEffectHidden(true, for: .top)`). On GitHub's Mac run (6 Oct 2026) a
+  click on Grab Lists (Home) and on To buy (To do) — the two pages whose header is ONE line, so their scroll view
+  began exactly at the strip's foot — never arrived, while the search and + New on Templates and the map on Trips
+  (a summary line under the title) worked. Both changes went in together and all clicks arrived after; which of
+  the two did it was not separated.
+- Sheets are unchanged: they come down over the page as before.
+- Tests (Mac branch of `testEveryTabsHeaderIsOnOneCentreLine` and `testHomeLeadsWithGrabAndGoAtTheTop`): each
+  tab's title within 2 pt of the window buttons' line (`XCUIIdentifierCloseWindow`, `…MinimizeWindow`,
+  `…ZoomWindow`, `…FullScreenWindow` — the green one is "full screen" on macOS 26 — as one box) and starting at
+  least 6 pt after them (seen red on GitHub's Mac with the step-in planted at 0: "home: the title starts at 168.0,
+  on or too near the window buttons", and the same on Trips, Templates, Care and To do); nothing above the window's
+  top; Settings' first
+  card under the strip (its foot worked out from the buttons, which sit in its middle); Home's first tile less than
+  16 pt under Grab and go and less than 50 pt under the window's top. Mac pictures came from the probe workflow
+  (`mac-probe.yml`, on a probe branch only).
 
 **Headings.**
 - **`HeadingBand(title:, tint = Care orange, id:)`** — a block's heading: Headline in the tint, full width, wraps,

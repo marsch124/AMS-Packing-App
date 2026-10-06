@@ -59,34 +59,37 @@ struct TemplatesScreen: View {
         return parts.joined(separator: " · ")
     }
 
+    /// "Your templates", with the search and + New beside it — on ONE centre line
+    /// (ScreenHeader; his note on 0.63, "Overall, icons are not aligned"): the tab's first
+    /// line on the iPhone, pinned in the window's title bar strip on the Mac.
+    private func header(_ flat: [PackList]) -> some View {
+        ScreenHeader(title: "Your templates", tint: AppSection.templates.color, id: "templates-heading",
+                     line: TemplatesScreen.summary(flat, model.library), lineId: "templates-summary") {
+            SearchButton { opened = .search }
+            Button { opened = .new } label: {
+                Text("+ New")
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                    .background(Capsule().fill(AppSection.templates.color))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("templates-new")
+        }
+        .padding(.bottom, 4)
+    }
+
     var body: some View {
         let areas = TemplatesScreen.activityAreas(model.library.shownTemplates())
         let flat = areas.flatMap(\.lists)
         let use = model.library.templateUse(today: Today.local)
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Your templates").font(.system(.title2, weight: .bold))
-                            .foregroundStyle(AppSection.templates.color)
-                            .accessibilityIdentifier("templates-heading")
-                        Text(TemplatesScreen.summary(flat, model.library))
-                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                            .accessibilityIdentifier("templates-summary")
-                    }
-                    Spacer(minLength: 8)
-                    SearchButton { opened = .search }
-                    Button { opened = .new } label: {
-                        Text("+ New")
-                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
-                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                            .background(Capsule().fill(AppSection.templates.color))
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("templates-new")
-                }
-                .padding(.top, 14).padding(.bottom, 4)
+                // On the Mac the header is pinned in the window's title bar strip
+                // instead (`headerOnTheMac`, below).
+                #if !os(macOS)
+                header(flat)
+                #endif
                 // What his trip reviews say a list carries for nothing (roadmap stop E).
                 RefineDoor().environmentObject(model)
                     .padding(.bottom, 4)
@@ -112,6 +115,7 @@ struct TemplatesScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+        .headerOnTheMac { header(flat) }
         .sheet(item: $opened, onDismiss: {
             // Straight into a template just made: a list he cannot see the inside of
             // is not made yet. Opened once New has gone, never on top of it.
@@ -742,8 +746,8 @@ struct TemplateDetail: View {
                         .accessibilityIdentifier("arrange-heading-\(k)")
                         .accessibilityHint("Rename or remove this heading")
                         Spacer(minLength: 8)
-                        GripMark(id: "arrange-heading-\(k)-grip", label: "Move the heading \(section.name)")
-                            .foregroundStyle(tint)
+                        GripMark(id: "arrange-heading-\(k)-grip", label: "Move the heading \(section.name)",
+                                 heading: true, tint: tint)
                     }
                     .padding(.top, 10)
                 }
@@ -761,7 +765,6 @@ struct TemplateDetail: View {
                         .accessibilityIdentifier("arrange-item-\(n)")
                     Spacer(minLength: 8)
                     GripMark(id: "arrange-item-\(n)-grip", label: "Move \(item.name)")
-                        .foregroundStyle(Theme.muted)
                 }
                 .frame(minHeight: Metrics.row)
                 .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
@@ -1171,14 +1174,25 @@ extension Color {
 /// The grip, ≡, drawn by hand in the app's style (three strokes, round ends, a
 /// 24-point box): hold it and drag — a heading with its things, or one thing (his
 /// layout "C", 5 Oct 2026). Named for the tests; read as "Move …".
+///
+/// The two kinds look clearly different (his note on 0.63, 6 Oct 2026: "Too little
+/// difference between the lilac grab handle and the black grab handle"): a HEADING's
+/// grip — it carries the heading and all its things — is bolder, in the template's
+/// colour, on a soft capsule of that colour; a THING's grip is thinner, a light grey
+/// (`Theme.faint`), on nothing. Until 0.67 both were bare, the thing's in `muted`.
 struct GripMark: View {
     let id: String
     let label: String
+    var heading = false
+    var tint: Color = AppSection.templates.color
 
     var body: some View {
-        SVGPath.path("M5 8h14M5 12h14M5 16h14")
-            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-            .frame(width: 20, height: 20)
+        GridShape(d: "M5 8h14M5 12h14M5 16h14")
+            .stroke(heading ? tint : Theme.faint,
+                    style: StrokeStyle(lineWidth: heading ? 2.2 : 1.6, lineCap: .round))
+            .frame(width: 24, height: 24)
+            .frame(width: 34, height: Metrics.chip)
+            .background(Capsule().fill(heading ? tint.opacity(0.16) : Color.clear))
             .frame(width: 36, height: Metrics.compact)
             .contentShape(Rectangle())
             .accessibilityElement()

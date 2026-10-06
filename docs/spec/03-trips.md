@@ -662,14 +662,22 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
 
 ### What is on screen (a lazy vertical stack, horizontal padding 16)
 
-1. Header line: **"Trips"** (28 heavy green, id `events-heading`) and under it the summary (15 medium
-   muted, id `events-summary`): "Nothing planned" with no trips; else "N trip(s)" + " · N being
-   packed" (state packing) + " · N ready to go" (state packed). On the right: the map pin
-   (`WorldMapDoor`, id `events-map`; its sheet *Where you have been* closes with **Done**, `map-done` — Escape
-   too since 0.62), the magnifier (`search-open`), and — only when there are open
-   to-dos — a red capsule "N" (16 heavy) + "to do" (14 bold), white, id `events-todos`, label
-   "N to do, open the To do tab"; it switches to the To do tab. Count = open actions of kind "todo"
-   (`openToDoCount`, shopping lines not counted).
+1. Header line — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), 4 pt bottom
+   padding; on the Mac pinned in the window's title bar strip, after the window buttons (the page scrolls under it): **"Trips"** (Title 2 bold, green, id `events-heading`) and, on the SAME centre line at the
+   right, 8 pt apart: the map pin (`WorldMapDoor`, id `events-map`: the drawn pin at 24 × 24 — 26 until
+   0.67, which on its 24-pt grid sat 1 pt up and left — green, in a `Metrics.tap` square; its sheet *Where
+   you have been* closes with **Done**, `map-done` — Escape too since 0.62), the magnifier (`search-open`),
+   and — only when there are open to-dos — a red capsule "N" (Callout semibold, monospaced) + "to do"
+   (Footnote semibold), white, `Metrics.chip` tall (34 until 0.67), id `events-todos`, label "N to do,
+   open the To do tab"; it switches to the To do tab. Count = open actions of kind "todo"
+   (`openToDoCount`, shopping lines not counted). Under that line the summary (Subheadline, muted, id
+   `events-summary`): "Nothing planned" with no trips; else "N trip(s)" + " · N being packed" (state
+   packing) + " · N ready to go" (state packed).
+
+   0.67 (his note on 0.63, "Overall, icons are not aligned", a picture of this header): the line was
+   aligned on the title's first text baseline with 14 pt above it, so the 36-pt pin and magnifier stood up
+   from the baseline, 10 pt higher than "Trips". `testEveryTabsHeaderIsOnOneCentreLine` checks the pin, the
+   magnifier and (when there) the chip within 1.5 pt of the title's centre line.
 2. No trips: "No trips yet. Build one on the Home tab." (17 medium muted, id `events-none`), and none
    of the piles below.
 3. Three **piles**, in order Now, Coming up, Done (`events-pile-now`, `events-pile-comingUp`,

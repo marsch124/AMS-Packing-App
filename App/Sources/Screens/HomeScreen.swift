@@ -51,39 +51,39 @@ struct HomeScreen: View {
                 // Home's two parts lead with real headings (field test, 3 Oct 2026: "the
                 // headings … dominant"); they were small and grey, smaller than the
                 // headings inside Create new trip.
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Grab and go").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
-                        .accessibilityIdentifier("home-grab-heading")
-                    Spacer()
-                    SearchButton { searching = true }
-                    // This door opens the grab lists — not the templates (whose screen
-                    // is "Your templates"). His note on the Mac: "Your Grab Lists".
-                    Button("Grab Lists") { showingGrabLists = true }
+                //
+                // Grab and go is Home's FIRST line, its search and Grab Lists beside it on
+                // one centre line, and the grab lists right under it (his note on 0.63,
+                // 6 Oct 2026: "The area above Grab and go is underused" — the row was
+                // lined up on the heading's baseline, so the search button stood up above
+                // it and left an empty band at the top).
+                VStack(alignment: .leading, spacing: 6) {
+                    // On the Mac the header is pinned in the window's title bar strip
+                    // instead (`headerOnTheMac`, below).
+                    #if !os(macOS)
+                    grabHeader
+                    #endif
+                    // Home holds eight (4 × 2) — HIS, in his order; a free place takes only a
+                    // list new since he last arranged Home (GrabCollection.swift).
+                    let onHome = model.library.homeGrabLists()
+                    GrabButtons(lists: onHome) { grab = $0 }
+                    if onHome.isEmpty {
+                        // Every list taken off Home: the heading is not left over nothing —
+                        // it says where they are, and the line itself leads there (5 Oct 2026).
+                        Button { showingGrabLists = true } label: {
+                            Text("No grab lists on Home. They wait in Grab Lists \u{2014} tap here to put one back.")
+                                .font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.home.color)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(14)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.home.color.opacity(0.5), lineWidth: 1.5))
+                                .contentShape(Rectangle())
+                        }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
-                        .accessibilityIdentifier("grab-lists")
-                }
-                .padding(.top, 14)
-                // Home holds eight (4 × 2) — HIS, in his order; a free place takes only a
-                // list new since he last arranged Home (GrabCollection.swift).
-                let onHome = model.library.homeGrabLists()
-                GrabButtons(lists: onHome) { grab = $0 }
-                if onHome.isEmpty {
-                    // Every list taken off Home: the heading is not left over nothing —
-                    // it says where they are, and the line itself leads there (5 Oct 2026).
-                    Button { showingGrabLists = true } label: {
-                        Text("No grab lists on Home. They wait in Grab Lists \u{2014} tap here to put one back.")
-                            .font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.home.color)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(14)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.home.color.opacity(0.5), lineWidth: 1.5))
-                            .contentShape(Rectangle())
+                        .accessibilityIdentifier("home-grab-none")
                     }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("home-grab-none")
                 }
 
                 // The trip he leaves on next, counted down (his idea 6) — under the grab
@@ -189,6 +189,7 @@ struct HomeScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
+        .headerOnTheMac { grabHeader }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id })) { o in
             TripScreen(tripId: o.id).environmentObject(model)
@@ -219,6 +220,24 @@ struct HomeScreen: View {
     }
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
+
+    /// Grab and go, with the search and Grab Lists beside it: Home's first line on the
+    /// iPhone, pinned in the window's title bar strip on the Mac.
+    private var grabHeader: some View {
+        ScreenHeader(title: "Grab and go", tint: Theme.ink, id: "home-grab-heading",
+                     font: .system(.title3, weight: .bold)) {
+            SearchButton { searching = true }
+            // This door opens the grab lists — not the templates (whose screen
+            // is "Your templates"). His note on the Mac: "Your Grab Lists".
+            Button { showingGrabLists = true } label: {
+                Text("Grab Lists")
+                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
+                    .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("grab-lists")
+        }
+    }
 
     /// Something asked from outside — a Shortcut, the Action button, a tapped packing
     /// reminder — while one of Home's own windows is up (Grab Lists, Search, a trip,

@@ -84,19 +84,25 @@ magnifier.
 - When the library failed to load: the error text in red (`library-problem`) instead.
 
 ### What is on screen (top to bottom), inside a `KeyboardAwayScroll` (a ScrollView that dismisses the keyboard on drag) with a `LazyVStack(spacing: 8)`, side padding 16, bottom 24
-1. **Header row** (top padding 14, bottom 4):
-   - "Your templates" — 28 heavy, violet (`AppSection.templates.color`), id `templates-heading`.
-   - Under it the **summary** — 15 medium, `Theme.muted`, id `templates-summary`:
+1. **Header** — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), bottom padding 4 — on the
+   Mac pinned in the window's title bar strip, after the window buttons, the page scrolling under it. Its
+   first line holds the title and, on the SAME centre line at the right, 8 pt apart, the magnifier and + New;
+   until 0.67 the row was aligned on the title's baseline with 14 pt above it, and the magnifier stood 10 pt
+   higher than the title (his note on 0.63, "Overall, icons are not aligned"):
+   - "Your templates" — Title 2 bold, violet (`AppSection.templates.color`), one line (scales to 80 %), id
+     `templates-heading`.
+   - Under that line the **summary** — Subheadline, `Theme.muted`, id `templates-summary`:
      `"<T> template(s) · <N> thing(s)"` plus `" · <K> trip(s) packed from them"` only when K > 0. Singular when the
      number is 1. `Library.templateSummary(shown)`: T = the templates shown on this screen (bag list and "loose"
      lists excluded); N = the things ON them, each once however many templates it sits on (bags, the loose bin's
      things and things on no template are not counted); K = the trips packed from them — a trip that names one of
      them as an activity or has a line from one of them. "The words should match the numbers" (the spec pass,
      5 Oct 2026; until then N was every thing he owns and K every trip). Separator " · " (U+00B7).
-   - The magnifier `SearchButton` (24 pt drawn magnifier in a 40×36 hit area, muted, id `search-open`,
-     label "Search everything") → opens `SearchScreen` as a sheet.
-   - "+ New" — 15 heavy white on a violet capsule, min height 36, horizontal padding 14, id `templates-new` →
-     opens `NewList` (§5) as a sheet.
+   - The magnifier `SearchButton` (24 pt drawn magnifier in a (`Metrics.tap` + 4) × `Metrics.tap` hit area —
+     40 × 36 iPhone, 30 × 26 Mac — muted, id `search-open`, label "Search everything") → opens `SearchScreen`
+     as a sheet.
+   - "+ New" — Subheadline semibold white on a violet capsule, `Metrics.chip` tall, horizontal padding 12, id
+     `templates-new` → opens `NewList` (§5) as a sheet.
 2. **Refine door** (`RefineDoor`, id `refine-open`, bottom padding 4): violet card "Refine your templates" with a
    count of waiting suggestions; owns its own sheet (`RefineScreen`). Documented in the Refine spec.
 3. For each **activity area** (see Behaviour) in order:
@@ -152,7 +158,8 @@ sheet here can be swiped down, except a template's page while arranging (`intera
   `templates-area-GA` reads "GA · GOAL ACTIVITY"; summary contains "templates"; a card opens `template-detail`,
   Done closes it); `testAnEmptyDeviceShowsTheTwoDoors`; `testHeMakesAListOfHisOwn` (heading reads "Your templates");
   `testRefineOffersWhatTheReviewsFoundAndKeepAndDropSettleIt` and `testTheLoopShowsWhereATripStands` (use
-  `refine-open` here).
+  `refine-open` here); `testEveryTabsHeaderIsOnOneCentreLine` (0.67: `search-open` and `templates-new` within
+  1.5 pt of the centre line of `templates-heading`; on 0.66 the magnifier was 10.2 pt and + New 2.5 pt off).
 - Model: `ListsTests.testOrderActivities*` (4 tests); `CreateTripTests.testTheChoicesAreHisGroupsInHisOrder`;
   `TemplateFacesTests.testTheTemplatesLineCountsWhatItSays` (the bag list and the loose bin are not shown; things
   on them counted once; a trip packed from none of them not counted).
@@ -416,9 +423,13 @@ pick "C" of three pictured layouts, 5 Oct 2026).
 - **"Rename"** — only while the typed name differs from the stored one after `jsTrim`: 15 bold violet plain text
   button, id `template-rename`. Always in colour.
 - Spacer.
-- **Share** — `ShareDoor(id: "template-share")`: outlined violet capsule with the drawn share mark (18) and
-  "Share"; label "Share". Opens the share sheet with title `Share “<name>”` and
-  `link = library.shareLink(templateId:)` (§19).
+- **Share** — `ShareDoor(id: "template-share")`: outlined violet capsule (`HeaderButtonStyle`, centred on the
+  icon's line like Done) with the drawn share mark and "Share", 6 pt apart; label "Share". The mark is
+  `ShareMark` framed 22 × 22 and drawn through `GridShape`, so it is centred on the word's line (0.67: measured
+  in the day picture, the mark's middle and the capitals' middle are 0.2 pt apart). Until 0.67 it was framed at
+  18 while drawn on its 24-pt grid: it hung 3 pt low and right, its box through the pill's lower edge — his
+  note on 0.63, "The share buttons is not aligned with the icon". Opens the share sheet with title
+  `Share “<name>”` and `link = library.shareLink(templateId:)` (§19).
 - **"Done"** — `HeaderButtonStyle` filled violet (white 17 bold on a capsule, min height 36; 16 until 0.62).
 - Under the row, `needsLine` id `template-rename-needs` (15 bold red), cleared as soon as the typed name changes.
 
@@ -575,6 +586,9 @@ both.
   replaced by "Swim" → `template-rename` → `template-rename-needs`); `testATripReviewIsSavedAndTheMissedThingIsFiled`
   (a missed thing lands on the base template: `template-item-4`); `testOneSearchReachesEverything` (a Search
   result opens `template-detail`); `testATemplateAndAGrabListAreSharedAndOpenedAgain` (`template-share`);
+  `testShareSitsOnItsHeadersCentreLine` (0.67: on Hiking, `template-share` and `template-detail-done` sit within
+  1.5 pt of the centre line of `template-cover`; seen red with the header row planted as `.top`-aligned: "template-share
+  sits -5.0 pt off the icon's centre line"; the mark inside the pill is checked in the pictures);
   `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
   row); `testATemplateMovesToAnotherActivityArea` (Common base offers no `template-area`; Hiking's reads "GA",
   `template-area-OE` → "OE", and on the tab OE appears and GA goes); Arrange — §6a.
@@ -628,18 +642,26 @@ or a thing to its place"). Built for 0.63 with Apple's text styles and the slim 
   row height 1; id `arrange-list`), top to bottom (`Library.arrangeLines`, §13a):
   - each **heading** of the template in its order — even one with nothing under it, so a thing can be dragged into
     it: its name (Headline, violet; a button, id `arrange-heading-<k>` with k = the heading's position, label = the
-    name, hint "Rename or remove this heading"; height `Metrics.tap`; 10 above) and at the right the **grip** in
-    violet (`arrange-heading-<k>-grip`, label "Move the heading <name>");
+    name, hint "Rename or remove this heading"; height `Metrics.tap`; 10 above) and at the right the heading's
+    **grip** — violet, bold, on a soft violet capsule (`arrange-heading-<k>-grip`, label "Move the heading <name>");
   - under it its **things**, in the template's order: the name (Body, ink, one line; a text, id `arrange-item-<n>`
-    with n = position as read across the whole list, 0 first) and the grip in muted (`arrange-item-<n>-grip`, label
-    "Move <name>"); height `Metrics.row`, a hairline under each. The bag, the "×qty · note" line, "Only on:" and
+    with n = position as read across the whole list, 0 first) and the thing's grip — thin, light grey
+    `Theme.faint`, on nothing (`arrange-item-<n>-grip`, label "Move <name>"); height `Metrics.row`, a hairline under each. The bag, the "×qty · note" line, "Only on:" and
     the ✕ are not shown while arranging (his picture: name and grip only);
   - when the template has headings: **"Everything else"** (Headline, muted — not his heading, so not violet; id
     `arrange-heading-rest`; no grip, cannot be moved or renamed), then the things under no heading (a section id
     the template does not have counts as none, as on the page). A template with no headings shows only its things.
-- **The grip** (`GripMark`): three strokes `M5 8h14M5 12h14M5 16h14`, stroke 1.8, round caps, drawn 20 × 20 in a
-  36 × `Metrics.compact` area; an accessibility element with trait image. Drawn by hand with `SVGPath` — no SF
-  Symbol, no emoji, and not the system's edit-mode grip.
+- **The grip** (`GripMark`): three strokes `M5 8h14M5 12h14M5 16h14`, round caps, drawn 24 × 24 through
+  `GridShape` (centred), in a 36 × `Metrics.compact` area; an accessibility element with trait image. Drawn by
+  hand — no SF Symbol, no emoji, and not the system's edit-mode grip. The two kinds look clearly different (0.67,
+  his note on 0.63: "Too little difference between the lilac grab handle and the black grab handle. The colors
+  are too similar"):
+  - a **heading's** grip (`heading: true`) — it carries the heading and all its things: stroke 2.2 in the
+    template violet, on a capsule of 16 % violet, 34 × `Metrics.chip`;
+  - a **thing's** grip — stroke 1.6 in `Theme.faint` (light `#a9b5ba`, dark `#5a6a71`), no capsule.
+  Until 0.67 both were bare strokes of 1.8 — violet and `muted` (`#5f7078`, which read as black) — framed at 20
+  while drawn on the 24-pt grid, so they sat 2 pt low and right. Colour cannot be read by a UI test: the
+  difference is checked in the day and night pictures of `testArrangeTurnsOnAndOff` ("arrange-on").
 - **Renaming a heading** — a tap on its name puts, in place of that heading line, a card (padding 10, `Theme.card`,
   radius 12, 1-pt violet stroke, 6 above and below):
   - a field holding the name (Body, ink; `Theme.bg` fill, radius 10, hairline — red while a problem is said; height

@@ -184,7 +184,7 @@ struct HowItWorksScreen: View {
             "On a row, Bag, When and Section are drop-downs: tap one, tap your choice. A new section is made at the foot of Section.",
             "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",
             "Delete template asks first. Your things stay. Beside it, Activity area moves the template to GA, WET, OE or none.",
-            "Arrange, under Group (while it groups by Section): hold \u{2261} and drag a heading \u{2014} its things come along \u{2014} or a thing to its place, under any heading. Tap a heading's name to rename it, or Remove heading (its things stay). Tap Arrange again, or press Escape, when done. New trips pack in the new order.",
+            "Arrange, under Group (while it groups by Section): hold \u{2261} and drag a heading \u{2014} its things come along \u{2014} or a thing to its place, under any heading. A heading's \u{2261} sits on a lilac patch; a thing's is light grey. Tap a heading's name to rename it, or Remove heading (its things stay). Tap Arrange again, or press Escape, when done. New trips pack in the new order.",
             "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
             "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
         Topic(section: .care, title: "Care", lines: [
