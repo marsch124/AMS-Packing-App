@@ -5302,6 +5302,58 @@ final class AMSPackingUITests: XCTestCase {
         picture.name = "table-slim"; picture.lifetime = .keepAlways; add(picture)
     }
 
+    /// His ask (6 Oct 2026): "Please make it possible to adjust the column width". The line
+    /// at a heading's right edge drags its column wider — the rows follow — and the Thing
+    /// column too; the widths are kept when the table opens again; a double tap on the
+    /// line puts back the column's own width.
+    func testATableColumnIsDraggedWiderAndKeepsItsWidth() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        let head = app.buttons["table-head-weight"]
+        XCTAssertTrue(head.waitForExistence(timeout: 5), "no Weight heading")
+        let own = head.frame.width
+        let line = app.buttons["table-resize-weight"]
+        XCTAssertTrue(line.exists, "no line to drag at Weight's right edge")
+        let from = line.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        from.press(forDuration: 0.3, thenDragTo: from.withOffset(CGVector(dx: 80, dy: 0)))
+        XCTAssertTrue(waitUntil { head.frame.width > own + 50 }, "Weight did not grow: \(own) → \(head.frame.width)")
+        let wide = head.frame.width
+        let cell = app.textFields["table-0-weight"]
+        XCTAssertTrue(cell.exists, "no weight in the first row")
+        XCTAssertLessThan(abs(cell.frame.maxX - head.frame.maxX), 12, "the row did not follow its heading")
+
+        // The Thing column too.
+        let name = app.buttons["table-head-name"]
+        let nameOwn = name.frame.width
+        let nameLine = app.buttons["table-resize-name"]
+        XCTAssertTrue(nameLine.exists, "no line to drag at Thing's right edge")
+        let nameFrom = nameLine.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        nameFrom.press(forDuration: 0.3, thenDragTo: nameFrom.withOffset(CGVector(dx: 60, dy: 0)))
+        XCTAssertTrue(waitUntil { name.frame.width > nameOwn + 30 }, "Thing did not grow: \(nameOwn) → \(name.frame.width)")
+        let nameWide = name.frame.width
+        shot(app, "table-widths")
+
+        // Kept when the table opens again.
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "the table did not open again")
+        XCTAssertTrue(waitUntil { abs(app.buttons["table-head-weight"].frame.width - wide) < 2 },
+                      "Weight's width was not kept: \(app.buttons["table-head-weight"].frame.width), not \(wide)")
+        XCTAssertTrue(waitUntil { abs(app.buttons["table-head-name"].frame.width - nameWide) < 2 }, "Thing's width was not kept")
+
+        // A double tap on the line: its own width again.
+        #if os(macOS)
+        app.buttons["table-resize-weight"].doubleClick()
+        #else
+        app.buttons["table-resize-weight"].doubleTap()
+        #endif
+        XCTAssertTrue(waitUntil { abs(app.buttons["table-head-weight"].frame.width - own) < 2 },
+                      "a double tap did not put Weight back: \(app.buttons["table-head-weight"].frame.width), not \(own)")
+    }
+
     func testTheTableSortsAndSaves() {
         let app = launch()
         tab(app, "care")
