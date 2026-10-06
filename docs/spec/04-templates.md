@@ -592,7 +592,9 @@ or a thing to its place"). Built for 0.63 with Apple's text styles and the slim 
   when the template has at least one row or one heading.
 - Left: a second tap on Arrange; **Escape** (⌘. on an iPhone keyboard: the Arrange pill carries
   `.keyboardShortcut(.cancelAction)` while on, and Done gives it up meanwhile) — the page stays open, a second Escape
-  closes it as Done does; a tap on any Group pill; the pill ceasing to be offered (`onChange(of: canArrange)`);
+  closes it as Done does. On the Mac a text field and a list take Escape for themselves before any shortcut, so the
+  heading's name field and the arranging list (`arrange-list`) also end Arrange with `.onExitCommand` (0.63, found on
+  GitHub's Mac run: Escape typed in the name field left Arrange on); a tap on any Group pill; the pill ceasing to be offered (`onChange(of: canArrange)`);
   Done (Arrange is not remembered — the page always opens with it off). Leaving drops a heading's name typed and
   not saved: never saved, by Escape least of all (Escape everywhere: never a save).
 - While arranging the page cannot be swiped away on the iPhone (`interactiveDismissDisabled(arranging)`): a drag
