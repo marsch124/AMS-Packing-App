@@ -223,6 +223,8 @@ extension LibraryModel {
     ///                           and one with no date (Worth a look)
     ///  -uiTestingTwoLibraries → memory, every template of the sample twice (Worth a look)
     ///  -uiTestingSections     → memory, the sample with Hiking under two headings (Arrange)
+    ///  -uiTestingWorkouts     → memory, the sample + a Run workout and things for one
+    ///                           context only (Context per workout, 0.67)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -259,6 +261,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingSections") {
             return LibraryModel(store: MemoryStore(SampleLibrary.sectioned().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingWorkouts") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.workouts().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTesting") {
             return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false, sky: sky)

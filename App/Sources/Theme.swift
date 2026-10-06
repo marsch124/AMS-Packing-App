@@ -57,12 +57,14 @@ enum Metrics {
     static let compact: CGFloat = 24  // a smaller button
     static let chip: CGFloat = 22     // a pill
     static let header: CGFloat = 24   // Done, Cancel, Share … at the top of a page
+    static let contextName: CGFloat = 64   // a workout's name before its own Context pills
     #else
     static let row: CGFloat = 40
     static let tap: CGFloat = 36
     static let compact: CGFloat = 32
     static let chip: CGFloat = 28
     static let header: CGFloat = 30
+    static let contextName: CGFloat = 72
     #endif
     /// The touch area of the table's column arrows and Hide, on both: his ask (4 Oct
     /// 2026), "These arrows are rather difficult to hit. Could you please enlarge the

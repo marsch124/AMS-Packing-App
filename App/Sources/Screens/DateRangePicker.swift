@@ -6,19 +6,33 @@ import SwiftUI
 /// the nights between shaded. Two months side by side where there is room (the
 /// Mac), one on the iPhone. The grid then stays open on the range picked until OK
 /// keeps it or Cancel puts the dates back (their field test, Oct 2026).
+///
+/// Always on the form since 0.67 — his words: "I would like the date picker to be
+/// present all the time, and then take away the Dates checkbox." A trip may still
+/// have no dates: until a day is tapped the field says "Add dates", and **Clear
+/// dates** in the grid takes them away again (what switching Dates off used to do).
 struct DateRangePicker: View {
     @Binding var start: Date
     @Binding var end: Date
+    /// Whether the trip has dates at all. False: the field offers "Add dates", the
+    /// grid marks no days, and the first tap picks the first day.
+    @Binding var dated: Bool
     var tint: Color = AppSection.home.color
-    /// Open the grid straight away (when Dates has just been switched on).
-    @State var open = true
+    /// The field's ids: `<id>-field`, `<id>-label`, `<id>-nights`. Create new trip keeps
+    /// "trip-dates"; Trip settings says "tripset-dates" (0.67) — Home's field is now always
+    /// there, and on the Mac its window stays in the tree behind the Trip settings sheet,
+    /// so one id in both would name two fields.
+    var id: String = "trip-dates"
+    /// Open the grid straight away. Both forms start with it closed (0.67).
+    @State var open = false
     /// The first month showing, "2026-09".
     @State private var month = ""
     /// Between the two taps: the first day is set, the last is not yet.
     @State private var waitingForEnd = false
     @State private var width: CGFloat = 0
-    /// The dates as they were when the grid opened — Cancel puts them back.
-    @State private var before: (Date, Date)?
+    /// The dates as they were when the grid opened — Cancel puts them back (and an
+    /// undated trip stays undated).
+    @State private var before: (Date, Date, Bool)?
     /// OK was pressed with only the first day picked: say what is missing.
     @State private var okTooSoon = false
 
@@ -35,7 +49,7 @@ struct DateRangePicker: View {
             field
             if open { grid }
         }
-        .onAppear { if open && before == nil { before = (start, end) } }
+        .onAppear { if open && before == nil { before = (start, end, dated) } }
     }
 
     // MARK: The field
@@ -46,7 +60,11 @@ struct DateRangePicker: View {
             // with only the first day picked it stays open and says what is missing (the
             // spec pass, 5 Oct 2026: it closed, keeping a one-day trip and "Now tap the
             // last day" on the field, and Create or Save stored the day trip).
-            if open { ok() } else { open = true; month = ""; before = (start, end); okTooSoon = false }
+            // With no dates yet it opens on this month, not on whatever day the form
+            // last held.
+            if open { ok() } else {
+                open = true; month = dated ? "" : DateRangePicker.ym(Date()); before = (start, end, dated); okTooSoon = false
+            }
         } label: {
             HStack(spacing: 12) {
                 SectionMark(section: .events, size: 24, weight: 1.8)
@@ -54,16 +72,18 @@ struct DateRangePicker: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(waitingForEnd ? "Now tap the last day" : "Dates")
                         .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
-                    Text(waitingForEnd ? DateRangePicker.pretty(start) : "\(DateRangePicker.pretty(start)) — \(DateRangePicker.pretty(end))")
-                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    // No dates yet: an invitation in the tint, not a made-up range.
+                    Text(!dated ? "Add dates"
+                         : waitingForEnd ? DateRangePicker.pretty(start) : "\(DateRangePicker.pretty(start)) — \(DateRangePicker.pretty(end))")
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(dated ? Theme.ink : tint)
                         .lineLimit(1).minimumScaleFactor(0.8)
-                        .accessibilityIdentifier("trip-dates-label")
+                        .accessibilityIdentifier("\(id)-label")
                 }
                 Spacer(minLength: 8)
-                if !waitingForEnd {
+                if dated && !waitingForEnd {
                     Text(nightsText)
                         .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("trip-dates-nights")
+                        .accessibilityIdentifier("\(id)-nights")
                 }
             }
             .padding(.horizontal, 12).frame(minHeight: 56)
@@ -72,11 +92,12 @@ struct DateRangePicker: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityIdentifier("trip-dates-field")
+        .accessibilityIdentifier("\(id)-field")
         // What the field says, as its VALUE: the Mac folds a button's texts into the
         // button itself, so "trip-dates-label" never exists there as a text of its own
         // (the Mac UI test on GitHub, 0.21).
-        .accessibilityValue(waitingForEnd ? DateRangePicker.pretty(start)
+        .accessibilityValue(!dated ? "No dates"
+                            : waitingForEnd ? DateRangePicker.pretty(start)
                             : "\(DateRangePicker.pretty(start)) — \(DateRangePicker.pretty(end)) · \(nightsText)")
     }
 
@@ -106,10 +127,11 @@ struct DateRangePicker: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("range-needs")
             } else {
-                Text(waitingForEnd ? "Now tap the last day"
+                Text(!dated ? "Tap the first day, then the last"
+                     : waitingForEnd ? "Now tap the last day"
                      : "\(DateRangePicker.short(start)) \u{2013} \(DateRangePicker.short(end)) \u{00B7} \(nightsText)")
                     .font(.system(.body, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(waitingForEnd ? Theme.muted : Theme.ink)
+                    .foregroundStyle(waitingForEnd || !dated ? Theme.muted : Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("range-summary")
@@ -120,6 +142,15 @@ struct DateRangePicker: View {
             // come out of this date"): the dates go back to what they were. OK keeps
             // them — in full colour, always (his rule for a main button, 2026-09-26).
             HStack(spacing: 10) {
+                // The way to a trip with NO dates, now that there is no Dates switch to
+                // turn off (0.67): left, quiet, away from OK — Airbnb's place for it.
+                if dated {
+                    Button("Clear dates") { clear() }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .frame(minHeight: Metrics.header).contentShape(Rectangle())
+                        .accessibilityIdentifier("range-clear")
+                }
                 Spacer()
                 Button("Cancel") { cancel() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: false)).focusEffectDisabled()
@@ -172,9 +203,9 @@ struct DateRangePicker: View {
         let c = DateRangePicker.cal
         let d = c.startOfDay(for: day)
         let s = c.startOfDay(for: start), e = c.startOfDay(for: end)
-        let isStart = d == s
-        let isEnd = !waitingForEnd && d == e
-        let between = !waitingForEnd && d > s && d < e
+        let isStart = dated && d == s
+        let isEnd = dated && !waitingForEnd && d == e
+        let between = dated && !waitingForEnd && d > s && d < e
         let today = d == c.startOfDay(for: Date())
         let past = d < c.startOfDay(for: Date())
         let key = DateRangePicker.ymd(day)
@@ -201,7 +232,16 @@ struct DateRangePicker: View {
     }
 
     private func cancel() {
-        if let b = before { start = b.0; end = b.1 }
+        if let b = before { start = b.0; end = b.1; dated = b.2 }
+        waitingForEnd = false
+        okTooSoon = false
+        open = false
+    }
+
+    /// No dates at all: the field says "Add dates" again, and the trip is made (or
+    /// saved) without any.
+    private func clear() {
+        dated = false
         waitingForEnd = false
         okTooSoon = false
         open = false
@@ -220,6 +260,7 @@ struct DateRangePicker: View {
     /// stays open until OK or Cancel.
     private func pick(_ d: Date) {
         okTooSoon = false
+        dated = true
         if waitingForEnd && d >= DateRangePicker.cal.startOfDay(for: start) {
             end = d
             waitingForEnd = false

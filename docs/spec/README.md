@@ -49,8 +49,8 @@ Make, Off Home, "Which one steps back?"), the Action button's "Which grab list?"
 list. Also the countdown card to the next trip, the This Device tiles, the three Shortcuts actions, the
 "Remind me to pack" notifications and Search.
 
-**[03 — Trips](03-trips.md).** The whole life of a trip. Create new trip (name, dates, Quick, templates,
-context, transport, season, food, laundry) and how its list is built from the templates; the Trips tab; the
+**[03 — Trips](03-trips.md).** The whole life of a trip. Create new trip (name, Full trip | Quick, dates,
+templates, context per workout, transport, season, food, laundry) and how its list is built from the templates; the Trips tab; the
 trip screen (ticking, "not this time", sorting and folding, adding a thing, Tick everything); Trip settings
 and Start a new trip from this one; Check before you go, the weather card and the Bags card (luggage scale,
 cabin, bag photos); On site, Pack to go home, the review and Refine, and the loop that joins them; Save as
