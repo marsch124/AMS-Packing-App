@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.65", date: "6 Oct 2026", title: "A table without air",
+                changed: ["All your things \u{00B7} table: no air between the lines \u{2014} each row is as tall as its words, with smaller tick boxes; the open arrow sits on the name's line, and a short table starts at the top of its window."]),
         Release(version: "0.64", date: "6 Oct 2026", title: "Drop-downs, your own bags, and sections",
                 new: ["Every choose-one list on a thing's page and on a template's row is now a drop-down: tap it, tap your choice. Kept at home is chosen from your places; a new place made there joins Your choices.",
                       "Trips can be sorted by Section: Sorting is one drop-down with When, Into, From where, Category and Section.",

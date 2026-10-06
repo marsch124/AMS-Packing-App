@@ -242,6 +242,9 @@ jobs:
 
       - name: Keep the logs when something fails
         if: always()
+        # Keeping the logs must never fail a release that went out: in 0.64's run both
+        # builds were sent and released, and this step alone timed out talking to GitHub.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: testflight-logs
