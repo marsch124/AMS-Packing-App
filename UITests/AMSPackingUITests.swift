@@ -5334,6 +5334,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { name.frame.width > nameOwn + 30 }, "Thing did not grow: \(nameOwn) → \(name.frame.width)")
         let nameWide = name.frame.width
         shot(app, "table-widths")
+        let picture = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        picture.name = "table-widths"; picture.lifetime = .keepAlways; add(picture)
 
         // Kept when the table opens again.
         tap(app, id: "table-done")

@@ -18,13 +18,25 @@ jobs:
       - name: Chosen UI tests on the Mac
         run: |
           T=AMSPackingUITests/AMSPackingUITests
-          for look in Light Dark; do
-            if [ $look = Dark ]; then defaults write -g AppleInterfaceStyle -string Dark; else defaults delete -g AppleInterfaceStyle 2>/dev/null || true; fi
-            xcodebuild test -project AMSPacking.xcodeproj -scheme AMSPacking -destination "platform=macOS" \
-              -derivedDataPath build -resultBundlePath Probe-Mac-$look.xcresult -collect-test-diagnostics never \
-              -only-testing:$T/testTheTableRowsHaveNoAirBetweenThem \
-              CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
-          done
+          xcodebuild test -project AMSPacking.xcodeproj -scheme AMSPacking -destination "platform=macOS" \
+            -derivedDataPath build -resultBundlePath Probe-Mac-Light.xcresult -collect-test-diagnostics never \
+            -only-testing:$T/testATableColumnIsDraggedWiderAndKeepsItsWidth \
+            -only-testing:$T/testARowOpensItsThingAndComesBackToTheSameSpot \
+            -only-testing:$T/testATemplateDeletedTakesItsFilterAndColumnAlong \
+            -only-testing:$T/testChangeAllRefusesANonNumberAndCountsTicksOutOfSight \
+            -only-testing:$T/testEscapeCancelsAThingAndClosesCaresWindows \
+            -only-testing:$T/testManyThingsAreChangedAtOnceAndCanBePutBack \
+            -only-testing:$T/testTheBagListIsNoColumnOfTheTable \
+            -only-testing:$T/testTheTableChipsFindWhatIsMissing \
+            -only-testing:$T/testTheTableFiltersByAnyColumn \
+            -only-testing:$T/testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy \
+            -only-testing:$T/testTheTableRowsHaveNoAirBetweenThem \
+            -only-testing:$T/testTheTableSortsAndSaves \
+            -only-testing:$T/testTheTableSortsByLevels \
+            -only-testing:$T/testTheTableTakesTheColumnsHeChooses \
+            -only-testing:$T/testWhatBelongsToAListIsEditedPerList \
+            -only-testing:$T/testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
       - name: Keep the results
         if: always()
         uses: actions/upload-artifact@v4
