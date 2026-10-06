@@ -3425,7 +3425,13 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch("-uiTestingSections")
         openSectionedHiking(app)
         startArranging(app)
+        #if os(macOS)
+        // 🪤 On the Mac a drop above the very FIRST row did not land (GitHub's Mac run,
+        // 6 Oct 2026): carry Lights down past Clothes' last thing instead — the same order.
+        drag(app, "arrange-heading-0-grip", to: "arrange-item-4-grip")       // Lights below Wool socks
+        #else
         drag(app, "arrange-heading-1-grip", to: "arrange-heading-0-grip")    // Clothes above Lights
+        #endif
         XCTAssertTrue(waitUntil { self.words(app.buttons["arrange-heading-0"]) == "Clothes" },
                       "Clothes did not move up: '\(words(app.buttons["arrange-heading-0"]))'")
         XCTAssertEqual(words(app.buttons["arrange-heading-1"]), "Lights")

@@ -10,6 +10,11 @@ struct RestoreSheet: View {
     let device: Library
     /// true = replace, false = leave everything alone.
     let answer: (Bool) -> Void
+    /// Answered by one of its two buttons. Closed any other way (swiped away on the
+    /// iPhone), it answers "no" as it goes — so Settings says "Nothing was replaced."
+    /// Done here, not with the sheet's onDismiss: with onDismiss on the Mac, the kept
+    /// copy's restore never opened after a first restore (GitHub's Mac run, 6 Oct 2026).
+    @State private var answered = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -32,7 +37,7 @@ struct RestoreSheet: View {
             HStack {
                 Text("Restore from a file").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
-                Button("Cancel") { answer(false); dismiss() }
+                Button("Cancel") { answered = true; answer(false); dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: false)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
@@ -92,7 +97,7 @@ struct RestoreSheet: View {
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .padding(.top, 4)
 
-                    Button { answer(true); dismiss() } label: {
+                    Button { answered = true; answer(true); dismiss() } label: {
                         Text("Replace everything on this device")
                             .font(.system(.body, weight: .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity, minHeight: Metrics.row)
@@ -115,5 +120,6 @@ struct RestoreSheet: View {
         .background(Theme.bg)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("restore-detail")
+        .onDisappear { if !answered { answered = true; answer(false) } }
     }
 }
