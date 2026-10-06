@@ -121,7 +121,6 @@ struct RestoreSheet: View {
         .background(Theme.bg)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("restore-detail")
-        .onAppear { SettingsScreen.log("sheet-appear") }
-        .onDisappear { SettingsScreen.log("sheet-gone:\(String(describing: choice))"); answer(choice ?? false) }
+        .onDisappear { answer(choice ?? false) }
     }
 }
