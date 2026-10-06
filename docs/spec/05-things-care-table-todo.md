@@ -767,7 +767,7 @@ dropdown for 'kept in'. Well done. Can we please make these kinds of drop-downs 
 itself perfectly for 'usually packed in', 'Kind of thing' etc." Under its heading band sits a field-like button
 (`thing-<list>`; its value = the words of the choice that stands, its label = the heading) showing the choice and
 a ▾; a tap opens the list beside it — a popover on the iPhone as on the Mac, placed by the system where there is
-room (under a field near the top, over one near the bottom) — container `thing-<list>-list`, one row per choice
+room (the system picks above or below the field; a field near the top opens downwards) — container `thing-<list>-list`, one row per choice
 named `thing-<list>-<n>` exactly as its pill was (so `thing-category-7` is still Electronics), the chosen row
 ticked (a drawn tick in orange, selected trait). A tap on a row takes it and closes the list; nothing is stored
 before Save, as before. A blank choice (value "": "Both have one", "No bag", "Not said") is in grey on the field and

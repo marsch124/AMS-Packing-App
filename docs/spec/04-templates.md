@@ -727,7 +727,7 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
   Items 2–4 are **drop-downs** (0.64, `DropDown`, spec 06 §21) in violet: under the heading band a field-like
   button (`row-bag`, `row-when`, `row-section`; value = the words of the choice that stands, label = the heading;
   Body, `Metrics.tap` tall, card fill, hairline, a ▾) that opens its list beside it — a popover on the iPhone as on
-  the Mac, placed where there is room (Bag, near the top, opens under its field) — container `row-bag-list`,
+  the Mac, placed by the system above or below its field, wherever it fits (Bag, near the top, opens downwards) — container `row-bag-list`,
   `row-when-list`, `row-section-list`; one row per choice named as its pill was (`row-bag-<n>` …), the chosen row
   ticked in violet (selected trait); a tap on a row takes it and closes the list (nothing is stored before Save).
   A blank choice ("Same as …", "No section") is in grey on the field and in the list. Until 0.64 each was a row of

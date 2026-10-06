@@ -1336,10 +1336,12 @@ What it draws:
   truncated at the end; then a drawn ▾ (`M6 9l6 6 6-6`, 1.8 stroke, 16 × 16, muted). Padding 12 sideways, min
   height `Metrics.tap` (36 iPhone / 26 Mac), `Theme.card` fill, radius 10, a 1-pt `line` border — like the text
   fields around it. Accessibility: label = the title (the words when there is none), VALUE = the words shown (what
-  tests read), id = the field id. A tap opens the list.
+  tests read), id = the field id. A tap opens the list — on the iPhone after first putting the keyboard away
+  (`resignFirstResponder` sent to the app): with the weight still being typed, a list opened over the keys was
+  squeezed into the space above them, and a test could not reach its last rows.
 - **The list**: a popover (`presentationCompactAdaptation(.popover)`, so the iPhone shows a popover too, not a
-  sheet) with NO arrow edge given, so the system puts it where there is room — under a field near the top of the
-  page, over one near the bottom (the first Kept at home fixed it above its field: on a row's Bag, near the top,
+  sheet) with NO arrow edge given, so the system puts it above or below its field, wherever it fits — a field near
+  the top of the page opens downwards; a short list may open above a field in the middle (the first Kept at home fixed it above its field: on a row's Bag, near the top,
   it was squeezed to three rows). Inside: a `ScrollView` (padding 12; min width 280, ideal 320, max height 440;
   `Theme.bg` behind) holding, top to bottom, the `blank` row, the options, the `other` row and the foot; it opens
   scrolled to the ticked row (centred), so the tick is seen in a long list. Container: `.contain`, id = the list

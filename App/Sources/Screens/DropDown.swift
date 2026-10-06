@@ -115,8 +115,8 @@ struct DropDown: View {
         .accessibilityLabel(title ?? shown)
         .accessibilityValue(shown)
         .accessibilityIdentifier(ids.field)
-        // No arrow edge given: the list goes where there is room — under a field near the
-        // top of the page, over one near the bottom. (Kept at home's list was fixed ABOVE
+        // No arrow edge given: the system puts the list above or below its field, wherever
+        // it fits — a field near the top opens downwards. (Kept at home's list was fixed ABOVE
         // its field, and on a row's Bag, near the top, it was squeezed to three rows.)
         .popover(isPresented: $open) {
             list.presentationCompactAdaptation(.popover)
