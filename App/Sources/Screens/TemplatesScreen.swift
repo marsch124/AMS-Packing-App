@@ -980,19 +980,16 @@ struct RowEditor: View {
     @State private var qty = ""
     @State private var note = ""
     @State private var section = ""
-    @State private var newSectionName = ""
     /// A section typed here, waiting for Save: it is made only then, so Cancel leaves
     /// the template as it was (the spec pass, 5 Oct 2026 — it used to stay behind).
     @State private var pendingSection = ""
-    /// What Add was missing, said under the field (never a grey button).
-    @State private var sectionNeeds = ""
     /// Only on some trips (his ask, 2 Oct 2026): none = always comes along.
     @State private var seasons: Set<String> = []
     @State private var contexts: Set<String> = []
     @State private var transports: Set<String> = []
     @State private var catering: Set<String> = []
 
-    /// The pill of a section typed here and not made yet.
+    /// The row of a section typed here and not made yet.
     static let newSectionKey = "\u{0}new-section"
 
     var body: some View {
@@ -1026,30 +1023,25 @@ struct RowEditor: View {
                             .accessibilityIdentifier("row-thing-name")
                         Text("On \(list.name)").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
-                    // The first pill says where a blank bag REALLY goes: the template's own
-                    // bag when it came with one, else the thing's (the spec pass).
-                    Pills(title: "Bag on this template", options: [("", model.library.sameBagWords(templateId: templateId, thing: thing))]
-                            + model.library.bagNames().map { ($0, $0) },
-                          selected: [bag], id: "row-bag", tint: AppSection.templates.color, heading: .band) { bag = $0 }
-                    Pills(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
-                            + PHASES.map { ($0.id, $0.label) },
-                          selected: [when], id: "row-when", tint: AppSection.templates.color, heading: .band) { when = $0 }
-                    if !list.sections.isEmpty || !pendingSection.isEmpty {
-                        Pills(title: "Section of this template",
-                              options: [("", "No section")] + list.sections.map { ($0.id, $0.name) }
+                    // Each pick-one list a drop-down, as on the thing's page (his word, 6 Oct 2026:
+                    // "Can we please make these kinds of drop-downs everywhere?").
+                    // The first row says where a blank bag REALLY goes: the template's own
+                    // bag when it came with one, else the thing's (the spec pass). A bag this
+                    // row names that is none of his is shown on a row of its own, ticked.
+                    DropDown(title: "Bag on this template", options: [("", model.library.sameBagWords(templateId: templateId, thing: thing))]
+                                + model.library.bagNames().map { ($0, $0) },
+                             selected: bag, id: "row-bag", tint: AppSection.templates.color, other: true) { bag = $0 }
+                    DropDown(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
+                                + PHASES.map { ($0.id, $0.label) },
+                             selected: when, id: "row-when", tint: AppSection.templates.color) { when = $0 }
+                    // Always there since 0.64: "A new section" is the list's foot, as "A new
+                    // place" is Kept at home's — it was a block of its own under the pills.
+                    DropDown(title: "Section of this template",
+                             options: [("", "No section")] + list.sections.map { ($0.id, $0.name) }
                                 + (pendingSection.isEmpty ? [] : [(RowEditor.newSectionKey, pendingSection)]),
-                              selected: [section], id: "row-section", tint: AppSection.templates.color, heading: .band) { section = $0 }
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                    HeadingBand(title: "A new section", tint: AppSection.templates.color, id: "row-heading-section-new")
-                    HStack(spacing: 8) {
-                        field($newSectionName, "e.g. Lights", "row-section-new")
-                        Button { addSection() } label: { FieldButtonLabel(title: "Add", tint: AppSection.templates.color) }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("row-section-add")
-                    }
-                    .needsLine($sectionNeeds, typed: newSectionName, id: "row-section-add-needs")
-                    }
+                             selected: section, id: "row-section", tint: AppSection.templates.color,
+                             newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") { addSection($0) }
+                    ) { section = $0 }
                     // Blank shows, in grey, what the thing itself says — so a blank field
                     // never looks as if the thing's note had gone.
                     VStack(alignment: .leading, spacing: 6) {
@@ -1117,10 +1109,10 @@ struct RowEditor: View {
     }
 
     /// A section of that name already on the template is simply chosen; a new one
-    /// waits for Save.
-    private func addSection() {
-        let name = jsTrim(newSectionName)
-        guard !name.isEmpty else { sectionNeeds = "Type the section's name first."; return }
+    /// waits for Save. (A blank name never gets here: the list's foot says so first.)
+    private func addSection(_ typed: String) {
+        let name = jsTrim(typed)
+        guard !name.isEmpty else { return }
         let sections = model.library.templates.first { $0.id == templateId }?.sections ?? []
         if let there = sections.first(where: { normName($0.name) == normName(name) }) {
             section = there.id
@@ -1129,7 +1121,6 @@ struct RowEditor: View {
             pendingSection = name
             section = RowEditor.newSectionKey
         }
-        newSectionName = ""
     }
 
     /// The pills of one "Only on" kind: the app's words, then any stored word it

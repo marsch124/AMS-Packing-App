@@ -1621,10 +1621,8 @@ final class AMSPackingUITests: XCTestCase {
         type("Map", into: app.textFields["things-search"])
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        let bag = app.buttons["thing-bag-2"]
-        XCTAssertTrue(bag.waitForExistence(timeout: 5))
-        XCTAssertFalse(words(bag).contains("Carry-on"), "pick a bag other than the one it has: '\(words(bag))'")
-        select(app, bag)
+        let bag = choose(app, "thing-bag", 2)
+        XCTAssertFalse(bag.contains("Carry-on"), "pick a bag other than the one it has: '\(bag)'")
         let weight = app.textFields["thing-weight"]
         XCTAssertTrue(weight.waitForExistence(timeout: 5), "no weight on the thing's page")
         bringIntoView(app, weight)
@@ -3680,27 +3678,36 @@ final class AMSPackingUITests: XCTestCase {
             tap(app, id: "template-item-0")
             XCTAssertTrue(appears(app, "row-detail", timeout: 5))
         }
+        // "A new section" is the foot of the Section list (0.64), as "A new place" is
+        // Kept at home's: typed, Added, and the list closes on it.
         func addSection(_ name: String) {
-            let field = app.textFields["row-section-new"]
-            bringIntoView(app, field)
-            type(name, into: field)
+            openDropDown(app, "row-section")
+            type(name, into: app.textFields["row-section-new"])
             tap(app, id: "row-section-add")
+            XCTAssertTrue(disappears(app, "row-section-list", timeout: 5), "the list did not close after Add")
+            hideKeyboard(app)
         }
         openFirstRow()
+        openDropDown(app, "row-section")
         XCTAssertTrue(app.buttons["row-section-1"].waitForExistence(timeout: 5), "Lights is not offered")
         XCTAssertFalse(app.buttons["row-section-2"].exists)
+        closeDropDown(app, "row-section")
         addSection("Rig")
+        XCTAssertTrue(waitUntil { self.chosen(app, "row-section") == "Rig" }, "the typed section is not chosen: '\(chosen(app, "row-section"))'")
+        openDropDown(app, "row-section")
         let rig = app.buttons["row-section-2"]
         XCTAssertTrue(rig.waitForExistence(timeout: 5), "the typed section is not offered")
-        XCTAssertTrue(waitUntil { self.isOn(rig) }, "the typed section is not chosen")
-        hideKeyboard(app)
+        XCTAssertTrue(waitUntil { self.isOn(rig) }, "the typed section is not ticked")
         shot(app, "row-section-waiting")
+        closeDropDown(app, "row-section")
         tap(app, id: "row-cancel")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
 
         openFirstRow()
+        openDropDown(app, "row-section")
         XCTAssertTrue(app.buttons["row-section-1"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["row-section-2"].exists, "Cancel left the section on the template")
+        closeDropDown(app, "row-section")
         addSection("Rig")
         tap(app, id: "row-save")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
@@ -3708,7 +3715,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Rig" },
                       "the row is not under its new section: '\(words(app.staticTexts["template-group-0"]))'")
         openFirstRow()
-        XCTAssertTrue(waitUntil { self.isOn(app.buttons["row-section-2"]) }, "the saved section is not the row's")
+        XCTAssertTrue(isChosen(app, "row-section", 2), "the saved section is not the row's")
         tap(app, id: "row-cancel")
     }
 
@@ -3783,11 +3790,8 @@ final class AMSPackingUITests: XCTestCase {
         type("Headlamp", into: app.textFields["things-search"])
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        let bag = app.buttons["thing-bag-2"]
-        XCTAssertTrue(bag.waitForExistence(timeout: 5))
-        let newBag = words(bag)
+        let newBag = choose(app, "thing-bag", 2)
         XCTAssertFalse(newBag.isEmpty || newBag.contains("Carry-on"), "pick a bag other than the one it has: '\(newBag)'")
-        select(app, bag)
         tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         tap(app, id: "things-done")
@@ -4038,29 +4042,33 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        XCTAssertTrue(app.buttons["thing-owner-0"].waitForExistence(timeout: 5), "no Whose it is")
-        // No owner = each has one (his words, 4 Oct 2026), not "Nobody's in particular".
-        XCTAssertEqual(words(app.buttons["thing-owner-0"]), "Both have one")
+        XCTAssertTrue(app.buttons["thing-owner"].waitForExistence(timeout: 5), "no Whose it is")
         // Notes sit right under the name, before Kept at home (his ask, 4 Oct 2026).
         let name = app.textFields["thing-name"].frame, storage = app.buttons["thing-storage"].frame
         let notes = app.descendants(matching: .any).matching(identifier: "thing-notes").firstMatch.frame
         XCTAssertTrue(name.maxY <= notes.minY && notes.maxY <= storage.minY,
                       "Notes are not between Name and Kept at home: name \(name.maxY), notes \(notes.minY)–\(notes.maxY), kept at home \(storage.minY)")
-        let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
-        XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
         // Apple-standard and slim (his word, 5 Oct 2026): a block's heading is a Headline,
-        // and the pills under it are slim (`Metrics.chip`: 28 on the iPhone, 22 on the Mac)
-        // — never squeezed below that, never the 36 of the old look.
+        // and the drop-down under it (0.64) is as slim as a field (`Metrics.tap`: 36 on the
+        // iPhone, 26 on the Mac) — read before its list opens over it.
         let heading = app.staticTexts["thing-category-title"]
         XCTAssertTrue(heading.waitForExistence(timeout: 5), "no Kind of thing heading")
-        let line = heading.frame.height, pill = app.buttons["thing-category-0"].frame.height
+        let line = heading.frame.height, field = app.buttons["thing-category"].frame.height
         #if os(macOS)
-        let chip: CGFloat = 22
+        let slim: CGFloat = 26
         #else
-        let chip: CGFloat = 28
+        let slim: CGFloat = 36
         #endif
-        XCTAssertTrue(line >= 15 && pill >= chip - 0.5 && pill < 34,
-                      "a heading line (got \(line) tall) over slim pills (\(chip) tall: got \(pill))")
+        XCTAssertTrue(line >= 15 && field >= slim - 0.5 && field < slim + 6,
+                      "a heading line (got \(line) tall) over a slim drop-down (\(slim) tall: got \(field))")
+        // No owner = each has one (his words, 4 Oct 2026), not "Nobody's in particular";
+        // then each owner once.
+        openDropDown(app, "thing-owner")
+        XCTAssertEqual(words(app.buttons["thing-owner-0"]), "Both have one")
+        let offered = (1..<12).map { app.buttons["thing-owner-\($0)"] }.filter { $0.exists }.map { words($0) }
+        XCTAssertEqual(offered, ["Kim", "Robin"], "each owner once, A–Z: \(offered)")
+        shot(app, "thing-owner-list")
+        closeDropDown(app, "thing-owner")
     }
 
     /// A grab list is edited — renamed, one removed, one added — and stays so.
@@ -4106,7 +4114,7 @@ final class AMSPackingUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
 
-        select(app, app.buttons["thing-category-7"])        // Electronics
+        choose(app, "thing-category", 7)                   // Electronics
         let swim = app.buttons["thing-lists-2"]             // Common base, Hiking, Swim — A–Z
         bringIntoView(app, swim)
         XCTAssertTrue(swim.exists, "no list to put it on")
@@ -4119,7 +4127,7 @@ final class AMSPackingUITests: XCTestCase {
 
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-category-7"]) }, "the kind of thing was not kept")
+        XCTAssertTrue(isChosen(app, "thing-category", 7), "the kind of thing was not kept")
         XCTAssertTrue(isOn(app.buttons["thing-lists-2"]), "the list was not kept")
     }
     /// A list reads in ITS sections, and a row can be given this list's own bag,
@@ -4145,7 +4153,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(row.label.contains("Carry-on"), "it follows the thing's own bag: '\(row.label)'")
         row.tap()
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
-        select(app, app.buttons["row-bag-4"])                     // this list's own bag
+        choose(app, "row-bag", 4)                                 // this list's own bag
         type("with the red filter", into: app.textFields["row-note"])
         tapVisible(app, app.buttons["row-save"])
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
@@ -4185,7 +4193,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].exists })
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-bag-1"]) }, "the thing's own bag was changed by a list's exception")
+        XCTAssertTrue(isChosen(app, "thing-bag", 1), "the thing's own bag was changed by a list's exception")
     }
     /// His own lists: a storage place is added, is offered to a thing, and cannot
     /// be removed while something uses it.
@@ -6013,7 +6021,9 @@ final class AMSPackingUITests: XCTestCase {
         hideKeyboard(app)
         tap(app, id: "template-item-0")
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        openDropDown(app, "row-section")                           // its foot: A new section
         misses.append(saysWhatIsMissing(app, "row-section-add"))
+        closeDropDown(app, "row-section")
         tap(app, id: "row-cancel")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
         tap(app, id: "template-detail-done")
@@ -6052,7 +6062,9 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "the thing editor lost its heading \(id)")
         }
         shot(app, "looks-thing")
-        bringIntoView(app, app.buttons["thing-when-0"])
+        let when = app.buttons["thing-when"]
+        XCTAssertTrue(when.waitForExistence(timeout: 5), "When is not a drop-down under its heading")
+        bringIntoView(app, when)
         shot(app, "looks-thing-when")
         tap(app, id: "thing-cancel")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
@@ -6065,7 +6077,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         tap(app, id: "template-item-0")
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
-        for id in ["row-bag-title", "row-when-title", "row-section-title", "row-heading-section-new",
+        for id in ["row-bag-title", "row-when-title", "row-section-title",
                    "row-heading-qty", "row-heading-note", "row-heading-some", "row-seasons-title",
                    "row-transports-title", "row-catering-title"] {
             XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "the row editor lost its heading \(id)")
@@ -6176,10 +6188,7 @@ final class AMSPackingUITests: XCTestCase {
         // The thing's own page lights it…
         tap(app, id: "table-0-open")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        let lit = app.buttons["thing-condition-4"]
-        XCTAssertTrue(lit.waitForExistence(timeout: 5))
-        bringIntoView(app, lit)
-        XCTAssertTrue(isOn(lit), "the thing's page does not light the condition set in the table")
+        XCTAssertTrue(isChosen(app, "thing-condition", 4), "the thing's page does not tick the condition set in the table")
         tap(app, id: "thing-cancel")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         tap(app, id: "table-done")
@@ -6371,15 +6380,14 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "thing-place-0")
         XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "the list did not close on a choice")
         XCTAssertEqual(keptAtHome(app), placeName, "the place was not taken")
-        // No bag: the last pill of Usually packed in.
-        let noBag = (0..<40).map { app.buttons["thing-bag-\($0)"] }.last { $0.exists }!
-        XCTAssertTrue(words(noBag).contains("No bag"), "'\(words(noBag))'")
-        select(app, noBag)
+        // No bag: the last row of Usually packed in.
+        openDropDown(app, "thing-bag")
+        let noBag = (0..<40).last { app.buttons["thing-bag-\($0)"].exists }!
+        closeDropDown(app, "thing-bag")
+        XCTAssertEqual(choose(app, "thing-bag", noBag), "No bag")
         shot(app, "thing-no-bag")
         // Looked after every month, with what to do.
-        let monthly = app.buttons["thing-care-1"]
-        bringIntoView(app, monthly)
-        select(app, monthly)
+        choose(app, "thing-care", 1)
         let notes = app.textFields["thing-care-notes"]
         bringIntoView(app, notes)
         type("Rinse in fresh water", into: notes)
@@ -6392,8 +6400,8 @@ final class AMSPackingUITests: XCTestCase {
         bringIntoView(app, app.textFields["thing-weight"])
         XCTAssertEqual(app.textFields["thing-weight"].value as? String, "12.5", "the decimal weight did not keep")
         XCTAssertEqual(keptAtHome(app), placeName, "the place was not kept")
-        XCTAssertTrue(isOn(noBag), "No bag is not lit")
-        XCTAssertTrue(isOn(app.buttons["thing-care-1"]), "the care schedule was not kept")
+        XCTAssertTrue(isChosen(app, "thing-bag", noBag), "No bag is not ticked")
+        XCTAssertTrue(isChosen(app, "thing-care", 1), "the care schedule was not kept")
         tap(app, id: "thing-cancel")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         tap(app, id: "things-done")
@@ -6653,18 +6661,20 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         tap(app, id: "template-item-0")
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
-        let field = app.textFields["row-section-new"]
-        bringIntoView(app, field)
-        type("Rig", into: field)
+        openDropDown(app, "row-section")
+        type("Rig", into: app.textFields["row-section-new"])
         tap(app, id: "row-section-add")
-        XCTAssertTrue(app.buttons["row-section-2"].waitForExistence(timeout: 5), "the typed section is not offered")
+        XCTAssertTrue(disappears(app, "row-section-list", timeout: 5), "the list did not close after Add")
+        XCTAssertTrue(waitUntil { self.chosen(app, "row-section") == "Rig" }, "the typed section is not chosen")
         pressEscape(app)
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5), "Escape did not cancel the row")
         XCTAssertNotNil(find(app, "template-detail"), "Escape closed the template behind the row too")
         tap(app, id: "template-item-0")
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        openDropDown(app, "row-section")
         XCTAssertTrue(app.buttons["row-section-1"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["row-section-2"].exists, "Escape saved the row and its section")
+        closeDropDown(app, "row-section")
         tap(app, id: "row-cancel")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
         pressEscape(app)
@@ -6777,6 +6787,130 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "the list did not close after Add")
     }
 
+    // MARK: - Drop-downs everywhere (0.64)
+
+    /// Open a drop-down. Its field is the button `<prefix>`; its list `<prefix>-list`,
+    /// whose rows are `<prefix>-<n>` — the ids the pills had (his word, 6 Oct 2026:
+    /// "Can we please make these kinds of drop-downs everywhere?").
+    private func openDropDown(_ app: XCUIApplication, _ prefix: String) {
+        let field = app.buttons[prefix]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no drop-down \(prefix)")
+        bringIntoView(app, field)
+        tapVisible(app, field)
+        XCTAssertTrue(appears(app, "\(prefix)-list", timeout: 5), "\(prefix) did not open its list")
+    }
+
+    /// Choose row `n` of a drop-down, as he would: open it, tap the row, see the list
+    /// close and the field show the row's words. Answers those words.
+    @discardableResult
+    private func choose(_ app: XCUIApplication, _ prefix: String, _ n: Int) -> String {
+        openDropDown(app, prefix)
+        let row = app.buttons["\(prefix)-\(n)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "\(prefix) has no row \(n)")
+        let said = words(row)
+        tap(app, id: "\(prefix)-\(n)")
+        XCTAssertTrue(disappears(app, "\(prefix)-list", timeout: 5), "\(prefix)'s list did not close on a choice")
+        XCTAssertTrue(waitUntil { self.chosen(app, prefix) == said },
+                      "\(prefix) does not show the choice '\(said)': '\(chosen(app, prefix))'")
+        return said
+    }
+
+    /// What a drop-down's field shows as chosen (its value; the heading is its label).
+    private func chosen(_ app: XCUIApplication, _ prefix: String) -> String {
+        let field = app.buttons[prefix]
+        return field.exists ? (field.value as? String ?? "") : ""
+    }
+
+    /// Is row `n` the ticked one? Opens the list, reads the row, and closes the list
+    /// again on the ticked row — which changes nothing.
+    private func isChosen(_ app: XCUIApplication, _ prefix: String, _ n: Int) -> Bool {
+        openDropDown(app, prefix)
+        let on = waitUntil(timeout: 2) { self.isOn(app.buttons["\(prefix)-\(n)"]) }
+        closeDropDown(app, prefix)
+        return on
+    }
+
+    /// Close an open list without changing anything: a tap on the ticked row.
+    private func closeDropDown(_ app: XCUIApplication, _ prefix: String) {
+        let ticked = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND selected == true", "\(prefix)-")).firstMatch
+        guard ticked.waitForExistence(timeout: 3) else { return XCTFail("\(prefix)'s list has no ticked row to close it with") }
+        tap(app, id: ticked.identifier)
+        XCTAssertTrue(disappears(app, "\(prefix)-list", timeout: 5), "\(prefix)'s list did not close")
+    }
+
+    /// Every pick-one list on a thing's page and on a template's row is a drop-down —
+    /// his word (6 Oct 2026): "I like the dropdown for 'kept in'. Well done. Can we please
+    /// make these kinds of drop-downs everywhere? I think it would lend itself perfectly
+    /// for 'usually packed in', 'Kind of thing' etc." A field that opens its list; a tap
+    /// chooses and closes it; the field shows the choice; Save keeps it. Lists where
+    /// several may be picked stay pills.
+    func testThePickOneListsAreDropDownsThatChooseAndKeep() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Headlamp", into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        for id in ["thing-category", "thing-owner", "thing-storage", "thing-bag", "thing-when", "thing-condition", "thing-care"] {
+            XCTAssertTrue(app.buttons[id].waitForExistence(timeout: 5), "\(id) is not a drop-down")
+        }
+        for id in ["thing-category", "thing-owner", "thing-bag", "thing-when", "thing-condition", "thing-care"] {
+            XCTAssertFalse(app.buttons["\(id)-0"].exists, "\(id)'s choices are out before it is opened")
+        }
+        XCTAssertTrue(app.buttons["thing-lists-0"].exists, "On these templates (several at once) is no longer pills")
+        openDropDown(app, "thing-bag")
+        shot(app, "dropdown-thing-open")
+        closeDropDown(app, "thing-bag")
+        let kind = choose(app, "thing-category", 7)
+        let whose = choose(app, "thing-owner", 2)
+        let when = choose(app, "thing-when", 3)
+        let condition = choose(app, "thing-condition", 2)
+        shot(app, "dropdown-thing-chosen")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == kind }, "Kind of thing not kept: '\(chosen(app, "thing-category"))'")
+        XCTAssertEqual(chosen(app, "thing-owner"), whose, "Whose it is not kept")
+        XCTAssertEqual(chosen(app, "thing-when"), when, "When not kept")
+        XCTAssertEqual(chosen(app, "thing-condition"), condition, "Condition not kept")
+        XCTAssertTrue(isChosen(app, "thing-when", 3), "the kept When is not the ticked row")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // A template's row (Hiking's first: the Headlamp, in Lights).
+        tab(app, "templates")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        for id in ["row-bag", "row-when", "row-section"] {
+            XCTAssertTrue(app.buttons[id].waitForExistence(timeout: 5), "\(id) is not a drop-down")
+            XCTAssertFalse(app.buttons["\(id)-0"].exists, "\(id)'s choices are out before it is opened")
+        }
+        XCTAssertTrue(app.buttons["row-seasons-0"].exists, "Season (several at once) is no longer pills")
+        XCTAssertEqual(chosen(app, "row-section"), "Lights", "the row's section is not shown")
+        openDropDown(app, "row-bag")
+        shot(app, "dropdown-row-open")
+        closeDropDown(app, "row-bag")
+        let bag = choose(app, "row-bag", 3)
+        let rowWhen = choose(app, "row-when", 2)
+        shot(app, "dropdown-row-chosen")
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "row-bag") == bag }, "the row's bag not kept: '\(chosen(app, "row-bag"))'")
+        XCTAssertEqual(chosen(app, "row-when"), rowWhen, "the row's When not kept")
+        XCTAssertTrue(isChosen(app, "row-bag", 3), "the kept bag is not the ticked row")
+        XCTAssertTrue(isChosen(app, "row-section", 1), "Lights is not the ticked section")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+    }
+
     // MARK: - Only his own bags (0.64)
 
     /// A thing is offered his own bags and No bag — never a built-in name he does not
@@ -6791,14 +6925,15 @@ final class AMSPackingUITests: XCTestCase {
         type("Map", into: app.textFields["things-search"])
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        openDropDown(app, "thing-bag")
         let first = app.buttons["thing-bag-0"]
         XCTAssertTrue(first.waitForExistence(timeout: 5), "no bag offered at all")
-        bringIntoView(app, first)
         XCTAssertEqual(words(first), "Carry-on / hand luggage", "his own bag does not lead")
         XCTAssertEqual(words(app.buttons["thing-bag-1"]), "No bag")
         XCTAssertFalse(app.buttons["thing-bag-2"].exists,
                        "a bag he does not have is offered: '\(words(app.buttons["thing-bag-2"]))'")
         shot(app, "thing-only-his-bags")
+        closeDropDown(app, "thing-bag")
     }
 
     /// A thing's page in his order (6 Oct 2026): Name, Notes, Kind of thing, Whose it is,
@@ -6841,7 +6976,7 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "thing-kept-at-home-list")
         tap(app, id: "thing-place-none")
         XCTAssertTrue(disappears(app, "thing-places", timeout: 5))
-        XCTAssertEqual(keptAtHome(app), "", "Not said did not clear the place")
+        XCTAssertEqual(keptAtHome(app), "Not said", "Not said did not clear the place")
         tap(app, id: "thing-cancel")
     }
 }

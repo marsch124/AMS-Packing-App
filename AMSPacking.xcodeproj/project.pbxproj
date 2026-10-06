@@ -24,6 +24,7 @@
 		39B87583182066477449515D /* GuideScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */; };
 		3B34615E704B984738565FC3 /* Share.swift in Sources */ = {isa = PBXBuildFile; fileRef = C79C38939D0655EEE452D769 /* Share.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
+		4AD76B6494FA68210153D99C /* DropDown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1750ABC86D97A97B07370949 /* DropDown.swift */; };
 		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
 		4F3FD7E1E457A44E56AB6E19 /* Headings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCA03D292255B391659C37C /* Headings.swift */; };
 		5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */; };
@@ -96,6 +97,7 @@
 		0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatesScreen.swift; sourceTree = "<group>"; };
 		112E88E5E56E46CAA3F002CE /* KitDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitDashboard.swift; sourceTree = "<group>"; };
 		1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1750ABC86D97A97B07370949 /* DropDown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropDown.swift; sourceTree = "<group>"; };
 		1E01A9E0DEC947610C0F642D /* GrabScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabScreen.swift; sourceTree = "<group>"; };
 		1E0A839566CDE77B068F47C5 /* BulkChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BulkChange.swift; sourceTree = "<group>"; };
 		1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingUITests.swift; sourceTree = "<group>"; };
@@ -286,6 +288,7 @@
 				56F5604CA6875D255BD93251 /* CareScreen.swift */,
 				BA8E667C951BD91655405B94 /* Countdown.swift */,
 				200B88877006E1F006B96632 /* DateRangePicker.swift */,
+				1750ABC86D97A97B07370949 /* DropDown.swift */,
 				77CEDA06EFED05D4A1612077 /* EventsScreen.swift */,
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
 				F82D64736DCAA09F967D279E /* GrabCollectionScreen.swift */,
@@ -449,6 +452,7 @@
 				B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */,
 				9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */,
 				3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */,
+				4AD76B6494FA68210153D99C /* DropDown.swift in Sources */,
 				8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */,
 				4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */,
 				622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */,

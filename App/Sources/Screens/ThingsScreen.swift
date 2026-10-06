@@ -205,10 +205,6 @@ struct ThingEditor: View {
     @State private var weightText = ""
     /// What was wrong with the weight when Save was pressed, said under the field.
     @State private var weightProblem = ""
-    /// Kept at home's list is open; what is typed as a new place; what Add was missing.
-    @State private var choosingPlace = false
-    @State private var newPlace = ""
-    @State private var placeNeeds = ""
     /// The care schedule (days, 0 = none) and care notes, edited here since 0.62.
     @State private var careEvery = 0
     @State private var careNotes = ""
@@ -247,13 +243,16 @@ struct ThingEditor: View {
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
-                    Pills(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: [draft.category],
-                          id: "thing-category", tint: AppSection.care.color, heading: .band) { draft.category = $0 }
+                    // Every pick-one list here is a drop-down (his word, 6 Oct 2026: "Can we please
+                    // make these kinds of drop-downs everywhere?"); a kind of thing from the web app
+                    // that is none of the app's is shown on a row of its own.
+                    DropDown(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: draft.category,
+                             id: "thing-category", other: true) { draft.category = $0 }
                     if !owners.isEmpty {
                         // No owner means each has one of their own — his words (4 Oct 2026):
                         // "Replace 'Nobody's in particular' with 'Both have one'".
-                        Pills(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
-                              selected: [draft.ownedBy], id: "thing-owner", tint: AppSection.care.color, heading: .band) { draft.ownedBy = $0 }
+                        DropDown(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
+                                 selected: draft.ownedBy, id: "thing-owner", other: true) { draft.ownedBy = $0 }
                     } else {
                         // Nobody named anywhere yet: the heading stays, and says where the
                         // names come from (it vanished, so the first owner could not be
@@ -278,11 +277,11 @@ struct ThingEditor: View {
                     // Chosen from his places, never typed (6 Oct 2026, his word: "Can we turn Kept
                     // at home into a drop-down … so that we have a list to choose from? If we write
                     // it this way, it's a possibility that the naming convention skews.")
-                    labelled("Kept at home") { keptAtHome }
-                    Pills(title: "Usually packed in", options: bag.options,
-                          selected: [bag.selected], id: "thing-bag", tint: AppSection.care.color, heading: .band) { draft.container = $0 }
-                    Pills(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: [draft.phase],
-                          id: "thing-when", tint: AppSection.care.color, heading: .band) { draft.phase = $0 }
+                    keptAtHome
+                    DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
+                             selected: bag.selected, id: "thing-bag") { draft.container = $0 }
+                    DropDown(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: draft.phase,
+                             id: "thing-when") { draft.phase = $0 }
                     labelled("Weight, in grams (0 = not known)") {
                         field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight")
                         if !weightProblem.isEmpty {
@@ -297,9 +296,9 @@ struct ThingEditor: View {
                     labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
                     // The condition's ID is what is stored; a thing still holding a label
                     // (stored by the table before 0.62) lights its pill all the same.
-                    Pills(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
-                          selected: [model.library.conditionId(for: draft.condition) ?? draft.condition],
-                          id: "thing-condition", tint: AppSection.care.color, heading: .band) { draft.condition = $0 }
+                    DropDown(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
+                             selected: model.library.conditionId(for: draft.condition) ?? draft.condition,
+                             id: "thing-condition") { draft.condition = $0 }
                     careFields
                     // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
                     VStack(alignment: .leading, spacing: 8) {
@@ -384,100 +383,23 @@ struct ThingEditor: View {
         }
     }
 
-    /// Kept at home: a field-like button that opens his places, as a list beside it —
-    /// chosen, never typed (6 Oct 2026). "Not said" first, then his places in his order
+    /// Kept at home: chosen from his places, never typed (6 Oct 2026) — the first
+    /// drop-down, which the others copy. "Not said" first, then his places in his order
     /// (Your choices), then the one the thing already names when it is none of his (from
     /// before 0.64, kept and ticked); at the foot "A new place", which joins Your choices
-    /// so it is spelt one way everywhere.
-    @ViewBuilder private var keptAtHome: some View {
-        Button { choosingPlace = true } label: {
-            HStack(spacing: 8) {
-                Text(draft.storage.isEmpty ? "Not said" : draft.storage)
-                    .font(.body).foregroundStyle(draft.storage.isEmpty ? Theme.muted : Theme.ink)
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                SVGPath.path("M6 9l6 6 6-6")
-                    .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .frame(width: 16, height: 16).foregroundStyle(Theme.muted)
-            }
-            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityIdentifier("thing-storage")
-        .accessibilityValue(draft.storage)
-        .popover(isPresented: $choosingPlace, arrowEdge: .bottom) {
-            placeList
-                .presentationCompactAdaptation(.popover)
-        }
-    }
-
-    private var placeList: some View {
-        let places = model.library.storagePlaces()
-        let unknown = !draft.storage.isEmpty && !places.contains { normName($0) == normName(draft.storage) }
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                placeRow("Not said", value: "", id: "thing-place-none")
-                ForEach(Array(places.enumerated()), id: \.offset) { n, place in
-                    placeRow(place, value: place, id: "thing-place-\(n)")
-                }
-                if unknown { placeRow(draft.storage, value: draft.storage, id: "thing-place-other") }
-                HStack(spacing: 8) {
-                    TextField("A new place", text: $newPlace)
-                        .textFieldStyle(.plain)
-                        .font(.body).foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.bg))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
-                        .onSubmit { addPlace() }
-                        .accessibilityIdentifier("thing-place-new")
-                    Button { addPlace() } label: { FieldButtonLabel(title: "Add", tint: AppSection.care.color) }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("thing-place-add")
-                }
-                .needsLine($placeNeeds, typed: newPlace, id: "thing-place-add-needs")
-                .padding(.top, 8)
-            }
-            .padding(12)
-        }
-        .frame(minWidth: 280, idealWidth: 320, maxHeight: 440)
-        .background(Theme.bg)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("thing-places")
-    }
-
-    private func placeRow(_ label: String, value: String, id: String) -> some View {
-        let on = normName(value) == normName(draft.storage)
-        return Button { draft.storage = value; choosingPlace = false } label: {
-            HStack(spacing: 8) {
-                Text(label).font(.body).foregroundStyle(value.isEmpty ? Theme.muted : Theme.ink)
-                Spacer(minLength: 8)
-                if on {
-                    Tick().stroke(AppSection.care.color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .frame(width: 18, height: 18)
-                }
-            }
-            .padding(.vertical, 6).frame(minHeight: Metrics.tap)
-            .background(Theme.bg)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).focusEffectDisabled()
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-        .accessibilityIdentifier(id)
-        .accessibilityAddTraits(on ? .isSelected : [])
-    }
-
-    /// "A new place": made in Your choices (or, when he already has it, his own
-    /// spelling of it), and taken by this thing.
-    private func addPlace() {
-        guard !jsTrim(newPlace).isEmpty else { placeNeeds = "Type the place first."; return }
-        var made: String?
-        model.change { made = $0.addPlace(newPlace) }
-        if let made { draft.storage = made }
-        newPlace = ""
-        choosingPlace = false
+    /// so it is spelt one way everywhere. Its parts keep the names they had before the
+    /// drop-down was made of it.
+    private var keptAtHome: some View {
+        DropDown(title: "Kept at home", options: model.library.storagePlaces().map { ($0, $0) },
+                 selected: draft.storage,
+                 id: DropDownIds(field: "thing-storage", list: "thing-places", row: "thing-place", title: "thing-heading-kept"),
+                 blank: "Not said", other: true, same: { normName($0) == normName($1) },
+                 newEntry: DropDownNew(placeholder: "A new place", needs: "Type the place first.") { typed in
+                     // Made in Your choices — or, when he already has it, his own spelling of it.
+                     var made: String?
+                     model.change { made = $0.addPlace(typed) }
+                     if let made { draft.storage = made }
+                 }) { draft.storage = $0 }
     }
 
     /// Care: how often the thing is looked after, and what to do. Care listed only
@@ -487,8 +409,8 @@ struct ThingEditor: View {
         let standard = MAINTENANCE_INTERVALS.map { ($0.days, $0.days == 0 ? "None" : $0.label) }
         let options = standard + (standard.contains { $0.0 == careEvery } ? [] : [(careEvery, "Every \(careEvery) days")])
         VStack(alignment: .leading, spacing: 6) {
-            Pills(title: "Care", options: options.map { (String($0.0), $0.1) }, selected: [String(careEvery)],
-                  id: "thing-care", tint: AppSection.care.color, heading: .band) { careEvery = Int($0) ?? 0 }
+            DropDown(title: "Care", options: options.map { (String($0.0), $0.1) }, selected: String(careEvery),
+                     id: "thing-care") { careEvery = Int($0) ?? 0 }
             TextField("What to do, e.g. Wax the leather", text: $careNotes, axis: .vertical)
                 .lineLimit(1...6)
                 .textFieldStyle(.plain)
