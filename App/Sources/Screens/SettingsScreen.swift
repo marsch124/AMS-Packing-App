@@ -158,7 +158,7 @@ struct SettingsScreen: View {
                         .accessibilityIdentifier("rescue-heading")
                     VStack(spacing: 0) {
                         ForEach(Array(copies.enumerated()), id: \.offset) { n, copy in
-                            Button { status = "PROBE clicked"; offer(RescueCopies.read(copy) ?? Data()) } label: {
+                            Button { status += " |clicked"; offer(RescueCopies.read(copy) ?? Data()) } label: {
                                 HStack {
                                     Text(RescueCopies.when(copy))
                                         .font(.system(.callout)).foregroundStyle(Theme.ink)
@@ -220,7 +220,7 @@ struct SettingsScreen: View {
         .sheet(item: $pending) { waiting in
             RestoreSheet(file: waiting.library, device: model.library) { yes in
                 pending = nil
-                guard yes else { status = "Nothing was replaced."; return }
+                guard yes else { status += " |answered-no"; return }
                 do {
                     try model.restore(waiting.library)
                     copies = RescueCopies.all()
@@ -257,7 +257,7 @@ struct SettingsScreen: View {
         do {
             let (library, _) = try model.inspectBackup(data)
             pending = PendingRestore(library: library)
-            if status == "PROBE clicked" { status = "PROBE pending set" }
+            status += " |pending"
         } catch {
             status = error.localizedDescription
         }

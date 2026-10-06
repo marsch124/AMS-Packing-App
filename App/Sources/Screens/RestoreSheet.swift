@@ -121,6 +121,7 @@ struct RestoreSheet: View {
         .background(Theme.bg)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("restore-detail")
+        .onAppear { print("PROBE-APP restore sheet appeared") }
         .onDisappear { answer(choice ?? false) }
     }
 }

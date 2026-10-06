@@ -4257,6 +4257,7 @@ final class AMSPackingUITests: XCTestCase {
         if other { tap(app, id: "restore-cancel"); _ = disappears(app, "restore-detail", timeout: 5)
             print("PROBE after-cancel status='\(words(app.staticTexts["backup-status"]))'") }
         bringIntoView(app, app.buttons["rescue-row-0"])
+        print("PROBE before-click status='\(words(app.staticTexts["backup-status"]))'")
         shot(app, "rescue-copy")
         // 🪤 On the Mac the list can still be gliding when the click comes, and the click
         // then lands where the row WAS (GitHub's Mac run, 6 Oct 2026: on the heading
