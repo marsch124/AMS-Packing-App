@@ -3914,9 +3914,25 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(day.waitForExistence(timeout: 5), "no day \(d.day!) on the calendar")
         XCTAssertTrue(waitUntil { (day.value as? String) == "1 due" },
                       "the boots are not on the day they fall due: '\(day.value as? String ?? "")'")
-        // Brought fully into view first: on GitHub's iPhone 17 the day sat under the top of
-        // the screen and the tap was refused (0.63, 6 Oct 2026).
+        #if os(iOS)
+        // 🪤 After the overdue row, the page stays scrolled far down — the calendar above
+        // the screen — while XCUITest still reports the day where it was and calls it
+        // hittable; the tap is then refused (GitHub's iPhone 17, 0.63, 6 Oct 2026, seen in
+        // the run's recording). So never ask: swipe the page back to its top, three times.
+        for _ in 0..<3 {
+            app.swipeDown(velocity: .fast)
+            usleep(300_000)
+        }
+        // …and on iPhone 17 XCUITest still calls the day (two lines in a 32-point cell)
+        // not hittable, with nothing over it (its tree, 6 Oct 2026): tap its very point.
+        if day.exists && !day.isHittable {
+            day.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        } else {
+            tapVisible(app, day)
+        }
+        #else
         tapVisible(app, day)
+        #endif
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-cal-day"]).hasSuffix("· 1") },
                       "the day does not list what is due: '\(words(app.staticTexts["care-cal-day"]))'")
         XCTAssertTrue(app.buttons["care-row-900-done"].waitForExistence(timeout: 5), "the boots are not under the day")
