@@ -54,7 +54,8 @@ Shared building blocks referred to below (defined outside this area, summarised 
 | `HeadingTitle`, `SectionTitle` | `Headings.swift` | 20 heavy with a 4×18 mark; SectionTitle = 18 heavy CAPITALS, kerning 0.8, 16 pt above. |
 | `Pills(title:options:selected:id:tint:heading:choose:)` | `HomeScreen.swift` | A heading (here always `.band`, id `<id>-title`) over wrapping capsules (15 pt, medium; bold when picked), min height 36; picked = filled in the tint with white words; each pill id `<id>-<n>` by POSITION, never by words; picked pills carry the selected trait. Tapping calls `choose(id)` — the caller decides single or multiple choice. |
 | `KeyboardAwayScroll` | `Theme.swift` | A vertical ScrollView that dismisses the keyboard immediately when dragged. |
-| `SearchButton` | `SearchScreen.swift` | A drawn magnifier, 24 pt in a 40×36 hit area, id `search-open`, label "Search everything". |
+| `SearchButton` | `SearchScreen.swift` | A drawn magnifier, 24 pt in a (`Metrics.tap` + 4) × `Metrics.tap` hit area (40 × 36 iPhone, 30 × 26 Mac — 0.67; 40 × 36 on both before), id `search-open`, label "Search everything". |
+| `ScreenHeader` | `ScreenHeader.swift` | The first line of a tab (0.67): title at the left, its buttons at the right, all on ONE centre line, then a short line under it. Spec 06, "The tab header". |
 | `Today.local` | `Store/Today.swift` | Today as `yyyy-MM-dd` in the device's time zone (Gregorian, POSIX). The model's own "today" default is the UTC date; the screens always pass this. |
 
 ---
@@ -367,10 +368,14 @@ table on the Mac, a window).
 
 **What is on screen, top to bottom** (one `KeyboardAwayScroll` holding a `LazyVStack`, 16 pt side padding):
 
-1. **Heading row.** "Care" (28 heavy, care orange, id `care-heading`); under it the kit line (15 medium, muted,
-   id `care-line`) = `CareScreen.line(stats)`: "`N` thing(s) · `<weight>` · `W` looked after" — the weight part
-   only when the total is > 0, written by `KitDashboard.kilos` ("240 g" under 1000 g, else "2.4 kg"). Right:
-   the magnifier (`search-open`) opening the global search as a sheet.
+1. **Heading** — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), 2 pt bottom padding.
+   "Care" (Title 2 bold, care orange, id `care-heading`) and, on the SAME centre line at the right, the
+   magnifier (`search-open`) opening the global search as a sheet; under that line the kit line (Subheadline,
+   muted, id `care-line`) = `CareScreen.line(stats)`: "`N` thing(s) · `<weight>` · `W` looked after" — the
+   weight part only when the total is > 0, written by `KitDashboard.kilos` ("240 g" under 1000 g, else
+   "2.4 kg"). Until 0.67 the row was aligned on the title's baseline with 14 pt above, and the magnifier stood
+   10 pt higher than "Care" (his note on 0.63, "Overall, icons are not aligned"); checked by
+   `testEveryTabsHeaderIsOnOneCentreLine`.
 2. **"Your things" door** (`care-things`): a card (radius 12, card colour, 1 pt line border, min height 52):
    "Your things" (18 bold ink), the number of ALL items `library.items.count` (16 bold muted, monospaced), a
    chevron. Opens Your things with an empty search. The door counts what Your things lists — every thing,
@@ -1608,9 +1613,12 @@ questions). Left by another tab. The side shown ("To do" or "To buy")
 is `@State`: every time the tab is built again it starts on "To do".
 
 **What is on screen.**
-1. Top row (16 pt sides, 12 top): two equal-width side buttons "To do" (`actions-tab-todo`) and "To buy"
-   (`actions-tab-buy`) — 17 bold, min height 44, radius 10; the side showing is filled red with white words and
-   carries the selected trait, the other is ink on the card with a 1 pt line — and the magnifier (`search-open`).
+1. Top row (16 pt sides, `Metrics.screenTop` = 4 top — 12 until 0.67, so it starts where every tab's first
+   line does; centre-aligned, 8 apart): two equal-width side buttons "To do" (`actions-tab-todo`) and "To buy"
+   (`actions-tab-buy`) — Body semibold, `Metrics.tap` tall, radius 10; the side showing is filled red with white
+   words and carries the selected trait, the other is ink on the card with a 1 pt line — and the magnifier
+   (`search-open`). `testEveryTabsHeaderIsOnOneCentreLine` (0.67) checks the magnifier and "To buy" within
+   1.5 pt of the centre line of "To do" (they were already).
 2. On the To do side, a scrolling list (`LazyVStack`, 4 pt spacing):
    - The count (`actions-count`, 16 bold muted, monospaced): "Nothing to do." (no to-dos), "All done." (all
      ticked), else "`N` to do".

@@ -26,7 +26,7 @@ How Home is reached: the **Home** tab (`tab-home`); app launch (the app always s
 tapped packing reminder; any of the three Shortcuts actions (each switches to Home first).
 
 Source files: `App/Sources/RootView.swift`, `AMSPackingApp.swift`, `Sections.swift`, `Theme.swift`,
-`Buttons.swift`, `Screens/FirstRunView.swift`, `Screens/HomeScreen.swift` (all but Create new trip),
+`Buttons.swift`, `ScreenHeader.swift` (0.67), `Screens/FirstRunView.swift`, `Screens/HomeScreen.swift` (all but Create new trip),
 `Screens/Countdown.swift`, `Screens/GrabScreen.swift`, `Screens/GrabCollectionScreen.swift`,
 `Screens/GrabMenu.swift`, `Screens/SearchScreen.swift`, `Screens/Share.swift` (the grab-list parts),
 `Store/LibraryModel.swift` (the open-requests and test launch modes), `Store/Shortcuts.swift`,
@@ -251,18 +251,28 @@ the path must lie inside the app's sandbox container (`docs/store.md`).
 real headings: "the headings … dominant". They had been small and grey.
 
 **How it is reached and left.** The Home tab with the state `.ready`. It is a vertical scroll
-(`KeyboardAwayScroll`: dragging the scroll puts the keyboard away). Content is in a stack with 14 pt
+(`KeyboardAwayScroll`: dragging the scroll puts the keyboard away). Content is in a stack with 10 pt
 spacing, 16 pt side padding and 24 pt bottom padding.
 
 **What is on screen** (top to bottom):
-1. A row, aligned on the first text baseline, 14 pt top padding:
-   - "Grab and go": **Title 3 bold** (22 heavy before 0.62), `ink`; id `home-grab-heading`.
-   - A spacer.
+1. **Grab and go, its first line** — the shared tab header `ScreenHeader` (spec 06, "The tab header"):
+   `Metrics.screenTop` (4 pt) under the top of the screen (the status bar's safe area on the iPhone, the
+   title bar on the Mac), one row at least `Metrics.tap` tall with everything on ONE centre line:
+   - "Grab and go": **Title 3 bold** (22 heavy before 0.62), `ink`, one line (scales down to 80 %); id
+     `home-grab-heading`.
+   - A spacer (at least 8), then, 8 pt apart:
    - The magnifier `SearchButton` (`search-open`; section 15).
-   - "Grab Lists": a plain button, 14 pt bold, Home blue, no focus ring; id `grab-lists`. It opens the
-     Grab Lists sheet (section 8). The code comment notes that this door opens the grab lists, not the
-     templates ("Your templates"), and that the owner's note on the Mac asked for "Your Grab Lists".
-2. The grab tiles (`GrabButtons`, section 4) for `library.homeGrabLists()`. When that is empty (every list
+   - "Grab Lists": a plain button, Footnote semibold, Home blue, no focus ring, `Metrics.tap` tall so the
+     whole height takes the tap; id `grab-lists`. It opens the Grab Lists sheet (section 8). The code
+     comment notes that this door opens the grab lists, not the templates ("Your templates"), and that the
+     owner's note on the Mac asked for "Your Grab Lists".
+
+   0.67 (his note on 0.63: "The area above Grab and go is underused"): until then the row was aligned on
+   the heading's first text baseline with 14 pt above it, so the 36-pt magnifier stood up from the baseline,
+   sat 11 pt higher than the words, and left an empty band at the top — the heading's words began 39 pt
+   under the iPhone's status bar (18 now) and the first tile 73 pt (54 now).
+2. The grab tiles (`GrabButtons`, section 4) for `library.homeGrabLists()`, **6 pt** under the header (header
+   and tiles share their own stack, 0.67; 10 before). When that is empty (every list
    taken off Home), a button in their place instead (0.62, `home-grab-none`): "No grab lists on Home. They
    wait in Grab Lists — tap here to put one back." (16 pt semibold Home blue, 14 pt padding, `card` fill,
    radius 12, a 1.5-pt Home-blue stroke at 50 %). It opens Grab Lists.
@@ -300,6 +310,13 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
 **Tests.**
 - UI `testTheEditorsLeadWithTheirHeadings` checks that `home-grab-heading` and `home-create-heading`
   exist.
+- UI `testHomeLeadsWithGrabAndGoAtTheTop` (0.67): measured from the top of Home as the eye sees it (under
+  the iPhone's status bar; under the Mac's title bar), Grab and go's words begin less than 24 pt down and
+  not above it (−2 pt allowed), the first tile is less than 14 pt under the heading, and the first tile
+  begins less than 60 pt down on the iPhone (50 on the Mac). Seen red with the old 14-pt top planted:
+  "an empty band of 28.0 pt above Grab and go"; on 0.66 it said 39.0.
+- UI `testEveryTabsHeaderIsOnOneCentreLine` (0.67, spec 06): `search-open` and `grab-lists` on the centre
+  line of `home-grab-heading`, within 1.5 pt.
 - UI `testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp` (iPhone only): with Grab Lists open, a
   Shortcut for Bike arriving on return opens `grab-detail` and Grab Lists is gone; with Search open, a
   tapped reminder for the next trip opens `trip-detail` "Sunny weeks".
@@ -634,8 +651,9 @@ device's own working state.
    - `title`, 22 pt heavy `ink`, one line, scaling to 70 %;
    - a spacer;
    - **"Edit"** (`grab-edit`): an outlined capsule in the tone;
-   - **Share** (`grab-share`): the drawn share mark only, outlined in the tone, accessibility label
-     "Share";
+   - **Share** (`grab-share`): the drawn share mark only (`ShareMark`, 22 × 22, centred — 0.67; it was
+     framed at 18 and, drawn on its 24-pt grid, hung 3 pt low and right), outlined in the tone,
+     accessibility label "Share";
    - **"Done"** (`grab-done`): a capsule filled with the tone, white text.
    - The buttons use `HeaderButtonStyle`: 17 pt bold (16 until 0.62, which overrode the `.font(17 bold)`
      written on them — spec 06 §20), minimum 36 tall, 14 pt side padding, 70 % opacity while pressed, words
@@ -1249,6 +1267,8 @@ web app for anyone, and in this app under Settings → Open a shared link.
 - Model `SharingTests.testAReceivedGrabListGetsTheStandardLookForWhatIsUnknown` (0.62): a known drawing and
   colour are kept; "kite" and "magenta" become "" and "blue".
 - UI `testAnEmptyGrabListSaysHowToFillIt`: Share on an empty list shows `share-empty`, not `share-toolong`.
+- UI `testShareSitsOnItsHeadersCentreLine` (0.67): on `grab-0`, `grab-share` and `grab-edit` sit on the
+  centre line of `grab-done` (within 1.5 pt); the template half is in spec 04.
 - PackingCore `GrabSharingTests`:
   - `testRoundTripOfNameLookAndItems`
   - `testAcceptsAWholeLinkOrTextWithTheLinkPastedInsideIt`
@@ -1566,7 +1586,9 @@ Actions finds things, lists, trips and to-dos." It deliberately improves on the 
 The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0.56).
 
 **How it is reached and left.**
-- **In:** the magnifier (`search-open`, a drawn magnifier 24 pt in a 40 × 36 area, `muted`,
+- **In:** the magnifier (`search-open`, a drawn magnifier 24 pt in a (`Metrics.tap` + 4) × `Metrics.tap`
+  area — 40 × 36 on the iPhone, 30 × 26 on the Mac since 0.67 (it was 40 × 36 there too, the tallest thing in
+  the Mac's headers), `muted`,
   accessibility label "Search everything") on Home (beside "Grab Lists"), Trips, Templates, Care and
   To do. Each opens its own sheet.
 - **Out:** "Done" (`search-done`, Home-blue filled capsule; Escape too, 0.62 — even with the field being typed in) or a swipe down.

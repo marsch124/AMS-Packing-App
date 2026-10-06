@@ -164,3 +164,21 @@ enum SVGPath {
         }
     }
 }
+
+/// A drawing on the 24-point grid that fills whatever square it is framed in, centred.
+///
+/// 🪤 A bare `SVGPath.path` is drawn at its own coordinates: framed smaller than 24 it
+/// hangs off to the bottom right, framed bigger it sits up and to the left. 0.63's
+/// Share mark, framed at 18, sat 3 pt low in its pill with its box poking through the
+/// pill's edge — his note (6 Oct 2026): "The share button is not aligned with the
+/// icon". The marks that are framed at other sizes (Share, the pen, the grip) are
+/// drawn through this, so they are centred at any size.
+struct GridShape: Shape {
+    let d: String
+
+    func path(in rect: CGRect) -> Path {
+        let k = min(rect.width, rect.height) / 24
+        let move = CGAffineTransform(translationX: rect.midX - 12 * k, y: rect.midY - 12 * k).scaledBy(x: k, y: k)
+        return SVGPath.path(d).applying(move)
+    }
+}

@@ -75,7 +75,10 @@ struct ShareDoor: View {
             } else {
                 Button { offer = make() } label: {
                     HStack(spacing: 6) {
-                        ShareMark().frame(width: 18, height: 18)
+                        // Centred on the word's line, and as tall as its capitals and a
+                        // little more (0.67: framed at 18 it hung 3 pt low — his note
+                        // "The share button is not aligned with the icon").
+                        ShareMark().frame(width: 22, height: 22)
                         if !markOnly { Text("Share") }
                     }
                 }

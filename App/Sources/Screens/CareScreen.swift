@@ -42,18 +42,12 @@ struct CareScreen: View {
         let stats = model.library.kitStats(today: today)
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Care").font(.system(.title2, weight: .bold)).foregroundStyle(AppSection.care.color)
-                        .accessibilityIdentifier("care-heading")
-                    Text(CareScreen.line(stats))
-                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("care-line")
-                }
-                    Spacer()
+                // Title and search on ONE centre line (ScreenHeader; his note on 0.63).
+                ScreenHeader(title: "Care", tint: AppSection.care.color, id: "care-heading",
+                             line: CareScreen.line(stats), lineId: "care-line") {
                     SearchButton { searching = true }
                 }
-                .padding(.top, 14).padding(.bottom, 2)
+                .padding(.bottom, 2)
 
                 // Everything he owns, on a list or not — the web app's "Your things".
                 Button { opening = ThingsRequest(search: "") } label: {

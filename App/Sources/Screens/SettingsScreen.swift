@@ -47,7 +47,9 @@ struct SettingsScreen: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.top, 14)
+                // Settings has no header line: its first card starts where every tab's
+                // first line does (Metrics.screenTop, 0.67; was 14).
+                .padding(.top, Metrics.screenTop)
                 .accessibilityIdentifier("settings-lists")
 
                 // Remind me to pack (his idea 7) — per device, off until he says.

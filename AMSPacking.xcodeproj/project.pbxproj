@@ -52,6 +52,7 @@
 		B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878AF15AECFDDAD02F227DDD /* TripScreen.swift */; };
 		B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */; };
 		B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A74DCE749078F203A8E87BF /* SettingsScreen.swift */; };
+		B7EFE44328F09E5EB47E6485 /* ScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */; };
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
 		BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5604CA6875D255BD93251 /* CareScreen.swift */; };
 		C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0A839566CDE77B068F47C5 /* BulkChange.swift */; };
@@ -120,6 +121,7 @@
 		4EB48F2667254D2AD3862586 /* BagsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagsScreen.swift; sourceTree = "<group>"; };
 		4F6491A9AB1E25EAC20F46EB /* TableFilterSort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableFilterSort.swift; sourceTree = "<group>"; };
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
+		55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenHeader.swift; sourceTree = "<group>"; };
 		56F5604CA6875D255BD93251 /* CareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareScreen.swift; sourceTree = "<group>"; };
 		5844FD1A40A106FF0878B093 /* TableColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumns.swift; sourceTree = "<group>"; };
 		5A986BF2DF0FA5E39E42559C /* Words.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Words.swift; sourceTree = "<group>"; };
@@ -244,6 +246,7 @@
 				534AF493408BF588BA9222FF /* AMSPackingApp.swift */,
 				2523F591EFB11AFB55FEFF2D /* Buttons.swift */,
 				BA49BA1121FBB7576FC62E32 /* RootView.swift */,
+				55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */,
 				A78A30067C884BCEB042959A /* Sections.swift */,
 				AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */,
 				CE240BD38035471259419B81 /* TemplateIcons.swift */,
@@ -480,6 +483,7 @@
 				E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */,
 				5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */,
 				C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */,
+				B7EFE44328F09E5EB47E6485 /* ScreenHeader.swift in Sources */,
 				AEC09A016E6CEAD021B5D4C6 /* SearchScreen.swift in Sources */,
 				EB766063382A7E2DADC60C89 /* Sections.swift in Sources */,
 				B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */,

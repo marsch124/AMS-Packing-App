@@ -23,15 +23,10 @@ struct EventsScreen: View {
         let toDos = model.library.openToDoCount()
         KeyboardAwayScroll {
             LazyVStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Trips").font(.system(.title2, weight: .bold)).foregroundStyle(AppSection.events.color)
-                            .accessibilityIdentifier("events-heading")
-                        Text(EventsScreen.summary(cards))
-                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                            .accessibilityIdentifier("events-summary")
-                    }
-                    Spacer()
+                // Title, map, search and the to-do chip on ONE centre line (ScreenHeader;
+                // his note on 0.63: the pin and the search stood higher than "Trips").
+                ScreenHeader(title: "Trips", tint: AppSection.events.color, id: "events-heading",
+                             line: EventsScreen.summary(cards), lineId: "events-summary") {
                     WorldMapDoor().environmentObject(model)
                     SearchButton { searching = true }
                     if toDos > 0 {
@@ -41,7 +36,7 @@ struct EventsScreen: View {
                                 Text(toDos == 1 ? "to do" : "to do").font(.system(.footnote, weight: .semibold))
                             }
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 12).frame(minHeight: 34)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                             .background(Capsule().fill(AppSection.actions.color))
                             .contentShape(Capsule())
                         }
@@ -50,7 +45,7 @@ struct EventsScreen: View {
                         .accessibilityLabel("\(toDos) to do, open the To do tab")
                     }
                 }
-                .padding(.top, 14).padding(.bottom, 4)
+                .padding(.bottom, 4)
 
                 if cards.isEmpty {
                     Text("No trips yet. Build one on the Home tab.")

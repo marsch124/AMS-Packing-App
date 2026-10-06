@@ -252,7 +252,9 @@ struct SearchButton: View {
                 .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 .frame(width: 24, height: 24)
                 .foregroundStyle(Theme.muted)
-                .frame(width: 40, height: 36)
+                // A tap's height, as the buttons beside it (36 on the iPhone, 26 on the
+                // Mac — it was 36 on both, the tallest thing in the Mac's headers).
+                .frame(width: Metrics.tap + 4, height: Metrics.tap)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()

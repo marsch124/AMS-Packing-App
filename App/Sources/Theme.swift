@@ -35,6 +35,10 @@ enum Theme {
     static let ink   = Color(light: 0x16232a, dark: 0xe7edee)
     static let muted = Color(light: 0x5f7078, dark: 0x94a6ac)
     static let line  = Color(light: 0xe2e8ea, dark: 0x26343a)
+    /// Quieter than `muted`: a mark that is there to be found, not read — a thing's
+    /// grip ≡ while arranging (his note on 0.63, 6 Oct 2026: the things' grips in
+    /// `muted` looked "black", too close to the headings' lilac ones).
+    static let faint = Color(light: 0xa9b5ba, dark: 0x5a6a71)
 }
 
 /// A ScrollView that puts the keyboard away when it is dragged — on the phone
@@ -68,4 +72,9 @@ enum Metrics {
     /// 2026), "These arrows are rather difficult to hit. Could you please enlarge the
     /// hotspots". The arrows themselves stay small; only the area that takes the tap is.
     static let fingertip: CGFloat = 44
+    /// From the top of a tab (under the status bar, or the Mac's title bar) to its
+    /// first line, the header. Was 14 on most tabs, and the header lined up on the
+    /// title's baseline stood a 36-pt search button up above that — his note on 0.63
+    /// (6 Oct 2026), "The area above Grab and go is underused".
+    static let screenTop: CGFloat = 4
 }

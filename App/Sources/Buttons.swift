@@ -103,16 +103,18 @@ struct WideButtonLabel<Mark: View>: View {
 /// "should be a pen or something like that".
 struct PenMark: View {
     var body: some View {
-        SVGPath.path("M15.2 5.3L18.7 8.8L8.6 18.9L4.3 19.7L5.1 15.4ZM13 7.5L16.5 11M5.1 15.4L8.6 18.9")
+        GridShape(d: "M15.2 5.3L18.7 8.8L8.6 18.9L4.3 19.7L5.1 15.4ZM13 7.5L16.5 11M5.1 15.4L8.6 18.9")
             .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round, lineJoin: .round))
             .accessibilityHidden(true)
     }
 }
 
-/// A box with an arrow going up out of it, drawn — for Share.
+/// A box with an arrow going up out of it, drawn — for Share. Centred in whatever
+/// frame it is given (`GridShape`): until 0.67 the 18-pt one in a sheet's Share pill
+/// hung 3 pt low, its box through the pill's edge.
 struct ShareMark: View {
     var body: some View {
-        SVGPath.path("M12 15V4.5M8 8.5l4-4 4 4M6.5 11.5H5.5v8h13v-8h-1")
+        GridShape(d: "M12 15V4.5M8 8.5l4-4 4 4M6.5 11.5H5.5v8h13v-8h-1")
             .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round, lineJoin: .round))
             .accessibilityHidden(true)
     }

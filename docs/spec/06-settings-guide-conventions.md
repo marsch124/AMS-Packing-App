@@ -43,7 +43,7 @@ order in the code:
 
 | # | Element | Shown when | Id |
 |---|---|---|---|
-| 1 | *Your choices* door (§2) | always; 14 pt extra space above it | `settings-lists` |
+| 1 | *Your choices* door (§2) | always; `Metrics.screenTop` (4 pt) above it — where every tab's first line starts (0.67; 14 before) | `settings-lists` |
 | 2 | *Remind me to pack* card (§3) | always | `settings-reminders-card` |
 | 3 | *iCloud sync* card (§4) | always | `sync-card` |
 | 4 | Three guide doors: *What's new*, *How it works*, *Your first real trip* (§5) | always | `settings-whatsnew`, `settings-howitworks`, `settings-firsttrip` |
@@ -1065,6 +1065,7 @@ dynamic `NSColor` on the Mac — `bestMatch(from: [.darkAqua, .aqua])` — and a
 | `ink` | `#16232a` | `#e7edee` | text |
 | `muted` | `#5f7078` | `#94a6ac` | secondary text, chevrons, ✕ marks |
 | `line` | `#e2e8ea` | `#26343a` | hairlines and card borders (1 pt) |
+| `faint` | `#a9b5ba` | `#5a6a71` | a mark to be found, not read: a thing's grip ≡ while arranging (0.67) |
 
 **The six sections** (`enum AppSection: String, CaseIterable` — `home, events, templates, care, actions, settings`;
 the same six, order and colours as the web app's tab bar; ONE sRGB hex each, the same in light and dark — mid-tones
@@ -1139,6 +1140,14 @@ Marks are `.accessibilityHidden(true)` where words already say it (Pen, Share, C
 
 **`SectionMark(section, size = 24, weight = 1.9)`** scales the mark by size/24 and strokes it with
 `weight × size/24`. Used in the tab bar, the How-it-works topics, the loop picture and placeholders.
+
+**`GridShape(d:)`** (SVGPath.swift, 0.67) — a 24-grid drawing as a Shape that scales to whatever square it is
+framed in (factor min(width, height)/24) and is centred in it; the stroke width is not scaled. 🪤 A bare
+`SVGPath.path` is drawn at its own coordinates: framed smaller than 24 it hangs off to the bottom right, framed
+bigger it sits up and left. 0.63's Share mark, framed at 18 in a sheet's Share pill, hung 3 pt low with its box
+through the pill's edge (his note "The share buttons is not aligned with the icon"); the grip ≡ (framed 20) sat
+2 pt off; the map pin (26) 1 pt. `ShareMark`, `PenMark` and `GripMark` draw through `GridShape` now; a mark still
+drawn with a bare `SVGPath.path` must be framed at exactly 24 × 24.
 
 **Data emoji.** Emoji that are DATA (a phase's or template's emoji imported from the web app) are not drawn, with one
 exception: a template's `Cover` shows `list.emoji` as text when the template has no icon (his covers "are his data").
@@ -1226,7 +1235,7 @@ failures are listed in one message). `testHomeBuildsATrip` (Create trip enabled,
 `testABagIsRenamedAndDeletedFromItsPage`. **Colour cannot be tested**: "A colour cannot be read by a test; being
 pressable and answering can."
 
-## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
+## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `ScreenHeader.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 
 **Origin.** His word, 5 Oct 2026: "make things smaller so that the app is efficient, fluid, and Apple-standard",
 and "make the buttons even slimmer, smaller when possible"; "less space between blocks on the forms and slimmer
@@ -1278,10 +1287,28 @@ semibold (the `size` parameter of `SmallDeleteButton` is gone).
 | `compact` | 32 | 24 | smaller buttons (40) |
 | `chip` | 28 | 22 | pills (36) |
 | `header` | 30 | 24 | Done, Cancel, Share … at the top of a page (`HeaderButtonStyle`, 36) |
+| `screenTop` | 4 | 4 | from the top of a tab (under the status bar / the Mac's title bar) to its first line (0.67; 14 on most tabs, 12 on To do before) |
 
 Buttons have 12 pt side padding (14–16 before); the field button (Add, New, Make) a corner radius of 8. One exception
 keeps its size on both: `Metrics.fingertip` = 44, the touch area of the table's column arrows and Hide (his ask, 4 Oct
 2026: "These arrows are rather difficult to hit") — the arrows are drawn 22 within it.
+
+**The tab header** — **`ScreenHeader(title:, tint:, id:, font = Title 2 bold, line:, lineId:, trailing:)`**
+(ScreenHeader.swift, 0.67): the first line of Home, Trips, Templates and Care. `Metrics.screenTop` above it; one row,
+at least `Metrics.tap` tall, `HStack(alignment: .center, spacing: 8)`: the title (one line, scales to 80 %, id `id`), a
+spacer (≥ 8), then the tab's buttons (`trailing`) — all on ONE centre line. Under the row, when given, the `line`
+(Subheadline, muted, id `lineId`). Used as: Home — "Grab and go", Title 3 bold, ink, with the magnifier and Grab
+Lists; Trips — "Trips", green, map pin, magnifier, the to-do chip, line = the trips summary; Templates — "Your
+templates", violet, magnifier, + New, line = the templates summary; Care — "Care", orange, magnifier, line = the kit
+line. To do's first line (To do · To buy · magnifier) is its own `HStack` (centred, `Metrics.screenTop` above);
+Settings has no header line. History: his note on 0.63 (6 Oct 2026), "Overall, icons are not aligned", with a
+picture of Trips — every tab built this row itself, aligned on the title's first text baseline with 14 pt above it,
+so a 36-pt icon button stood up from the baseline about 10 pt higher than the title, and left an empty band at the
+top of every tab ("The area above Grab and go is underused"). UI `testEveryTabsHeaderIsOnOneCentreLine` checks on
+Home, Trips, Templates, Care and To do that every button of the line sits within 1.5 pt of the title's centre line
+and nothing reaches above the top of the screen (the iPhone's status bar, the Mac's title bar; 2 pt allowed). On
+0.66 it was red on four tabs (the magnifier 10–11 pt off everywhere, Home's Grab Lists and Templates' + New 2.5 pt);
+planted again by aligning `ScreenHeader`'s row on `.firstTextBaseline`, the same four.
 
 **Headings.**
 - **`HeadingBand(title:, tint = Care orange, id:)`** — a block's heading: Headline in the tint, full width, wraps,

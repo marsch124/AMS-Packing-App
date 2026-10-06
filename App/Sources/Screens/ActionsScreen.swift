@@ -31,7 +31,8 @@ struct ActionsScreen: View {
                 Spacer()
                 SearchButton { searching = true }
             }
-            .padding(.horizontal, 16).padding(.top, 12)
+            // At the same height as every tab's first line (Metrics.screenTop, 0.67).
+            .padding(.horizontal, 16).padding(.top, Metrics.screenTop)
             if buying {
                 BuyList(text: $buyText).environmentObject(model)
             } else {
