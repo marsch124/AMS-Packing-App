@@ -761,7 +761,7 @@ named `thing-<list>-<n>` exactly as its pill was (so `thing-category-7` is still
 ticked (a drawn tick in orange, selected trait). A tap on a row takes it and closes the list; nothing is stored
 before Save, as before. A blank choice (value "": "Both have one", "No bag", "Not said") is in grey on the field and
 in the list. Until 0.64 each of these lists was a row of pills. On these templates, where several may be ticked,
-stays pills.
+stays pills. The Section on each template it is on (item 6a, 0.64) is a drop-down too, in violet.
 
 **What is on screen, top to bottom** (accessibility container `thing-detail`; 16 pt padding; headings 22 pt
 apart; a field 6 pt under its heading):
@@ -790,6 +790,34 @@ apart; a field 6 pt under its heading):
 6. **On these templates** — pills band in VIOLET (templates colour, `thing-lists-title`): every template except
     the bag list (`templatesForThings()`), A–Z (`jsLocaleCompare`, base sensitivity) (`thing-lists-N`; with the sample: Common base 0,
     Hiking 1, Swim 2); several may be lit; a tap toggles.
+6a. **Section on <template>** (0.64) — his ask of 6 Oct 2026: he likes sections because "it gives a visual
+    structure to the packing", and asked whether a thing's section can be set "already in this view" — its page —
+    instead of opening each template it is on. A section belongs to a TEMPLATE (`PackList.sections`) and the
+    thing's place on it (its membership) names one, so: right under the pills, for EACH template that is lit — in
+    the pills' order, one lit in this edit too (it appears the moment its pill is lit, and goes when it is
+    unlit) — a drop-down (`DropDown`, spec 06 §21) in VIOLET, 10 apart:
+    - Heading "Section on <template name>" as a heading INSIDE the block (`heading: .title` — `HeadingTitle`,
+      Subheadline semibold violet; id `thing-section-<n>-title`), the field under it (`thing-section-<n>`, value =
+      the words of the choice that stands), `<n>` = the template's position in the On these templates pills (with
+      the sample: the Headlamp has `thing-section-0` (Common base) and `thing-section-1` (Hiking); the Map only
+      `thing-section-1`).
+    - Its list (`thing-section-<n>-list`): **"No section"** first (`thing-section-<n>-none`, the component's
+      `blank` row; value "", grey on the field and in the list), then that template's sections in its own order
+      (`thing-section-<n>-0`, `-1`, …, value = the section id, words = its name), then a section typed here and not
+      made yet (the next row, ticked); at the foot **"A new section"** (field `thing-section-<n>-new`, Add
+      `thing-section-<n>-add`; nothing typed → "Type the section's name first." under it,
+      `thing-section-<n>-add-needs`, and the list stays open).
+    - On appear each lit template shows `Library.thingSection(itemId:templateId:)`: the section of the thing's
+      FIRST place on it (`firstPlace`: by `order`, as the template reads its rows; equal numbers keep the stored
+      order) when that is one of THIS template's sections, else "" (No section) — an id from another template, or of
+      a section since removed, reads as none, as on the template's own page (`groupItemsBySection`). A template lit
+      in this edit starts on No section.
+    - A thing on one template TWICE (another "When", say): the page speaks for the first place only; the second
+      keeps its own section and is set on the template's row (spec 04 §7). Nothing on the page says so.
+    - "A new section" typed and Added: a section of that template with the same `normName` is simply chosen;
+      otherwise the name WAITS for Save as the last, ticked row (the field shows it) — nothing is written, so
+      Cancel leaves the template as it was (as the row editor does, spec 04 §7). The list closes.
+    - Choosing stores nothing; Save does (see Behaviour).
 7. "Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and
     tap this thing." (`thing-tags-hint`, 15 medium muted).
 8. **Kept at home** — band (`thing-heading-kept`); since 0.64 CHOSEN, never typed (his word, 6 Oct 2026: "Can we
@@ -877,8 +905,25 @@ templates Subheadline, `Metrics.chip` tall.
   differ from the record — the care record (`normalizeMaintenance` of the old record with the new interval and
   trimmed notes: its log, last service and link kept; nothing said = no record); then for every template of
   `templatesForThings()` `setOnTemplate(on: chosen)` (a new membership goes to the bottom; an unticked template
-  loses the membership; the bag list membership is never touched). (3) Close. Rename and update are two commits;
-  each runs `followThing`, so open lines on trips still ahead follow.
+  loses the membership; the bag list membership is never touched); then (0.64), for every template it is on now
+  whose Section was CHANGED on the page (the choice differs from what it showed on opening; a template lit in this
+  edit counts from No section), `Library.setThingSection(itemId:templateId:section:newSection:)`
+  (PackingLibrary/ThingSections.swift) with the chosen section id — or, for a typed one, "" and its name. (3)
+  Close. Rename and update are two commits; each runs `followThing`, so open lines on trips still ahead follow.
+- `setThingSection` stores what the row editor's Save stores for its Section (`saveRow`): the FIRST place's
+  `section` (via `updateMembership`), and nothing else of the place. A typed name (trimmed, not blank) wins over the
+  id: the template's section of that `normName` is used, or a new one is made then (`addSection`, appended to the
+  template's sections). Then `followThing(id:)`, as `saveRow` does: on trips still ahead (not reviewed, not over),
+  the thing's lines that are not ticked, not added by hand and not changed on the trip are rebuilt from the
+  templates — so their `section` (the section's NAME, spec 03) follows, and a trip sorted by Section shows the line
+  under its new heading at once. Ticked lines and finished trips keep their old heading. The trip's line comes from
+  the FIRST template that holds the thing (`buildTotalEntries`; the base template before the ticked ones): a
+  section set on Hiking does not move a line that came from the base template (the sample's Headlamp). It returns
+  whether anything changed, and is a NO-OP — no write, no section made, no trip touched — when the place is already
+  in that section (by id, or a typed name of its own section), when `section` is not one of the template's, when
+  the thing is not on it, or the template is unknown.
+- What happens to existing trips: nothing is rebuilt but the thing's open lines on trips still ahead (above); a
+  trip already packed, reviewed or over keeps the headings it was packed with.
 - If the thing no longer exists when Save is pressed, the page just closes.
 - Delete the thing: closes the page FIRST, then `deleteThing(id:)` (memberships and kit entries go; trips keep
   their lines).
@@ -887,6 +932,22 @@ templates Subheadline, `Metrics.chip` tall.
 extra key is preserved untouched (the draft is the whole item).
 
 **iPhone vs Mac.** Mac: at least 520 × 600. The date picker is the platform's compact picker.
+
+**Tests (Section on a template, 0.64).** UI `testAThingsPageSetsItsSectionOnATemplate` (the Map, on Hiking only:
+`thing-section-1` and no `-0`/`-2`; "Section on Hiking", "No section", under the pills; Swim lit → `thing-section-2`
+"Section on Swim" appears, unlit → gone; the list: No section ticked, Lights `-0`, no `-1`, the foot's field; Lights
+chosen and saved → on Hiking's page the Map is under Lights with the Headlamp, the boots under Everything else; the
+trip still ahead, sorted by Section (spec 03), has the Map (`trip-line-6`) under Lights);
+`testAThingsPageMakesANewSectionOnSave` (the Headlamp: Common base "No section", Hiking "Lights", ticked; photographed
+closed and open; the Map: Add with nothing typed → `thing-section-1-add-needs`; "Navigation" typed and Added → the
+field says it; Cancel → reopened, Hiking has no second section; typed again and Saved → reopened, "Navigation" is
+`thing-section-1-1`, ticked; Hiking's page has ONE Navigation heading with the Map under it, the Headlamp still under
+Lights). Model `ThingSectionTests` (6): a section set on one template only, and No section takes it out; a typed
+section made once, a known name (any capitals) chosen, a typed name wins over the id; nothing written when nothing
+changes (the same section, its name typed, another template's section, an unknown id, a thing not on it, an unknown
+template — the library is equal before and after); a thing twice on a template sets its first place by order, not by
+storage; a section from elsewhere reads as none and stays stored; the section reaches a trip still ahead (the
+line keeps its id, `groupBy("section")` reads it) but not a ticked line or a trip that is over.
 
 **Tests.** UI (0.64) `testThePickOneListsAreDropDownsThatChooseAndKeep` (on the Headlamp: all seven pick-one
 lists are fields whose rows are not out before opening, On these templates is still pills; the Bag list opened and

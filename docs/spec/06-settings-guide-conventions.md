@@ -1302,14 +1302,21 @@ picked pills carry the `.isSelected` trait (what tests read). `ContextPills` put
 opens its choices as a list beside it. His word, 6 Oct 2026, after Kept at home became the first: "I like the
 dropdown for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere? I think it would lend
 itself perfectly for 'usually packed in', 'Kind of thing' etc." Used for every pick-one list on a thing's page (Kind
-of thing, Whose it is, Kept at home, Usually packed in, When, Condition, Care — spec 05) and on a template's row
-(Bag, When, Section — spec 04 §7). Lists where SEVERAL may be picked stay `Pills` (On these templates; a row's
-Season, Context, Transport, Food), and so do the short toggles of Create new trip and Trip settings (a few words
-each, seen at a glance, one tap).
+of thing, Whose it is, Kept at home, Usually packed in, When, Condition, Care, and — 0.64 — the Section on each
+template it is on — spec 05), on a template's row (Bag, When, Section — spec 04 §7) and, since 0.64, a trip's
+Sorting (spec 03: five pills no longer fit an iPhone's line). Lists where SEVERAL may be picked stay `Pills` (On
+these templates; a row's Season, Context, Transport, Food), and so do the short toggles of Create new trip and Trip
+settings (a few words each, seen at a glance, one tap).
 
-`DropDown(title:, options:, selected:, id:, tint = Care orange, blank = nil, other = false, same = exact,
-newEntry = nil, choose:)`:
-- `title: String?` — the heading, a `HeadingBand` in the tint (none when nil).
+`DropDown(title:, heading = .band, options:, selected:, id:, tint = Care orange, blank = nil, other = false,
+same = exact, newEntry = nil, choose:)`:
+- `title: String?` — the heading's words (no heading when nil).
+- `heading: DropDownHeading` (0.64) — how the title reads: `.band` — a `HeadingBand` in the tint over the field (every
+  drop-down until 0.64); `.title` — a `HeadingTitle` in the tint over the field (Subheadline semibold): a heading
+  inside a block that already has one — a thing's "Section on <template>" under its On these templates band;
+  `.beside` — the words to the LEFT of the field on the same line (Subheadline semibold, muted, one line, never
+  squeezed: `fixedSize`; 10 apart; the field takes the rest of the line) — the trip's "Sorting", kept where his marks
+  of 2026-09-25 put it when its pills became a drop-down. In all three the title's id is `ids.title`.
 - `options: [(value: String, label: String)]` — the rows, in order; `value` is what is stored, `label` what is read.
 - `selected: String` — the value that stands; `choose(value)` is called when a row is tapped (the caller keeps the
   value in its own draft — nothing is stored before the page's Save).
@@ -1318,7 +1325,9 @@ newEntry = nil, choose:)`:
   test that named a pill names the same row), the heading `<prefix>-title`. Kept at home, which came first, passes
   its own: `DropDownIds(field: "thing-storage", list: "thing-places", row: "thing-place", title: "thing-heading-kept")`.
 - `blank: String?` — words for a first row meaning "nothing said" (value ""), named `<row>-none`, before the
-  options (only Kept at home's "Not said"; elsewhere such a row is simply option 0, as its pill was).
+  options (Kept at home's "Not said", and since 0.64 a thing's Section's "No section" — new, so no pill ids to keep,
+  and its sections count from 0; elsewhere such a row is simply option 0, as its pill was — a row's own Section
+  has "No section" as `row-section-0`).
 - `other: Bool` — when the value that stands is not blank and none of the rows, a row of its own at the END, its
   words = the value, ticked, named `<row>-other`; for lists whose values are words (Kind of thing, Whose it is, Kept
   at home, a row's Bag) — an id (a When step, a section, a condition) would read as nonsense.
@@ -1327,7 +1336,8 @@ newEntry = nil, choose:)`:
   field (`<row>-new`) and the button (`<row>-add`, `FieldButtonLabel` in the tint, never grey); Add or Return with
   nothing typed (after `jsTrim`) shows `needs` under them (`<row>-add-needs`, `NeedsLine`, gone as he types) and
   the list stays open; otherwise `add(trimmed words)` is called, the field empties and the list closes. Kept at
-  home: "A new place" / "Type the place first."; a row's Section: "A new section" / "Type the section's name first.".
+  home: "A new place" / "Type the place first."; a row's Section and a thing's Section on a template (0.64): "A new
+  section" / "Type the section's name first.".
 
 What it draws:
 - **The field**: the words of the choice that stands — the matching row's label; with a `blank` row and a blank

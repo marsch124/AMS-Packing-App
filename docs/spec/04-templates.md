@@ -17,7 +17,9 @@ A template holds **rows**. A row is a **membership**: the link between ONE *thin
 Care → Your things) and ONE template, carrying what *this template* says about the thing (its bag here, its "When"
 here, its section, how many, a note, and "Only on some trips" conditions). A thing exists once; it can sit on many
 templates, and even twice on one template (e.g. a different "When" each time). Taking a row off a template or
-deleting a template **never deletes a thing**.
+deleting a template **never deletes a thing**. A row's section is set on the row (§7), by dragging it under a
+heading (§6a, Arrange) and — since 0.64 — from the thing's own page, one Section per template it is on (spec 05,
+item 6a: the FIRST place when it is on a template twice).
 
 **How one reaches it.**
 - The **Templates** tab (third tab; `tab-templates`, screen container `screen-templates`; violet `#7c5cd6`).
@@ -680,7 +682,8 @@ thenHoldForDuration: 0.8)` on the grips; they were run on the iPhone simulator o
 
 ### Tests
 - UI (`-uiTestingSections`: the sample with Hiking under Lights (Headlamp, Spare batteries) and Clothes (Hiking
-  boots, Rain jacket, Wool socks), the Map under no heading — `SampleLibrary.sectioned()`):
+  boots, Rain jacket, Wool socks), the Map under no heading — `SampleLibrary.sectioned()`; since 0.64 its trip is
+  packed from Hiking as it then reads, 9 lines, so a trip sorted by Section has headings — spec 03):
   `testArrangeTurnsOnAndOff` (offered by Section and off; on = selected, the hint, headings "Lights"/"Clothes",
   "Everything else", the six things in order, grips on headings and things, no ✕, no Find; a second tap ends it and
   the ✕ comes back; When hides Arrange, Section brings it back; Swim, with no headings, is arranged as one list of
@@ -713,7 +716,9 @@ means 'the same as the thing itself', so a change to the thing still reaches thi
 became per-template in 0.14 (24 Sep 2026). "Only on some trips" is his ask of 2 Oct 2026 ("a towel can be
 summer-only on Beach and always on Swim"). Heading bands: field test 3 Oct 2026 (the headings had been 14 grey,
 smaller than the pills). Bag, When and Section are drop-downs since 0.64 (his word, 6 Oct 2026: "I like the dropdown
-for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere?").
+for 'kept in'. Well done. Can we please make these kinds of drop-downs everywhere?"). The same Section can be set
+from the thing's page since 0.64 (his ask, 6 Oct 2026, "already in this view"; spec 05 item 6a) — it stores exactly
+what this editor's Save stores for it, and the trips still ahead follow the same way.
 
 ### How it is reached and left
 Tap a row on a template page. Left by "Cancel" (`row-cancel`, nothing saved; Escape too, 0.62 — the template's page
@@ -845,8 +850,11 @@ sections, group), `resolvedTemplates()` (bag names), `sameBagWords`. Writes thro
   does not change), `testOnlyOnSaysWhatATripReadsOnThisTemplate`, `testABlankBagNamesWhereItReallyGoes`.
 - The model classes `TemplateEditingTests`, `ThingEditingTests` and `RowEditingTests` live in
   `PackingLibraryTests/CreateTripTests.swift`.
-- **Not covered:** Food tags on screen; Transport-only tags on their own; a section from another template; an
-  unknown condition's pill on screen (no sample row has one).
+- **Not covered:** Food tags on screen; Transport-only tags on their own; a section from another template on
+  screen (the model reads it as none: `ThingSectionTests.testASectionFromElsewhereReadsAsNone`); an unknown
+  condition's pill on screen (no sample row has one).
+- The same section set from the thing's page (0.64): UI `testAThingsPageSetsItsSectionOnATemplate`,
+  `testAThingsPageMakesANewSectionOnSave` — they read Hiking's page by its headings afterwards (spec 05).
 
 ### Traps
 - 🪤 The Pills' heading must be bigger than the pills (field test 3 Oct): bands 22, inner headings 20, pills 15.
@@ -1057,7 +1065,7 @@ overrides), **TRIP LINE** (thing ↔ trip: a frozen copy).
 | `seasons`, `contexts`, `transports`, `catering` | always comes (no restriction) | Any strings kept (not checked against the vocabularies); on resolve they **replace** the thing's own. |
 | `weather` | not conditional gear | Only `rain`, `cold`, `hot`, `wind`, `snow` kept. A tagged row is held back from a trip unless the trip forces that weather on. No UI here. |
 | `container` | the template's `defaultContainer`, then the thing's own bag | Non-string → "". |
-| `section` | no section | A section id of THIS template; no item default. Not carried between templates by id (only by name). |
+| `section` | no section | A section id of THIS template; no item default. Not carried between templates by id (only by name). Written by the row editor's Save (`saveRow`, §7), by Arrange (`moveRow`/`removeSection`, §13a) and, since 0.64, from the thing's page (`setThingSection`, below) — the first place only when the thing is on the template twice. An id that is not one of this template's sections reads as none everywhere (`groupItemsBySection`, `thingSection`) and is kept until something else is chosen. |
 | `kit` | no kit | A kit NAME; no item default. No UI here. |
 | `phase` | the thing's own When | Trimmed, cut to 40 UTF-16 units; an unknown id is **kept** (likely a phase made on the other device); non-string → "". |
 | `itemType` | the thing's own | "item" / "reminder" / "" (anything else → ""). No UI here. |
@@ -1159,6 +1167,16 @@ Takes an edited **resolved** template apart:
 - `saveRow(templateId:memId:_ RowAnswers) -> Bool` (`TemplateRows.swift`) — the row editor's Save (§7): a section
   typed there made now, how many / note "" when equal to the thing's, conditions kept with words unknown to the
   app, then `followThing`. false when that row is not on that template.
+- (0.64, `ThingSections.swift`, for the thing's page — spec 05 item 6a) `firstPlace(itemId:templateId:) ->
+  Membership?` — the thing's first place on that template by `order` (NaN = 0; equal numbers keep the stored
+  order), nil when it is not on it. `thingSection(itemId:templateId:) -> String` — that place's section when it is
+  one of THIS template's, else "". `setThingSection(itemId:templateId:section:newSection: = "") -> Bool` — puts the
+  first place under `section` (an id of this template, or "" = none) or, when `newSection` is not blank after
+  `jsTrim`, under the template's section of that `normName` or a new one (`addSection`); then `followThing(id:)`,
+  as `saveRow` does. Returns whether anything changed; a no-op (nothing written, no section made, no trip touched)
+  when the place is already there, `section` is not one of the template's, the thing is not on it, or the template
+  is unknown. Only `section` changes — not `order` (as in `saveRow`; Arrange is what renumbers). Does not touch the
+  template's `updatedAt` (neither does `addSection`). Model tests `ThingSectionTests` (6; spec 05).
 - `letCopiedAnswersFollowTheirThings() -> Int` — the clean-up of the rows an older build froze: a membership whose
   non-empty `qty` or `note` is EXACTLY its thing's own is set back to "" (nothing on screen changes; a row of his
   own that says something else is kept). Run by `LibraryModel.reload()` on every load, after duplicate records are
