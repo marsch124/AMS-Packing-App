@@ -574,7 +574,7 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
 ### What is on screen (a lazy vertical stack, horizontal padding 16)
 
 1. Header line — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), 4 pt bottom
-   padding: **"Trips"** (Title 2 bold, green, id `events-heading`) and, on the SAME centre line at the
+   padding; on the Mac pinned in the window's title bar strip, after the window buttons (the page scrolls under it): **"Trips"** (Title 2 bold, green, id `events-heading`) and, on the SAME centre line at the
    right, 8 pt apart: the map pin (`WorldMapDoor`, id `events-map`: the drawn pin at 24 × 24 — 26 until
    0.67, which on its 24-pt grid sat 1 pt up and left — green, in a `Metrics.tap` square; its sheet *Where
    you have been* closes with **Done**, `map-done` — Escape too since 0.62), the magnifier (`search-open`),

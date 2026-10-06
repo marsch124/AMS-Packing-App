@@ -84,7 +84,8 @@ magnifier.
 - When the library failed to load: the error text in red (`library-problem`) instead.
 
 ### What is on screen (top to bottom), inside a `KeyboardAwayScroll` (a ScrollView that dismisses the keyboard on drag) with a `LazyVStack(spacing: 8)`, side padding 16, bottom 24
-1. **Header** — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), bottom padding 4. Its
+1. **Header** — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), bottom padding 4 — on the
+   Mac pinned in the window's title bar strip, after the window buttons, the page scrolling under it. Its
    first line holds the title and, on the SAME centre line at the right, 8 pt apart, the magnifier and + New;
    until 0.67 the row was aligned on the title's baseline with 14 pt above it, and the magnifier stood 10 pt
    higher than the title (his note on 0.63, "Overall, icons are not aligned"):

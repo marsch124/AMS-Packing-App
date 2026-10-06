@@ -368,7 +368,8 @@ table on the Mac, a window).
 
 **What is on screen, top to bottom** (one `KeyboardAwayScroll` holding a `LazyVStack`, 16 pt side padding):
 
-1. **Heading** — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), 2 pt bottom padding.
+1. **Heading** — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), 2 pt bottom padding; on
+   the Mac pinned in the window's title bar strip, after the window buttons.
    "Care" (Title 2 bold, care orange, id `care-heading`) and, on the SAME centre line at the right, the
    magnifier (`search-open`) opening the global search as a sheet; under that line the kit line (Subheadline,
    muted, id `care-line`) = `CareScreen.line(stats)`: "`N` thing(s) · `<weight>` · `W` looked after" — the
@@ -1613,8 +1614,9 @@ questions). Left by another tab. The side shown ("To do" or "To buy")
 is `@State`: every time the tab is built again it starts on "To do".
 
 **What is on screen.**
-1. Top row (16 pt sides, `Metrics.screenTop` = 4 top — 12 until 0.67, so it starts where every tab's first
-   line does; centre-aligned, 8 apart): two equal-width side buttons "To do" (`actions-tab-todo`) and "To buy"
+1. Top row (`headerLine()`, 16 pt sides; on the iPhone `Metrics.screenTop` = 4 top — 12 until 0.67, so it
+   starts where every tab's first line does; on the Mac in the window's title bar strip, on the traffic lights'
+   line and after them — the screen ignores the top safe area there; centre-aligned, 8 apart): two equal-width side buttons "To do" (`actions-tab-todo`) and "To buy"
    (`actions-tab-buy`) — Body semibold, `Metrics.tap` tall, radius 10; the side showing is filled red with white
    words and carries the selected trait, the other is ink on the card with a 1 pt line — and the magnifier
    (`search-open`). `testEveryTabsHeaderIsOnOneCentreLine` (0.67) checks the magnifier and "To buy" within

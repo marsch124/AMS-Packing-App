@@ -146,6 +146,9 @@ marks "On this device".
 `-dropOwnGrabListsOnReturn` aside).
 
 **iPhone vs Mac.**
+- Mac: the window has **no title bar** (0.67, `.windowStyle(.hiddenTitleBar)`): each tab's header sits in the strip
+  where it was, on the traffic lights' line, clear of the buttons; the empty parts of the strip move the window
+  (`TitleBarDrag`; spec 06, "The Mac: the header in the title bar strip").
 - Mac: the window has `minWidth 480, idealWidth 760, minHeight 600, idealHeight 900` and
   `.defaultSize(760 × 900)`. Under UI tests (`AMSPackingApp.testing` = any launch argument starting
   `-uiTesting`) every titled window is **set** to 760 × 674 on appear, keeping its top edge. That is
@@ -267,6 +270,10 @@ spacing, 16 pt side padding and 24 pt bottom padding.
      comment notes that this door opens the grab lists, not the templates ("Your templates"), and that the
      owner's note on the Mac asked for "Your Grab Lists".
 
+   **On the Mac** this line is pinned in the window's title bar strip (0.67; the window has no title bar): "Grab and
+   go" starts just after the three window buttons, on their line, and the tiles start 6 pt under the strip — 38 pt
+   under the window's top (about 96 before). The page scrolls under it.
+
    0.67 (his note on 0.63: "The area above Grab and go is underused"): until then the row was aligned on
    the heading's first text baseline with 14 pt above it, so the 36-pt magnifier stood up from the baseline,
    sat 11 pt higher than the words, and left an empty band at the top — the heading's words began 39 pt
@@ -310,10 +317,11 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
 **Tests.**
 - UI `testTheEditorsLeadWithTheirHeadings` checks that `home-grab-heading` and `home-create-heading`
   exist.
-- UI `testHomeLeadsWithGrabAndGoAtTheTop` (0.67): measured from the top of Home as the eye sees it (under
-  the iPhone's status bar; under the Mac's title bar), Grab and go's words begin less than 24 pt down and
-  not above it (−2 pt allowed), the first tile is less than 14 pt under the heading, and the first tile
-  begins less than 60 pt down on the iPhone (50 on the Mac). Seen red with the old 14-pt top planted:
+- UI `testHomeLeadsWithGrabAndGoAtTheTop` (0.67): on the iPhone, measured from the foot of the status bar,
+  Grab and go's words begin less than 24 pt down and not above it (−2 pt allowed), the first tile is less than
+  14 pt under the heading and begins less than 60 pt down. On the Mac Grab and go is on the window buttons'
+  line (within 2 pt) and starts 8 pt or more after them; the first tile is less than 16 pt under it and less than
+  50 pt under the window's top. Seen red with the old 14-pt top planted:
   "an empty band of 28.0 pt above Grab and go"; on 0.66 it said 39.0.
 - UI `testEveryTabsHeaderIsOnOneCentreLine` (0.67, spec 06): `search-open` and `grab-lists` on the centre
   line of `home-grab-heading`, within 1.5 pt.

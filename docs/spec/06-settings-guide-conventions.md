@@ -43,7 +43,7 @@ order in the code:
 
 | # | Element | Shown when | Id |
 |---|---|---|---|
-| 1 | *Your choices* door (§2) | always; `Metrics.screenTop` (4 pt) above it — where every tab's first line starts (0.67; 14 before) | `settings-lists` |
+| 1 | *Your choices* door (§2) | always; `Metrics.screenTop` (4 pt) above it — where every tab's first line starts (0.67; 14 before); on the Mac under the empty title bar strip | `settings-lists` |
 | 2 | *Remind me to pack* card (§3) | always | `settings-reminders-card` |
 | 3 | *iCloud sync* card (§4) | always | `sync-card` |
 | 4 | Three guide doors: *What's new*, *How it works*, *Your first real trip* (§5) | always | `settings-whatsnew`, `settings-howitworks`, `settings-firsttrip` |
@@ -1287,7 +1287,8 @@ semibold (the `size` parameter of `SmallDeleteButton` is gone).
 | `compact` | 32 | 24 | smaller buttons (40) |
 | `chip` | 28 | 22 | pills (36) |
 | `header` | 30 | 24 | Done, Cancel, Share … at the top of a page (`HeaderButtonStyle`, 36) |
-| `screenTop` | 4 | 4 | from the top of a tab (under the status bar / the Mac's title bar) to its first line (0.67; 14 on most tabs, 12 on To do before) |
+| `screenTop` | 4 | — | from the top of a tab (under the iPhone's status bar) to its first line (0.67; 14 on most tabs, 12 on To do before). On the Mac the first line sits in the title bar strip instead (below) |
+| `windowButtons` | — | 78 | the Mac: where a tab's title may start, from the window's LEFT EDGE — after the three window buttons, whose right edge is at 68 on macOS 26 (measured on his 0.63 picture; the system's own title started at 84) |
 
 Buttons have 12 pt side padding (14–16 before); the field button (Add, New, Make) a corner radius of 8. One exception
 keeps its size on both: `Metrics.fingertip` = 44, the touch area of the table's column arrows and Hide (his ask, 4 Oct
@@ -1313,6 +1314,38 @@ reaches up under it) — on the Mac, should the screen reach under the title bar
 traffic lights. On
 0.66 it was red on four tabs (the magnifier 10–11 pt off everywhere, Home's Grab Lists and Templates' + New 2.5 pt);
 planted again by aligning `ScreenHeader`'s row on `.firstTextBaseline`, the same four.
+
+**The Mac: the header in the title bar strip** (0.67; his boxes on the 0.63 picture covered the title bar too). The
+main window (`WindowGroup`) has **no title bar**: `.windowStyle(.hiddenTitleBar)`. The window "All your things" keeps
+its own. `RootView` measures the strip with a `GeometryReader` — its height is the window's top safe area (32 on
+macOS 26) — and how far a header must step in so its title starts just after the three window buttons:
+`lead = max(0, Metrics.windowButtons − (window width − column) / 2 − 16)`, where the column is `RootView.column` =
+720, centred, and 16 the page's side padding (42 in a 760-wide window). Both travel down in the environment as
+`TitleBarStrip(height:, lead:)` (ScreenHeader.swift).
+- `headerOnTheMac { header }` (View extension): on the Mac the page becomes `VStack(spacing: 0) { header (16 side
+  padding); page }` with the top safe area ignored, so the header is PINNED in the strip and the page scrolls under
+  it — nothing ever slides beneath the window buttons. On the iPhone it does nothing: there the page puts the header
+  in itself as its first line (`#if !os(macOS)`). Home, Trips, Templates and Care build their header once
+  (`grabHeader`, `header(…)`) and use it both ways; their scroll content has 6–8 pt more at its top on the Mac,
+  where the header no longer gives it.
+- `headerLine()` (View extension, used by `ScreenHeader`'s row and To do's first line): on the Mac the line steps
+  in by `lead` and is at least the strip's height tall, so it is centred on the traffic lights' line; on the
+  iPhone it is `Metrics.tap` tall with `Metrics.screenTop` above. To do's whole screen ignores the top safe area on
+  the Mac, so its To do · To buy · search line sits in the strip, after the buttons. Settings, the first-run doors,
+  the placeholder and the library problem keep the safe area: they start under the strip.
+- Moving the window: `TitleBarDrag` (RootView) — a clear layer the strip's size with `WindowDragGesture()` (and
+  `allowsWindowActivationEvents`), BEHIND the page and in front of the background colour, so a header's buttons
+  take their own clicks and only the strip's empty parts (all of it on a tab with no header) move the window.
+  `.windowBackgroundDragBehavior(.disabled)`. 🪤 With `.enabled` instead (the first try), GitHub's Mac run saw a
+  click on Grab Lists and on To buy taken for a drag: the window jumped aside and the button never heard it,
+  while the search and + New worked.
+- Sheets are unchanged: they come down over the page as before.
+- Tests (Mac branch of `testEveryTabsHeaderIsOnOneCentreLine` and `testHomeLeadsWithGrabAndGoAtTheTop`): each
+  tab's title within 2 pt of the window buttons' line (`XCUIIdentifierCloseWindow`, `…MinimizeWindow`,
+  `…ZoomWindow`, as one box) and starting at least 8 pt after them; nothing above the window's top; Settings' first
+  card under the strip (its foot worked out from the buttons, which sit in its middle); Home's first tile less than
+  16 pt under Grab and go and less than 50 pt under the window's top. Mac pictures came from the probe workflow
+  (`mac-probe.yml`, on a probe branch only).
 
 **Headings.**
 - **`HeadingBand(title:, tint = Care orange, id:)`** — a block's heading: Headline in the tint, full width, wraps,
