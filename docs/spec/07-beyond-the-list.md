@@ -24,6 +24,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 10. Hands-free packing (a test version) | 0.71 | built (a test, iPhone only) — specified below from the code |
 | 11. Decision log | — | kept here |
 | 12. Reminders on a template | 0.70 | built (branch work/reminders070) |
+| 13. His lists changed inside their drop-downs | 0.69 | built (branch work/ddedit069) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -907,6 +908,97 @@ things only". UI (iPhone, light and dark): `testATemplateKeepsItsReminders` (pla
 was not added"), `testATripsRemindersShowWhenTheyAreDue` (planted: `dueReminders` empty → "the countdown does not
 name the reminder due"). Not covered by a UI test: Into's "To do" heading, the When drop-down on a reminder, Remove's
 "Keep it", the Mac (built, not run).
+
+## 13. His lists changed inside their drop-downs
+
+> **Built in 0.69** (helper "ddedit", 7 Oct 2026) — written from the code. Screen details are in spec 05 ("His lists
+> inside their drop-downs", A thing's page), spec 04 §7 (a template's row) and spec 06 §21 (`DropDown`).
+
+His ask, 7 Oct 2026: "work on all the drop-downs so that they can be edited, changed, added, and deleted from within
+the drop-downs." Part 2 (0.68) had given a Section list a pen, ↑ ↓ and Remove; this part gives the same to every
+pick-one list whose choices are his own.
+
+### Which lists
+
+| Drop-down | Where | His list (`kind`) | Order of his | New at the foot |
+|---|---|---|---|---|
+| Kind of thing | thing's page | `categories` — NEW: his own list (below) | yes | A new kind |
+| Whose it is | thing's page | `owners` | no — A–Z, no arrows | A new owner |
+| Kept at home | thing's page | `places` | yes | A new place |
+| Usually packed in | thing's page | `bags` (his own bags only) | yes (Your bags) | A new bag |
+| Pocket | thing's page | `pockets` of the chosen bag | yes | A new pocket |
+| When | thing's page | `phases` | yes | A new step |
+| Condition | thing's page | `conditions` | yes | A new condition |
+| Bag on this template | template's row | `bags` | yes | A new bag |
+| When, on this template | template's row | `phases` | yes | A new step |
+| Section of this template | template's row | the template's sections (part 2's tools) | yes | A new section (as before) |
+
+Not included: **Care** (its choices are numbers of days, not a list of his); the trip's Sorting, Counts as (the
+review), a reminder's When (applied at once, no Save to hold changes for — open question) and the table's menus.
+
+### How it works (one mechanism)
+
+- `DropDown` keeps ONE set of row tools (`DropDownRowTools`, spec 06 §21) — the Section list's look and ids — with
+  four additions: `orders` (no arrows for owners), `refusal` (what still uses an entry, said in place of the question,
+  with OK), `open` (Open the bag) and `nameHint`. The tools a row shows, and the order Tab reaches them on the Mac,
+  come from one function (`toolsOf`).
+- `ChoiceDrop` (App `Screens/ChoiceDropDown.swift`) turns one held `ChoiceEdits` into a drop-down's options, tools
+  and foot; the thing's page and the template's row each hold theirs (`choiceLists`) until Save.
+- The model (`Core/Sources/PackingLibrary/ChoiceEdits.swift`): `ChoiceEdits` (names by key, order, removed, added —
+  an added entry keyed `addedKey(n)` so it can be renamed, moved or taken back like any other), `choiceRows`,
+  `choicesAsEdited`, `choiceFixed`, `choiceNameProblem`, `choiceUse`, `choiceRemoveProblem`, `addChoice`,
+  `removeChoice`, `moveBag`, `applyChoiceEdits` (renames — two that swap names are parked on the way — then new
+  entries, then the order, each step by the list's OWN one-step move), `applyChoiceRemovals`, `choiceValue`.
+- **No second way.** Every change is the one the list's own screen makes: `renameChoice` / `moveChoice` (Your
+  choices), `addChoice` / `removeChoice` (Your choices now calls these too — they were its own code until 0.69),
+  `renameThing` → `renameBagEverywhere` and `addBag` / `deleteBag` (a bag), Arrange's `moveRow` (a bag's place on Your
+  bags), `renamePocket` / `movePocket` / `addPocket` / `removePocket`, `applySectionEdits`.
+- **Held until Save; Cancel undoes.** Save: sections, then `applyPageChoices` (pockets before bags), then the thing or
+  row with its choices followed (`choiceValue`), then `applyPageRemovals`. A new place made at Kept at home's foot is
+  now held too (until 0.69 it joined Your choices at once, and stayed after Cancel).
+- **Remove is refused while the entry is in use** — Your choices' words (`ChoiceUse.refusal`); the page's own thing
+  counts by what the page says. A pocket in use is refused too (the bag's page can still remove it — the things then
+  go just in the bag). A bag is removed here only when its page would let it go without a question; otherwise the
+  list says so and offers **Open the bag**.
+- Rename follows everywhere, as from Your choices: things, trip lines (places, owners, kinds), "This is me" (an
+  owner), a place's printed code (`renameChoice` now gives the place its code before the rename, so a code never
+  given yet does not change with the name), a bag's things, rows, trips, scale readings, photos and pockets, a pocket's
+  usual-pocket marks and trip lines. Steps and conditions are kept by id: only their words change.
+
+### Kinds of thing become his list
+
+`Library.categories()` — the app's twelve (`CATEGORIES`) until he changes one, then his own, kept in `meta["categories"]`
+(a record of its own, so it syncs; in a backup as `prefs.categories`; the web app has no such list and keeps its
+own words, showing a renamed kind as an unknown one). `setCategories` stores nothing while the list is the app's.
+**Documents & money** and **Reminders** keep their names and have no tools (`fixedCategory`): Check before you go and
+a template's reminders read them by their words. PackingCore is untouched (parity unchanged).
+
+### The Mac
+
+The keys reach the tools as in a Section list (spec 05, Keyboard): Tab through the lit row's pen, ↑, ↓, Remove (Remove
+and Keep while asked; OK and Open the bag when refused), Space or Return presses, a name typed from the keys. Every
+list that takes a new entry goes by a name's START when letters are typed — now also Kind of thing, Whose it is,
+Usually packed in, When and Condition ("rink" is offered as a new kind; it no longer finds Food & drink inside a word).
+
+### Tests
+
+Model `ChoiceEditsTests` (14): per list — a rename follows (places with their code, owners with This is me, kinds on
+things and trip lines and in records and a backup, steps and conditions by id, bags with things and pockets, pockets
+with their marks), a removal refused while in use (and the page's own thing counted by what the page says), the order
+kept (places, bags, pockets, kinds, steps), an added entry renamed or taken back, two places swapping names, the two
+fixed kinds. Planted: `choiceRemoveProblem` always nil → 11 red ("Garage is still used by 2 things" expected, nil
+got); the kind's rename not carried to things → red "a thing kept the old kind".
+UI (iPhone, light and dark): `testKindOfThingIsChangedInsideItsList`, `testKeptAtHomeIsChangedInsideItsListAndCancelUndoes`,
+`testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage`, `testWhenIsChangedInsideItsListOnATemplatesRow`;
+Mac `testHisListsAnswerTabAndSpaceOnTheMac`. UI_FAULTS_HERE
+
+### Open questions
+
+- A reminder's When (on a template's page) has no tools: it is applied at once, with nothing to hold changes until.
+- With nobody named anywhere, Whose it is still shows its line instead of a list, so the first owner is made in Your
+  choices, not from the list.
+- A bag with no pockets shows no Pocket list, so its first pocket is made on the bag's page.
+- The row's own stored bag counts as a use when its Bag list refuses a remove, even after the row picked another.
 
 ---
 

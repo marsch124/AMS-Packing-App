@@ -1560,7 +1560,14 @@ same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
   Remove asks in place of the row — `question(value)` (`-ask`), "Remove" (`-remove-yes`, white on a red capsule) and
   "Keep" (`-remove-no`) — then `remove(value)`. A row `isRemoved` is struck out and muted, chooses nothing, and has
   "Put back" (`-putback` → `putBack(value)`) instead of its tools. The caller holds every change and hands the list its
-  options as they stand. Only a thing's Section lists have tools (spec 05 item 6a).
+  options as they stand. Since 0.69 also (defaults keep 0.68's Section lists as they were): `orders` (false = no ↑ ↓:
+  Whose it is, A–Z); `refusal(value)` — what still uses the row, said in the question's card instead of the question
+  (`-refused`), with "OK" (`-remove-no`) and no Remove; `open: DropDownOpen?` — a way on under a refusal ("Open the
+  bag", `-open`: the list closes, then `open(value)`); `nameHint` — the name field's grey words ("Section name";
+  "Name" for his lists). The tools of a row, in Tab's order, come from one place (`toolsOf`). Which lists have tools:
+  a thing's and a template row's Section lists, and every pick-one list of his own on a thing's page and a template's
+  row (spec 05 "His lists inside their drop-downs", spec 07 part 13) — built by `ChoiceDrop`
+  (`Screens/ChoiceDropDown.swift`) and `DropDownRowTools.sections`.
 - `ring: Color?` (0.68) — the field's border drawn 2 pt in this colour instead of the 1-pt line: the Mac's focus on a
   thing's page (spec 05, Keyboard (Mac)).
 - **The Mac's keys (0.68)** — only where the page hands the drop-down a `DropDownKeys` in the environment

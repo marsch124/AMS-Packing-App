@@ -947,8 +947,10 @@ apart; a field 6 pt under its heading):
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
    twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.
 4. **Kind of thing** — drop-down (0.64; band `thing-category-title`, field `thing-category`, list
-   `thing-category-list`): one row per `CATEGORIES` entry (`thing-category-0` … `-11`; Electronics is `-7`); single
-   choice; the thing's category is ticked. A category that is none of these (from the web app) is shown on the
+   `thing-category-list`): one row per kind of thing — since 0.69 his own list, `Library.categories()` (the app's
+   twelve `CATEGORIES` until he changes one; `thing-category-0` … `-11`; Electronics is `-7`); single
+   choice; the thing's category is ticked. Pen, arrows, Remove and "A new kind" (0.69): see "His lists inside their
+   drop-downs" below. A category that is none of these (from the web app) is shown on the
    field and on a row of its own at the end, ticked (`thing-category-other`).
 5. **Whose it is** — drop-down (0.64; band `thing-owner-title`, field `thing-owner`, list `thing-owner-list`) when
     `ownerChoices()` is not empty: first "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026,
@@ -957,7 +959,9 @@ apart; a field 6 pt under its heading):
     things' names) — the value compared is the exact text, so a thing saying "kim" while "Kim" is offered shows
     "kim" on the field and on a row of its own, ticked (`thing-owner-other`; until 0.64 no pill was lit). With
     nobody named anywhere (0.62): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
-    choices." (`thing-owner-none`, 15 medium muted) — it used to vanish; no drop-down then.
+    choices." (`thing-owner-none`, 15 medium muted) — it used to vanish; no drop-down then. Since 0.69 the rows of
+    his Owners list (`owners()`) come first, as edited on the page, then any other name a thing carries; pen and
+    Remove (no arrows: A–Z) and "A new owner" — see below.
 6. **On these templates** — pills band in VIOLET (templates colour, `thing-lists-title`): every template except
     the bag list (`templatesForThings()`), A–Z (`jsLocaleCompare`, base sensitivity) (`thing-lists-N`; with the sample: Common base 0,
     Hiking 1, Swim 2); several may be lit; a tap toggles.
@@ -1026,9 +1030,9 @@ apart; a field 6 pt under its heading):
    `thing-place-N`), the place the thing already names when it is none of his — compared by `normName` — at the end
    (`thing-place-other`, the component's `other` row); the chosen one ticked; a tap takes it and closes the list.
    At its foot (the component's new-entry foot) "A new place" (`thing-place-new`) and Add (`thing-place-add`; blank
-   → "Type the place first." under it, `thing-place-add-needs`): `Library.addPlace` puts it on Your choices'
-   places — or, when he has it already (same `choiceKey`), returns his own spelling — the thing takes it and the
-   list closes. Until 0.64: a free-text field with his places as pills under it. (In the first 0.64 build its value
+   → "Type the place first." under it, `thing-place-add-needs`): a place he has already (same `choiceKey`, as the
+   list shows them) is simply chosen; a new one is the list's last row, ticked, and joins Your choices' places on
+   Save (0.69 — until then it joined at once, through `addPlace`, and stayed after Cancel); the list closes. Until 0.64: a free-text field with his places as pills under it. (In the first 0.64 build its value
    was the stored place, "" for none; on the component it is the words shown, "Not said". Its list was fixed ABOVE
    the field; it now goes where there is room.)
 9. **Usually packed in** — drop-down (0.64; band `thing-bag-title`, field `thing-bag`, list `thing-bag-list`):
@@ -1036,19 +1040,21 @@ apart; a field 6 pt under its heading):
    "Checked luggage" is `-2`; 0.64) (`thing-bag-N`); then the bag the thing names when it is none of those (a row
    in the count, ticked — not the component's `other` row, so the ids stay as the pills' were); then **"No bag"**
    LAST (value "", grey — the same "no bag" a bag's delete can leave; 0.62). Single choice; a bag named in other
-   capitals ticks the offered spelling (`ThingEditor.bagChoices`). A long list (17 bags) scrolls inside the list,
-   which opens scrolled to the ticked row.
+   capitals ticks the offered spelling (`ThingEditor.bagChoices`, given the bags as the list shows them by key and
+   words since 0.69). A long list (17 bags) scrolls inside the list, which opens scrolled to the ticked row. His own
+   bags (not the 17 built-in names) take the tools, "A new bag" at the foot (0.69) — see below.
 9a. **Pocket** (0.69, stop B of his idea plan: "A thing can have a usual pocket ('Backpack · front pocket'), so
    most need no tap at all") — a second drop-down right under Usually packed in, **only while the bag chosen
    there has pockets** (`pockets(bag:)`; band `thing-pocket-title`, field `thing-pocket`, list `thing-pocket-list`):
    first **"Just in the bag"** (value "", grey, `thing-pocket-none`), then the bag's pockets in its order
    (`thing-pocket-0…`), matched by `normName`. Choosing another bag clears the pocket unless the new bag has one of
-   that name. Kept on the draft (`extra.usualPocket`) and saved with the page (`thing.extra[USUAL_POCKET_KEY] =
+   that name. The bag's pockets take the tools and "A new pocket" (0.69, below); a bag with none still shows no
+   Pocket list (its first pocket is made on the bag's page). Kept on the draft (`extra.usualPocket`) and saved with the page (`thing.extra[USUAL_POCKET_KEY] =
    draft's`); Cancel keeps nothing. A trip line ticked in this bag then gets this pocket by itself (spec 03,
    "Bag pockets on a trip").
 10. **When** — drop-down (0.64; band `thing-when-title`, field `thing-when`, list `thing-when-list`), one row per
-    live `PHASES` step (id stored, label shown; `thing-when-N`). A thing with no step, or one this device does not
-    know, ticks no row; the field then says "Not said" (grey) or the raw id.
+    step of `timeline()` as the page holds it (id stored, label shown; `thing-when-N`). A thing with no step, or one this device does not
+    know, ticks no row; the field then says "Not said" (grey) or the raw id. Tools and "A new step" (0.69) below.
 11. **Weight** — band "Weight, in grams (0 = not known)" (`thing-heading-weight`); field (`thing-weight`),
     placeholder "0"; when Save found it unreadable, "The weight must be a number of grams, like 250 or 12,5."
     under it in red (`thing-weight-problem`, 15 semibold; gone as he types). On the Mac (0.68) kilos may carry their
@@ -1088,7 +1094,7 @@ apart; a field 6 pt under its heading):
 14. **Condition** — drop-down (0.64; band `thing-condition-title`, field `thing-condition`, list
     `thing-condition-list`): "Not said" (value "", grey; `thing-condition-0`) then each live condition by label,
     storing its id (`thing-condition-N`). The ticked row is `conditionId(for:)` of the stored value, so a thing still
-    holding a label ticks its condition too.
+    holding a label ticks its condition too. Tools and "A new condition" (0.69) below; "Not said" has none.
 11a. **Care** (0.62; a drop-down since 0.64: band "Care" `thing-care-title`, field `thing-care`, list
     `thing-care-list`): "None" (0), "Every month" (30), "Every 3 months" (90), "Every 6 months" (182), "Every year"
     (365), "Every 2 years" (730) (`thing-care-0`…`-5`; an interval of his own, e.g. 45 from the web app, adds the row
@@ -1127,6 +1133,52 @@ UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's p
     or "It leaves your `A, B and C` template(s). Trips you already packed keep it." (15 medium; names joined
     "A", "A and B", "A, B and C"); "Keep it" (`thing-delete-no`, 16 bold ink) closes the question; "Delete the
     thing" (`thing-delete-yes`, 16 heavy white on a red capsule, min height 40).
+
+**His lists inside their drop-downs (0.69)** — his ask of 7 Oct 2026: "work on all the drop-downs so that they can
+be edited, changed, added, and deleted from within the drop-downs." What 0.68 gave a Section list (item 6a), every
+pick-one list whose choices are HIS OWN gets, on the iPhone and the Mac: Kind of thing (`categories`), Whose it is
+(`owners`), Kept at home (`places`), Usually packed in (`bags`, his own only), Pocket (`pockets` of the chosen bag),
+When (`phases`) and Condition (`conditions`). Care is not one of his lists (a number of days) and stays as it was.
+- ONE mechanism: `DropDown`'s row tools (spec 06 §21), fed by `ChoiceDrop` (`Screens/ChoiceDropDown.swift`) from the
+  page's held `ChoiceEdits` — one per list (`choiceLists`, keyed by the list; a bag's pockets as `pockets:<bag>`). The
+  look and ids are the Section list's: on each of his rows a pen (`<row>-rename`), ↑ ↓ (`-up`/`-down`) and a quiet red
+  Remove (`-remove`); the rows that are not his list's ("Not said", "Both have one", "No bag", "Just in the bag", a
+  value from the web app) have none. Whose it is has no arrows: owners are A–Z.
+- **Rename**: the row becomes a field (grey words "Name"); Return takes it unless `choiceNameProblem` says what is
+  wrong (under it, `-name-needs`): "Type a name first.", "You already have <entry>." (as the list shows them; a
+  removed one still counts), "Some of your things already say <name>. Pick another name." (a place, owner or kind —
+  it would merge them), "You already have something called <name>." (a bag: bags are joined by name).
+- **Remove** asks first ("Remove <entry> from your places? Nothing uses it.", `-ask`, Remove `-remove-yes` / Keep
+  `-remove-no`) — but only while nothing uses it. In use, there is no question: the list says what uses it, Your
+  choices' own words (`ChoiceUse.refusal`: "Garage is still used by 2 things, so it stays."; a step also counts
+  trips and templates; a pocket the trip lines packed in it), in the same card (`-refused`), and **OK**
+  (`-remove-no`). The page's own thing counts by what the page says, not by what it had (`except`/`pageSays`).
+  A bag goes from here only as its page would let it go without a question (nothing packed in it, on no trip, on
+  none of his templates as a thing he packs); otherwise the card says so ("… Its page asks where they go instead.")
+  and offers **Open the bag** (`-open`), which closes the list and opens the bag's page (`BagDetail`) over the
+  thing's. Documents & money and Reminders have no tools: the app reads them by their words.
+- **"A new …"** at every foot: "A new kind" ("Type the kind first."), "A new owner" ("Type the name first."), "A new
+  place", "A new bag" ("Type the bag's name first."), "A new pocket" ("Type the pocket's name first."), "A new step"
+  ("Type the step first."), "A new condition" ("Type the condition first."). One he has (as the list shows them) is
+  simply chosen; a new one is the list's last row, chosen, with the tools of any other (renamed, moved, taken back).
+- **Held until Save**, like the sections: the list shows itself as it will be (`choicesAsEdited`), Cancel leaves every
+  list as it was. Save, in its one `model.change`: the sections, then `applyPageChoices` (each list's renames, new
+  entries and order — a bag's pockets before the bags), then the thing with its choices FOLLOWED (`choiceValue`: a
+  renamed entry's new name, a new one's key), then `applyPageRemovals` (an entry still in use by then stays). Every
+  change goes through the list's own function — `renameChoice`/`moveChoice`/`addChoice`/`removeChoice` (the same
+  Your choices now calls), `renameThing` (a bag: `renameBagEverywhere` carries things, rows, trips, scale readings and
+  photos; its pockets are on the bag), `addBag`, `moveBag` (Arrange's `moveRow`, within one heading of Your bags),
+  `renamePocket`/`movePocket`/`addPocket`/`removePocket`. A place keeps its printed code across a rename
+  (`renameChoice` gives it its code first). "This is me" follows an owner's rename. ⌘N's next thing starts from the
+  names as saved.
+- On the Mac the keys reach the tools as in a Section list: Tab steps through the lit row's tools (pen, ↑, ↓, Remove;
+  Remove and Keep while asked; OK and Open the bag when refused), Space or Return presses. Letters in Kind of thing,
+  Whose it is, Usually packed in, When and Condition now go by a name's START only (a list with a new entry, as Kept at
+  home since 0.68): "rink" is offered as "A new kind: rink", no longer finding Food & drink inside a word.
+- Tests: model `ChoiceEditsTests` (14, PackingLibrary); UI `testKindOfThingIsChangedInsideItsList`,
+  `testKeptAtHomeIsChangedInsideItsListAndCancelUndoes`, `testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage`,
+  `testWhenIsChangedInsideItsListOnATemplatesRow` (iPhone) and `testHisListsAnswerTabAndSpaceOnTheMac` (Mac); spec 07
+  part 13 has the planted faults.
 
 The headings are `HeadingBand`s in orange (violet for On these templates); a drop-down's field is Body, `Metrics.tap`
 tall (36 on the iPhone, 26 on the Mac), card-filled with a hairline like the text fields; the pills of On these

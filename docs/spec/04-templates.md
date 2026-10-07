@@ -817,6 +817,16 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
      section" (`row-section-new`; it said "e.g. Lights" under the band) and "Add" (`row-section-add`); Add with
      nothing typed → "Type the section's name first." under it (`row-section-add-needs`); otherwise the section is
      chosen (see Behaviour) and the list closes. What was typed and not added is dropped when the list closes.
+  **Changed inside their lists (0.69)** — his ask of 7 Oct 2026, "work on all the drop-downs so that they can be
+  edited, changed, added, and deleted from within the drop-downs": Bag (his own bags), When (his steps) and Section
+  (this template's sections) take the tools a thing's page has (spec 05, "His lists inside their drop-downs" and
+  item 6a): a pen, ↑ ↓ and Remove on each of their rows (`row-bag-<n>-rename` …; none on "Same as …" or "No
+  section"), Remove asking first or, while the entry is in use, saying what uses it (a bag in use: Open the bag,
+  `row-bag-<n>-open`); "A new bag" / "A new step" at the foot as "A new section" is. All of it is held until Save
+  (`choiceLists`, `sectionEdits`) and written then — the sections (`applySectionEdits`), the lists
+  (`applyPageChoices`), the row with its Bag and When followed to their new names (`choiceValue`), the removals last.
+  Cancel leaves them as they were. The row's own stored bag counts as a use of it. No Mac keys here (the page has
+  none). UI `testWhenIsChangedInsideItsListOnATemplatesRow`.
   5. **"How many"** (band, `row-heading-qty`): field `row-qty`; its grey words (placeholder) "Same as the thing:
      <the thing's own how-many>" when the thing has one, else "e.g. 2, or 2 pairs".
   6. **"Note"** (band, `row-heading-note`): field `row-note`; placeholder "Same as the thing: <the first line of
