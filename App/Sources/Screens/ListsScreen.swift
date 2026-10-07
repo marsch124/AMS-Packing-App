@@ -348,20 +348,10 @@ struct ListsScreen: View {
             return
         }
         problem = nil
-        model.change { lib in
-            switch kind {
-            case .places: _ = lib.setNames("places", lib.storagePlaces() + [name])
-            case .owners: _ = lib.setNames("owners", lib.owners() + [name])
-            case .people: _ = lib.setPeople(lib.people() + [newPerson(name: name, color: PERSON_COLORS[lib.people().count % PERSON_COLORS.count])])
-            case .conditions: _ = lib.setConditions(lib.conditions() + [newCondition(name, lib.conditions().map(\.id))])
-            case .phases:
-                var list = lib.timeline()
-                // Its colour from the app's own cover colours: the web app's pick made
-                // the eighth step teal (his colour notes: "Not teal"; the spec pass).
-                list.append(lib.newStep(named: name))
-                _ = lib.setTimeline(list)
-            }
-        }
+        // The one way an entry is added — the same a drop-down's "A new …" takes (0.69).
+        // A new "When" step gets its colour from the app's own cover colours (`newStep`):
+        // the web app's pick made the eighth step teal (his colour notes: "Not teal").
+        model.change { lib in _ = lib.addChoice(kind.rawValue, name) }
         adding[kind.rawValue] = ""
     }
 
@@ -375,14 +365,7 @@ struct ListsScreen: View {
         }
         problem = nil
         if isEditing(kind, entry.key) { editing = nil }
-        model.change { lib in
-            switch kind {
-            case .places: _ = lib.setNames("places", lib.storagePlaces().filter { $0 != entry.key })
-            case .owners: _ = lib.setNames("owners", lib.owners().filter { $0 != entry.key })
-            case .people: _ = lib.setPeople(lib.people().filter { $0.name != entry.key })
-            case .conditions: _ = lib.setConditions(lib.conditions().filter { $0.id != entry.key })
-            case .phases: _ = lib.setTimeline(lib.timeline().filter { $0.id != entry.key })
-            }
-        }
+        // The one way an entry is taken away — a drop-down's Remove takes it too (0.69).
+        model.change { lib in _ = lib.removeChoice(kind.rawValue, key: entry.key) }
     }
 }

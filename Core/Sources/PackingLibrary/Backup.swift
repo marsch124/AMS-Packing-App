@@ -52,6 +52,8 @@ extension Library {
         if !owners.isEmpty { prefs["owners"] = JSONValue(owners) }
         // Which owner is him (0.70) — ours, the web app has none.
         if let me = meta[Library.meKey]?.stringValue, !me.isEmpty { prefs[Library.meKey] = .string(me) }
+        // His kinds of thing, once he changed them from a thing's page (0.69) — ours too.
+        if let kinds = meta[Library.categoriesKey], kinds.arrayValue?.isEmpty == false { prefs[Library.categoriesKey] = kinds }
         let places = orderedNamesFromRows(shared, "places")
         if !places.isEmpty { prefs["storageLocations"] = JSONValue(places) }
         let presets = presetsFromRows(shared)

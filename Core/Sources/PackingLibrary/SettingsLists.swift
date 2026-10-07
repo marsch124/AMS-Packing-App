@@ -97,6 +97,15 @@ extension Library {
     }
     /// The "When" timeline in force — his own, or the factory seven.
     public func timeline() -> [Phase] { phases.isEmpty ? DEFAULT_PHASES : phases }
+    /// His kinds of thing (0.69): his own list once he has changed one from a thing's Kind
+    /// of thing, otherwise the app's twelve (`CATEGORIES`). Kept in `meta` (a record of its
+    /// own, so it syncs; the web app has no such list and goes on showing its own words).
+    public func categories() -> [String] {
+        let mine = (meta[Library.categoriesKey]?.arrayValue ?? []).compactMap { $0.stringValue }.map(jsTrim).filter { !$0.isEmpty }
+        return mine.isEmpty ? CATEGORIES : Library.onePerKey(mine)
+    }
+    /// The `meta` key (and the backup's `prefs` key) his kinds of thing are kept under.
+    public static let categoriesKey = "categories"
 
     /// What uses each entry of a list, by its normalised key, so a screen can show how
     /// many THINGS use it and refuse to remove one that is in use.
@@ -117,6 +126,7 @@ extension Library {
             case "people": v = it.packer
             case "conditions": v = it.condition
             case "phases": v = it.phase
+            case "categories": v = it.category
             default: continue
             }
             let k = normName(v)
@@ -151,6 +161,8 @@ extension Library {
             return conditions().first { $0.id != except && Library.choiceKey($0.label) == want }?.label
         case "phases":
             return timeline().first { $0.id != except && Library.choiceKey($0.label) == want }?.label
+        case "categories":
+            return categories().first { $0 != except && Library.choiceKey($0) == want }
         default:
             return nil
         }
@@ -185,7 +197,7 @@ extension Library {
         if name.isEmpty { return "Type a name first." }
         if let twin = existingChoice(kind, name, except: key) { return "You already have \(twin)." }
         switch kind {
-        case "places", "owners", "people":
+        case "places", "owners", "people", "categories":
             // A name that things already carry, though it is not on the list, would
             // merge them too.
             if Library.choiceKey(name) != Library.choiceKey(key), (usesOf(kind)[normName(name)]?.things ?? 0) > 0 {
@@ -193,7 +205,16 @@ extension Library {
             }
             let old = normName(key)
             func carry(_ v: inout String) { if !old.isEmpty && normName(v) == old { v = name } }
-            if kind == "people" {
+            if kind == "categories" {
+                // The two kinds the app itself reads keep their names (0.69).
+                if let fixed = Library.fixedCategory(key) { return fixed }
+                var list = categories()
+                guard let n = list.firstIndex(of: key) else { return nil }
+                list[n] = name
+                setCategories(list)
+                for i in items.indices { carry(&items[i].category) }
+                for t in trips.indices { for e in trips[t].entries.indices { carry(&trips[t].entries[e].category) } }
+            } else if kind == "people" {
                 var list = people()
                 guard let n = list.firstIndex(where: { $0.name == key }) else { return nil }
                 list[n].name = name
@@ -203,6 +224,9 @@ extension Library {
             } else {
                 var list = kind == "places" ? storagePlaces() : owners()
                 guard let n = list.firstIndex(of: key) else { return nil }
+                // A place keeps its code across a rename (0.69): one never given yet is made
+                // from the name, so it is given now — under the old name — and follows.
+                if kind == "places" { givePlaceCode(key) }
                 list[n] = name
                 setNames(kind, list)
                 // A place's code printed before the rename names the OLD name (0.69).
@@ -234,7 +258,7 @@ extension Library {
 
     /// Whether a list's order is his to set. Owners are always A–Z (as every Owner
     /// dropdown offers them); the others keep the order he gives them.
-    public static func canMove(_ kind: String) -> Bool { ["places", "people", "conditions", "phases"].contains(kind) }
+    public static func canMove(_ kind: String) -> Bool { ["places", "people", "conditions", "phases", "categories"].contains(kind) }
 
     /// Moves one entry one place up (`by: -1`) or down (`by: 1`). False when it cannot
     /// move (the first up, the last down, an owner, an unknown key). Moving a list back
@@ -254,6 +278,9 @@ extension Library {
         case "people":
             guard let list = moved(people(), { $0.name == key }) else { return false }
             return setPeople(list)
+        case "categories":
+            guard let list = moved(categories(), { $0 == key }) else { return false }
+            return setCategories(list)
         case "conditions":
             guard let list = moved(conditions(), { $0.id == key }) else { return false }
             return setConditions(list)
@@ -308,6 +335,25 @@ extension Library {
         if !isFactoryList("conditions", list.map { $0.json }) { shared.append(contentsOf: conditionsToRows(list)) }
         _ = setItemConditions(list.isEmpty ? DEFAULT_ITEM_CONDITIONS : list)
         return true
+    }
+
+    /// His kinds of thing. Stored only when they differ from the app's twelve.
+    @discardableResult
+    public mutating func setCategories(_ list: [String]) -> Bool {
+        let clean = Library.onePerKey(list.map(jsTrim).filter { !$0.isEmpty })
+        meta[Library.categoriesKey] = clean.isEmpty || clean == CATEGORIES ? nil : .array(clean.map(JSONValue.string))
+        return true
+    }
+
+    /// Why a kind of thing keeps its name and its place in the list — nil for any other.
+    /// The app reads two by their words: Documents & money (Check before you go) and
+    /// Reminders (a template's reminders).
+    public static func fixedCategory(_ name: String) -> String? {
+        switch normName(name) {
+        case normName(DOCUMENTS_CATEGORY): return "\(DOCUMENTS_CATEGORY) is read by Check before you go, so it keeps its name."
+        case normName(REMINDERS_CATEGORY): return "\(REMINDERS_CATEGORY) holds the reminders of your templates, so it keeps its name."
+        default: return nil
+        }
     }
 
     /// The "When" steps. Stored only when they differ from the factory seven — and

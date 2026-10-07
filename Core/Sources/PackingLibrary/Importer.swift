@@ -164,6 +164,10 @@ public enum Importer {
         }
         // Which owner is him (0.70).
         if let me = prefs?[Library.meKey]?.stringValue, !me.isEmpty { lib.meta[Library.meKey] = .string(me) }
+        // His kinds of thing (0.69).
+        if let kinds = prefs?[Library.categoriesKey]?.arrayValue?.compactMap({ $0.stringValue }), !kinds.isEmpty {
+            lib.setCategories(kinds)
+        }
         if let grab = prefs?["grab"]?.objectValue {
             let items = grab["items"]?.objectValue ?? [:]
             let looks = grab["meta"]?.objectValue ?? [:]
