@@ -1806,12 +1806,13 @@ model's `homeBags` is tested).
 
 ---
 
-## The trip review (`ReviewScreen.swift`, `Library.reviewLines/tripTemplates/saveReview`, `Counting.applyReview`)
+## The trip review (`ReviewScreen.swift`, `ReviewHealth.swift`, `Library.reviewLines/tripTemplates/saveReview/healthReview`, `Counting.applyReview`)
 
 **Purpose and origin.** "After a trip. Tap anything you didn't use; add what you wished you'd had — it
 goes onto one of the trip's lists, so next time it comes along. Saving teaches every thing its history."
 Since the web app's v162 only what went in the bag counts as packed. The order of the missed part (his
-test F.3, 0.41); WHERE a thing went, and fixing a thing mid-review (his asks).
+test F.3, 0.41); WHERE a thing went, and fixing a thing mid-review (his asks). Apple Health fills it in on the
+iPhone since 0.70 (his choice of 7 Oct 2026; the whole design, the table and every edge case: chapter 07 part 7).
 
 **How it is reached and left.** The trip's **Review** button (while not reviewed and with lines; at any
 date). Sheet; **Cancel** (outlined muted, `review-cancel`; Escape too, 0.62) closes without saving;
@@ -1821,6 +1822,22 @@ Mac minimum 520 × 600.
 
 ### What is on screen
 - Header "Trip review" (22 heavy) and Cancel; the loop strip at Review (`review-loop`).
+- **From Apple Health** (0.70; iPhone only — nothing at all on the Mac, and nothing for an undated trip): the
+  first thing in the list, a card (padding 12, corner 12, `Theme.card`, 1 pt `Theme.line`, 12 below it; id
+  `review-health`). "From Apple Health" (Headline, ink, `review-health-title`), then ONE of:
+  - "Reading Apple Health…" (Callout muted, `review-health-reading`) while it reads;
+  - "Apple Health is not allowed — Settings → Privacy & Security → Health → AMS Packing." (Callout muted,
+    `review-health-refused`);
+  - "No workouts in Apple Health for these days." (Callout muted, `review-health-none`);
+  - the rows (`review-health-row-<n>`, top to bottom): each kind done, "Swim · indoor · 3 times" (Callout
+    semibold ink), then "No bike" for each workout template on the trip with none (Callout regular muted); and
+    **Use these** (Callout semibold white on a green capsule, min height `Metrics.compact` 32 / 24, padding 16
+    sideways, 6 above; `review-health-use`). Under it, after a press: "Marked N didn't use, M used." (+ "; your own
+    answer stays." / "your own K answers stay." when it skipped lines he answered) — Subheadline muted,
+    `review-health-said`; or, when there was nothing to mark, Subheadline semibold red (`review-health-use-needs`):
+    "None of this trip's lines come from a workout template." / "You have answered every line Apple Health could."
+    While nobody is marked "This is me" (Your choices → Owners), under that: "Who are you? Mark yourself in Your
+    choices → Owners." (Subheadline muted, `review-health-who`).
 - "Anything you wished you'd had?" (20 heavy). Field "e.g. Power bank" (`review-miss-input`, Return
   adds). When the trip has templates: question pills "Put it on which template, for next time?" (heading
   id `review-miss-where-title`) — one per template the trip's lines came from (`tripTemplates`: in the
@@ -1845,6 +1862,13 @@ Mac minimum 520 × 600.
   went, packed = those and never packed = the rest; if none went, every line NOT set aside counts as
   packed (the list itself is the evidence) and the set-aside ones are "never packed" (0.62: set-aside
   lines were asked about as packed).
+- **Apple Health** (0.70, `ReviewHealth` + `PackingLibrary/AppleHealthReview.swift`; rules in full in chapter 07
+  part 7): when the block first shows (`.task`), `AppleHealth.source.workouts(firstDay:lastDay:)` — the first
+  time Apple's permission sheet with his words — then `healthReview(tripId:workouts:)` gives the rows and the
+  marks (line id → used / didn't use). **Use these** reads Apple Health AGAIN (a watch synced since counts), then
+  `unused = Library.unusedAfterHealth(marks, unused:, answeredByHand: answered)`: a "didn't use" mark inserts the
+  line, a "used" mark removes it, a line he tapped himself (`answered`, filled by every tap on a line, either way)
+  is never changed. Nothing is saved: only Save review writes, as before; Cancel throws the marks away.
 - Which template: `target` = the picked pill; while nothing is picked (`missWhere == nil`) the FIRST
   template. "No template" is the pill with value "" and can really be chosen (0.62: "" also meant
   "nothing picked", so the target fell straight back to the first template and its pill never lit).
@@ -1876,7 +1900,14 @@ saved → "Reviewed", no Review button; the base template gets a 5th thing), `te
 `ReviewTests.testAReviewTeachesTheThingsAndFilesWhatWasMissed`, `testASetAsideLineNeverCountsAsPacked`,
 `testASetAsideLineOnATripWithNoTicksIsLeftOutOfTheHistory`, `CountingTests.testApplyReview*` (4),
 `TripCardsTests.testAReviewedTripSaysSoWhateverItsTicks`, `testReviewedIsOneRuleEverywhere`.
-**Not covered:** removing a missed thing, the no-ticks-at-all case in the UI.
+Apple Health (0.70): UI `testAppleHealthFillsInTheReview` (`-uiTestingHealth`: rows "Swim · indoor · 3 times", "Run
+· outdoor · 2 times", "No bike", no fourth; his own mark on the Goggles kept; after Use these exactly lines 5, 7,
+9, 12 marked; Cancel keeps nothing; Use these + Save → Reviewed; the Mac: no `review-health`),
+`testATemplateCountsAsWhatHeLinksItTo`, `testAppleHealthSaysWhenItIsNotAllowedOrHasNothing` (`-healthRefused` →
+`review-health-refused`, `-healthNone` → `review-health-none`, neither with `review-health-use`). Model
+`AppleHealthReviewTests` (20, chapter 07).
+**Not covered:** removing a missed thing, the no-ticks-at-all case in the UI; the real Apple Health (only on his
+iPhone — the tests feed invented workouts); "Reading Apple Health…" (the invented source answers at once).
 
 ---
 

@@ -41,6 +41,10 @@
 	<string>public.app-category.travel</string>
 	<key>NSCameraUsageDescription</key>
 	<string>A photo of a packed bag, kept with the trip, to repack from on the way home.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>AMS Packing reads your workouts during a trip to suggest what you used. It never writes to Apple Health.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>AMS Packing never writes to Apple Health. Apple requires this text all the same.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
 	<key>NSRemindersUsageDescription</key>

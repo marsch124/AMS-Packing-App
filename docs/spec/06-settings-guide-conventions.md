@@ -154,7 +154,9 @@ the sheet down on the iPhone. Nothing is ever
       - phases: "The steps of packing, from a week ahead to the day you leave. Every thing has its When, and a trip
         shows its list in this order, step by step."
     - One row per entry (n = 0, 1, …): the label (17 medium, ink, id `list-<kind>-name-<n>`); if THINGS use the
-      entry, how many (14 bold, monospaced digits, muted) right after it — things only, also for a "When" step
+      entry, how many (14 bold, monospaced digits, muted) right after it — things only, also for a "When" step;
+      on the owner marked "This is me" (0.70), right after its name, a small **"Me"** tag (Caption semibold white on a
+      slate capsule, min height 20, padding 8 sideways; id `list-owners-me-<n>`)
       (0.62; until then a step's number added its trip lines and template places); Spacer; (places only, 0.69) the
       place's square — a drawn `CodeMark` (three corner squares and two dots on the 24 grid, stroke 1.8) 22×22,
       muted, in a `Metrics.tap` square; id `list-places-code-<n>`, VoiceOver "Square code for <label>" — which opens
@@ -179,7 +181,12 @@ the sheet down on the iPhone. Nothing is ever
       conditions and steps, two drawn chevrons ▲ ▼ (`M6 15l6-6 6 6` / `M6 9l6 6 6-6`, stroke 2.2, in 44×44 boxes,
       slate at 10 % with a 1.4-pt slate outline, ids `list-<kind>-up` / `list-<kind>-down`, VoiceOver "Move <label>
       up|down") and the line "Up or down the list." ("Up or down the timeline: every trip follows this order." for
-      steps; 15 medium muted); for owners instead "Owners are always in A–Z order." Under the card, its needs line
+      steps; 15 medium muted); for owners instead "Owners are always in A–Z order.", and under it (0.70, his answer
+      "My things." to whose things Apple Health marks) **"This is me"** — a pill (Subheadline semibold, min height
+      `Metrics.chip`; slate outline on 10 % slate, filled slate with white words while this owner is him; id
+      `list-owners-me`, `.isSelected` when on) with a muted line beside it: "Whose things Apple Health marks in a
+      trip's review." / "Apple Health marks your things in a trip's review." Press → `setMe(owner)`; pressed on the
+      owner already marked → `setMe(nil)` (nobody). One at most: marking another moves the mark. Under the card, its needs line
       (id `list-<kind>-edit-needs`, §20): what Rename was missing or refused, or "<label> is already at the top." /
       "… at the bottom." for an arrow that cannot move it.
     - The Add row (`HStack(spacing: 8)`): a plain `TextField` with the placeholder **"Add to <title lower-cased>"**
@@ -293,6 +300,7 @@ when reminders come, which is his to decide; rename and reorder were the parts t
 |---|---|
 | `storagePlaces()` | `orderedNamesFromRows(shared, "places")` (stored order); empty → `DEFAULT_STORAGE_LOCATIONS` |
 | `owners()` | `namesFromRows(shared, "owners")` — A–Z (`jsLocaleCompare`, en-US collation); no defaults; empty → (0.62) the owners his THINGS already name: every item's trimmed `ownedBy` sorted A–Z, each normalised name once (the first spelling in that order wins — the same names *Whose it is* offers). Things only, not trip lines, as for `people()`: every name shown is in use by a thing, so none can be removed (the ✕ says "Kim is still used by 5 things, so it stays."); a rename or an Add stores them all as his own list, still A–Z. Until 0.62 the Owners part was empty on such an account while *Whose it is* offered those very names (Open questions 14) |
+| `me()` / `setMe(_:)` (0.70, `Me.swift`) | the owner marked "This is me": stored in `meta["me"]` (its own record, so it syncs; in a backup `prefs.me`, read back by the import). `me()` answers it spelled as `ownerChoices()` has it, or nil when nobody is marked or the name is no longer an owner; `setMe` refuses a name that is no owner, nil/blank clears; a rename in Owners carries it (`renameChoice`). Apple Health's review (chapter 07 part 7) treats this owner's things and "Both have one" as his; nobody marked → its guess, the name on most things, and the card asks "Who are you? Mark yourself in Your choices → Owners." |
 | `ownerChoices()` | what *Whose it is* on a thing offers: `owners()` then every item's trimmed `ownedBy` sorted A–Z, each normalised name ONCE, first spelling wins (fix of 2026-09-26: one name appeared once per thing he owns); on an account with no Owners of its own the two lists are now the same |
 | `people()` | `peopleFromRows(shared)`; empty → (0.62) the packers his THINGS already name (`assignedPeople(items)`, each once, A–Z, coloured `PERSON_COLORS[n % 8]`), so an account that never wrote Packers of its own keeps showing its own people now that the starters are invented; none → `DEFAULT_PEOPLE`, each made a person with a fresh random id. Things only, not trip lines: every name it offers is then in use, so none can be removed only to come back from an old trip |
 | `conditions()` | `conditionsFromRows(shared)`; empty → `DEFAULT_ITEM_CONDITIONS` |
@@ -370,6 +378,13 @@ filter; `people()` feeds *Packed by* in the table; `conditions()` feeds *Conditi
 A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
 
 ### 2.8 Tests
+- 0.70 — "This is me": model `AppleHealthReviewTests.testThisIsMeDecidesWhoseThingsAppleHealthMarks` (the guess
+  until marked; Robin marked → Robin's things and "Both have one" are his, Kim's left; one at most; no-owner refused;
+  kept through a rename, the sync records and a backup; unmarked → the guess); UI
+  `testThisIsMeDecidesWhoseThingsAppleHealthMarks` (`-uiTestingHealth`: the review asks `review-health-who` and says
+  "Marked 3 didn't use, 3 used."; pen on Robin (`list-owners-edit-1`) → `list-owners-me` on, tag
+  `list-owners-me-1` and none on row 0; the review then "Marked 3 didn't use, 4 used." and no longer asks). Seen
+  red with `mainOwner()` planted to ignore the mark.
 - Model — `SettingsListsTests`: `testAListWithNoRowsIsTheFactoryOneAndHisOwnIsStored` (factory answers, nothing
   stored; `setNames` trims and drops empties, one record per entry with keys `places:garage shelf`…; `setNames`
   refuses `people`; it also pins the two INVENTED starter packer names, Kim and Robin), `testEachOwnerIsOfferedOnce` (40 items, three
@@ -1821,6 +1836,11 @@ so a change to `project.yml` is committed together with the regenerated files. "
 - **Entitlements, plain build** (`AMSPacking.entitlements`, generated from project.yml): app sandbox,
   user-selected files read/write (Save and Open windows), personal-information.calendars (Reminders on the Mac). No
   iCloud: an ad-hoc-signed Mac app carrying iCloud entitlements is refused at launch, and that is how CI builds.
+  Since 0.70 this is the MAC's file: an iPhone build (device or simulator) signs with the hand-written
+  `AMSPacking-iOS.entitlements` (`CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]` / `[sdk=iphonesimulator*]`) — the same
+  three keys + `com.apple.developer.healthkit` and `com.apple.developer.healthkit.access` [] (Apple Health in the
+  review, read only; chapter 07 part 7). The TestFlight workflow adds those two keys to the shipped iPhone file and
+  fails the run if the archived iPhone app lacks HealthKit.
 - **Entitlements, syncing build** (`AMSPacking-iCloud.entitlements`, hand-written): the three above + network client
   (a sandboxed Mac app may not reach iCloud without it), the iCloud container `iCloud.<bundle id>`, CloudKit, the
   container environment `Development`, the sandbox exception `mach-lookup` for `com.apple.cloudd` ("Without this the
@@ -1830,7 +1850,9 @@ so a change to `project.yml` is committed together with the regenerated files. "
   CFBundleIconName AppIcon, LSApplicationCategoryType `public.app-category.travel`, ITSAppUsesNonExemptEncryption NO,
   NSRemindersFullAccessUsageDescription and NSRemindersUsageDescription "Your To buy list goes into Reminders, to
   take to the shop; what you tick there is ticked here.", NSCameraUsageDescription "A photo of a packed bag, kept with
-  the trip, to repack from on the way home.", `PackingUsesICloud` = `$(PACKING_USES_ICLOUD)` (read at launch),
+  the trip, to repack from on the way home.", NSHealthShareUsageDescription "AMS Packing reads your workouts during a
+  trip to suggest what you used. It never writes to Apple Health." and NSHealthUpdateUsageDescription "AMS Packing
+  never writes to Apple Health. Apple requires this text all the same." (0.70), `PackingUsesICloud` = `$(PACKING_USES_ICLOUD)` (read at launch),
   UIBackgroundModes [remote-notification], UILaunchScreen (empty colour name), UISupportedInterfaceOrientations
   [Portrait] — "portrait by design, like the web app on the phone"; (0.69) CFBundleURLTypes: one type, name
   `com.schabbauer.AMSPacking.place`, role Viewer, scheme `amspacking` — a place's printed label

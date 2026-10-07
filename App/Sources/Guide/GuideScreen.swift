@@ -174,6 +174,7 @@ struct HowItWorksScreen: View {
             "The photos of every packed bag are at the top of the way home; tap one to see it large, Next steps through them."]),
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use; type what you missed, pick the template it goes onto, and Add it; then Save.",
+            "On the iPhone the review opens with From Apple Health: the workouts of the trip\u{2019}s days, one line per kind (Swim \u{00B7} indoor \u{00B7} 3 times), and No bike for a workout template that had none. Use these marks the workout things: done \u{2192} used, not done or only in the other context (Indoor or Outdoor) \u{2192} didn\u{2019}t use. What you marked yourself, the common base, someone else\u{2019}s things (mark yourself: Your choices \u{2192} Owners, the pen, This is me) and Race-only things stay as they are, and nothing is kept until Save. The app only reads Apple Health, never writes to it. The Mac has no Apple Health, so no block there.",
             "Under a trip's name: where it stands in the loop, Plan · Pack · On site · Review · Refine, the step it is at filled in with the mark of the tab where it is done. Tap it for the whole picture.",
             "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time."]),
         Topic(section: .events, title: "Trips", lines: [
@@ -190,6 +191,7 @@ struct HowItWorksScreen: View {
             "On a row, Bag, When and Section are drop-downs: tap one, tap your choice. A new section is made at the foot of Section.",
             "Group, at the top of a template: its sections, When, Into, From where, Kind or A–Z.",
             "Delete template asks first. Your things stay. Beside it, Activity area moves the template to GA, WET, OE or none.",
+            "Counts as, above them, says which Apple Health workout the template meets in a trip\u{2019}s review \u{2014} Swim, Bike, Run, Strength, Mobility & breath work, Hiking, Golf, Climbing, Diving, or Nothing. Until you pick, the name decides: Swim counts as Swim, a name that is no workout as Nothing. The always-packed and transport templates have none.",
             "Arrange, under Group (while it groups by Section): hold \u{2261} and drag a heading \u{2014} its things come along \u{2014} or a thing to its place, under any heading. A heading's \u{2261} sits on a lilac patch; a thing's is light grey. Tap a heading's name to rename it, or Remove heading (its things stay). Tap Arrange again, or press Escape, when done. New trips pack in the new order.",
             "Share, at the top of a template: a link and a QR code. A grab list has Share at its top too.",
             "Refine (the violet card under the heading): after two or more reviewed trips, what a template carries for nothing. Keep settles it; Drop takes it off that one template."]),
