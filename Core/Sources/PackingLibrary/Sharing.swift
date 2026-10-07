@@ -80,7 +80,8 @@ extension Library {
     /// carries your private marks and scale readings"): the trip's luggage-scale
     /// readings and its bag photos (only their ids would travel — the photos never
     /// do); a line's "not this time", way-home tick, used up, maintenance note,
-    /// bought on site, packing time and "changed on the trip". The list itself — its
+    /// bought on site, packing time, the pockets it went into (0.69: his bags are not
+    /// theirs) and "changed on the trip". The list itself — its
     /// lines, bags, When, quantities and the trip's answers — goes as it is.
     public static func justTheList(_ trip: TripEvent) -> TripEvent {
         var t = trip
@@ -91,7 +92,7 @@ extension Library {
             l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)
             l.skipped = false
             l.edited = false
-            for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt"] { l.extra[key] = nil }
+            for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt", POCKET_KEY, HOME_POCKET_KEY] { l.extra[key] = nil }
             return l
         }
         return t

@@ -64,9 +64,15 @@ extension Library {
 
     @discardableResult
     public mutating func setPackedHome(_ on: Bool, tripId: String, entryId: String) -> Bool {
-        mark(tripId: tripId, entryId: entryId) { line in
+        let done = mark(tripId: tripId, entryId: entryId) { line in
             line.extra[HOME_KEY] = on ? .bool(true) : nil
         }
+        // The pocket it went out in comes along with the tick (0.69), as on the way out.
+        if done, on, let t = trips.firstIndex(where: { $0.id == tripId }),
+           let k = trips[t].entries.firstIndex(where: { $0.id == entryId }) {
+            prechooseHomePocket(trip: t, entry: k)
+        }
+        return done
     }
 
     /// Used up or left on site: off the way home (and not packed). Again: back on.

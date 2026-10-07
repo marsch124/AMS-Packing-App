@@ -402,8 +402,23 @@ struct ThingEditor: View {
                     keptAtHome
                         .keyed(.storage)
                     DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
-                             selected: bag.selected, id: "thing-bag", ring: ring(.bag)) { draft.container = $0 }
+                             selected: bag.selected, id: "thing-bag", ring: ring(.bag)) { picked in
+                        draft.container = picked
+                        // A new bag: the old bag's pocket is not one of its (0.69).
+                        if !model.library.pockets(bag: picked).contains(where: { normName($0) == normName(Library.usualPocket(draft)) }) {
+                            Library.setUsualPocket(&draft, "")
+                        }
+                    }
                         .keyed(.bag)
+                    // Its usual pocket (0.69), when that bag has pockets: "Backpack · Front pocket".
+                    let pockets = model.library.pockets(bag: draft.container)
+                    if !pockets.isEmpty {
+                        DropDown(title: "Pocket", options: pockets.map { ($0, $0) }, selected: Library.usualPocket(draft),
+                                 id: "thing-pocket", blank: "Just in the bag", same: { normName($0) == normName($1) }, ring: ring(.pocket)) {
+                            Library.setUsualPocket(&draft, $0)
+                        }
+                            .keyed(.pocket)
+                    }
                     DropDown(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: draft.phase,
                              id: "thing-when", ring: ring(.when)) { draft.phase = $0 }
                         .keyed(.when)
@@ -417,8 +432,8 @@ struct ThingEditor: View {
                     }
                     .keyed(.weight)
                     // Inside — a pouch or a kit and what it holds; or the kit it is in (0.70).
-                    ThingKitPart(thingId: current, draft: $kit)
-                        .id("kit-part-\(current)")    // a fresh list per thing (⌘↓ ⌘↑ on the Mac)
+                    ThingKitPart(thingId: current, draft: $kit, ringed: at)
+                        .keyed(.kitAdd)
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand", .brand) }
@@ -971,6 +986,7 @@ struct ThingEditor: View {
                 thing.storage = jsTrim(d.storage)
                 thing.category = d.category
                 thing.container = d.container
+                thing.extra[USUAL_POCKET_KEY] = d.extra[USUAL_POCKET_KEY]
                 thing.phase = d.phase
                 thing.ownedBy = d.ownedBy
                 thing.condition = d.condition
@@ -1068,6 +1084,7 @@ extension ThingEditor {
         switch f {
         case .section(let t): return "key-section-\(t)"
         case .liquid, .restricted: return "key-plane"
+        case .kitTakenOut, .kitAdd, .kitCheck: return "key-kit"
         case .jump: return "key-jump"
         default: return "key-\(f)"
         }
@@ -1080,7 +1097,17 @@ extension ThingEditor {
         let templates = self.templates
         if !templates.isEmpty { out.append(.templates) }
         for t in templates where onLists.contains(t.id) { out.append(.section(t.id)) }
-        out += [.storage, .bag, .when, .weight, .brand, .colour, .condition, .care, .careNotes, .liquid, .restricted, .expiry]
+        out += [.storage, .bag]
+        if !model.library.pockets(bag: draft.container).isEmpty { out.append(.pocket) }   // 0.69
+        out += [.when, .weight]
+        // The kit part (0.70), as it shows: a thing in a kit, or one that may hold things.
+        if !kit.none {
+            if kit.holder != nil { out.append(.kitTakenOut) } else {
+                out.append(.kitAdd)
+                if !kit.contents.isEmpty { out.append(.kitCheck) }
+            }
+        }
+        out += [.brand, .colour, .condition, .care, .careNotes, .liquid, .restricted, .expiry]
         return out
     }
 
@@ -1095,6 +1122,10 @@ extension ThingEditor {
         case .section(let t): return "thing-section-\(templates.firstIndex { $0.id == t } ?? -1)"
         case .storage: return "thing-storage"
         case .bag: return "thing-bag"
+        case .pocket: return "thing-pocket"
+        case .kitTakenOut: return "thing-kit-taken-out"
+        case .kitAdd: return "thing-kit-add"
+        case .kitCheck: return "thing-kit-check"
         case .when: return "thing-when"
         case .weight: return "thing-weight"
         case .brand: return "thing-brand"
@@ -1120,6 +1151,10 @@ extension ThingEditor {
         case .section(let t): return "Section on \(templates.first { $0.id == t }?.name ?? "")"
         case .storage: return "Kept at home"
         case .bag: return "Usually packed in"
+        case .pocket: return "Pocket"
+        case .kitTakenOut: return "Taken out for now"
+        case .kitAdd: return "Add from your things"
+        case .kitCheck: return "Check before each trip"
         case .when: return "When"
         case .weight: return "Weight"
         case .brand: return "Brand"
@@ -1154,10 +1189,11 @@ extension ThingEditor {
         case .expiry: return "a date, 2027-06-30 or 30/6 27, or +6m, +1y · Return saves"
         case .jump: return "type part of a field's name · Return goes there · Esc closes"
         case .templates: return "← → move · Space turns it on or off · type to jump · Tab next"
-        case .liquid, .restricted: return "Space turns it on or off · Tab next · Return saves"
+        case .liquid, .restricted, .kitTakenOut, .kitCheck: return "Space turns it on or off · Tab next · Return saves"
+        case .kitAdd: return "Space opens or closes the list of your things · Tab next · Return saves"
         case .storage: return "type to pick, or a new place · Space opens · Tab next · Return saves"
         case .section: return "type to pick, or a new section · Space opens · Tab next · Return saves"
-        case .category, .owner, .bag, .when, .condition, .care:
+        case .category, .owner, .bag, .pocket, .when, .condition, .care:
             return "type to pick · Space opens · Tab next · Return saves"
         case .name, .brand, .colour: return "type · Tab next · Return saves"
         }
@@ -1519,6 +1555,14 @@ extension ThingEditor {
         case .liquid, .restricted:
             guard code == KeyCode.space else { return e }
             if f == .liquid { draft.liquid.toggle() } else { draft.restricted.toggle() }
+            return nil
+        case .kitTakenOut, .kitAdd, .kitCheck:
+            guard code == KeyCode.space else { return e }
+            switch f {
+            case .kitTakenOut: kit.takenOut.toggle()
+            case .kitCheck: kit.check.toggle()
+            default: kit.picking.toggle()
+            }
             return nil
         default:
             return e

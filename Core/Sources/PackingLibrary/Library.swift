@@ -234,6 +234,8 @@ public struct Library: Equatable, Sendable {
         // A kit to check before each trip is packed only when all inside it is ticked (ThingKits).
         guard kitAllowsTick(checked, trip: t, entry: e) else { return false }
         trips[t].entries[e].checked = checked
+        // Its usual pocket comes along with the tick (0.69): most lines need no tap.
+        if checked { prechoosePocket(trip: t, entry: e) }
         return true
     }
 }

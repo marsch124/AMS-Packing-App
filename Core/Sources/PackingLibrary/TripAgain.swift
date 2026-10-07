@@ -38,7 +38,9 @@ extension Library {
             fresh.checked = false
             fresh.skipped = false
             fresh.used = nil
-            for key in ["packedAt", BOUGHT_ON_SITE_KEY, HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY] { fresh.extra[key] = nil }
+            // The pockets it went into were that trip's packing too (0.69); a tick on the
+            // new trip brings the usual pocket again.
+            for key in ["packedAt", BOUGHT_ON_SITE_KEY, HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, POCKET_KEY, HOME_POCKET_KEY] { fresh.extra[key] = nil }
             return fresh
         }
         trips.append(copy)

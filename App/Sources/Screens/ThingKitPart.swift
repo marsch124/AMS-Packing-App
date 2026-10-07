@@ -21,6 +21,9 @@ struct KitDraft: Equatable {
     /// taken out of it for now.
     var holder: String?
     var takenOut = false
+    /// The list of his things to add from is open — kept here so the Mac's keys (Space on
+    /// Add from your things) open it too; never saved.
+    var picking = false
     /// As the page opened — Save writes only what changed.
     private var opened: [String] = []
     private var openedOut: Set<String> = []
@@ -59,8 +62,9 @@ struct KitDraft: Equatable {
 struct ThingKitPart: View {
     let thingId: String
     @Binding var draft: KitDraft
+    /// The field the Mac's keys are on (ThingKeys.swift): its control is ringed. nil on the iPhone.
+    var ringed: ThingField? = nil
     @EnvironmentObject var model: LibraryModel
-    @State private var picking = false
     @State private var query = ""
 
     var body: some View {
@@ -87,6 +91,7 @@ struct ThingKitPart: View {
                 Text("Taken out for now").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
             }
             .tint(AppSection.care.color)
+            .focusRing(ringed == .kitTakenOut)
             .accessibilityIdentifier("thing-kit-taken-out")
             // A thing ALSO on a template by itself: a trip packs its kit instead (spec 07, part 9).
             if !also.isEmpty {
@@ -120,12 +125,13 @@ struct ThingKitPart: View {
                 row(thing, n: n, today: today)
             }
             addButton
-            if picking { picker(byId) }
+            if draft.picking { picker(byId) }
             if !things.isEmpty {
                 Toggle(isOn: $draft.check) {
                     Text("Check before each trip").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 }
                 .tint(AppSection.care.color)
+                .focusRing(ringed == .kitCheck)
                 .accessibilityIdentifier("thing-kit-check")
                 Text("With what is inside: \(KitDashboard.kilos(total))")
                     .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
@@ -188,14 +194,15 @@ struct ThingKitPart: View {
     }
 
     private var addButton: some View {
-        Button { picking.toggle(); query = "" } label: {
-            Text(picking ? "Close the list" : "Add from your things").font(.system(.subheadline, weight: .semibold))
+        Button { draft.picking.toggle(); query = "" } label: {
+            Text(draft.picking ? "Close the list" : "Add from your things").font(.system(.subheadline, weight: .semibold))
                 .foregroundStyle(AppSection.care.color)
                 .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
                 .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain).focusEffectDisabled()
+        .focusRing(ringed == .kitAdd, radius: 14)
         .accessibilityIdentifier("thing-kit-add")
     }
 

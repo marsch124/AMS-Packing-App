@@ -23,6 +23,11 @@ import AppKit
 /// A field of a thing's page, in his reading order.
 enum ThingField: Hashable {
     case name, notes, category, owner, templates, section(String), storage, bag, when
+    /// Pocket (0.69) — only when its bag has pockets.
+    case pocket
+    /// The kit part (0.70): Taken out for now (a thing in a kit); Add from your things and
+    /// Check before each trip (a thing that holds things) — Space presses or switches.
+    case kitTakenOut, kitAdd, kitCheck
     case weight, brand, colour, condition, care, careNotes, liquid, restricted, expiry
     /// The ⌘J box's own field — never in the Tab order.
     case jump
@@ -38,7 +43,7 @@ enum ThingField: Hashable {
     /// A drop-down.
     var isList: Bool {
         switch self {
-        case .category, .owner, .section, .storage, .bag, .when, .condition, .care: return true
+        case .category, .owner, .section, .storage, .bag, .pocket, .when, .condition, .care: return true
         default: return false
         }
     }

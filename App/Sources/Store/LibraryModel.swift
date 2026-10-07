@@ -27,6 +27,11 @@ final class LibraryModel: ObservableObject {
     /// A trip asked to open from outside the screens — a tapped packing reminder, a
     /// Shortcut. Home opens it and clears it.
     @Published var tripToOpen: String?
+    /// How that trip opens when a door check was tapped (0.69): on just its unticked
+    /// lines, or (`home`) at Pack to go home on just what is not in a bag yet. The trip
+    /// takes it as it opens, and clears it.
+    @Published var tripFocus: TripFocus?
+    struct TripFocus: Equatable { let tripId: String; let home: Bool }
     /// A grab list asked to open from a Shortcut (the Action button). Home opens it.
     @Published var grabToOpen: String?
     /// The Action button's "Choose a grab list": Home shows the menu of grab lists.
@@ -246,6 +251,9 @@ extension LibraryModel {
     ///                           packed); "home" = it began 3 days ago, ends today, all
     ///                           ticked; anything else = a month ahead, as the sample
     ///  -uiTestingNotes        → memory, the sample + notes to search (0.69)
+    ///  -uiTestingPockets      → memory, the sample under way + a Backpack with three pockets,
+    ///                           the charger usually in its front pocket, and the times
+    ///                           he leaves (the pockets and the door check, 0.69)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -295,6 +303,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingNotes") {
             return LibraryModel(store: MemoryStore(SampleLibrary.notes().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingPockets") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.pockets().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTesting") {
             return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false, sky: sky)

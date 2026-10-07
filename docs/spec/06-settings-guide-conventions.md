@@ -503,6 +503,41 @@ scheduling (skipped under tests), a tapped notification opening the trip, the 09
 
 ---
 
+## 3a. The door check — notifications (`Store/DoorChecks.swift`, `PackingLibrary/DoorCheck.swift`; 0.69)
+
+His choice of idea 4 (7 Oct 2026, "c, a time"). Set on a trip ("I leave at", Create new trip and Trip settings —
+spec 03 "The door check", which has the words, the moments and the tests). The notification side:
+- **iPhone only** (`#if os(iOS)`): the Mac at home saying the same would be the same news twice. The Mac shows "I
+  leave at" too (the times sync) with "…your iPhone names…" under it, and never asks for permission.
+- **Permission**: the app's one notification permission, shared with Remind me to pack. "Add a time" asks for it
+  (`PackingReminders.askToShow`, the system's own question, once); "I leave at" says in red under the times when the
+  device does not allow it (`PackingReminders.permission() == .refused`, looked up whenever a time changes) — the
+  same words as the Remind me to pack card. It does NOT depend on the Remind me to pack switch: a time set on a trip
+  is the asking.
+- **Scheduling**: `DoorChecks.reschedule(library)` — removes every pending id starting `door-`, then adds one
+  calendar notification per `Library.doorChecks(now:)` entry (title, body, default sound, `userInfo` `tripId` +
+  `door`). Run from `RootView` whenever the library settles (debounced 2 s) and when the app comes to the front.
+  Under the UI tests: nothing reaches the system; `planned` holds the plan (`-showDoorChecks` shows it on the trip).
+- **Tapped**: the shared notification delegate (`PackingReminders`) sees `door` in `userInfo` and calls
+  `DoorChecks.open(tripId, kind)` (RootView: Home, `model.tripFocus`, `model.tripToOpen`), else the packing reminder's
+  `open`.
+
+## 3b. "Where is my …?" — Siri and Shortcuts (`Store/WhereIsIntent.swift`; 0.69)
+
+Stop B of his idea plan: "On site you ask 'Where is my charger?' and the answer comes back: 'Backpack, front
+pocket.'" — on the iPhone and the Mac, on site and on the way home. `WhereIsIntent` ("Where is my thing?";
+`openAppWhenRun = false`) takes a `ThingEntity` (`ThingQuery`: his things not "Not in use", A–Z, also found by a
+typed or said part of the name) and answers `WhereAnswer.said` as a dialog and as its value; a thing gone since:
+"That thing is not in Packing any more." Phrases (in `PackingShortcuts`, the fourth App Shortcut, tile "Where is my
+thing?", symbol `bag` — the Shortcuts app's own tile, as the other three): "Where is my <thing> in Packing",
+"Where's my <thing> in Packing", "Ask Packing where something is" (Siri asks "Which thing?"). The things offered
+by name follow his library (`updateAppShortcutParameters` on every change, as for the grab lists). The answer's
+rules: spec 03, "Bag pockets on a trip, and Where is my …?". **Not covered by a UI test** (no test can speak to
+Siri): the words come from `Library.whereIs`, covered by `PocketsTests.testWhereIsMyCharger`, and the same answer
+shows first in Search (`testSearchShowsWhereAThingIsOnTheTripUnderWay`).
+
+---
+
 ## 4. *iCloud sync* card (`SyncCard.swift`) — briefly
 
 Full behaviour belongs to the storage/sync chapter and `docs/store.md`; here only what Settings shows.
@@ -1669,14 +1704,17 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-uiTestingOnSite` | memory, `SampleLibrary.underWay()` | |
 | `-uiTestingOldPhoto` | memory, `SampleLibrary.oldPhoto()` | |
 | `-uiTestingTwoLibraries` | memory, `SampleLibrary.doubled()` | |
-| `-uiTestingPlaces <when>` | memory, `SampleLibrary.places(when)` | 0.69; checked before `-uiTestingNotes` and `-uiTesting` |
+| `-uiTestingPlaces <when>` | memory, `SampleLibrary.places(when)` | 0.69; checked before `-uiTestingNotes`, `-uiTestingPockets` and `-uiTesting` |
 | `-uiTestingNotes` | memory, `SampleLibrary.notes()` | 0.69 |
+| `-uiTestingPockets` | memory, `SampleLibrary.pockets()` | 0.69 |
 | `-uiTesting` | memory, `SampleLibrary.make()` | checked last |
 | (none) | SwiftData; iCloud when the Info.plist key `PackingUsesICloud` is "YES" | a failure to open → `.failed("The library could not be opened: …")` |
 | `-openGrab <label or title>`, `-openGrabMenu`, `-openNextTrip` | (testing only) play a Shortcut | |
 | `-uiTestingOpen <link>` | (testing only) a link handed to the app at launch, as the Camera hands a place's label (`LibraryModel.open`) | 0.69 |
 | `-pretendShopTicks` | (ShopReminders) pretend ticks in Reminders | |
-| `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings | 0.62 |
+| `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings — also "I leave at"'s red line (0.69) | 0.62 |
+| `-showDoorChecks` | (DEBUG, testing only) the trip lists the door checks that would be scheduled (`door-check-out/home/none`) | 0.69 |
+| `-tapDoorCheck out\|home` | (testing only) a door check tapped at launch, for the first trip with that time | 0.69 |
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |
 
@@ -1741,6 +1779,10 @@ every one of his things does.
   [Hiking], made with `createTrip`. Result: 4 templates and 13 things (10 + the bag + 2) — no test reads that count.
 - **`underWay()`** (`-uiTestingOnSite`): `make()` with the trip moved to yesterday → today + 2 (it stands at On site);
   the Passport has the note "Keep it dry".
+- **`pockets()`** (`-uiTestingPockets`, 0.69): `underWay()` + a bag **Backpack** (`addBag`) with pockets Main, Front
+  pocket, Lid; the Phone charger and the Headlamp usually in the Backpack, the charger's usual pocket Front pocket;
+  the trip's lines rebuilt (7: Passport 0, Phone charger 1, Toothbrush 2, Headlamp 3, Hiking boots 4, Rain jacket 5,
+  Map 6), the Passport ticked; "I leave at" 07:30 on the first day (yesterday — no check left) and 10:00 on the last.
 - **`oldPhoto()`** (`-uiTestingOldPhoto`): `make()` + a photo record id `left-behind`, data
   `data:image/jpeg;base64,AQID`, created 2026-01-01T09:00:00.000Z, used by nothing.
 - **`doubled()`** (`-uiTestingTwoLibraries`): `make()` + every template again under new ids, same name, group and

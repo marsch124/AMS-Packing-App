@@ -79,6 +79,11 @@ trip *Weekend in the hills* (Hiking + base, always 30–32 days from the day the
 | `laundryNights` | `LAUNDRY_NIGHTS_KEY` | number 1…60 | Create trip, Trip settings, Start again |
 | `weighed` | `WEIGHED_KEY` | `{ "<bag name>": grams }` | luggage scale (`setWeighed`) |
 | `bagPhotos` | `BAG_PHOTOS_KEY` | `{ "<bag name>": ["<photo id>", …] }` (0.52/0.53 wrote one plain string id; read as a list of one) | bag photos |
+| `leaveAt` | `LEAVE_AT_KEY` | "HH:mm" (0.69) — the time he leaves on the first day; absent = none | Create trip, Trip settings ("I leave at") |
+| `leaveHomeAt` | `LEAVE_HOME_AT_KEY` | "HH:mm" (0.69) — the time he leaves for home on the last day | Create trip, Trip settings |
+
+Neither leave time is copied by Start again (a new trip has no dates); both travel in a shared trip (the
+people he shares a trip with leave with him). See "The door check".
 
 ### A line (`Item` used as a trip entry)
 
@@ -100,8 +105,13 @@ unit), `liquid`, `restricted`, `perNight`, `section` (the section's DISPLAY NAME
 | `usedUp` | `USED_UP_KEY` | used up / left on site |
 | `homeNote` | `HOME_NOTE_KEY` | maintenance note on this line |
 | `packedAt` | — | the web app's packing time; removed by Start again, left out of a share |
+| `pocket` | `POCKET_KEY` | (0.69) the pocket of the line's bag it went into on the way out; removed by Start again, left out of a share |
+| `homePocket` | `HOME_POCKET_KEY` | (0.69) the pocket it went into for the way home; removed by Start again, left out of a share |
 
-**Extra key on a bag (a thing on the bag list):** `cabin` (`CABIN_KEY`, Bool) — "Goes in the cabin".
+**Extra keys on a bag (a thing on the bag list):** `cabin` (`CABIN_KEY`, Bool) — "Goes in the cabin";
+`pockets` (`POCKETS_KEY`, 0.69) — its pockets' names, in his order (absent = no pockets).
+**Extra key on a thing:** `usualPocket` (`USUAL_POCKET_KEY`, 0.69) — the pocket of its usual bag it usually goes
+in. All of these are absent until he uses pockets, and an absent key changes nothing (`PocketsTests.testAnAbsentPocketChangesNothing`).
 
 ### How a trip is stored and synced
 
@@ -247,7 +257,8 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   `CONTEXTS` order, Indoor, Outdoor, Race; nothing picked = an empty entry, which narrows nothing) —
   picks for a workout ticked off again are not saved — and `contexts` = every context picked for any
   workout (`WorkoutContexts.union`, for a device still on 0.66 and the web app). With dates picked:
-  `startDate = ymd(start)`, `endDate = ymd(max(start, end))`; with none, both stay "".
+  `startDate = ymd(start)`, `endDate = ymd(max(start, end))`, and (0.69) the "I leave at" times as
+  `extra.leaveAt` / `extra.leaveHomeAt` ("" = none); with none, both stay "" and no time is kept.
   `Library.createTrip(draft)` then: `coerceEvent`, an id if empty, `nights = nightsBetween(start,
   end) ?? 0`, `entries = buildTotalEntries(trip, resolvedTemplates())`, `generatedAt = createdAt =
   updatedAt = now`, appended to `trips`.
@@ -294,6 +305,9 @@ tap after a range starts a new one, an earlier day becomes the first; Create wit
 "last day" and makes nothing; the last day tapped, the line goes and the trip keeps its dates — red with
 the grid hidden until a tap: "the month grid is not open on Create new trip", and with Create not waiting
 for the last day: "Create with only a first day did not ask for the last: ''"),
+**0.69:** `testCreateNewTripTakesTheTimeHeLeaves` (no "Add a time" without days; two days picked → both
+times added, "Check 07:15" / "Check 09:45"; the trip made shows them again in Trip settings — red with the two
+`setLeaveTime` lines planted out of `create`: "the trip made did not keep the time he leaves"),
 `testContextSitsUnderTheWorkouts` (Context absent until a WET pill, below the workouts,
 above Transport, Swim's pills `trip-context-1-*` set in > 24 pt), `testTheDateGridCanBeLeftAndQuickSaysSo`
 (the Quick line is there with Full trip AND with Quick picked), `testABagOnTheTripSaysWhetherItGoesInTheCabin`
@@ -516,6 +530,20 @@ web app's "Filtering" and "Total List generation".
 2. **Quick** (`mode == "quick"`): exactly the ticked templates, in `activities` order.
 3. **Trip**: every `role == "base"` template, then every `role == "transport"` template whose
    `transport` equals the trip's transport, then the ticked templates.
+3a. **I leave at** (0.69, the door check; `LeaveTimes(id: "trip-leave")` in `Screens/Pockets.swift`) — only
+   while the trip has dates (a time on a day needs the day). A heading "I leave at" (Subheadline semibold blue,
+   id `trip-leave-title`), then a `Grid` of two rows so the times line up: **First day** and **Last day**
+   (Subheadline ink). A row with no time: **Add a time** (Footnote semibold blue capsule outline,
+   `Metrics.chip` tall, id `trip-leave-out-add` / `trip-leave-home-add`) — it sets 07:30 (first day) or 10:00
+   (last day) and, on the iPhone, asks the system's notification question once (`PackingReminders.askToShow`).
+   A row with a time: the compact system time picker (id `…-time`), **"Check 07:15"** (Footnote mono muted —
+   the time minus 15 minutes; id `…-check`) and a small quiet ✕ (drawn, muted, `Metrics.glyph` in a
+   `Metrics.compact` square, id `…-remove`, label "Remove the time") that takes the time away. Under the rows
+   (Footnote muted, id `trip-leave-note`): "Optional. 15 minutes before, the iPhone names what is still unticked
+   — on the last day, what is not in a bag yet." (Mac: "…your iPhone names…"). On the iPhone, with a time set
+   and the device not allowing the app to notify him: **"This device does not allow the app to remind you. Allow
+   it in the device's Settings, under Notifications."** (Subheadline semibold red, id `trip-leave-refused`) —
+   looked up whenever a time changes (`PackingReminders.permission`). Created with the trip; reset after Create.
 4. Duplicates removed, first occurrence kept. Earlier templates win a name+bag clash, so the base has
    priority.
 
@@ -893,9 +921,13 @@ smaller tick circles and less space between lines").
   `.strikethrough` — when set aside; up to 2 lines); "Bought on site" (Footnote semibold green) right under
   the name when marked; at the right "×N" (Subheadline semibold mono muted) when the quantity > 1, plus the
   washtub at `Metrics.glyph` when laundry washes and the line is per night; then the bag name (Footnote muted,
-  one line, max 150 pt wide) — except when sorted Into. 2 pt above and below the words (5 until 0.67), at
+  one line, max 150 pt wide) — except when sorted Into. **0.69:** a ticked line with a pocket says
+  **"Backpack · Front pocket"** there instead (max 200 wide); sorted Into (the heading names the bag), just
+  "Front pocket". An unticked or set-aside line never shows a pocket. 2 pt above and below the words (5 until 0.67), at
   least `Metrics.line` tall, a hairline under it.
-  Tap: toggles `checked` (`Library.setChecked`) — **a set-aside line does not tick**.
+  Tap: toggles `checked` (`Library.setChecked`) — **a set-aside line does not tick**. **0.69:** ticking a line
+  whose bag has pockets (`Library.pocketsByBag()`, asked once per screen) opens its **pocket pills** under it —
+  see "Bag pockets on a trip".
 - **⊘ / ↻** (`AsideMark`, drawn on the 24-pt grid, stroked 1.8, muted, shown at `Metrics.glyph` — 20 / 16 —
   with `onGrid`), in a **`Metrics.lineButton` × `Metrics.line`** target — 40 × 30 on the iPhone, 30 × 22 on
   the Mac (24 pt in 40 × 40 until 0.67): as tall as the line, no taller, generous across; id
@@ -936,7 +968,7 @@ smaller tick circles and less space between lines").
   in a cabin bag is not allowed on board; "Plasters, in the Camp pouch" runs out before you are home — each opens
   that thing.
 
-Each row view is keyed by "id|checked|aside|group|placing|qtyNights", so it is rebuilt whenever its
+Each row view is keyed by "id|checked|aside|group|placing|qtyNights|pocketing|pocket" (the last two 0.69), so it is rebuilt whenever its
 tick, set-aside, group, place panel or night count changes (bug B1, his Mac 2026-09-26: a row showed no
 tick while the trip had it; and a moved lazy row kept "Set place").
 
@@ -1142,6 +1174,10 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   its grid CLOSED: field id `tripset-dates-field` (value "No dates" for an undated trip), grid ids `range-*`.
   **Clear dates** (`range-clear`) in the grid is how a trip's dates are taken away now — the switch was the
   only way before, so it is kept as a small action rather than lost.
+- **I leave at** (0.69), only while the trip has dates: as on Create new trip ("I leave at"), GREEN, ids
+  `tripset-leave-*` (`tripset-leave-out-add`, `tripset-leave-out-check`, `tripset-leave-refused`…). Loaded from
+  `extra.leaveAt` / `extra.leaveHomeAt`; part of the sheet's snapshot (a changed time stops the swipe from
+  closing it); Save writes them with `Library.setLeaveTime` inside `changeTrip` ("" takes one away).
 - The template pill groups (ids `tripset-activity-<n>`, same numbering as Create new trip, "OTHER
   TEMPLATES" last; heading id `tripset-activity-title`), Context per workout (`WorkoutContexts`, 0.67:
   `tripset-context-title`, a line per ticked workout `tripset-context-<n>-name` with its pills
@@ -1700,6 +1736,15 @@ since 0.57.
 (photos or a thing) — SwiftUI does not reliably present a second sheet while the first closes; closing it
 leaves the search as it was.
 
+**0.69:** a tapped door check for the way home opens it by itself (the trip, then On site with
+`openHome`, then this with `onlyLeft`, each 0.7 s after the one before has arrived): **"Only what is not in a
+bag yet"** (Subheadline semibold green, id `wayhome-left-only`) and **Show all** (green capsule outline,
+`Metrics.chip`, id `wayhome-show-all`) under the search; the list holds only lines not packed for home and not
+used up until Show all. Packing a line whose bag has pockets opens that bag's **pocket pills** under it
+(`wayhome-line-<n>-pocket`, pills `…-pocket-<k>`, indented 38): the pocket it went out in chosen first
+(`prechooseHomePocket`: its way-out pocket while the bag still has it, else its usual one); a tap keeps another
+(`setHomePocket`) and closes the row. A packed line with a home pocket says it under its name (Footnote muted).
+
 ### What is on screen
 - Header "Way home" (24 heavy green); "D/T" or "D/T · N used up" (15 bold mono muted, `wayhome-progress`).
 - Search field "Search the way home" (17 medium, ✕ at its end only when typed: `wayhome-search-clear`,
@@ -1995,6 +2040,131 @@ non-empty but unreadable.
 
 ---
 
+## Bag pockets on a trip, and "Where is my …?" (`Pockets.swift` in PackingLibrary and in Screens, `Store/WhereIsIntent.swift`)
+
+**Purpose and origin.** Stop B of his idea plan, approved 7 Oct 2026 (idea 5, "every bag gets its pockets"):
+"Your bags get their own pockets: main, front pocket, lid, shoe compartment. While packing, one tap says which
+pocket a thing went into. On site you ask 'Where is my charger?' and the answer comes back: 'Backpack, front
+pocket.'" A bag's pockets are named on the bag's page (spec 05); a thing's usual pocket on its page (spec 05).
+
+**The pills** (`PocketPills`): ticking a line (way out) whose bag has pockets sets `pocketing` to that line;
+under it, indented `Metrics.mark` + 8, one horizontal row (scrolls sideways if long) of small pills —
+Footnote semibold, `Metrics.chip` tall (28 / Mac 22), 6 apart, green: the chosen one filled with white words, the
+others outlined 1.2 pt — row id `trip-line-<n>-pocket`, pills `trip-line-<n>-pocket-<k>` (k = the bag's order),
+`.isSelected` on the chosen. The tick itself already chose the thing's **usual pocket** (`Library.setChecked` →
+`prechoosePocket`: only when the line has no pocket yet, the line is in the thing's usual bag and that bag has
+the pocket), so most lines need no tap. A tap on a pill keeps that pocket (`setPocket`) and closes the row;
+ticking another line moves the row there; ignoring it leaves the usual one. Unticking keeps the pocket (a tick
+again shows it; his choice stands). A bag without pockets: nothing appears, exactly as before.
+
+**Model rules** (PackingLibrary `Pockets.swift`): pockets are matched by `normName`; `addPocket` refuses an empty
+name, a thing that is not one of his bags, or a second pocket of the same name; `renamePocket` carries the new name
+to every thing whose usual bag it is and every trip line packed in that bag (`carryPocket`, both pocket keys), and
+refuses a name another pocket has; `removePocket` leaves those things and lines simply in the bag; `movePocket`
+reorders. A thing's usual pocket counts only while its usual bag has it (`usualPocket(thingId:)`). Deleting a bag
+into another (or into no bag) forgets the pockets of its things and lines first (`forgetPockets`). Choosing a
+pocket (`setPocket`, `setHomePocket`) writes the LINE only — like a tick, one small record. A shared trip and a
+new trip from this one leave the line pockets out (`justTheList`, `startAgain`). Everything is in extra keys
+(top of this chapter), synced, backed up and restored with the records they sit on.
+
+**"Where is my …?"** — `Library.whereIs(words, today:)` / `whereIs(thingId:today:)` → `WhereAnswer`:
+- The **trip under way** (`tripUnderWay(today:)`: started, last day not past — the last day counts; two at once:
+  the one that began last). Its line for the thing (by `sourceItemId`; by name for `whereIs(words)`, which also
+  finds a line typed on the trip), not set aside: **packed for home** → its bag + home pocket; **ticked** → its bag
+  + pocket; **not ticked** → where it goes: its bag + the usual pocket ("Not packed yet. It goes in …").
+- No trip under way, or the thing not on it: **usual** — its usual bag + usual pocket ("Usually in …").
+- **Inside a kit** (0.70, `kitHolding(thingId:)`, not taken out of it): the kit's own answer, the thing's name kept and
+  `kit` = the kit's name — `shown` "Camp pouch, Backpack · Lid" (just "Camp pouch" when the kit is in no bag),
+  `said` "Usually in Camp pouch, Backpack, lid." / "Camp pouch, Backpack, lid." Taken out: its own answer
+  (`testWhereIsAThingInsideAKit`).
+- Names: a whole-name match first, else the shortest name containing the words. Nil = nothing by that name.
+- `shown` = "Backpack · Front pocket" ("Not in a bag" for none); `said` = "Backpack, front pocket." (a pocket's
+  first capital softened when the second letter is small: "USB pocket" stays).
+
+**Siri / Shortcuts** (`WhereIsIntent`, iPhone and Mac): "Where is my <thing> in Packing", "Where's my <thing> in
+Packing", "Ask Packing where something is" (asks "Which thing?"). The thing is a `ThingEntity` (his things not
+"Not in use", A–Z; `EntityStringQuery`, so a typed or said part of a name finds it). It answers in words
+(`ProvidesDialog` + the words as its value), opens nothing and changes nothing. Shortcut tile "Where is my thing?".
+See spec 06 §3b.
+
+**Search** (`WhereCard`, top of the results): while a trip is under way and the search finds a thing (or line) on
+it, a card first: the name (Body semibold, `search-where-name`), "Backpack · Front pocket" (Callout semibold green,
+`search-where-place`) and a line (Footnote muted, `search-where-says`): "Packed on <trip>." / "Packed for home from
+<trip>." / "On <trip>, not packed yet — it goes there." Card: padding 12 × 8, corner 10, card fill, green 1-pt
+border at 60 %, 10 above, id `search-where`. No trip under way: no card.
+
+### Tests
+UI `testTickingALineOffersItsBagsPockets` (`-uiTestingPockets`: ticking the charger shows `trip-line-1-pocket-*`,
+Front pocket selected, the line says "Backpack · Front pocket"; Lid tapped → the row goes and the line says
+"Backpack · Lid"; the Toothbrush in the carry-on shows none — red with `pocketing` never set: "ticking the charger
+did not offer the Backpack's pockets"), `testPackToGoHomeKeepsItsPockets` (the way home's pills, the way-out pocket
+first, Main kept — red with `prechooseHomePocket` not called: "the pocket it went out in was not chosen first"),
+`testSearchShowsWhereAThingIsOnTheTripUnderWay` ("Backpack · Front pocket" above the things; none with no trip
+under way — red with the card's condition turned round: "Search does not say where it is: ''"). Model
+`PocketsTests` (8: a bag's list, add/rename/move/remove and their refusals; the usual pocket comes with a tick and
+his choice stands; records and a backup keep all three keys; a usual pocket only while its bag has it; a rename
+reaches things and lines, a remove leaves them in the bag; a bag deleted into another; the way home's own
+pocket, Start again and a share without pockets; Where is my charger in every case; an absent key changes nothing).
+
+---
+
+## The door check (`PackingLibrary/DoorCheck.swift`, `Store/DoorChecks.swift`, `LeaveTimes` in `Screens/Pockets.swift`)
+
+**Purpose and origin.** Idea 4 of his idea plan; his choice (7 Oct 2026): "c, a time" — "'I leave at 07:30' on
+the trip; the check comes 15 minutes before." "On the day you leave, at the moment you set off, one message names
+what is still unticked … A tap opens the trip on just those lines. On the last day away, the same when you leave
+the place."
+
+**Where it is set.** "I leave at" on Create new trip and in Trip settings (above), stored as `leaveAt` /
+`leaveHomeAt` ("HH:mm"; `Library.cleanTime` takes "7:30", "0730"; anything else is refused).
+
+**What is said, and when** — `Library.doorChecks(now: "yyyy-MM-dd HH:mm")` (this device's clock), for every trip
+not reviewed:
+- **Way out**: on the first day at the leave time minus `DOOR_CHECK_LEAD_MINUTES` (15; past midnight → the day
+  before, `Library.before`), if that moment is still ahead and some line is neither ticked nor set aside: id
+  `door-out-<trip id>`, title **"Leaving for <place>?"** (the trip's place, else its name), body **"Still unticked:
+  Passport, Charger, Goggles"** — up to `DOOR_CHECK_NAMES` (5) names in list order, then " and 3 more".
+- **Way home**: on the last day (the first when there is none) at the home time minus 15, if some line of the way
+  home (`homeLines`) is neither packed for home nor used up: id `door-home-<trip id>`, **"Going home from
+  <place>?"**, **"Not in a bag yet: …"**.
+- Nothing to say (all ticked, all in a bag) = no check at all; no time = none.
+
+**Scheduling** (`DoorChecks.reschedule`): on the **iPhone only** — he leaves with it, and the Mac at home saying the
+same would be the same news twice (his word on the packing reminders). Every pending notification whose id starts
+`door-` is removed, then (only with permission authorized/provisional) one calendar notification per check: title,
+body, default sound, `userInfo` `tripId` + `door` ("out"/"home"), id = the check's id. It runs whenever the library
+settles after a change (`RootView`, debounced 2 s — so a tick, a new time, a deleted or reviewed trip all put it
+right) and whenever the app comes back to the front. Permission is the app's one notification permission (the
+same as Remind me to pack); "Add a time" asks for it on the iPhone. The words are those of the LAST change on this
+device or arrived by sync: a tick made on the Mac while the iPhone app stays asleep is not in it (open question).
+
+**Tapped** (`PackingReminders` delegate → `DoorChecks.open`): Home, `model.tripFocus` + `tripToOpen`; the trip
+opens and takes its focus (`TripScreen.takeFocus`): **out** → only the unticked lines (not ticked, not set
+aside), under **"Only what is still unticked"** (Subheadline semibold green, id `trip-unticked-only`) and **Show
+all** (green capsule outline, `Metrics.chip`, id `trip-show-all`) between Sorting and the cards; ticking a line
+takes it out of the view. **home** → On site, then Pack to go home on "Only what is not in a bag yet" (above).
+
+**For the tests** (no test can see a notification): under the UI tests nothing reaches the system;
+`DoorChecks.planned` holds what WOULD be scheduled, and with `-showDoorChecks` (DEBUG builds only) the trip shows it
+under Sorting: one Caption muted line per check, "<id> · <day> <time> · <title> <body>", ids `door-check-out` /
+`door-check-home`, or "No door check" (`door-check-none`). `-tapDoorCheck out|home` plays a tapped check at launch
+for the first trip with that time.
+
+### Tests
+UI `testTheDoorCheckNamesWhatIsStillUnticked` (-uiTesting -showDoorChecks: none without a time; Trip settings →
+Add a time → "Check 07:15" → Save → `door-check-out` with 07:15, "Leaving for Weekend in the hills?" and "Still
+unticked: Passport, Phone charger, Toothbrush, Headlamp, Hiking boots and 2 more"; Tick everything → none — red
+with ticked lines counted: "a door check with everything ticked"), `testATappedDoorCheckOpensTheTripOnWhatIsLeft`
+(out: the ticked Passport hidden, Show all brings it back; home: Pack to go home on what is left — red with the
+focus not applied: "the trip did not open on just what is left"), `testCreateNewTripTakesTheTimeHeLeaves` (above),
+`testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt` (-pretendRemindersBlocked: no line before a time, the red line
+after Add a time — red with the line switched off: "nothing says the device does not allow the check"). Model
+`DoorCheckTests` (6: times kept, synced and backed up; 15 minutes before, set-aside and ticked lines left out,
+nothing to say = none; five names then "and 3 more"; midnight; the way home; no time no check; reviewed or
+deleted = none). **Not covered:** the real scheduling and a real tap (the system's), the Mac's "your iPhone" line.
+
+---
+
 ## Other ways into a trip
 
 - **Countdown card on Home** (`CountdownCard`, id `home-countdown`; Home spec): the next trip still to
@@ -2019,7 +2189,10 @@ from your things" (his tests H.9, H.3, 0.42). Templates spec. Tests `TemplatePic
 
 ## Test index for this area
 
-**UI (UITests/AMSPackingUITests.swift):** testATickCountsAndStays, testHomeBuildsATrip,
+**UI (UITests/AMSPackingUITests.swift):** (0.69) testTickingALineOffersItsBagsPockets, testPackToGoHomeKeepsItsPockets,
+testSearchShowsWhereAThingIsOnTheTripUnderWay, testTheDoorCheckNamesWhatIsStillUnticked,
+testATappedDoorCheckOpensTheTripOnWhatIsLeft, testCreateNewTripTakesTheTimeHeLeaves,
+testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt; testATickCountsAndStays, testHomeBuildsATrip,
 testDatesArePickedLikeBooking, testEveryRowShowsTheTickTheTripHolds, testASectionFoldsAndStaysFolded,
 testATripIsDeletedOnlyAfterAsking, testWorthALookRemovesAPhotoLeftBehind, testAPlaceIsSetFromTheTrip,
 testRefineOffersWhatTheReviewsFoundAndKeepAndDropSettleIt, testTheLoopShowsWhereATripStands,
@@ -2055,7 +2228,7 @@ two sections, its trip packed from Hiking as it now reads — 0.64 — so Sectio
 Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-openNextTrip`. Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
 
-**Model (PackingLibraryTests):** WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
+**Model (PackingLibraryTests):** PocketsTests, DoorCheckTests (0.69), WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
 LoopTests, OnSiteTests, OnTheTripTests, RefineTests, TripAgainTests, TripBulkTests, TripCardsTests,
 TripChecksTests, TripEditsTests, SetPlaceTests, ChangeTripTests, TripWeatherTests, WayHomeTests,
 WeighingTests, TravelYearTests, PhotoTidyTests, CountdownTests, ThingFollowsTests, RowTagsTests,

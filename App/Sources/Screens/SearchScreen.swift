@@ -70,6 +70,8 @@ struct SearchScreen: View {
                         note("Nothing matches “\(jsTrim(query))”.")
                             .accessibilityIdentifier("search-none")
                     } else {
+                        // On a trip under way: where the thing is, first (0.69).
+                        WhereCard(query: query).environmentObject(model)
                         ForEach(found) { part in
                             heading(part.title, part.total)
                             ForEach(Array(part.rows.enumerated()), id: \.element.id) { n, row in
