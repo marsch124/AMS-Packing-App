@@ -163,6 +163,8 @@ struct HowItWorksScreen: View {
             "It also takes a few other ways of saying them \u{2014} packed it, next, not this time, that\u{2019}s all. At each new place, and after every five things, it says how far you are: \u{201C}Garage done, 12 of 40.\u{201D}",
             "It speaks and listens in English, and understands you on the iPhone itself, without the internet: nothing you say leaves it. AirPods work. The first time, it asks for the microphone and speech recognition; if they are not allowed, the button says where to allow them.",
             "While it runs, a big panel shows the thing and its place, what it said and what it heard, and the five words as buttons \u{2014} a tap does the same as the word. The screen stays on; put Packing away and it stops.",
+            "At the end, if you left something for later, it asks \u{201C}once more?\u{201D} \u{2014} say packed (or yes) to go through those again, stop to finish.",
+            "A place code you scan starts it by itself, at that place. Don\u{2019}t want that? Switch off \u{201C}Start Pack by voice when a place code opens a trip\u{201D} on the panel.",
             "When it ends: what it did, how often it understood you, how long it took, and each answer. It is a test: it stays only if it understands you at least 9 times in 10 and is quicker than tapping."]),
         Topic(section: .events, title: "On site", lines: [
             "On site is the step after Pack: the trip's On site door appears once the trip has begun, or as soon as something is bought on site. Its line says what it holds \u{2014} 2 bought \u{00B7} 1 left \u{00B7} 3 notes \u{00B7} home 4/9.",

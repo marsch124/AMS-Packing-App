@@ -232,11 +232,22 @@ understands your five words on this iPhone itself, without the internet. Nothing
   order (`groupByStorage`: places A–Z, "No place set" last; inside a place the trip's own line order) —
   whatever sorting the trip screen shows. The walk is fixed when it starts; a line ticked or set aside
   meanwhile (by the other device) is passed over without being asked.
-- **A start place** (`VoiceWalk(trip:startAt:)`, `VoiceSortingRow(startAt:)`): the walk begins at that place
+- **A start place** (`VoiceWalk(trip:startAt:)`, `VoiceSortingRow(startAt:)`, `VoiceStarts`): the walk begins at that place
   and goes round — that place, the places after it, then the ones before. Compared by `Library.choiceKey`
   ("garage" is the Garage). A place the trip does not have, or one with nothing left, is no start: the walk
-  begins at the first place. For a place opened by its printed code (part 3): the place's link opens the trip
-  on that place, and whoever opens it passes the place on. (0.71 builds the start; the link side is part 3's.)
+  begins at the first place.
+- **A place opened by its printed code STARTS the walk by itself** at that place (his yes of 7 Oct 2026). The
+  entry point is `VoiceStarts.shared.startVoiceAt(place:tripId:)` (`App/Sources/Voice/VoiceStarts.swift`, iPhone
+  only): a request held until the trip's Sorting row takes it — at once when that trip is open, or when it opens
+  (`tripId` nil = whichever trip screen is open or opens next). The row (`VoiceSortingRow`,
+  `.onChange(of: starts.request, initial: true)`) takes the request, and — when the setting below is on and no
+  walk is running — starts exactly as the button does (permissions, "nothing to pack" said under the row).
+  **To wire at the merge:** where part 3's link handler opens a trip on a place (`Library.PlaceVisit.packing(tripId:)`,
+  branch work/places069), add `#if os(iOS) VoiceStarts.shared.startVoiceAt(place: <the place's name>, tripId: <that
+  trip>) #endif` right after it sets the trip to open; nothing for `.goingBack` or `.keptThere`.
+- **The setting** "Start Pack by voice when a place code opens a trip" — a switch on the panel (under Said/Heard
+  while it runs, under the log when over; Subheadline, green tint; id `voice-autostart`), stored on this device
+  (`ams.voice.autostart`), **on by default**. Off: a place code opens the trip as part 3 says and nothing starts.
 - **What it says** (an English voice; names as written; "Name, 4" when a line counts more than one —
   `effectiveQty` with the trip's laundry-capped nights):
   - first: "7 to pack. Bathroom cabinet. Toothbrush." — how many, the place, the thing;
@@ -247,7 +258,13 @@ understands your five words on this iPhone itself, without the internet. Nothing
     count first, "5 of 7. Thing 6.";
   - **where**: the place and the thing again, "Garage. Headlamp." (nothing moves on);
   - **stop**: "Stopped. 2 of 6 packed." — and the walk ends;
-  - the end of the list: "That was everything. 6 of 7 packed." and, when some were left, " 1 left for later.";
+  - the end of the list: "That was everything. 6 of 7 packed." — and, when lines were left for later that still
+    wait (not ticked or set aside meanwhile), **once more** (his yes of 7 Oct 2026): "That was everything. 6 of 7
+    packed. 1 left for later — once more?" and it waits. **packed** (and every word of its list: yes, ok, done …)
+    walks those lines again — "Once more. Bathroom cabinet. Toothbrush." — in the same order; **where** asks the
+    question again; **skip, later or stop** end the walk: "Stopped. 6 of 7 packed. 1 left for later." Only ONE more
+    round: at the end of the second the walk ends ("That was everything. 7 of 8 packed. 1 left for later."). The
+    summary counts both rounds (packed and set aside added up; later = what is still left at the end);
   - something heard that is none of the words: "Sorry?" — and it listens again.
 - **The five words** and what they do to the line being asked about (`VoiceWalk.action`, applied by
   `Library.apply` — one `model.change`, exactly as a tap does):
@@ -308,6 +325,8 @@ While it runs (a swipe down does not close it — Stop does):
   `voice-current`).
 - **Said** — the last line it spoke (Callout, id `voice-said`) — and **Heard** — what it heard, in quotes (id
   `voice-heard`): a word it misheard can be seen.
+- At "once more?" the card says "That was everything" over "1 left for later — once more?", and the Packed button
+  reads **Once more** (same id).
 - At the bottom, outside the scroll, always there: the five words as buttons, 50 pt tall (Apple's large button
   — to be hit while carrying things), Title 3 semibold, radius 12: **Packed** (filled green) and **Skip**;
   **Later** and **Where** (outlined green); **Stop** (outlined red) on a line of its own. Ids
@@ -334,18 +353,21 @@ What's new.
 
 ### Tests
 
-- Model (`Core/Tests/PackingLibraryTests/VoiceWalkTests.swift`, 13, invented things):
+- Model (`Core/Tests/PackingLibraryTests/VoiceWalkTests.swift`, 15, invented things):
   `testEachOfTheFiveWordsIsUnderstoodAsItIsWritten`, `testWhatIsHeardIsMatchedForgivingly` (31 sayings),
   `testOtherWordsAreNotUnderstood` (incl. "no", "wait", "back"), `testTheFirstWordWinsAndTheLongestPhrase`,
   `testTheListIsOneListAndEveryPhraseCanBeHeard` (no phrase in two lists, each written as heard, each
   understood), `testTheWalkGoesFromWhereAndLeavesOutWhatIsDone`, `testAWalkCanStartAtAPlace`,
   `testAThingOfSeveralSaysHowMany`, `testTheWalkSaysThePlaceThenTheThingAndTheCountAtEachNewPlace`,
   `testEveryFiveThingsInOnePlaceItSaysTheCount`, `testTheEndOfTheListSaysSo`, `testALineTickedMeanwhileIsPassedOver`,
-  `testItCountsWhatItUnderstoodAndWhatWasTapped`.
+  `testItCountsWhatItUnderstoodAndWhatWasTapped`, `testWhatWasLeftForLaterIsAskedOnceMore`,
+  `testOnceMoreCanBeDeclinedAndOnlyAsksForWhatStillWaits` (planted fault: never ask once more → both red, and
+  `testEveryFiveThingsInOnePlaceItSaysTheCount`).
 - UI (iPhone only — each skips on the Mac, which has no button): the speech is a fake (`ScriptedVoice`), chosen
   under ANY `-uiTesting…` launch, so no test opens a microphone. `-uiTestingVoice "a,b,c"` makes it hear those
   words, one after each thing said (a beat each); `-uiTestingVoice ""` hears nothing (the buttons drive);
-  `-uiTestingVoiceRefused` refuses the microphone.
+  `-uiTestingVoiceRefused` refuses the microphone; `-uiTestingVoiceStartAt <place>` plays a place code opened —
+  at launch and each time the app comes back to the front (under the tests the setting starts on).
   - `testPackByVoiceWalksTheTripByTheWordsItHears` — heard "Packed it, hello, skip, next, where is it, pack,
     stop": the panel ends "Stopped. 2 of 6 packed.", "Packed 2 · set aside 1 · later 1", "Understood 6 of 7
     times", "Left for later: Phone charger", the six log lines; Done; the trip "2/6 · 1 set aside", the
@@ -359,17 +381,22 @@ What's new.
     `voice-panel`, `voice-over`.
   - `testPackByVoiceSaysWhyItCannotStart` — refused: `voice-start-needs` names the microphone and no panel
     opens; after Tick everything: "Everything on this trip is packed or set aside." and no panel.
+  - `testPackByVoiceGoesOnceMoreOverWhatWasLeft` — heard later + six packed: "…6 of 7 packed. 1 left for later —
+    once more?", the card says the question, Stop still there; Once more → "Once more. Bathroom cabinet.
+    Toothbrush."; Packed → "That was everything. 7 of 7 packed.", "Packed 7 · set aside 0 · later 0", the trip 7/7.
+    Planted fault: never ask once more → "it did not offer once more". Picture `voice-once-more`.
+  - `testAPlaceCodeStartsPackByVoiceAtThePlace` — `-uiTestingVoiceStartAt garage`: opening the trip opens the panel
+    by itself at Garage · Headlamp, "7 to pack. Garage. Headlamp.", `voice-autostart` on; Stop, switch it off, Done;
+    away and back (the code again): no panel. Planted faults: the place ignored → "…'Toothbrush'"; the switch
+    ignored → "switched off, a place code still started Pack by voice". Picture `voice-place-start`.
 - Not covered by any test (judged on his iPhone): the real voice and recognition, AirPods, a call cutting in,
   Packing put away, a narrow iPhone's "Voice".
 
 ### Open questions (part 10)
 
-- At the end of the list the walk stops; the lines left for later are named, not asked again. A second round
-  over them is a small change if he wants it.
 - "Next" was made **later** (moves on, unticked); "done" and "yes" are **packed**. If he uses a word the list
   does not have, the log shows it — add it to `VoiceWord.accepted` (one place).
-- The start place is accepted (part 3's link passes it); whether a place opened by its code should START the
-  walk by itself, or only start it there when he presses the button, is his call — 0.71 does the latter.
+- Wiring part 3's link to `VoiceStarts` is left for the merge (described above); until then only the tests play it.
 
 ## 11. Decision log
 

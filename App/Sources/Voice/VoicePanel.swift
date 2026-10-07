@@ -17,6 +17,9 @@ struct VoiceSortingRow<Sorting: View>: View {
     @State private var open = false
     @State private var needs = ""
     @State private var starting = false
+    /// A place opened by its printed code starts the walk there (`VoiceStarts`).
+    @ObservedObject private var starts = VoiceStarts.shared
+    @AppStorage(VoiceStarts.autoStartKey) private var autoStart = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -31,6 +34,14 @@ struct VoiceSortingRow<Sorting: View>: View {
                     .accessibilityIdentifier("voice-start-needs")
             }
         }
+        // A place code opened (now, or before this trip was on screen): start there by itself,
+        // unless he switched that off on the panel.
+        .onChange(of: starts.request, initial: true) { _, r in
+            guard let r, r.tripId == nil || r.tripId == tripId else { return }
+            starts.take(r)
+            guard autoStart, !open else { return }
+            begin(at: r.place)
+        }
         .sheet(isPresented: $open, onDismiss: { walker.close() }) {
             VoicePanel(walker: walker, tripId: tripId) { open = false }
                 .environmentObject(model)
@@ -38,7 +49,7 @@ struct VoiceSortingRow<Sorting: View>: View {
     }
 
     private func door(_ title: String) -> some View {
-        Button { begin() } label: {
+        Button { begin(at: startAt) } label: {
             HStack(spacing: 6) {
                 MicMark().frame(width: 18, height: 18)
                 Text(title).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
@@ -55,12 +66,12 @@ struct VoiceSortingRow<Sorting: View>: View {
         .accessibilityLabel("Pack by voice")
     }
 
-    private func begin() {
+    private func begin(at place: String?) {
         guard !starting else { return }
         starting = true
         needs = ""
         Task {
-            let missing = await walker.start(tripId: tripId, at: startAt, model: model)
+            let missing = await walker.start(tripId: tripId, at: place, model: model)
             starting = false
             if let missing { needs = missing } else { open = true }
         }
@@ -77,6 +88,7 @@ struct VoicePanel: View {
     let close: () -> Void
     @EnvironmentObject var model: LibraryModel
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(VoiceStarts.autoStartKey) private var autoStart = true
 
     var body: some View {
         let running = walker.phase == .running
@@ -131,11 +143,12 @@ struct VoicePanel: View {
                 .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                 .accessibilityIdentifier("voice-progress")
         }
+        let asking = walker.walk?.askingOnceMore == true
         VStack(alignment: .leading, spacing: 6) {
-            Text(walker.walk?.current?.place ?? "")
+            Text(asking ? "That was everything" : walker.walk?.current?.place ?? "")
                 .font(.system(.title3, weight: .semibold)).foregroundStyle(AppSection.events.color)
                 .accessibilityIdentifier("voice-place")
-            Text(walker.walk?.current?.says ?? "")
+            Text(asking ? VoiceWalk.onceMoreQuestion(walker.walk?.leftForLater.count ?? 0) : walker.walk?.current?.says ?? "")
                 .font(.system(.largeTitle, weight: .bold)).foregroundStyle(Theme.ink)
                 .lineLimit(3).minimumScaleFactor(0.6)
                 .accessibilityIdentifier("voice-current")
@@ -145,6 +158,19 @@ struct VoicePanel: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppSection.events.color, lineWidth: 1.2))
         said
+        autoStartSwitch
+    }
+
+    /// His choice (7 Oct 2026, on by default): a place code opened starts the walk by itself.
+    private var autoStartSwitch: some View {
+        Toggle(isOn: $autoStart) {
+            Text("Start Pack by voice when a place code opens a trip")
+                .font(.system(.subheadline)).foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .tint(AppSection.events.color)
+        .padding(.top, 6)
+        .accessibilityIdentifier("voice-autostart")
     }
 
     /// What it said last, and what it heard — so a word it misheard can be seen.
@@ -205,6 +231,7 @@ struct VoicePanel: View {
                 }
             }
         }
+        autoStartSwitch
     }
 
     /// The five words as buttons, under everything and always there while it runs: Packed
@@ -212,7 +239,8 @@ struct VoicePanel: View {
     private var words: some View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
-                word(.packed, "Packed", filled: true)
+                // At "once more?" packed is the yes (his answer, 7 Oct 2026).
+                word(.packed, walker.walk?.askingOnceMore == true ? "Once more" : "Packed", filled: true)
                 word(.skip, "Skip")
             }
             HStack(spacing: 10) {

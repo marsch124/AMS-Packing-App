@@ -1030,7 +1030,9 @@ least 9 times in 10 and beats tapping. **Specified in full in spec 07 part 10**;
 - Not on the Mac (no button; the code is iPhone-only).
 
 Tests: UI `testPackByVoiceWalksTheTripByTheWordsItHears`, `testPackByVoiceButtonsDoWhatTheWordsDo`,
-`testPackByVoiceSaysWhyItCannotStart` (iPhone; skipped on the Mac); model `VoiceWalkTests` (13).
+`testPackByVoiceSaysWhyItCannotStart`, `testPackByVoiceGoesOnceMoreOverWhatWasLeft`, `testAPlaceCodeStartsPackByVoiceAtThePlace`
+(iPhone; skipped on the Mac); model `VoiceWalkTests` (15). At the end, what was left for later is offered once more;
+a place opened by its printed code starts the walk there by itself (switch `voice-autostart`, on by default).
 
 ---
 
@@ -1998,14 +2000,14 @@ testABagWithNothingWeighedIsOnTheTrip, testWeatherGearCanBePackedAnyway, testATe
 testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only) — and 0.67:
 testFullTripOrQuickIsChosenUnderTheName, testDatesAreAlwaysThereAndCanBeCleared, testEachWorkoutHasItsOwnContext
 — and 0.71 (iPhone only): testPackByVoiceWalksTheTripByTheWordsItHears, testPackByVoiceButtonsDoWhatTheWordsDo,
-testPackByVoiceSaysWhyItCannotStart.
+testPackByVoiceSaysWhyItCannotStart, testPackByVoiceGoesOnceMoreOverWhatWasLeft, testAPlaceCodeStartsPackByVoiceAtThePlace.
 UI launch modes used: `-uiTesting` (sample), `-uiTestingChecks` (a plane trip "Sunny weeks" 20–34 days
 out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passport day 180),
 `-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-uiTestingSections` (Hiking in
 two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings),
 `-uiTestingWorkouts` (0.67: the sample plus a WET template Run — Trail shoes Outdoor, Treadmill towel Indoor,
 Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-openNextTrip`, and with `-uiTesting`
-0.71's `-uiTestingVoice "<words, by commas>"` / `-uiTestingVoiceRefused` (Pack by voice's fake speech; under any
+0.71's `-uiTestingVoice "<words, by commas>"` / `-uiTestingVoiceRefused` / `-uiTestingVoiceStartAt <place>` (Pack by voice's fake speech; under any
 `-uiTesting…` launch the fake is used, so no test opens a microphone). Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
 

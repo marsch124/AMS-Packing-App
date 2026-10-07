@@ -692,8 +692,9 @@ no entry shows no marker anywhere (and fails the test).
    understood on the iPhone itself without the internet, nothing leaves it, AirPods work; asks for the microphone
    and speech recognition the first time, and says where to allow them; the panel (thing, place, said, heard, the
    five words as buttons); the screen stays on, put away it stops; at the end what it did, how often it understood,
-   how long it took, each answer — and it stays only if it understands at least 9 times in 10 and beats tapping.
-   (6 lines.)
+   how long it took, each answer — and it stays only if it understands at least 9 times in 10 and beats tapping;
+   "once more?" over what was left for later; a scanned place code starts it at that place (switch on the panel).
+   (8 lines.)
 3. **On site** (Trips mark): the door appears once the trip began or something was bought, with a summary line
    ("2 bought · 1 left · 3 notes · home 4/9"); Bought on site; Left on site with Undo; Maintenance notes (also
    dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕, Tick everything;

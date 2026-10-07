@@ -40,6 +40,7 @@
 		80E3669131BEA0D1C726A660 /* Releases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6B09947C62AF9C62758EFD /* Releases.swift */; };
 		811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */; };
 		852DE35543B8B6DE3F014ABA /* VoiceIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = A751E258BF8E1D5C8C0CF952 /* VoiceIO.swift */; };
+		859FFD3EC946926E2C26D3BC /* VoiceStarts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9303A9912D1C193EBFA773D8 /* VoiceStarts.swift */; };
 		8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34879BF77676913C07B69267 /* RestoreSheet.swift */; };
 		8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CEDA06EFED05D4A1612077 /* EventsScreen.swift */; };
 		9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8E667C951BD91655405B94 /* Countdown.swift */; };
@@ -141,6 +142,7 @@
 		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
+		9303A9912D1C193EBFA773D8 /* VoiceStarts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStarts.swift; sourceTree = "<group>"; };
 		95CE795CC801DFFE3FD39642 /* BagCabin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagCabin.swift; sourceTree = "<group>"; };
 		9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsScreen.swift; sourceTree = "<group>"; };
 		A644B6F78A0C7B86EF26025E /* AMSPacking.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPacking.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -254,6 +256,7 @@
 				AA55DD1C69CF406AC89958E8 /* DeviceVoice.swift */,
 				A751E258BF8E1D5C8C0CF952 /* VoiceIO.swift */,
 				50CD73DFBC2243DAE7B30588 /* VoicePanel.swift */,
+				9303A9912D1C193EBFA773D8 /* VoiceStarts.swift */,
 				18C6CB980A090E605DD6CC2D /* VoiceWalker.swift */,
 			);
 			path = Voice;
@@ -527,6 +530,7 @@
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
 				852DE35543B8B6DE3F014ABA /* VoiceIO.swift in Sources */,
 				1A3A1067D5D9FB7754573E80 /* VoicePanel.swift in Sources */,
+				859FFD3EC946926E2C26D3BC /* VoiceStarts.swift in Sources */,
 				C6FE9965A251DF28F495E8BF /* VoiceWalker.swift in Sources */,
 				D8BFC0A9124CC984A49C398B /* WayHomeScreen.swift in Sources */,
 				811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */,

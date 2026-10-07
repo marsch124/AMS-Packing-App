@@ -163,7 +163,54 @@ final class VoiceWalkTests: XCTestCase {
         var said: [String] = []
         for _ in 0..<6 { said.append(say(.packed, &walk, &lib)) }
         XCTAssertEqual(said, ["Thing 2.", "Thing 3.", "Thing 4.", "Thing 5.", "5 of 7. Thing 6.", "Thing 7."])
-        XCTAssertEqual(say(.later, &walk, &lib), "That was everything. 6 of 7 packed. 1 left for later.")
+        XCTAssertEqual(say(.later, &walk, &lib), "That was everything. 6 of 7 packed. 1 left for later \u{2014} once more?")
+        XCTAssertFalse(walk.isOver, "the walk ended without asking once more")
+    }
+
+    // MARK: - Once more (his yes of 7 Oct 2026)
+
+    /// Left for later at the end: "N left for later — once more?"; yes (or packed) walks them
+    /// again, and the summary counts both rounds.
+    func testWhatWasLeftForLaterIsAskedOnceMore() {
+        var lib = library(trip())
+        var walk = VoiceWalk(trip: lib.trips[0])
+        let first: [VoiceWord] = [.later, .packed, .later, .packed, .packed, .packed, .packed]
+        var said = ""
+        for w in first { said = say(w, &walk, &lib) }
+        XCTAssertEqual(said, "Hall closet done, 5 of 8. No place set. Goggles.")
+        said = say(.packed, &walk, &lib)
+        XCTAssertEqual(said, "That was everything. 6 of 8 packed. 2 left for later \u{2014} once more?")
+        XCTAssertTrue(walk.askingOnceMore)
+        XCTAssertNil(walk.current)
+        XCTAssertEqual(walk.action(for: .packed), .none, "yes to once more ticked something")
+        XCTAssertEqual(say(.where, &walk, &lib), "2 left for later \u{2014} once more?", "where did not ask again")
+        XCTAssertEqual(say(.packed, &walk, &lib, heard: "yes"), "Once more. Bathroom cabinet. Toothbrush.")
+        XCTAssertEqual(walk.round, 2)
+        XCTAssertEqual(walk.steps.map(\.name), ["Toothbrush", "Phone charger"])
+        XCTAssertEqual(say(.packed, &walk, &lib), "Bathroom cabinet done, 7 of 8. Chest of drawers. Phone charger.")
+        XCTAssertEqual(say(.later, &walk, &lib), "That was everything. 7 of 8 packed. 1 left for later.",
+                       "the second round asked once more again")
+        XCTAssertTrue(walk.isOver)
+        XCTAssertEqual(walk.summary, "Packed 7 · set aside 0 · later 1", "the summary does not count both rounds")
+    }
+
+    /// Stop (or skip, or later) at "once more?" ends the walk; a line ticked meanwhile is not
+    /// asked again, and with none left waiting there is no question.
+    func testOnceMoreCanBeDeclinedAndOnlyAsksForWhatStillWaits() {
+        var t = newEvent(name: "Two")
+        t.entries = [newItem(id: "a", name: "Hat", storage: "Hall closet"), newItem(id: "b", name: "Cap", storage: "Hall closet")]
+        var lib = library(t)
+        var walk = VoiceWalk(trip: t)
+        _ = say(.later, &walk, &lib)
+        XCTAssertEqual(say(.later, &walk, &lib), "That was everything. 0 of 2 packed. 2 left for later \u{2014} once more?")
+        XCTAssertEqual(say(.stop, &walk, &lib), "Stopped. 0 of 2 packed. 2 left for later.")
+        XCTAssertTrue(walk.isOver)
+
+        lib = library(t)
+        walk = VoiceWalk(trip: t)
+        _ = say(.later, &walk, &lib)
+        lib.setChecked(true, tripId: t.id, entryId: "a")          // the hat packed by hand meanwhile
+        XCTAssertEqual(say(.packed, &walk, &lib), "That was everything. 2 of 2 packed.", "asked once more for nothing")
         XCTAssertTrue(walk.isOver)
     }
 

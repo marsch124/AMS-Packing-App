@@ -1641,6 +1641,63 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    /// His yes (7 Oct 2026): what was left for later is offered once more at the end —
+    /// "1 left for later — once more?" — and yes walks it again; the summary counts both rounds.
+    func testPackByVoiceGoesOnceMoreOverWhatWasLeft() throws {
+        #if os(macOS)
+        throw XCTSkip("Pack by voice is on the iPhone only")
+        #else
+        let app = launch("-uiTesting", ["-uiTestingVoice", "later,packed,packed,packed,packed,packed,packed"])
+        openSampleTrip(app)
+        tap(app, id: "voice-start")
+        XCTAssertTrue(appears(app, "voice-panel", timeout: 5), "Pack by voice did not open its panel")
+        let said = app.staticTexts["voice-said"], thing = app.staticTexts["voice-current"]
+        XCTAssertTrue(waitUntil(timeout: 20) { self.words(said) == "That was everything. 6 of 7 packed. 1 left for later \u{2014} once more?" },
+                      "it did not offer once more: '\(words(said))'")
+        XCTAssertEqual(words(thing), "1 left for later \u{2014} once more?")
+        XCTAssertTrue(app.buttons["voice-word-stop"].exists, "Stop went at the question")
+        shot(app, "voice-once-more")
+        tap(app, id: "voice-word-packed")
+        XCTAssertTrue(waitUntil { self.words(thing) == "Toothbrush" }, "yes did not walk the Toothbrush again: '\(words(thing))'")
+        XCTAssertEqual(words(said), "Once more. Bathroom cabinet. Toothbrush.")
+        tap(app, id: "voice-word-packed")
+        XCTAssertTrue(app.staticTexts["voice-summary"].waitForExistence(timeout: 5), "the second round never ended")
+        XCTAssertEqual(words(app.staticTexts["voice-said"]), "That was everything. 7 of 7 packed.")
+        XCTAssertEqual(words(app.staticTexts["voice-summary"]), "Packed 7 · set aside 0 · later 0", "the summary does not count both rounds")
+        tap(app, id: "voice-done")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "7/7" }, "the trip is not all packed")
+        #endif
+    }
+
+    /// His yes (7 Oct 2026): a place opened by its printed code starts the walk by itself, at
+    /// that place — unless "Start Pack by voice when a place code opens a trip" is off.
+    /// (`-uiTestingVoiceStartAt` plays the code being opened, at launch and on each return.)
+    func testAPlaceCodeStartsPackByVoiceAtThePlace() throws {
+        #if os(macOS)
+        throw XCTSkip("Pack by voice is on the iPhone only")
+        #else
+        let app = launch("-uiTesting", ["-uiTestingVoice", "", "-uiTestingVoiceStartAt", "garage"])
+        openSampleTrip(app)
+        XCTAssertTrue(appears(app, "voice-panel", timeout: 10), "the place code did not start Pack by voice")
+        let place = app.staticTexts["voice-place"], thing = app.staticTexts["voice-current"]
+        XCTAssertTrue(waitUntil { self.words(thing) == "Headlamp" }, "it did not start at the Garage's first thing: '\(words(thing))'")
+        XCTAssertEqual(words(place), "Garage")
+        XCTAssertEqual(words(app.staticTexts["voice-said"]), "7 to pack. Garage. Headlamp.")
+        XCTAssertTrue(isSwitchOn(app, "voice-autostart"), "starting by a place code is not on to begin with")
+        shot(app, "voice-place-start")
+        tap(app, id: "voice-word-stop")
+        XCTAssertTrue(app.staticTexts["voice-summary"].waitForExistence(timeout: 5))
+        setSwitch(app, "voice-autostart", on: false)
+        tap(app, id: "voice-done")
+        XCTAssertTrue(disappears(app, "voice-panel", timeout: 5))
+        // The code opened again (away and back): switched off, nothing starts.
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the trip did not stay open")
+        XCTAssertFalse(appears(app, "voice-panel", timeout: 4), "switched off, a place code still started Pack by voice")
+        #endif
+    }
+
     /// His rule (2026-09-26), the spec pass (5 Oct 2026): Set place's Save sat grey and
     /// switched off while its field was empty, and the review's Add did nothing at all
     /// with nothing typed. Both are there to press, and say what is missing. And in the

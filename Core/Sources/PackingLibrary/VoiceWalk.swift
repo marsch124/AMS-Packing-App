@@ -115,6 +115,13 @@ public struct VoiceWalk: Equatable, Sendable {
     public private(set) var packed = 0
     public private(set) var setAside = 0
     public private(set) var leftForLater: [String] = []
+    /// The lines left for later, for the second round.
+    private var laterSteps: [Step] = []
+    /// 1, or 2 once he said yes to "once more?" (his yes of 7 Oct 2026). Only one more round.
+    public private(set) var round = 1
+    /// The walk reached the end with things left for later and asks "once more?":
+    /// packed (or yes, ok …) starts the second round; where asks again; any other word ends it.
+    public private(set) var askingOnceMore = false
     /// Words heard and understood, and things heard that were none of the five — his
     /// measure: at least 9 of 10 understood.
     public private(set) var understood = 0
@@ -152,7 +159,7 @@ public struct VoiceWalk: Equatable, Sendable {
     }
 
     public var current: Step? { at < steps.count ? steps[at] : nil }
-    public var isOver: Bool { stopped || at >= steps.count }
+    public var isOver: Bool { stopped || (at >= steps.count && !askingOnceMore) }
 
     /// What the word does to the line being asked about.
     public func action(for word: VoiceWord) -> VoiceAction {
@@ -188,6 +195,7 @@ public struct VoiceWalk: Equatable, Sendable {
     /// AFTER the word, so the count is right — and a line ticked meanwhile (on the other
     /// device, or by hand) is passed over without being asked.
     public mutating func answer(_ word: VoiceWord, heard: String?, trip: TripEvent?) -> String {
+        if askingOnceMore, !stopped { return onceMore(word, heard: heard, trip: trip) }
         guard let step = current, !stopped else { return VoiceWalk.ending(self, trip) }
         if heard == nil { tapped += 1 } else { understood += 1 }
         log.append(Turn(name: step.name, word: word, heard: heard))
@@ -199,14 +207,14 @@ public struct VoiceWalk: Equatable, Sendable {
             return "Stopped. \(VoiceWalk.count(trip)) packed."
         case .packed: packed += 1
         case .skip: setAside += 1
-        case .later: leftForLater.append(step.name)
+        case .later: leftForLater.append(step.name); laterSteps.append(step)
         }
         sinceProgress += 1
         at += 1
         // Passed over: lines no longer waiting (ticked or set aside elsewhere, or gone).
         let waiting = Set((trip?.entries ?? []).filter { !$0.checked && !isSetAside($0) }.map(\.id))
         while at < steps.count, !waiting.contains(steps[at].entryId) { at += 1 }
-        guard let next = current else { return VoiceWalk.ending(self, trip) }
+        guard let next = current else { return endOfRound(trip) }
         if next.place != step.place {
             sinceProgress = 0
             return "\(step.place) done, \(VoiceWalk.count(trip)). \(next.place). \(next.says)."
@@ -216,6 +224,45 @@ public struct VoiceWalk: Equatable, Sendable {
             return "\(VoiceWalk.count(trip)). \(next.says)."
         }
         return "\(next.says)."
+    }
+
+    /// The end of the list. In the first round, with lines left for later that still wait:
+    /// "That was everything. 6 of 7 packed. 1 left for later — once more?" — and it waits for
+    /// the answer. Otherwise the walk ends.
+    private mutating func endOfRound(_ trip: TripEvent?) -> String {
+        let waiting = Set((trip?.entries ?? []).filter { !$0.checked && !isSetAside($0) }.map(\.id))
+        laterSteps = laterSteps.filter { waiting.contains($0.entryId) }
+        leftForLater = laterSteps.map(\.name)
+        guard round == 1, !laterSteps.isEmpty else { return VoiceWalk.ending(self, trip) }
+        askingOnceMore = true
+        return "That was everything. \(VoiceWalk.count(trip)) packed. \(VoiceWalk.onceMoreQuestion(laterSteps.count))"
+    }
+
+    /// "1 left for later — once more?"
+    public static func onceMoreQuestion(_ n: Int) -> String { "\(n) left for later \u{2014} once more?" }
+
+    /// The answer to "once more?".
+    private mutating func onceMore(_ word: VoiceWord, heard: String?, trip: TripEvent?) -> String {
+        if heard == nil { tapped += 1 } else { understood += 1 }
+        log.append(Turn(name: "Once more?", word: word, heard: heard))
+        switch word {
+        case .where:
+            return VoiceWalk.onceMoreQuestion(laterSteps.count)
+        case .packed:
+            askingOnceMore = false
+            round = 2
+            steps = laterSteps
+            laterSteps = []
+            leftForLater = []
+            at = 0
+            sinceProgress = 0
+            let first = steps[0]
+            return "Once more. \(first.place). \(first.says)."
+        case .skip, .later, .stop:
+            askingOnceMore = false
+            stopped = true
+            return "Stopped. \(VoiceWalk.count(trip)) packed. \(leftForLater.count) left for later."
+        }
     }
 
     /// The last words of a walk that reached the end of the list.
