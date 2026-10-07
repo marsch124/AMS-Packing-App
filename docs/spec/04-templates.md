@@ -512,6 +512,11 @@ Mobility & breath work, Hiking, Golf, Climbing, Diving, and `template-counts-as-
 `setCountsAs(templateId:to:)` (stored even when it is what the name says; "none" = meets nothing whatever its name).
 The common base and transport templates have no field and never meet a workout.
 
+**While the iPhone's keyboard is up** (`keyboardUp`, from the keyboard's show/hide notices; iPhone only) Counts as and
+the Activity area / Delete row are not shown, so the list keeps room for the field being typed in — a reminder's
+Add field at the list's top was hidden under them once Counts as joined the foot (`testATemplateKeepsItsReminders`,
+the 0.68–0.71 merge). The Delete question and the area card, once open, stay.
+
 **Activity area and Delete** (one row, side 16, bottom 8):
 - Only on an activity template (role ""): at the left, **"Activity area: <GA / WET / OE / none>"** — 15 semibold
   violet plain text button, min height 36, id `template-area`, accessibility value the area id or "none". Tap →

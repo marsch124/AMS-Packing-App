@@ -334,6 +334,10 @@ struct TemplateDetail: View {
     @State private var renaming: String?
     @FocusState private var writingName: Bool
     @State private var askingToDelete = false
+    /// The iPhone's keyboard is up: Counts as and the area / Delete row step aside, so the
+    /// list keeps room for the field being typed in (a reminder's, at the list's top, was
+    /// hidden under them once Counts as joined the foot — the 0.68–0.71 merge).
+    @State private var keyboardUp = false
     /// Choosing the template's activity area again (the spec pass, 5 Oct 2026: New
     /// asks for it, and nothing could put a wrong answer right).
     @State private var choosingArea = false
@@ -616,7 +620,7 @@ struct TemplateDetail: View {
                     .padding(.horizontal, 16).padding(.bottom, 10)
                 } else if choosingArea {
                     areaCard(list)
-                } else {
+                } else if !keyboardUp {
                     // Which Apple Health workout it meets in the trip review (0.70).
                     if list.role.isEmpty {
                         CountsAsField(list: list).environmentObject(model)
@@ -634,6 +638,10 @@ struct TemplateDetail: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
+        #if os(iOS)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardUp = false }
+        #endif
         .overlay { if let t = takingOff { takeOffCard(t, list: list) } }
         .sheet(item: Binding(get: { editingRow.map { Editing(id: $0) } }, set: { editingRow = $0?.id })) { e in
             RowEditor(templateId: listId, memId: e.id).environmentObject(model)
