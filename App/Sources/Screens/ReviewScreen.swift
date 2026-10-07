@@ -25,6 +25,9 @@ struct ReviewScreen: View {
     @State private var missNeeds = ""
     /// The thing he is fixing mid-review, if any.
     @State private var fixing: String?
+    /// The lines he marked himself (either way): Apple Health's "Use these" never changes
+    /// them (0.70, chapter 07 part 7).
+    @State private var answered: Set<String> = []
 
     var body: some View {
         let lines = model.library.reviewLines(tripId: tripId)
@@ -46,6 +49,9 @@ struct ReviewScreen: View {
                 .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
+                    // "From Apple Health" opens the review on the iPhone (0.70): the trip's
+                    // workouts and "Use these". Nothing at all on the Mac or an undated trip.
+                    ReviewHealth(tripId: tripId, unused: $unused, answered: answered)
                     // The two parts' headings above the question asked inside them (17) and
                     // the pills (15) — field test, 3 Oct 2026: headings "dominant".
                     Text("Anything you wished you'd had?").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
@@ -110,6 +116,7 @@ struct ReviewScreen: View {
                         HStack(spacing: 4) {
                         Button {
                             if off { unused.remove(line.id) } else { unused.insert(line.id) }
+                            answered.insert(line.id)
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {

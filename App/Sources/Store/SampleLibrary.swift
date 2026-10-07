@@ -211,6 +211,42 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library for Apple Health in the review (`-uiTestingHealth`, 0.70): the
+    /// workouts of `workouts()` plus a Race belt (Race only) on Run, a Bike template with a
+    /// Bike helmet, the Towel on the common base too, and the Running cap Robin's (Kim is on
+    /// most things, so Kim is "him"). ONE trip, "Training camp", six to two days ago, from
+    /// Swim, Run and Bike (and the base), nothing ticked — its review asks about all 13
+    /// lines, in this order: Passport, Phone charger, Toothbrush, Headlamp, Towel (base);
+    /// Goggles, Swim cap, Wetsuit (Swim); Trail shoes, Treadmill towel, Running cap, Race
+    /// belt (Run); Bike helmet (Bike). The invented Apple Health (`InventedHealth`) has three
+    /// pool swims and two outdoor runs on those days, so "Use these" marks the Wetsuit, the
+    /// Treadmill towel and the Bike helmet "didn't use", and leaves the base, the cap and
+    /// the belt as they are.
+    static func health() -> Library {
+        var lib = workouts()
+        if let run = lib.templates.first(where: { $0.name == "Run" }), var full = lib.resolvedTemplate(id: run.id) {
+            full.items.append(newItem(name: "Race belt", contexts: ["Race"]))
+            lib.saveTemplate(full)
+        }
+        lib.saveTemplate(newList(name: "Bike", group: "WET", items: [newItem(name: "Bike helmet")]))
+        if let base = lib.templates.first(where: { $0.role == "base" }), var full = lib.resolvedTemplate(id: base.id) {
+            full.items.append(newItem(name: "Towel"))
+            lib.saveTemplate(full)
+        }
+        if let n = lib.items.firstIndex(where: { $0.name == "Running cap" }) { lib.items[n].ownedBy = "Robin" }
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        let id = { (name: String) in lib.templates.first { $0.name == name }?.id ?? "" }
+        var trip = newEvent(name: "Training camp", startDate: day(-6), endDate: day(-2))
+        trip.activities = [id("Swim"), id("Run"), id("Bike")]
+        lib.trips = []
+        _ = lib.createTrip(trip)
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that

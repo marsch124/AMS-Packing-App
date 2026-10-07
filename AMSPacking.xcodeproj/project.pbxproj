@@ -29,6 +29,7 @@
 		4F3FD7E1E457A44E56AB6E19 /* Headings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCA03D292255B391659C37C /* Headings.swift */; };
 		5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */; };
 		55A2BB9EF7E8AA1F601802AC /* TripChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9F694B5D78B16B402CD363 /* TripChecks.swift */; };
+		5856BAC0D9BF67F1B2E6780E /* AppleHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28540B3BBCD50AB31F2DF8D /* AppleHealth.swift */; };
 		5BB780225F4AD5294A389DF4 /* GrabMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA098293FBB7AB47DA81148E /* GrabMenu.swift */; };
 		622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */; };
 		65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534AF493408BF588BA9222FF /* AMSPackingApp.swift */; };
@@ -40,6 +41,7 @@
 		811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */; };
 		8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34879BF77676913C07B69267 /* RestoreSheet.swift */; };
 		8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CEDA06EFED05D4A1612077 /* EventsScreen.swift */; };
+		92BFCF1AF636841A4A4B1D51 /* ReviewHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4023CCF833EE4F1EA60FEE23 /* ReviewHealth.swift */; };
 		9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8E667C951BD91655405B94 /* Countdown.swift */; };
 		A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5844FD1A40A106FF0878B093 /* TableColumns.swift */; };
 		A2EF7B9D15A856E17FB773D8 /* TemplateIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE240BD38035471259419B81 /* TemplateIcons.swift */; };
@@ -113,6 +115,7 @@
 		38F244475495E5E17D2F7126 /* WayHomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WayHomeScreen.swift; sourceTree = "<group>"; };
 		3A74DCE749078F203A8E87BF /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
+		4023CCF833EE4F1EA60FEE23 /* ReviewHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewHealth.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnSiteScreen.swift; sourceTree = "<group>"; };
 		47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLibrary.swift; sourceTree = "<group>"; };
@@ -158,6 +161,7 @@
 		DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareCalendarView.swift; sourceTree = "<group>"; };
 		DBCE6F6679B4724E0039268E /* SyncCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCard.swift; sourceTree = "<group>"; };
 		DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagPhoto.swift; sourceTree = "<group>"; };
+		E28540B3BBCD50AB31F2DF8D /* AppleHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealth.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		ED9B041225333263C7547689 /* ThingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsScreen.swift; sourceTree = "<group>"; };
@@ -218,6 +222,7 @@
 		521FDCA33F67871678AF4426 /* Store */ = {
 			isa = PBXGroup;
 			children = (
+				E28540B3BBCD50AB31F2DF8D /* AppleHealth.swift */,
 				A841D9340C8D1312A6814431 /* CloudStore.swift */,
 				09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */,
 				E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */,
@@ -309,6 +314,7 @@
 				6CC01537D593379C8EF1B84F /* RefineScreen.swift */,
 				4926F40EBD71822EA9165684 /* RemindersSend.swift */,
 				34879BF77676913C07B69267 /* RestoreSheet.swift */,
+				4023CCF833EE4F1EA60FEE23 /* ReviewHealth.swift */,
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
 				F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
@@ -442,6 +448,7 @@
 			files = (
 				65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */,
 				AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */,
+				5856BAC0D9BF67F1B2E6780E /* AppleHealth.swift in Sources */,
 				1A611EFAD56B0A1A1AF93E20 /* BagCabin.swift in Sources */,
 				F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */,
 				06244CC7FE9451C6DA719388 /* BagPhoto.swift in Sources */,
@@ -479,6 +486,7 @@
 				DE244FF0F4F0D12DF0F82CF0 /* RemindersSend.swift in Sources */,
 				D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */,
 				8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */,
+				92BFCF1AF636841A4A4B1D51 /* ReviewHealth.swift in Sources */,
 				09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */,
 				E726D1AAD07CB69C1F102F6A /* RootView.swift in Sources */,
 				5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */,
@@ -570,6 +578,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = App/Config/AMSPacking.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "App/Config/AMSPacking-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "App/Config/AMSPacking-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Config/Info.plist;
@@ -663,6 +673,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = App/Config/AMSPacking.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "App/Config/AMSPacking-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "App/Config/AMSPacking-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Config/Info.plist;

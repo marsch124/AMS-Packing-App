@@ -120,6 +120,11 @@ jobs:
           sed -e 's|<key>com.apple.developer.aps-environment</key>|<key>aps-environment</key>|' \
               App/Config/AMSPacking-Ship.entitlements > App/Config/AMSPacking-Ship-iOS.entitlements
           grep -c "<key>aps-environment</key>" App/Config/AMSPacking-Ship-iOS.entitlements
+          # Apple Health fills in the trip review (0.70, docs/spec/07 part 7): READ only,
+          # and the iPhone's alone — the Mac has no Apple Health, so its file stays without.
+          /usr/libexec/PlistBuddy -c "Add :com.apple.developer.healthkit bool true" \
+              -c "Add :com.apple.developer.healthkit.access array" App/Config/AMSPacking-Ship-iOS.entitlements
+          grep -c "com.apple.developer.healthkit" App/Config/AMSPacking-Ship-iOS.entitlements
 
       - name: Write the App Store Connect key
         env:
@@ -168,6 +173,23 @@ jobs:
               2>&1 | tee "build/archive-$platform.log" | grep -E "error:|\*\* ARCHIVE" || true
             grep -q "\*\* ARCHIVE SUCCEEDED \*\*" "build/archive-$platform.log"
           done
+
+      # Never send an iPhone build that cannot read Apple Health. Without the HealthKit
+      # entitlement the review's "From Apple Health" block would only ever say "not
+      # allowed" — and nothing else would show that anything was missing. Workout Sync
+      # shipped seven such builds (23 Sep 2026) before it checked this; the owner allowed
+      # (7 Oct 2026) that a version GitHub cannot sign with it is archived and uploaded
+      # from his Mac instead.
+      - name: The iPhone archive must carry the HealthKit entitlement
+        run: |
+          APP="build/AMSPacking-iOS.xcarchive/Products/Applications/AMSPacking.app"
+          codesign -d --entitlements - "$APP" > build/entitlements-iOS.txt 2>&1 || true
+          cat build/entitlements-iOS.txt
+          if ! grep -q "com.apple.developer.healthkit" build/entitlements-iOS.txt; then
+            echo "::error::the archived iPhone app has no HealthKit entitlement (com.apple.developer.healthkit) — it would ship unable to read Apple Health. Archive and upload this version from the Mac."
+            exit 1
+          fi
+          echo "HealthKit entitlement present."
 
       - name: Send both to TestFlight
         env:

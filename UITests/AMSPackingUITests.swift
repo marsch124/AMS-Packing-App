@@ -4240,6 +4240,151 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["template-item-4"].exists },
                       "the missed thing is not on the list for next time")
     }
+
+    // MARK: - Apple Health fills in the review (0.70, docs/spec/07 part 7)
+
+    /// Open the review of the `-uiTestingHealth` sample's one trip ("Training camp", six to
+    /// two days ago, from Swim, Run and Bike and the base; nothing ticked).
+    private func openHealthReview(_ app: XCUIApplication) {
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+    }
+
+    /// Line `n` of the review, scrolled to — the review's list is lazy, so a line further
+    /// down is not there until the list has come to it.
+    private func reviewLine(_ app: XCUIApplication, _ n: Int) -> XCUIElement {
+        scrollWithin(app, "review-detail", until: "review-line-\(n)")
+        return app.buttons["review-line-\(n)"]
+    }
+
+    /// The review opens with what Apple Health logged on the trip's days (invented: three
+    /// pool swims and two outdoor runs, a walk, and a swim the week before), one row per
+    /// kind and "No bike" for the Bike template that had none. "Use these" marks the lines
+    /// it can tell about — Wetsuit (Outdoor, only pool swims), Treadmill towel (Indoor, only
+    /// outdoor runs), Bike helmet (no ride) — and leaves the base, Robin's cap, the Race belt
+    /// and a line he answered himself. Nothing is kept until Save. The Mac: no block at all.
+    ///
+    /// Lines (`SampleLibrary.health()`): 0 Passport, 1 Phone charger, 2 Toothbrush, 3 Headlamp,
+    /// 4 Towel (base); 5 Goggles, 6 Swim cap, 7 Wetsuit; 8 Trail shoes, 9 Treadmill towel,
+    /// 10 Running cap, 11 Race belt; 12 Bike helmet.
+    func testAppleHealthFillsInTheReview() {
+        let app = launch("-uiTestingHealth")
+        openHealthReview(app)
+        #if os(macOS)
+        XCTAssertFalse(waitUntil(timeout: 3) { self.find(app, "review-health") != nil }, "the Mac shows an Apple Health block")
+        XCTAssertFalse(app.buttons["review-health-use"].exists)
+        #else
+        XCTAssertTrue(appears(app, "review-health", timeout: 10), "the review does not open with Apple Health")
+        let row = { (n: Int) in app.staticTexts["review-health-row-\(n)"] }
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(row(0)) == "Swim \u{00B7} indoor \u{00B7} 3 times" },
+                      "the first row: '\(words(row(0)))'")
+        XCTAssertEqual(words(row(1)), "Run \u{00B7} outdoor \u{00B7} 2 times")
+        XCTAssertEqual(words(row(2)), "No bike")
+        XCTAssertFalse(row(3).exists, "a row too many — the walk, or the swim before the trip?")
+        shot(app, "review-health")
+
+        // He marks the Goggles "didn't use" himself; Apple Health would say "used".
+        tap(app, id: "review-line-5")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["review-line-5"]) }, "his own mark did not take")
+        tap(app, id: "review-health-use")
+        XCTAssertTrue(waitUntil { app.staticTexts["review-health-said"].exists }, "Use these did not say what it marked")
+        shot(app, "review-health-used")
+        let off: Set<Int> = [5, 7, 9, 12]
+        for n in 0...12 {
+            let line = reviewLine(app, n)
+            XCTAssertTrue(waitUntil { line.exists && line.isSelected == off.contains(n) },
+                          "line \(n) should be \(off.contains(n) ? "didn't use" : "used")")
+        }
+        XCTAssertFalse(app.buttons["review-line-13"].exists, "the trip has 13 lines")
+
+        // Nothing is kept until Save: Cancel, and the review opens fresh.
+        tap(app, id: "review-cancel")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(appears(app, "review-health", timeout: 10))
+        for n in [5, 7] { XCTAssertFalse(isOn(reviewLine(app, n)), "line \(n) kept a mark through Cancel") }
+
+        // Use these, then Save: the trip is reviewed.
+        tap(app, id: "review-health-use")
+        XCTAssertTrue(waitUntil { self.isOn(self.reviewLine(app, 7)) }, "the wetsuit was not marked the second time")
+        XCTAssertFalse(isOn(reviewLine(app, 5)), "this time the goggles are Apple Health's to mark: used")
+        tap(app, id: "review-save")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["trip-reviewed"].waitForExistence(timeout: 5), "the trip does not say it is reviewed")
+        #endif
+    }
+
+    /// A template's own "Counts as" (0.70): Bike reads "Bike" by its name; linked to
+    /// Nothing, the review no longer says "No bike" and leaves the Bike helmet alone. The
+    /// common base has no "Counts as" at all. (The Mac has the drop-down but no review block.)
+    func testATemplateCountsAsWhatHeLinksItTo() {
+        let app = launch("-uiTestingHealth")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        // Rows: 0 Common base, 1 Hiking (GA), 2 Swim, 3 Bike, 4 Run (WET, in his order).
+        tap(app, id: "template-row-0")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["template-delete"].exists }, "the base's page did not finish")
+        XCTAssertTrue(cellSays(app, "template-counts-as").isEmpty, "the common base never counts as a workout")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        tap(app, id: "template-row-3")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "template-counts-as") == "Bike" },
+                      "Bike does not count as Bike by its name: '\(chosen(app, "template-counts-as"))'")
+        shot(app, "template-counts-as")
+        XCTAssertEqual(choose(app, "template-counts-as", 9), "Nothing")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        // Opened again, it still says Nothing.
+        tap(app, id: "template-row-3")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "template-counts-as") == "Nothing" }, "the link was not kept")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        #if os(iOS)
+        openHealthReview(app)
+        XCTAssertTrue(appears(app, "review-health", timeout: 10))
+        XCTAssertTrue(waitUntil(timeout: 10) { app.staticTexts["review-health-row-1"].exists }, "no rows")
+        XCTAssertFalse(app.staticTexts["review-health-row-2"].exists, "still \u{201C}No bike\u{201D}, though Bike counts as Nothing")
+        tap(app, id: "review-health-use")
+        XCTAssertTrue(waitUntil { app.staticTexts["review-health-said"].exists })
+        XCTAssertTrue(waitUntil { self.isOn(self.reviewLine(app, 7)) }, "the wetsuit was not marked")
+        XCTAssertFalse(isOn(reviewLine(app, 12)), "the Bike helmet was marked, though Bike counts as Nothing")
+        #endif
+    }
+
+    /// Refused, Apple Health says so and how to allow it; with no workouts on the trip's
+    /// days it says that. Neither offers "Use these". (iPhone only: the Mac has no block.)
+    func testAppleHealthSaysWhenItIsNotAllowedOrHasNothing() throws {
+        #if os(macOS)
+        throw XCTSkip("Apple Health is on the iPhone only")
+        #else
+        var app = launch("-uiTestingHealth", ["-healthRefused"])
+        openHealthReview(app)
+        XCTAssertTrue(waitUntil(timeout: 10) { app.staticTexts["review-health-refused"].exists },
+                      "a refusal is not said")
+        XCTAssertFalse(app.buttons["review-health-use"].exists, "Use these, with Apple Health not allowed")
+        XCTAssertFalse(app.staticTexts["review-health-row-0"].exists)
+        shot(app, "review-health-refused")
+        app.terminate()
+
+        app = launch("-uiTestingHealth", ["-healthNone"])
+        openHealthReview(app)
+        XCTAssertTrue(waitUntil(timeout: 10) { app.staticTexts["review-health-none"].exists },
+                      "no workouts is not said")
+        XCTAssertFalse(app.buttons["review-health-use"].exists, "Use these, with nothing to use")
+        XCTAssertFalse(app.staticTexts["review-health-row-0"].exists)
+        shot(app, "review-health-none")
+        #endif
+    }
     /// Your things: everything he owns is listed; a new thing is on no list; a
     /// rename sticks.
     func testYourThingsListsAddsAndRenames() {

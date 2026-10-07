@@ -607,6 +607,12 @@ struct TemplateDetail: View {
                 } else if choosingArea {
                     areaCard(list)
                 } else {
+                    // Which Apple Health workout it meets in the trip review (0.70).
+                    if list.role.isEmpty {
+                        CountsAsField(list: list).environmentObject(model)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16).padding(.bottom, 6)
+                    }
                     HStack(spacing: 8) {
                         // Only an activity template lives in an area; always packed and
                         // transport templates are filed by what they do.

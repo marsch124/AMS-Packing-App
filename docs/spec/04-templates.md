@@ -64,6 +64,9 @@ sync are in `docs/store.md`; colours in `docs/colours.md` (both linked, not repe
   `realmId` are always dropped (`extraKeys` + `RESERVED_SYNC_KEYS`; pinned by
   `ListsTests.testAListRoundTripsThroughJSONAndCarriesUnknownKeys`).
 - The template's chosen icon is stored in the template's `extra["iconKey"]` (see §3).
+- Its "Counts as" (0.70 — which Apple Health workout it meets in the trip review) is stored in the template's
+  `extra["countsAs"]` (`Library.countsAsKey`): a `WorkoutKind` raw value (`swim` … `diving`) or `"none"`; absent =
+  the name decides (see §6 and chapter 07 part 7).
 
 ---
 
@@ -495,6 +498,17 @@ a sliver and Remove heading was out of sight). It stays while arranging otherwis
 fill, hairline border; id `template-add-name`; Return = Add) and **"Add"** (`FieldButtonLabel`: 16 bold white on
 violet, radius 10, min height 44; id `template-add`). `needsLine` id `template-add-needs`.
 
+**Counts as** (0.70, chapter 07 part 7 — Apple Health in the trip review; `CountsAsField` in
+`ReviewHealth.swift`). Only on an activity template (role ""), on both devices, above the Activity area row, side
+16, bottom 6, left-aligned: a drop-down (`DropDown`, heading `.beside`, violet) — "Counts as" (15 semibold muted,
+id `template-counts-as-title`) then the field (id `template-counts-as`) showing the kind it meets now: his pick
+(`extra["countsAs"]`), else the one its NAME meets (`WorkoutKind.named`, compared as `WorkoutTone` compares:
+`normName`, no white space — "Swim", "Breath work", "Mobility & Breath work", "Diving and Freediving"…), else
+"Nothing". Its list (`template-counts-as-list`): rows `template-counts-as-0…8` = Swim, Bike, Run, Strength,
+Mobility & breath work, Hiking, Golf, Climbing, Diving, and `template-counts-as-9` = Nothing. A choice →
+`setCountsAs(templateId:to:)` (stored even when it is what the name says; "none" = meets nothing whatever its name).
+The common base and transport templates have no field and never meet a workout.
+
 **Activity area and Delete** (one row, side 16, bottom 8):
 - Only on an activity template (role ""): at the left, **"Activity area: <GA / WET / OE / none>"** — 15 semibold
   violet plain text button, min height 36, id `template-area`, accessibility value the area id or "none". Tap →
@@ -561,7 +575,7 @@ violet, radius 10, min height 44; id `template-add`). `needsLine` id `template-a
 ### Data
 Reads `resolvedTemplate(id:)`, `templateNameTaken`, `isOnTemplate`, `shareLink(templateId:)`, and while arranging
 `arrangeLines(templateId:)` and `sectionNameTaken`. Writes through `renameTemplate`, `removeFromTemplate`,
-`addToTemplate`, `deleteTemplate`, `setTemplateArea`, `setTemplateIcon` (cover), while arranging `dropLine`
+`addToTemplate`, `deleteTemplate`, `setTemplateArea`, `setCountsAs` (0.70), `setTemplateIcon` (cover), while arranging `dropLine`
 (→ `moveSection` / `moveRow`), `renameSection` and `removeSection` (§13a), and through the sheets. AppStorage:
 `ams.template.grouping` (Arrange itself is not remembered: the page always opens with it off).
 
@@ -591,8 +605,13 @@ both.
   sits -5.0 pt off the icon's centre line"; the mark inside the pill is checked in the pictures);
   `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
   row); `testATemplateMovesToAnotherActivityArea` (Common base offers no `template-area`; Hiking's reads "GA",
-  `template-area-OE` → "OE", and on the tab OE appears and GA goes); Arrange — §6a.
+  `template-area-OE` → "OE", and on the tab OE appears and GA goes); `testATemplateCountsAsWhatHeLinksItTo` (0.70,
+  `-uiTestingHealth`: the Common base has no `template-counts-as`; Bike reads "Bike" by its name, `template-counts-as-9`
+  → "Nothing", kept after Done and reopening; on the iPhone the review then has no "No bike" row and "Use these"
+  leaves the Bike helmet alone); Arrange — §6a.
 - Model: `TemplateEditingTests`, `EditListsTests`, `RowEditingTests` (§13–14), `ArrangeTests` (§13a);
+  `AppleHealthReviewTests.testCountsAsIsHisLinkAndTravelsWithTheTemplate` (kept through edits, the records and a
+  backup; "none"; back to the name; nonsense refused), `testATemplateMeetsAWorkoutByItsName`;
   `TemplateRowsTests.testTypingAThingAlreadyOnTheTemplateDoesNotAddItTwice`,
   `testOnlyOnSaysWhatATripReadsOnThisTemplate`; `TemplateFacesTests.testATemplateMovesToAnotherActivityArea`.
 - **Not covered:** the device-wide grouping memory; When's colours; Delete's "Keep it"; a rename discarded by Done;

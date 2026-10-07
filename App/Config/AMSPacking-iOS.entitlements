@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The entitlements of a plain iPhone build (the simulator and a local build to a
+	     phone) — hand-written, picked for the iPhone only by project.yml
+	     (CODE_SIGN_ENTITLEMENTS[sdk=iphone…]). The same keys as the generated
+	     AMSPacking.entitlements, which the Mac keeps, plus Apple Health. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
+	<!-- Apple Health fills in the trip review (0.70, docs/spec/07 part 7): it READS the
+	     workouts of a trip's days and never writes. iPhone ONLY: the Mac has no Apple
+	     Health, and an ad-hoc signed Mac app carrying a com.apple.developer entitlement
+	     is refused at launch (as with iCloud). Builds that ship get it from the
+	     TestFlight workflow, which also stops a run whose archived iPhone app lacks it. -->
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
+</dict>
+</plist>

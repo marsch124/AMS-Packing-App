@@ -50,6 +50,12 @@ targets:
         # Mac app carrying iCloud entitlements is refused at launch, and GitHub's
         # runners have no provisioning profile.
         PACKING_USES_ICLOUD: "NO"
+        # Apple Health (0.70, chapter 07 part 7) is the iPhone's alone: an iPhone build
+        # signs with AMSPacking-iOS.entitlements (the same keys + HealthKit), the Mac keeps
+        # the generated file above, without it. (A build that ships: the TestFlight
+        # workflow adds HealthKit to the iPhone's entitlements and checks the archive.)
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": App/Config/AMSPacking-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": App/Config/AMSPacking-iOS.entitlements
         # iPhone only on iOS — portrait by design, like the web app on the
         # phone. The Mac app is a separate destination and unaffected.
         TARGETED_DEVICE_FAMILY: "1"
@@ -73,6 +79,10 @@ targets:
         NSRemindersUsageDescription: Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.
         # A photo of a packed bag (0.52).
         NSCameraUsageDescription: A photo of a packed bag, kept with the trip, to repack from on the way home.
+        # Apple Health fills in the trip review (0.70) — his words, chapter 07 part 7. Read
+        # only; Apple wants the second text all the same once an app uses HealthKit.
+        NSHealthShareUsageDescription: AMS Packing reads your workouts during a trip to suggest what you used. It never writes to Apple Health.
+        NSHealthUpdateUsageDescription: AMS Packing never writes to Apple Health. Apple requires this text all the same.
         # YES only in builds that carry the iCloud entitlements (see settings below).
         PackingUsesICloud: $(PACKING_USES_ICLOUD)
         # A change on the other device arrives as a silent push (iPhone).
