@@ -7735,6 +7735,16 @@ final class AMSPackingUITests: XCTestCase {
         // The sample trip starts in 2 days; the link arrives as the Camera hands it over.
         let app = launch("-uiTestingPlaces", ["soon", "-uiTestingOpen", "AMSPACKING://P/G4R"])
         XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the code did not open the trip being packed")
+        #if os(iOS)
+        // On the iPhone the code also starts Pack by voice at that place (0.71, on by default):
+        // it does, and stopped, the trip shows just that place's lines.
+        XCTAssertTrue(appears(app, "voice-panel", timeout: 10), "the place code did not start Pack by voice")
+        XCTAssertEqual(words(app.staticTexts["voice-place"]), "Garage")
+        tap(app, id: "voice-word-stop")
+        XCTAssertTrue(app.staticTexts["voice-summary"].waitForExistence(timeout: 5))
+        tap(app, id: "voice-done")
+        XCTAssertTrue(disappears(app, "voice-panel", timeout: 5))
+        #endif
         let chip = app.buttons["trip-place-filter"]
         XCTAssertTrue(chip.waitForExistence(timeout: 5), "no chip saying which place is shown")
         XCTAssertEqual(chip.value as? String, "Garage")
@@ -9345,7 +9355,17 @@ final class AMSPackingUITests: XCTestCase {
         let find = app.textFields["thing-kit-search"]
         XCTAssertTrue(find.waitForExistence(timeout: 5), "no search in the list")
         type("Map", into: find)
+        // The keyboard away by its own Return: a swipe started on the keyboard's guesses
+        // ("Map" became "Map of ") or on a page already at its end (the keyboard stayed over
+        // the list) — found when 0.68–0.71 were merged.
+        #if os(iOS)
+        if app.keyboards.count > 0 {
+            find.typeText("\n")
+            _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
+        }
+        #endif
         hideKeyboard(app)
+        XCTAssertEqual(find.value as? String, "Map", "the search is not what was typed")
         // The one row left is the map (a lost tap is tried again; a second tap finds no row).
         for _ in 0..<3 where !app.staticTexts["thing-kit-row-3"].exists {
             if app.buttons["thing-kit-pick-0"].waitForExistence(timeout: 3) { tap(app, id: "thing-kit-pick-0") }

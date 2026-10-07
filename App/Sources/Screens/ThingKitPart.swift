@@ -220,6 +220,9 @@ struct ThingKitPart: View {
         return VStack(alignment: .leading, spacing: 0) {
             TextField("Find a thing", text: $query)
                 .textFieldStyle(.plain)
+                // A name to find, not words to correct: the iPhone's inline guess ("Map" →
+                // "Map of ") was taken in as the keyboard went away and found nothing.
+                .autocorrectionDisabled()
                 .font(.system(.body)).foregroundStyle(Theme.ink)
                 .clearButton($query, id: "thing-kit-search")
                 .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
