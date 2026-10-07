@@ -34,6 +34,11 @@ public let VAULT_WRITTEN_KEY = "vaultWritten"
 public let TRIP_WORKOUTS_KEY = "healthWorkouts"
 /// The folder beside the page that holds the bags' photos.
 public let VAULT_ATTACHMENTS_FOLDER = "attachments"
+/// The invisible markers (HTML comments) around the app's part of the page.
+public let VAULT_START_MARKER = "<!-- AMS Packing: start -->"
+public let VAULT_END_MARKER = "<!-- AMS Packing: end -->"
+/// The front-matter keys the app writes — the only ones a resend replaces.
+public let VAULT_KEYS = ["type", "start", "end", "nights", "place", "transport", "season", "templates", "packed", "weight", "reviewed"]
 
 /// One photo the page shows: the file it is copied to (inside `attachments`) and the
 /// photo record it comes from.
@@ -78,19 +83,23 @@ extension Library {
 
     /// The Mac wrote the page: the wish is answered, and the file and the moment are kept.
     @discardableResult
-    public mutating func vaultPageWritten(tripId: String, file: String, at moment: String = nowISO()) -> Bool {
+    /// `beside` = his page has no AMS Packing markers, so it was left alone and the app's
+    /// page went into "<name> (AMS Packing).md" beside it (`file` is that file).
+    public mutating func vaultPageWritten(tripId: String, file: String, at moment: String = nowISO(), beside: Bool = false) -> Bool {
         guard let n = trips.firstIndex(where: { $0.id == tripId }), !file.isEmpty else { return false }
         trips[n].extra[VAULT_WAITING_KEY] = nil
-        trips[n].extra[VAULT_WRITTEN_KEY] = .object(["file": .string(file), "at": .string(moment)])
+        var o: [String: JSONValue] = ["file": .string(file), "at": .string(moment)]
+        if beside { o["beside"] = .bool(true) }
+        trips[n].extra[VAULT_WRITTEN_KEY] = .object(o)
         trips[n].updatedAt = nowISO()
         return true
     }
 
     /// What the Mac wrote last for this trip, or nil.
-    public func vaultWritten(tripId: String) -> (file: String, at: String)? {
+    public func vaultWritten(tripId: String) -> (file: String, at: String, beside: Bool)? {
         guard let o = trip(tripId)?.extra[VAULT_WRITTEN_KEY]?.objectValue,
               let file = o["file"]?.stringValue, !file.isEmpty else { return nil }
-        return (file, o["at"]?.stringValue ?? "")
+        return (file, o["at"]?.stringValue ?? "", o["beside"]?.boolValue == true)
     }
 
     /// What the review added as missed — nil when the review kept no such record (saved
@@ -265,6 +274,10 @@ extension Library {
         lines.append("reviewed: \(Library.vaultDay(trip.reviewedAt, zone))".trimmingTrailingSpace)
         lines.append("---")
         lines.append("")
+        // The app's part of the page, between two markers Obsidian does not show: a
+        // resend replaces only this (and its own front-matter keys) — his words above
+        // and below stay (`vaultMerge`; his answer, 7 Oct 2026).
+        lines.append(VAULT_START_MARKER)
 
         // The name and the days.
         lines.append("# \(Library.md(jsTrim(trip.name).isEmpty ? "Trip" : jsTrim(trip.name)))")
@@ -390,7 +403,8 @@ extension Library {
         let notes = onSiteNotes(tripId: tripId)
         lines += notes.isEmpty ? ["No notes."] : notes.map { "- **\(Library.md(jsTrim($0.name)))**: \(Library.md(Library.homeNote($0)))" }
         lines.append("")
-        lines.append("*Written by AMS Packing. Sending the trip again replaces this page.*")
+        lines.append("*Written by AMS Packing. Sending the trip again replaces what is between its markers; what you write above or below them stays.*")
+        lines.append(VAULT_END_MARKER)
         lines.append("")
         return VaultPage(fileName: "\(stem).md", text: lines.joined(separator: "\n"), attachments: attachments)
     }
@@ -408,5 +422,122 @@ private extension String {
         var s = self
         while s.hasSuffix(" ") { s.removeLast() }
         return s
+    }
+}
+
+// MARK: - Keeping his own words on a resend (his answer, 7 Oct 2026)
+
+/// What to write for a page, given what is already on the disk.
+public struct VaultWrite: Equatable, Sendable {
+    public var fileName: String
+    public var text: String
+    /// His page has no markers: it is left alone, and this went beside it.
+    public var beside: Bool
+    public init(fileName: String, text: String, beside: Bool) { self.fileName = fileName; self.text = text; self.beside = beside }
+}
+
+extension Library {
+    /// "2026-07 Weekend in the hills.md" → "2026-07 Weekend in the hills (AMS Packing).md".
+    public static func vaultBesideName(_ fileName: String) -> String {
+        let stem = fileName.hasSuffix(".md") ? String(fileName.dropLast(3)) : fileName
+        return "\(stem) (AMS Packing).md"
+    }
+
+    /// The fresh page laid into what is on the disk — or nil when the disk's page has no
+    /// pair of markers (start before end): such a page is never overwritten.
+    ///
+    /// - Everything ABOVE the start marker (after the front matter) and BELOW the end
+    ///   marker is kept byte for byte; between them (markers included) comes the fresh part.
+    /// - Front matter: each of the app's keys (`VAULT_KEYS`, with its indented lines) is
+    ///   replaced where it stands; an app key the disk lacks is added at the end; every
+    ///   other key and line of his stays as it is. A page with no front matter gets the
+    ///   app's in front of his text.
+    public static func vaultMerge(_ fresh: String, onDisk: String) -> String? {
+        guard let start = onDisk.range(of: VAULT_START_MARKER),
+              let end = onDisk.range(of: VAULT_END_MARKER, range: start.upperBound..<onDisk.endIndex),
+              let freshStart = fresh.range(of: VAULT_START_MARKER),
+              let freshEnd = fresh.range(of: VAULT_END_MARKER, range: freshStart.upperBound..<fresh.endIndex) else { return nil }
+        let block = fresh[freshStart.lowerBound..<freshEnd.upperBound]
+        let after = onDisk[end.upperBound...]
+        let (freshFront, _) = frontMatter(String(fresh[..<freshStart.lowerBound]))
+        let head = String(onDisk[..<start.lowerBound])
+        let (hisFront, above) = frontMatter(head)
+        let front: String
+        if let his = hisFront, let mine = freshFront {
+            front = mergeFront(mine: mine, his: his)
+        } else {
+            front = (freshFront.map { "---\n" + $0.joined(separator: "\n") + "\n---\n" } ?? "") + (hisFront == nil ? "\n" : "")
+        }
+        return front + above + block + after
+    }
+
+    /// Front matter at the very top ("---" … "---"): its lines, and the text after its
+    /// closing line (byte for byte). No front matter: nil and the whole text.
+    static func frontMatter(_ text: String) -> (lines: [String]?, rest: String) {
+        guard text.hasPrefix("---\n") else { return (nil, text) }
+        let body = text.index(text.startIndex, offsetBy: 4)
+        var at = body
+        while at < text.endIndex {
+            let lineEnd = text[at...].firstIndex(of: "\n") ?? text.endIndex
+            if text[at..<lineEnd] == "---" {
+                let lines = text[body..<at].split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+                let rest = lineEnd < text.endIndex ? text.index(after: lineEnd) : lineEnd
+                return (at == body ? [] : Array(lines.dropLast(lines.last == "" ? 1 : 0)), String(text[rest...]))
+            }
+            guard lineEnd < text.endIndex else { break }
+            at = text.index(after: lineEnd)
+        }
+        return (nil, text)
+    }
+
+    /// Front-matter lines in blocks: a top-level key with the indented / list lines under
+    /// it. Lines before the first key form a block with no key.
+    static func frontBlocks(_ lines: [String]) -> [(key: String?, lines: [String])] {
+        var out: [(key: String?, lines: [String])] = []
+        for line in lines {
+            let first = line.first
+            let isKey = first != nil && first != " " && first != "\t" && first != "-" && first != "#" && line.contains(":")
+            if isKey {
+                let key = jsTrim(String(line[..<line.firstIndex(of: ":")!]))
+                out.append((key, [line]))
+            } else if out.isEmpty {
+                out.append((nil, [line]))
+            } else {
+                out[out.count - 1].lines.append(line)
+            }
+        }
+        return out
+    }
+
+    static func mergeFront(mine: [String], his: [String]) -> String {
+        let fresh = frontBlocks(mine)
+        var byKey: [String: [String]] = [:]
+        for b in fresh { if let k = b.key { byKey[k] = b.lines } }
+        var used = Set<String>()
+        var out: [String] = []
+        for b in frontBlocks(his) {
+            if let k = b.key, VAULT_KEYS.contains(k) {
+                guard !used.contains(k), let lines = byKey[k] else { continue }   // an app key twice: once
+                out += lines
+                used.insert(k)
+            } else {
+                out += b.lines
+            }
+        }
+        for b in fresh { if let k = b.key, !used.contains(k) { out += b.lines } }
+        return "---\n" + out.joined(separator: "\n") + "\n---\n"
+    }
+
+    /// What to write: the page merged into his (nil on the disk → the fresh page); his page
+    /// without markers → the side file "<name> (AMS Packing).md", itself merged into what
+    /// the app wrote there before (a side file without markers is the app's own and is
+    /// replaced).
+    public static func vaultWrite(_ page: VaultPage, onDisk: String?, besideOnDisk: String?) -> VaultWrite {
+        guard let his = onDisk else { return VaultWrite(fileName: page.fileName, text: page.text, beside: false) }
+        if let merged = vaultMerge(page.text, onDisk: his) {
+            return VaultWrite(fileName: page.fileName, text: merged, beside: false)
+        }
+        let side = besideOnDisk.flatMap { vaultMerge(page.text, onDisk: $0) } ?? page.text
+        return VaultWrite(fileName: vaultBesideName(page.fileName), text: side, beside: true)
     }
 }

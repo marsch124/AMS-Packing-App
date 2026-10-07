@@ -77,7 +77,7 @@ struct VaultCard: View {
     /// The line under "Obsidian": where the page stands. Each state has its own id, so a
     /// test reads the state without reading the words.
     @ViewBuilder
-    private func status(waiting: Bool, written: (file: String, at: String)?) -> some View {
+    private func status(waiting: Bool, written: (file: String, at: String, beside: Bool)?) -> some View {
         #if os(macOS)
         if let trouble = shelf.trouble {
             line(trouble, id: "trip-vault-trouble", tint: AppSection.actions.color)
@@ -88,7 +88,9 @@ struct VaultCard: View {
         } else if waiting {
             line("Writing the page\u{2026}", id: "trip-vault-waiting")
         } else if let written {
-            line("Written: \(written.file)\(VaultCard.day(written.at))", id: "trip-vault-written")
+            line(written.beside
+                 ? "Written beside your page, as \(written.file)\(VaultCard.day(written.at)) \u{2014} your page has no AMS Packing markers, so it is left as it is."
+                 : "Written: \(written.file)\(VaultCard.day(written.at))", id: "trip-vault-written")
         } else {
             line("Not in your vault yet.", id: "trip-vault-status")
         }
@@ -96,7 +98,9 @@ struct VaultCard: View {
         if waiting {
             line("Waiting for the Mac \u{2014} it writes the page the next time it is open.", id: "trip-vault-waiting")
         } else if let written {
-            line("Written by the Mac: \(written.file)\(VaultCard.day(written.at))", id: "trip-vault-written")
+            line(written.beside
+                 ? "Written by the Mac beside your page, as \(written.file)\(VaultCard.day(written.at)) \u{2014} your page has no AMS Packing markers, so it is left as it is."
+                 : "Written by the Mac: \(written.file)\(VaultCard.day(written.at))", id: "trip-vault-written")
         } else {
             line("The Mac writes this trip's page into your vault.", id: "trip-vault-status")
         }

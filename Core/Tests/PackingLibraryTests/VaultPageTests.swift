@@ -67,7 +67,7 @@ final class VaultPageTests: XCTestCase {
         let (lib, id) = VaultPageTests.reviewed()
         let page = try XCTUnwrap(lib.vaultPage(tripId: id, zone: VaultPageTests.utc))
         XCTAssertEqual(page.fileName, "2026-07 Weekend in the hills.md")
-        let front = page.text.components(separatedBy: "\n").prefix(17).joined(separator: "\n")
+        let front = page.text.components(separatedBy: "\n").prefix(18).joined(separator: "\n")
         XCTAssertEqual(front, """
             ---
             type: trip
@@ -85,6 +85,7 @@ final class VaultPageTests: XCTestCase {
             reviewed: 2026-07-07
             ---
 
+            <!-- AMS Packing: start -->
             # Weekend in the hills
             """)
         XCTAssertTrue(page.text.contains("\n3 Jul 2026 \u{2013} 5 Jul 2026 \u{00B7} 2 nights \u{00B7} Testville\n"), page.text)
@@ -116,7 +117,7 @@ final class VaultPageTests: XCTestCase {
                                            "- Sit mat \u{2014} a thing of its own, on no template"])
         XCTAssertEqual(section("Bought on site"), ["- Sun hat"])
         XCTAssertEqual(section("Notes"), ["- **Rain jacket**: zip broken"])
-        XCTAssertTrue(text.hasSuffix("*Written by AMS Packing. Sending the trip again replaces this page.*\n"))
+        XCTAssertTrue(text.hasSuffix("*Written by AMS Packing. Sending the trip again replaces what is between its markers; what you write above or below them stays.*\n<!-- AMS Packing: end -->\n"))
     }
 
     func testTheBagsPhotosAreCopiedBesideThePage() throws {
@@ -252,5 +253,108 @@ final class VaultPageTests: XCTestCase {
         for key in [MISSED_AT_REVIEW_KEY, TRIP_WORKOUTS_KEY, VAULT_WAITING_KEY, VAULT_WRITTEN_KEY] {
             XCTAssertNil(sent.extra[key], "\(key) is his, not the list's")
         }
+    }
+
+    // MARK: - His own words on the page stay (his answer, 7 Oct 2026)
+
+    /// The page as it stands after a write, then a CHANGE to the trip (a new place), so
+    /// the app's part really is different on the resend.
+    static func twoVersions() -> (first: VaultPage, second: VaultPage) {
+        var (lib, id) = VaultPageTests.reviewed()
+        let first = lib.vaultPage(tripId: id, zone: VaultPageTests.utc)!
+        lib.trips[0].destination = "Otherplace"
+        return (first, lib.vaultPage(tripId: id, zone: VaultPageTests.utc)!)
+    }
+
+    func testAResendKeepsHisWordsAboveAndBelowByteForByte() throws {
+        let (first, second) = VaultPageTests.twoVersions()
+        let above = "\nMy own lines above,  with  spaces \t and ==marks==.\n\n"
+        let below = "\n## My diary\n\nIt rained. [[Kalmar]] #travel\n"
+        let start = first.text.range(of: VAULT_START_MARKER)!
+        let end = first.text.range(of: VAULT_END_MARKER)!
+        let (front, _) = Library.frontMatter(String(first.text[..<start.lowerBound]))
+        let disk = "---\n" + front!.joined(separator: "\n") + "\n---\n" + above
+            + first.text[start.lowerBound..<end.upperBound] + below
+        let merged = try XCTUnwrap(Library.vaultMerge(second.text, onDisk: disk))
+        let s2 = second.text.range(of: VAULT_START_MARKER)!, e2 = second.text.range(of: VAULT_END_MARKER)!
+        let block = String(second.text[s2.lowerBound..<e2.upperBound])
+        XCTAssertTrue(merged.hasSuffix(block + below), "his words below the end marker, byte for byte")
+        XCTAssertTrue(merged.contains("\n---\n" + above + block), "his words above the start marker, byte for byte")
+        XCTAssertTrue(merged.hasPrefix("---\ntype: trip\n"))
+        XCTAssertTrue(merged.contains("\nplace: \"Otherplace\"\n"), "the app's key is replaced")
+        XCTAssertFalse(merged.contains("Testville\""), "the old place is gone")
+        XCTAssertEqual(Library.vaultMerge(second.text, onDisk: merged), merged, "a second resend changes nothing")
+    }
+
+    func testHisOwnFrontMatterKeysAreKept() throws {
+        let (_, second) = VaultPageTests.twoVersions()
+        let disk = """
+            ---
+            # his comment
+            type: trip
+            rating: 5
+            place: "Testville"
+            tags:
+              - travel
+              - family
+            templates:
+              - "Old one"
+            mood: sunny
+            ---
+
+            \(VAULT_START_MARKER)
+            old part
+            \(VAULT_END_MARKER)
+
+            """
+        let merged = try XCTUnwrap(Library.vaultMerge(second.text, onDisk: disk))
+        let (lines, _) = Library.frontMatter(merged)
+        let front = try XCTUnwrap(lines)
+        XCTAssertEqual(Array(front.prefix(11)), ["# his comment", "type: trip", "rating: 5", "place: \"Otherplace\"",
+                                                 "tags:", "  - travel", "  - family", "templates:", "  - \"Common base\"",
+                                                 "  - \"Hiking\"", "mood: sunny"],
+                       "his keys and lines stay where they were; the app's are replaced in place")
+        XCTAssertEqual(Array(front.dropFirst(11)), ["start: 2026-07-03", "end: 2026-07-05", "nights: 2", "transport: \"Car\"",
+                                                    "season: \"Summer\"", "packed: \"6/6\"", "weight: 1.9", "reviewed: 2026-07-07"],
+                       "the app's keys his page lacked are added at the end")
+        XCTAssertFalse(merged.contains("old part"))
+    }
+
+    func testAPageWithoutMarkersIsNeverOverwritten() {
+        let (first, second) = VaultPageTests.twoVersions()
+        XCTAssertEqual(Library.vaultWrite(second, onDisk: nil, besideOnDisk: nil),
+                       VaultWrite(fileName: second.fileName, text: second.text, beside: false), "no page yet: the whole page")
+        // An older page, his own page of that name, or one whose end marker he deleted.
+        let noEnd = first.text.replacingOccurrences(of: VAULT_END_MARKER, with: "")
+        for his in ["# My trip\n\nAll mine.\n", noEnd,
+                    first.text.replacingOccurrences(of: VAULT_START_MARKER, with: "")] {
+            XCTAssertNil(Library.vaultMerge(second.text, onDisk: his))
+            let plan = Library.vaultWrite(second, onDisk: his, besideOnDisk: nil)
+            XCTAssertEqual(plan.fileName, "2026-07 Weekend in the hills (AMS Packing).md")
+            XCTAssertTrue(plan.beside)
+            XCTAssertEqual(plan.text, second.text)
+        }
+        // The side file keeps his words too once he writes in it.
+        let side = first.text + "\nNotes in the side file.\n"
+        let plan = Library.vaultWrite(second, onDisk: "# Mine\n", besideOnDisk: side)
+        XCTAssertTrue(plan.text.hasSuffix(VAULT_END_MARKER + "\n\nNotes in the side file.\n"))
+        XCTAssertTrue(plan.text.contains("Otherplace"))
+    }
+
+    func testAPageWrittenBesideHisSaysSo() {
+        var (lib, id) = VaultPageTests.reviewed()
+        lib.vaultPageWritten(tripId: id, file: "2026-07 Weekend in the hills (AMS Packing).md", beside: true)
+        XCTAssertEqual(lib.vaultWritten(tripId: id)?.beside, true)
+        lib.vaultPageWritten(tripId: id, file: "2026-07 Weekend in the hills.md")
+        XCTAssertEqual(lib.vaultWritten(tripId: id)?.beside, false)
+    }
+
+    func testAPageWithNoFrontMatterGetsTheAppsInFront() throws {
+        let (_, second) = VaultPageTests.twoVersions()
+        let disk = "His first line\n\(VAULT_START_MARKER)\nx\n\(VAULT_END_MARKER)\nlast"
+        let merged = try XCTUnwrap(Library.vaultMerge(second.text, onDisk: disk))
+        XCTAssertTrue(merged.hasPrefix("---\ntype: trip\n"))
+        XCTAssertTrue(merged.contains("---\n\nHis first line\n\(VAULT_START_MARKER)\n# Weekend"))
+        XCTAssertTrue(merged.hasSuffix(VAULT_END_MARKER + "\nlast"))
     }
 }

@@ -1776,7 +1776,9 @@ saved → "Reviewed", no Review button; the base template gets a 5th thing), `te
 
 **Purpose and origin.** Spec 07 part 8, his yes of 7 Oct 2026: a reviewed trip becomes one Markdown page in
 his Obsidian vault — the folder he picks once (his choice: the vault's `Areas/Travel`), named
-`<yyyy-mm> <trip name>.md`, its bags' photos in `attachments/` beside it; sending again replaces it. The page
+`<yyyy-mm> <trip name>.md`, its bags' photos in `attachments/` beside it; sending again replaces only the app's part
+between its markers and its own front-matter keys — what he wrote himself stays, and a page of his without the
+markers is never overwritten (the app's goes beside it as `<name> (AMS Packing).md`; his answer, 7 Oct 2026). The page
 itself (front matter, sections, file names, escaping), the marks on the trip and the Mac's writing are in spec
 07 part 8; this is the card on the trip (0.70).
 
@@ -1795,7 +1797,9 @@ itself (front matter, sections, file names, escaping), the marks on the trip and
     "Send asks for the folder once — your vault's Areas/Travel.", or, while a page waits, "Waiting for a
     folder. Send asks for it once — your vault's Areas/Travel.") · `trip-vault-waiting` "Writing the page…"
     (the moment between a wish and its write) · `trip-vault-written` "Written: <file> · 7 Oct 2026" ·
-    `trip-vault-status` "Not in your vault yet."
+    `trip-vault-status` "Not in your vault yet." When the page went into the side file (`vaultWritten.beside`),
+    `trip-vault-written` says "Written beside your page, as <file> · <day> — your page has no AMS Packing markers, so
+    it is left as it is." (iPhone: "Written by the Mac beside your page, as …").
   - The day is the device's day of the write, in fixed English words.
 - Right, 12 pt away: **Send to Obsidian** — `FieldButtonLabel` (Callout semibold, white on green, `Metrics.tap`
   tall, corner 8), plain button style, id `trip-vault-send`. Never grey, never switched off (his rule).
@@ -1819,7 +1823,7 @@ itself (front matter, sections, file names, escaping), the marks on the trip and
 ### Tests
 UI `testOnTheIPhoneSendToObsidianWaitsForTheMac` (iPhone; `-uiTestingReviewed`), `testSendToObsidianWritesTheTripPageOnTheMac`
 (Mac, GitHub's), `testASavedReviewAsksForTheTripsPage` (both: iPhone waiting, Mac written at once). Model
-`VaultPageTests` (15). **Not covered:** the system folder picker, Change, a folder that has gone away, night
+`VaultPageTests` (20). **Not covered:** the system folder picker, Change, a folder that has gone away, night
 mode on the Mac (looked at on the iPhone only).
 
 ---

@@ -143,7 +143,8 @@ spec 03 "The trip's page in his vault" has the card's every size and id).
 
 When a trip's review is saved — and whenever he presses **"Send to Obsidian"** on a reviewed trip — the trip
 becomes one Markdown page in the folder he picked once (his choice, 7 Oct 2026: the vault's `Areas/Travel`),
-named `<yyyy-mm> <trip name>.md`. Writing it again replaces the page (the same name). The bags' photos are copied
+named `<yyyy-mm> <trip name>.md`. Writing it again replaces the APP'S PART of the page — what he wrote on it himself
+stays (his answer, 7 Oct 2026; "Keeping his own words" below). The bags' photos are copied
 into `attachments/` in that same folder, beside the page. Only a REVIEWED trip has a page (`Library.isReviewed`,
 the one rule: marked done or a review time on it); before the review there is nothing to write.
 
@@ -178,6 +179,7 @@ weight: 1.9
 reviewed: 2026-07-07
 ---
 
+<!-- AMS Packing: start -->
 # Weekend in the hills
 
 3 Jul 2026 – 5 Jul 2026 · 2 nights · Testville
@@ -214,7 +216,8 @@ Testville, SE · 9–21°C · rain
 
 - **Rain jacket**: zip broken
 
-*Written by AMS Packing. Sending the trip again replaces this page.*
+*Written by AMS Packing. Sending the trip again replaces what is between its markers; what you write above or below them stays.*
+<!-- AMS Packing: end -->
 ```
 
 - **Front matter** (YAML, what Obsidian shows as Properties): `type: trip`; `start` / `end` (the trip's dates, an
@@ -251,10 +254,34 @@ Testville, SE · 9–21°C · rain
 - **Bought on site**: `boughtOnSite`, each name once; none → "Nothing."
 - **Notes**: the maintenance notes made on site or on the way home (`onSiteNotes`), "- **<line name>**: <note>";
   none → "No notes."
-- Last line: "*Written by AMS Packing. Sending the trip again replaces this page.*"
+- After the front matter and a blank line, the app's part sits between two markers Obsidian does not show:
+  `<!-- AMS Packing: start -->` (just before the heading) and `<!-- AMS Packing: end -->` (the last line).
+- Last line inside the markers: "*Written by AMS Packing. Sending the trip again replaces what is between its
+  markers; what you write above or below them stays.*"
 - **His words are escaped** (`md`): `\ ` * _ [ ] < > # $ | ~` get a backslash and "==" becomes "=\=", so a
   name like "C# notes" is not a tag and "*spare*" is not emphasis. Plain Markdown: no plug-in is needed, and
   nothing goes on the page beyond what he typed into the trip.
+
+### Keeping his own words — `Library.vaultMerge` / `vaultWrite` (his answer, 7 Oct 2026)
+
+His words: keep his own edits on the page "if it is uncomplicated and safe". Before writing, the Mac reads the page
+already there (and the side file, below) and `vaultWrite(page, onDisk:, besideOnDisk:)` decides:
+- **No page yet** → the whole fresh page.
+- **His page has both markers, start before end** → `vaultMerge`: everything ABOVE the start marker (after the
+  front matter) and everything BELOW the end marker is kept byte for byte; the markers and what is between them are
+  the fresh part. Front matter: the app's keys (`VAULT_KEYS` — type, start, end, nights, place, transport, season,
+  templates, packed, weight, reviewed — each with its indented or list lines) are replaced WHERE THEY STAND; an app
+  key his page lacks is added at the end; every other key, comment or line of his stays as it was, in its place (a
+  key the app writes, written twice by him, is kept once). A page with markers but no front matter gets the app's in
+  front of his text (then a blank line). Merging the same page again changes nothing.
+- **His page has no pair of markers** (written by a version before the markers, his own page of that name, or a
+  marker he deleted) → it is **never overwritten**: the app's page goes into `<name> (AMS Packing).md` beside it
+  (`vaultBesideName`) — itself merged the same way when it already has markers (so his notes in it stay too), else
+  replaced (it is the app's own file). The trip records `vaultWritten.beside = true` and the card says "Written
+  beside your page, as <side file> · <day> — your page has no AMS Packing markers, so it is left as it is." (iPhone:
+  "Written by the Mac beside your page, as …").
+- Line breaks are read as "\n" (what the app and Obsidian write). The photos in `attachments/` are still replaced
+  by name.
 
 ### The marks on the trip (trip extra keys — native only; synced with the trip's own record)
 
@@ -262,7 +289,7 @@ Testville, SE · 9–21°C · rain
 |---|---|---|
 | `missedAtReview` (`MISSED_AT_REVIEW_KEY`) | `[{ "name", "template" }]` — the missed things as the review saved them, each name once; `template` = the template's SHOWN name ("" = on no template) — a name, not an id: the page is read years later | `saveReview` (0.70 on), before the missed things are filed |
 | `vaultWaiting` (`VAULT_WAITING_KEY`) | the ISO moment a page was asked for | `saveReview` (the review's own moment); the iPhone's Send (`askForVaultPage` — refused for a trip not reviewed) |
-| `vaultWritten` (`VAULT_WRITTEN_KEY`) | `{ "file", "at" }` — what the Mac wrote last | the Mac after a write (`vaultPageWritten`, which also takes `vaultWaiting` away) |
+| `vaultWritten` (`VAULT_WRITTEN_KEY`) | `{ "file", "at", "beside"? }` — what the Mac wrote last; `beside: true` when it went into the side file | the Mac after a write (`vaultPageWritten`, which also takes `vaultWaiting` away) |
 | `healthWorkouts` (`TRIP_WORKOUTS_KEY`) | `["Swim · indoor · 3 times", …]` | 🔌 **HOOK for part 7** — nothing writes it yet; part 7 is to write the rows of its "From Apple Health" block here when the review is saved with workouts read (the Mac has no Apple Health: this key is how its page learns them) |
 
 `tripsWaitingForVault()` = the reviewed trips carrying `vaultWaiting`. A shared trip leaves all four behind
@@ -282,9 +309,9 @@ The folder lives on the Mac, so the **Mac** writes the page:
   of the main loop (`LibraryModel.library`'s `didSet` → `VaultShelf.libraryChanged`). Only with a folder chosen;
   without one the trips stay waiting and the card says so.
 - **A write**: the photos first (`attachments/`, created when needed), then the page, each written whole
-  (`.atomic`) through an `NSFileCoordinator` (Obsidian or a sync service may be reading the folder); then the trip
-  is marked written. The same name replaces the page and its photos; nothing else in the folder is touched or
-  deleted.
+  (`.atomic`) through an `NSFileCoordinator` (Obsidian or a sync service may be reading the folder) — the page as
+  `vaultWrite` merged it with what was on the disk; then the trip is marked written (with `beside`). Nothing else in
+  the folder is touched or deleted.
 - **A folder that has gone away** (the bookmark cannot be resolved, or the folder is not there): the folder is
   forgotten, the card says "<name> can no longer be found. Choose the folder again.", and Send asks for one —
   then writes. Any other failure: "The page could not be written into <name>." — the trip stays waiting and is
@@ -294,12 +321,12 @@ The folder lives on the Mac, so the **Mac** writes the page:
   <name>` = a throwaway folder of that NAME (no "/", no leading dot) in the app's own temporary folder, emptied
   at launch, not chosen until the picker is "answered" by it (no test can drive the system's panel);
   `-uiTestingVaultChosen` = chosen from the start. After a write the app reads the folder back from the disk
-  into `trip-vault-check` (the files A–Z, "===", the page's lines before its `# ` heading) — the Mac's test
+  into `trip-vault-check` (the files A–Z, "===", the page's lines before its start marker) — the Mac's test
   runner is sandboxed apart from the app and cannot look into the app's folder.
 
 ### Tests
 
-Model `VaultPageTests` (15, invented data — the sample trip "Weekend in the hills", 3–5 Jul 2026, Testville):
+Model `VaultPageTests` (20, invented data — the sample trip "Weekend in the hills", 3–5 Jul 2026, Testville):
 `testTheSampleTripsPageHasItsNameFrontMatterAndSections` (file name, the whole front matter, the order of the
 sections), `testEachSectionSaysWhatTheTripRecorded` (every section line for line),
 `testTheBagsPhotosAreCopiedBesideThePage`, `testThePageIsTheSameEveryTime`, `testOnlyAReviewedTripHasAPage`
@@ -308,7 +335,11 @@ sections), `testEachSectionSaysWhatTheTripRecorded` (every section line for line
 `testAnOlderReviewSaysMissedWasNotRecorded`, `testWorkoutsFromAppleHealthGetASectionOfTheirOwn` (the hook),
 `testATripWithNothingOnSiteSaysSo`, `testASavedReviewAsksForThePageAndKeepsWhatWasMissed`,
 `testTheMacWritingThePageAnswersTheWish`, `testOnlyAReviewedTripCanAskForAPage`,
-`testTheMarksTravelWithTheTripButNotWhenItIsShared`.
+`testTheMarksTravelWithTheTripButNotWhenItIsShared`; keeping his words (5, each seen red with a planted fault):
+`testAResendKeepsHisWordsAboveAndBelowByteForByte` (fault: the text below the end marker dropped),
+`testHisOwnFrontMatterKeysAreKept` (fault: his keys dropped), `testAPageWithoutMarkersIsNeverOverwritten` (fault:
+a page without markers written over — also an end or a start marker deleted, and his notes in the side file kept),
+`testAPageWrittenBesideHisSaysSo`, `testAPageWithNoFrontMatterGetsTheAppsInFront`. 20 in all.
 UI (`-uiTestingReviewed`: the sample's trip been and reviewed, nothing asked for): iPhone
 `testOnTheIPhoneSendToObsidianWaitsForTheMac` (`trip-vault-status` → Send → `trip-vault-waiting`, the button
 still enabled); Mac (GitHub's Mac, probe) `testSendToObsidianWritesTheTripPageOnTheMac` (`trip-vault-nofolder` →
@@ -323,8 +354,7 @@ test drives).
 
 ### Open questions
 
-- **A page he changed in Obsidian is replaced** on the next send (the agreed design: "Writing it again replaces
-  the page"). AMS WatchLater keeps a note he changed; say if this page should too.
+- His edits INSIDE the markers are replaced on a resend (by design: that is the app's part).
 - **A renamed trip** gets a page of its new name; the old page stays (the app never deletes his files). The same
   for a removed bag photo: its old copy stays in `attachments/`.
 - **Workouts** wait for part 7 to write `healthWorkouts` (the hook above).

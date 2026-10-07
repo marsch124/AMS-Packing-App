@@ -160,6 +160,7 @@ final class VaultShelf: ObservableObject {
         guard let page = model.library.vaultPage(tripId: tripId) else { return .failed }
         if folderName == nil { return .needsFolder }
         let fm = FileManager.default
+        var written = VaultWrite(fileName: page.fileName, text: page.text, beside: false)
         do {
             let (root, scoped) = try folder()
             let entered = scoped && root.startAccessingSecurityScopedResource()
@@ -174,10 +175,17 @@ final class VaultShelf: ObservableObject {
                     try VaultShelf.put(photo.data, at: dir.appendingPathComponent(a.fileName))
                 }
             }
-            let file = root.appendingPathComponent(page.fileName)
-            try VaultShelf.put(Data(page.text.utf8), at: file)
+            // His own words on the page stay: only the app's part between its markers and
+            // its own front-matter keys are replaced; a page of his without the markers is
+            // never overwritten — the app's page goes beside it (`Library.vaultWrite`).
+            let his = try? String(contentsOf: root.appendingPathComponent(page.fileName), encoding: .utf8)
+            let side = try? String(contentsOf: root.appendingPathComponent(Library.vaultBesideName(page.fileName)), encoding: .utf8)
+            let plan = Library.vaultWrite(page, onDisk: his, besideOnDisk: side)
+            let file = root.appendingPathComponent(plan.fileName)
+            try VaultShelf.put(Data(plan.text.utf8), at: file)
             guard fm.fileExists(atPath: file.path) else { throw CocoaError(.fileWriteUnknown) }
-            if testFolder != nil { readBack = VaultShelf.readBack(root, page: page.fileName) }
+            written = plan
+            if testFolder != nil { readBack = VaultShelf.readBack(root, page: plan.fileName) }
         } catch is Gone {
             forget()
             return .needsFolder
@@ -186,8 +194,9 @@ final class VaultShelf: ObservableObject {
             return .failed
         }
         trouble = nil
-        model.change { _ = $0.vaultPageWritten(tripId: tripId, file: page.fileName, at: nowISO()) }
-        return .written(page.fileName)
+        let plan = written
+        model.change { _ = $0.vaultPageWritten(tripId: tripId, file: plan.fileName, at: nowISO(), beside: plan.beside) }
+        return .written(plan.fileName)
     }
 
     /// One file, written whole (a page half-written never shows in Obsidian), through a
@@ -216,7 +225,7 @@ final class VaultShelf: ObservableObject {
             }
         }
         let text = (try? String(contentsOf: root.appendingPathComponent(page), encoding: .utf8)) ?? ""
-        let head = text.components(separatedBy: "\n").prefix(while: { !$0.hasPrefix("# ") })
+        let head = text.components(separatedBy: "\n").prefix(while: { $0 != VAULT_START_MARKER })
         return (names.sorted() + ["==="] + head).joined(separator: "\n")
     }
     #endif
