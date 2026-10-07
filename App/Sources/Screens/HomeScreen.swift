@@ -32,6 +32,9 @@ struct HomeScreen: View {
     @State private var quick = false
     @State private var laundry = false
     @State private var laundryNights = LAUNDRY_CAP_NIGHTS
+    /// "I leave at" (0.69, the door check): on the first day, and on the last for home.
+    @State private var leaveOut = ""
+    @State private var leaveHome = ""
     @State private var opened: String?
     @State private var grab: GrabDefinition?
     @State private var searching = false
@@ -118,6 +121,10 @@ struct HomeScreen: View {
                     DateRangePicker(start: $start, end: $end, dated: $hasDates, inline: true, grid: "trip-range") { waiting in
                         pickingEnd = waiting
                         if !stillNeeded.isEmpty { stillNeeded = needs() }
+                    }
+                    // The door check (0.69): a time on a day needs the days.
+                    if hasDates {
+                        LeaveTimes(out: $leaveOut, home: $leaveHome, id: "trip-leave", tint: AppSection.home.color)
                     }
 
                     ForEach(choices, id: \.group.id) { choice in
@@ -285,10 +292,13 @@ struct HomeScreen: View {
         if hasDates {
             draft.startDate = HomeScreen.ymd(start)
             draft.endDate = HomeScreen.ymd(max(start, end))
+            _ = Library.setLeaveTime(&draft, leaveOut, home: false)
+            _ = Library.setLeaveTime(&draft, leaveHome, home: true)
         }
         var made: TripEvent?
         model.change { made = $0.createTrip(draft) }
         name = ""; activities = []; workoutContexts = [:]; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
+        leaveOut = ""; leaveHome = ""
         opened = made?.id
     }
 

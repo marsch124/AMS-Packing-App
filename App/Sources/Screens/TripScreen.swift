@@ -41,6 +41,12 @@ struct TripScreen: View {
     @State private var checking: CheckedThing?
     /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
     @State private var onSite = false
+    /// The line just ticked whose bag has pockets: its pockets show under it (0.69).
+    @State private var pocketing: String?
+    /// Only the lines still unticked — a tapped door check opens the trip so (0.69).
+    @State private var onlyUnticked = false
+    /// A tapped door check for the way home: On site opens, and in it Pack to go home.
+    @State private var homeFromDoor = false
     struct CheckedThing: Identifiable { let id: String }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
@@ -91,6 +97,9 @@ struct TripScreen: View {
         let allPacked = p.total > 0 && p.done == p.total
         // Never trap on a repeated id (his E.6 crash, 28 Sep): the first line keeps it.
         let index: [String: Int] = Dictionary(trip.entries.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+        // Every bag's pockets, asked once for all the lines (0.69).
+        let pockets = model.library.pocketsByBag()
+        let shownLines = onlyUnticked ? trip.entries.filter { !$0.checked && !isSetAside($0) } : trip.entries
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -152,6 +161,12 @@ struct TripScreen: View {
             sorting
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
+            #if DEBUG
+            if AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-showDoorChecks") {
+                DoorCheckList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
+            }
+            #endif
+            if onlyUnticked { untickedBar }
             KeyboardAwayScroll {
                 // The card is deliberately OUTSIDE the lazy stack: a lazy row is
                 // thrown away and rebuilt as it scrolls off, which loses what he
@@ -174,7 +189,7 @@ struct TripScreen: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     // One level of groups; inside a group the lines keep the trip's own order.
                     // (The web app nests: When → by bag inside; the others → by When inside.)
-                    ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { g, group in
+                    ForEach(Array(groupBy(view, shownLines).enumerated()), id: \.offset) { g, group in
                         if !group.entries.isEmpty {
                             // The heading, and one press to tick the whole section
                             // (his ask: "so that I could toggle all done").
@@ -237,7 +252,12 @@ struct TripScreen: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 4) {
                                     Button {
-                                        if !aside { model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) } }
+                                        if !aside {
+                                            let on = !line.checked
+                                            model.change { _ = $0.setChecked(on, tripId: tripId, entryId: line.id) }
+                                            // Its bag has pockets: they show under it, the usual one chosen (0.69).
+                                            pocketing = on && pockets[normName(line.container)] != nil ? line.id : nil
+                                        }
                                     } label: {
                                         PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
                                                  showBag: view != "container", washed: washes(trip))
@@ -258,6 +278,17 @@ struct TripScreen: View {
                                     .buttonStyle(.plain).focusEffectDisabled()
                                     .accessibilityIdentifier("trip-line-\(n)-aside")
                                     .accessibilityLabel(aside ? "Take it this time" : "Not this time")
+                                }
+                                // Which pocket (0.69): one short row of small pills under the line just
+                                // ticked — tap one, or ignore it.
+                                if pocketing == line.id, line.checked, let choices = pockets[normName(line.container)] {
+                                    PocketPills(pockets: choices, chosen: Library.pocket(line), tint: AppSection.events.color,
+                                                id: "trip-line-\(n)-pocket") { picked in
+                                        let id = tripId, entry = line.id
+                                        model.change { _ = $0.setPocket(picked, tripId: id, entryId: entry) }
+                                        pocketing = nil
+                                    }
+                                    .padding(.leading, Metrics.mark + 8).padding(.bottom, 4)
                                 }
                                 // On its own line under the name, so the name keeps its width.
                                 if needsPlace {
@@ -284,7 +315,7 @@ struct TripScreen: View {
                                 // closes: a lazy row that MOVED kept its old face ("Set place" still
                                 // showing under the place just chosen — the same staleness, seen
                                 // 2026-09-26 in the Set place test).
-                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)|\(qtyNights(trip))")
+                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)|\(qtyNights(trip))|\(pocketing == line.id)|\(Library.pocket(line))")
                             }
                             }
                         }
@@ -387,6 +418,41 @@ struct TripScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
         #endif
+        .onAppear(perform: takeFocus)
+        .onChange(of: model.tripFocus) { _, _ in takeFocus() }
+    }
+
+    /// A tapped door check opened this trip (0.69): on just its unticked lines — or, for
+    /// the way home, On site opens and in it Pack to go home, on what is not in a bag yet.
+    private func takeFocus() {
+        guard let focus = model.tripFocus, focus.tripId == tripId else { return }
+        model.tripFocus = nil
+        if focus.home {
+            homeFromDoor = true
+            // After this window has finished arriving: one cannot come up while another still is.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { onSite = true }
+        } else {
+            onlyUnticked = true
+        }
+    }
+
+    /// "Only what is still unticked", and Show all — while a door check's view is on.
+    private var untickedBar: some View {
+        HStack(spacing: 8) {
+            Text("Only what is still unticked")
+                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                .accessibilityIdentifier("trip-unticked-only")
+            Spacer(minLength: 8)
+            Button { onlyUnticked = false } label: {
+                Text("Show all").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                    .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                    .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("trip-show-all")
+        }
+        .padding(.horizontal, 16).padding(.top, 6)
     }
 
     /// His places, one tap each; or a new one typed. The thing keeps the place.
@@ -527,7 +593,9 @@ struct TripScreen: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-onsite")
         .accessibilityValue(says)
-        .sheet(isPresented: $onSite) { OnSiteScreen(tripId: trip.id).environmentObject(model) }
+        .sheet(isPresented: $onSite, onDismiss: { homeFromDoor = false }) {
+            OnSiteScreen(tripId: trip.id, openHome: homeFromDoor).environmentObject(model)
+        }
     }
 
     private func addBought() {
@@ -583,10 +651,13 @@ struct PackLine: View {
                     LaundryMark().onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
                 }
             }
-            if showBag {
-                Text(line.container)
+            // The pocket it went into, once ticked (0.69): "Backpack · Front pocket" — just
+            // the pocket when the list is sorted by bag (the heading names the bag).
+            let pocket = line.checked && !aside ? Library.pocket(line) : ""
+            if showBag || !pocket.isEmpty {
+                Text(showBag ? Library.bagAndPocket(line.container, pocket) : pocket)
                     .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                    .frame(maxWidth: 150, alignment: .trailing)
+                    .frame(maxWidth: pocket.isEmpty ? 150 : 200, alignment: .trailing)
             }
         }
         // A hair above and below, so a name on two lines keeps off the hairline.

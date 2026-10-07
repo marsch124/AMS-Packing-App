@@ -47,9 +47,17 @@ struct RootView: View {
                 model.tripToOpen = id
             }
             PackingReminders.shared.start()
+            // A tapped door check (0.69): its trip, on just what is left.
+            DoorChecks.shared.open = { id, kind in
+                section = .home
+                model.tripFocus = LibraryModel.TripFocus(tripId: id, home: kind == .home)
+                model.tripToOpen = id
+            }
+            if AMSPackingApp.testing { RootView.playTappedDoorCheck(model) }
         }
         .onReceive(model.$library.debounce(for: .seconds(2), scheduler: RunLoop.main)) { library in
             Task { await PackingReminders.shared.reschedule(library) }
+            Task { await DoorChecks.shared.reschedule(library) }
             // The grab lists Shortcuts offers by name follow his.
             PackingShortcuts.updateAppShortcutParameters()
         }
@@ -60,6 +68,7 @@ struct RootView: View {
             // allowed again: put the packing reminders right at once, not at the next
             // change of the library.
             if phase == .active { Task { await PackingReminders.shared.reschedule(model.library) } }
+            if phase == .active { Task { await DoorChecks.shared.reschedule(model.library) } }
             if phase == .background { wasAway = true }
             if phase == .active, wasAway {
                 wasAway = false
@@ -76,6 +85,16 @@ struct RootView: View {
             section = tab
             model.tabToOpen = nil
         }
+    }
+
+    /// UI tests only (`-tapDoorCheck out|home`): a door check tapped as the app opens —
+    /// for the first trip with that time set.
+    private static func playTappedDoorCheck(_ model: LibraryModel) {
+        let args = ProcessInfo.processInfo.arguments
+        guard let n = args.firstIndex(of: "-tapDoorCheck"), n + 1 < args.count else { return }
+        let home = args[n + 1] == "home"
+        guard let trip = model.library.trips.first(where: { !Library.leaveTime($0, home: home).isEmpty }) else { return }
+        DoorChecks.shared.open?(trip.id, home ? .home : .out)
     }
 
     /// UI tests only: what reaches the app from outside while it is in the

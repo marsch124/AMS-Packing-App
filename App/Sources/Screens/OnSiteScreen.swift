@@ -11,6 +11,9 @@ import PackingLibrary
 /// message — green for the trip, orange for what goes on to Care.
 struct OnSiteScreen: View {
     let tripId: String
+    /// A tapped door check for the way home (0.69): Pack to go home opens at once, on
+    /// just what is not in a bag yet.
+    var openHome = false
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var boughtName = ""
@@ -59,7 +62,11 @@ struct OnSiteScreen: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
-        .sheet(isPresented: $goingHome) { WayHomeScreen(tripId: tripId).environmentObject(model) }
+        .sheet(isPresented: $goingHome) { WayHomeScreen(tripId: tripId, onlyLeft: openHome).environmentObject(model) }
+        .onAppear {
+            // After this window has finished arriving: one cannot come up while another still is.
+            if openHome { DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { goingHome = true } }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("onsite-screen")
         #if os(macOS)

@@ -87,5 +87,10 @@ struct PackingShortcuts: AppShortcutsProvider {
         AppShortcut(intent: OpenNextTripIntent(),
                     phrases: ["Open my next trip in \(.applicationName)"],
                     shortTitle: "My next trip", systemImageName: "suitcase")
+        // "Where is my charger in Packing?" (0.69): the bag and pocket, said back.
+        AppShortcut(intent: WhereIsIntent(),
+                    phrases: ["Where is my \(\.$thing) in \(.applicationName)", "Where's my \(\.$thing) in \(.applicationName)",
+                              "Ask \(.applicationName) where something is"],
+                    shortTitle: "Where is my thing?", systemImageName: "bag")
     }
 }

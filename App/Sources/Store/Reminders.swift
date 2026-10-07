@@ -118,7 +118,13 @@ final class PackingReminders: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse) async {
-        guard let id = response.notification.request.content.userInfo["tripId"] as? String else { return }
+        let info = response.notification.request.content.userInfo
+        guard let id = info["tripId"] as? String else { return }
+        // A door check (0.69) opens its trip on just what is left; a packing reminder, the trip.
+        if let door = (info["door"] as? String).flatMap(DoorCheck.Kind.init(rawValue:)) {
+            await MainActor.run { DoorChecks.shared.open?(id, door) }
+            return
+        }
         await MainActor.run { PackingReminders.shared.open?(id) }
     }
 }

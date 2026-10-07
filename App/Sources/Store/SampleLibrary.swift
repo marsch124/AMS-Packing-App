@@ -142,6 +142,29 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library under way, with pockets and the times he leaves
+    /// (`-uiTestingPockets`, 0.69): a Backpack with three pockets — Main, Front pocket,
+    /// Lid — that the Phone charger (usually in the Front pocket) and the Headlamp (no
+    /// usual pocket) go in; the Passport already ticked; "I leave at" 07:30 on the first
+    /// day (yesterday, so no check is left for it) and 10:00 on the last for home.
+    static func pockets() -> Library {
+        var lib = underWay()
+        guard let bag = lib.addBag(name: "Backpack") else { return lib }
+        for p in ["Main", "Front pocket", "Lid"] { _ = lib.addPocket(bagId: bag.id, name: p) }
+        for n in lib.items.indices where ["Phone charger", "Headlamp"].contains(lib.items[n].name) {
+            lib.items[n].container = "Backpack"
+        }
+        if let charger = lib.items.first(where: { $0.name == "Phone charger" }) {
+            _ = lib.setUsualPocket(thingId: charger.id, pocket: "Front pocket")
+        }
+        guard !lib.trips.isEmpty else { return lib }
+        lib.trips[0].entries = buildTotalEntries(lib.trips[0], lib.resolvedTemplates())
+        if let n = lib.trips[0].entries.firstIndex(where: { $0.name == "Passport" }) { lib.trips[0].entries[n].checked = true }
+        _ = Library.setLeaveTime(&lib.trips[0], "07:30", home: false)
+        _ = Library.setLeaveTime(&lib.trips[0], "10:00", home: true)
+        return lib
+    }
+
     /// The sample library with a photo nothing shows any more, from long ago — what a
     /// trip deleted before 0.59 left behind (`-uiTestingOldPhoto`).
     static func oldPhoto() -> Library {

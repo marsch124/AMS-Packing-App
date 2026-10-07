@@ -12,6 +12,14 @@ import PackingLibrary
 /// It opens from the trip's On site page, the step it belongs to (same field test).
 struct WayHomeScreen: View {
     let tripId: String
+    /// Only what is not in a bag yet — a tapped door check opens it so (0.69).
+    @State private var onlyLeft: Bool
+    /// The line just packed whose bag has pockets: its pockets show under it (0.69).
+    @State private var pocketing: String?
+    init(tripId: String, onlyLeft: Bool = false) {
+        self.tripId = tripId
+        _onlyLeft = State(initialValue: onlyLeft)
+    }
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     /// What is open on top of the way home. ONE sheet with a destination, as on the
@@ -40,7 +48,8 @@ struct WayHomeScreen: View {
         let p = model.library.homeProgress(tripId: tripId)
         let usedUp = model.library.homeUsedUp(tripId: tripId)
         let needle = normName(query)
-        let shown = needle.isEmpty ? lines : lines.filter { normName($0.name).contains(needle) }
+        let left = onlyLeft ? lines.filter { !Library.isPackedHome($0) && !Library.isUsedUp($0) } : lines
+        let shown = needle.isEmpty ? left : left.filter { normName($0.name).contains(needle) }
         // A line keeps its number while the search narrows the list, so it is the same
         // line to a test (and to the eye) whatever is typed.
         let number = Dictionary(lines.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -66,6 +75,23 @@ struct WayHomeScreen: View {
             .padding(16)
             if !lines.isEmpty {
                 searchField.padding(.horizontal, 16).padding(.bottom, 6)
+            }
+            if onlyLeft {
+                HStack(spacing: 8) {
+                    Text("Only what is not in a bag yet")
+                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                        .accessibilityIdentifier("wayhome-left-only")
+                    Spacer(minLength: 8)
+                    Button { onlyLeft = false } label: {
+                        Text("Show all").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                            .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                            .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("wayhome-show-all")
+                }
+                .padding(.horizontal, 16).padding(.bottom, 6)
             }
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
@@ -175,11 +201,16 @@ struct WayHomeScreen: View {
         let note = Library.homeNote(line)
         let thing = model.library.thingBehind(line)
         let tint = AppSection.events.color
+        // Its bag's pockets (0.69): offered under the line just packed for home.
+        let choices = model.library.pockets(bag: line.container)
+        let pocket = packed ? Library.homePocket(line) : ""
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 Button {
                     guard !used else { return }
-                    model.change { _ = $0.setPackedHome(!packed, tripId: tripId, entryId: line.id) }
+                    let on = !packed
+                    model.change { _ = $0.setPackedHome(on, tripId: tripId, entryId: line.id) }
+                    pocketing = on && !choices.isEmpty ? line.id : nil
                 } label: {
                     HStack(spacing: 12) {
                         ZStack {
@@ -199,6 +230,9 @@ struct WayHomeScreen: View {
                                 .lineLimit(2)
                             if used {
                                 Text("Used up").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+                            } else if !pocket.isEmpty {
+                                // The pocket it is packed in for home (the bag is the heading).
+                                Text(pocket).font(.system(.footnote)).foregroundStyle(Theme.muted)
                             } else if Library.isBoughtOnSite(line) {
                                 Text("Bought on site").font(.system(.footnote, weight: .semibold)).foregroundStyle(tint)
                             }
@@ -239,6 +273,14 @@ struct WayHomeScreen: View {
                     .accessibilityIdentifier("wayhome-line-\(n)-notetext")
             }
             if noting == line.id { noteEditor(line) }
+            if pocketing == line.id, packed, !choices.isEmpty {
+                PocketPills(pockets: choices, chosen: Library.homePocket(line), tint: tint, id: "wayhome-line-\(n)-pocket") { picked in
+                    let id = tripId, entry = line.id
+                    model.change { _ = $0.setHomePocket(picked, tripId: id, entryId: entry) }
+                    pocketing = nil
+                }
+                .padding(.leading, 38).padding(.bottom, 8)
+            }
         }
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }

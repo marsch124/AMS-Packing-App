@@ -288,7 +288,21 @@ struct ThingEditor: View {
                     // it this way, it's a possibility that the naming convention skews.")
                     keptAtHome
                     DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
-                             selected: bag.selected, id: "thing-bag") { draft.container = $0 }
+                             selected: bag.selected, id: "thing-bag") { picked in
+                        draft.container = picked
+                        // A new bag: the old bag's pocket is not one of its (0.69).
+                        if !model.library.pockets(bag: picked).contains(where: { normName($0) == normName(Library.usualPocket(draft)) }) {
+                            Library.setUsualPocket(&draft, "")
+                        }
+                    }
+                    // Its usual pocket (0.69), when that bag has pockets: "Backpack · Front pocket".
+                    let pockets = model.library.pockets(bag: draft.container)
+                    if !pockets.isEmpty {
+                        DropDown(title: "Pocket", options: pockets.map { ($0, $0) }, selected: Library.usualPocket(draft),
+                                 id: "thing-pocket", blank: "Just in the bag", same: { normName($0) == normName($1) }) {
+                            Library.setUsualPocket(&draft, $0)
+                        }
+                    }
                     DropDown(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: draft.phase,
                              id: "thing-when") { draft.phase = $0 }
                     labelled("Weight, in grams (0 = not known)") {
@@ -648,6 +662,7 @@ struct ThingEditor: View {
                 thing.storage = jsTrim(d.storage)
                 thing.category = d.category
                 thing.container = d.container
+                thing.extra[USUAL_POCKET_KEY] = d.extra[USUAL_POCKET_KEY]
                 thing.phase = d.phase
                 thing.ownedBy = d.ownedBy
                 thing.condition = d.condition

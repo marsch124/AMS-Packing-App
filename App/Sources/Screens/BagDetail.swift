@@ -40,6 +40,8 @@ struct BagDetail: View {
                     VStack(alignment: .leading, spacing: 12) {
                         numbers(bag)
                         cabinSwitch(bag)
+                        // Its pockets (0.69): named once, offered when a thing is ticked.
+                        BagPockets(bagId: bag.id).environmentObject(model)
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)

@@ -24,6 +24,9 @@ struct TripSettingsScreen: View {
     @State private var place = ""
     @State private var laundry = false
     @State private var laundryNights = LAUNDRY_CAP_NIGHTS
+    /// "I leave at" (0.69, the door check): on the first day, and on the last for home.
+    @State private var leaveOut = ""
+    @State private var leaveHome = ""
     @State private var activities: Set<String> = []
     /// Indoor / Outdoor / Race PER WORKOUT (0.67): template id → its contexts. A trip
     /// made before 0.67 opens with each workout showing the trip-wide ones — what its
@@ -95,6 +98,10 @@ struct TripSettingsScreen: View {
                     // Always there, as on Create new trip (0.67). The Dates switch was also the
                     // only way to take a trip's dates away: that is Clear dates in the grid now.
                     DateRangePicker(start: $start, end: $end, dated: $hasDates, tint: AppSection.events.color, id: "tripset-dates")
+                    // The door check (0.69): a time on a day needs the days.
+                    if hasDates {
+                        LeaveTimes(out: $leaveOut, home: $leaveHome, id: "tripset-leave", tint: AppSection.events.color)
+                    }
                     ForEach(choices, id: \.group.id) { choice in
                         Pills(title: groupHeading(choice.group.id, choice.group.label),
                               options: choice.lists.map { ($0.id, $0.name) },
@@ -247,6 +254,8 @@ struct TripSettingsScreen: View {
         quick = t.mode == "quick"
         laundry = t.laundry
         laundryNights = PackingCore.laundryNights(t)
+        leaveOut = Library.leaveTime(t, home: false)
+        leaveHome = Library.leaveTime(t, home: true)
         activities = Set(t.activities)
         storedContexts = t.activityContexts
         // What each workout's things are narrowed by now (`contextsFor`): its own entry,
@@ -267,7 +276,7 @@ struct TripSettingsScreen: View {
         [name, place, "\(hasDates)", HomeScreen.ymd(start), HomeScreen.ymd(end), "\(quick)", "\(laundry)",
          "\(laundryNights)", activities.sorted().joined(separator: ","),
          activities.sorted().map { "\($0):\(workoutContexts[$0, default: []].sorted().joined(separator: "+"))" }.joined(separator: ","),
-         transport, season, catering, weatherOn.sorted().joined(separator: ",")]
+         transport, season, catering, weatherOn.sorted().joined(separator: ","), leaveOut, leaveHome]
     }
 
     private func needs() -> String {
@@ -291,6 +300,7 @@ struct TripSettingsScreen: View {
         let ctx = WorkoutContexts.union(perWorkout)
         let wx = WEATHER_CONDITION_IDS.filter { weatherOn.contains($0) }
         let tr = transport, se = season, ca = catering, la = laundry, pl = jsTrim(place), ln = laundryNights
+        let lo = leaveOut, lh = leaveHome
         var result: Library.TripRebuilt?
         model.change { lib in
             result = lib.changeTrip(id: tripId) { t in
@@ -310,6 +320,8 @@ struct TripSettingsScreen: View {
                 t.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(ln))
                 t.startDate = dated ? HomeScreen.ymd(s) : ""
                 t.endDate = dated ? HomeScreen.ymd(max(s, e)) : ""
+                _ = Library.setLeaveTime(&t, lo, home: false)
+                _ = Library.setLeaveTime(&t, lh, home: true)
             }
         }
         if let result { rebuilt(result) }
