@@ -8484,8 +8484,7 @@ final class AMSPackingUITests: XCTestCase {
         app.typeKey(.space, modifierFlags: [])
         let field = app.textFields["thing-section-1-0-name"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "Tab Space did not press the pen")
-        app.typeKey("a", modifierFlags: .command)
-        app.typeText("Lamps\n")
+        app.typeText("Lamps\n")                                   // the first letter replaces the name
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-section-1-0"]) == "Lamps" }, "the name typed was not taken")
         app.typeKey(.tab, modifierFlags: [])                      // pen
         app.typeKey(.tab, modifierFlags: [])                      // ↑

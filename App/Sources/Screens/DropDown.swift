@@ -121,10 +121,12 @@ struct DropDown: View {
     @State private var byKeys = false
     /// The tool of the lit row that Tab has reached (`tool(for:)`), nil = the row itself.
     @State private var tool: Int?
-    /// The open list's own window (a popover is one): a name typed in it needs that window
-    /// to have the keys, which the keys alone never gave it (GitHub's Mac, 7 Oct 2026).
-    @State private var listWindow = ListWindow()
-    final class ListWindow { weak var window: NSWindow? }
+    /// A Section's name being changed from the keys (Tab to its pen, Space): the page's keys
+    /// type it here — the list's own window never got the keys from the keyboard alone
+    /// (GitHub's Mac, 7 Oct 2026: the field opened and the letters went nowhere). `fresh`:
+    /// the name stands as if selected, so the first letter replaces it, as Tab's arrival does.
+    @State private var namingByKeys = false
+    @State private var fresh = false
     #endif
 
     init(title: String?, heading: DropDownHeading = .band, options: [(value: String, label: String)],
@@ -262,9 +264,6 @@ struct DropDown: View {
         }
         .frame(minWidth: 280, idealWidth: 320, maxHeight: 440)
         .background(Theme.bg)
-        #if os(macOS)
-        .background(WindowReader { w in listWindow.window = w })
-        #endif
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(ids.list)
     }
@@ -332,7 +331,7 @@ struct DropDown: View {
                     .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 8)
-                        .stroke(nameNeeds.isEmpty ? tint : AppSection.actions.color, lineWidth: 1.5))
+                        .stroke(nameNeeds.isEmpty ? tint : AppSection.actions.color, lineWidth: typedByKeys ? 2 : 1.5))
                     .focused($naming)
                     .onSubmit { takeName(tools, value) }
                     #if os(macOS)
@@ -454,21 +453,19 @@ struct DropDown: View {
             .accessibilityHidden(true)
     }
 
-    private func startName(_ value: String, _ label: String) {
+    private func startName(_ value: String, _ label: String, byKeys: Bool = false) {
         asking = nil
         nameNeeds = ""
         newName = label
         renaming = value
         #if os(macOS)
-        keys?.typingInList = true
-        let home = listWindow
-        DispatchQueue.main.async {
-            home.window?.makeKey()
-            naming = true
-        }
-        #else
-        DispatchQueue.main.async { naming = true }
+        namingByKeys = byKeys
+        fresh = byKeys
+        // Clicked: the field has the keys itself. From the keys: the page's keys type it.
+        keys?.typingInList = !byKeys
+        if byKeys { return }
         #endif
+        DispatchQueue.main.async { naming = true }
     }
 
     private func takeName(_ tools: DropDownRowTools, _ value: String) {
@@ -482,6 +479,7 @@ struct DropDown: View {
         nameNeeds = ""
         naming = false
         #if os(macOS)
+        namingByKeys = false
         keys?.typingInList = footTyping
         #endif
     }
@@ -492,6 +490,15 @@ struct DropDown: View {
         #if os(macOS)
         // The arrows' row goes with the section it moved.
         if let n = lit { lit = n + by }
+        #endif
+    }
+
+    /// A name being typed from the keys (Mac): its field drawn with the 2-pt ring.
+    private var typedByKeys: Bool {
+        #if os(macOS)
+        return namingByKeys
+        #else
+        return false
         #endif
     }
 
@@ -561,6 +568,7 @@ struct DropDown: View {
     /// move, letters jump, Return chooses, Esc closes the list only. Answers whether the
     /// key was taken.
     private func answer(_ key: DropDownKey) -> Bool {
+        if open, namingByKeys, let tools, let value = renaming { return name(key, tools, value) }
         switch key {
         case .open:
             openByKeys()
@@ -614,6 +622,23 @@ struct DropDown: View {
         return true
     }
 
+    /// A Section's new name typed from the keys: letters and Space type (the first replaces
+    /// the name), ⌫ takes one back, Return takes the name (or says what is wrong with it),
+    /// Esc leaves it; the arrows and Tab wait.
+    private func name(_ key: DropDownKey, _ tools: DropDownRowTools, _ value: String) -> Bool {
+        switch key {
+        case .letters(let s): newName = fresh ? s : newName + s; fresh = false; nameNeeds = ""
+        case .space: newName = fresh ? " " : newName + " "; fresh = false; nameNeeds = ""
+        case .back:
+            if fresh { newName = "" } else if !newName.isEmpty { newName.removeLast() }
+            fresh = false; nameNeeds = ""
+        case .choose: takeName(tools, value)
+        case .close: leaveName()
+        default: break
+        }
+        return true
+    }
+
     /// The tools of the lit row Tab steps through: its pen, ↑, ↓ and Remove (Put back once
     /// removed; Remove and Keep while asked). Answers false past the last (or before the
     /// row, going back): the page then closes the list and goes on.
@@ -647,7 +672,7 @@ struct DropDown: View {
             tool = nil
         } else {
             switch k {
-            case 0: startName(value, keyRows[n].label)
+            case 0: startName(value, keyRows[n].label, byKeys: true)
             case 1: move(tools, value, -1)
             case 2: move(tools, value, 1)
             default: asking = value; tool = 0
