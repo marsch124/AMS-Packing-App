@@ -121,6 +121,10 @@ struct DropDown: View {
     @State private var byKeys = false
     /// The tool of the lit row that Tab has reached (`tool(for:)`), nil = the row itself.
     @State private var tool: Int?
+    /// The open list's own window (a popover is one): a name typed in it needs that window
+    /// to have the keys, which the keys alone never gave it (GitHub's Mac, 7 Oct 2026).
+    @State private var listWindow = ListWindow()
+    final class ListWindow { weak var window: NSWindow? }
     #endif
 
     init(title: String?, heading: DropDownHeading = .band, options: [(value: String, label: String)],
@@ -258,6 +262,9 @@ struct DropDown: View {
         }
         .frame(minWidth: 280, idealWidth: 320, maxHeight: 440)
         .background(Theme.bg)
+        #if os(macOS)
+        .background(WindowReader { w in listWindow.window = w })
+        #endif
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(ids.list)
     }
@@ -454,8 +461,14 @@ struct DropDown: View {
         renaming = value
         #if os(macOS)
         keys?.typingInList = true
-        #endif
+        let home = listWindow
+        DispatchQueue.main.async {
+            home.window?.makeKey()
+            naming = true
+        }
+        #else
         DispatchQueue.main.async { naming = true }
+        #endif
     }
 
     private func takeName(_ tools: DropDownRowTools, _ value: String) {

@@ -198,8 +198,10 @@ final class ThingKeys: ObservableObject {
             String(UnicodeScalar(UInt16(NSUpArrowFunctionKey))!): "thing-menu-previous",
         ]
         for top in bar.items where top.title == "Thing" {
-            for item in top.submenu?.items ?? [] {
-                guard let id = names[item.keyEquivalent], item.identifier?.rawValue != id else { continue }
+            for (n, item) in (top.submenu?.items ?? []).enumerated() {
+                // Save and New has no key while no page is open: it is the second item.
+                let id = names[item.keyEquivalent] ?? (n == 1 ? "thing-menu-new" : nil)
+                guard let id, item.identifier?.rawValue != id else { continue }
                 item.identifier = NSUserInterfaceItemIdentifier(id)
             }
         }
@@ -230,16 +232,32 @@ final class ThingKeys: ObservableObject {
 /// a window with ⌘N).
 struct ThingCommands: Commands {
     @ObservedObject var keys = ThingKeys.shared
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        // ⌘N belongs to ONE item at a time — two items with the same key and the Mac shows
+        // it on neither (GitHub's Mac, 7 Oct 2026: Save and New came without its ⌘N). So
+        // File ▸ New Window has it while no thing's page is open, Save and New while one is.
+        CommandGroup(replacing: .newItem) {
+            if keys.pages.isEmpty {
+                Button("New Window") { openWindow(id: AMSPackingApp.mainWindowId) }
+                    .keyboardShortcut("n")
+            } else {
+                Button("New Window") { openWindow(id: AMSPackingApp.mainWindowId) }
+            }
+        }
         CommandMenu("Thing") {
             let page = keys.active
             Button("Save") { page?.save() }
                 .keyboardShortcut("s")
                 .disabled(page == nil)
-            Button("Save and New") { page?.saveAndNew() }
-                .keyboardShortcut("n")
-                .disabled(page == nil)
+            if page != nil {
+                Button("Save and New") { page?.saveAndNew() }
+                    .keyboardShortcut("n")
+            } else {
+                Button("Save and New") {}
+                    .disabled(true)
+            }
             Divider()
             Button("Next Thing") { page?.step(1) }
                 .keyboardShortcut(.downArrow)

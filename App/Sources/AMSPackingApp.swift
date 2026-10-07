@@ -5,7 +5,7 @@ struct AMSPackingApp: App {
     @StateObject private var model = LibraryModel.shared
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: AMSPackingApp.mainWindowId) {
             RootView()
                 .environmentObject(model)
                 #if os(macOS)
@@ -52,6 +52,10 @@ extension AMSPackingApp {
     /// 674-point window there), so a test that passes here passes there: a
     /// control below the fold on the runner is below the fold here too.
     static let testing = ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-uiTesting") }
+
+    /// The app's own window, named so File ▸ New Window can open another (0.68: the Thing
+    /// menu takes ⌘N while a thing's page is open, `ThingCommands`).
+    static let mainWindowId = "main"
 
     #if os(macOS)
     /// Set, not suggested: macOS restores a window's last size and ignores size
