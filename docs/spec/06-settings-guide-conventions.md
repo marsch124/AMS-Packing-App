@@ -1415,7 +1415,9 @@ a heading (band / title / question, id `<id>-title`) over pills in a `FlowRow(sp
 semibold when picked, regular when not; padding 12 sideways, min height `Metrics.chip`; picked = filled with its tone
 or the tint, white (or the tone's dark) words; not picked = `Theme.bg` fill, ink words, outlined in `line` (1 pt) or,
 for a toned pill, in its tone (1.8 pt). Id `<id>-<startIndex + position>` — "its position — never its words";
-picked pills carry the `.isSelected` trait (what tests read). `WorkoutContexts` (0.67; `ContextPills` until then)
+picked pills carry the `.isSelected` trait (what tests read). `cursor: Int?` (0.68, nil everywhere but a thing's On
+these templates on the Mac): the pill the keys' arrows are on, ringed 2 pt in the tint just outside it (`focusRing`).
+`WorkoutContexts` (0.67; `ContextPills` until then)
 puts Context under the workouts, indented 18 with a 3-pt grey line down its side: a `.question` heading "Context",
 then one line per ticked workout — its name in its colour made readable (`WorkoutTone.words`, `readableHex`), in a
 `Metrics.contextName` column (72 / Mac 64) — and its own Indoor, Outdoor, Race pills in the Settings slate
@@ -1433,7 +1435,7 @@ these templates; a row's Season, Context, Transport, Food), and so do the short 
 settings (a few words each, seen at a glance, one tap).
 
 `DropDown(title:, heading = .band, options:, selected:, id:, tint = Care orange, blank = nil, other = false,
-same = exact, newEntry = nil, choose:)`:
+same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
 - `title: String?` — the heading's words (no heading when nil).
 - `heading: DropDownHeading` (0.64) — how the title reads: `.band` — a `HeadingBand` in the tint over the field (every
   drop-down until 0.64); `.title` — a `HeadingTitle` in the tint over the field (Subheadline semibold): a heading
@@ -1462,6 +1464,28 @@ same = exact, newEntry = nil, choose:)`:
   the list stays open; otherwise `add(trimmed words)` is called, the field empties and the list closes. Kept at
   home: "A new place" / "Type the place first."; a row's Section and a thing's Section on a template (0.64): "A new
   section" / "Type the section's name first.".
+- `tools: DropDownRowTools?` (0.68) — rows that are themselves changed: for each row `applies(value)` says yes to, the
+  row's words (a button that chooses) then, at its right, a pen (`<row id>-rename`), ↑ (`-up`), ↓ (`-down`) and a quiet
+  red "Remove" (`-remove`), each `Metrics.compact` wide and `Metrics.tap` tall, hand-drawn marks on the 24 grid at 16
+  (pen muted; arrows in the tint, `Theme.faint` where `canMove` says no — and then they do nothing). The pen turns the
+  row into a field (`-name`, tint 1.5 border; Return → `rename(value, words)`, which answers "" when taken or the words
+  of what is wrong, shown under it as `-name-needs`; Esc on the Mac leaves it); the arrows call `move(value, ±1)`;
+  Remove asks in place of the row — `question(value)` (`-ask`), "Remove" (`-remove-yes`, white on a red capsule) and
+  "Keep" (`-remove-no`) — then `remove(value)`. A row `isRemoved` is struck out and muted, chooses nothing, and has
+  "Put back" (`-putback` → `putBack(value)`) instead of its tools. The caller holds every change and hands the list its
+  options as they stand. Only a thing's Section lists have tools (spec 05 item 6a).
+- `ring: Color?` (0.68) — the field's border drawn 2 pt in this colour instead of the 1-pt line: the Mac's focus on a
+  thing's page (spec 05, Keyboard (Mac)).
+- **The Mac's keys (0.68)** — only where the page hands the drop-down a `DropDownKeys` in the environment
+  (`dropDownKeys`; a thing's page): each drop-down hands in its answer to a key under its field's id
+  (`DropDownKeyAnswer`, refreshed each time it is drawn, taken back when it goes) and reports its list opened or
+  closed; the page asks the one in focus (`DropDownKey`: letters, open, up, down, choose, close, back, space, tab).
+  Closed: letters pick at once (type-ahead, a second's pause starts afresh; a word inside the label counts after the
+  start), Space or ↓ open; with a `newEntry`, letters matching nothing open the list with the offer "<placeholder>:
+  <typed>" (`<row>-offer`; before typing `<row>-offer-hint`) in place of the foot's field — Return makes it via
+  `newEntry.add`. Open: the lit row (the list's tint at 18 % behind it, scrolled to), ↑ ↓ move it, letters jump,
+  Return / Space choose, Esc closes; with `tools`, Tab steps through the lit row's tools (a 2-pt tint ring) and Space /
+  Return press them. Every other screen's drop-downs have none of this, exactly as before. Spec 05 has every key.
 
 What it draws:
 - **The field**: the words of the choice that stands — the matching row's label; with a `blank` row and a blank

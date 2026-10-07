@@ -753,7 +753,13 @@ go" (`TripScreen`), the trip review (`ReviewScreen`) and Pack to go home (`WayHo
 "Cancel" (`thing-cancel`: nothing is saved; Escape presses it too, 0.62 — never Save, so a name typed is not kept),
 "Save" (`thing-save`: saves and closes, unless the name is refused), "Delete the thing" (closes, then deletes), or
 (iPhone) a swipe down = Cancel. Only the thing's page closes, not the screen it was opened from. The screen behind is not
-rebuilt, so it is exactly where it was (the table keeps its scroll position).
+rebuilt, so it is exactly where it was (the table keeps its scroll position). On the Mac (0.68) the page can also stay
+open and go on: ⌘N saves and turns it into a NEW thing's page, ⌘↓ ⌘↑ save and show the next or previous thing of the
+list it was opened from (Your things, the table) — see **Keyboard (Mac)** below. `ThingEditor(itemId:order:made:)`:
+`order` is that list's ids in its order of the moment (Your things: `ThingsScreen.shownIds()` — Just added, then the rest
+A–Z, under the search and the On no template chip; the table: `things()` — as sorted and filtered; nil from everywhere
+else), `made` is told a thing made on the page (Your things puts it under Just added, newest first, and empties a
+search that would hide it, as for one added at its foot).
 
 **Drop-downs (0.64).** Every PICK-ONE list on this page — Kind of thing, Whose it is, Kept at home, Usually
 packed in, When, Condition, Care — is a drop-down (`DropDown`, spec 06 §21), his word of 6 Oct 2026: "I like the
@@ -824,6 +830,32 @@ apart; a field 6 pt under its heading):
       otherwise the name WAITS for Save as the last, ticked row (the field shows it) — nothing is written, so
       Cancel leaves the template as it was (as the row editor does, spec 04 §7). The list closes.
     - Choosing stores nothing; Save does (see Behaviour).
+    - **Rename, move and remove the template's sections (0.68)** — his ask of 7 Oct 2026, with a picture of this list
+      open on the Mac: "I would like to be able to Rename, Change and Delete Sections from this here as well." On the
+      iPhone and the Mac. Every SECTION row (not No section, not one typed here and not made yet) is a row of its own
+      with, at its right (`DropDownRowTools`, spec 06 §21): a **pen** (`thing-section-<n>-<k>-rename`, a hand-drawn
+      pencil, muted), **↑** and **↓** (`-up`, `-down`, chevrons in violet; faint where there is no place to go, and
+      pressing them then does nothing) and a quiet red **Remove** (`-remove`, Subheadline semibold) at the far right;
+      each tool `Metrics.compact` wide, `Metrics.tap` tall. `<k>` is the row's place in the list as it stands now.
+      - The pen turns the row into a field with its name (`-name`, violet 1.5 border; the name selected for typing on
+        the Mac); **Return takes the name**, Esc (Mac) leaves it unchanged. A blank name says "Type the section's name
+        first."; a name another section of the template has (`normName`, as the list shows them: a removed one's name
+        is free) says "<Template> already has a section called that." under it (`-name-needs`, red) and the field
+        stays.
+      - ↑ / ↓ swap the section with its neighbour in the TEMPLATE's order — the order its page reads by Section and a
+        new trip sorted by Section reads (spec 04 §13a). The thing's tick goes with its section.
+      - Remove asks first, inside the list, in place of the row (a card: card fill, red 1-pt border, radius 10):
+        "Remove <section> from <template>? Its things stay, with no section." (`-ask`), then **Remove** (`-remove-yes`,
+        white on a red capsule) and **Keep** (`-remove-no`). Removed, the row stays in the list STRUCK OUT, muted, not
+        choosable, with **Put back** (`-putback`) instead of its tools; when it held this thing, the thing's choice
+        becomes No section.
+      - All three are template changes held until **Save**, like "A new section": the list shows them as they will
+        be (the new name, the new order, a removed one struck out) — `Library.sectionsAsEdited` — and Cancel leaves
+        the template as it was. Save writes them FIRST (`Library.applySectionEdits`, spec 04 §13a: Arrange's own
+        `removeSection`, `renameSection`, `moveSection` — no second way), then the thing as below. A renamed section
+        keeps its things (the same section, its name changed); a removed one's things stay on the template under no
+        section; trips already made keep the headings they were made with, as after Arrange. The page holds them
+        per template (`sectionEdits`), and forgets them when it moves to another thing (⌘↓, ⌘N: they were saved).
 7. "Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and
     tap this thing." (`thing-tags-hint`, 15 medium muted).
 8. **Kept at home** — band (`thing-heading-kept`); since 0.64 CHOSEN, never typed (his word, 6 Oct 2026: "Can we
@@ -852,7 +884,9 @@ apart; a field 6 pt under its heading):
     know, ticks no row; the field then says "Not said" (grey) or the raw id.
 11. **Weight** — band "Weight, in grams (0 = not known)" (`thing-heading-weight`); field (`thing-weight`),
     placeholder "0"; when Save found it unreadable, "The weight must be a number of grams, like 250 or 12,5."
-    under it in red (`thing-weight-problem`, 15 semibold; gone as he types).
+    under it in red (`thing-weight-problem`, 15 semibold; gone as he types). On the Mac (0.68) kilos may carry their
+    unit — "1,2 kg", "1.2kg", "0,35 kilo", "250 g" — read by `readGrams` (always grams), and the line says "The weight
+    must be grams, like 250 or 12,5 — or kilos with their unit, like 1,2 kg."; the iPhone reads grams as before.
 12. **Brand** — band (`thing-heading-brand`); field (`thing-brand`), placeholder "e.g. " and a clothing brand
     (see the code).
 13. **Colour** — band (`thing-heading-colour`); field (`thing-colour`), placeholder "e.g. Black".
@@ -879,6 +913,13 @@ apart; a field 6 pt under its heading):
      date to `addMonths(today, 1/6/12/60/120)`; the pill equal to the current date is filled orange with white
      bold words and the selected trait.
    - Always: "The trip warns before it runs out — a document (Documents & money) six months ahead." (14 muted).
+   - **Mac (0.68)**: the date is TYPED, in a field where the date picker stood (`thing-expiry`, 230 wide, Body with
+     even digits, placeholder "2027-06-30, 30/6 27 or +6m"), on one line with "Add a date" (no date) or "Remove the
+     date"; the distance and the quick pills under it as on the iPhone. What he types is read when he leaves the
+     field (Tab, a click elsewhere) or saves (`readDate`, spec below): "2027-06-30"; "30/6 27", "30/6/2027", "30.6.27";
+     "30/6" (the next 30 June); "+6m", "+1y", "+10y", "+2w", "+30d" (from today; a month on as the "+1 month" pill
+     counts it); nothing = no date. Anything else: "Not a date: type 2027-06-30 or 30/6 27, or +6m, +1y." in red under
+     it (`thing-expiry-problem`), and Save refuses until it is right. The field follows the date when a button sets it.
 17. When a save was refused: the problem in red (`thing-problem`, 15 semibold): "A thing needs a name." or "You
     already have a thing called that."
 18. "A change here reaches every template it is on. Past trips keep what they were packed with." (14 muted).
@@ -903,10 +944,12 @@ templates Subheadline, `Metrics.chip` tall.
   a point, otherwise up to two decimals — 88.7 stays "88.7"); typing is never rewritten, so "12," and "12."
   survive. Read on Save by `readAmount`: a comma or a point, empty = 0, anything else (letters, a minus,
   "1e3") = not a number. Untouched, the stored weight is kept exactly.
-- **Save**, in this order: (0) the weight: unreadable → the line under the weight field, NOTHING saved, the page
-  stays open. (1) when the trimmed name differs from the stored name, `renameThing` — on refusal
-  the problem line shows and NOTHING else is saved (the page stays open). (2) One `model.change`:
-  `updateThing` setting storage (trimmed), category, container, phase, ownedBy, condition, weight, manufacturer
+- **Save**, in this order: (00, Mac) Valid until as typed: no date → its line, NOTHING saved. (0) the weight: unreadable
+  → the line under the weight field, NOTHING saved, the page stays open. (1) when the trimmed name differs from the stored name, `renameThing` — on refusal
+  the problem line shows and NOTHING else is saved (the page stays open). On a NEW thing's page (⌘N, Mac) the name
+  makes the thing instead (`addThing`; blank → "A thing needs a name.", one he has → "You already have a thing called
+  that.", nothing made). (2) One `model.change`: first each template's section edits (`applySectionEdits`, item 6a),
+  then `updateThing` setting storage (trimmed), category, container, phase, ownedBy, condition, weight, manufacturer
   (trimmed), color (trimmed), note (trimmed), liquid, restricted, expiry, and — only when how often or the notes
   differ from the record — the care record (`normalizeMaintenance` of the old record with the new interval and
   trimmed notes: its log, last service and link kept; nothing said = no record); then for every template of
@@ -937,7 +980,168 @@ templates Subheadline, `Metrics.chip` tall.
 **Data.** The catalogue item (`items` record) and its memberships (`memberships` records). The bag's `cabin`
 extra key is preserved untouched (the draft is the whole item).
 
-**iPhone vs Mac.** Mac: at least 520 × 600. The date picker is the platform's compact picker.
+**iPhone vs Mac.** Mac: at least 520 × 600. The date picker is the platform's compact picker on the iPhone; on the Mac
+(0.68) the date is typed (item 16). Everything in **Keyboard (Mac)** is the Mac's only — his answer of 7 Oct 2026: "Mac
+only. The iPhone stays as it is." (The Section tools of item 6a are on both.)
+
+### Keyboard (Mac) — a thing filled in without the mouse (0.68)
+
+**Origin.** His priority, decided 7 Oct 2026 on the concept page "Fill in a thing without touching the mouse" (Tab
+walks the page top to bottom, every field included; each kind of field answers the same few keys; Save and the next
+thing one key away), with his three answers: **Return saves the page**, from any field except Notes and an open list;
+**⌘N carries over** Kind of thing, Whose it is, Kept at home, Usually packed in, When and the templates; **Mac only**.
+Every key works on a Swedish keyboard: none needs ⌥, [ or ] (keys are read by their place, `keyCode`, and letters by
+what they type).
+
+**How it works** (`ThingKeys.swift`; the page's half in `ThingsScreen.swift`, extension `ThingEditor` under `#if
+os(macOS)`). The page keeps its OWN field in focus (`at: ThingField?`) and reads every key before the window does
+(`KeyMonitor`, `NSEvent.addLocalMonitorForEvents(.keyDown)`, started when the page appears and stopped when it goes),
+for its own window only — or for the list one of its drop-downs has open (a popover is a window of its own). So the
+order and the keys are the same whatever the Mac's "Keyboard navigation" setting says: with it off (the Mac's default)
+the Mac's own Tab skips every drop-down, pill and switch; with it on it would stop on every button too. A TEXT field in
+focus is also the window's first responder (`@FocusState typing`), so typing in it is the Mac's own; a drop-down, the
+templates and a switch are reached by the page alone (the window then has no text field in focus). A click moves the
+focus too: into a text field (the focus follows `typing`), on a drop-down's field (`DropDownKeys.clicked`), a pill or a
+switch (a tap gesture beside its own). A text field left for nothing (a click on empty space) takes the ring away.
+
+**The order Tab walks** (`fieldOrder()`; Shift-Tab back; round from the last to the first and back): Name · Notes ·
+Kind of thing · Whose it is (when anyone is named) · On these templates (when he has any) · the Section of each template
+lit, in the pills' order (one lit by the keys comes in at once; one unlit goes) · Kept at home · Usually packed in ·
+When · Weight · Brand · Colour · Condition · Care · What to do (Care's notes) · Liquid · Not allowed in the cabin · Valid
+until. Never: Cancel, Save, the date's buttons, Delete thing. The page opens with the focus in Name, the cursor at the
+END of the name. The field reached by the KEYS is scrolled into sight (`ScrollViewReader`, ids `ThingEditor.scrollKey`); a
+click moves the focus without scrolling (a pill clicked once scrolled the page under the next click — GitHub's Mac).
+
+**What the focus looks like.** A 2-point ring in the page's orange: a text field's and a drop-down's own border
+becomes 2 pt orange (1 pt `line` otherwise — the iPhone draws exactly what it did); a switch gets a rounded ring just
+outside it (`focusRing`, nothing moves); On these templates rings the PILL the arrows are on, in the templates' violet,
+2 pt just outside the pill (the concept's look; `Pills(cursor:)`). **The line at the page's foot** (under the scroll,
+Footnote, 7 pt above and below, a hairline over it, `Theme.bg`): the field's name in orange semibold, then its keys in
+muted — e.g. "Kind of thing   type to pick · Space opens · Tab next · Return saves". The keys of each kind:
+- Name, Brand, Colour: "type · Tab next · Return saves"; Notes: "Return starts a new line · Tab next · ⌘S saves"; What to
+  do: "type what to do · Tab next · Return saves"; Weight: "grams, or kilos as 1,2 kg · Tab next · Return saves"; Valid
+  until: "a date, 2027-06-30 or 30/6 27, or +6m, +1y · Return saves".
+- A drop-down: "type to pick · Space opens · Tab next · Return saves" (Kept at home: "type to pick, or a new place …";
+  a Section: "type to pick, or a new section …"); its list open: "↑ ↓ move · Return chooses · type to jump · Esc closes
+  the list" (a Section's: "↑ ↓ move · Tab to its pen, arrows, Remove · Space presses · Return chooses · Esc closes").
+- On these templates: "← → move · Space turns it on or off · type to jump · Tab next"; a switch: "Space turns it on or
+  off · Tab next · Return saves"; the ⌘J box: "type part of a field's name · Return goes there · Esc closes"; no
+  field: "Tab goes to the fields · Return saves · ⌘N saves and starts a new thing · ⌘J jumps to a field".
+- For a moment after ⌘↓ ⌘↑ at an end of the list: "Saved. That was the last (first) thing in the list." in place of
+  the keys, until the focus moves.
+Ids: the keys' words `thing-keys`; the field's name carries `thing-keys-at-<the field's control id>` (`thing-name`,
+`thing-notes`, `thing-category`, `thing-owner`, `thing-lists`, `thing-section-<n>`, `thing-storage`, `thing-bag`,
+`thing-when`, `thing-weight`, `thing-brand`, `thing-colour`, `thing-condition`, `thing-care`, `thing-care-notes`,
+`thing-liquid`, `thing-restricted`, `thing-expiry`, `thing-jump`; `none`) — what the tests read; an id is never shown
+or spoken.
+
+**Every key** (the page's window; a ⌘ key from anywhere on it, an open list included — it closes first):
+- **Tab / Shift-Tab** — the next / previous field in the order above. A text field's words are SELECTED on arrival, so
+  typing replaces them (the Mac's own way; the weight's "0" or "88" goes at the first digit); in Notes and What to do
+  the cursor goes to the END instead, so a note is never typed over. (Selection is made a turn of the run loop after
+  the field has the keys.)
+- **Return** (and the number pad's Enter), no ⌘ ⌥ ⌃ ⇧ — **saves the page**, from any field, a drop-down and a switch
+  included (as Save: a weight or date that is wrong, or a refused name, stops it and says why) — except: in **Notes** it
+  starts a new line (`insertNewlineIgnoringFieldEditor`); in an open list it chooses; in the ⌘J box it goes. (⌥Return
+  makes a new line in What to do, the Mac's own way.)
+- **Esc** — cancels the page, as before (Cancel's `.cancelAction`) — except: in an open list it closes the list ONLY; in
+  a Section's name being changed it leaves the name; in a Remove question it keeps the section; in the ⌘J box it closes
+  the box and puts the focus back where it was.
+- **⌘S** — saves (as Save). **⌘N** — saves, then a NEW thing's page: Kind of thing, Whose it is, Kept at home, Usually
+  packed in, When and the templates lit carried over (each template's Section starts at No section; everything else
+  as `newItem` makes it: no weight, no notes, no date); Name empty with the cursor in it; no Delete (nothing to delete
+  yet). Saved, the new thing is made (`addThing`) and the page's list shows it (Your things: Just added). Esc / Cancel on
+  a new page makes nothing. ⌘N again saves it and starts the next — things come in groups ("five dive things kept in
+  the garage, so you only type the names").
+- **⌘↓ / ⌘↑** — saves, then the next / previous thing of the list the page came from, the focus on the SAME field
+  ("all weights is one field after another"; a Section of a template the next thing is not on → On these templates).
+  The list is taken as it stood BEFORE the save, so a thing that leaves it by being filled in (the table filtered to
+  No weight) still leads to the one after it; a thing made here (not in that list yet) is looked up in the list after
+  the save; things deleted meanwhile are skipped. At an end it stays (saved) and the foot says so. From a page opened
+  elsewhere (a trip, a bag, the search, the review, the way home) there is no list: ⌘↓ ⌘↑ do nothing and the menu
+  items are off.
+- **⌘J** — "Jump to field": a small box under Cancel / Save (card fill, hairline, radius 12, padding 12): "Jump to field"
+  (orange) and a field (`thing-jump`, 2-pt orange border) with the cursor in it; under it (`thing-jump-match`)
+  "Return goes to <field>" for the best match, "No field is called that" (red) when none. Matching
+  (`jumpMatches`): case ignored; fields with a WORD starting with what is typed first ("wei" → Weight, "val" → Valid
+  until, "kind" → Kind of thing), then fields containing it; in the page's order. Return goes (and the box closes);
+  with no match it stays; Tab does nothing there.
+- **A drop-down in focus** (closed): **letters** pick the first row whose words start with what was typed (capitals
+  ignored), else the first with a WORD that does ("hand" → Carry-on / hand luggage) — chosen at once, the list stays
+  closed; letters typed within a second add up ("food" → Food & drink; "fo" alone is Footwear, which comes first);
+  after a second's pause they start afresh. **Space** or **↓** opens the list (↑ ← → ⌫ do nothing). A list that takes
+  a new entry (Kept at home, a Section): letters that match nothing OPEN the list with the offer "A new place: <what
+  was typed>" (or "A new section: …") at its foot, lit (`thing-place-offer`, `thing-section-<n>-offer`); typing goes
+  on there with no pause limit, ⌫ takes a letter back, Space is a letter while a name is being typed (a space within a
+  second of a letter, too, so "Garage loft" can be typed after Garage was picked by its first letters), and **Return
+  makes it** — exactly as the list's foot does (`DropDownNew.add`: a place joins Your choices; a section waits for
+  Save). A list opened by the keys shows the offer (before typing: "A new place: type its name", muted,
+  `-offer-hint`) instead of the foot's field; opened by a click it has the field as before. Letters that already
+  picked a row keep it if the offer is then left with Esc.
+- **An open list** — opened by the KEYS (a list opened by a click keeps its keys as before 0.68: its foot's field takes
+  what is typed, and only Esc is the page's, closing the list only): **↑ / ↓** move the lit row (opened at the ticked row; lit = the list's
+  colour at 18 % behind the row, scrolled into sight); **letters** jump to the first match; **Return** — or **Space**
+  with nothing being typed — chooses the lit row (or makes the offer) and closes the list; **Esc** closes it only;
+  **Tab / Shift-Tab** close it and go on to the next / previous field — in a Section's list Tab first reaches the lit
+  row's tools: pen → ↑ → ↓ → Remove (Put back on a removed row; Remove → Keep while it is asked), ringed 2 pt in
+  violet, **Space or Return presses** the one lit; past the last Tab closes the list and goes on, Shift-Tab before the
+  row goes back. Pressed from the keys, the pen's field is typed by the PAGE's keys (the list's own window never gets
+  them from the keyboard alone — GitHub's Mac): the name stands as if selected, the first letter replaces it,
+  ⌫ takes one back, Return takes it (or says what is wrong), Esc leaves it; a pen CLICKED gives the field the keys
+  itself (all but Esc, which leaves it). After ↑ ↓ the lit row goes with the section moved, so Space again moves it
+  further; Remove asks with Remove lit (Space removes).
+- **On these templates**: the arrows start on the first template lit (else the first); **← →** move along the pills
+  (no wrap); **Space** turns the one lit on or off (its Section joins or leaves the Tab order); **letters** jump to the
+  first template whose name starts so (within a second they add up); ↑ ↓ ⌫ do nothing.
+- **Liquid / Not allowed in the cabin**: **Space** turns the switch.
+- Text fields: their own keys (⌘A, ⌘C/⌘V, arrows …); Tab, Return and the ⌘ keys above are the page's.
+
+**The Thing menu** (`ThingCommands`, in the menu bar between View and Window, `.commands` on the main window group):
+Save ⌘S · Save and New ⌘N · — · Next Thing ⌘↓ · Previous Thing ⌘↑ · — · Jump to Field… ⌘J — the Apple way, nothing
+hidden, nothing to memorise. It acts on the thing's page in the window in front (else the last opened); every item is
+OFF while no thing's page is open, and Next / Previous are off for a page opened from no list (`ThingKeys.shared`, the
+open pages, refreshed when a window comes to the front). **⌘N stays File ▸ New Window everywhere else**: the page reads
+its keys before the menus do, and only while it is open — and the UI tests' launch, which presses ⌘N when no window
+shows, keeps working. (SwiftUI does not hand a menu item's `accessibilityIdentifier` to the menu; see Tests.)
+
+**Edge cases.** Two pages open at once (the main window and the table's window): each reads only its own window's
+keys. A save refused (wrong weight, date or name) stops ⌘N, ⌘↓ and ⌘↑ too, and says why. A thing deleted on the other
+device while its page is open: Save just closes the page, as before. Escape still cancels a page whose Name has the
+focus (the cancel shortcut comes before the field). The table's own keys are unchanged (its rows have none yet).
+
+**Model** (PackingLibrary, `TableEdits.swift` / `DateWords.swift`, 0.68): `readGrams(_:) -> Double?` — `readAmount`
+after taking off a unit at the end ("kilos", "kilo", "kg" ×1000; "grams", "gram", "g" ×1), spaces anywhere ignored,
+capitals ignored; a unit with no number → nil; rounded to two decimals (1,2 kg = 1200, not 1199.999…); "" = 0.
+`readDate(_:today:) -> String?` — trimmed and lowercased; "" → "" (no date); "+N" with d/day(s), w/week(s), m/month(s),
+y/year(s) (N up to 4 digits; spaces allowed) → `addDays` / `addMonths`; otherwise 2 or 3 groups of digits split by "/",
+".", "-" or spaces: a 4-digit first group = year-month-day; else day, month[, year (2 digits = 20yy, or 4)]; no year =
+the next such day from today (today itself counts; 29 February → the next leap year; a day no month of the next eight
+years has → nil); the day must exist in its month; anything else nil.
+
+**Tests.** UI, Mac only (each skipped on the iPhone — "The keys of a thing's page are the Mac's"), every one seen red
+with a fault planted first (0.68): `testTheThingPageTabsThroughEveryFieldInOrder` (the Map: opens in Name with the
+cursor at the end — " case" makes "Map case"; Tab through all 18 stops in the order above and round to Name; Shift-Tab
+round to Valid until and back; typing lands in Notes and Brand; Esc still cancels), `testADropDownPicksAsHeTypesAndOpensWithSpace`
+("e" → Electronics with the list closed; "food" → Food & drink; Space opens; ↓ ↓ Return → Pharmacy / meds, the page
+still open; ↓ opens, Esc closes the list only and keeps the choice; Tab → Whose it is, "r" → Robin; saved and kept),
+`testKeptAtHomeMakesANewPlaceFromTheKeys` ("hall" → Hall closet, closed; "Workbench" → the offer, Return makes it; saved;
+it joined his places), `testTemplatePillsAndSwitchesAnswerArrowsAndSpace` (→ Space: Swim on and its Section comes; "c"
+Space: Common base on; Tab → its Section; Space turns Liquid, three Spaces leave Not allowed on; saved),
+`testWeightAndValidUntilAreTypedFromTheKeys` (the Headlamp's 88 replaced by "1,2 kg" → kept as 1200; "+6m" lights +6
+months, "in 6 months"; "30/6 27" → 2027-06-30; "soon" refused with the line; "+1y" and Return saves),
+`testReturnSavesButNotInNotes` (Return in Notes makes "line one\nline two" and the page stays; Return on Kind of thing
+saves; ⌘S saves Colour), `testCommandNSavesAndStartsTheNextThingWithTheSameChoices` (⌘N carries Electronics, the owner,
+Garage, the bag, When and Hiking, not the weight, no Delete, cursor in Name; Compass ⌘N Whistle ⌘S → 12 things, the
+newest on top; Compass has Electronics and Hiking; ⌘N then Esc makes nothing; with no page open ⌘N opens a window),
+`testCommandArrowsGoThroughTheListOnTheSameField` (the table filtered to No weight: Goggles 90 ⌘↓ Swim cap — on
+Weight — 40 ⌘↓ Towel 300 ⌘↑ Swim cap still 40; past the last it says so; then the table says Nothing missing; Your
+things from the Headlamp: ⌘↓ Hiking boots on Colour, ⌘↑ ⌘↑ Goggles with 90), `testCommandJJumpsToAFieldByName` ("wei"
+→ Weight, its 60 replaced by 75; "val" → Valid until; "zzz" stays open and says so; Esc closes, the focus back),
+`testTheThingMenuIsOnOnlyWhileAPageIsOpen`, `testTheSectionToolsAnswerTabAndSpace` (item 6a by keys). Model:
+`TypedEntryTests` (6: grams with or without a unit, what is no weight, the date written his ways, a date with no year,
+a jump from today, nothing typed and nonsense). The Section tools on both: `testASectionIsRenamedFromAThingsPageAndKeepsItsThings`,
+`testASectionIsMovedFromAThingsPageAndANewTripReadsIt`, `testASectionIsRemovedFromAThingsPageAndItsThingsStay`,
+`testCancelLeavesTheSectionsAsTheyWere`; model `SectionEditsTests` (spec 04 §13a).
 
 **Tests (Section on a template, 0.64).** UI `testAThingsPageSetsItsSectionOnATemplate` (the Map, on Hiking only:
 `thing-section-1` and no `-0`/`-2`; "Section on Hiking", "No section", under the pills; Swim lit → `thing-section-2`

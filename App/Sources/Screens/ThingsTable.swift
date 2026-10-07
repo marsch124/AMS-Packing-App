@@ -193,7 +193,8 @@ struct ThingsTable: View {
             ColumnPicker(chosen: $chosenColumns, library: model.library)
         }
         .sheet(item: Binding(get: { opening.map { Opening(id: $0) } }, set: { opening = $0?.id })) { o in
-            ThingEditor(itemId: o.id).environmentObject(model)
+            // ⌘↓ ⌘↑ (Mac) go through the rows as sorted and filtered now.
+            ThingEditor(itemId: o.id, order: { things().map(\.id) }).environmentObject(model)
         }
         .sheet(isPresented: $filtering) {
             FilterSheet(stored: $filtersStored, base: unfiltered()).environmentObject(model)

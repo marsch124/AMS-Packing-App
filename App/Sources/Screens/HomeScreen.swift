@@ -318,6 +318,9 @@ struct Pills: View {
     /// A colour of its own for some pills, by their words — the workouts (his
     /// colours, 2026-09-28). Picked: filled in it; not picked: outlined in it.
     var tones: ((String) -> PillTone?)? = nil
+    /// The pill the Mac's arrows are on (a thing's On these templates, 0.68): ringed in
+    /// the pills' colour, just outside it. nil = none (everywhere else).
+    var cursor: Int? = nil
     let choose: (String) -> Void
 
     var body: some View {
@@ -347,6 +350,7 @@ struct Pills: View {
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
+                    .focusRing(cursor == n, tint: tint, radius: 11, gap: 2)
                     .accessibilityIdentifier("\(id)-\(startIndex + n)")
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
