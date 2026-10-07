@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.69", date: "7 Oct 2026", title: "Change your lists where you pick from them",
+                new: ["Every list on a thing's page and on a template's row can now be changed right inside it: rename an entry with the pen, move it with the arrows, remove it, or make a new one at the bottom. Everything that used the old name follows, and nothing changes until you press Save.",
+                      "Something still in use can't be removed from the list; it tells you what uses it. A bag with things in it opens its own page instead."],
+                changed: ["A new place made in Kept at home now waits for Save too \u{2014} Cancel leaves Your choices as it was.",
+                          "Kinds of thing are your own list now, renamed and ordered like your other lists."]),
         Release(version: "0.68", date: "7 Oct 2026", title: "Beyond the list",
                 new: ["On the Mac you can fill in a thing without the mouse: Tab goes from field to field, type to pick from a list, Return saves. \u{2318}N saves and starts the next thing with the same choices, \u{2318}\u{2193} and \u{2318}\u{2191} go through your things, \u{2318}J jumps to a field \u{2014} the new Thing menu lists them all.",
                       "Each storage place has its own small square code. Print its label on the P-touch (12 mm tape), stick it on the shelf, and point the iPhone's Camera at it: while you pack, the trip opens with only what to take from there; back from a trip, what goes back there; otherwise, everything kept there.",
