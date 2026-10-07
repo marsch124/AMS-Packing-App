@@ -14,7 +14,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 |---|---|---|
 | 1. The keyboard on a thing's page (Mac) | 0.68 | building |
 | 2. Sections renamed, reordered and removed from a thing's page | 0.68 | building |
-| 3. Places with stickers (NFC) and printed codes | 0.69 | building |
+| 3. Places opened by a printed code (no stickers — his word, 7 Oct) | 0.69 | building |
 | 4. Search finds words in notes | 0.69 | building |
 | 5. Bag pockets and "Where is my …?" | 0.69 | building |
 | 6. The door check | 0.69 | building |
@@ -39,9 +39,9 @@ there. Parts 7–10 are specified in full below.
    a "Thing" menu lists them. Keys chosen to work on a Swedish keyboard (no ⌥ letters, no [ or ]). → spec 05.
 2. **Sections from a thing's page.** In the Section list of each template on a thing's page: rename (pen), order
    (up/down), remove (asks first; the things stay, with no section). Applied on Save; Cancel undoes. → spec 04/05.
-3. **Places with stickers.** A place (Your choices → Places) can be written to an NFC sticker or shown as a printed
-   code; reading it opens the trip on that place's lines (or what goes back there on the way home, or everything
-   kept there). → spec 05/06.
+3. **Places opened by a code.** A place (Your choices → Places) can be shown as a printed square code; the iPhone's
+   Camera opens it, and it opens the trip on that place's lines (or what goes back there on the way home, or
+   everything kept there). NFC stickers were planned and dropped the same day ("let's skip the NFC"). → spec 05/06.
 4. **Search finds notes.** Your things and Search match a thing's own Notes and the notes its templates keep for
    it; the matching note shows under the name. → spec 05.
 5. **Bag pockets and "Where is my …?"** Bags have pockets; a thing a usual pocket; a trip line the pocket it went
@@ -196,7 +196,7 @@ His yes of 7 Oct 2026, in English (his choice): on a trip, **"Pack by voice"** r
 where" order — the place, then the thing ("Garage. Goggles.") — and listens for five words: **packed**, **skip**
 (set aside, "not this time"), **later** (moves on, keeps it unticked), **where** (repeats the place), **stop**. Every
 few things it says the progress ("Garage done, 12 of 40"). Speech is recognised on the device (works offline);
-thing names are read as written. A tapped sticker (part 3) can start the walk at its place.
+thing names are read as written. A place opened by its code (part 3) can start the walk at its place.
 
 It is a TEST: kept only if, on a real trip, it understands him at least 9 times in 10 and beats tapping, and he
 wants to use it again. Otherwise it is removed and recorded in the decision log.
@@ -213,6 +213,7 @@ wants to use it again. Otherwise it is removed and recorded in the decision log.
 | 7 Oct 2026 | No gear wear counted from Apple Health (kilometres per pair of shoes) | He runs in different shoes. |
 | 7 Oct 2026 | No Home Screen widget | His "No" on the timeline. |
 | 7 Oct 2026 | No second shared field test ("Packing Quest 2") | Not needed; move on. |
+| 7 Oct 2026 | No NFC stickers on places (the printed code stays) | "Let's skip the NFC." |
 | 7 Oct 2026 | Door check by a time he sets | Chosen over location and the car. |
 | 7 Oct 2026 | Return saves a thing's page; ⌘N carries over the choices; the keyboard work is Mac only | His three answers. |
 | 7 Oct 2026 | Voice in English; vault folder `Areas/Travel`; Apple Health versions may be uploaded from his Mac | His answers. |
