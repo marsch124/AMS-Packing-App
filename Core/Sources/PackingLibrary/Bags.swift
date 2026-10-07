@@ -224,6 +224,11 @@ extension Library {
         guard let list = bagList, let bag = bags().first(where: { $0.id == id }) else { return false }
         let target = jsTrim(moveTo)
         let others = bags().filter { $0.id != id }
+        // Its pockets go with it: a thing or line moved to another bag is in that bag,
+        // not in a pocket the other bag may not have (0.69).
+        if target.isEmpty || others.contains(where: { normName($0.name) == normName(target) }) {
+            forgetPockets(ofBag: bag.name)
+        }
         if target.isEmpty {
             renameBagEverywhere(from: bag.name, to: "")
         } else {

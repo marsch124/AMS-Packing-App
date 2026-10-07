@@ -232,6 +232,8 @@ public struct Library: Equatable, Sendable {
         guard let t = trips.firstIndex(where: { $0.id == tripId }),
               let e = trips[t].entries.firstIndex(where: { $0.id == entryId }) else { return false }
         trips[t].entries[e].checked = checked
+        // Its usual pocket comes along with the tick (0.69): most lines need no tap.
+        if checked { prechoosePocket(trip: t, entry: e) }
         return true
     }
 }
