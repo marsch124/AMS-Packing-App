@@ -7972,7 +7972,9 @@ final class AMSPackingUITests: XCTestCase {
     func testAThingInsideAKitSaysSoAndIsTakenOutFromItsPage() {
         let app = launch("-uiTestingKits")
         openKitThing(app, search: "Toothbrush")
-        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-taken-out") || app.switches["thing-kit-taken-out"].exists)
+        // Scrolled to the drop-down under the kit part (a switch is a check box on the Mac).
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-condition"))
+        XCTAssertTrue(switchNamed(app, "thing-kit-taken-out").exists, "no Taken out for now")
         XCTAssertTrue(words(app.staticTexts["thing-kit-inside"]).contains("Wash bag"), "'\(words(app.staticTexts["thing-kit-inside"]))'")
         XCTAssertTrue(words(app.staticTexts["thing-kit-also"]).contains("Common base"), "it is not said the toothbrush is on Common base too")
         XCTAssertFalse(app.buttons["thing-kit-add"].exists, "a thing inside a kit offered to hold things")
