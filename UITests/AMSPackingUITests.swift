@@ -3931,7 +3931,10 @@ final class AMSPackingUITests: XCTestCase {
 
     /// Hold the grip, carry it to the other one, hold a moment, let go — slowly, as
     /// a hand does: a quick throw lets go before the list has opened the gap.
-    private func drag(_ app: XCUIApplication, _ from: String, to: String) {
+    /// `edge` (iPhone): aim at the target's top edge moving up, its bottom edge moving
+    /// down, as the Mac always does — a drop on the FIRST heading's middle was taken as
+    /// "below it" twice on GitHub's iPhone (the 0.68–0.71 merge run).
+    private func drag(_ app: XCUIApplication, _ from: String, to: String, edge: Bool = false) {
         let a = grip(app, from), b = grip(app, to)
         XCTAssertTrue(a.waitForExistence(timeout: 5), "no \(from)")
         XCTAssertTrue(b.exists, "no \(to)")
@@ -3944,7 +3947,14 @@ final class AMSPackingUITests: XCTestCase {
         let end = b.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.05 : 0.95))
         start.press(forDuration: 1.0, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.8)
         #else
-        a.press(forDuration: 1.0, thenDragTo: b, withVelocity: .slow, thenHoldForDuration: 0.8)
+        if edge {
+            let up = b.frame.midY < a.frame.midY
+            let start = a.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let end = b.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.05 : 0.95))
+            start.press(forDuration: 1.0, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.8)
+        } else {
+            a.press(forDuration: 1.0, thenDragTo: b, withVelocity: .slow, thenHoldForDuration: 0.8)
+        }
         #endif
     }
 
@@ -4040,7 +4050,7 @@ final class AMSPackingUITests: XCTestCase {
         // 6 Oct 2026): carry Lights down past Clothes' last thing instead — the same order.
         drag(app, "arrange-heading-0-grip", to: "arrange-item-4-grip")       // Lights below Wool socks
         #else
-        drag(app, "arrange-heading-1-grip", to: "arrange-heading-0-grip")    // Clothes above Lights
+        drag(app, "arrange-heading-1-grip", to: "arrange-heading-0-grip", edge: true)    // Clothes above Lights
         #endif
         XCTAssertTrue(waitUntil { self.words(app.buttons["arrange-heading-0"]) == "Clothes" },
                       "Clothes did not move up: '\(words(app.buttons["arrange-heading-0"]))'")
