@@ -8755,9 +8755,10 @@ final class AMSPackingUITests: XCTestCase {
                       "typing e did not pick Electronics: '\(chosen(app, "thing-category"))'")
         XCTAssertFalse(app.buttons["thing-category-0"].exists, "typing opened the list")
         sleep(2)                                                  // a pause starts the letters afresh
-        // Kind of thing takes a new kind since 0.69, so it goes by a name's START only: "rink"
-        // is offered as a new kind, never Food & drink found inside a word on the way.
-        app.typeText("rink")
+        // Kind of thing takes a new kind since 0.69, so it goes by a name's START only: "kayak"
+        // (no kind starts with k) is offered as a new kind — a word inside a name is no longer
+        // looked for ("rink" found Food & drink until 0.69).
+        app.typeText("kayak")
         XCTAssertTrue(app.buttons["thing-category-offer"].waitForExistence(timeout: 5), "a kind that is not there was not offered")
         XCTAssertEqual(chosen(app, "thing-category"), "Electronics", "typing a new kind passed through another on the way")
         app.typeKey(.escape, modifierFlags: [])
