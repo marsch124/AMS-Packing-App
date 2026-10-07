@@ -18,6 +18,19 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.68", date: "7 Oct 2026", title: "Beyond the list",
+                new: ["On the Mac you can fill in a thing without the mouse: Tab goes from field to field, type to pick from a list, Return saves. \u{2318}N saves and starts the next thing with the same choices, \u{2318}\u{2193} and \u{2318}\u{2191} go through your things, \u{2318}J jumps to a field \u{2014} the new Thing menu lists them all.",
+                      "Each storage place has its own small square code. Print its label on the P-touch (12 mm tape), stick it on the shelf, and point the iPhone's Camera at it: while you pack, the trip opens with only what to take from there; back from a trip, what goes back there; otherwise, everything kept there.",
+                      "Your bags have pockets. Name them once on the bag's page; when you tick a thing, tap the pocket it went into. Ask Siri \u{201C}Where is my charger?\u{201D} or search for it: \u{201C}Backpack, front pocket.\u{201D}",
+                      "Set \u{201C}I leave at\u{201D} on a trip: 15 minutes before you go, your iPhone names what is still unticked \u{2014} and on the last day, what is not in a bag yet.",
+                      "Kits: a pouch that stays packed can hold your things. On a trip it is one line, \u{201C}Camp pouch \u{00B7} 3 inside\u{201D}; take one thing out and the trip says \u{201C}1 missing\u{201D}. It weighs itself plus what is inside.",
+                      "After a trip, the review starts with what Apple Health saw you do. Use these marks the gear of workouts you skipped as didn't use. Tell the app who you are in Your choices \u{2192} Owners (This is me).",
+                      "A reviewed trip can go into your Obsidian vault as one page \u{2014} weather, workouts, bags, photos, what you didn't use, missed and bought, your notes. The Mac writes it; your own edits on the page stay.",
+                      "Each template has its own reminders, each with a When. A trip gets them as To do lines; when one is due it shows under Check before you go and on Home.",
+                      "Pack by voice (a test, iPhone): it reads what is still to pack, place by place; answer packed, skip, later, where or stop. It asks once more for what you left for later, and a place's code starts it right there."],
+                changed: ["A thing's Section list can rename a section, move it up or down, or remove it (it asks first). Nothing changes until Save.",
+                          "Search also finds words in your things' notes and in the notes your templates keep for them.",
+                          "Press Weather while still typing the place: it no longer freezes on Looking\u{2026}"]),
         Release(version: "0.67", date: "7 Oct 2026", title: "Your field test: lines without air, an open calendar",
                 new: ["Create new trip: the calendar is always open \u{2014} tap the first day, then the last; Create waits for the last day and says so. Clear dates beside the range leaves the trip without dates. In Trip settings, tap the dates to change them.",
                       "Each workout has its own Indoor / Outdoor / Race: Run outdoors and Swim indoors on the same trip \u{2014} on Create new trip and in Trip settings."],
