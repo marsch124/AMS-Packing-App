@@ -1119,7 +1119,7 @@ extension ThingEditor {
         guard let f else { return "Tab goes to the fields · Return saves · ⌘N saves and starts a new thing · ⌘J jumps to a field" }
         switch f {
         case .notes: return "Return starts a new line · Tab next · ⌘S saves"
-        case .careNotes: return "type what to do · Tab next · Return saves"
+        case .careNotes: return "Return starts a new line · Tab next · ⌘S saves"
         case .weight: return "grams, or kilos as 1,2 kg · Tab next · Return saves"
         case .expiry: return "a date, 2027-06-30 or 30/6 27, or +6m, +1y · Return saves"
         case .jump: return "type part of a field's name · Return goes there · Esc closes"
@@ -1460,8 +1460,9 @@ extension ThingEditor {
             return nil
         case KeyCode.returnKey, KeyCode.enter:
             guard mods.isEmpty else { return e }
-            // Notes are many lines: Return starts a new one there (his answer, 7 Oct 2026).
-            if at == .notes, let editor = mine.firstResponder as? NSTextView {
+            // Notes are many lines: Return starts a new one there (his answer, 7 Oct 2026) —
+            // and in Care's What to do too (his follow-up the same day).
+            if at == .notes || at == .careNotes, let editor = mine.firstResponder as? NSTextView {
                 editor.insertNewlineIgnoringFieldEditor(nil)
                 return nil
             }

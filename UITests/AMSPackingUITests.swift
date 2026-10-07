@@ -7942,6 +7942,10 @@ final class AMSPackingUITests: XCTestCase {
                       "typing e did not pick Electronics: '\(chosen(app, "thing-category"))'")
         XCTAssertFalse(app.buttons["thing-category-0"].exists, "typing opened the list")
         sleep(2)                                                  // a pause starts the letters afresh
+        app.typeText("rink")                                      // no name or word starts so: inside a word
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Food & drink" },
+                      "typing rink did not find Food & drink inside a word: '\(chosen(app, "thing-category"))'")
+        sleep(2)
         app.typeText("food")
         XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Food & drink" },
                       "typing food did not pick Food & drink: '\(chosen(app, "thing-category"))'")
@@ -7992,6 +7996,7 @@ final class AMSPackingUITests: XCTestCase {
         let offer = app.buttons["thing-place-offer"]
         XCTAssertTrue(offer.waitForExistence(timeout: 5), "a place that is not there was not offered")
         XCTAssertTrue(words(offer).contains("Workbench"), "the offer does not say the name: '\(words(offer))'")
+        XCTAssertEqual(keptAtHome(app), "Hall closet", "typing a new name passed through another place on the way")
         shot(app, "keys-new-place-offered")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "Return did not close the list")
@@ -8102,8 +8107,13 @@ final class AMSPackingUITests: XCTestCase {
         app.typeText("line two")
         XCTAssertNotNil(find(app, "thing-detail"), "Return in Notes saved the page")
         XCTAssertTrue(says(app, "thing-notes").contains("line one\nline two"), "Return in Notes made no new line: '\(says(app, "thing-notes"))'")
-        app.typeKey(.tab, modifierFlags: [])
-        XCTAssertTrue(focused(app, "thing-category"))
+        tabTo(app, "thing-care-notes")                            // What to do: many lines too
+        app.typeText("wax")
+        app.typeKey(.return, modifierFlags: [])
+        app.typeText("buff")
+        XCTAssertNotNil(find(app, "thing-detail"), "Return in What to do saved the page")
+        XCTAssertTrue(says(app, "thing-care-notes").contains("wax\nbuff"), "Return in What to do made no new line: '\(says(app, "thing-care-notes"))'")
+        tabTo(app, "thing-category")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Return on Kind of thing did not save")
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).contains("Map case") }, "the name typed was not saved")

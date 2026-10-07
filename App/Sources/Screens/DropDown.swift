@@ -549,16 +549,21 @@ struct DropDown: View {
     /// The ticked row's place in `keyRows`.
     private var chosenIndex: Int? { keyRows.firstIndex { same($0.value, selected) } }
 
-    /// The first row whose words start with what was typed (capitals ignored), else the
-    /// first with a WORD that does — "hand" finds "Carry-on / hand luggage".
+    /// The row for what was typed (capitals ignored): first one whose name STARTS so, then
+    /// one with a WORD that starts so ("hand" → "Carry-on / hand luggage"), and only when
+    /// none does, one that has it inside a word ("rink" → "Food & drink"). A list that takes a
+    /// new entry (Kept at home, a Section) goes by the name's start only: a new name typed
+    /// there is offered as itself and never passes through another row on the way
+    /// ("Workbench" once picked Bedroom wardrobe on its W — his note, 7 Oct 2026).
     private func match(_ typed: String) -> Int? {
         let t = typed.lowercased()
         guard !t.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         let rows = keyRows.map { $0.label.lowercased() }
         if let n = rows.firstIndex(where: { $0.hasPrefix(t) }) { return n }
-        return rows.firstIndex { label in
-            label.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains { $0.hasPrefix(t) }
-        }
+        if newEntry != nil { return nil }
+        let words = rows.map { $0.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) }
+        if let n = words.firstIndex(where: { $0.contains { $0.hasPrefix(t) } }) { return n }
+        return rows.firstIndex { $0.contains(t) }
     }
 
     /// One key from the page. Closed: letters pick the first match at once (a list that

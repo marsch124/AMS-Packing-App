@@ -1018,8 +1018,8 @@ outside it (`focusRing`, nothing moves); On these templates rings the PILL the a
 2 pt just outside the pill (the concept's look; `Pills(cursor:)`). **The line at the page's foot** (under the scroll,
 Footnote, 7 pt above and below, a hairline over it, `Theme.bg`): the field's name in orange semibold, then its keys in
 muted — e.g. "Kind of thing   type to pick · Space opens · Tab next · Return saves". The keys of each kind:
-- Name, Brand, Colour: "type · Tab next · Return saves"; Notes: "Return starts a new line · Tab next · ⌘S saves"; What to
-  do: "type what to do · Tab next · Return saves"; Weight: "grams, or kilos as 1,2 kg · Tab next · Return saves"; Valid
+- Name, Brand, Colour: "type · Tab next · Return saves"; Notes and What to do: "Return starts a new line · Tab next · ⌘S
+  saves"; Weight: "grams, or kilos as 1,2 kg · Tab next · Return saves"; Valid
   until: "a date, 2027-06-30 or 30/6 27, or +6m, +1y · Return saves".
 - A drop-down: "type to pick · Space opens · Tab next · Return saves" (Kept at home: "type to pick, or a new place …";
   a Section: "type to pick, or a new section …"); its list open: "↑ ↓ move · Return chooses · type to jump · Esc closes
@@ -1041,9 +1041,9 @@ or spoken.
   the cursor goes to the END instead, so a note is never typed over. (Selection is made a turn of the run loop after
   the field has the keys.)
 - **Return** (and the number pad's Enter), no ⌘ ⌥ ⌃ ⇧ — **saves the page**, from any field, a drop-down and a switch
-  included (as Save: a weight or date that is wrong, or a refused name, stops it and says why) — except: in **Notes** it
-  starts a new line (`insertNewlineIgnoringFieldEditor`); in an open list it chooses; in the ⌘J box it goes. (⌥Return
-  makes a new line in What to do, the Mac's own way.)
+  included (as Save: a weight or date that is wrong, or a refused name, stops it and says why) — except: in **Notes** and in
+  Care's **What to do** it starts a new line (`insertNewlineIgnoringFieldEditor`; What to do since his follow-up of 7 Oct
+  2026); in an open list it chooses; in the ⌘J box it goes.
 - **Esc** — cancels the page, as before (Cancel's `.cancelAction`) — except: in an open list it closes the list ONLY; in
   a Section's name being changed it leaves the name; in a Remove question it keeps the section; in the ⌘J box it closes
   the box and puts the focus back where it was.
@@ -1066,18 +1066,20 @@ or spoken.
   (`jumpMatches`): case ignored; fields with a WORD starting with what is typed first ("wei" → Weight, "val" → Valid
   until, "kind" → Kind of thing), then fields containing it; in the page's order. Return goes (and the box closes);
   with no match it stays; Tab does nothing there.
-- **A drop-down in focus** (closed): **letters** pick the first row whose words start with what was typed (capitals
-  ignored), else the first with a WORD that does ("hand" → Carry-on / hand luggage) — chosen at once, the list stays
+- **A drop-down in focus** (closed): **letters** pick the first row whose NAME starts with what was typed (capitals
+  ignored), else the first with a WORD that does ("hand" → Carry-on / hand luggage), and only when none does, the first
+  with it inside a word ("rink" → Food & drink) — chosen at once, the list stays
   closed; letters typed within a second add up ("food" → Food & drink; "fo" alone is Footwear, which comes first);
   after a second's pause they start afresh. **Space** or **↓** opens the list (↑ ← → ⌫ do nothing). A list that takes
-  a new entry (Kept at home, a Section): letters that match nothing OPEN the list with the offer "A new place: <what
+  a new entry (Kept at home, a Section) goes by the NAME's start only (his follow-up, 7 Oct 2026: "Workbench" had
+  passed through Bedroom wardrobe on its W): letters that start no name OPEN the list with the offer "A new place: <what
   was typed>" (or "A new section: …") at its foot, lit (`thing-place-offer`, `thing-section-<n>-offer`); typing goes
   on there with no pause limit, ⌫ takes a letter back, Space is a letter while a name is being typed (a space within a
   second of a letter, too, so "Garage loft" can be typed after Garage was picked by its first letters), and **Return
   makes it** — exactly as the list's foot does (`DropDownNew.add`: a place joins Your choices; a section waits for
   Save). A list opened by the keys shows the offer (before typing: "A new place: type its name", muted,
   `-offer-hint`) instead of the foot's field; opened by a click it has the field as before. Letters that already
-  picked a row keep it if the offer is then left with Esc.
+  picked a row by its name's start keep it if the offer is then left with Esc.
 - **An open list** — opened by the KEYS (a list opened by a click keeps its keys as before 0.68: its foot's field takes
   what is typed, and only Esc is the page's, closing the list only): **↑ / ↓** move the lit row (opened at the ticked row; lit = the list's
   colour at 18 % behind the row, scrolled into sight); **letters** jump to the first match; **Return** — or **Space**
@@ -1122,14 +1124,14 @@ years has → nil); the day must exist in its month; anything else nil.
 with a fault planted first (0.68): `testTheThingPageTabsThroughEveryFieldInOrder` (the Map: opens in Name with the
 cursor at the end — " case" makes "Map case"; Tab through all 18 stops in the order above and round to Name; Shift-Tab
 round to Valid until and back; typing lands in Notes and Brand; Esc still cancels), `testADropDownPicksAsHeTypesAndOpensWithSpace`
-("e" → Electronics with the list closed; "food" → Food & drink; Space opens; ↓ ↓ Return → Pharmacy / meds, the page
+("e" → Electronics with the list closed; "rink" → Food & drink, inside a word; "food" → Food & drink; Space opens; ↓ ↓ Return → Pharmacy / meds, the page
 still open; ↓ opens, Esc closes the list only and keeps the choice; Tab → Whose it is, "r" → Robin; saved and kept),
-`testKeptAtHomeMakesANewPlaceFromTheKeys` ("hall" → Hall closet, closed; "Workbench" → the offer, Return makes it; saved;
+`testKeptAtHomeMakesANewPlaceFromTheKeys` ("hall" → Hall closet, closed; "Workbench" → the offer, Hall closet still chosen, Return makes it; saved;
 it joined his places), `testTemplatePillsAndSwitchesAnswerArrowsAndSpace` (→ Space: Swim on and its Section comes; "c"
 Space: Common base on; Tab → its Section; Space turns Liquid, three Spaces leave Not allowed on; saved),
 `testWeightAndValidUntilAreTypedFromTheKeys` (the Headlamp's 88 replaced by "1,2 kg" → kept as 1200; "+6m" lights +6
 months, "in 6 months"; "30/6 27" → 2027-06-30; "soon" refused with the line; "+1y" and Return saves),
-`testReturnSavesButNotInNotes` (Return in Notes makes "line one\nline two" and the page stays; Return on Kind of thing
+`testReturnSavesButNotInNotes` (Return in Notes makes "line one\nline two", in What to do "wax\nbuff", and the page stays; Return on Kind of thing
 saves; ⌘S saves Colour), `testCommandNSavesAndStartsTheNextThingWithTheSameChoices` (⌘N carries Electronics, the owner,
 Garage, the bag, When and Hiking, not the weight, no Delete, cursor in Name; Compass ⌘N Whistle ⌘S → 12 things, the
 newest on top; Compass has Electronics and Hiking; ⌘N then Esc makes nothing; with no page open ⌘N opens a window),

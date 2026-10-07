@@ -1480,8 +1480,7 @@ same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
   (`dropDownKeys`; a thing's page): each drop-down hands in its answer to a key under its field's id
   (`DropDownKeyAnswer`, refreshed each time it is drawn, taken back when it goes) and reports its list opened or
   closed; the page asks the one in focus (`DropDownKey`: letters, open, up, down, choose, close, back, space, tab).
-  Closed: letters pick at once (type-ahead, a second's pause starts afresh; a word inside the label counts after the
-  start), Space or ↓ open; with a `newEntry`, letters matching nothing open the list with the offer "<placeholder>:
+  Closed: letters pick at once (type-ahead, a second's pause starts afresh; the name's start first, then a word's start, then inside a word — a list with a `newEntry` by the name's start only), Space or ↓ open; with a `newEntry`, letters matching nothing open the list with the offer "<placeholder>:
   <typed>" (`<row>-offer`; before typing `<row>-offer-hint`) in place of the foot's field — Return makes it via
   `newEntry.add`. Open: the lit row (the list's tint at 18 % behind it, scrolled to), ↑ ↓ move it, letters jump,
   Return / Space choose, Esc closes; with `tools`, Tab steps through the lit row's tools (a 2-pt tint ring) and Space /
