@@ -216,6 +216,8 @@ struct ThingEditor: View {
     /// A section typed here, per template, waiting for Save: made only then, so Cancel
     /// leaves the template as it was (as in the row editor).
     @State private var newSections: [String: String] = [:]
+    /// What it holds, or the kit it is in (0.70, ThingKitPart.swift) — kept until Save.
+    @State private var kit = KitDraft()
 
     var body: some View {
         let templates = model.library.templatesForThings()
@@ -299,6 +301,8 @@ struct ThingEditor: View {
                                 .accessibilityIdentifier("thing-weight-problem")
                         }
                     }
+                    // Inside — a pouch or a kit and what it holds; or the kit it is in (0.70).
+                    ThingKitPart(thingId: itemId, draft: $kit)
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand") }
@@ -342,6 +346,7 @@ struct ThingEditor: View {
             onLists = Set(model.library.memberships.filter { $0.itemId == itemId }.map(\.templateId))
             for t in onLists { sections[t] = model.library.thingSection(itemId: itemId, templateId: t) }
             sectionsAtOpen = sections
+            kit = KitDraft(model.library, thingId: itemId)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-detail")
@@ -643,7 +648,9 @@ struct ThingEditor: View {
         let lists = onLists
         let every = careEvery, notes = jsTrim(careNotes)
         let chosen = sections, atOpen = sectionsAtOpen, typed = newSections
+        let kitSays = kit
         model.change { lib in
+            kitSays.save(&lib, thingId: itemId)      // what it holds, or taken out of its kit (0.70)
             _ = lib.updateThing(id: itemId) { thing in
                 thing.storage = jsTrim(d.storage)
                 thing.category = d.category

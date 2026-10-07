@@ -41,6 +41,9 @@ struct TripScreen: View {
     @State private var checking: CheckedThing?
     /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
     @State private var onSite = false
+    /// Kits opened or folded on this visit (0.70); a kit not in here is open only while
+    /// it is checked before each trip and not packed yet.
+    @State private var kitOpen: [String: Bool] = [:]
     struct CheckedThing: Identifiable { let id: String }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
@@ -91,6 +94,8 @@ struct TripScreen: View {
         let allPacked = p.total > 0 && p.done == p.total
         // Never trap on a repeated id (his E.6 crash, 28 Sep): the first line keeps it.
         let index: [String: Int] = Dictionary(trip.entries.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+        // Its kits, read once for every line (0.70, TripKitLine.swift).
+        let kits = model.library.kitLines(tripId: tripId)
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -240,12 +245,19 @@ struct TripScreen: View {
                                         if !aside { model.change { _ = $0.setChecked(!line.checked, tripId: tripId, entryId: line.id) } }
                                     } label: {
                                         PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
-                                                 showBag: view != "container", washed: washes(trip))
+                                                 showBag: view != "container", washed: washes(trip),
+                                                 kitWords: kits[line.id]?.insideWords ?? "")
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("trip-line-\(n)")
                                     .accessibilityValue(PackLine.count(line, qtyNights(trip), washed: washes(trip)))
                                     .accessibilityAddTraits(line.checked ? .isSelected : [])
+                                    // A kit: the arrow that shows what is inside it (0.70).
+                                    if let kit = kits[line.id] {
+                                        KitFoldButton(open: kitIsOpen(kit, line), name: line.name, id: "trip-line-\(n)-kit") {
+                                            kitOpen[line.id] = !kitIsOpen(kit, line)
+                                        }
+                                    }
                                     // ⊘ "not this time" — one tap, his call, no confirmation; ↻ takes it back.
                                     Button {
                                         model.change { _ = $0.setAside(!aside, tripId: tripId, entryId: line.id) }
@@ -259,6 +271,8 @@ struct TripScreen: View {
                                     .accessibilityIdentifier("trip-line-\(n)-aside")
                                     .accessibilityLabel(aside ? "Take it this time" : "Not this time")
                                 }
+                                // A kit (0.70): what is missing from it, what is worth saying, what is inside.
+                                if let kit = kits[line.id] { kitParts(kit, line, n: n, trip: trip) }
                                 // On its own line under the name, so the name keeps its width.
                                 if needsPlace {
                                     if placing == line.id { placePanel(line) }
@@ -387,6 +401,26 @@ struct TripScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
         #endif
+    }
+
+    /// A kit shows what is inside it while it is checked before each trip and not packed
+    /// yet — until he folds it; any other kit when he opens it (0.70).
+    private func kitIsOpen(_ kit: KitOnLine, _ line: Item) -> Bool {
+        kitOpen[line.id] ?? (kit.check && !line.checked && !isSetAside(line))
+    }
+
+    private func kitParts(_ kit: KitOnLine, _ line: Item, n: Int, trip: TripEvent) -> some View {
+        let open = kitIsOpen(kit, line)
+        let id = tripId, entry = line.id
+        return KitLineParts(kit: kit, line: line, n: n, open: open,
+                            warnings: model.library.kitWarnings(kitId: kit.kit.id, today: Today.local, before: trip.endDate),
+                            tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
+                            tick: { thing, on in
+                                model.change { _ = $0.setKitContentTicked(on, tripId: id, entryId: entry, contentId: thing) }
+                            },
+                            takeOut: { thing, out in model.change { _ = $0.setTakenOut(thingId: thing, out) } })
+            // Rebuilt whenever what it shows changes (the lazy list's stale rows, B1).
+            .id("kit|\(line.id)|\(open)|\(line.checked)|\(kit.ticked.sorted())|\(kit.missing.count)|\(kit.contents.count)")
     }
 
     /// His places, one tap each; or a new one typed. The thing keeps the place.
@@ -547,6 +581,8 @@ struct PackLine: View {
     var showBag = true
     /// Laundry capped the nights: a per-night line says so with the washtub.
     var washed = false
+    /// A kit's "3 inside", after its name (0.70).
+    var kitWords = ""
 
     /// "×4 · laundry", "×7", or nothing — what the line says about how many.
     static func count(_ line: Item, _ nights: Int, washed: Bool) -> String {
@@ -566,7 +602,7 @@ struct PackLine: View {
         HStack(spacing: 8) {
             TickCircle(on: line.checked && !aside, tint: tint, ring: aside ? Theme.line : nil)
             VStack(alignment: .leading, spacing: 0) {
-                Text(line.name)
+                (Text(line.name) + (kitWords.isEmpty ? Text("") : Text(" \u{00B7} \(kitWords)").foregroundStyle(Theme.muted)))
                     .font(.system(.body))
                     .foregroundStyle(aside ? Theme.muted : (line.checked ? Theme.muted : Theme.ink))
                     .strikethrough(aside, pattern: .solid, color: Theme.muted)

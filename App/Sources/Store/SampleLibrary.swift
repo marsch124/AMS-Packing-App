@@ -211,6 +211,40 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with two kits (`-uiTestingKits`, 0.70): a Camp pouch (60 g, on
+    /// Hiking, kept in the Garage) holding a Lighter (30 g, not allowed in the cabin), Spare
+    /// cord (80 g) and Plasters (20 g, valid for 10 more days — before the trip ends); and a
+    /// Wash bag (100 g, on no template, checked before each trip) holding the Toothbrush
+    /// (still on Common base on its own) and Soap (90 g). Its trip is rebuilt as a new trip
+    /// would be: the Wash bag in the toothbrush's place, the Camp pouch last — eight lines,
+    /// the kits at `trip-line-2` (Wash bag) and `trip-line-7` (Camp pouch).
+    static func kits() -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        guard let hiking = lib.templates.first(where: { $0.name == "Hiking" }) else { return lib }
+        var made: [String: String] = [:]
+        for (name, grams) in [("Camp pouch", 60.0), ("Lighter", 30), ("Spare cord", 80), ("Plasters", 20),
+                              ("Wash bag", 100), ("Soap", 90)] {
+            guard let t = lib.addThing(name: name) else { continue }
+            made[name] = t.id
+            _ = lib.updateThing(id: t.id) { $0.weight = grams }
+        }
+        guard let pouch = made["Camp pouch"], let wash = made["Wash bag"],
+              let brush = lib.items.first(where: { $0.name == "Toothbrush" })?.id else { return lib }
+        _ = lib.updateThing(id: pouch) { $0.storage = "Garage" }
+        if let lighter = made["Lighter"] { _ = lib.updateThing(id: lighter) { $0.restricted = true } }
+        if let plasters = made["Plasters"] { _ = lib.updateThing(id: plasters) { $0.expiry = day(10) } }
+        _ = lib.setOnTemplate(itemId: pouch, templateId: hiking.id, on: true)
+        lib.setKit(kitId: pouch, contents: ["Lighter", "Spare cord", "Plasters"].compactMap { made[$0] })
+        lib.setKit(kitId: wash, contents: [brush] + ["Soap"].compactMap { made[$0] }, check: true)
+        if !lib.trips.isEmpty { lib.trips[0].entries = lib.builtLines(lib.trips[0]) }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that

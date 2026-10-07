@@ -267,7 +267,7 @@ extension Library {
         let limits = bagLimits()
         var went: [BagTrip] = []
         for t in trips {
-            guard let load = bagLoads(t.entries, qtyNights(t), limits).first(where: { normName($0.container) == key }),
+            guard let load = bagLoads(linesWithKitWeights(t.entries), qtyNights(t), limits).first(where: { normName($0.container) == key }),
                   load.grams > 0 else { continue }
             let date = t.startDate.isEmpty ? String(t.createdAt.prefix(10)) : t.startDate
             went.append(BagTrip(tripId: t.id, name: t.name, date: date, grams: load.grams, limitKg: load.limitKg, over: load.over))

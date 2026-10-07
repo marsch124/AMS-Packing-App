@@ -251,8 +251,15 @@ struct Cell: View {
     var body: some View {
         Group {
             switch column.kind {
-            case .number(let path): box(text: amountText(thing[keyPath: path]),
-                                        blank: thing[keyPath: path] <= 0, number: true) { commitNumber($0, path) }
+            case .number(let path):
+                // A kit (0.70): its weight with what is inside it, not typed here — its own
+                // weight is set on its page (ThingKitPart).
+                if column.id == "weight", !Library.listedContents(thing).isEmpty, model.library.isKit(thing.id) {
+                    kitWeight(model.library.packedWeight(thing))
+                } else {
+                    box(text: amountText(thing[keyPath: path]),
+                        blank: thing[keyPath: path] <= 0, number: true) { commitNumber($0, path) }
+                }
             case .words(let path): box(text: thing[keyPath: path], blank: false) { commitWords($0, path) }
             case .choice(let path, let which): choice(path, which)
             case .flag(let path): tick(thing[keyPath: path]) { on in
@@ -266,6 +273,21 @@ struct Cell: View {
         }
         .frame(width: column.width, height: TableColumns.rowHeight)
         .overlay(alignment: .trailing) { Theme.line.frame(width: 1) }
+    }
+
+    /// A kit's weight: what it weighs with what is inside it, in the kit colour of Care,
+    /// read only (0.70).
+    private func kitWeight(_ grams: Double) -> some View {
+        Text(amountText(grams))
+            .font(.system(.footnote, weight: .semibold).monospacedDigit()).foregroundStyle(AppSection.care.color)
+            .lineLimit(1).minimumScaleFactor(0.75)
+            .padding(.horizontal, 7)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .help("With what is inside it. Its own weight is on its page.")
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier(id)
+            .accessibilityLabel("Weight with what is inside")
+            .accessibilityValue(amountText(grams))
     }
 
     // A box he types in. It takes the change when he presses Return or leaves it.

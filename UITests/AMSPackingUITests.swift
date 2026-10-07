@@ -7846,4 +7846,144 @@ final class AMSPackingUITests: XCTestCase {
         }
         shot(app, "share-grab-header")
     }
+
+    // MARK: - Kits — things that hold things (0.70, spec 07 part 9)
+
+    /// `-uiTestingKits`: a Camp pouch (60 g) holding a Lighter (30), Spare cord (80) and
+    /// Plasters (20); a Wash bag (100), checked before each trip, holding the Toothbrush
+    /// (also on Common base) and Soap (90). Your things A–Z: the Camp pouch is row 0.
+    private func openKitThing(_ app: XCUIApplication, search: String = "") {
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        if !search.isEmpty { type(search, into: app.textFields["things-search"]) }
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+    }
+
+    private func openKitTrip(_ app: XCUIApplication) {
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+    }
+
+    /// A kit's page: what is inside, its weight with them, one taken out, one added from
+    /// his things; kept by Save. Then on the trip: "1 missing".
+    func testAKitsPageHoldsItsThingsTakesOneOutAndAddsAnother() {
+        let app = launch("-uiTestingKits")
+        openKitThing(app)
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"), "no Add from your things")
+        for n in 0...2 { XCTAssertTrue(app.staticTexts["thing-kit-row-\(n)"].exists, "no thing \(n) inside") }
+        let weight = app.staticTexts["thing-kit-weight"]
+        XCTAssertTrue(waitUntil { (weight.value as? String) == "190" }, "the pouch does not weigh 190 g with what is inside: '\(weight.value ?? "")'")
+        shot(app, "kit-page")
+        tap(app, id: "thing-kit-row-1-out")
+        XCTAssertTrue(waitUntil { (app.staticTexts["thing-kit-row-1"].value as? String) == "taken out" }, "the cord was not taken out")
+        XCTAssertTrue(waitUntil { (weight.value as? String) == "110" }, "taken out, it still weighs: '\(weight.value ?? "")'")
+        tap(app, id: "thing-kit-add")
+        let find = app.textFields["thing-kit-search"]
+        XCTAssertTrue(find.waitForExistence(timeout: 5), "no search in the list")
+        type("Map", into: find)
+        hideKeyboard(app)
+        // The one row left is the map (a lost tap is tried again; a second tap finds no row).
+        for _ in 0..<3 where !app.staticTexts["thing-kit-row-3"].exists {
+            if app.buttons["thing-kit-pick-0"].waitForExistence(timeout: 3) { tap(app, id: "thing-kit-pick-0") }
+            _ = waitUntil(timeout: 3) { app.staticTexts["thing-kit-row-3"].exists }
+        }
+        XCTAssertTrue(waitUntil { app.staticTexts["thing-kit-row-3"].exists }, "the map did not go in")
+        XCTAssertTrue(waitUntil { (weight.value as? String) == "170" }, "'\(weight.value ?? "")'")
+        shot(app, "kit-page-added")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+
+        // Kept: reopened, the map is the fourth thing, the cord still out.
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"))
+        XCTAssertTrue(waitUntil { app.staticTexts["thing-kit-row-3"].exists }, "Save did not keep the map inside")
+        XCTAssertEqual(app.staticTexts["thing-kit-row-1"].value as? String, "taken out", "Save did not keep the cord out")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+
+        openKitTrip(app)
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-kit"), "no Camp pouch line")
+        let missing = app.staticTexts["trip-line-7-kit-missing"]
+        XCTAssertTrue(waitUntil { self.words(missing) == "1 missing: Spare cord" }, "the trip does not say what is missing: '\(words(missing))'")
+        shot(app, "kit-trip-missing")
+    }
+
+    /// On a trip a kit is ONE line, "Camp pouch · 3 inside"; its arrow shows what is
+    /// inside; a thing taken out there is said missing; the bags and Care weigh the kit
+    /// with what is inside it.
+    func testAKitIsOneLineOnATripAndWeighsWhatIsInside() {
+        let app = launch("-uiTestingKits")
+        openKitTrip(app)
+        let pouch = app.buttons["trip-line-7"]
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-kit"), "no Camp pouch line")
+        XCTAssertTrue(words(pouch).contains("3 inside"), "the line does not say what is inside: '\(words(pouch))'")
+        XCTAssertFalse(app.buttons["trip-line-8"].exists, "what is inside became lines of their own")
+        let total = app.staticTexts["bags-total"]
+        XCTAssertTrue(waitUntil { self.words(total) == "2.4 kg" }, "the bag does not weigh what is inside the kits: '\(words(total))'")
+        XCTAssertFalse(app.otherElements["trip-line-7-kit-0"].exists, "the pouch is open before it is asked")
+        tap(app, id: "trip-line-7-kit")
+        XCTAssertTrue(waitUntil { app.otherElements["trip-line-7-kit-2"].exists }, "the arrow does not show what is inside")
+        XCTAssertTrue(words(app.staticTexts["trip-line-7-kit-warning-0"]).contains("Plasters"), "the plasters' date is not said on the kit")
+        shot(app, "kit-trip-open")
+        tap(app, id: "trip-line-7-kit-0-out")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-7-kit-missing"]) == "1 missing: Lighter" }, "taken out on the trip, nothing is missing")
+        XCTAssertTrue(waitUntil { self.words(pouch).contains("2 inside") }, "'\(words(pouch))'")
+        tap(app, id: "trip-line-7-kit-0-out")
+        XCTAssertTrue(waitUntil { !app.staticTexts["trip-line-7-kit-missing"].exists }, "put back, still missing")
+        tap(app, id: "trip-done")
+
+        // Care's heaviest things: the Wash bag (208 g with its things) and the pouch (190 g)
+        // come before the 120 g charger.
+        tab(app, "care")
+        XCTAssertTrue(scrollUntil(app, "kit-heavy-3"), "no heaviest things")
+        XCTAssertTrue(words(app.buttons["kit-heavy-2"]).contains("Wash bag"), "'\(words(app.buttons["kit-heavy-2"]))'")
+        XCTAssertTrue(words(app.buttons["kit-heavy-3"]).contains("Camp pouch"), "'\(words(app.buttons["kit-heavy-3"]))'")
+    }
+
+    /// Check before each trip: the Wash bag's things show with small ticks, the kit's own
+    /// tick waits for them ("2 to go"), and the last one ticked packs it.
+    func testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked() {
+        let app = launch("-uiTestingKits")
+        openKitTrip(app)
+        let wash = app.buttons["trip-line-2"]
+        XCTAssertTrue(wash.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-2-kit-1-tick"].exists }, "the wash bag's things are not there to tick")
+        XCTAssertTrue(words(app.staticTexts["trip-line-2-kit-togo"]).contains("2 to go"))
+        tap(app, id: "trip-line-2")
+        usleep(600_000)
+        XCTAssertFalse(wash.isSelected, "the kit was packed before what is inside it was ticked")
+        shot(app, "kit-check")
+        tap(app, id: "trip-line-2-kit-0-tick")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go") })
+        XCTAssertFalse(wash.isSelected)
+        tap(app, id: "trip-line-2-kit-1-tick")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-2"].isSelected }, "the last thing ticked did not pack the kit")
+        shot(app, "kit-check-packed")
+    }
+
+    /// A thing inside a kit says so on its page — and that it is also on a template on
+    /// its own; taken out there, the trip's kit says it is missing and no longer asks for it.
+    func testAThingInsideAKitSaysSoAndIsTakenOutFromItsPage() {
+        let app = launch("-uiTestingKits")
+        openKitThing(app, search: "Toothbrush")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-taken-out") || app.switches["thing-kit-taken-out"].exists)
+        XCTAssertTrue(words(app.staticTexts["thing-kit-inside"]).contains("Wash bag"), "'\(words(app.staticTexts["thing-kit-inside"]))'")
+        XCTAssertTrue(words(app.staticTexts["thing-kit-also"]).contains("Common base"), "it is not said the toothbrush is on Common base too")
+        XCTAssertFalse(app.buttons["thing-kit-add"].exists, "a thing inside a kit offered to hold things")
+        setSwitch(app, "thing-kit-taken-out", on: true)
+        shot(app, "kit-content-page")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        openKitTrip(app)
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-2-kit-missing"]) == "1 missing: Toothbrush" },
+                      "taken out on its page, it is not missing on the trip: '\(words(app.staticTexts["trip-line-2-kit-missing"]))'")
+        XCTAssertTrue(words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go"), "it still asks for the toothbrush")
+    }
 }
