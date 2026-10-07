@@ -1129,17 +1129,21 @@ extension ThingEditor {
     fileprivate var keysLine: some View {
         let name = jumping ? fieldName(.jump) : at.map(fieldName) ?? "Keys"
         let keys = !keyNote.isEmpty ? keyNote : keysWords(jumping ? .jump : at)
-        return (Text(name).font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.care.color)
-                + Text("   " + keys).font(.system(.footnote)).foregroundStyle(Theme.muted))
-            .lineLimit(1).truncationMode(.tail)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16).padding(.vertical, 7)
-            .background(Theme.bg)
-            .overlay(alignment: .top) { Theme.line.frame(height: 1) }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(name): \(keys)")
-            .accessibilityValue(jumping ? fieldId(.jump) : at.map(fieldId) ?? "")
-            .accessibilityIdentifier("thing-keys")
+        // The field's name says which field it is by its control's id too —
+        // `thing-keys-at-<id>`, for the tests (an id is never shown or spoken).
+        let id = jumping ? fieldId(.jump) : at.map(fieldId) ?? "none"
+        return HStack(spacing: 8) {
+            Text(name).font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                .lineLimit(1).fixedSize()
+                .accessibilityIdentifier("thing-keys-at-\(id)")
+            Text(keys).font(.system(.footnote)).foregroundStyle(Theme.muted)
+                .lineLimit(1).truncationMode(.tail)
+                .accessibilityIdentifier("thing-keys")
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 7)
+        .background(Theme.bg)
+        .overlay(alignment: .top) { Theme.line.frame(height: 1) }
     }
 
     /// The ⌘J box: type part of a field's name, Return goes there.

@@ -7858,17 +7858,21 @@ final class AMSPackingUITests: XCTestCase {
     /// The field the thing's page has in focus: the line at its foot names it, and carries
     /// the field's control id as its value.
     private func focusOn(_ app: XCUIApplication) -> String {
-        for holder in [app.staticTexts, app.otherElements, app.groups] {
-            let e = holder["thing-keys"]
-            if e.exists { return e.value as? String ?? "" }
-        }
-        return ""
+        let e = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "thing-keys-at-")).firstMatch
+        return e.exists ? String(e.identifier.dropFirst("thing-keys-at-".count)) : ""
     }
 
     /// Waits for the focus to be on this field; false — with what the line said — if not.
     private func focused(_ app: XCUIApplication, _ id: String, timeout: TimeInterval = 3) -> Bool {
         if waitUntil(timeout: timeout, { self.focusOn(app) == id }) { return true }
-        print("KEYS-REPORT focus is '\(focusOn(app))', not \(id); the line says '\(words(app.staticTexts["thing-keys"]))'")
+        let line = app.staticTexts["thing-keys"]
+        print("KEYS-REPORT focus is '\(focusOn(app))', not \(id); the line says '\(line.exists ? words(line) : "(no line)")'")
+        let tree = app.debugDescription
+        if let at = tree.range(of: "thing-keys") {
+            print("KEYS-REPORT tree near the line:\n" + String(tree[tree.index(at.lowerBound, offsetBy: -1500, limitedBy: tree.startIndex) ?? tree.startIndex..<at.upperBound]))
+        } else {
+            print("KEYS-REPORT no thing-keys in the tree; its end:\n" + String(tree.suffix(4000)))
+        }
         return false
     }
 
