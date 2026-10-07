@@ -8755,9 +8755,13 @@ final class AMSPackingUITests: XCTestCase {
                       "typing e did not pick Electronics: '\(chosen(app, "thing-category"))'")
         XCTAssertFalse(app.buttons["thing-category-0"].exists, "typing opened the list")
         sleep(2)                                                  // a pause starts the letters afresh
-        app.typeText("rink")                                      // no name or word starts so: inside a word
-        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Food & drink" },
-                      "typing rink did not find Food & drink inside a word: '\(chosen(app, "thing-category"))'")
+        // Kind of thing takes a new kind since 0.69, so it goes by a name's START only: "rink"
+        // is offered as a new kind, never Food & drink found inside a word on the way.
+        app.typeText("rink")
+        XCTAssertTrue(app.buttons["thing-category-offer"].waitForExistence(timeout: 5), "a kind that is not there was not offered")
+        XCTAssertEqual(chosen(app, "thing-category"), "Electronics", "typing a new kind passed through another on the way")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-category-list", timeout: 5), "Esc did not close the offer")
         sleep(2)
         app.typeText("food")
         XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Food & drink" },
@@ -9331,6 +9335,212 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(page.first, "# Clothes", "Hiking: \(page)")
         XCTAssertFalse(page.contains("# Lamps") || page.contains("# Lights"), "the removed section is still there: \(page)")
         XCTAssertEqual(heading(of: "Spare batteries", in: page), "Everything else")
+        #endif
+    }
+
+    // MARK: - His lists changed inside their drop-downs (0.69)
+
+    // His ask (7 Oct 2026): "work on all the drop-downs so that they can be edited, changed,
+    // added, and deleted from within the drop-downs." Each entry of his own a pen, ↑ ↓ (not
+    // on Whose it is: A–Z) and Remove, which asks first — or, while anything uses the entry,
+    // says what does and keeps it; "A new …" at the foot; all held until Save.
+
+    /// The pen on row `row` of an open list: the row becomes its name; `name` and Return.
+    private func renameInList(_ app: XCUIApplication, _ row: String, to name: String) {
+        tap(app, id: "\(row)-rename")
+        let field = app.textFields["\(row)-name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the pen did not open \(row)'s name")
+        replace(name, in: field)
+        field.typeText("\n")
+        XCTAssertTrue(waitUntil { self.words(app.buttons[row]) == name },
+                      "Return did not take the new name: '\(words(app.buttons[row]))'")
+    }
+
+    /// Remove on a row in use: no question, the list says what uses it; OK closes that.
+    private func removeIsRefused(_ app: XCUIApplication, _ row: String) -> String {
+        tap(app, id: "\(row)-remove")
+        let said = app.staticTexts["\(row)-refused"]
+        XCTAssertTrue(said.waitForExistence(timeout: 5), "an entry in use was not refused")
+        XCTAssertFalse(app.buttons["\(row)-remove-yes"].exists, "an entry in use can still be removed")
+        return words(said)
+    }
+
+    /// Kind of thing: renamed, moved, an unused kind removed and one in use refused, a new
+    /// kind made — and saved, every thing of the renamed kind says the new name. The two
+    /// kinds the app reads by their words (Documents & money, Reminders) have no tools.
+    func testKindOfThingIsChangedInsideItsList() {
+        let app = launch()
+        openThing(app, "Map")
+        openDropDown(app, "thing-category")
+        for tool in ["rename", "up", "down", "remove"] {
+            XCTAssertTrue(app.buttons["thing-category-0-\(tool)"].exists, "a kind has no \(tool)")
+        }
+        XCTAssertFalse(app.buttons["thing-category-8-rename"].exists, "Documents & money has a pen")
+        XCTAssertEqual(words(app.buttons["thing-category-10"]), "Comfort & misc")
+        renameInList(app, "thing-category-10", to: "Comfort")
+        tap(app, id: "thing-category-10-up")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-category-9"]) == "Comfort" }, "↑ did not move the kind up")
+        XCTAssertTrue(removeIsRefused(app, "thing-category-9").contains("still used by"), "the refusal does not say what uses it")
+        shot(app, "lists-kind-refused")
+        tap(app, id: "thing-category-9-remove-no")
+        tap(app, id: "thing-category-0-remove")
+        XCTAssertTrue(app.staticTexts["thing-category-0-ask"].waitForExistence(timeout: 5), "Remove did not ask first")
+        tap(app, id: "thing-category-0-remove-yes")
+        XCTAssertTrue(app.buttons["thing-category-0-putback"].waitForExistence(timeout: 5), "the removed kind is not struck out")
+        type("Camping", into: app.textFields["thing-category-new"])
+        tap(app, id: "thing-category-add")
+        XCTAssertTrue(disappears(app, "thing-category-list", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-category"), "Camping", "the new kind was not chosen")
+        shot(app, "lists-kind-new")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        replace("Headlamp", in: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-category"), "Comfort", "the Headlamp's kind did not follow the rename")
+        openDropDown(app, "thing-category")
+        XCTAssertEqual(words(app.buttons["thing-category-0"]), "Adventure clothing", "the removed kind is still there")
+        let last = (0..<30).map { app.buttons["thing-category-\($0)"] }.last { $0.exists }
+        XCTAssertEqual(last.map { words($0) }, "Camping", "the new kind did not join the list")
+        closeDropDown(app, "thing-category")
+    }
+
+    /// Kept at home: a place renamed reaches every thing kept there; one in use is refused;
+    /// the order is kept; and Cancel leaves the places as they were.
+    func testKeptAtHomeIsChangedInsideItsListAndCancelUndoes() {
+        let app = launch()
+        openThing(app, "Map")
+        openPlaces(app)
+        XCTAssertEqual(words(app.buttons["thing-place-5"]), "Garage")
+        renameInList(app, "thing-place-2", to: "Hall cupboard")
+        tapInList(app, "thing-place-none")                          // closes the list, Not said
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(keptAtHome(app), "Garage", "Cancel kept the change of place")
+        openPlaces(app)
+        XCTAssertEqual(words(app.buttons["thing-place-2"]), "Hall closet", "Cancel kept the rename")
+        renameInList(app, "thing-place-5", to: "Workshop")
+        XCTAssertTrue(removeIsRefused(app, "thing-place-5").contains("Workshop"), "the refusal does not name the place")
+        tap(app, id: "thing-place-5-remove-no")
+        tap(app, id: "thing-place-0-down")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-place-0"]) == "Chest of drawers" }, "↓ did not move the place")
+        shot(app, "lists-places-changed")
+        closeDropDown(app, "thing-place")
+        XCTAssertEqual(keptAtHome(app), "Workshop", "the field does not show the new name")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        replace("Headlamp", in: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(keptAtHome(app), "Workshop", "the Headlamp, kept in the Garage, did not follow the rename")
+        openPlaces(app)
+        XCTAssertEqual(words(app.buttons["thing-place-0"]), "Chest of drawers", "the order was not kept")
+        XCTAssertEqual(words(app.buttons["thing-place-1"]), "Bedroom wardrobe")
+        closeDropDown(app, "thing-place")
+    }
+
+    /// Usually packed in: his bag renamed (its pocket goes with it), a new bag made and
+    /// moved up — and a bag with things in it is not removed from here: the list says so
+    /// and opens the bag's own page, which asks where its things go.
+    func testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage() {
+        let app = launch("-uiTestingPockets")
+        openThing(app, "Phone charger")
+        openDropDown(app, "thing-bag")
+        XCTAssertEqual(words(app.buttons["thing-bag-0"]), "Backpack")
+        XCTAssertFalse(app.buttons["thing-bag-1-rename"].exists, "No bag has a pen")
+        renameInList(app, "thing-bag-0", to: "Rucksack")
+        closeDropDown(app, "thing-bag")
+        XCTAssertEqual(chosen(app, "thing-bag"), "Rucksack")
+        XCTAssertEqual(chosen(app, "thing-pocket"), "Front pocket", "the pocket did not go with the renamed bag")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-bag"), "Rucksack", "the rename was not kept")
+        XCTAssertEqual(chosen(app, "thing-pocket"), "Front pocket", "the usual pocket was lost with the rename")
+        openDropDown(app, "thing-bag")
+        type("Duffel", into: app.textFields["thing-bag-new"])
+        tap(app, id: "thing-bag-add")
+        XCTAssertTrue(disappears(app, "thing-bag-list", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-bag"), "Duffel", "the new bag was not chosen")
+        openDropDown(app, "thing-bag")
+        tap(app, id: "thing-bag-1-up")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-bag-0"]) == "Duffel" }, "↑ did not move the new bag up")
+        // The Rucksack still has the Headlamp in it: its own page asks where that goes.
+        let said = removeIsRefused(app, "thing-bag-1")
+        XCTAssertTrue(said.contains("Its page asks"), "the refusal does not say where it goes: '\(said)'")
+        shot(app, "lists-bag-refused")
+        tap(app, id: "thing-bag-1-open")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 10), "Open the bag did not open its page")
+        shot(app, "lists-bag-page")
+    }
+
+    /// When on a template's row: a step renamed and a new one made there reach a thing's
+    /// When; the step the thing is in is refused.
+    func testWhenIsChangedInsideItsListOnATemplatesRow() {
+        let app = launch()
+        tab(app, "templates")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        openDropDown(app, "row-when")
+        XCTAssertFalse(app.buttons["row-when-0-rename"].exists, "Same as the thing has a pen")
+        renameInList(app, "row-when-2", to: "A week ahead")
+        type("In the car", into: app.textFields["row-when-new"])
+        tap(app, id: "row-when-add")
+        XCTAssertTrue(disappears(app, "row-when-list", timeout: 5))
+        XCTAssertEqual(chosen(app, "row-when"), "In the car")
+        shot(app, "lists-when-row")
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        openThing(app, "Map")
+        openDropDown(app, "thing-when")
+        XCTAssertEqual(words(app.buttons["thing-when-1"]), "A week ahead", "the rename did not reach the thing's When")
+        let last = (0..<30).map { app.buttons["thing-when-\($0)"] }.last { $0.exists }
+        XCTAssertEqual(last.map { words($0) }, "In the car", "the new step did not reach the thing's When")
+        let ticked = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'thing-when-' AND selected == true")).firstMatch
+        XCTAssertTrue(ticked.waitForExistence(timeout: 5))
+        let row = ticked.identifier                               // the Map's own step
+        XCTAssertTrue(removeIsRefused(app, row).contains("still used by"))
+        tap(app, id: "\(row)-remove-no")
+        closeDropDown(app, "thing-when")
+    }
+
+    /// The Mac's keys in his lists, as in a Section list: Tab reaches the lit row's pen, ↑ ↓
+    /// and Remove; Space presses — a rename typed from the keys, Remove refused for a place in
+    /// use (Space again: OK). Esc closes the list, Return saves.
+    func testHisListsAnswerTabAndSpaceOnTheMac() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")
+        tabTo(app, "thing-storage")
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(appears(app, "thing-places", timeout: 5), "Space did not open Kept at home")
+        app.typeKey(.tab, modifierFlags: [])                      // the Garage's pen
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(app.textFields["thing-place-5-name"].waitForExistence(timeout: 5), "Tab Space did not press the pen")
+        app.typeText("Shed\n")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-place-5"]) == "Shed" }, "the name typed was not taken")
+        for _ in 0..<4 { app.typeKey(.tab, modifierFlags: []) }   // pen, ↑, ↓, Remove
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(app.staticTexts["thing-place-5-refused"].waitForExistence(timeout: 5), "Space on Remove did not answer")
+        shot(app, "lists-keys-refused")
+        app.typeKey(.space, modifierFlags: [])                    // OK
+        XCTAssertTrue(waitUntil { !app.staticTexts["thing-place-5-refused"].exists }, "Space did not close the refusal")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "Esc did not close the list")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Return did not save")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.keptAtHome(app) == "Shed" }, "the rename from the keys was not kept: '\(keptAtHome(app))'")
         #endif
     }
 
