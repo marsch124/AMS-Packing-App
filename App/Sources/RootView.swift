@@ -66,6 +66,9 @@ struct RootView: View {
                 if AMSPackingApp.testing { RootView.playWhatHappenedWhileAway(model) }
             }
         }
+        // A place's printed code, read by the iPhone's Camera (0.69): it opens on Home.
+        .onOpenURL { model.open($0) }
+        .onChange(of: model.placeToOpen, initial: true) { _, place in if place != nil { section = .home } }
         // A Shortcut asked for a grab list or a trip: both open on Home.
         .onChange(of: model.grabToOpen, initial: true) { _, id in if id != nil { section = .home } }
         .onChange(of: model.grabMenuOpen, initial: true) { _, open in if open { section = .home } }

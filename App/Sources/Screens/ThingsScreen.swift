@@ -27,7 +27,14 @@ struct ThingsScreen: View {
         let all = model.library.thingRows()
         let homeless = all.filter { $0.templates.isEmpty }.count
         let q = normName(query)
-        let shown = all.filter { (!noListOnly || $0.templates.isEmpty) && (q.isEmpty || normName($0.item.name).contains(q)) }
+        // Its notes count too (0.69): its own Notes and the notes its templates keep for it.
+        let hits = model.library.noteHits(query)
+        let shown = all.filter { (!noListOnly || $0.templates.isEmpty)
+            && (q.isEmpty || normName($0.item.name).contains(q) || hits[$0.item.id] != nil) }
+        // The note line shows only under a thing found by its notes, not by its name.
+        let note: ((item: Item, templates: [String])) -> NoteHit? = { row in
+            normName(row.item.name).contains(q) ? nil : hits[row.item.id]
+        }
         // The ones added on this visit first (newest on top), then the rest A–Z.
         let fresh = justAdded.compactMap { id in shown.first { $0.item.id == id } }
         let rest = fresh.isEmpty ? shown : shown.filter { !justAdded.contains($0.item.id) }
@@ -80,12 +87,12 @@ struct ThingsScreen: View {
                                 // A row of its own, not the A–Z row moved up: the Mac kept
                                 // the moved row's old name ("thing-row-7" at the top of the
                                 // list, 3 Oct 2026), so a test — and VoiceOver — lost it.
-                                thingRow(row, n: n).id("just-added-\(row.item.id)")
+                                thingRow(row, n: n, note: note(row)).id("just-added-\(row.item.id)")
                             }
                             if !rest.isEmpty { listHeading("A–Z", id: "things-rest") }
                         }
                         ForEach(Array(rest.enumerated()), id: \.element.item.id) { n, row in
-                            thingRow(row, n: fresh.count + n)
+                            thingRow(row, n: fresh.count + n, note: note(row))
                         }
                     }
                     .padding(.horizontal, 16).padding(.bottom, 24)
@@ -126,7 +133,12 @@ struct ThingsScreen: View {
 
     private static let top = "things-top"
 
-    private func thingRow(_ row: (item: Item, templates: [String]), n: Int) -> some View {
+    /// `note`: the line of its notes a search found it by (0.69), shown under it — muted,
+    /// the words searched for in Care's colour. Its own text, outside the row's button, so
+    /// the Mac keeps it apart (a button folds its texts into itself there); a tap on it
+    /// opens the thing too.
+    private func thingRow(_ row: (item: Item, templates: [String]), n: Int, note: NoteHit? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
         Button { editing = row.item.id } label: {
             // The name and where it lives on ONE line (his word, 5 Oct 2026: "set the item
             // name and the info on the same line").
@@ -148,8 +160,16 @@ struct ThingsScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
         .accessibilityIdentifier("thing-row-\(n)")
+            if let note {
+                NoteHitLine(hit: note, query: query, tint: AppSection.care.color)
+                    .padding(.top, -3).padding(.bottom, 5)
+                    .contentShape(Rectangle())
+                    .onTapGesture { editing = row.item.id }
+                    .accessibilityIdentifier("thing-row-\(n)-note")
+            }
+        }
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }
 
     private func listHeading(_ title: String, id: String) -> some View {

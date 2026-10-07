@@ -31,6 +31,9 @@ final class LibraryModel: ObservableObject {
     @Published var grabToOpen: String?
     /// The Action button's "Choose a grab list": Home shows the menu of grab lists.
     @Published var grabMenuOpen = false
+    /// A place's code, from its printed label read by the iPhone's Camera
+    /// (AMSPACKING://P/<code>, 0.69). Home opens what it leads to and clears it.
+    @Published var placeToOpen: String?
     /// A tab asked for from inside a window — a to-do found by Search lives on To do.
     /// The frame switches to it and clears it.
     @Published var tabToOpen: AppSection?
@@ -178,6 +181,12 @@ final class LibraryModel: ObservableObject {
         return library.forecastIsStale(tripId: tripId)
     }
 
+    /// A link that came from outside — a place's printed label, read by the Camera
+    /// (AMSPACKING://P/<code>, 0.69). Anything else is left alone.
+    func open(_ url: URL) {
+        if let code = PlaceLink.code(in: url) { placeToOpen = code }
+    }
+
     /// Read a backup file and change NOTHING — not even the live "When" steps and
     /// conditions (`Importer.read`): what it holds, so a restore can be looked at before
     /// it replaces the lot. A file that does not come back the same is refused here,
@@ -207,6 +216,11 @@ extension LibraryModel {
             model.grabToOpen = model.library.allGrabLists().first { $0.label == args[n + 1] || $0.title == args[n + 1] }?.id
         }
         if AMSPackingApp.testing, args.contains("-openGrabMenu") { model.grabMenuOpen = true }
+        // A place's code, read by the Camera, as the link arrives (0.69).
+        if AMSPackingApp.testing, let n = args.firstIndex(of: "-uiTestingOpen"), n + 1 < args.count,
+           let url = URL(string: args[n + 1]) {
+            model.open(url)
+        }
         if AMSPackingApp.testing, args.contains("-openNextTrip"),
            let next = model.library.nextTrip(today: Today.local) {
             model.tripToOpen = next.id
@@ -225,6 +239,11 @@ extension LibraryModel {
     ///  -uiTestingSections     → memory, the sample with Hiking under two headings (Arrange)
     ///  -uiTestingWorkouts     → memory, the sample + a Run workout and things for one
     ///                           context only (Context per workout, 0.67)
+    ///  -uiTestingPlaces <when> → memory, the sample with the Garage's code G4R and its
+    ///                           trip moved (0.69): "soon" = it starts in 2 days (being
+    ///                           packed); "home" = it began 3 days ago, ends today, all
+    ///                           ticked; anything else = a month ahead, as the sample
+    ///  -uiTestingNotes        → memory, the sample + notes to search (0.69)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -264,6 +283,13 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingWorkouts") {
             return LibraryModel(store: MemoryStore(SampleLibrary.workouts().records()), usesICloud: false, sky: sky)
+        }
+        if let n = args.firstIndex(of: "-uiTestingPlaces") {
+            let when = n + 1 < args.count ? args[n + 1] : ""
+            return LibraryModel(store: MemoryStore(SampleLibrary.places(when).records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingNotes") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.notes().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTesting") {
             return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false, sky: sky)

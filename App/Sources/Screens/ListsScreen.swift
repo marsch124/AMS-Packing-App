@@ -20,6 +20,13 @@ struct ListsScreen: View {
     @State private var editing: (kind: String, key: String)?
     @State private var renaming = ""
     @State private var editSays = ""
+    /// The place whose square code is open (0.69).
+    @State private var coding: CodeFor?
+    /// Every place's label as a file, for Share (iPhone, 0.69).
+    @State private var labelFiles: [URL] = []
+    /// What saving every label into a folder did (Mac, 0.69).
+    @State private var labelsSaid = ""
+    private struct CodeFor: Identifiable { let id: String }
 
     private enum Kind: String, CaseIterable {
         case places, owners, people, conditions, phases
@@ -37,7 +44,7 @@ struct ListsScreen: View {
         /// totally clear to the user".
         var hint: String {
             switch self {
-            case .places: return "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place under Kept at home; a trip sorted by From where then lists what to fetch room by room."
+            case .places: return "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place under Kept at home; a trip sorted by From where then lists what to fetch room by room. The square beside a place is its code: print its label, and the iPhone\u{2019}s Camera opens the app on that place."
             case .owners: return "Whose a thing is — you, your partner, a child. You pick it under Whose it is on a thing, so on a shared trip everyone sees which things are theirs."
             case .people: return "Who packs a thing. You set it in the All your things table (Packed by), so you can see who is in charge of what."
             case .conditions: return "How worn a thing is: New, Good, Worn, Needs replacing. You set it under Condition on a thing; a thing that needs replacing is suggested on To buy."
@@ -75,6 +82,7 @@ struct ListsScreen: View {
                         Text(kind.hint).font(.system(.subheadline)).foregroundStyle(Theme.ink.opacity(0.85))
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("choices-hint-\(kind.rawValue)")
+                        if kind == .places { allLabels }
                         ForEach(Array(entries.enumerated()), id: \.offset) { n, entry in
                             HStack {
                                 Text(entry.label).font(.system(.body)).foregroundStyle(Theme.ink)
@@ -86,6 +94,19 @@ struct ListsScreen: View {
                                         .foregroundStyle(Theme.muted)
                                 }
                                 Spacer()
+                                // A place's square code, to print and put where its things are
+                                // kept (0.69): the Camera, pointed at it, opens the app there.
+                                if kind == .places {
+                                    Button { coding = CodeFor(id: entry.label) } label: {
+                                        CodeMark().frame(width: 22, height: 22)
+                                            .foregroundStyle(Theme.muted)
+                                            .frame(width: Metrics.tap, height: Metrics.tap)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("list-places-code-\(n)")
+                                    .accessibilityLabel("Square code for \(entry.label)")
+                                }
                                 // His own lists could only be added to and taken from (the spec
                                 // pass, 5 Oct 2026: "no rename, no reorder"). The pen opens the
                                 // entry: a new name, and ▲ ▼ where its order is his to set.
@@ -146,12 +167,78 @@ struct ListsScreen: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
+        .sheet(item: $coding) { PlaceCodeSheet(place: $0.id).environmentObject(model) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("lists-detail")
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 600)
         #endif
     }
+
+    /// Every place's label for the P-touch at once (0.69): on the Mac into a folder he
+    /// picks, on the iPhone through Share (Save Images, or Files).
+    @ViewBuilder private var allLabels: some View {
+        #if os(macOS)
+        VStack(alignment: .leading, spacing: 4) {
+            Button { saveAllLabels() } label: { allLabelsLabel }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("list-places-labels")
+            if !labelsSaid.isEmpty {
+                Text(labelsSaid).font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("list-places-labels-said")
+            }
+        }
+        #else
+        // Two steps on the iPhone: the labels are made (and the places' codes kept) on a
+        // press, never just by opening this page — then Share hands them all on.
+        if labelFiles.isEmpty {
+            Button { labelFiles = allLabelFiles() } label: { allLabelsLabel }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("list-places-labels")
+        } else {
+            ShareLink(items: labelFiles) {
+                Text(labelFiles.count == 1 ? "Share 1 label" : "Share \(labelFiles.count) labels")
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: Metrics.tap)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.settings.color))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("list-places-labels-share")
+        }
+        #endif
+    }
+
+    private var allLabelsLabel: some View {
+        WideButtonLabel(title: "Labels for P-touch, all places", tint: AppSection.settings.color) { CodeMark() }
+    }
+
+    /// Every place's code kept first (so a label never shows a code the library does
+    /// not know), then each label written as a file.
+    private func allLabelFiles() -> [URL] {
+        let places = model.library.storagePlaces()
+        PlaceLabels.keepCodes(places, in: model)
+        return PlaceLabels.write(places, from: model.library)
+    }
+
+    #if os(macOS)
+    private func saveAllLabels() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Save labels here"
+        panel.message = "Choose a folder for the P-touch labels of your places."
+        guard panel.runModal() == .OK, let folder = panel.url else { labelsSaid = "Not saved."; return }
+        var n = 0
+        for file in allLabelFiles() {
+            let to = folder.appendingPathComponent(file.lastPathComponent)
+            try? FileManager.default.removeItem(at: to)
+            if (try? FileManager.default.copyItem(at: file, to: to)) != nil { n += 1 }
+        }
+        labelsSaid = n == 1 ? "1 label saved in \(folder.lastPathComponent)." : "\(n) labels saved in \(folder.lastPathComponent)."
+    }
+    #endif
 
     /// One entry's editor, under its row: a new name with Rename, and ▲ ▼ (44 × 44,
     /// drawn) where the list's order is his. What a press could not do is said under it.

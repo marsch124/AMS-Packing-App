@@ -100,6 +100,25 @@ public enum PlaceLabel {
         return ctx.makeImage()
     }
 
+    /// The code alone, large, for the screen: `scale` pixels a square, four squares of
+    /// white all round — the same squares the label prints.
+    public static func codeImage(code: String, scale: Int = 10) -> CGImage? {
+        guard let grid = squares(PlaceLink.text(code: code)) else { return nil }
+        let side = (grid.count + 8) * scale
+        guard let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue) else { return nil }
+        ctx.setFillColor(gray: 1, alpha: 1)
+        ctx.fill(CGRect(x: 0, y: 0, width: side, height: side))
+        ctx.setShouldAntialias(false)
+        ctx.setFillColor(gray: 0, alpha: 1)
+        for (r, row) in grid.enumerated() {
+            for (c, black) in row.enumerated() where black {
+                ctx.fill(CGRect(x: (4 + c) * scale, y: side - (4 + r + 1) * scale, width: scale, height: scale))
+            }
+        }
+        return ctx.makeImage()
+    }
+
     /// The label as PNG bytes, marked 180 dots to the inch.
     public static func png(code: String, name: String) -> Data? {
         guard let image = image(code: code, name: name) else { return nil }
