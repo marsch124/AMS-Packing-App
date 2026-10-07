@@ -86,12 +86,26 @@ final class ChoiceEditsTests: XCTestCase {
         var lib = library()
         var e = ChoiceEdits(kind: "places")
         e.added = ["Workbench"]
-        e.order = ["Loft", ChoiceEdits.addedKey("Workbench"), "Garage", "Hall closet"]
+        e.order = ["Loft", ChoiceEdits.addedKey(0), "Garage", "Hall closet"]
         XCTAssertEqual(labels(lib, e), ["Loft", "Workbench", "Garage", "Hall closet"])
         XCTAssertEqual(lib.storagePlaces().count, 3, "added before Save")
         let map = lib.applyChoiceEdits(e)
-        XCTAssertEqual(map[ChoiceEdits.addedKey("Workbench")], "Workbench")
+        XCTAssertEqual(map[ChoiceEdits.addedKey(0)], "Workbench")
         XCTAssertEqual(lib.storagePlaces(), ["Loft", "Workbench", "Garage", "Hall closet"])
+    }
+
+    func testAnAddedEntryCanBeRenamedOrTakenBackBeforeSave() {
+        var lib = library()
+        var e = ChoiceEdits(kind: "places")
+        e.added = ["Workbnch", "Cellar"]
+        e.names[ChoiceEdits.addedKey(0)] = "Workbench"
+        e.removed = [ChoiceEdits.addedKey(1)]
+        XCTAssertEqual(labels(lib, e).suffix(2), ["Workbench", "Cellar"])
+        XCTAssertEqual(lib.choiceNameProblem(e, key: ChoiceEdits.addedKey(1), name: "workbench"), "You already have Workbench.")
+        let map = lib.applyChoiceEdits(e)
+        lib.applyChoiceRemovals(e, renamed: map)
+        XCTAssertEqual(map[ChoiceEdits.addedKey(0)], "Workbench")
+        XCTAssertEqual(lib.storagePlaces(), ["Garage", "Hall closet", "Loft", "Workbench"], "a taken-back entry was made")
     }
 
     func testTwoPlacesThatSwapNamesBothGetTheirs() {
@@ -129,7 +143,7 @@ final class ChoiceEditsTests: XCTestCase {
         var e = ChoiceEdits(kind: "categories")
         e.names["Electronics"] = "Gadgets"
         e.added = ["Camping"]
-        e.order = [ChoiceEdits.addedKey("Camping")] + CATEGORIES
+        e.order = [ChoiceEdits.addedKey(0)] + CATEGORIES
         let map = lib.applyChoiceEdits(e)
         XCTAssertEqual(map["Electronics"], "Gadgets")
         XCTAssertEqual(lib.categories().first, "Camping")
@@ -172,7 +186,7 @@ final class ChoiceEditsTests: XCTestCase {
         e.added = ["At the door"]
         let map = lib.applyChoiceEdits(e)
         XCTAssertNil(map["daybefore"], "an id does not change")
-        let made = map[ChoiceEdits.addedKey("At the door")]!
+        let made = map[ChoiceEdits.addedKey(0)]!
         XCTAssertEqual(lib.timeline().last?.id, made)
         XCTAssertEqual(lib.timeline().first { $0.id == "daybefore" }?.label, "The evening before")
         XCTAssertEqual(item(lib, "Charger").phase, "daybefore")
@@ -190,7 +204,7 @@ final class ChoiceEditsTests: XCTestCase {
         e.added = ["Lent out"]
         let map = lib.applyChoiceEdits(e)
         XCTAssertEqual(lib.conditions().first { $0.id == "worn" }?.label, "Well used")
-        XCTAssertEqual(lib.conditions().last?.id, map[ChoiceEdits.addedKey("Lent out")])
+        XCTAssertEqual(lib.conditions().last?.id, map[ChoiceEdits.addedKey(0)])
         XCTAssertEqual(lib.removeChoice("conditions", key: "worn"), "Well used is still used by 2 things, so it stays.")
     }
 
@@ -227,9 +241,9 @@ final class ChoiceEditsTests: XCTestCase {
         var lib = library()
         var e = ChoiceEdits(kind: "bags")
         e.added = ["Duffel"]
-        e.order = ["Tote", ChoiceEdits.addedKey("Duffel"), "Backpack", "Spare bag"]
+        e.order = ["Tote", ChoiceEdits.addedKey(0), "Backpack", "Spare bag"]
         let map = lib.applyChoiceEdits(e)
-        XCTAssertEqual(map[ChoiceEdits.addedKey("Duffel")], "Duffel")
+        XCTAssertEqual(map[ChoiceEdits.addedKey(0)], "Duffel")
         XCTAssertEqual(lib.bagNames(), ["Tote", "Duffel", "Backpack", "Spare bag"])
     }
 

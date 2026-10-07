@@ -28,17 +28,19 @@ public struct ChoiceEdits: Equatable, Sendable {
     public var names: [String: String] = [:]
     /// Every key in the new order (added ones by `addedKey`); nil = the order was not changed.
     public var order: [String]? = nil
-    /// Keys taken away — each refused, when asked, while anything used it.
+    /// Keys taken away — each refused, when asked, while anything used it. (An added one
+    /// taken back stays in `added`, removed: the keys of the others must not move.)
     public var removed: Set<String> = []
-    /// New entries, as typed, in the order they were added.
+    /// New entries, as typed, in the order they were added; each keyed `addedKey(n)`, and
+    /// renamed, moved and taken back by that key like any other.
     public var added: [String] = []
 
     public init(kind: String, bag: String = "") { self.kind = kind; self.bag = bag }
 
     public var isEmpty: Bool { names.isEmpty && order == nil && removed.isEmpty && added.isEmpty }
 
-    /// The key of an entry added on the page and not made yet (made on Save).
-    public static func addedKey(_ name: String) -> String { "\u{0}+" + jsTrim(name) }
+    /// The key of the `n`th entry added on the page and not made yet (made on Save).
+    public static func addedKey(_ n: Int) -> String { "\u{0}+\(n)" }
     public static func isAdded(_ key: String) -> Bool { key.hasPrefix("\u{0}+") }
 }
 
@@ -80,7 +82,7 @@ extension Library {
     public func choicesAsEdited(_ e: ChoiceEdits) -> [ChoiceRow] {
         var rows = choiceRows(e.kind, bag: e.bag)
         let stored = Set(rows.map(\.key))
-        for name in e.added { rows.append(ChoiceRow(key: ChoiceEdits.addedKey(name), label: name, added: true)) }
+        for (n, name) in e.added.enumerated() { rows.append(ChoiceRow(key: ChoiceEdits.addedKey(n), label: name, added: true)) }
         for n in rows.indices {
             if let name = e.names[rows[n].key] { rows[n].label = name }
             rows[n].removed = e.removed.contains(rows[n].key)
@@ -333,10 +335,13 @@ extension Library {
                 if let at = parked[key], renameOne(e, at, name) { took(key, name) }
             }
         }
-        for name in e.added {
-            if let made = addChoice(e.kind, name, bag: e.bag) { map[ChoiceEdits.addedKey(name)] = made }
+        for (n, typed) in e.added.enumerated() {
+            let key = ChoiceEdits.addedKey(n)
+            guard !e.removed.contains(key) else { continue }     // taken back on the page
+            let name = e.names[key] ?? typed
+            if let made = addChoice(e.kind, name, bag: e.bag) { map[key] = made }
             else if let have = choiceRows(e.kind, bag: e.bag).first(where: { Library.choiceKey($0.label) == Library.choiceKey(name) }) {
-                map[ChoiceEdits.addedKey(name)] = have.key       // made meanwhile (the other device): that one
+                map[key] = have.key                              // made meanwhile (the other device): that one
             }
         }
         if let order = e.order {

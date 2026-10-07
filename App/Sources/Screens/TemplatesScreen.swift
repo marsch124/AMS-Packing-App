@@ -1021,6 +1021,11 @@ struct RowEditor: View {
     @State private var contexts: Set<String> = []
     @State private var transports: Set<String> = []
     @State private var catering: Set<String> = []
+    /// His bags and When steps, and this template's sections, changed inside their lists
+    /// here (0.69) — held until Save, as on a thing's page (ChoiceDropDown.swift).
+    @State private var choiceLists: [String: ChoiceEdits] = [:]
+    @State private var sectionEdits = SectionEdits()
+    @State private var bagPage: String?
 
     /// The row of a section typed here and not made yet.
     static let newSectionKey = "\u{0}new-section"
@@ -1061,19 +1066,30 @@ struct RowEditor: View {
                     // The first row says where a blank bag REALLY goes: the template's own
                     // bag when it came with one, else the thing's (the spec pass). A bag this
                     // row names that is none of his is shown on a row of its own, ticked.
+                    // His bags, When steps and this template's sections are his own lists: each
+                    // row a pen, ↑ ↓ and Remove, and "A new …" at the foot (0.69).
+                    let bags = drop("bags", chosen: bag, words: "your bags",
+                                    open: DropDownOpen(title: "Open the bag") { name in openBag(name) })
                     DropDown(title: "Bag on this template", options: [("", model.library.sameBagWords(templateId: templateId, thing: thing))]
-                                + model.library.bagNames().map { ($0, $0) },
-                             selected: bag, id: "row-bag", tint: AppSection.templates.color, other: true) { bag = $0 }
+                                + (bags.rows.isEmpty ? model.library.bagNames().map { ($0, $0) } : bags.options),
+                             selected: bag, id: "row-bag", tint: AppSection.templates.color, other: true,
+                             newEntry: bags.newEntry("A new bag", needs: "Type the bag's name first.") { bag = $0 },
+                             tools: bags.tools) { bag = $0 }
+                    let steps = drop("phases", chosen: when, words: "your \u{201C}When\u{201D} steps")
                     DropDown(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
-                                + PHASES.map { ($0.id, $0.label) },
-                             selected: when, id: "row-when", tint: AppSection.templates.color) { when = $0 }
+                                + steps.options,
+                             selected: when, id: "row-when", tint: AppSection.templates.color,
+                             newEntry: steps.newEntry("A new step", needs: "Type the step first.") { when = $0 },
+                             tools: steps.tools) { when = $0 }
                     // Always there since 0.64: "A new section" is the list's foot, as "A new
                     // place" is Kept at home's — it was a block of its own under the pills.
                     DropDown(title: "Section of this template",
-                             options: [("", "No section")] + list.sections.map { ($0.id, $0.name) }
+                             options: [("", "No section")] + model.library.sectionsAsEdited(templateId: templateId, sectionEdits).map { ($0.id, $0.name) }
                                 + (pendingSection.isEmpty ? [] : [(RowEditor.newSectionKey, pendingSection)]),
                              selected: section, id: "row-section", tint: AppSection.templates.color,
-                             newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") { addSection($0) }
+                             newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") { addSection($0) },
+                             tools: .sections(model.library, template: list, edits: sectionEdits, keep: { sectionEdits = $0 },
+                                              removed: { value in if section == value { section = "" } })
                     ) { section = $0 }
                     // Blank shows, in grey, what the thing itself says — so a blank field
                     // never looks as if the thing's note had gone.
@@ -1117,6 +1133,10 @@ struct RowEditor: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
+        // A bag's own page, from a refusal in the Bag list (0.69): it is removed there.
+        .sheet(item: Binding(get: { bagPage.map { BagPageId(id: $0) } }, set: { bagPage = $0?.id })) { b in
+            BagDetail(bagId: b.id).environmentObject(model)
+        }
         .onAppear {
             guard let f = model.library.row(templateId: templateId, memId: memId) else { return }
             bag = f.membership.container; when = f.membership.phase
@@ -1177,11 +1197,34 @@ struct RowEditor: View {
     /// left blank, a new section made now — and trips still ahead follow.
     private func save() {
         let fresh = section == RowEditor.newSectionKey
-        let answers = Library.RowAnswers(bag: bag, when: when, qty: qty, note: note,
-                                         section: fresh ? "" : section, newSection: fresh ? pendingSection : "",
-                                         seasons: seasons, contexts: contexts, transports: transports, catering: catering)
-        model.change { _ = $0.saveRow(templateId: templateId, memId: memId, answers) }
+        let held = choiceLists, edits = sectionEdits
+        let (bag, when, section, pendingSection) = (bag, when, section, pendingSection)
+        let (qty, note, seasons, contexts, transports, catering) = (qty, note, seasons, contexts, transports, catering)
+        model.change { lib in
+            // The lists changed here first (0.69): the row's answers then follow them.
+            _ = lib.applySectionEdits(templateId: templateId, edits)
+            let maps = lib.applyPageChoices(held)
+            let answers = Library.RowAnswers(bag: Library.choiceValue(bag, after: maps["bags"] ?? [:]),
+                                             when: Library.choiceValue(when, after: maps["phases"] ?? [:]),
+                                             qty: qty, note: note,
+                                             section: fresh ? "" : section, newSection: fresh ? pendingSection : "",
+                                             seasons: seasons, contexts: contexts, transports: transports, catering: catering)
+            _ = lib.saveRow(templateId: templateId, memId: memId, answers)
+            lib.applyPageRemovals(held, maps)
+        }
         dismiss()
+    }
+
+    /// One of his lists as its drop-down here shows it, with the changes this row holds.
+    private func drop(_ kind: String, chosen: String, words: String, open: DropDownOpen? = nil) -> ChoiceDrop {
+        ChoiceDrop(library: model.library, edits: choiceLists[kind] ?? ChoiceEdits(kind: kind),
+                   keep: { choiceLists[kind] = $0 }, listWords: words, chosen: chosen, open: open)
+    }
+
+    /// "Open the bag" under a refusal: its page, once the list has closed.
+    private func openBag(_ name: String) {
+        guard let id = model.library.bags().first(where: { normName($0.name) == normName(name) })?.id else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { bagPage = id }
     }
 }
 

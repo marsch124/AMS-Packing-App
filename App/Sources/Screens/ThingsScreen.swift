@@ -271,6 +271,11 @@ struct ThingEditor: View {
     /// Each template's sections renamed, moved or removed in a Section list here (0.68),
     /// waiting for Save like a typed one — Cancel leaves the template as it was.
     @State private var sectionEdits: [String: SectionEdits] = [:]
+    /// His own lists changed inside their drop-downs here (0.69, ChoiceDropDown.swift) —
+    /// by list ("places", "bags", "pockets:<bag>" …), waiting for Save like the sections.
+    @State private var choiceLists: [String: ChoiceEdits] = [:]
+    /// A bag whose page was asked for from Usually packed in ("Open the bag", 0.69).
+    @State private var bagPage: String?
 
     // The Mac's keys (0.68) — see ThingKeys.swift. Unused on the iPhone.
     /// The field in focus, as the page sees it: ringed, and named at the page's foot.
@@ -320,7 +325,13 @@ struct ThingEditor: View {
     var body: some View {
         let templates = self.templates
         let owners = model.library.ownerChoices()          // each once (his screenshot, 2026-09-26)
-        let bag = ThingEditor.bagChoices(model.library.bagNames(), current: draft.container)
+        // His own lists, as their drop-downs show them while this page holds their changes.
+        let kinds = drop("categories", chosen: draft.category, words: "your kinds of thing")
+        let whose = drop("owners", chosen: draft.ownedBy, words: "your owners")
+        let bags = drop("bags", chosen: draft.container, words: "your bags",
+                        open: DropDownOpen(title: "Open the bag") { name in openBag(name) })
+        let bag = ThingEditor.bagChoices(bags.rows.isEmpty ? model.library.bagNames().map { ($0, $0) } : bags.options,
+                                         current: draft.container)
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
@@ -359,14 +370,21 @@ struct ThingEditor: View {
                     // Every pick-one list here is a drop-down (his word, 6 Oct 2026: "Can we please
                     // make these kinds of drop-downs everywhere?"); a kind of thing from the web app
                     // that is none of the app's is shown on a row of its own.
-                    DropDown(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: draft.category,
-                             id: "thing-category", other: true, ring: ring(.category)) { draft.category = $0 }
+                    DropDown(title: "Kind of thing", options: kinds.options, selected: draft.category,
+                             id: "thing-category", other: true,
+                             newEntry: kinds.newEntry("A new kind", needs: "Type the kind first.") { draft.category = $0 },
+                             tools: kinds.tools, ring: ring(.category)) { draft.category = $0 }
                         .keyed(.category)
                     if !owners.isEmpty {
                         // No owner means each has one of their own — his words (4 Oct 2026):
                         // "Replace 'Nobody's in particular' with 'Both have one'".
-                        DropDown(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
-                                 selected: draft.ownedBy, id: "thing-owner", other: true, ring: ring(.owner)) { draft.ownedBy = $0 }
+                        // His owners (A–Z, no ↑ ↓), then anyone a thing names who is not one of them.
+                        let listed = Set(model.library.owners().map(normName))
+                        DropDown(title: "Whose it is",
+                                 options: [("", OWNER_BOTH)] + whose.options + owners.filter { !listed.contains(normName($0)) }.map { ($0, $0) },
+                                 selected: draft.ownedBy, id: "thing-owner", other: true,
+                                 newEntry: whose.newEntry("A new owner", needs: "Type the name first.") { draft.ownedBy = $0 },
+                                 tools: whose.tools, ring: ring(.owner)) { draft.ownedBy = $0 }
                             .keyed(.owner)
                     } else {
                         // Nobody named anywhere yet: the heading stays, and says where the
@@ -402,7 +420,9 @@ struct ThingEditor: View {
                     keptAtHome
                         .keyed(.storage)
                     DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
-                             selected: bag.selected, id: "thing-bag", ring: ring(.bag)) { picked in
+                             selected: bag.selected, id: "thing-bag",
+                             newEntry: bags.newEntry("A new bag", needs: "Type the bag's name first.") { draft.container = $0 },
+                             tools: bags.tools, ring: ring(.bag)) { picked in
                         draft.container = picked
                         // A new bag: the old bag's pocket is not one of its (0.69).
                         if !model.library.pockets(bag: picked).contains(where: { normName($0) == normName(Library.usualPocket(draft)) }) {
@@ -411,16 +431,21 @@ struct ThingEditor: View {
                     }
                         .keyed(.bag)
                     // Its usual pocket (0.69), when that bag has pockets: "Backpack · Front pocket".
-                    let pockets = model.library.pockets(bag: draft.container)
-                    if !pockets.isEmpty {
-                        DropDown(title: "Pocket", options: pockets.map { ($0, $0) }, selected: Library.usualPocket(draft),
-                                 id: "thing-pocket", blank: "Just in the bag", same: { normName($0) == normName($1) }, ring: ring(.pocket)) {
+                    let pockets = drop("pockets", bag: draft.container, chosen: Library.usualPocket(draft),
+                                       words: "the \(jsTrim(draft.container))\u{2019}s pockets")
+                    if !pockets.rows.isEmpty {
+                        DropDown(title: "Pocket", options: pockets.options, selected: Library.usualPocket(draft),
+                                 id: "thing-pocket", blank: "Just in the bag", same: { normName($0) == normName($1) },
+                                 newEntry: pockets.newEntry("A new pocket", needs: "Type the pocket's name first.") { Library.setUsualPocket(&draft, $0) },
+                                 tools: pockets.tools, ring: ring(.pocket)) {
                             Library.setUsualPocket(&draft, $0)
                         }
                             .keyed(.pocket)
                     }
-                    DropDown(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: draft.phase,
-                             id: "thing-when", ring: ring(.when)) { draft.phase = $0 }
+                    let steps = drop("phases", chosen: draft.phase, words: "your \u{201C}When\u{201D} steps")
+                    DropDown(title: "When", options: steps.options, selected: draft.phase, id: "thing-when",
+                             newEntry: steps.newEntry("A new step", needs: "Type the step first.") { draft.phase = $0 },
+                             tools: steps.tools, ring: ring(.when)) { draft.phase = $0 }
                         .keyed(.when)
                     labelled("Weight, in grams (0 = not known)") {
                         field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight", .weight)
@@ -442,9 +467,12 @@ struct ThingEditor: View {
                         .keyed(.colour)
                     // The condition's ID is what is stored; a thing still holding a label
                     // (stored by the table before 0.62) lights its pill all the same.
-                    DropDown(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
-                             selected: model.library.conditionId(for: draft.condition) ?? draft.condition,
-                             id: "thing-condition", ring: ring(.condition)) { draft.condition = $0 }
+                    let condition = model.library.conditionId(for: draft.condition) ?? draft.condition
+                    let wear = drop("conditions", chosen: condition, words: "your conditions")
+                    DropDown(title: "Condition", options: [("", "Not said")] + wear.options,
+                             selected: condition, id: "thing-condition",
+                             newEntry: wear.newEntry("A new condition", needs: "Type the condition first.") { draft.condition = $0 },
+                             tools: wear.tools, ring: ring(.condition)) { draft.condition = $0 }
                         .keyed(.condition)
                     careFields
                     // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
@@ -494,6 +522,10 @@ struct ThingEditor: View {
             #endif
         }
         .background(Theme.bg.ignoresSafeArea())
+        // A bag's own page, from a refusal in Usually packed in (0.69): it is removed there.
+        .sheet(item: Binding(get: { bagPage.map { BagPageId(id: $0) } }, set: { bagPage = $0?.id })) { b in
+            BagDetail(bagId: b.id).environmentObject(model)
+        }
         .onAppear {
             if let id = shown { load(id) }
             #if os(macOS)
@@ -532,6 +564,7 @@ struct ThingEditor: View {
         sectionsAtOpen = now
         newSections = [:]
         sectionEdits = [:]
+        choiceLists = [:]
         kit = KitDraft(model.library, thingId: id)     // what it holds, or its kit (0.70)
         problem = ""
         weightProblem = ""
@@ -636,53 +669,10 @@ struct ThingEditor: View {
     /// things stay on the template with no section.
     private func sectionTools(_ t: PackList) -> DropDownRowTools {
         let id = t.id
-        func edits() -> SectionEdits { sectionEdits[id] ?? SectionEdits() }
-        func order() -> [String] { model.library.sectionsAsEdited(templateId: id, edits()).map(\.id) }
-        return DropDownRowTools(
-            applies: { value in t.sections.contains { $0.id == value } },
-            rename: { value, name in
-                let clean = jsTrim(name)
-                guard !clean.isEmpty else { return "Type the section's name first." }
-                guard !model.library.sectionNameTaken(templateId: id, name: clean, except: value, edits()) else {
-                    return "\(t.name) already has a section called that."
-                }
-                var e = edits()
-                let stored = model.library.templates.first { $0.id == id }?.sections.first { $0.id == value }?.name
-                e.names[value] = clean == stored ? nil : clean
-                sectionEdits[id] = e
-                return ""
-            },
-            move: { value, by in
-                var ids = order()
-                guard let at = ids.firstIndex(of: value), ids.indices.contains(at + by) else { return }
-                ids.swapAt(at, at + by)
-                var e = edits()
-                let stored = model.library.templates.first { $0.id == id }?.sections.map(\.id)
-                e.order = ids == stored ? nil : ids
-                sectionEdits[id] = e
-            },
-            canMove: { value, by in
-                let ids = order()
-                guard let at = ids.firstIndex(of: value) else { return false }
-                return ids.indices.contains(at + by)
-            },
-            isRemoved: { value in edits().removed.contains(value) },
-            remove: { value in
-                var e = edits()
-                e.removed.insert(value)
-                sectionEdits[id] = e
-                // The thing was in it: it is in none now, as its things will be.
-                if sections[id] == value { sections[id] = "" }
-            },
-            putBack: { value in
-                var e = edits()
-                e.removed.remove(value)
-                sectionEdits[id] = e
-            },
-            question: { value in
-                let name = model.library.sectionsAsEdited(templateId: id, edits()).first { $0.id == value }?.name ?? ""
-                return "Remove \(name) from \(t.name)? Its things stay, with no section."
-            })
+        // The one Section mechanism, shared with a template's row (0.69).
+        return .sections(model.library, template: t, edits: sectionEdits[id] ?? SectionEdits(),
+                         keep: { sectionEdits[id] = $0 },
+                         removed: { value in if sections[id] == value { sections[id] = "" } })   // the thing goes to none, as its things will
     }
 
     /// A section typed at the foot of a template's list: one of that name already on
@@ -707,16 +697,33 @@ struct ThingEditor: View {
     /// so it is spelt one way everywhere. Its parts keep the names they had before the
     /// drop-down was made of it.
     private var keptAtHome: some View {
-        DropDown(title: "Kept at home", options: model.library.storagePlaces().map { ($0, $0) },
+        // A new place joins Your choices on Save (0.69 — it used to join at once, and stayed
+        // after Cancel); one he already has is simply chosen, in his own spelling.
+        let places = drop("places", chosen: draft.storage, words: "your places")
+        return DropDown(title: "Kept at home", options: places.options,
                  selected: draft.storage,
                  id: DropDownIds(field: "thing-storage", list: "thing-places", row: "thing-place", title: "thing-heading-kept"),
                  blank: "Not said", other: true, same: { normName($0) == normName($1) },
-                 newEntry: DropDownNew(placeholder: "A new place", needs: "Type the place first.") { typed in
-                     // Made in Your choices — or, when he already has it, his own spelling of it.
-                     var made: String?
-                     model.change { made = $0.addPlace(typed) }
-                     if let made { draft.storage = made }
-                 }, ring: ring(.storage)) { draft.storage = $0 }
+                 newEntry: places.newEntry("A new place", needs: "Type the place first.") { draft.storage = $0 },
+                 tools: places.tools, ring: ring(.storage)) { draft.storage = $0 }
+    }
+
+    /// One of his lists as its drop-down here shows it, with the changes this page holds.
+    private func drop(_ kind: String, bag: String = "", chosen: String, words: String, open: DropDownOpen? = nil) -> ChoiceDrop {
+        let key = ThingEditor.choiceKey(kind, bag: bag)
+        return ChoiceDrop(library: model.library, edits: choiceLists[key] ?? ChoiceEdits(kind: kind, bag: bag),
+                          keep: { choiceLists[key] = $0 }, listWords: words, except: shown, chosen: chosen, open: open)
+    }
+
+    /// The page's key for one list's held changes: a bag's pockets by the bag.
+    static func choiceKey(_ kind: String, bag: String = "") -> String {
+        kind == "pockets" ? "pockets:\(normName(bag))" : kind
+    }
+
+    /// "Open the bag" under a refusal: its page, once the list has closed.
+    private func openBag(_ name: String) {
+        guard let id = model.library.bags().first(where: { normName($0.name) == normName(name) })?.id else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { bagPage = id }
     }
 
     /// Care: how often the thing is looked after, and what to do. Care listed only
@@ -747,10 +754,12 @@ struct ThingEditor: View {
     /// none of those (so it is seen, lit), then "No bag" — LAST, so the built-in
     /// bags keep their places. It could not be set back to no bag at all (the spec
     /// pass, 5 Oct 2026). A bag named in other capitals is lit as the bag it is.
-    static func bagChoices(_ names: [String], current: String) -> (options: [(id: String, label: String)], selected: String) {
+    /// The bags come as the drop-down shows them (0.69): by key and words, a bag added on
+    /// this page by its key.
+    static func bagChoices(_ bags: [(id: String, label: String)], current: String) -> (options: [(id: String, label: String)], selected: String) {
         let now = jsTrim(current)
-        let same = names.first { $0.lowercased() == now.lowercased() }
-        var options = names.map { (id: $0, label: $0) }
+        let same = bags.first { $0.id == current || $0.id.lowercased() == now.lowercased() }?.id
+        var options = bags
         if !now.isEmpty, same == nil { options.append((id: current, label: now)) }
         options.append((id: "", label: "No bag"))
         return (options, now.isEmpty ? "" : (same ?? current))
@@ -975,28 +984,45 @@ struct ThingEditor: View {
         let every = careEvery, notes = jsTrim(careNotes)
         let chosen = sections, atOpen = sectionsAtOpen, typed = newSections, edited = sectionEdits
         let kitSays = kit
+        let held = choiceLists
+        var written = d
         model.change { lib in
             // A template's sections changed in its Section list here (0.68), first: the
             // thing's own choice below is made among them as they now are.
             for (templateId, edits) in edited.sorted(by: { $0.key < $1.key }) {
                 _ = lib.applySectionEdits(templateId: templateId, edits)
             }
+            // His lists changed in their drop-downs here (0.69): renamed, moved and new
+            // entries first — the thing's own choices then follow them — removals last,
+            // once the thing no longer says what it moved away from.
+            let maps = lib.applyPageChoices(held)
+            var page = d
+            func follow(_ v: String, _ kind: String) -> String { Library.choiceValue(v, after: maps[kind] ?? [:]) }
+            page.storage = follow(page.storage, "places")
+            page.category = follow(page.category, "categories")
+            page.ownedBy = follow(page.ownedBy, "owners")
+            page.phase = follow(page.phase, "phases")
+            page.condition = follow(page.condition, "conditions")
+            let pocketsKey = ThingEditor.choiceKey("pockets", bag: page.container)
+            Library.setUsualPocket(&page, follow(Library.usualPocket(page), pocketsKey))
+            page.container = follow(page.container, "bags")
+            written = page
             kitSays.save(&lib, thingId: itemId)      // what it holds, or taken out of its kit (0.70)
             _ = lib.updateThing(id: itemId) { thing in
-                thing.storage = jsTrim(d.storage)
-                thing.category = d.category
-                thing.container = d.container
-                thing.extra[USUAL_POCKET_KEY] = d.extra[USUAL_POCKET_KEY]
-                thing.phase = d.phase
-                thing.ownedBy = d.ownedBy
-                thing.condition = d.condition
+                thing.storage = jsTrim(page.storage)
+                thing.category = page.category
+                thing.container = page.container
+                thing.extra[USUAL_POCKET_KEY] = page.extra[USUAL_POCKET_KEY]
+                thing.phase = page.phase
+                thing.ownedBy = page.ownedBy
+                thing.condition = page.condition
                 thing.weight = grams
-                thing.manufacturer = jsTrim(d.manufacturer)
-                thing.color = jsTrim(d.color)
-                thing.note = jsTrim(d.note)
-                thing.liquid = d.liquid
-                thing.restricted = d.restricted
-                thing.expiry = d.expiry
+                thing.manufacturer = jsTrim(page.manufacturer)
+                thing.color = jsTrim(page.color)
+                thing.note = jsTrim(page.note)
+                thing.liquid = page.liquid
+                thing.restricted = page.restricted
+                thing.expiry = page.expiry
                 // The care record changes only when what is said here changed: its log
                 // and last service stay as they were.
                 let had = thing.maintenance
@@ -1020,7 +1046,13 @@ struct ThingEditor: View {
                 _ = lib.setThingSection(itemId: itemId, templateId: t.id, section: fresh ? "" : pick,
                                         newSection: fresh ? (typed[t.id] ?? "") : "")
             }
+            lib.applyPageRemovals(held, maps)
         }
+        // The page now says what was written (⌘N's next thing starts from it).
+        draft.storage = written.storage; draft.category = written.category; draft.ownedBy = written.ownedBy
+        draft.phase = written.phase; draft.condition = written.condition; draft.container = written.container
+        Library.setUsualPocket(&draft, Library.usualPocket(written))
+        choiceLists = [:]
         return true
     }
 
@@ -1361,6 +1393,7 @@ extension ThingEditor {
         sectionsAtOpen = none
         newSections = [:]
         sectionEdits = [:]
+        choiceLists = [:]
         kit = KitDraft()
         problem = ""
         weightProblem = ""

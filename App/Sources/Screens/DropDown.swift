@@ -58,7 +58,27 @@ struct DropDownRowTools {
     let putBack: (String) -> Void
     /// The question before a row is removed ("Remove Nutrition from Business trip? …").
     let question: (String) -> String
+    /// Whether the rows have an order of his to set: no ↑ ↓ on a list that has its own
+    /// (Whose it is, A–Z — 0.69).
+    var orders = true
+    /// Why a row cannot be removed, said inside the list instead of the question — what
+    /// still uses it (Your choices' own words) — nil = it may go. (0.69: his lists.)
+    var refusal: (String) -> String? = { _ in nil }
+    /// A way on from a refusal: a bag in use is removed on its own page, which asks where
+    /// its things go — "Open the bag" (0.69). nil = none.
+    var open: DropDownOpen? = nil
+    /// The grey words of a row's name field.
+    var nameHint = "Section name"
 }
+
+/// A button under a refusal that opens the page where the row can be dealt with.
+struct DropDownOpen {
+    let title: String
+    let open: (String) -> Void
+}
+
+/// One tool of a row, in the order Tab reaches them (Mac) and they stand on the row.
+private enum DropDownTool { case rename, up, down, remove, putBack, yes, keep, open }
 
 /// How a drop-down's heading reads. A band of its own over the field (the thing's
 /// page, a template's row); a heading inside a block that already has one (a thing's
@@ -323,7 +343,7 @@ struct DropDown: View {
         #endif
         if renaming == value {
             VStack(alignment: .leading, spacing: 4) {
-                TextField("Section name", text: Binding(get: { newName }, set: { newName = $0; nameNeeds = "" }))
+                TextField(tools.nameHint, text: Binding(get: { newName }, set: { newName = $0; nameNeeds = "" }))
                     .textFieldStyle(.plain)
                     .font(.body).foregroundStyle(Theme.ink)
                     .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
@@ -346,30 +366,45 @@ struct DropDown: View {
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
             .id(id)
         } else if asking == value {
-            // Asked inside the list, as a thing's Delete asks on its page.
+            // Asked inside the list, as a thing's Delete asks on its page. An entry still in
+            // use is not asked about: the list says what uses it, as Your choices does (0.69).
+            let refused = tools.refusal(value)
+            let have = toolsOf(tools, value)
             VStack(alignment: .leading, spacing: 8) {
-                Text(tools.question(value))
+                Text(refused ?? tools.question(value))
                     .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("\(id)-ask")
+                    .accessibilityIdentifier(refused == nil ? "\(id)-ask" : "\(id)-refused")
                 HStack(spacing: 12) {
-                    Button { tools.remove(value); asking = nil; keyTool(nil) } label: {
-                        Text("Remove").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
-                            .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
-                            .background(Capsule().fill(AppSection.actions.color))
-                            .contentShape(Capsule())
+                    if refused == nil {
+                        Button { tools.remove(value); asking = nil; keyTool(nil) } label: {
+                            Text("Remove").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
+                                .background(Capsule().fill(AppSection.actions.color))
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .focusRing(toolLit(n, have, .yes), tint: tint, radius: 12, gap: 2)
+                        .accessibilityIdentifier("\(id)-remove-yes")
                     }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .focusRing(toolLit(n, 0), tint: tint, radius: 12, gap: 2)
-                    .accessibilityIdentifier("\(id)-remove-yes")
                     Button { asking = nil; keyTool(nil) } label: {
-                        Text("Keep").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                        Text(refused == nil ? "Keep" : "OK").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                             .padding(.horizontal, 8).frame(minHeight: Metrics.compact)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .focusRing(toolLit(n, 1), tint: tint, radius: 6, gap: 2)
+                    .focusRing(toolLit(n, have, .keep), tint: tint, radius: 6, gap: 2)
                     .accessibilityIdentifier("\(id)-remove-no")
+                    if refused != nil, let way = tools.open {
+                        Button { asking = nil; keyTool(nil); open = false; way.open(value) } label: {
+                            Text(way.title).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint)
+                                .padding(.horizontal, 8).frame(minHeight: Metrics.compact)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .focusRing(toolLit(n, have, .open), tint: tint, radius: 6, gap: 2)
+                        .accessibilityIdentifier("\(id)-open")
+                    }
                     Spacer(minLength: 0)
                 }
             }
@@ -381,6 +416,7 @@ struct DropDown: View {
         } else {
             let on = same(value, selected)
             let gone = tools.isRemoved(value)
+            let have = toolsOf(tools, value)
             HStack(spacing: 2) {
                 Button { if !gone { choose(value); open = false } } label: {
                     HStack(spacing: 8) {
@@ -401,22 +437,24 @@ struct DropDown: View {
                 .accessibilityIdentifier(id)
                 .accessibilityAddTraits(on ? .isSelected : [])
                 if gone {
-                    toolButton(id: "\(id)-putback", lit: toolLit(n, 0), label: "Put back") {
+                    toolButton(id: "\(id)-putback", lit: toolLit(n, have, .putBack), label: "Put back") {
                         tools.putBack(value); keyTool(nil)
                     } face: {
                         Text("Put back").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     }
                 } else {
-                    toolButton(id: "\(id)-rename", lit: toolLit(n, 0), label: "Rename") { startName(value, label) } face: {
+                    toolButton(id: "\(id)-rename", lit: toolLit(n, have, .rename), label: "Rename") { startName(value, label) } face: {
                         glyph("M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3zM13.5 7.5l3 3", Theme.muted)
                     }
-                    toolButton(id: "\(id)-up", lit: toolLit(n, 1), label: "Move up") { move(tools, value, -1) } face: {
-                        glyph("M6 15l6-6 6 6", tools.canMove(value, -1) ? tint : Theme.faint)
+                    if tools.orders {
+                        toolButton(id: "\(id)-up", lit: toolLit(n, have, .up), label: "Move up") { move(tools, value, -1) } face: {
+                            glyph("M6 15l6-6 6 6", tools.canMove(value, -1) ? tint : Theme.faint)
+                        }
+                        toolButton(id: "\(id)-down", lit: toolLit(n, have, .down), label: "Move down") { move(tools, value, 1) } face: {
+                            glyph("M6 9l6 6 6-6", tools.canMove(value, 1) ? tint : Theme.faint)
+                        }
                     }
-                    toolButton(id: "\(id)-down", lit: toolLit(n, 2), label: "Move down") { move(tools, value, 1) } face: {
-                        glyph("M6 9l6 6 6-6", tools.canMove(value, 1) ? tint : Theme.faint)
-                    }
-                    toolButton(id: "\(id)-remove", lit: toolLit(n, 3), label: "Remove") { asking = value; keyTool(0) } face: {
+                    toolButton(id: "\(id)-remove", lit: toolLit(n, have, .remove), label: "Remove") { ask(tools, value) } face: {
                         Text("Remove").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                     }
                 }
@@ -501,13 +539,31 @@ struct DropDown: View {
         #endif
     }
 
+    /// The tools a row shows now, in the order Tab reaches them: Put back on a removed
+    /// row; Remove and Keep while asked (OK, and the way on, when refused); otherwise the
+    /// pen, ↑ ↓ (on a list with an order of his) and Remove.
+    private func toolsOf(_ tools: DropDownRowTools, _ value: String) -> [DropDownTool] {
+        if asking == value {
+            return tools.refusal(value) == nil ? [.yes, .keep] : [.keep] + (tools.open == nil ? [] : [.open])
+        }
+        if tools.isRemoved(value) { return [.putBack] }
+        return [.rename] + (tools.orders ? [.up, .down] : []) + [.remove]
+    }
+
     /// Is this tool of row `n` the one Tab has reached (Mac)?
-    private func toolLit(_ n: Int, _ k: Int) -> Bool {
+    private func toolLit(_ n: Int, _ have: [DropDownTool], _ t: DropDownTool) -> Bool {
         #if os(macOS)
-        return lit == n && tool == k
+        return lit == n && tool.map { have.indices.contains($0) && have[$0] == t } == true
         #else
         return false
         #endif
+    }
+
+    /// Remove pressed: the question, or what still uses the row — with the first of its
+    /// buttons lit for the keys (Remove, or OK).
+    private func ask(_ tools: DropDownRowTools, _ value: String) {
+        asking = value
+        keyTool(0)
     }
 
     private func keyTool(_ k: Int?) {
@@ -648,7 +704,7 @@ struct DropDown: View {
     private func tab(_ by: Int) -> Bool {
         guard open, let tools, let n = lit, keyRows.indices.contains(n), tools.applies(keyRows[n].value) else { return false }
         let value = keyRows[n].value
-        let count = asking == value ? 2 : (tools.isRemoved(value) ? 1 : 4)
+        let count = toolsOf(tools, value).count
         guard let at = tool else {
             if by < 0 { return false }
             tool = 0
@@ -666,20 +722,20 @@ struct DropDown: View {
     private func pressTool() -> Bool {
         guard let tools, let n = lit, let k = tool, keyRows.indices.contains(n), tools.applies(keyRows[n].value) else { return false }
         let value = keyRows[n].value
-        if asking == value {
-            if k == 0 { tools.remove(value) }
-            asking = nil
-            tool = nil
-        } else if tools.isRemoved(value) {
-            tools.putBack(value)
-            tool = nil
-        } else {
-            switch k {
-            case 0: startName(value, keyRows[n].label, byKeys: true)
-            case 1: move(tools, value, -1)
-            case 2: move(tools, value, 1)
-            default: asking = value; tool = 0
-            }
+        let have = toolsOf(tools, value)
+        guard have.indices.contains(k) else { tool = nil; return true }
+        switch have[k] {
+        case .yes: tools.remove(value); asking = nil; tool = nil
+        case .keep: asking = nil; tool = nil
+        case .open:
+            asking = nil; tool = nil
+            close()
+            tools.open?.open(value)
+        case .putBack: tools.putBack(value); tool = nil
+        case .rename: startName(value, keyRows[n].label, byKeys: true)
+        case .up: move(tools, value, -1)
+        case .down: move(tools, value, 1)
+        case .remove: ask(tools, value)
         }
         return true
     }
