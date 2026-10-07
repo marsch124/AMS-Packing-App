@@ -9571,4 +9571,83 @@ final class AMSPackingUITests: XCTestCase {
         #endif
         shot(app, "vault-after-review")
     }
+
+    // MARK: - Reminders on a template (0.70, spec 07 part 12)
+
+    /// A template keeps a list of reminders above its things (his idea, 7 Oct 2026): Add
+    /// says what is missing when nothing is typed; a reminder is added with its When,
+    /// moved up, renamed and removed (asked first) — and the things stay as they were.
+    func testATemplateKeepsItsReminders() {
+        let app = launch()
+        openSectionedHiking(app)                                   // Hiking, the sample's
+        XCTAssertTrue(appears(app, "template-reminders", timeout: 5), "no Reminders block on the template")
+        XCTAssertFalse(app.buttons["template-reminder-0"].exists, "a reminder before any was added")
+        tap(app, id: "template-reminders-start")
+        let name = app.textFields["template-reminder-add-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5), "no field for a new reminder")
+        tap(app, id: "template-reminder-add")
+        XCTAssertTrue(app.staticTexts["template-reminder-add-needs"].waitForExistence(timeout: 5),
+                      "Add with nothing typed says nothing")
+        type("Fill the bottles", into: name)
+        tap(app, id: "template-reminder-add")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-0"]).contains("Fill the bottles") },
+                      "the reminder was not added: '\(words(app.buttons["template-reminder-0"]))'")
+        type("Pack the snacks", into: name)
+        tap(app, id: "template-reminder-add")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-1"]).contains("Pack the snacks") })
+        XCTAssertEqual(words(app.staticTexts["template-reminders-count"]), "2")
+        shot(app, "reminders-template")
+
+        // Open the second: up, renamed, Done.
+        hideKeyboard(app)
+        tap(app, id: "template-reminder-1")
+        XCTAssertTrue(app.textFields["template-reminder-name"].waitForExistence(timeout: 5), "the reminder does not open")
+        hideKeyboard(app)
+        shot(app, "reminders-open")
+        tap(app, id: "template-reminder-up")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-0"]).contains("Pack the snacks") },
+                      "Up did not move it: '\(words(app.buttons["template-reminder-0"]))'")
+        type(" now", into: app.textFields["template-reminder-name"])
+        tap(app, id: "template-reminder-done")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-0"]).contains("Pack the snacks now") },
+                      "not renamed: '\(words(app.buttons["template-reminder-0"]))'")
+        XCTAssertFalse(app.textFields["template-reminder-name"].exists, "Done did not close it")
+
+        // Remove asks first.
+        tap(app, id: "template-reminder-1")
+        tap(app, id: "template-reminder-remove")
+        tap(app, id: "template-reminder-remove-yes")
+        XCTAssertTrue(waitUntil { !app.buttons["template-reminder-1"].exists }, "the reminder was not removed")
+        XCTAssertEqual(words(app.staticTexts["template-reminders-count"]), "1")
+        // A reminder is no thing: Find on this template does not find it.
+        type("snacks", into: app.textFields["template-find"])
+        XCTAssertTrue(app.staticTexts["template-find-none"].waitForExistence(timeout: 5),
+                      "a reminder is found among the template's things")
+        XCTAssertFalse(app.buttons["template-reminder-0"].exists, "the reminders stay while he looks for a thing")
+        hideKeyboard(app)
+        tap(app, id: "template-find-clear")
+        XCTAssertTrue(app.buttons["template-reminder-0"].waitForExistence(timeout: 5))
+    }
+
+    /// On a trip a reminder is a line to tick, and when its step has come it shows on
+    /// Home's countdown and in Check before you go — a press there ticks it.
+    /// (`-uiTestingReminders`: Hiking's "Check the forecast" a week ahead, "Leave a
+    /// route note" the day before; the trip in three days.)
+    func testATripsRemindersShowWhenTheyAreDue() {
+        let app = launch("-uiTestingReminders")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let card = app.buttons["home-countdown"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "no countdown")
+        XCTAssertTrue(waitUntil { (card.value as? String ?? "") == "1 to do" },
+                      "the countdown does not name the reminder due: '\(card.value as? String ?? "")'")
+        shot(app, "reminders-home")
+        tap(app, id: "home-countdown")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "Check before you go does not show the reminder due")
+        XCTAssertTrue(app.buttons["trip-check-todo-0"].exists)
+        XCTAssertFalse(app.buttons["trip-check-todo-1"].exists, "a reminder not yet due is shown")
+        shot(app, "reminders-trip")
+        tap(app, id: "trip-check-todo-0")
+        XCTAssertTrue(disappears(app, "trip-checks", timeout: 5), "ticking it did not take it off the card")
+    }
 }

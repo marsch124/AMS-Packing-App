@@ -15,11 +15,20 @@ extension Library {
         public var task: Bool
         /// The day it falls due: the trip's start less the step's lead days.
         public var date: String
-        /// Its lines not yet ticked or set aside.
+        /// Its lines not yet ticked or set aside — the THINGS (0.70: reminders apart).
         public var left: Int
+        /// Its reminders not yet ticked or set aside (spec 07, part 12).
+        public var todo: Int = 0
 
-        /// "≥1 week ahead: 12 to pack", "Preparations: 3 to do".
-        public var says: String { "\(label): \(left) to \(task ? "do" : "pack")" }
+        /// "≥1 week ahead: 12 to pack", "Day before: 3 to pack, 2 to do",
+        /// "Preparations: 3 to do" (a step of things to do: its reminders are to do too).
+        public var says: String {
+            if task { return "\(label): \(left + todo) to do" }
+            var parts: [String] = []
+            if left > 0 || todo == 0 { parts.append("\(left) to pack") }
+            if todo > 0 { parts.append("\(todo) to do") }
+            return "\(label): " + parts.joined(separator: ", ")
+        }
     }
 
     public struct NextTrip: Equatable, Sendable {
@@ -28,10 +37,12 @@ extension Library {
         public var startDate: String
         /// Whole days until it starts; 0 = today.
         public var days: Int
-        /// Lines still to pack, every step together.
+        /// Lines still to pack, every step together — the things (0.70: reminders apart).
         public var left: Int
         /// The first step with something left — due already, or still to come.
         public var step: PackingStep?
+        /// The reminders due by today and not yet ticked (spec 07, part 12), by name.
+        public var due: [String] = []
     }
 
     public struct PackingReminder: Equatable, Sendable {
@@ -54,10 +65,12 @@ extension Library {
         guard let trip = trips.first(where: { $0.id == tripId }), isYMD(trip.startDate) else { return [] }
         var out: [PackingStep] = []
         for phase in PHASES where phase.leadDays >= 0 {
-            let left = trip.entries.filter { $0.phase == phase.id && !$0.checked && !isSetAside($0) }.count
-            guard left > 0 else { continue }
+            let open = trip.entries.filter { $0.phase == phase.id && !$0.checked && !isSetAside($0) }
+            let todo = open.filter(Library.isReminder).count
+            let left = open.count - todo
+            guard left + todo > 0 else { continue }
             out.append(PackingStep(phaseId: phase.id, label: phase.label, task: phase.task,
-                                   date: Library.ymd(trip.startDate, plusDays: -phase.leadDays), left: left))
+                                   date: Library.ymd(trip.startDate, plusDays: -phase.leadDays), left: left, todo: todo))
         }
         return out.stableSorted(by: { a, b in jsStringLess(a.date, b.date) })
     }
@@ -68,9 +81,25 @@ extension Library {
         let ahead = trips.filter { stillToLeave($0, today) }
             .stableSorted(by: { a, b in jsStringLess(a.startDate, b.startDate) })
         guard let t = ahead.first, let days = daysUntil(t.startDate, today) else { return nil }
-        let left = t.entries.filter { !$0.checked && !isSetAside($0) }.count
+        let left = t.entries.filter { !$0.checked && !isSetAside($0) && !Library.isReminder($0) }.count
         return NextTrip(id: t.id, name: t.name, startDate: t.startDate, days: days, left: left,
-                        step: packingSteps(tripId: t.id).first)
+                        step: packingSteps(tripId: t.id).first,
+                        due: dueReminders(tripId: t.id, today: today).map(\.name))
+    }
+
+    /// A trip's reminders that are due (spec 07, part 12): not ticked, not set aside,
+    /// and their step's day — the trip's start less its lead days — is today or past.
+    /// In the timeline's order, then the trip's. A trip without a start date, or a line
+    /// whose When this device does not know, has none due.
+    public func dueReminders(tripId: String, today: String) -> [Item] {
+        guard let trip = trips.first(where: { $0.id == tripId }), isYMD(trip.startDate) else { return [] }
+        var out: [Item] = []
+        for phase in PHASES {
+            let day = Library.ymd(trip.startDate, plusDays: -phase.leadDays)
+            guard !jsStringLess(today, day) else { continue }
+            out += trip.entries.filter { Library.isReminder($0) && $0.phase == phase.id && !$0.checked && !isSetAside($0) }
+        }
+        return out
     }
 
     /// What to remind him of: one reminder per trip per day a step falls due, from

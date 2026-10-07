@@ -519,7 +519,8 @@ extension Library {
                 if !(names[m.itemId] ?? []).contains(shown) { names[m.itemId, default: []].append(shown) }
             }
         }
-        return items
+        // The reminders on a template are on its page, never among his things (0.70).
+        return ownThings()
             .map { (item: $0, templates: names[$0.id] ?? []) }
             .stableSorted(compare: { a, b in jsLocaleCompare(a.item.name, b.item.name, sensitivity: .base) })
     }
@@ -793,8 +794,14 @@ extension Library {
     /// gone are not shown, as everywhere.
     public func arrangeLines(templateId: String) -> [ArrangeLine] {
         guard let t = templates.first(where: { $0.id == templateId }) else { return [] }
-        let things = Set(items.map(\.id))
-        let shown = Set(memberships.filter { $0.templateId == templateId && things.contains($0.itemId) }.map(\.id))
+        // A reminder is not arranged with the things: it has its own list on the page,
+        // and its own order (0.70) — it keeps its place among the rows meanwhile.
+        var kinds: [String: String] = [:]
+        for i in items { kinds[i.id] = i.itemType }
+        let shown = Set(memberships.filter { m in
+            guard m.templateId == templateId, let kind = kinds[m.itemId] else { return false }
+            return (m.itemType.isEmpty ? kind : m.itemType) != REMINDER_TYPE
+        }.map(\.id))
         var lines: [ArrangeLine] = []
         for group in arrangedRows(templateId: templateId) {
             if !group.sectionId.isEmpty { lines.append(.heading(group.sectionId)) }

@@ -21,13 +21,16 @@ struct TripChecksCard: View {
     var body: some View {
         let cabin = model.library.cabinCheck(tripId: tripId)
         let dates = model.library.dateCheck(tripId: tripId, todayISO: Today.local)
+        // His reminders whose step has come and that are not ticked yet (0.70, spec 07 part 12).
+        let due = model.library.dueReminders(tripId: tripId, today: Today.local)
         let red = cabin.contains { $0.why == .notAllowed } || dates.contains { $0.alreadyOut || $0.beforeHome }
-        let tint = red ? AppSection.actions.color : AppSection.care.color
-        if !cabin.isEmpty || !dates.isEmpty {
+        // Only reminders to see to: the trip's own colour, not a warning's.
+        let tint = red ? AppSection.actions.color : (cabin.isEmpty && dates.isEmpty ? AppSection.events.color : AppSection.care.color)
+        if !cabin.isEmpty || !dates.isEmpty || !due.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Text("Check before you go").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
-                    Text("\(cabin.count + dates.count)")
+                    Text("\(cabin.count + dates.count + due.count)")
                         .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                         .padding(.horizontal, 8).padding(.vertical, 2)
                         .background(Capsule().fill(tint))
@@ -44,6 +47,10 @@ struct TripChecksCard: View {
                          mark: f.document ? (TemplateIcons.icon("passport")?.path ?? "") : TripChecksCard.hourglass,
                          thing: f.thingId)
                         .accessibilityIdentifier("trip-check-date-\(n)")
+                }
+                ForEach(Array(due.enumerated()), id: \.element.id) { n, line in
+                    reminder(line)
+                        .accessibilityIdentifier("trip-check-todo-\(n)")
                 }
             }
             .padding(14)
@@ -73,6 +80,28 @@ struct TripChecksCard: View {
             .frame(minHeight: Metrics.tap).contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
+    }
+
+    /// A reminder due: its tick, its name, and the step it belongs to. A press ticks it
+    /// — on the trip's list too, it is the same line — and it leaves the card.
+    private func reminder(_ line: Item) -> some View {
+        let tint = AppSection.events.color
+        return Button {
+            model.change { _ = $0.setChecked(true, tripId: tripId, entryId: line.id) }
+        } label: {
+            HStack(spacing: 10) {
+                TickCircle(on: false, tint: tint).frame(width: 22, height: 22)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(line.name).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text("To do \u{00B7} \(phaseOrFallback(line.phase).label)").font(.system(.subheadline)).foregroundStyle(tint)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 6)
+            }
+            .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityLabel("\(line.name), to do. Tick it")
     }
 
     static func says(_ f: CabinFlag) -> String {

@@ -28,6 +28,12 @@ struct CountdownCard: View {
                     Text(CountdownCard.stepLine(next, today: Today.local))
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
+                    // His reminders whose step has come (0.70, spec 07 part 12), by name.
+                    if !next.due.isEmpty {
+                        Text("To do: " + next.due.joined(separator: " \u{00B7} "))
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                            .lineLimit(2)
+                    }
                 }
                 Spacer(minLength: 4)
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -41,6 +47,7 @@ struct CountdownCard: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("home-countdown")
+        .accessibilityValue(next.due.isEmpty ? "" : "\(next.due.count) to do")
     }
 
     /// "≥1 week ahead: 12 to pack, from 14 Oct" — or "now" once it is due.

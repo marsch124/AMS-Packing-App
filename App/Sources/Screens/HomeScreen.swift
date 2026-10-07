@@ -190,7 +190,7 @@ struct HomeScreen: View {
                         .frame(width: 16)
                         .accessibilityIdentifier("device-heading")
                     CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
-                    CountTile(number: model.library.items.count, label: "Things", id: "count-things", color: AppSection.care.color)
+                    CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
                     // The templates Your templates shows — not the hidden bags list or the
                     // web app's old bin, which made this number the higher one (5 Oct 2026).
                     CountTile(number: TemplatesScreen.activityAreas(model.library.templates).reduce(0) { $0 + $1.lists.count },

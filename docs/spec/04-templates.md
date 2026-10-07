@@ -1704,3 +1704,9 @@ deciding before a rewrite.
     choices counts and footer 14.
 33. **Resolved in 0.62** — ~~`DEFAULT_PEOPLE` holds two real first names in a public repository.~~ They are the
     invented Kim and Robin (spec 06, item 29).
+
+## Reminders on a template (0.70)
+
+A block **Reminders** above a template's things (add, rename, When, up/down, remove) — specified in full in
+spec 07, part 12. The template's things list, its Find count, Arrange and the template card count leave the
+reminders out.

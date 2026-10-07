@@ -642,6 +642,9 @@ wash bag open with two ticks and "2 to go"; its own tap does not tick it; the se
   progress, because they must be done before leaving; they are NOT in the bag loads (nothing to weigh),
   the cabin check (nothing to carry) or the review (nothing to use). Written down by the spec pass,
   5 Oct 2026, and kept so.
+  Since 0.70 (spec 07, part 12) a reminder line says "To do" instead of its bag, stands under "To do" when
+  sorted by Into, and shows in Check before you go and on Home's countdown once its step is due; the
+  countdown's "to pack" counts leave reminders out ("7 to pack, 1 to do").
 - **Set aside means not packed** (0.62): `setAside(true)` also takes the line's tick away, so a line is
   never ticked and set aside at once. (Older data can still hold both; the review, Your year and All
   your trips count such a line as not packed.)

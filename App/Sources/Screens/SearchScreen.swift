@@ -148,7 +148,7 @@ struct SearchScreen: View {
         // it, so a hit can look inexplicable; here it is said in the line under.
         // …and its notes (0.69): its own Notes and the notes its templates keep for it.
         let hits = library.noteHits(query)
-        let things = library.items.filter {
+        let things = library.ownThings().filter {   // not a template's reminders (0.70)
             normName($0.name).contains(needle) || normName($0.swedish).contains(needle) || hits[$0.id] != nil
         }
         if !things.isEmpty {
