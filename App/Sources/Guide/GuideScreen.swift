@@ -169,7 +169,9 @@ struct HowItWorksScreen: View {
         Topic(section: .events, title: "After a trip", lines: [
             "Review: tap what you did not use; type what you missed, pick the template it goes onto, and Add it; then Save.",
             "Under a trip's name: where it stands in the loop, Plan · Pack · On site · Review · Refine, the step it is at filled in with the mark of the tab where it is done. Tap it for the whole picture.",
-            "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time."]),
+            "Nothing is removed. \u{201C}Didn't use\u{201D} adds to each thing's history; what you missed goes onto a template for next time.",
+            "Obsidian: a reviewed trip becomes one page in your Obsidian vault, named by its month and name (2026-07 Weekend in the hills), with its weather, bags and their weights and photos, what you did not use, missed, bought on site, and your notes. Sending it again replaces the page.",
+            "The Mac writes the page. On the Mac, Send to Obsidian asks once for the folder (your vault's Areas/Travel) and writes at once; Change picks another folder. On the iPhone, Send to Obsidian marks the trip waiting for the Mac, which writes it the next time it is open. Saving a review asks for the page by itself."]),
         Topic(section: .events, title: "Trips", lines: [
             "Now, Coming up and Done — Now is always there, even when no trip is under way. Each trip says Planned, Packing or Ready.",
             "Reviewed trips fold away. Your year shows when you travel, month by month; All your trips counts everything, ever, with the map of where they went under it.",

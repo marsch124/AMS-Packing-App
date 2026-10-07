@@ -456,6 +456,9 @@ extension Library {
     @discardableResult
     public mutating func saveReview(tripId: String, unused: Set<String>, missed: [Missed], when: String) -> Bool {
         guard let t = trips.firstIndex(where: { $0.id == tripId }) else { return false }
+        // What was missed, kept on the trip, and the page in his vault asked for (0.70,
+        // spec 07 part 8 — VaultPage.swift): the Mac writes it.
+        noteReviewForVault(trip: t, missed: missed, when: when)
         for m in missed {
             let name = jsTrim(m.name)
             guard !name.isEmpty else { continue }

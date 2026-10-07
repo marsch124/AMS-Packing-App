@@ -19,13 +19,13 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 5. Bag pockets and "Where is my …?" | 0.69 | building |
 | 6. The door check | 0.69 | building |
 | 7. Apple Health fills in the review | 0.70 | designed here |
-| 8. A trip page in his Obsidian vault | 0.70 | designed here |
+| 8. A trip page in his Obsidian vault | 0.70 | built |
 | 9. Kits — things that hold things | 0.70 | designed here |
 | 10. Hands-free packing (a test version) | 0.71 | designed here |
 | 11. Decision log | — | kept here |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
-there. Parts 7–10 are specified in full below.
+there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
 
 ---
 
@@ -135,33 +135,200 @@ his Mac when GitHub cannot sign them. The release step checks the archived app's
 
 ## 8. A trip page in his Obsidian vault
 
+**Built in 0.70** (`PackingLibrary/VaultPage.swift` — the page and the marks; `App/Sources/Store/Vault.swift` —
+`VaultShelf`, the folder and the writing, Mac only; `App/Sources/Screens/VaultCard.swift` — the card on the trip;
+spec 03 "The trip's page in his vault" has the card's every size and id).
+
 ### What he gets
 
 When a trip's review is saved — and whenever he presses **"Send to Obsidian"** on a reviewed trip — the trip
 becomes one Markdown page in the folder he picked once (his choice, 7 Oct 2026: the vault's `Areas/Travel`),
-named `<yyyy-mm> <trip name>.md`. Writing it again replaces the page (the same name).
+named `<yyyy-mm> <trip name>.md`. Writing it again replaces the page (the same name). The bags' photos are copied
+into `attachments/` in that same folder, beside the page. Only a REVIEWED trip has a page (`Library.isReviewed`,
+the one rule: marked done or a review time on it); before the review there is nothing to write.
 
-### The page
+### The file name — `Library.vaultFileStem(trip, zone:)` + ".md"
 
-- Front matter: `type: trip`, `start`, `end`, `nights`, `place`, `transport`, `season`, `templates` (names),
-  `packed` (lines packed / lines), `weight` (all bags, kg), `reviewed` (date).
-- Sections: **Weather** (as the trip recorded it), **Workouts** (from part 7, when read), **Bags** (each bag with
-  its weight and its packed photos, copied into an `attachments` folder beside the page and linked),
-  **Didn't use**, **Missed** (added at the review), **Bought on site**, **Notes** (maintenance notes like "zip
-  broken", each with its thing's name).
-- Plain Markdown, no plug-ins needed. No personal data beyond what he typed into the trip.
+- The month the trip began (`monthKey(startDate)`, "2026-07"); an undated trip takes the month of its review
+  (the device's day of `reviewedAt`); with neither, no month at all.
+- Then the trip's name made safe (`vaultSafe`): each of `/ \ : * ? " < > | # ^ [ ]` and every line break becomes
+  "-" (a file name or an Obsidian link cannot hold them), runs of white space become one space, leading dots go
+  (a hidden file), at most 100 characters; an empty name is "Trip". Example: "  .Hut / Lake: *wet* #2  " →
+  "2026-07 Hut - Lake- -wet- -2.md".
 
-### Where it is written
+### The page — `Library.vaultPage(tripId:zone:)`, a pure function
 
-The folder lives on the Mac, so the **Mac** writes the page: on the Mac's next launch (or at once, when the Mac app
-is open) for a review saved on the iPhone, and at once for "Send to Obsidian". The folder is chosen with the
-system's folder picker and remembered as a security-scoped bookmark, the same way as WatchLater's export. Without
-a folder, the button asks for one. A folder that has gone away → the button says so and asks again.
+The same library gives the same page, word for word (no clock is read; `zone` — the device's own — only decides
+the DAY a moment fell on). For the model test's sample trip it reads:
 
-### Tests (planned)
+```
+---
+type: trip
+start: 2026-07-03
+end: 2026-07-05
+nights: 2
+place: "Testville"
+transport: "Car"
+season: "Summer"
+templates:
+  - "Common base"
+  - "Hiking"
+packed: "6/6"
+weight: 1.9
+reviewed: 2026-07-07
+---
 
-Model: the page's text for the sample trip (front matter, sections, names in invented data). UI on the Mac (probe):
-the button, the picker answered by a test folder (`-uiTestingVault <path>`), the file written.
+# Weekend in the hills
+
+3 Jul 2026 – 5 Jul 2026 · 2 nights · Testville
+
+## Weather
+
+Testville, SE · 9–21°C · rain
+- Fri 3 Jul 2026: Partly cloudy · 12–19°C · rain 40 % · wind 20 km/h
+…
+
+## Bags
+
+### Carry-on / hand luggage · 533 g · max 8 kg
+
+![Carry-on / hand luggage, photo 1](attachments/2026-07%20Weekend%20in%20the%20hills%20-%20Carry-on%20-%20hand%20luggage%201.jpg)
+
+### Day pack · 1.4 kg weighed · max 8 kg
+…
+
+## Didn't use
+
+- Map
+
+## Missed
+
+- Power bank — onto Hiking
+- Sit mat — a thing of its own, on no template
+
+## Bought on site
+
+- Sun hat
+
+## Notes
+
+- **Rain jacket**: zip broken
+
+*Written by AMS Packing. Sending the trip again replaces this page.*
+```
+
+- **Front matter** (YAML, what Obsidian shows as Properties): `type: trip`; `start` / `end` (the trip's dates, an
+  empty value when undated — `start:`); `nights`; `place` (the trip's place, quoted); `transport`; `season`;
+  `templates` (the shown names of the templates the trip's lines came from, `tripTemplates` — base and
+  transport included, in the order the lines first name them; `[]` when none); `packed` ("done/total" of
+  `progress`, set-aside lines left out — as the trip card counts); `weight` (all bags, kg to one decimal, "2"
+  not "2.0": each bag's scale reading where weighed, else what its things add up to — `weighedBags`); `reviewed`
+  (the device's day of `reviewedAt`; empty for a web-app trip marked done with no time). Free text is always in
+  double quotes with `\` and `"` escaped and line breaks turned into spaces (a place like `Nice: old town` would
+  break bare YAML).
+- **Heading**: `# <trip name>` ("Trip" when empty), then one line: the dates ("3 Jul 2026 – 5 Jul 2026", one day
+  alone when start = end, "No dates" when undated) · "N nights" (left out at 0; "1 night") · the place.
+- **Weather** (always): from the forecast the trip kept (`deriveWeather`): a line "place · range · conditions"
+  (the forecast's own place name, the range left out when a temperature is missing, conditions as the model
+  names them — rain, snow, cold, hot, wind), then one line per day "- Fri 3 Jul 2026: label · lo–hi°C · rain N %
+  · wind N km/h" (rain left out at 0 %, wind at 0). No forecast: "No forecast was kept on this trip." When
+  conditions were switched on for the trip (`weatherOn`): "Packed for: rain, cold (switched on for the trip)".
+- **Workouts** — only when part 7 left rows on the trip (see the hook below): "- Swim · indoor · 3 times", one
+  per row, as the review showed them. No rows → no section.
+- **Bags** (always): one `### <bag>` per bag of `weighedBags` (CONTAINERS order, then his own; "Other" is "Not in
+  a bag"), then any bag that has photos but no lines. The heading adds " · <weight> weighed" (a scale reading)
+  or " · <weight>" (the things' sum, when above 0), " · max N kg" when the bag has a limit, " · over" when over.
+  Weights: under 1000 g "533 g", else "2.4 kg". Under it, each packed photo (`bagPhotos`, up to three, in the
+  order taken) as a plain Markdown image, `![<bag>, photo k](attachments/<file>)` — the link percent-encoded
+  (spaces and everything but plain letters, digits and `- . _ ~ /`), which Obsidian reads back. The photo's
+  file: `<stem> - <bag made safe> <k>.<jpg|png|heic|gif|webp>` (from the photo's own kind); a clash gets "-2".
+  A photo whose record is missing or unreadable is left out. No bags at all: "No bags on this trip."
+- **Didn't use**: the lines the review marked "didn't use" (`used == false`), reminders left out, each name
+  once; none → "Nothing — everything that went was used."
+- **Missed**: what the review added as missed (`MISSED_AT_REVIEW_KEY`, below): "- Power bank — onto Hiking" or
+  "- Sit mat — a thing of its own, on no template"; an empty list → "Nothing."; a review saved before 0.70 has
+  no such record → "Not recorded: this trip was reviewed before version 0.70."
+- **Bought on site**: `boughtOnSite`, each name once; none → "Nothing."
+- **Notes**: the maintenance notes made on site or on the way home (`onSiteNotes`), "- **<line name>**: <note>";
+  none → "No notes."
+- Last line: "*Written by AMS Packing. Sending the trip again replaces this page.*"
+- **His words are escaped** (`md`): `\ ` * _ [ ] < > # $ | ~` get a backslash and "==" becomes "=\=", so a
+  name like "C# notes" is not a tag and "*spare*" is not emphasis. Plain Markdown: no plug-in is needed, and
+  nothing goes on the page beyond what he typed into the trip.
+
+### The marks on the trip (trip extra keys — native only; synced with the trip's own record)
+
+| Key | Holds | Written by |
+|---|---|---|
+| `missedAtReview` (`MISSED_AT_REVIEW_KEY`) | `[{ "name", "template" }]` — the missed things as the review saved them, each name once; `template` = the template's SHOWN name ("" = on no template) — a name, not an id: the page is read years later | `saveReview` (0.70 on), before the missed things are filed |
+| `vaultWaiting` (`VAULT_WAITING_KEY`) | the ISO moment a page was asked for | `saveReview` (the review's own moment); the iPhone's Send (`askForVaultPage` — refused for a trip not reviewed) |
+| `vaultWritten` (`VAULT_WRITTEN_KEY`) | `{ "file", "at" }` — what the Mac wrote last | the Mac after a write (`vaultPageWritten`, which also takes `vaultWaiting` away) |
+| `healthWorkouts` (`TRIP_WORKOUTS_KEY`) | `["Swim · indoor · 3 times", …]` | 🔌 **HOOK for part 7** — nothing writes it yet; part 7 is to write the rows of its "From Apple Health" block here when the review is saved with workouts read (the Mac has no Apple Health: this key is how its page learns them) |
+
+`tripsWaitingForVault()` = the reviewed trips carrying `vaultWaiting`. A shared trip leaves all four behind
+(`justTheList` — his review and his vault are his). Start a new trip from this one never copies them (it builds a
+fresh trip). They are trip-level keys, so they travel on the trip's head record — a tick never touches them.
+
+### Where it is written — the Mac (`VaultShelf`)
+
+The folder lives on the Mac, so the **Mac** writes the page:
+- **On the Mac, Send to Obsidian** writes at once. Without a folder it opens the system's folder picker
+  (`.fileImporter`, folders only) and writes as soon as one is picked. The folder is kept as a security-scoped
+  bookmark (`ams.vault.bookmark`, its name in `ams.vault.name`, this Mac only), as AMS WatchLater keeps its
+  vault; the Mac app carries `com.apple.security.files.bookmarks.app-scope` for it (both entitlements files and
+  project.yml). **Change** (beside "Folder: <name>") picks another.
+- **Automatically**: whenever the library changes on the Mac — at launch, when a sync brings the iPhone's review
+  or its Send, and right after a review saved on the Mac — every waiting trip's page is written, on the next turn
+  of the main loop (`LibraryModel.library`'s `didSet` → `VaultShelf.libraryChanged`). Only with a folder chosen;
+  without one the trips stay waiting and the card says so.
+- **A write**: the photos first (`attachments/`, created when needed), then the page, each written whole
+  (`.atomic`) through an `NSFileCoordinator` (Obsidian or a sync service may be reading the folder); then the trip
+  is marked written. The same name replaces the page and its photos; nothing else in the folder is touched or
+  deleted.
+- **A folder that has gone away** (the bookmark cannot be resolved, or the folder is not there): the folder is
+  forgotten, the card says "<name> can no longer be found. Choose the folder again.", and Send asks for one —
+  then writes. Any other failure: "The page could not be written into <name>." — the trip stays waiting and is
+  not tried again until the library changes (no loop).
+- **The iPhone never writes**: its Send marks the trip waiting for the Mac (see spec 03 for the words).
+- **Under the tests** nothing of his is read or written: no bookmark, no remembered folder. `-uiTestingVault
+  <name>` = a throwaway folder of that NAME (no "/", no leading dot) in the app's own temporary folder, emptied
+  at launch, not chosen until the picker is "answered" by it (no test can drive the system's panel);
+  `-uiTestingVaultChosen` = chosen from the start. After a write the app reads the folder back from the disk
+  into `trip-vault-check` (the files A–Z, "===", the page's lines before its `# ` heading) — the Mac's test
+  runner is sandboxed apart from the app and cannot look into the app's folder.
+
+### Tests
+
+Model `VaultPageTests` (15, invented data — the sample trip "Weekend in the hills", 3–5 Jul 2026, Testville):
+`testTheSampleTripsPageHasItsNameFrontMatterAndSections` (file name, the whole front matter, the order of the
+sections), `testEachSectionSaysWhatTheTripRecorded` (every section line for line),
+`testTheBagsPhotosAreCopiedBesideThePage`, `testThePageIsTheSameEveryTime`, `testOnlyAReviewedTripHasAPage`
+(a web-app "done" counts), `testTheDayOfTheReviewIsTheDevicesDay` (23:30 UTC is the next day in Sweden),
+`testAnUndatedTripIsNamedByTheMonthOfItsReview`, `testNamesAreMadeSafeForAFileAndForMarkdown`,
+`testAnOlderReviewSaysMissedWasNotRecorded`, `testWorkoutsFromAppleHealthGetASectionOfTheirOwn` (the hook),
+`testATripWithNothingOnSiteSaysSo`, `testASavedReviewAsksForThePageAndKeepsWhatWasMissed`,
+`testTheMacWritingThePageAnswersTheWish`, `testOnlyAReviewedTripCanAskForAPage`,
+`testTheMarksTravelWithTheTripButNotWhenItIsShared`.
+UI (`-uiTestingReviewed`: the sample's trip been and reviewed, nothing asked for): iPhone
+`testOnTheIPhoneSendToObsidianWaitsForTheMac` (`trip-vault-status` → Send → `trip-vault-waiting`, the button
+still enabled); Mac (GitHub's Mac, probe) `testSendToObsidianWritesTheTripPageOnTheMac` (`trip-vault-nofolder` →
+Send → the test folder answers the picker → `trip-vault-written` names "<yyyy-mm> Weekend in the hills.md";
+read back from the disk: the page, `attachments/… Carry-on - hand luggage 1.jpg`, and the front matter lines);
+both `testASavedReviewAsksForTheTripsPage` (a review saved through the screen: the iPhone shows
+`trip-vault-waiting`; the Mac, folder chosen, `trip-vault-written` and the page on the disk). Each was seen red
+with a planted fault (0.70 report).
+**Not covered:** the real system folder picker and the bookmark across launches (no test can drive the panel);
+a folder that has gone away; a sync bringing the iPhone's wish to an open Mac (the same `didSet` path the review
+test drives).
+
+### Open questions
+
+- **A page he changed in Obsidian is replaced** on the next send (the agreed design: "Writing it again replaces
+  the page"). AMS WatchLater keeps a note he changed; say if this page should too.
+- **A renamed trip** gets a page of its new name; the old page stays (the app never deletes his files). The same
+  for a removed bag photo: its old copy stays in `attachments/`.
+- **Workouts** wait for part 7 to write `healthWorkouts` (the hook above).
+- The vault folder is chosen on the trip's card only — there is no row for it in Settings.
 
 ---
 

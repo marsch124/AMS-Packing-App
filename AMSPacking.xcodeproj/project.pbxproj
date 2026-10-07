@@ -23,6 +23,8 @@
 		38D87FC50351C1AC76DA3DE1 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */; };
 		39B87583182066477449515D /* GuideScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */; };
 		3B34615E704B984738565FC3 /* Share.swift in Sources */ = {isa = PBXBuildFile; fileRef = C79C38939D0655EEE452D769 /* Share.swift */; };
+		3F92FF6665ADB7BD4437005C /* Vault.swift in Sources */ = {isa = PBXBuildFile; fileRef = F99A5CDDEE7077CDDBCB185D /* Vault.swift */; };
+		3FC3ACFD520FB3DB0B17F719 /* VaultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D588E84D41CE3E84D62CA76F /* VaultCard.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
 		4AD76B6494FA68210153D99C /* DropDown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1750ABC86D97A97B07370949 /* DropDown.swift */; };
 		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
@@ -154,6 +156,7 @@
 		CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideScreen.swift; sourceTree = "<group>"; };
 		CD0CC9973692AB2A31CFC2DE /* TripSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripSettings.swift; sourceTree = "<group>"; };
 		CE240BD38035471259419B81 /* TemplateIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateIcons.swift; sourceTree = "<group>"; };
+		D588E84D41CE3E84D62CA76F /* VaultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultCard.swift; sourceTree = "<group>"; };
 		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
 		DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareCalendarView.swift; sourceTree = "<group>"; };
 		DBCE6F6679B4724E0039268E /* SyncCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCard.swift; sourceTree = "<group>"; };
@@ -165,6 +168,7 @@
 		F4B594AF144EDDECFF9CF7B3 /* Laundry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Laundry.swift; sourceTree = "<group>"; };
 		F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescueCopies.swift; sourceTree = "<group>"; };
 		F82D64736DCAA09F967D279E /* GrabCollectionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabCollectionScreen.swift; sourceTree = "<group>"; };
+		F99A5CDDEE7077CDDBCB185D /* Vault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vault.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -227,6 +231,7 @@
 				029AD64D1791D9D681EA7DDF /* ShopReminders.swift */,
 				76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */,
 				35352F3BD8D2A7EE166961C9 /* Today.swift */,
+				F99A5CDDEE7077CDDBCB185D /* Vault.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
@@ -324,6 +329,7 @@
 				AC9F694B5D78B16B402CD363 /* TripChecks.swift */,
 				878AF15AECFDDAD02F227DDD /* TripScreen.swift */,
 				CD0CC9973692AB2A31CFC2DE /* TripSettings.swift */,
+				D588E84D41CE3E84D62CA76F /* VaultCard.swift */,
 				38F244475495E5E17D2F7126 /* WayHomeScreen.swift */,
 				2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */,
 				5D88FA9EA0BC448F857072B9 /* WorldMap.swift */,
@@ -504,6 +510,8 @@
 				55A2BB9EF7E8AA1F601802AC /* TripChecks.swift in Sources */,
 				B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */,
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
+				3F92FF6665ADB7BD4437005C /* Vault.swift in Sources */,
+				3FC3ACFD520FB3DB0B17F719 /* VaultCard.swift in Sources */,
 				D8BFC0A9124CC984A49C398B /* WayHomeScreen.swift in Sources */,
 				811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */,
 				C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */,

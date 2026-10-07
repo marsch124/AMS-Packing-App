@@ -79,6 +79,13 @@ trip *Weekend in the hills* (Hiking + base, always 30–32 days from the day the
 | `laundryNights` | `LAUNDRY_NIGHTS_KEY` | number 1…60 | Create trip, Trip settings, Start again |
 | `weighed` | `WEIGHED_KEY` | `{ "<bag name>": grams }` | luggage scale (`setWeighed`) |
 | `bagPhotos` | `BAG_PHOTOS_KEY` | `{ "<bag name>": ["<photo id>", …] }` (0.52/0.53 wrote one plain string id; read as a list of one) | bag photos |
+| `missedAtReview` | `MISSED_AT_REVIEW_KEY` | `[{ "name", "template" }]` — the missed things as the review saved them; `template` = the template's shown name, "" = on no template (0.70) | `saveReview` |
+| `vaultWaiting` | `VAULT_WAITING_KEY` | ISO moment a page in his Obsidian vault was asked for (0.70) | `saveReview`; the iPhone's Send to Obsidian (`askForVaultPage`); taken away by `vaultPageWritten` |
+| `vaultWritten` | `VAULT_WRITTEN_KEY` | `{ "file", "at" }` — the page the Mac wrote last (0.70) | the Mac (`vaultPageWritten`) |
+| `healthWorkouts` | `TRIP_WORKOUTS_KEY` | `["Swim · indoor · 3 times", …]` — 🔌 hook for spec 07 part 7; nothing writes it yet (0.70) | (part 7) |
+
+The four 0.70 keys are his: a shared trip leaves them behind (`justTheList`), Start again never copies them.
+Spec 07 part 8 has the page they serve.
 
 ### A line (`Item` used as a trip entry)
 
@@ -817,6 +824,8 @@ everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the cho
   chosen one white on green with the selected trait.
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
+0. **Obsidian** card (`VaultCard`, only on a REVIEWED trip — `Library.isReviewed`; 0.70, top padding 10) — see
+   "The trip's page in his vault".
 1. **Check before you go** card (only when something needs him) — own section below.
 2. **Weather card** (always) — own section below.
 3. **Bags card** (only when some bag has lines AND weight or a scale reading) — own section below.
@@ -1731,6 +1740,9 @@ Mac minimum 520 × 600.
 - Adding a missed thing: trimmed; blank → the needs line; already in the missed list (normName) → nothing
   (the field empties). The keyboard goes away after adding.
 - **Save** → `saveReview(tripId:, unused:, missed:, when: now)`:
+  0. (0.70) the missed things are kept on the trip (`missedAtReview`: each name once, with its template's shown
+     name, "" for no template) and the trip's page in his vault is asked for (`vaultWaiting` = `when`) — on the
+     Mac it is written at once when a folder is chosen; see "The trip's page in his vault";
   1. each missed thing: "no template" → a new thing on no list, unless a thing of that name exists;
      a template → `addToTemplate` unless the template already has that name (an existing thing of that
      name is put on, not duplicated);
@@ -1757,6 +1769,58 @@ saved → "Reviewed", no Review button; the base template gets a 5th thing), `te
 `testASetAsideLineOnATripWithNoTicksIsLeftOutOfTheHistory`, `CountingTests.testApplyReview*` (4),
 `TripCardsTests.testAReviewedTripSaysSoWhateverItsTicks`, `testReviewedIsOneRuleEverywhere`.
 **Not covered:** removing a missed thing, the no-ticks-at-all case in the UI.
+
+---
+
+## The trip's page in his vault (`VaultCard.swift`, `Store/Vault.swift`, `PackingLibrary/VaultPage.swift`)
+
+**Purpose and origin.** Spec 07 part 8, his yes of 7 Oct 2026: a reviewed trip becomes one Markdown page in
+his Obsidian vault — the folder he picks once (his choice: the vault's `Areas/Travel`), named
+`<yyyy-mm> <trip name>.md`, its bags' photos in `attachments/` beside it; sending again replaces it. The page
+itself (front matter, sections, file names, escaping), the marks on the trip and the Mac's writing are in spec
+07 part 8; this is the card on the trip (0.70).
+
+**Where.** The trip screen's scroll area, FIRST (above Check before you go), only on a reviewed trip; padding
+16 sideways, 10 on top.
+
+### What is on screen (card: padding 14, corner 12, `Theme.card`, 1 pt `Theme.line` stroke; id `trip-vault`, children contained)
+- Left: **"Obsidian"** (Body semibold, ink; id `trip-vault-title`) and under it, 2 pt apart, ONE status line
+  (Footnote, muted, wraps), whose id says the state:
+  - iPhone: `trip-vault-status` "The Mac writes this trip's page into your vault." · `trip-vault-waiting`
+    "Waiting for the Mac — it writes the page the next time it is open." (while `vaultWaiting` is set) ·
+    `trip-vault-written` "Written by the Mac: <file> · 7 Oct 2026" (once written, nothing waiting).
+  - Mac, first that applies: `trip-vault-trouble` (the last write's trouble, in red — `AppSection.actions`:
+    "<folder> can no longer be found. Choose the folder again." / "The page could not be written into
+    <folder>." / "That folder cannot be used. Choose another.") · `trip-vault-nofolder` (no folder chosen:
+    "Send asks for the folder once — your vault's Areas/Travel.", or, while a page waits, "Waiting for a
+    folder. Send asks for it once — your vault's Areas/Travel.") · `trip-vault-waiting` "Writing the page…"
+    (the moment between a wish and its write) · `trip-vault-written` "Written: <file> · 7 Oct 2026" ·
+    `trip-vault-status` "Not in your vault yet."
+  - The day is the device's day of the write, in fixed English words.
+- Right, 12 pt away: **Send to Obsidian** — `FieldButtonLabel` (Callout semibold, white on green, `Metrics.tap`
+  tall, corner 8), plain button style, id `trip-vault-send`. Never grey, never switched off (his rule).
+- Mac only, under them (6 pt): "Folder: <name>" (Footnote, muted, one line, cut in the middle; id
+  `trip-vault-folder-name`) and **Change** (Footnote semibold, green words; id `trip-vault-folder`) — only
+  once a folder is chosen.
+- Mac, test runs with `-uiTestingVault` only: the folder read back from the disk (Caption 2 monospaced, muted;
+  id `trip-vault-check`) — see spec 07 part 8.
+
+### Behaviour
+- **iPhone, Send** → `askForVaultPage` (the trip gets `vaultWaiting`; pressed again it is simply asked again).
+  The iPhone never writes a file.
+- **Mac, Send** → `VaultShelf.write`: with a folder, the page and its photos are written at once and the trip
+  is marked written (`vaultWritten`, `vaultWaiting` taken away); without one — or when it has gone away — the
+  system's folder picker opens (`.fileImporter`, folders only) and the page is written as soon as a folder is
+  picked; cancelled, nothing happens. **Change** opens the picker without writing.
+- **By itself, on the Mac**: every trip waiting (a review saved here or on the iPhone, the iPhone's Send) is
+  written whenever the library changes — at launch, on a sync, after a save — as long as a folder is chosen.
+- Under the tests the picker is answered by the `-uiTestingVault` folder (no test can drive the system panel).
+
+### Tests
+UI `testOnTheIPhoneSendToObsidianWaitsForTheMac` (iPhone; `-uiTestingReviewed`), `testSendToObsidianWritesTheTripPageOnTheMac`
+(Mac, GitHub's), `testASavedReviewAsksForTheTripsPage` (both: iPhone waiting, Mac written at once). Model
+`VaultPageTests` (15). **Not covered:** the system folder picker, Change, a folder that has gone away, night
+mode on the Mac (looked at on the iPhone only).
 
 ---
 
@@ -1971,18 +2035,24 @@ testATripSomeoneSentKeepsItsListOnSave, testASetAsideLineIsNotPacked,
 testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen, testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill,
 testABagWithNothingWeighedIsOnTheTrip, testWeatherGearCanBePackedAnyway, testATemplateWithNoActivityAreaGoesOnATrip,
 testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only) — and 0.67:
-testFullTripOrQuickIsChosenUnderTheName, testDatesAreAlwaysThereAndCanBeCleared, testEachWorkoutHasItsOwnContext.
+testFullTripOrQuickIsChosenUnderTheName, testDatesAreAlwaysThereAndCanBeCleared, testEachWorkoutHasItsOwnContext
+— and 0.70: testOnTheIPhoneSendToObsidianWaitsForTheMac, testSendToObsidianWritesTheTripPageOnTheMac,
+testASavedReviewAsksForTheTripsPage.
 UI launch modes used: `-uiTesting` (sample), `-uiTestingChecks` (a plane trip "Sunny weeks" 20–34 days
 out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passport day 180),
 `-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-uiTestingSections` (Hiking in
 two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings),
 `-uiTestingWorkouts` (0.67: the sample plus a WET template Run — Trail shoes Outdoor, Treadmill towel Indoor,
-Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-openNextTrip`. Under the
+Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-uiTestingReviewed` (0.70: the
+sample's trip six to three days ago, everything ticked, the carry-on weighed 2.4 kg and photographed, a sun hat
+bought on site, "zip broken" on the rain jacket, the map not used, a power bank missed onto Hiking; reviewed
+yesterday, no page asked for; `SampleLibrary.reviewed`), `-uiTestingVault <name>` / `-uiTestingVaultChosen`
+(0.70, Mac: a throwaway vault folder — spec 07 part 8), `-openNextTrip`. Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
 
 **Model (PackingLibraryTests):** WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
 LoopTests, OnSiteTests, OnTheTripTests, RefineTests, TripAgainTests, TripBulkTests, TripCardsTests,
-TripChecksTests, TripEditsTests, SetPlaceTests, ChangeTripTests, TripWeatherTests, WayHomeTests,
+TripChecksTests, TripEditsTests, SetPlaceTests, ChangeTripTests, TripWeatherTests, WayHomeTests, VaultPageTests (0.70),
 WeighingTests, TravelYearTests, PhotoTidyTests, CountdownTests, ThingFollowsTests, RowTagsTests,
 BagsTests/BagNotesTests (trip parts), LibraryTests (records, regenerate), WorkbookTests, SharingTests.
 **(PackingCoreTests):** TripBuildingTests, WorkoutContextsTests (0.67), TripEventsTests, CountingTests, ResolveTests, WeatherTests,
