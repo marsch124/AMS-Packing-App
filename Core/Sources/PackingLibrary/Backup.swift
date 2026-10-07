@@ -10,6 +10,9 @@ extension Library {
     /// and `things`), so its file and ours stay readable by both.
     public static let backupItemsKey = "items"
     public static let backupPlacesKey = "memberships"
+    /// …and, since 0.69, the places' codes (code → place), so a label printed before a
+    /// restore still opens its place after it. The web app reads none of these.
+    public static let backupPlaceCodesKey = "placeCodes"
 
     /// Everything, as `db.exportJSON()` writes it: templates resolved with their
     /// items (each row carrying its item and membership ids, as the web app's rows
@@ -38,6 +41,8 @@ extension Library {
             Library.backupItemsKey: .array(items.map { $0.json }),
             Library.backupPlacesKey: .array(placesOnTemplates().map { $0.json }),
         ]
+        let codes = placeCodes()
+        if !codes.isEmpty { o[Library.backupPlaceCodesKey] = .object(codes.mapValues { .string($0) }) }
         var prefs: [String: JSONValue] = [:]
         let conditions = conditionsFromRows(shared)
         if !conditions.isEmpty { prefs["conditions"] = .array(conditions.map { $0.json }) }
