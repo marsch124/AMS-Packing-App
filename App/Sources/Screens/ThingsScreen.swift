@@ -362,7 +362,7 @@ struct ThingEditor: View {
                         toggleTemplate(id)
                         #if os(macOS)
                         // A click puts the arrows on that pill.
-                        if let n = templates.firstIndex(where: { $0.id == id }) { pillAt = n; land(.templates) }
+                        if let n = templates.firstIndex(where: { $0.id == id }) { pillAt = n; land(.templates, quiet: true) }
                         #endif
                     }
                     .keyed(.templates)
@@ -412,14 +412,14 @@ struct ThingEditor: View {
                             .tint(AppSection.care.color)
                             #if os(macOS)
                             .focusRing(at == .liquid)
-                            .simultaneousGesture(TapGesture().onEnded { land(.liquid) })
+                            .simultaneousGesture(TapGesture().onEnded { land(.liquid, quiet: true) })
                             #endif
                             .accessibilityIdentifier("thing-liquid")
                         Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin") }
                             .tint(AppSection.care.color)
                             #if os(macOS)
                             .focusRing(at == .restricted)
-                            .simultaneousGesture(TapGesture().onEnded { land(.restricted) })
+                            .simultaneousGesture(TapGesture().onEnded { land(.restricted, quiet: true) })
                             #endif
                             .accessibilityIdentifier("thing-restricted")
                     }
@@ -439,6 +439,9 @@ struct ThingEditor: View {
             #if os(macOS)
             // The field the keys reach is brought into sight.
             .onChange(of: at) { _, f in
+                // Only the keys scroll: a click is on what is already in sight (a pill clicked
+                // scrolled the page under the next click — GitHub's Mac, 7 Oct 2026).
+                if keyHome.quiet { keyHome.quiet = false; return }
                 guard let f else { return }
                 withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(ThingEditor.scrollKey(f)) }
             }
@@ -1020,6 +1023,8 @@ final class ThingKeyHome {
     let monitor = KeyMonitor()
     let page = ThingKeys.Page()
     let drop = DropDownKeys()
+    /// The next focus move came from a click: no scrolling.
+    var quiet = false
     /// The letters typed on the template pills, and when the last came.
     var ahead = ""
     var aheadAt = Date.distantPast
@@ -1194,8 +1199,9 @@ extension ThingEditor {
     /// Puts the page's focus on a field: ringed, scrolled to, and — a text field — given
     /// the window's keys, its words selected so typing replaces them (Notes: the cursor
     /// at the end, so nothing is lost). `whole: false` puts the cursor at the end.
-    fileprivate func land(_ f: ThingField?, whole: Bool = true) {
+    fileprivate func land(_ f: ThingField?, whole: Bool = true, quiet: Bool = false) {
         if at == .expiry, f != .expiry { readExpiry() }
+        keyHome.quiet = quiet && f != at
         keyNote = ""
         at = f
         if f == .templates, pillAt == nil {
@@ -1225,7 +1231,7 @@ extension ThingEditor {
     /// nothing in particular takes the ring with it.
     fileprivate func typed(from old: ThingField?, to now: ThingField?) {
         if old == .expiry, now != .expiry { readExpiry() }
-        if let now, now != .jump, now != at { keyNote = ""; at = now }
+        if let now, now != .jump, now != at { keyNote = ""; keyHome.quiet = true; at = now }
         if now == nil, at?.isText == true, !jumping { at = nil }
     }
 
@@ -1248,7 +1254,7 @@ extension ThingEditor {
     fileprivate func startKeys() {
         let home = keyHome
         home.drop.changed = { id in listOpen = id }
-        home.drop.clicked = { id in if let f = field(forId: id) { land(f) } }
+        home.drop.clicked = { id in if let f = field(forId: id) { land(f, quiet: true) } }
         home.monitor.start { e in key(e) }
         home.page.save = { save() }
         home.page.saveAndNew = { saveAndNew() }
@@ -1419,9 +1425,10 @@ extension ThingEditor {
 
         // An open list: the arrows, the letters, Return and Esc are the list's.
         if let open = drop.open, let answer = drop.answer[open] {
-            // Typing into a field in the list (A new place, or a Section's new name): its
-            // own keys — but Esc, which leaves it.
-            if drop.typingInList {
+            // A list opened by a CLICK keeps its keys as it always had them (its foot's field
+            // takes them: GitHub's Mac, 7 Oct 2026, "could not type into thing-place-new"),
+            // and so does a Section's name clicked into — all but Esc, which leaves it.
+            if !drop.openedByKeys || drop.typingInList {
                 if code == KeyCode.escape { _ = answer(.close); return nil }
                 return e
             }

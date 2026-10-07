@@ -62,10 +62,9 @@ final class DropDownKeys {
     /// The drop-down whose list is open (its field's id), and whether the keys opened it.
     private(set) var open: String?
     private(set) var openedByKeys = false
-    /// A field in the open list is being typed in (A new place clicked into, a Section's
-    /// new name): every key is that field's but Esc. Said by the drop-down itself — the
-    /// window a key arrives in does not tell (GitHub's Mac, 7 Oct 2026: the letters for a
-    /// popover's field were taken for the list while ⌘A reached the field).
+    /// A Section's new name clicked into: every key is that field's but Esc. Said by the
+    /// drop-down itself — the window a key arrives in does not tell (GitHub's Mac, 7 Oct
+    /// 2026: the letters for a popover's field were taken for the list while ⌘A reached it).
     var typingInList = false
     /// A list opened or closed — for the line at the page's foot.
     var changed: ((String?) -> Void)?

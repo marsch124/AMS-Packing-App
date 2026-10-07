@@ -1009,7 +1009,8 @@ Kind of thing · Whose it is (when anyone is named) · On these templates (when 
 lit, in the pills' order (one lit by the keys comes in at once; one unlit goes) · Kept at home · Usually packed in ·
 When · Weight · Brand · Colour · Condition · Care · What to do (Care's notes) · Liquid · Not allowed in the cabin · Valid
 until. Never: Cancel, Save, the date's buttons, Delete thing. The page opens with the focus in Name, the cursor at the
-END of the name. The field reached is scrolled into sight (`ScrollViewReader`, ids `ThingEditor.scrollKey`).
+END of the name. The field reached by the KEYS is scrolled into sight (`ScrollViewReader`, ids `ThingEditor.scrollKey`); a
+click moves the focus without scrolling (a pill clicked once scrolled the page under the next click — GitHub's Mac).
 
 **What the focus looks like.** A 2-point ring in the page's orange: a text field's and a drop-down's own border
 becomes 2 pt orange (1 pt `line` otherwise — the iPhone draws exactly what it did); a switch gets a rounded ring just
@@ -1077,16 +1078,18 @@ or spoken.
   Save). A list opened by the keys shows the offer (before typing: "A new place: type its name", muted,
   `-offer-hint`) instead of the foot's field; opened by a click it has the field as before. Letters that already
   picked a row keep it if the offer is then left with Esc.
-- **An open list** (by the keys or a click): **↑ / ↓** move the lit row (opened at the ticked row; lit = the list's
+- **An open list** — opened by the KEYS (a list opened by a click keeps its keys as before 0.68: its foot's field takes
+  what is typed, and only Esc is the page's, closing the list only): **↑ / ↓** move the lit row (opened at the ticked row; lit = the list's
   colour at 18 % behind the row, scrolled into sight); **letters** jump to the first match; **Return** — or **Space**
   with nothing being typed — chooses the lit row (or makes the offer) and closes the list; **Esc** closes it only;
   **Tab / Shift-Tab** close it and go on to the next / previous field — in a Section's list Tab first reaches the lit
   row's tools: pen → ↑ → ↓ → Remove (Put back on a removed row; Remove → Keep while it is asked), ringed 2 pt in
   violet, **Space or Return presses** the one lit; past the last Tab closes the list and goes on, Shift-Tab before the
-  row goes back. The pen's field has the keys while a name is typed (Return takes it, Esc leaves it); after ↑ ↓ the
-  lit row goes with the section moved, so Space again moves it further; Remove asks with Remove lit (Space removes).
-  When a field in the list has the keys (A new place typed into after a click, a section's new name), every key is
-  its own but Esc.
+  row goes back. Pressed from the keys, the pen's field is typed by the PAGE's keys (the list's own window never gets
+  them from the keyboard alone — GitHub's Mac): the name stands as if selected, the first letter replaces it,
+  ⌫ takes one back, Return takes it (or says what is wrong), Esc leaves it; a pen CLICKED gives the field the keys
+  itself (all but Esc, which leaves it). After ↑ ↓ the lit row goes with the section moved, so Space again moves it
+  further; Remove asks with Remove lit (Space removes).
 - **On these templates**: the arrows start on the first template lit (else the first); **← →** move along the pills
   (no wrap); **Space** turns the one lit on or off (its Section joins or leaves the Tab order); **letters** jump to the
   first template whose name starts so (within a second they add up); ↑ ↓ ⌫ do nothing.
