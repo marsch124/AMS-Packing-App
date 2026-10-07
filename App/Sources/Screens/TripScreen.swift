@@ -451,6 +451,7 @@ struct TripScreen: View {
         .accessibilityIdentifier("trip-place-filter")
         .accessibilityLabel("Only \(place). Show every line")
         .accessibilityValue(place)
+    }
 
     /// A kit shows what is inside it while it is checked before each trip and not packed
     /// yet — until he folds it; any other kit when he opens it (0.70).
