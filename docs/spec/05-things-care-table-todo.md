@@ -311,6 +311,145 @@ tests, names in the file).
 
 ---
 
+## A place's code and its label — "Tap the garage, see the garage" (0.69)
+
+**Purpose and origin.** Stop A of his idea plan (7 Oct 2026, idea 1, his verdict "Yes · fantastic"): a small
+label on the wardrobe, one in the garage, one on the bathroom cabinet; the iPhone, pointed at the garage's, opens
+the trip on what to take from the garage. Planned with NFC stickers; the same day he said "let's skip the NFC",
+so a place is reached by a square code on a printed label instead, read by the iPhone's own Camera. His label
+printer is a Brother P-touch CUBE (PT-P300BT, 180 dots to the inch) on 12 mm TZe tape (about 9 mm — 64 dots —
+printable); he prints from Brother's "P-touch Design&Print 2" app, mostly on the iPhone, which takes a picture
+from Photos or Files.
+
+**The place's code** (`PackingLibrary/PlaceLinks.swift`). Every storage place gets a short code: 3 base-36
+characters (0–9, A–Z), kept in the library's facts as ONE meta record per code, `placeCode:<CODE>` → the place's
+name (spec 01 §1.11). Rules:
+- `placeCode(for:)` — the place's code, or the one it WILL get: the codes are looked up by the place's choice key
+  (`choiceKey`: trimmed, lower-cased, spaces collapsed, cut at 60), first A–Z when two name it; else FNV-1a (32-bit)
+  of the choice key modulo 46 656, written in base 36 with three digits, moved on by one past any code already in
+  the map (removed places' included). The same name gives the same code on every device, so two devices that give
+  the Garage its code at the same moment give the same one.
+- `givePlaceCode(_:)` — stores it (only when missing; nothing changes for a place that has one). Called when a
+  place's page opens and by "Labels for P-touch, all places" — through `PlaceLabels.keepCodes`, which does nothing
+  on a device whose library `isEmpty` (a fact stored there would shut the first-run doors); the label then shows the
+  code the place will get.
+- A rename in Your choices (`renameChoice("places", …)` → `notePlaceRenamed`): every code naming the old name names
+  the new one — a label printed before the rename opens the renamed place.
+- A removed place keeps its code (the record stays): a code is never given to another place. Its link then opens
+  "This label's place is no longer in Your choices…".
+- `place(forCode:)` — the code's place as his list spells it today (`placeNamed`: by choice key on
+  `storagePlaces()`, else the spelling of the first thing whose `storage` has that key); nil for a code never given
+  or whose place is gone.
+- Backup and restore carry the codes (`placeCodes` key, spec 01 §10 and §9 step 3a).
+
+**The link** (`PlaceLink`). `AMSPACKING://P/<CODE>` — 18 characters, all in the QR code's alphanumeric set
+(capitals, digits, ":" and "/"), so the code is the smallest QR size (version 1, 21 × 21 squares) at error
+correction M (which holds 20 such characters; a 4-character code still fits — `PlaceLinksTests`). The scheme
+`amspacking` is registered for the app (project.yml → Info.plist `CFBundleURLTypes`, name
+`com.schabbauer.AMSPacking.place`, role Viewer) on the iPhone and the Mac; schemes are case-insensitive, and
+`PlaceLink.code(in:)` accepts any case of scheme, host (`p`) and code, exactly one path part of 2–4 characters.
+Anything else is not a place's link and is ignored.
+
+**What a code opens** (`Library.placeVisit(today:)`, decided as it opens):
+1. **Back from a trip** — a trip not reviewed, dated, that began BEFORE today and whose last day (its start when it
+   has no end) was no longer ago than yesterday, with lines that came along (`homeLines` not empty): the latest
+   such trip → the place's page with what goes back there (`goingBack(tripId:to:)` = `homeLines` less used up,
+   kept at the place by choice key, in the trip's order).
+2. **A trip being packed** — a trip not reviewed, dated, starting today or within the packing window
+   (`packingWindowDays()` = the largest lead days of his non-task "When" steps, at least 1 — 7 with the factory
+   steps, "≥1 week ahead"): the soonest such trip → the trip itself, opened on that place (spec 03, "Opened on a
+   place").
+3. Otherwise → the place's page with everything kept there (`thingsKept(at:)`, A–Z).
+A code nothing knows → the place's page saying so.
+
+**How a code arrives.** The iPhone's Camera reads the label and offers the link; iOS opens the app with it.
+`RootView.onOpenURL` → `LibraryModel.open(url)` → `placeToOpen = code` → the frame switches to Home
+(`onChange(of: placeToOpen)`) → `HomeScreen` clears it and, with `PlaceOpening.of(code:in:today:)`, either opens
+the trip (`openedPlace` + `opened`) or `placeShown` (the place's page) — through `whenFree`, which first closes any
+of Home's own windows (Search, Grab Lists, a trip, a grab list, the grab menu, a place's page). The Mac takes the
+same link.
+
+**The place's page** (`PlaceScreen`, in `Screens/PlaceScreen.swift`; a sheet, container `place-detail`; Mac
+minimum 460 × 480):
+- Header (padding 16): the place's name (Title 3 bold, ink, two lines at most; "A place" for an unknown code; id
+  `place-title`), **Done** (`HeaderButtonStyle`, filled: green for the way home, Care orange otherwise; Escape too;
+  id `place-done`).
+- One line (Subheadline, muted, 8 under it; id `place-says`):
+  - back from a trip: "Back from “<trip>”: nothing goes back here." / "1 thing goes back here." / "<n> things go
+    back here.";
+  - otherwise: "Everything kept here: 1 thing." / "… <n> things." — or, with none, "Nothing is kept here yet. A
+    thing's place is set on its page, under Kept at home.";
+  - an unknown code: "This label's place is no longer in Your choices. Print a new label from the place's page
+    there."
+- The lines (`place-line-<n>`): a plain button as tall as its words (`Metrics.line`, a hair of padding, a
+  hairline under it): the name (Body, ink, two lines), how many (the trip line's count, `PackLine.count`; Subheadline
+  semibold monospaced, muted) and the bag (Footnote muted, one line, at most 150 wide) — on the way home the line's
+  bag or "Not in a bag", for a kept thing its usual bag. A tap opens the thing's page (`ThingEditor`; on the way
+  home the thing behind the line, `thingBehind`, when there is one).
+
+**The place's own page in Your choices** (`PlaceCodeSheet`, container `place-code-detail`; Mac minimum 460 ×
+600) — opened by the square beside a place (spec 06 §2):
+- Header: the place's name (`place-code-title`) and **Done** (filled Settings slate; Escape; `place-code-done`).
+- "Print its label and stick it where these things are kept. Point the iPhone's Camera at the square and tap the
+  link that appears: the app opens on this place." (Subheadline, ink 85 %.)
+- The code, large (`place-code`): `PlaceLabel.codeImage` (10 pixels a square, 4 squares of white round it) shown
+  200 × 200, never smoothed, black on white in both modes, radius 10, hairline.
+- "Label for P-touch, 12 mm tape" (Subheadline semibold) and the label as it prints (`place-label`): the PNG's
+  picture at ¾ point a dot (64 dots → 48 points tall), never smoothed, on a white card (padding 8 × 10, radius 6,
+  hairline).
+- The main button, full colour (Settings slate, `Metrics.row` tall, radius 12): iPhone — **Label for P-touch**
+  (`place-label-share`), a Share of the PNG file ("<place> label.png", written to the app's temporary folder
+  `Place labels` as the page opens): Save Image puts it in Photos, where Brother's app picks it up, or Save to
+  Files. Mac — **Label for P-touch…** (`place-label-save`), a Save window for "<place> label.png"; under it "Saved:
+  <file>" or "Not saved." (`place-label-saved`).
+- "In Brother's app, add it as a picture, 12 mm tape." (Footnote muted.)
+- **Open <place>** (`WideButtonLabel`, slate, chevron; `place-code-open`): what the code would open now — the trip
+  on its place, or the place's page — as a sheet over this one. This is how the Mac (no Camera) sees a place's list.
+- "What it opens: a trip you are packing, with only what to take from here; back from a trip, what goes back here;
+  otherwise everything kept here." (Footnote muted; `place-code-hint`.)
+- As it opens: `PlaceLabels.keepCodes([place])` (the code is kept), then the label file is written.
+
+**The label** (`PackingLibrary/PlaceLabel.swift`). A PNG, 8-bit grey, black on white, `PlaceLabel.height` = **64**
+dots tall (12 mm TZe tape's printable height on the P-touch CUBE), marked **180** dots to the inch (`dpi`) so an app
+that reads it places it at 9 mm:
+- The square code from Core Image's QR generator at correction **M** (`correction`), read one dot per square
+  (`squares(_:)`, the generator's one-square margin dropped) and drawn square by square at
+  `dotsPerSquare(21)` = 64 / 21 = **3** whole dots a square — 63 dots, 8.8 mm — never scaled smooth: no
+  anti-aliasing, no interpolation anywhere, so every dot is black or white.
+- Left of it two squares of white (`quiet` = 2, 6 dots); above and below, the tape's own unprinted edge is the code's
+  quiet margin (the 63-dot code sits at the top of the 64 dots, the spare dot below).
+- Three squares (9 dots) on, the place's name: Helvetica Neue Condensed Bold (else Avenir Next Condensed Bold, else
+  the system's bold) at 0.62 × 64 ≈ 40 dots, its capitals centred on the tape, drawn without anti-aliasing; then
+  6 dots of white. The label is as long as the name needs.
+- `fileName`: "<place> label.png", a "/" or ":" in the name becoming "-".
+
+**Tests.** Model `PlaceLinksTests` (`testALinkCarriesThePlacesCodeInCapitals`,
+`testEachPlaceGetsAShortCodeThatIsKeptAndTheSameEverywhere`, `testACodeIsNeverGivenToAnotherPlace`,
+`testACodeSurvivesABackupAndRestore`, `testALabelPrintedBeforeARenameStillFindsThePlace`,
+`testAPlaceIsFoundAsTheListSpellsItOrAsThingsSayIt`, `testThePackingWindowIsTheEarliestPackingStep`,
+`testATripBeingPackedOpensOnItsPlace`, `testTheSoonestTripIsTheOneBeingPacked`,
+`testBackFromATripShowsWhatGoesBackThere`, `testComingHomeComesBeforeTheNextTripsPacking`,
+`testATripWithoutDatesNeverOpens`, `testEverythingKeptThereIsAToZ`); `PlaceLabelTests`
+(`testTheLabelReadsBackAsThePlacesLink` — the PNG, as it is, read by Core Image's QR reader, gives exactly
+"AMSPACKING://P/G4R"; `testTheLabelIsAsTallAsTheTapePrintsAndMarked180Dots`;
+`testTheCodeIsTheSmallestSizeInWholeDots` — 21 squares, 3 dots each, every dot black or white, each 3 × 3 block
+one colour and equal to the code's square, 6 white dots to its left; `testTheFileIsNamedAfterThePlace`). UI
+`testAPlacesCodeOpensTheTripBeingPackedOnItsLines`, `testAPlacesCodeShowsWhatGoesBackAfterATrip` (the link handed
+to the app with `XCUIApplication.open`, as the Camera does), `testAPlacesCodeShowsEverythingKeptThereWhenNoTripIsBeingPacked`
+(lower-case link; a thing opens; an unknown code says so), `testEachPlaceHasACodeToPrintAndOpen` (spec 06 §2).
+
+**Not covered by a test.** The Camera itself (no simulator has one) and Brother's app; the Mac's Save windows (no
+test can drive them); the labels' look on real tape.
+
+**Traps and history.** 🪤 Lower case would cost a size: "amspacking://p/g4r" is not in the QR alphanumeric set,
+so Core Image codes it as bytes and needs version 2 (25 squares, 2 dots each at 64 dots) — measured 7 Oct 2026; the
+link is in capitals for that reason alone. 🪤 Background NFC reading would only have opened the app through a
+universal link (an https link on a domain of his with an apple-app-site-association file) — Apple does not hand a
+custom scheme to it; moot since he chose labels. 🪤 Not verified on his iPhone yet: that the Camera offers "Open in
+Packing" for the capital-letter link (schemes are case-insensitive by the standard).
+
+---
+
 ## The catalogue write path and catalogue rows (PackingCore/Catalogue.swift, CatalogRows.swift)
 
 **Catalogue.swift** keeps the rule "a value is either the ITEM's default, the TEMPLATE's default, or one
@@ -691,14 +830,24 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
      one line, keeps its room first) and at the right (Footnote, one line, cut in the middle when long) the template
      names (", "-joined) or "On no template", joined with " · " to the storage place when set — orange when on no
      template, muted otherwise; 5 pt vertical padding (until 0.62: the details on a second line, 10 pt padding); a
-     1 pt line under it. A just-added row is lit for a moment: a rounded (8) orange 18 %
-     background reaching 8 pt past the text on each side.
+     1 pt line under it (since 0.69 under the note line when there is one). A just-added row is lit for a moment: a
+     rounded (8) orange 18 % background reaching 8 pt past the text on each side.
+   - Under a thing found by its NOTES and not by its name (0.69): the note line (`thing-row-N-note`, `NoteHitLine`
+     in SearchScreen.swift) — Footnote, one line, cut at the end; muted, the words searched for in Care orange and
+     semibold (every place they occur, case and accents not counting); a template's note starts with its name and
+     ": " ("Hiking: The waterproof one, folded in the lid"). 3 pt pulled up under the row, 5 under it. It is a text of
+     its own OUTSIDE the row's button (the Mac folds a button's texts into the button); a tap on it opens the thing too.
 5. The add row at the BOTTOM (his rule): "A new thing" field (`thing-new-name`, 17 medium, min height 44) and
    "New" (`thing-new`, `FieldButtonLabel`, orange); its needs line `thing-new-needs`.
 
 **Behaviour.**
-- Search: keeps things whose `normName(name)` CONTAINS `normName(query)` (name only; not the place or the
-  templates). The "On no template" toggle keeps only things with no template; both combine.
+- Search: keeps things whose `normName(name)` CONTAINS `normName(query)`, or (0.69) whose notes do —
+  `Library.noteHits(query)` (`PackingLibrary/NoteSearch.swift`): the thing's own Notes first, then the notes its
+  templates keep for it in `rowNotes` order (a template's note that only repeats the thing's own is skipped), line by
+  line; the first line that holds the words is the hit (`NoteHit {template?, line}`; a line longer than 80
+  characters whose words start more than 24 in is cut to start a word before them with "…"). One pass over the
+  templates' rows for all things, not one per thing. Not the place, the templates' names or the care notes. The "On
+  no template" toggle keeps only things with no template; both combine.
 - Tap a row → the thing's page (`ThingEditor`) as a sheet over this one.
 - New (or Return in the field): a blank or all-space name → "Type a name first." under the row (cleared as soon
   as the field changes). Otherwise `addThing(name:)`. Refused because a thing of that name exists (by `normName`):
@@ -726,6 +875,13 @@ above it; both back in A–Z after leaving); `testTheCrossEmptiesASearch` ("Head
 `testARowOfAListHasItsOwnAnswers`, `testANoteMadeOnSiteReachesTheThing` (all open things from here).
 
 UI `testANewThingWithANameHeHasSaysSo` ("map" → the line says "already", the field still says "map", 10 things).
+
+UI `testSearchFindsAThingByWordsInItsNotes` (0.69, `-uiTestingNotes`): "blue pouch" → "1 thing", the Passport, its
+note line "Keep it in the blue pouch with the tickets"; "waterproof" → the Map, "Hiking: The waterproof one, folded
+in the lid"; "Passport" (its name) → no note line; then the same in Search (spec 02 §15). Model `NoteSearchTests`
+(`testAThingIsFoundByItsOwnNoteWithTheLineThatMatched`, `testATemplatesOwnNoteFindsTheThingAndNamesTheTemplate`,
+`testItsOwnNoteComesFirstThenTheTemplatesInOrder`, `testANoteThatOnlyRepeatsTheThingsOwnIsNotTheTemplates`,
+`testALongLineIsCutSoTheWordsShow`).
 
 **Not covered by a test.** The light and the scroll to the top; the dashboard's search prefill other than
 through `kit-heavy-0`.

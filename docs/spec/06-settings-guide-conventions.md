@@ -133,7 +133,18 @@ the sheet down on the iPhone. Nothing is ever
       **"Storage places"**, **"Owners"**, **"Packers"**, **"Item conditions"**, **""When" steps"**.
     - The hint (15 medium, `Theme.ink` at 85 % opacity, wraps, id `choices-hint-<kind>`):
       - places: "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place
-        under Kept at home; a trip sorted by From where then lists what to fetch room by room."
+        under Kept at home; a trip sorted by From where then lists what to fetch room by room. The square beside a
+        place is its code: print its label, and the iPhone's Camera opens the app on that place." (the last
+        sentence 0.69)
+    - (places only, 0.69) right under the hint: **Labels for P-touch, all places** (`WideButtonLabel`, slate, the
+      drawn square `CodeMark`; id `list-places-labels`). Mac: a folder window ("Choose a folder for the P-touch
+      labels of your places.", button "Save labels here", new folders allowed) → every place's code kept
+      (`PlaceLabels.keepCodes`), every label written there as "<place> label.png" (a file of that name replaced);
+      under the button "<n> labels saved in <folder>." / "1 label saved in …" / "Not saved." (Footnote muted, id
+      `list-places-labels-said`). iPhone: two steps, so nothing is kept just by opening this page — the press keeps
+      the codes and makes the files, then the button becomes **Share <n> labels** ("Share 1 label"; white on slate,
+      `Metrics.tap` tall, radius 12; id `list-places-labels-share`), a Share of all the PNGs (Save Images → Photos,
+      or Save to Files) for Brother's app. The labels: spec 05, "A place's code and its label".
       - owners: "Whose a thing is — you, your partner, a child. You pick it under Whose it is on a thing, so on a
         shared trip everyone sees which things are theirs."
       - people: "Who packs a thing. You set it in the All your things table (Packed by), so you can see who is in
@@ -144,7 +155,10 @@ the sheet down on the iPhone. Nothing is ever
         shows its list in this order, step by step."
     - One row per entry (n = 0, 1, …): the label (17 medium, ink, id `list-<kind>-name-<n>`); if THINGS use the
       entry, how many (14 bold, monospaced digits, muted) right after it — things only, also for a "When" step
-      (0.62; until then a step's number added its trip lines and template places); Spacer; the pen — a drawn
+      (0.62; until then a step's number added its trip lines and template places); Spacer; (places only, 0.69) the
+      place's square — a drawn `CodeMark` (three corner squares and two dots on the 24 grid, stroke 1.8) 22×22,
+      muted, in a `Metrics.tap` square; id `list-places-code-<n>`, VoiceOver "Square code for <label>" — which opens
+      the place's own page (`PlaceCodeSheet`, a sheet; spec 05): its code, its label for the P-touch and Open; the pen — a drawn
       `PenMark` 22×22, muted (Settings slate on a 16 % slate rounded square while that entry's editor is open), in a 44×44 hit area, id
       `list-<kind>-edit-<n>`, VoiceOver "Change <label>" (0.62); a remove button — a drawn ✕ (`M6 6L18 18M18 6L6 18`,
       stroke 1.8, 22×22, muted) in a 40×40 hit area, id `list-<kind>-remove-<n>`, VoiceOver label
@@ -399,6 +413,11 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   `testAChoiceIsRenamedAndMovedAndItsThingsFollow` (Hall closet → Hall cupboard through the pen; the editor
   closes; ▲ moves it to row 1 with the editor following; ▲ at the top says so; the Rain jacket's *Kept at home*
   then reads "Hall cupboard").
+- UI — `testEachPlaceHasACodeToPrintAndOpen` (0.69): `list-places-name-5` is "Garage"; `list-places-code-5` opens
+  `place-code-detail` titled "Garage"; `place-code` at least 200 wide; `place-label` 48 points tall (64 dots at ¾
+  point); `place-label-share` (iPhone) / `place-label-save` (Mac); `place-code-open` → `place-detail` "Garage",
+  "Everything kept here: 2 things."; both closed; `list-places-labels` there, and on the iPhone a press turns it
+  into `list-places-labels-share` reading "Share 12 labels". Pictures `place-code`.
 - **Not covered by any test:** adding to owners, packers, conditions or steps from this screen; the packer
   colour rotation; removing an entry that is NOT in use; removing the last entry (factory list returns); the
   needs line disappearing on typing (tested only on *Your things*); renaming or moving on screen for any part but
@@ -681,9 +700,10 @@ no entry shows no marker anywhere (and fails the test).
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one; Tick everything / Clear every tick (asks first); Save as
    Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
-   colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); Set place under "No place set"; typing a thing adds it
+   colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
+   under Sorting shows every line again; typing a thing adds it
    to this trip only, Bought on site adds it ticked; Delete trip at the very end asks first (things and
-   templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62). (16 lines.)
+   templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62). (17 lines.)
 2. **On site** (Trips mark): the door appears once the trip began or something was bought, with a summary line
    ("2 bought · 1 left · 3 notes · home 4/9"); Bought on site; Left on site with Undo; Maintenance notes (also
    dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕, Tick everything;
@@ -703,13 +723,14 @@ no entry shows no marker anywhere (and fails the test).
    a grab list); Refine (violet card) after two or more reviews — Keep / Drop. (11 lines.)
 6. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
    again — 0.62); Just added at the top until you
-   leave; ✕ in search; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
+   leave; ✕ in search; (0.69) the search finds words in a thing's notes and its templates' notes, the matching line
+   under the thing; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
    notes under Notes, places to tap under Kept at home, No bag, Care how often and what to do (0.62); Bags with max weight,
    litres, empty weight and their own page; All your things · table (sort, filter, columns, Change all — the line says what changed, Undo puts
    back just that, the bar counts ticked things out of sight — 0.62;
    own window on the Mac); Filter by every column (pills, Clear); Sort up to three levels (blank last); the arrow
    opens the thing and returns to the same spot; Services List or Calendar (Done today, Today); the numbers under
-   the services. (11 lines.)
+   the services. (12 lines.)
 7. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
    "To buy · Packing", each once, dated, all day, ticks read back; ticks and removals here follow there, and a reminder deleted there can be sent again
    (0.62). (3 lines.)
@@ -717,14 +738,18 @@ no entry shows no marker anywhere (and fails the test).
    notifications, switch on or off, and where to allow them — 0.62); iCloud sync
    (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62); Save a backup / restore (a copy is kept
    first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, owners stay A–Z,
-   no duplicates, the reason for a refused remove right under it, Owners from his things when he has no list — 0.62); Worth a look
+   no duplicates, the reason for a refused remove right under it, Owners from his things when he has no list — 0.62);
+   (0.69) each storage place's square code and its label for the P-touch, 12 mm tape (iPhone: Share → Save Image, and
+   Brother's app takes it from Photos; Mac: saved as a picture), all places at once; the Camera on a label opens the
+   trip being packed on that place, what goes back after a trip, or everything kept there — Open on the place's page
+   shows the same on the Mac; Worth a look
    (only when something seems wrong; one-press fix such as Remove it; an undated photo nothing shows goes only on Remove — 0.62); Open a shared link (trip arrives unticked,
-   template links to existing things — with a name he has, a name of its own or Replace (0.62) —, grab list takes a free Home place or waits). (7 lines.)
+   template links to existing things — with a name he has, a name of its own or Replace (0.62) —, grab list takes a free Home place or waits). (9 lines.)
 9. **Shortcuts and the Action button** (Home mark): three actions (Choose a grab list, Open a grab list, Open my next
    trip); the Action-button path (iPhone Settings → Action Button → Shortcut → Packing → Choose a grab list); if
    Packing is missing, open it once; Home Screen or Siri ("Open Swim in Packing"). (4 lines.)
 10. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
-    so; the magnifier searches everything; on the Mac Escape closes a window as its Cancel or Done does, never saving
+    so; the magnifier searches everything (a thing's notes too — 0.69); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62). (3 lines.)
 
 **Tests.** `testWhatsNewStartsWithThisVersion` (topics 0 and 1 exist), `testTheLoopShowsWhereATripStands` (loop
@@ -1578,6 +1603,10 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
 600, ideal 760 × 900; `.defaultSize(760, 900)`; on appear `useTheRunnersWindowSize()`. Mac only: a second scene
 `Window("All your things", id: ThingsTable.windowId)` (the table, his ask 4 Oct 2026: "I would like it wider"), default
 1180 × 780 (760 × 620 under tests), `.windowResizability(.contentMinSize)`, restoration disabled, launch suppressed.
+Links (0.69, a place's label, spec 05): on the Mac the main window's content says `.handlesExternalEvents(preferring:
+["*"], allowing: ["*"])` and its `WindowGroup` `.handlesExternalEvents(matching: ["*"])`, so a link goes to the open
+window instead of opening a new one for every link; the "All your things" window `.handlesExternalEvents(matching:
+[])` — never the one a link opens in. `RootView.onOpenURL` → `LibraryModel.open(_:)` (spec 02 §1).
 
 **`useTheRunnersWindowSize()`** (Mac, only when testing): on the next main-queue turn, every visible titled window is
 set to x = its own, top edge kept, 760 wide, 674 tall. "Set, not suggested: macOS restores a window's last size and
@@ -1616,9 +1645,12 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-uiTestingOnSite` | memory, `SampleLibrary.underWay()` | |
 | `-uiTestingOldPhoto` | memory, `SampleLibrary.oldPhoto()` | |
 | `-uiTestingTwoLibraries` | memory, `SampleLibrary.doubled()` | |
+| `-uiTestingPlaces <when>` | memory, `SampleLibrary.places(when)` | 0.69; checked before `-uiTestingNotes` and `-uiTesting` |
+| `-uiTestingNotes` | memory, `SampleLibrary.notes()` | 0.69 |
 | `-uiTesting` | memory, `SampleLibrary.make()` | checked last |
 | (none) | SwiftData; iCloud when the Info.plist key `PackingUsesICloud` is "YES" | a failure to open → `.failed("The library could not be opened: …")` |
 | `-openGrab <label or title>`, `-openGrabMenu`, `-openNextTrip` | (testing only) play a Shortcut | |
+| `-uiTestingOpen <link>` | (testing only) a link handed to the app at launch, as the Camera hands a place's label (`LibraryModel.open`) | 0.69 |
 | `-pretendShopTicks` | (ShopReminders) pretend ticks in Reminders | |
 | `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings | 0.62 |
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
@@ -1689,6 +1721,13 @@ every one of his things does.
   `data:image/jpeg;base64,AQID`, created 2026-01-01T09:00:00.000Z, used by nothing.
 - **`doubled()`** (`-uiTestingTwoLibraries`): `make()` + every template again under new ids, same name, group and
   role, its things re-added by name (so the same 10 things sit on 6 templates).
+- **`places(when)`** (`-uiTestingPlaces <when>`, 0.69): `make()` + the Garage's code **G4R** (meta
+  `placeCode:G4R`, as if its label were printed); "soon" → the trip moved to today + 2 → today + 4 (being packed);
+  "home" → today − 3 → today, every line ticked (back from it: the way home); anything else → the trip as in
+  `make()`, a month ahead. The Garage holds the Headlamp and the Map.
+- **`notes()`** (`-uiTestingNotes`, 0.69): `make()` + the Passport's note "Renew before May" / "Keep it in the blue
+  pouch with the tickets" (two lines) and the Hiking template's own note for the Map, "The waterproof one, folded in
+  the lid" — neither name says the words the test searches for.
 - **`fileToRestore()`**: a DIFFERENT library as backup bytes (exportedAt 2026-09-22T09:00:00.000Z): one template "Day
   out" (`role: "base"`) with Water bottle and Sun hat — 2 things where the device holds 10, "so a restore that only
   ADDS would be caught". Read by *Restore from a file…* under the tests.
@@ -1728,7 +1767,10 @@ so a change to `project.yml` is committed together with the regenerated files. "
   take to the shop; what you tick there is ticked here.", NSCameraUsageDescription "A photo of a packed bag, kept with
   the trip, to repack from on the way home.", `PackingUsesICloud` = `$(PACKING_USES_ICLOUD)` (read at launch),
   UIBackgroundModes [remote-notification], UILaunchScreen (empty colour name), UISupportedInterfaceOrientations
-  [Portrait] — "portrait by design, like the web app on the phone".
+  [Portrait] — "portrait by design, like the web app on the phone"; (0.69) CFBundleURLTypes: one type, name
+  `com.schabbauer.AMSPacking.place`, role Viewer, scheme `amspacking` — a place's printed label
+  (`AMSPACKING://P/<code>`, spec 05) opens the app, on the iPhone and the Mac. No new entitlement: a link
+  scheme needs none (the NFC stickers first planned for this would have; he dropped them on 7 Oct 2026).
 - **Target `AMSPackingUITests`** (UI-testing bundle, iOS and macOS), `TEST_TARGET_NAME` AMSPacking, generated
   Info.plist. **Scheme `AMSPacking`**: builds the app; tests `AMSPackingUITests` and the package's
   `PackingCoreTests` AND (0.62) `PackingLibraryTests`. So the two UI jobs of CI and `tools/build.sh test` run both

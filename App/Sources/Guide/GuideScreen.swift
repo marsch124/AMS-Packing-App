@@ -153,6 +153,7 @@ struct HowItWorksScreen: View {
             "Tap a bag on a trip for Goes in the cabin: switched on, a plane trip checks that bag for liquids and things not allowed on board. A bag that was only a name on your lines becomes one of your Bags.",
             "Bags: how full each bag is against its max weight; the ⓘ explains the colours (blue fine, orange close, red over). Tap a bag to type what the luggage scale says \u{2014} from then on that is its weight; Clear takes it away \u{2014} and up to three photos of it packed, kept with the trip; each has its own Remove. A bag with nothing weighed yet says Tap to weigh.",
             "Sorted From where, Set place gives a thing under \u{201C}No place set\u{201D} its place in two taps.",
+            "Opened from a place\u{2019}s label, the trip shows only what is kept there. Tap the place\u{2019}s name under Sorting to see every line again.",
             "Type a thing at the bottom to add it to this trip only. Bought it on site? Press Bought on site: it goes on ticked, marked so.",
             "At the very end of the list, Delete trip asks first, then removes the trip. Your things and templates stay.",
             "A trip someone sent you arrives Quick: tick one of your templates to add to it, or pick Full trip to bring your always-packed things. Sharing a trip sends just the list \u{2014} your marks, notes and scale readings stay with you."]),
@@ -190,6 +191,7 @@ struct HowItWorksScreen: View {
         Topic(section: .care, title: "Care", lines: [
             "Your things: every thing you own; open one to change it, put it on a template, or delete it (it asks first). A change reaches the trips still ahead, on the lines you have not ticked yet. A name you already have is not added again.",
             "A thing you add in Your things stays at the top, under Just added, until you leave the screen. The \u{2715} in any search field empties it.",
+            "Searching Your things also finds words in a thing\u{2019}s notes, and in the notes its templates keep for it: the line that matched shows under the thing.",
             "On a thing's page: On a plane (Liquid, Not allowed in the cabin) and Valid until \u{2014} what a trip's Check before you go reads. Under the date: how far away it is (red once it has run out); +1 month \u{2026} +10 years sets it in one tap.",
             "A thing's page reads: Name, Notes, Kind of thing, Whose it is, On these templates, Kept at home, Usually packed in, When, then Weight, Brand, Colour, Condition, Care, On a plane and Valid until.",
             "Kind of thing, Whose it is, Kept at home, Usually packed in, When, Condition and Care each open a list: tap your choice. Kept at home lists your places, and a new place made there joins Your choices; Usually packed in offers your own bags and No bag.",
@@ -212,6 +214,8 @@ struct HowItWorksScreen: View {
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it. A backup holds every thing exactly as it is on this device, so Restore puts back exactly that \u{2014} cabin answers and notes included. Under Save a backup: when you last saved one on this device; This device holds says when your library came from a backup file.",
             "Your first real trip in 6 steps has its own door in Settings, to read again any time.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps. The pen beside an entry renames it \u{2014} everything that said the old name follows \u{2014} and its arrows move it up or down; owners always stay A to Z \u{2014} and if you never made an Owners list, it shows the names your things already carry. A name you already have is not added again, and something still in use cannot be removed: the reason appears right under it.",
+            "Each storage place has a square code. Tap the square beside a place: its label for the P-touch (12 mm tape) \u{2014} on the iPhone Share, then Save Image, and Brother\u{2019}s app takes it from Photos; on the Mac it is saved as a picture. Labels for P-touch, all places, makes them all at once. Stick the label where the things are kept.",
+            "Point the iPhone\u{2019}s Camera at a place\u{2019}s label and tap the link: packing for a trip, the trip opens with only what to take from there; back from a trip, what goes back there; otherwise, everything kept there. On the Mac, Open on the place\u{2019}s page shows the same.",
             "Worth a look appears only when something in the library seems wrong. Where it can, it puts it right in one press \u{2014} a photo left behind by a deleted trip has Remove it; a photo with no date that nothing shows is listed on its own and goes only when you press Remove.",
             "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them \u{2014} with a name you already have, it asks for one of its own, or Replace takes the shared things into yours and keeps your look, sections and bags (it says first what comes in and leaves); a grab list takes a free place on Home, or waits in Grab Lists when Home is full."]),
         Topic(section: .home, title: "Shortcuts and the Action button", lines: [
@@ -221,7 +225,7 @@ struct HowItWorksScreen: View {
             "Or add the Shortcut to the Home Screen, or say \u{201C}Open Swim in Packing\u{201D} to Siri."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",
-            "The magnifier at the top of most screens searches everything at once.",
+            "The magnifier at the top of most screens searches everything at once \u{2014} a thing\u{2019}s notes too.",
             "On the Mac, Escape closes the window you are in, as its Cancel (or Done) does \u{2014} it never saves. The All your things window closes with Done or \u{2318}W."]),
     ]
 

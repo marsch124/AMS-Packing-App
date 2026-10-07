@@ -7096,6 +7096,16 @@ final class AMSPackingUITests: XCTestCase {
 
     // MARK: - A place's code opens the place (0.69, stop A of his idea plan)
 
+    /// A drawn picture with an id: an image to the iPhone, an image or a group to the Mac.
+    private func picture(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        var found = app.images[id]
+        _ = waitUntil(timeout: 5) {
+            for e in [app.images[id], app.groups[id], app.otherElements[id]] where e.exists { found = e; return true }
+            return false
+        }
+        return found
+    }
+
     /// The lines of the trip on screen, by their words (lazy rows off screen are not asked).
     private func tripLinesShown(_ app: XCUIApplication) -> [String] {
         app.buttons.matching(NSPredicate(format: "identifier MATCHES 'trip-line-[0-9]+'")).allElementsBoundByIndex
@@ -7186,11 +7196,11 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "list-places-code-5")
         XCTAssertTrue(appears(app, "place-code-detail", timeout: 5), "the code did not open")
         XCTAssertEqual(words(app.staticTexts["place-code-title"]), "Garage", "the code is not the Garage's")
-        let code = app.images["place-code"].exists ? app.images["place-code"] : app.otherElements["place-code"]
-        XCTAssertTrue(code.waitForExistence(timeout: 5), "no code shown")
+        let code = picture(app, "place-code")
+        XCTAssertTrue(code.exists, "no code shown")
         XCTAssertGreaterThanOrEqual(code.frame.width, 200, "the code is not shown large: \(code.frame)")
-        let label = app.images["place-label"].exists ? app.images["place-label"] : app.otherElements["place-label"]
-        XCTAssertTrue(label.waitForExistence(timeout: 5), "no label for the P-touch")
+        let label = picture(app, "place-label")
+        XCTAssertTrue(label.exists, "no label for the P-touch")
         // 64 dots tall, shown at three quarters of a point a dot.
         XCTAssertEqual(label.frame.height, 48, accuracy: 1, "not the 12 mm tape's height: \(label.frame)")
         #if os(macOS)
