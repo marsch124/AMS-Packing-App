@@ -269,6 +269,10 @@ struct ThingEditor: View {
     @State private var beforeJump: ThingField?
     /// Said at the foot instead of the keys for a moment ("That was the last thing…").
     @State private var keyNote = ""
+    /// The list ⌘↓ ⌘↑ go through, as it stood when the page started going through it:
+    /// a thing that leaves the list by being filled in (the table filtered to No weight)
+    /// keeps its place in the walk, both ways.
+    @State private var walk: [String]?
     #if os(macOS)
     @State private var keyHome = ThingKeyHome()
     #endif
@@ -1295,14 +1299,17 @@ extension ThingEditor {
 
     /// ⌘↓ (1) and ⌘↑ (−1): saves, then the next or previous thing of the list the page
     /// came from, the cursor on the same field — "all weights" is one field after another.
-    /// The list as it stood BEFORE the save: a thing that leaves it by being filled in (the
-    /// table filtered to No weight) still leads to the one after it.
+    /// The list as it stood when the page first went on (`walk`; before that, before this
+    /// save): a thing that leaves it by being filled in (the table filtered to No weight)
+    /// keeps its place, so ⌘↓ leads on from it and ⌘↑ comes back to it. A thing not in it
+    /// (made here with ⌘N) takes the list as it is after the save.
     fileprivate func step(_ dir: Int) {
         guard let order else { return }
-        let before = order()
+        let before = walk ?? order()
         guard commit(), let id = shown else { return }
         var list = before
         if !list.contains(id) { list = order() }
+        walk = list
         guard let n = list.firstIndex(of: id) else {
             keyNote = "This thing is not in the list the page came from."
             return
@@ -1350,7 +1357,13 @@ extension ThingEditor {
 
     /// The Mac's date field under Valid until.
     fileprivate var expiryField: some View {
-        TextField("2027-06-30, 30/6 27 or +6m", text: Binding(get: { expiryText }, set: { expiryText = $0; expiryProblem = "" }))
+        TextField("2027-06-30, 30/6 27 or +6m", text: Binding(get: { expiryText }, set: { now in
+            // Only words that changed clear the line: the Mac hands the field's words back
+            // as it is left, which wiped "Not a date" the moment it was said (GitHub's Mac).
+            guard now != expiryText else { return }
+            expiryText = now
+            expiryProblem = ""
+        }))
             .textFieldStyle(.plain)
             .font(.system(.body).monospacedDigit()).foregroundStyle(Theme.ink)
             .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
@@ -1408,7 +1421,7 @@ extension ThingEditor {
         if let open = drop.open, let answer = drop.answer[open] {
             // Typing into a field in the list (A new place, or a Section's new name): its
             // own keys — but Esc, which leaves it.
-            if e.window !== mine, e.window?.firstResponder is NSTextView {
+            if drop.typingInList {
                 if code == KeyCode.escape { _ = answer(.close); return nil }
                 return e
             }

@@ -101,6 +101,8 @@ struct DropDown: View {
     @State private var newName = ""
     @State private var nameNeeds = ""
     @FocusState private var naming: Bool
+    /// The foot's field (A new place …) has the keys.
+    @FocusState private var footTyping: Bool
     /// The row whose removal is being asked (its value).
     @State private var asking: String?
     #if os(macOS)
@@ -219,6 +221,9 @@ struct DropDown: View {
         .background {
             if let keys { DropDownKeyAnswer(keys: keys, id: ids.field, answer: answer) }
         }
+        // A field in the list typed in has every key but Esc (the page asks this, not the window).
+        .onChange(of: renaming) { _, now in keys?.typingInList = now != nil || footTyping }
+        .onChange(of: footTyping) { _, now in keys?.typingInList = now || renaming != nil }
         #endif
     }
 
@@ -447,6 +452,9 @@ struct DropDown: View {
         nameNeeds = ""
         newName = label
         renaming = value
+        #if os(macOS)
+        keys?.typingInList = true
+        #endif
         DispatchQueue.main.async { naming = true }
     }
 
@@ -460,6 +468,9 @@ struct DropDown: View {
         renaming = nil
         nameNeeds = ""
         naming = false
+        #if os(macOS)
+        keys?.typingInList = footTyping
+        #endif
     }
 
     private func move(_ tools: DropDownRowTools, _ value: String, _ by: Int) {
@@ -495,6 +506,7 @@ struct DropDown: View {
                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
                 .onSubmit { add(new) }
+                .focused($footTyping)
                 .accessibilityIdentifier("\(ids.row)-new")
             Button { add(new) } label: { FieldButtonLabel(title: new.button, tint: tint) }
                 .buttonStyle(.plain).focusEffectDisabled()

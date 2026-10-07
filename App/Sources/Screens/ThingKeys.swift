@@ -62,12 +62,18 @@ final class DropDownKeys {
     /// The drop-down whose list is open (its field's id), and whether the keys opened it.
     private(set) var open: String?
     private(set) var openedByKeys = false
+    /// A field in the open list is being typed in (A new place clicked into, a Section's
+    /// new name): every key is that field's but Esc. Said by the drop-down itself — the
+    /// window a key arrives in does not tell (GitHub's Mac, 7 Oct 2026: the letters for a
+    /// popover's field were taken for the list while ⌘A reached the field).
+    var typingInList = false
     /// A list opened or closed — for the line at the page's foot.
     var changed: ((String?) -> Void)?
     /// A drop-down's field clicked: the page's focus goes there.
     var clicked: ((String) -> Void)?
 
     func opened(_ id: String?, byKeys: Bool) {
+        if id == nil { typingInList = false }
         guard open != id || openedByKeys != byKeys else { return }
         open = id
         openedByKeys = id != nil && byKeys
@@ -171,6 +177,32 @@ final class ThingKeys: ObservableObject {
                 self.objectWillChange.send()
             })
         }
+        // The Thing menu's items named for the tests, whenever the menu is (re)built.
+        for name in [NSMenu.didAddItemNotification, NSApplication.didFinishLaunchingNotification,
+                     NSApplication.didBecomeActiveNotification, NSWindow.didBecomeKeyNotification] {
+            watching.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
+                ThingKeys.nameMenuItems()
+            })
+        }
+    }
+
+    /// SwiftUI does not hand a menu item's `accessibilityIdentifier` to the menu (GitHub's
+    /// Mac, 7 Oct 2026: the Thing menu's items had titles and no ids), so the app names its
+    /// own items by their keys — `thing-menu-save`, `-new`, `-next`, `-previous`, `-jump` —
+    /// for the tests, which find controls by id, never by words.
+    static func nameMenuItems() {
+        guard let bar = NSApp?.mainMenu else { return }
+        let names: [String: String] = [
+            "s": "thing-menu-save", "n": "thing-menu-new", "j": "thing-menu-jump",
+            String(UnicodeScalar(UInt16(NSDownArrowFunctionKey))!): "thing-menu-next",
+            String(UnicodeScalar(UInt16(NSUpArrowFunctionKey))!): "thing-menu-previous",
+        ]
+        for top in bar.items where top.title == "Thing" {
+            for item in top.submenu?.items ?? [] {
+                guard let id = names[item.keyEquivalent], item.identifier?.rawValue != id else { continue }
+                item.identifier = NSUserInterfaceItemIdentifier(id)
+            }
+        }
     }
 
     /// The page the menu acts on: the one in the window in front, else the last opened.
@@ -181,8 +213,12 @@ final class ThingKeys: ObservableObject {
     func add(_ page: Page) {
         guard !pages.contains(where: { $0 === page }) else { return }
         pages.append(page)
+        DispatchQueue.main.async { ThingKeys.nameMenuItems() }
     }
-    func remove(_ page: Page) { pages.removeAll { $0 === page } }
+    func remove(_ page: Page) {
+        pages.removeAll { $0 === page }
+        DispatchQueue.main.async { ThingKeys.nameMenuItems() }
+    }
     /// What the page can do changed (a list to go through, or none).
     func refresh() { objectWillChange.send() }
 }
@@ -201,25 +237,20 @@ struct ThingCommands: Commands {
             Button("Save") { page?.save() }
                 .keyboardShortcut("s")
                 .disabled(page == nil)
-                .accessibilityIdentifier("thing-menu-save")
             Button("Save and New") { page?.saveAndNew() }
                 .keyboardShortcut("n")
                 .disabled(page == nil)
-                .accessibilityIdentifier("thing-menu-new")
             Divider()
             Button("Next Thing") { page?.step(1) }
                 .keyboardShortcut(.downArrow)
                 .disabled(!(page?.canStep ?? false))
-                .accessibilityIdentifier("thing-menu-next")
             Button("Previous Thing") { page?.step(-1) }
                 .keyboardShortcut(.upArrow)
                 .disabled(!(page?.canStep ?? false))
-                .accessibilityIdentifier("thing-menu-previous")
             Divider()
             Button("Jump to Field…") { page?.jump() }
                 .keyboardShortcut("j")
                 .disabled(page == nil)
-                .accessibilityIdentifier("thing-menu-jump")
         }
     }
 }
