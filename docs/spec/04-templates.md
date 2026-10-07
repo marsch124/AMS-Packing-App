@@ -19,7 +19,10 @@ here, its section, how many, a note, and "Only on some trips" conditions). A thi
 templates, and even twice on one template (e.g. a different "When" each time). Taking a row off a template or
 deleting a template **never deletes a thing**. A row's section is set on the row (§7), by dragging it under a
 heading (§6a, Arrange) and — since 0.64 — from the thing's own page, one Section per template it is on (spec 05,
-item 6a: the FIRST place when it is on a template twice).
+item 6a: the FIRST place when it is on a template twice). Since 0.68 a template's sections themselves can also be
+renamed, moved and removed from that Section list on a thing's page (his ask, 7 Oct 2026: "I would like to be able to
+Rename, Change and Delete Sections from this here as well"), held until the thing is saved and written by Arrange's
+own functions (§13a, `applySectionEdits`).
 
 **How one reaches it.**
 - The **Templates** tab (third tab; `tab-templates`, screen container `screen-templates`; violet `#7c5cd6`).
@@ -1285,6 +1288,26 @@ heading really changes are touched, so the store writes only those records.
   next heading below the drop, or nil when the next non-row line is `.rest` or there is none`)`; a row → `moveRow`
   under the nearest heading line above (`.rest` = "", none above = the first heading, at its top), `before` = the
   row right after it. `.rest` and out-of-range offsets → false, nothing changes.
+
+**From a thing's page (0.68, `PackingLibrary/SectionEdits.swift`)** — the same changes, held by the page until Save
+(spec 05 item 6a) and handed over in one go; no second way of doing any of them:
+- `SectionEdits(names: [sectionId: name], order: [sectionId]?, removed: Set<sectionId>)` — what a page did to ONE
+  template's sections; `isEmpty` when nothing.
+- `sectionsAsEdited(templateId:_:) -> [TemplateSection]` — the sections as the page shows them while it holds the
+  edits: in the new order (ids it no longer has dropped, ones it gained since last), under the new names, the removed
+  ones still there (the page strikes them out).
+- `sectionNameTaken(templateId:name:except:_:)` — would this name be a second one of that `normName` among the sections
+  as shown (the removed ones' names are free; blank never taken; its own name allowed).
+- `applySectionEdits(templateId:_:) -> Bool` — the REMOVED first (`removeSection` each: its rows stay, under no
+  heading, and its name is free), then the NAMES (`renameSection`, trimmed; a blank one or the same name skipped;
+  retried while any succeeds, and two that swap names are each parked under a name nobody has — U+2063 and the id —
+  then given theirs), then the ORDER (`moveSection(before: nil)` each in turn, only when it differs from the stored
+  order — so the rows are renumbered and a new trip reads it). Answers whether the sections or the template's rows
+  changed; false for an unknown template or empty edits.
+Tests: `SectionEditsTests` (6) — a renamed section keeps its things (the same id); the order is the template's and a
+new trip reads Clothes before Lights; a removed section's things stay on the template under none (the row count kept);
+all three at once with two names swapped; nothing to do writes nothing (the same names and order, an unknown template —
+the library equal before and after); the page's view of the edits and the name check.
 
 Tests: `ArrangeTests` — `testAHeadingIsRenamedButNeverToANameItAlreadyHas`, `testAHeadingMovesWithAllItsThings`
 (rows renumbered 0–4 in the page's order; nil = last; unknown ids refused), `testARemovedHeadingLeavesItsThingsOnTheTemplate`,
