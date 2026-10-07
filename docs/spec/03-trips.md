@@ -1440,6 +1440,9 @@ gear that weather calls for which is not on the trip yet — each with one press
 `destination`; Return looks it up), id `weather-place`; **Weather** (15 bold white on green; "Looking…"
 while busy), id `weather-look`, never disabled; after a press with a blank field "Type a place first."
 (15 bold red, id `weather-look-needs`, goes when typing).
+A look (Weather or Return) first puts the keyboard away (`@FocusState typing = false`): the field leaves the
+card when the forecast arrives, and leaving with the keyboard still up froze the iPhone on "Looking…" (iOS 26.5;
+`testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing` timed out — found at the 0.68–0.71 merge, already in 0.67).
 
 **With a forecast:**
 - The line (17 bold ink, id `weather-line`): the conditions in his words — rain "Rain", snow "Snow",

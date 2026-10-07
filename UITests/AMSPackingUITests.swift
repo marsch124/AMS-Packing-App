@@ -7772,9 +7772,16 @@ final class AMSPackingUITests: XCTestCase {
     /// Back from a trip, the same code shows what goes back to the Garage — opened the
     /// way the Camera opens it: the link handed to the app.
     func testAPlacesCodeShowsWhatGoesBackAfterATrip() {
+        #if os(macOS)
+        // On the Mac the link is handed over at launch: a link opened by the test went to
+        // the system, which started a SECOND copy of the app on GitHub's Mac — it stayed in
+        // front and every later test there failed "not foreground" (the 0.68–0.71 merge).
+        let app = launch("-uiTestingPlaces", ["home", "-uiTestingOpen", "AMSPACKING://P/G4R"])
+        #else
         let app = launch("-uiTestingPlaces", ["home"])
         XCTAssertTrue(appears(app, "screen-home"))
         app.open(URL(string: "AMSPACKING://P/G4R")!)
+        #endif
         XCTAssertTrue(appears(app, "place-detail", timeout: 10), "the link did not open the place")
         XCTAssertEqual(words(app.staticTexts["place-title"]), "Garage")
         let says = words(app.staticTexts["place-says"])
@@ -8698,7 +8705,7 @@ final class AMSPackingUITests: XCTestCase {
         app.typeText(" case")
         XCTAssertEqual(says(app, "thing-name"), "Map case", "the cursor was not at the end of the name")
         let order = ["thing-notes", "thing-category", "thing-owner", "thing-lists", "thing-section-1",
-                     "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-brand", "thing-colour",
+                     "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-kit-add", "thing-brand", "thing-colour",
                      "thing-condition", "thing-care", "thing-care-notes", "thing-liquid", "thing-restricted",
                      "thing-expiry", "thing-name"]
         for id in order {
@@ -9406,9 +9413,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["trip-line-8"].exists, "what is inside became lines of their own")
         let total = app.staticTexts["bags-total"]
         XCTAssertTrue(waitUntil { self.words(total) == "2.4 kg" }, "the bag does not weigh what is inside the kits: '\(words(total))'")
-        XCTAssertFalse(app.otherElements["trip-line-7-kit-0"].exists, "the pouch is open before it is asked")
+        XCTAssertFalse(app.descendants(matching: .any)["trip-line-7-kit-0"].exists, "the pouch is open before it is asked")
         tap(app, id: "trip-line-7-kit")
-        XCTAssertTrue(waitUntil { app.otherElements["trip-line-7-kit-2"].exists }, "the arrow does not show what is inside")
+        XCTAssertTrue(waitUntil { app.descendants(matching: .any)["trip-line-7-kit-2"].exists }, "the arrow does not show what is inside")
         XCTAssertTrue(words(app.staticTexts["trip-line-7-kit-warning-0"]).contains("Plasters"), "the plasters' date is not said on the kit")
         shot(app, "kit-trip-open")
         tap(app, id: "trip-line-7-kit-0-out")

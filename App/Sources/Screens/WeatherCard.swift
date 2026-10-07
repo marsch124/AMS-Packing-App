@@ -13,6 +13,10 @@ struct WeatherCard: View {
     /// What Weather was missing, said under the field (never a grey button).
     @State private var needs = ""
     @State private var asked = false
+    /// The place field has the keyboard. Weather puts it away first: the field is gone once
+    /// the forecast is in, and a field leaving with the keyboard still up hung the iPhone
+    /// (iOS 26.5: "Looking…" for ever, the screen frozen — found by the tests, 7 Oct 2026).
+    @FocusState private var typing: Bool
 
     private var trip: TripEvent? { model.library.trip(tripId) }
     private var busy: Bool { model.lookingUpWeather.contains(tripId) }
@@ -82,6 +86,7 @@ struct WeatherCard: View {
                         .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                        .focused($typing)
                         .onSubmit { look() }
                         .accessibilityIdentifier("weather-place")
                     // Always in colour (his rule for a main button); with no place it
@@ -135,6 +140,7 @@ struct WeatherCard: View {
         let name = jsTrim(place)
         guard !busy else { return }                 // one look at a time
         guard !name.isEmpty else { needs = "Type a place first."; return }
+        typing = false
         Task { await model.lookUpWeather(tripId: tripId, place: name) }
     }
 
