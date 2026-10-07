@@ -990,7 +990,13 @@ fixed kinds. Planted: `choiceRemoveProblem` always nil → 11 red ("Garage is st
 got); the kind's rename not carried to things → red "a thing kept the old kind".
 UI (iPhone, light and dark): `testKindOfThingIsChangedInsideItsList`, `testKeptAtHomeIsChangedInsideItsListAndCancelUndoes`,
 `testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage`, `testWhenIsChangedInsideItsListOnATemplatesRow`;
-Mac `testHisListsAnswerTabAndSpaceOnTheMac`. UI_FAULTS_HERE
+Mac `testHisListsAnswerTabAndSpaceOnTheMac`. Planted: (A) `ChoiceDrop`'s
+`refusal` always nil → all four red "an entry in use was not refused"; (B) `applyPageChoices` writing nothing → all
+four red ("the Headlamp's kind did not follow the rename", "… did not follow the rename", "the rename was not kept",
+"the rename did not reach the thing's When"). Green on the iPhone in light and dark; the Mac probe (GitHub's Mac) ran
+the Mac test and the Kind/Kept at home tests, the Section keys test and the two changed type-ahead tests — green
+(`testADropDownPicksAsHeTypesAndOpensWithSpace` once its new name started with a letter no kind has: "rink" first
+picked Reminders on its "r", as a closed list does).
 
 ### Open questions
 
