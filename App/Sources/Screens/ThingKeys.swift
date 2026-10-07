@@ -48,6 +48,9 @@ enum ThingField: Hashable {
 /// What the page's keys ask of one of its drop-downs.
 enum DropDownKey: Equatable {
     case letters(String), open, up, down, choose, close, back, space
+    /// Tab (1) or Shift-Tab (−1) in the open list: on to the lit row's tools (a Section's
+    /// pen, arrows, Remove); answered false when there is no tool left — the page goes on.
+    case tab(Int)
 }
 
 /// The page's line to its drop-downs (`DropDown`, Mac): each one, while it is on screen,

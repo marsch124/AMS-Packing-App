@@ -246,6 +246,9 @@ struct ThingEditor: View {
     /// A section typed here, per template, waiting for Save: made only then, so Cancel
     /// leaves the template as it was (as in the row editor).
     @State private var newSections: [String: String] = [:]
+    /// Each template's sections renamed, moved or removed in a Section list here (0.68),
+    /// waiting for Save like a typed one — Cancel leaves the template as it was.
+    @State private var sectionEdits: [String: SectionEdits] = [:]
 
     // The Mac's keys (0.68) — see ThingKeys.swift. Unused on the iPhone.
     /// The field in focus, as the page sees it: ringed, and named at the page's foot.
@@ -479,6 +482,7 @@ struct ThingEditor: View {
         sections = now
         sectionsAtOpen = now
         newSections = [:]
+        sectionEdits = [:]
         problem = ""
         weightProblem = ""
         askingToDelete = false
@@ -561,13 +565,74 @@ struct ThingEditor: View {
 
     private func sectionChoice(_ t: PackList, n: Int) -> some View {
         let typed = newSections[t.id] ?? ""
+        // The template's sections as they will be once saved: renamed, in the new order,
+        // a removed one still there to be struck out (0.68).
+        let shown = model.library.sectionsAsEdited(templateId: t.id, sectionEdits[t.id] ?? SectionEdits())
         return DropDown(title: "Section on \(t.name)", heading: .title,
-                        options: t.sections.map { ($0.id, $0.name) } + (typed.isEmpty ? [] : [(RowEditor.newSectionKey, typed)]),
+                        options: shown.map { ($0.id, $0.name) } + (typed.isEmpty ? [] : [(RowEditor.newSectionKey, typed)]),
                         selected: sections[t.id] ?? "", id: DropDownIds(stringLiteral: "thing-section-\(n)"),
                         tint: AppSection.templates.color, blank: "No section",
                         newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") {
                             newSection($0, on: t.id)
-                        }, ring: ring(.section(t.id))) { sections[t.id] = $0 }
+                        }, tools: sectionTools(t), ring: ring(.section(t.id))) { sections[t.id] = $0 }
+    }
+
+    /// Rename, move and remove a template's sections from its Section list here — his
+    /// ask (7 Oct 2026, a picture of that list open): "I would like to be able to Rename,
+    /// Change and Delete Sections from this here as well." Every change waits for Save, as
+    /// "A new section" does, and is then written by Arrange's own functions
+    /// (`Library.applySectionEdits`): a section renamed keeps its things, the order is the
+    /// template's (what its page and a trip sorted by Section read), and a removed one's
+    /// things stay on the template with no section.
+    private func sectionTools(_ t: PackList) -> DropDownRowTools {
+        let id = t.id
+        func edits() -> SectionEdits { sectionEdits[id] ?? SectionEdits() }
+        func order() -> [String] { model.library.sectionsAsEdited(templateId: id, edits()).map(\.id) }
+        return DropDownRowTools(
+            applies: { value in t.sections.contains { $0.id == value } },
+            rename: { value, name in
+                let clean = jsTrim(name)
+                guard !clean.isEmpty else { return "Type the section's name first." }
+                guard !model.library.sectionNameTaken(templateId: id, name: clean, except: value, edits()) else {
+                    return "\(t.name) already has a section called that."
+                }
+                var e = edits()
+                let stored = model.library.templates.first { $0.id == id }?.sections.first { $0.id == value }?.name
+                e.names[value] = clean == stored ? nil : clean
+                sectionEdits[id] = e
+                return ""
+            },
+            move: { value, by in
+                var ids = order()
+                guard let at = ids.firstIndex(of: value), ids.indices.contains(at + by) else { return }
+                ids.swapAt(at, at + by)
+                var e = edits()
+                let stored = model.library.templates.first { $0.id == id }?.sections.map(\.id)
+                e.order = ids == stored ? nil : ids
+                sectionEdits[id] = e
+            },
+            canMove: { value, by in
+                let ids = order()
+                guard let at = ids.firstIndex(of: value) else { return false }
+                return ids.indices.contains(at + by)
+            },
+            isRemoved: { value in edits().removed.contains(value) },
+            remove: { value in
+                var e = edits()
+                e.removed.insert(value)
+                sectionEdits[id] = e
+                // The thing was in it: it is in none now, as its things will be.
+                if sections[id] == value { sections[id] = "" }
+            },
+            putBack: { value in
+                var e = edits()
+                e.removed.remove(value)
+                sectionEdits[id] = e
+            },
+            question: { value in
+                let name = model.library.sectionsAsEdited(templateId: id, edits()).first { $0.id == value }?.name ?? ""
+                return "Remove \(name) from \(t.name)? Its things stay, with no section."
+            })
     }
 
     /// A section typed at the foot of a template's list: one of that name already on
@@ -858,8 +923,13 @@ struct ThingEditor: View {
         let d = draft
         let lists = onLists
         let every = careEvery, notes = jsTrim(careNotes)
-        let chosen = sections, atOpen = sectionsAtOpen, typed = newSections
+        let chosen = sections, atOpen = sectionsAtOpen, typed = newSections, edited = sectionEdits
         model.change { lib in
+            // A template's sections changed in its Section list here (0.68), first: the
+            // thing's own choice below is made among them as they now are.
+            for (templateId, edits) in edited.sorted(by: { $0.key < $1.key }) {
+                _ = lib.applySectionEdits(templateId: templateId, edits)
+            }
             _ = lib.updateThing(id: itemId) { thing in
                 thing.storage = jsTrim(d.storage)
                 thing.category = d.category
@@ -1032,7 +1102,11 @@ extension ThingEditor {
 
     /// The keys of the field in focus, in a few words — the line at the page's foot.
     fileprivate func keysWords(_ f: ThingField?) -> String {
-        if listOpen != nil { return "↑ ↓ move · Return chooses · type to jump · Esc closes the list" }
+        if let open = listOpen {
+            return open.hasPrefix("thing-section-")
+                ? "↑ ↓ move · Tab to its pen, arrows, Remove · Space presses · Return chooses · Esc closes"
+                : "↑ ↓ move · Return chooses · type to jump · Esc closes the list"
+        }
         guard let f else { return "Tab goes to the fields · Return saves · ⌘N saves and starts a new thing · ⌘J jumps to a field" }
         switch f {
         case .notes: return "Return starts a new line · Tab next · ⌘S saves"
@@ -1206,6 +1280,7 @@ extension ThingEditor {
         sections = none
         sectionsAtOpen = none
         newSections = [:]
+        sectionEdits = [:]
         problem = ""
         weightProblem = ""
         askingToDelete = false
@@ -1327,8 +1402,9 @@ extension ThingEditor {
 
         // An open list: the arrows, the letters, Return and Esc are the list's.
         if let open = drop.open, let answer = drop.answer[open] {
-            // Typing into the list's own field (A new place, clicked into): its keys, but Esc.
-            if !drop.openedByKeys, e.window?.firstResponder is NSTextView {
+            // Typing into a field in the list (A new place, or a Section's new name): its
+            // own keys — but Esc, which leaves it.
+            if e.window !== mine, e.window?.firstResponder is NSTextView {
                 if code == KeyCode.escape { _ = answer(.close); return nil }
                 return e
             }
@@ -1340,8 +1416,11 @@ extension ThingEditor {
             case KeyCode.delete: _ = answer(.back)
             case KeyCode.space: _ = answer(.space)
             case KeyCode.tab:
+                // A Section's tools first; past them the list closes and Tab goes on.
+                let by = mods.contains(.shift) ? -1 : 1
+                if answer(.tab(by)) { return nil }
                 _ = answer(.close)
-                move(mods.contains(.shift) ? -1 : 1)
+                move(by)
             default:
                 guard mods.subtracting(.shift).isEmpty, let words = e.typedWords else { return e }
                 _ = answer(.letters(words))

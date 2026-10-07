@@ -38,6 +38,28 @@ struct DropDownNew {
     let add: (String) -> Void
 }
 
+/// Tools on the rows of a list whose rows are themselves changed — a thing's Section on
+/// each template (0.68, his ask with a picture of that list open: "I would like to be able
+/// to Rename, Change and Delete Sections from this here as well"). Each row it `applies`
+/// to gets a pen (rename: the row becomes a field; Return takes the name, Esc leaves it),
+/// two small arrows (its place in the order) and a quiet red Remove at the far right,
+/// which asks inside the list first. The page holds every change until it is saved and
+/// gives the list its options as they stand; a removed row is struck out, with Put back.
+struct DropDownRowTools {
+    /// The rows that take tools (by value).
+    let applies: (String) -> Bool
+    /// A new name for a row: "" when taken, otherwise what is wrong with it.
+    let rename: (_ value: String, _ name: String) -> String
+    /// One place up (−1) or down (1); and whether there is a place to go.
+    let move: (_ value: String, _ by: Int) -> Void
+    let canMove: (_ value: String, _ by: Int) -> Bool
+    let isRemoved: (String) -> Bool
+    let remove: (String) -> Void
+    let putBack: (String) -> Void
+    /// The question before a row is removed ("Remove Nutrition from Business trip? …").
+    let question: (String) -> String
+}
+
 /// How a drop-down's heading reads. A band of its own over the field (the thing's
 /// page, a template's row); a heading inside a block that already has one (a thing's
 /// Section on each of its templates, under "On these templates"); or a word to the
@@ -65,6 +87,8 @@ struct DropDown: View {
     /// (his places compare as names, ignoring capitals and spaces).
     let same: (String, String) -> Bool
     let newEntry: DropDownNew?
+    /// Rename, move and remove on its rows (a thing's Section list, 0.68); nil = none.
+    let tools: DropDownRowTools?
     /// The 2-point ring of the field in focus on a thing's page (Mac, 0.68); nil = none.
     let ring: Color?
     let choose: (String) -> Void
@@ -72,6 +96,13 @@ struct DropDown: View {
     @State private var open = false
     @State private var typed = ""
     @State private var needs = ""
+    /// The row being renamed (its value), what its field says, and what was wrong.
+    @State private var renaming: String?
+    @State private var newName = ""
+    @State private var nameNeeds = ""
+    @FocusState private var naming: Bool
+    /// The row whose removal is being asked (its value).
+    @State private var asking: String?
     #if os(macOS)
     /// The Mac's keys on a thing's page (0.68): given by the page; nil elsewhere.
     @Environment(\.dropDownKeys) private var keys
@@ -86,17 +117,19 @@ struct DropDown: View {
     @State private var offer = ""
     /// The list was opened by the keys: its foot offers what is typed instead of a field.
     @State private var byKeys = false
+    /// The tool of the lit row that Tab has reached (`tool(for:)`), nil = the row itself.
+    @State private var tool: Int?
     #endif
 
     init(title: String?, heading: DropDownHeading = .band, options: [(value: String, label: String)],
          selected: String, id: DropDownIds,
          tint: Color = AppSection.care.color, blank: String? = nil, other: Bool = false,
          same: @escaping (String, String) -> Bool = { $0 == $1 }, newEntry: DropDownNew? = nil,
-         ring: Color? = nil, choose: @escaping (String) -> Void) {
+         tools: DropDownRowTools? = nil, ring: Color? = nil, choose: @escaping (String) -> Void) {
         self.title = title; self.heading = heading
         self.options = options; self.selected = selected; self.ids = id
         self.tint = tint; self.blank = blank; self.other = other; self.same = same
-        self.newEntry = newEntry; self.ring = ring; self.choose = choose
+        self.newEntry = newEntry; self.tools = tools; self.ring = ring; self.choose = choose
     }
 
     /// The words of the choice that stands — what the field shows and says.
@@ -172,7 +205,7 @@ struct DropDown: View {
             list.presentationCompactAdaptation(.popover)
         }
         .onChange(of: open) { _, now in
-            if !now { typed = ""; needs = "" }
+            if !now { typed = ""; needs = ""; renaming = nil; asking = nil; nameNeeds = "" }
             #if os(macOS)
             if now {
                 if lit == nil { lit = chosenIndex }
@@ -234,7 +267,15 @@ struct DropDown: View {
     /// One choice: a tap takes it and closes the list. Filled and shaped as a whole
     /// row — on the Mac a slim whole-row plain button with nothing behind its words
     /// once took no clicks.
-    private func row(_ label: String, value: String, id: String, n: Int) -> some View {
+    @ViewBuilder private func row(_ label: String, value: String, id: String, n: Int) -> some View {
+        if let tools, tools.applies(value) {
+            toolRow(tools, label, value: value, id: id, n: n)
+        } else {
+            plainRow(label, value: value, id: id, n: n)
+        }
+    }
+
+    private func plainRow(_ label: String, value: String, id: String, n: Int) -> some View {
         let on = same(value, selected)
         #if os(macOS)
         let arrows = lit == n
@@ -262,6 +303,187 @@ struct DropDown: View {
         .accessibilityIdentifier(id)
         .accessibilityAddTraits(on ? .isSelected : [])
         .id(id)
+    }
+
+    /// A row with its tools — or its name being changed, or its removal being asked.
+    @ViewBuilder private func toolRow(_ tools: DropDownRowTools, _ label: String, value: String, id: String, n: Int) -> some View {
+        #if os(macOS)
+        let arrows = lit == n
+        #else
+        let arrows = false
+        #endif
+        if renaming == value {
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("Section name", text: Binding(get: { newName }, set: { newName = $0; nameNeeds = "" }))
+                    .textFieldStyle(.plain)
+                    .font(.body).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 8)
+                        .stroke(nameNeeds.isEmpty ? tint : AppSection.actions.color, lineWidth: 1.5))
+                    .focused($naming)
+                    .onSubmit { takeName(tools, value) }
+                    #if os(macOS)
+                    .onExitCommand { leaveName() }          // a text field keeps Escape for itself
+                    #endif
+                    .accessibilityIdentifier("\(id)-name")
+                if !nameNeeds.isEmpty {
+                    Text(nameNeeds).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("\(id)-name-needs")
+                }
+            }
+            .padding(.vertical, 6)
+            .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+            .id(id)
+        } else if asking == value {
+            // Asked inside the list, as a thing's Delete asks on its page.
+            VStack(alignment: .leading, spacing: 8) {
+                Text(tools.question(value))
+                    .font(.system(.subheadline)).foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("\(id)-ask")
+                HStack(spacing: 12) {
+                    Button { tools.remove(value); asking = nil; keyTool(nil) } label: {
+                        Text("Remove").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
+                            .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
+                            .background(Capsule().fill(AppSection.actions.color))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .focusRing(toolLit(n, 0), tint: tint, radius: 12, gap: 2)
+                    .accessibilityIdentifier("\(id)-remove-yes")
+                    Button { asking = nil; keyTool(nil) } label: {
+                        Text("Keep").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 8).frame(minHeight: Metrics.compact)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .focusRing(toolLit(n, 1), tint: tint, radius: 6, gap: 2)
+                    .accessibilityIdentifier("\(id)-remove-no")
+                    Spacer(minLength: 0)
+                }
+            }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.actions.color, lineWidth: 1))
+            .padding(.vertical, 4)
+            .id(id)
+        } else {
+            let on = same(value, selected)
+            let gone = tools.isRemoved(value)
+            HStack(spacing: 2) {
+                Button { if !gone { choose(value); open = false } } label: {
+                    HStack(spacing: 8) {
+                        Text(label).font(.body).strikethrough(gone)
+                            .foregroundStyle(gone ? Theme.muted : Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 6)
+                        if on {
+                            Tick().stroke(tint, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                                .frame(width: 18, height: 18)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .padding(.vertical, 6).frame(minHeight: Metrics.tap)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier(id)
+                .accessibilityAddTraits(on ? .isSelected : [])
+                if gone {
+                    toolButton(id: "\(id)-putback", lit: toolLit(n, 0), label: "Put back") {
+                        tools.putBack(value); keyTool(nil)
+                    } face: {
+                        Text("Put back").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                    }
+                } else {
+                    toolButton(id: "\(id)-rename", lit: toolLit(n, 0), label: "Rename") { startName(value, label) } face: {
+                        glyph("M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3zM13.5 7.5l3 3", Theme.muted)
+                    }
+                    toolButton(id: "\(id)-up", lit: toolLit(n, 1), label: "Move up") { move(tools, value, -1) } face: {
+                        glyph("M6 15l6-6 6 6", tools.canMove(value, -1) ? tint : Theme.faint)
+                    }
+                    toolButton(id: "\(id)-down", lit: toolLit(n, 2), label: "Move down") { move(tools, value, 1) } face: {
+                        glyph("M6 9l6 6 6-6", tools.canMove(value, 1) ? tint : Theme.faint)
+                    }
+                    toolButton(id: "\(id)-remove", lit: toolLit(n, 3), label: "Remove") { asking = value; keyTool(0) } face: {
+                        Text("Remove").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                    }
+                }
+            }
+            .background(arrows ? AnyShapeStyle(tint.opacity(0.18)) : AnyShapeStyle(Theme.bg))
+            .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+            .id(id)
+        }
+    }
+
+    /// One of a row's tools: a mark or a word, pressed — never the row behind it.
+    private func toolButton<Face: View>(id: String, lit: Bool, label: String, _ action: @escaping () -> Void,
+                                        @ViewBuilder face: () -> Face) -> some View {
+        Button(action: action) {
+            face()
+                .frame(minWidth: Metrics.compact, minHeight: Metrics.tap)
+                .padding(.horizontal, 2)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .focusRing(lit, tint: tint, radius: 6, gap: 1)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier(id)
+    }
+
+    /// A small hand-drawn mark on the 24-point grid.
+    private func glyph(_ d: String, _ color: Color) -> some View {
+        SVGPath.path(d)
+            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+            .foregroundStyle(color)
+            .onGrid(16)
+            .accessibilityHidden(true)
+    }
+
+    private func startName(_ value: String, _ label: String) {
+        asking = nil
+        nameNeeds = ""
+        newName = label
+        renaming = value
+        DispatchQueue.main.async { naming = true }
+    }
+
+    private func takeName(_ tools: DropDownRowTools, _ value: String) {
+        let said = tools.rename(value, newName)
+        guard said.isEmpty else { nameNeeds = said; return }
+        leaveName()
+    }
+
+    private func leaveName() {
+        renaming = nil
+        nameNeeds = ""
+        naming = false
+    }
+
+    private func move(_ tools: DropDownRowTools, _ value: String, _ by: Int) {
+        guard tools.canMove(value, by) else { return }
+        tools.move(value, by)
+        #if os(macOS)
+        // The arrows' row goes with the section it moved.
+        if let n = lit { lit = n + by }
+        #endif
+    }
+
+    /// Is this tool of row `n` the one Tab has reached (Mac)?
+    private func toolLit(_ n: Int, _ k: Int) -> Bool {
+        #if os(macOS)
+        return lit == n && tool == k
+        #else
+        return false
+        #endif
+    }
+
+    private func keyTool(_ k: Int?) {
+        #if os(macOS)
+        tool = k
+        #endif
     }
 
     private func foot(_ new: DropDownNew) -> some View {
@@ -317,7 +539,10 @@ struct DropDown: View {
         switch key {
         case .open:
             openByKeys()
+        case .tab(let by):
+            return tab(by)
         case .letters(let s):
+            tool = nil
             let now = Date()
             // A new name being typed in the open list keeps every letter, pause or not.
             let naming = open && newEntry != nil && !offer.isEmpty
@@ -336,7 +561,7 @@ struct DropDown: View {
             // otherwise Space opens the list, or chooses in the open one.
             let typing = !ahead.isEmpty && (Date().timeIntervalSince(aheadAt) <= 1 || (open && !offer.isEmpty))
             if newEntry != nil && typing { return answer(.letters(" ")) }
-            if !open { openByKeys() } else { chooseLit() }
+            if !open { openByKeys() } else if !pressTool() { chooseLit() }
         case .back:
             guard open, !ahead.isEmpty else { return true }
             ahead.removeLast()
@@ -345,16 +570,63 @@ struct DropDown: View {
         case .down:
             if !open { openByKeys(); return true }
             let last = keyRows.count - (offer.isEmpty ? 1 : 0)
+            tool = nil; asking = nil
             lit = min((lit ?? -1) + 1, last)
         case .up:
             guard open else { return true }
+            tool = nil; asking = nil
             lit = max((lit ?? 1) - 1, 0)
         case .choose:
             guard open else { return false }
-            chooseLit()
+            if !pressTool() { chooseLit() }
         case .close:
             guard open else { return false }
+            // Esc leaves a name being changed, or a question, before the list.
+            if renaming != nil { leaveName(); return true }
+            if asking != nil { asking = nil; tool = nil; return true }
             close()
+        }
+        return true
+    }
+
+    /// The tools of the lit row Tab steps through: its pen, ↑, ↓ and Remove (Put back once
+    /// removed; Remove and Keep while asked). Answers false past the last (or before the
+    /// row, going back): the page then closes the list and goes on.
+    private func tab(_ by: Int) -> Bool {
+        guard open, let tools, let n = lit, keyRows.indices.contains(n), tools.applies(keyRows[n].value) else { return false }
+        let value = keyRows[n].value
+        let count = asking == value ? 2 : (tools.isRemoved(value) ? 1 : 4)
+        guard let at = tool else {
+            if by < 0 { return false }
+            tool = 0
+            return true
+        }
+        let next = at + by
+        if asking == value { tool = (next + count) % count; return true }   // the question keeps Tab
+        if next < 0 { tool = nil; return true }
+        if next >= count { tool = nil; return false }
+        tool = next
+        return true
+    }
+
+    /// Space or Return on a tool Tab reached: it is pressed. False when no tool is lit.
+    private func pressTool() -> Bool {
+        guard let tools, let n = lit, let k = tool, keyRows.indices.contains(n), tools.applies(keyRows[n].value) else { return false }
+        let value = keyRows[n].value
+        if asking == value {
+            if k == 0 { tools.remove(value) }
+            asking = nil
+            tool = nil
+        } else if tools.isRemoved(value) {
+            tools.putBack(value)
+            tool = nil
+        } else {
+            switch k {
+            case 0: startName(value, keyRows[n].label)
+            case 1: move(tools, value, -1)
+            case 2: move(tools, value, 1)
+            default: asking = value; tool = 0
+            }
         }
         return true
     }
