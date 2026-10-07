@@ -71,6 +71,12 @@ targets:
         # What the device says when the buy list first goes to Reminders (0.50).
         NSRemindersFullAccessUsageDescription: Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.
         NSRemindersUsageDescription: Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.
+        # A place's printed square code (0.69): the iPhone's Camera reads
+        # amspacking://place/<name> and offers to open the app on that place.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.schabbauer.AMSPacking.place
+            CFBundleTypeRole: Viewer
+            CFBundleURLSchemes: [amspacking]
         # A photo of a packed bag (0.52).
         NSCameraUsageDescription: A photo of a packed bag, kept with the trip, to repack from on the way home.
         # YES only in builds that carry the iCloud entitlements (see settings below).

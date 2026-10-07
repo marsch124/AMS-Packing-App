@@ -7094,6 +7094,177 @@ final class AMSPackingUITests: XCTestCase {
     }
     #endif
 
+    // MARK: - A place's code opens the place (0.69, stop A of his idea plan)
+
+    /// A drawn picture with an id: an image to the iPhone, an image or a group to the Mac.
+    private func picture(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        var found = app.images[id]
+        _ = waitUntil(timeout: 5) {
+            for e in [app.images[id], app.groups[id], app.otherElements[id]] where e.exists { found = e; return true }
+            return false
+        }
+        return found
+    }
+
+    /// The lines of the trip on screen, by their words (lazy rows off screen are not asked).
+    private func tripLinesShown(_ app: XCUIApplication) -> [String] {
+        app.buttons.matching(NSPredicate(format: "identifier MATCHES 'trip-line-[0-9]+'")).allElementsBoundByIndex
+            .filter { $0.exists && $0.isHittable }.map { self.words($0) }
+    }
+
+    /// His plan (7 Oct 2026, "fantastic"): the label on the garage shelf, read by the
+    /// Camera while a trip is being packed, opens THAT trip sorted From where, showing
+    /// only the Garage's lines; the chip with the place's name shows every line again.
+    /// (The sample's Garage has the code G4R.)
+    func testAPlacesCodeOpensTheTripBeingPackedOnItsLines() {
+        // The sample trip starts in 2 days; the link arrives as the Camera hands it over.
+        let app = launch("-uiTestingPlaces", ["soon", "-uiTestingOpen", "AMSPACKING://P/G4R"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the code did not open the trip being packed")
+        let chip = app.buttons["trip-place-filter"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 5), "no chip saying which place is shown")
+        XCTAssertEqual(chip.value as? String, "Garage")
+        XCTAssertEqual(chosen(app, "trip-view"), "From where", "the trip is not sorted From where")
+        let first = app.staticTexts["trip-group-0-label"]
+        XCTAssertTrue(waitUntil { self.words(first) == "Garage" }, "the first heading is not the Garage: '\(words(first))'")
+        XCTAssertFalse(app.staticTexts["trip-group-1-label"].exists, "another place's lines are shown too")
+        let lines = tripLinesShown(app)
+        XCTAssertEqual(lines.count, 2, "not the Garage's two lines: \(lines)")
+        XCTAssertTrue(lines.contains { $0.contains("Headlamp") } && lines.contains { $0.contains("Map") }, "\(lines)")
+        // Nothing else on the page: the lines are what he sees first.
+        XCTAssertFalse(app.textFields["trip-add-name"].exists, "the add bar is shown with one place's lines")
+        shot(app, "place-trip-filtered")
+
+        // Ticked from the place's page, as from the whole list.
+        tap(app, id: "trip-group-0-all")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]).hasPrefix("2/") }, "'\(words(app.staticTexts["trip-progress"]))'")
+
+        tap(app, id: "trip-place-filter")
+        XCTAssertTrue(disappears(app, "trip-place-filter", timeout: 5) || !chip.exists, "the chip stayed")
+        XCTAssertTrue(waitUntil { app.staticTexts["trip-group-1-label"].exists }, "every line did not come back")
+        XCTAssertTrue(app.textFields["trip-add-name"].waitForExistence(timeout: 5), "the add bar did not come back")
+    }
+
+    /// Back from a trip, the same code shows what goes back to the Garage — opened the
+    /// way the Camera opens it: the link handed to the app.
+    func testAPlacesCodeShowsWhatGoesBackAfterATrip() {
+        let app = launch("-uiTestingPlaces", ["home"])
+        XCTAssertTrue(appears(app, "screen-home"))
+        app.open(URL(string: "AMSPACKING://P/G4R")!)
+        XCTAssertTrue(appears(app, "place-detail", timeout: 10), "the link did not open the place")
+        XCTAssertEqual(words(app.staticTexts["place-title"]), "Garage")
+        let says = words(app.staticTexts["place-says"])
+        XCTAssertTrue(says.hasPrefix("Back from") && says.hasSuffix("2 things go back here."), "'\(says)'")
+        let shown = (0..<4).map { app.buttons["place-line-\($0)"] }.filter(\.exists).map { self.words($0) }
+        XCTAssertEqual(shown.count, 2, "not the Garage's two things: \(shown)")
+        XCTAssertTrue(shown[0].contains("Headlamp") && shown[1].contains("Map"), "\(shown)")
+        shot(app, "place-going-back")
+        tap(app, id: "place-done")
+        XCTAssertTrue(disappears(app, "place-detail", timeout: 5))
+    }
+
+    /// No trip being packed (the sample's is a month ahead): everything kept there, A–Z,
+    /// whatever the link's case; a thing opens its page. A code nothing knows says so.
+    func testAPlacesCodeShowsEverythingKeptThereWhenNoTripIsBeingPacked() {
+        var app = launch("-uiTestingPlaces", ["kept", "-uiTestingOpen", "amspacking://p/g4r"])
+        XCTAssertTrue(appears(app, "place-detail", timeout: 10), "the link did not open the place")
+        XCTAssertEqual(words(app.staticTexts["place-title"]), "Garage", "not the list's spelling")
+        XCTAssertEqual(words(app.staticTexts["place-says"]), "Everything kept here: 2 things.")
+        XCTAssertTrue(words(app.buttons["place-line-0"]).contains("Headlamp"), "'\(words(app.buttons["place-line-0"]))'")
+        XCTAssertTrue(words(app.buttons["place-line-1"]).contains("Map"), "'\(words(app.buttons["place-line-1"]))'")
+        XCTAssertFalse(app.buttons["place-line-2"].exists)
+        shot(app, "place-kept-there")
+        tap(app, id: "place-line-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the thing did not open")
+        app.terminate()
+
+        app = launch("-uiTestingPlaces", ["kept", "-uiTestingOpen", "AMSPACKING://P/ZZ9"])
+        XCTAssertTrue(appears(app, "place-detail", timeout: 10))
+        XCTAssertTrue(words(app.staticTexts["place-says"]).hasPrefix("This label\u{2019}s place is no longer in Your choices"),
+                      "'\(words(app.staticTexts["place-says"]))'")
+        XCTAssertFalse(app.buttons["place-line-0"].exists)
+    }
+
+    /// Your choices: every place has its page — its square code, large; its label for
+    /// the P-touch (12 mm tape), to share (iPhone) or save (Mac); and Open, which shows
+    /// what the code opens (how the Mac sees a place's list). All places' labels at once.
+    func testEachPlaceHasACodeToPrintAndOpen() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["list-places-name-5"]), "Garage")
+        tap(app, id: "list-places-code-5")
+        XCTAssertTrue(appears(app, "place-code-detail", timeout: 5), "the code did not open")
+        XCTAssertEqual(words(app.staticTexts["place-code-title"]), "Garage", "the code is not the Garage's")
+        let code = picture(app, "place-code")
+        XCTAssertTrue(code.exists, "no code shown")
+        XCTAssertGreaterThanOrEqual(code.frame.width, 200, "the code is not shown large: \(code.frame)")
+        let label = picture(app, "place-label")
+        XCTAssertTrue(label.exists, "no label for the P-touch")
+        // 64 dots tall, shown at three quarters of a point a dot.
+        XCTAssertEqual(label.frame.height, 48, accuracy: 1, "not the 12 mm tape's height: \(label.frame)")
+        #if os(macOS)
+        XCTAssertTrue(app.buttons["place-label-save"].exists, "no way to save the label")
+        #else
+        XCTAssertTrue(app.buttons["place-label-share"].exists, "no way to share the label")
+        #endif
+        shot(app, "place-code")
+        tap(app, id: "place-code-open")
+        XCTAssertTrue(appears(app, "place-detail", timeout: 5), "Open did not open the place")
+        XCTAssertEqual(words(app.staticTexts["place-title"]), "Garage")
+        XCTAssertEqual(words(app.staticTexts["place-says"]), "Everything kept here: 2 things.")
+        tap(app, id: "place-done")
+        XCTAssertTrue(disappears(app, "place-detail", timeout: 5))
+        tap(app, id: "place-code-done")
+        XCTAssertTrue(disappears(app, "place-code-detail", timeout: 5))
+
+        // Every place's label at once: into a folder on the Mac; made, then shared, on the iPhone.
+        XCTAssertTrue(app.buttons["list-places-labels"].waitForExistence(timeout: 5), "no labels for all places")
+        #if os(iOS)
+        tap(app, id: "list-places-labels")
+        let share = app.buttons["list-places-labels-share"]
+        XCTAssertTrue(share.waitForExistence(timeout: 5), "the labels were not made")
+        XCTAssertEqual(words(share), "Share 12 labels", "not one label per place")
+        #endif
+    }
+
+    /// Search also finds notes (0.69): Your things and the app's Search find a thing by
+    /// words in its own Notes and in a note its template keeps for it — and show the line.
+    func testSearchFindsAThingByWordsInItsNotes() {
+        let app = launch("-uiTestingNotes")
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let field = app.textFields["things-search"]
+        type("blue pouch", into: field)
+        let count = app.staticTexts["things-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "1 thing" }, "not found by its own note: '\(words(count))'")
+        XCTAssertTrue(words(app.buttons["thing-row-0"]).contains("Passport"), "'\(words(app.buttons["thing-row-0"]))'")
+        let note = app.staticTexts["thing-row-0-note"]
+        XCTAssertTrue(note.waitForExistence(timeout: 5), "the note line is not under the thing")
+        XCTAssertEqual(words(note), "Keep it in the blue pouch with the tickets")
+        shot(app, "notes-things")
+        replace("waterproof", in: field)
+        XCTAssertTrue(waitUntil { self.words(count) == "1 thing" && self.words(app.buttons["thing-row-0"]).contains("Map") },
+                      "not found by its template's note: '\(words(count))'")
+        XCTAssertEqual(words(app.staticTexts["thing-row-0-note"]), "Hiking: The waterproof one, folded in the lid")
+        // Found by its name: no note line.
+        replace("Passport", in: field)
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).contains("Passport") })
+        XCTAssertFalse(app.staticTexts["thing-row-0-note"].exists, "a note line under a thing found by its name")
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        tab(app, "home")
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("pouch", into: app.textFields["search-field"])
+        XCTAssertTrue(waitUntil { self.words(app.buttons["search-things-0"]).contains("Passport") },
+                      "Search did not find it by its note: '\(words(app.buttons["search-things-0"]))'")
+        XCTAssertEqual(words(app.staticTexts["search-things-0-note"]), "Keep it in the blue pouch with the tickets")
+        shot(app, "notes-search")
+    }
+
     // MARK: - Kept at home is chosen (0.64)
 
     /// The thing's Kept at home, as he reads it.

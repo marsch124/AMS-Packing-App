@@ -142,6 +142,52 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library for a place's code (`-uiTestingPlaces <when>`, 0.69): the
+    /// Garage's code is G4R (as if its label were printed), and its trip is moved:
+    /// "soon" = it starts in 2 days, inside the packing week, so a code opens it on that
+    /// place's lines; "home" = it began 3 days ago and ends today, every line ticked on
+    /// the way out, so a code shows what goes back there. Anything else = the sample as
+    /// it is (its trip a month ahead): a code shows everything kept there. The Garage
+    /// holds the Headlamp and the Map.
+    static func places(_ when: String) -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        lib.meta[Library.placeCodeKey("G4R")] = .string("Garage")
+        guard !lib.trips.isEmpty else { return lib }
+        switch when {
+        case "soon":
+            lib.trips[0].startDate = day(2)
+            lib.trips[0].endDate = day(4)
+        case "home":
+            lib.trips[0].startDate = day(-3)
+            lib.trips[0].endDate = day(0)
+            for n in lib.trips[0].entries.indices { lib.trips[0].entries[n].checked = true }
+        default:
+            break
+        }
+        return lib
+    }
+
+    /// The sample library with notes to search (`-uiTestingNotes`, 0.69): the Passport's
+    /// own note, and a note the Hiking template keeps for the Map — neither name says
+    /// the words searched for.
+    static func notes() -> Library {
+        var lib = make()
+        if let n = lib.items.firstIndex(where: { $0.name == "Passport" }) {
+            lib.items[n].note = "Renew before May\nKeep it in the blue pouch with the tickets"
+        }
+        if let hiking = lib.templates.first(where: { $0.name == "Hiking" }),
+           let map = lib.items.first(where: { $0.name == "Map" }),
+           let m = lib.memberships.firstIndex(where: { $0.templateId == hiking.id && $0.itemId == map.id }) {
+            lib.memberships[m].note = "The waterproof one, folded in the lid"
+        }
+        return lib
+    }
+
     /// The sample library with a photo nothing shows any more, from long ago — what a
     /// trip deleted before 0.59 left behind (`-uiTestingOldPhoto`).
     static func oldPhoto() -> Library {

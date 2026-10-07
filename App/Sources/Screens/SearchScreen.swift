@@ -73,9 +73,20 @@ struct SearchScreen: View {
                         ForEach(found) { part in
                             heading(part.title, part.total)
                             ForEach(Array(part.rows.enumerated()), id: \.element.id) { n, row in
-                                Button { chose(row) } label: { line(row) }
-                                    .buttonStyle(.plain).focusEffectDisabled()
-                                    .accessibilityIdentifier("search-\(part.id)-\(n)")
+                                VStack(alignment: .leading, spacing: 0) {
+                                    Button { chose(row) } label: { line(row) }
+                                        .buttonStyle(.plain).focusEffectDisabled()
+                                        .accessibilityIdentifier("search-\(part.id)-\(n)")
+                                    // Outside the button, so the Mac keeps it a text of its own.
+                                    if let note = row.note {
+                                        NoteHitLine(hit: note, query: query, tint: AppSection.home.color)
+                                            .padding(.top, -2).padding(.bottom, 5)
+                                            .contentShape(Rectangle())
+                                            .onTapGesture { chose(row) }
+                                            .accessibilityIdentifier("search-\(part.id)-\(n)-note")
+                                    }
+                                }
+                                .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                             }
                             if part.total > part.rows.count {
                                 Text("…and \(part.total - part.rows.count) more. Say more of the name.")
@@ -113,6 +124,8 @@ struct SearchScreen: View {
         let under: String
         let kind: Kind
         enum Kind { case thing, list, trip, todo }
+        /// The line of a thing's notes the search found it by (0.69).
+        var note: NoteHit? = nil
     }
 
     struct Part: Identifiable {
@@ -131,8 +144,10 @@ struct SearchScreen: View {
 
         // His things. The web app searches the Swedish wording too but never shows
         // it, so a hit can look inexplicable; here it is said in the line under.
+        // …and its notes (0.69): its own Notes and the notes its templates keep for it.
+        let hits = library.noteHits(query)
         let things = library.items.filter {
-            normName($0.name).contains(needle) || normName($0.swedish).contains(needle)
+            normName($0.name).contains(needle) || normName($0.swedish).contains(needle) || hits[$0.id] != nil
         }
         if !things.isEmpty {
             let rows = things.prefix(SearchScreen.mostThings).map { thing -> Row in
@@ -143,7 +158,10 @@ struct SearchScreen: View {
                 }
                 let lists = library.memberships.filter { $0.itemId == thing.id }.count
                 under.append(lists == 0 ? "on no template" : "on \(lists) template\(lists == 1 ? "" : "s")")
-                return Row(id: thing.id, name: thing.name, under: under.joined(separator: " · "), kind: .thing)
+                // Found by its notes, not its name: the line that matched goes under it.
+                let byName = normName(thing.name).contains(needle) || normName(thing.swedish).contains(needle)
+                return Row(id: thing.id, name: thing.name, under: under.joined(separator: " · "), kind: .thing,
+                           note: byName ? nil : hits[thing.id])
             }
             out.append(Part(id: "things", title: "Things", rows: Array(rows), total: things.count))
         }
@@ -230,7 +248,6 @@ struct SearchScreen: View {
                 .frame(width: 20, height: 20).foregroundStyle(Theme.muted)
         }
         .frame(minHeight: Metrics.compact)
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
         .contentShape(Rectangle())
     }
 
@@ -239,6 +256,37 @@ struct SearchScreen: View {
             .font(.system(.subheadline)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 24)
+    }
+}
+
+/// The line of a thing's notes a search found it by (0.69), under the thing: muted, with
+/// the words searched for in the screen's colour; a template's own note says whose it is
+/// ("Hiking: …"). One line — `noteHits` cuts a long one so the words are in it.
+struct NoteHitLine: View {
+    let hit: NoteHit
+    let query: String
+    let tint: Color
+
+    var body: some View {
+        Text(said)
+            .font(.system(.footnote))
+            .lineLimit(1).truncationMode(.tail)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var said: AttributedString {
+        var s = AttributedString((hit.template.map { "\($0): " } ?? "") + hit.line)
+        s.foregroundColor = Theme.muted
+        // Spaces as the search counts them (`normName`): "blue  pouch" finds "blue pouch".
+        let words = normName(query)
+        guard !words.isEmpty else { return s }
+        var from = s.startIndex
+        while from < s.endIndex, let r = s[from...].range(of: words, options: [.caseInsensitive, .diacriticInsensitive]) {
+            s[r].foregroundColor = tint
+            s[r].font = .system(.footnote, weight: .semibold)
+            from = r.upperBound
+        }
+        return s
     }
 }
 

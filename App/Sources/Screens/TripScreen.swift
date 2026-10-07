@@ -11,7 +11,14 @@ struct TripScreen: View {
     private let openedId: String
     @State private var startedId: String?
     private var tripId: String { startedId ?? openedId }
-    init(tripId: String) { self.openedId = tripId }
+    /// `place`: opened from a place's code (0.69) — sorted From where, showing only the
+    /// lines kept there until its chip is tapped.
+    init(tripId: String, place: String? = nil) {
+        self.openedId = tripId
+        _placeFilter = State(initialValue: place)
+    }
+    /// Only the lines kept at this place (a place's code, 0.69); nil = every line.
+    @State private var placeFilter: String?
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     /// His "When" colours are HIS — pale or bright — so they are made readable for
@@ -91,6 +98,10 @@ struct TripScreen: View {
         let allPacked = p.total > 0 && p.done == p.total
         // Never trap on a repeated id (his E.6 crash, 28 Sep): the first line keeps it.
         let index: [String: Int] = Dictionary(trip.entries.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+        // Opened from a place's code: its lines only — and nothing else on the page, so
+        // they are what he sees first (his plan, stop A: "the trip opens showing only
+        // what to take from the garage"). The chip under Sorting shows everything again.
+        let shownLines = placeFilter.map { place in trip.entries.filter { Library.isKept($0.storage, at: place) } } ?? trip.entries
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -152,11 +163,13 @@ struct TripScreen: View {
             sorting
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
+            if let place = placeFilter { placeChip(place) }
             KeyboardAwayScroll {
                 // The card is deliberately OUTSIDE the lazy stack: a lazy row is
                 // thrown away and rebuilt as it scrolls off, which loses what he
                 // has typed into it (found by the test, 2026-09-23).
                 VStack(alignment: .leading, spacing: 4) {
+                if placeFilter == nil {
                 // Check before you go (his ideas 4 and 5): first, and only when something needs him.
                 TripChecksCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
@@ -170,11 +183,18 @@ struct TripScreen: View {
                     onSiteDoor(trip)
                         .padding(.top, 6).padding(.horizontal, 16)
                 }
+                } else if shownLines.isEmpty {
+                    Text("Nothing on this trip is kept here. Tap the place above to see every line.")
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 16).padding(.top, 10)
+                        .accessibilityIdentifier("trip-place-none")
+                }
                 // No space between lines: each is as tall as its words (`Metrics.line`).
                 LazyVStack(alignment: .leading, spacing: 0) {
                     // One level of groups; inside a group the lines keep the trip's own order.
                     // (The web app nests: When → by bag inside; the others → by When inside.)
-                    ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { g, group in
+                    ForEach(Array(groupBy(view, shownLines).enumerated()), id: \.offset) { g, group in
                         if !group.entries.isEmpty {
                             // The heading, and one press to tick the whole section
                             // (his ask: "so that I could toggle all done").
@@ -292,6 +312,7 @@ struct TripScreen: View {
                 }
                 .padding(.horizontal, 16)
 
+                if placeFilter == nil {
                 // The web app's "Mark everything packed" / "Clear every tick", under the list.
                 TickAllRow(tripId: tripId, done: p.done, total: p.total).environmentObject(model)
                     .padding(.horizontal, 16).padding(.top, 18)
@@ -311,10 +332,13 @@ struct TripScreen: View {
                 deleteTrip(trip)
                     .padding(.horizontal, 16).padding(.top, 18)
                 }
+                }
                 .padding(.bottom, 24)
             }
             .sheet(item: $checking) { c in ThingEditor(itemId: c.id).environmentObject(model) }
-            // "Also the tripod" — a thing for THIS trip only, typed on the spot.
+            // "Also the tripod" — a thing for THIS trip only, typed on the spot. Not while
+            // one place's lines are shown: a line typed here has no place, and would vanish.
+            if placeFilter == nil {
             HStack(spacing: 8) {
                 TextField("Add a thing to this trip", text: $newName)
                     .textFieldStyle(.plain)
@@ -351,7 +375,9 @@ struct TripScreen: View {
             // The green is the WHOLE screen, this bar included (his call: "we need
             // strong indicators").
             .background(allPacked ? Color.clear : Theme.bg)
+            }
         }
+        .onAppear { if placeFilter != nil { view = "stored" } }
         .background {
             // Everything packed: the screen itself says so. The green is painted ON
             // the background, not under it, or the opaque one hides it.
@@ -387,6 +413,30 @@ struct TripScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
         #endif
+    }
+
+    /// The place a code opened the trip on (0.69), as a chip under Sorting: its name and
+    /// an ✕ — a tap shows every line again. Its words are the button's value, so a test
+    /// reads them on the Mac too (a button folds its texts into itself there).
+    private func placeChip(_ place: String) -> some View {
+        Button { placeFilter = nil } label: {
+            HStack(spacing: 6) {
+                Text(place).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+                SVGPath.path("M7 7L17 17M17 7L7 17")
+                    .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                    .onGrid(14)
+            }
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+            .background(Capsule().fill(AppSection.events.color))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16).padding(.top, 6)
+        .accessibilityIdentifier("trip-place-filter")
+        .accessibilityLabel("Only \(place). Show every line")
+        .accessibilityValue(place)
     }
 
     /// His places, one tap each; or a new one typed. The thing keeps the place.

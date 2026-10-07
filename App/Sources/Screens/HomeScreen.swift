@@ -33,6 +33,10 @@ struct HomeScreen: View {
     @State private var laundry = false
     @State private var laundryNights = LAUNDRY_CAP_NIGHTS
     @State private var opened: String?
+    /// The place a code opened the trip on (0.69): the trip shows only its lines.
+    @State private var openedPlace: String?
+    /// A place's list, opened by its code when no trip is being packed (0.69).
+    @State private var placeShown: PlaceOpening?
     @State private var grab: GrabDefinition?
     @State private var searching = false
     @State private var showingGrabLists = false
@@ -89,7 +93,7 @@ struct HomeScreen: View {
                 // The trip he leaves on next, counted down (his idea 6) — under the grab
                 // lists, which keep their place at the top.
                 if let next = model.library.nextTrip(today: Today.local) {
-                    CountdownCard(next: next) { opened = next.id }
+                    CountdownCard(next: next) { openedPlace = nil; opened = next.id }
                         .padding(.top, 4)
                 }
 
@@ -191,8 +195,18 @@ struct HomeScreen: View {
         }
         .headerOnTheMac { grabHeader }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
-        .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id })) { o in
-            TripScreen(tripId: o.id).environmentObject(model)
+        .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id; if $0 == nil { openedPlace = nil } })) { o in
+            TripScreen(tripId: o.id, place: openedPlace).environmentObject(model)
+        }
+        .sheet(item: $placeShown) { PlaceScreen(opening: $0).environmentObject(model) }
+        // A place's printed code, read by the Camera (0.69): a trip being packed opens on
+        // that place's lines; otherwise the place's own list.
+        .onChange(of: model.placeToOpen, initial: true) { _, code in
+            guard let code else { return }
+            model.placeToOpen = nil
+            let o = PlaceOpening.of(code: code, in: model.library, today: Today.local)
+            if let trip = o.packingTrip { whenFree { openedPlace = o.place; opened = trip } }
+            else { whenFree { placeShown = o } }
         }
         .sheet(isPresented: $showingGrabLists) { GrabCollectionScreen().environmentObject(model) }
         // The Action button's "Choose a grab list" (field test 2.3): the menu of them all.
@@ -212,7 +226,7 @@ struct HomeScreen: View {
         .onChange(of: model.tripToOpen, initial: true) { _, id in
             guard let id else { return }
             model.tripToOpen = nil
-            if model.library.trips.contains(where: { $0.id == id }) { whenFree { opened = id } }
+            if model.library.trips.contains(where: { $0.id == id }) { whenFree { openedPlace = nil; opened = id } }
         }
         .sheet(item: Binding(get: { grab.map { GrabOpened(list: $0) } }, set: { grab = $0?.list })) { g in
             GrabScreen(listId: g.list.id).environmentObject(model)
@@ -245,9 +259,9 @@ struct HomeScreen: View {
     /// not present a second window from a view while another is up or still closing,
     /// so until 5 Oct 2026 such a request could open nothing.
     private func whenFree(_ open: @escaping () -> Void) {
-        let busy = searching || showingGrabLists || opened != nil || grab != nil || menuShown
+        let busy = searching || showingGrabLists || opened != nil || grab != nil || menuShown || placeShown != nil
         guard busy else { open(); return }
-        searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false
+        searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false; placeShown = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
     }
 

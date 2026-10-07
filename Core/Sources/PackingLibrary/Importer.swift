@@ -186,6 +186,12 @@ public enum Importer {
             let off = (grab["off"]?.arrayValue ?? []).compactMap { $0.stringValue }
             if !off.isEmpty { lib.meta[GRAB_OFF_META] = JSONValue(off) }
         }
+        // The places' codes (0.69): a label printed before the restore opens its place.
+        for (code, name) in backup.extra[Library.backupPlaceCodesKey]?.objectValue ?? [:] {
+            if Library.isPlaceCode(code), let place = name.stringValue, !jsTrim(place).isEmpty {
+                lib.meta[Library.placeCodeKey(code)] = .string(place)
+            }
+        }
         if let conditions = backup.prefsConditions, !conditions.isEmpty { _ = setItemConditions(conditions) }
         report.sharedRows = lib.shared.count
 

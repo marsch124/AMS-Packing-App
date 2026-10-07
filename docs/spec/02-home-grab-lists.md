@@ -134,6 +134,10 @@ marks "On this device".
   model.tripToOpen, initial: true)`. When a grab-list id, the grab menu flag or a trip id is set, the
   section switches to `.home`. HomeScreen then does the opening (section 3). `initial: true` matters: a
   request set before the view exists (a Shortcut that launched the app) is still acted on.
+- **A place's printed label** (0.69, spec 05 "A place's code"): `onOpenURL` hands any link that reaches the app
+  to `LibraryModel.open(_:)`, which keeps only a place's link (`AMSPACKING://P/<code>`, any case) as
+  `model.placeToOpen` (the code); `onChange(of: model.placeToOpen, initial: true)` switches to `.home`.
+  Under UI tests `-uiTestingOpen <link>` plays the same at launch (`LibraryModel.shared`).
 - **A tab asked for from inside a window** (0.62): `onChange(of: model.tabToOpen)` switches to that
   section and sets it back to nil. Search sets it to `.actions` for a to-do (section 15).
 - **Under UI tests only**, when the app comes back to the front after being in the background
@@ -294,7 +298,8 @@ spacing, 16 pt side padding and 24 pt bottom padding.
 | Opens | Trigger | Content |
 |---|---|---|
 | Search | magnifier | `SearchScreen()` (no `go:` passed; see section 15) |
-| A trip | countdown tap; `model.tripToOpen`; Create trip | `TripScreen(tripId:)` |
+| A trip | countdown tap; `model.tripToOpen`; Create trip; (0.69) a place's code while the trip is being packed | `TripScreen(tripId:, place: openedPlace)` — `openedPlace` is set only by a place's code and cleared when the sheet closes or another opening (countdown, `tripToOpen`) uses it |
+| A place's page (0.69) | `model.placeToOpen` when no trip is being packed | `PlaceScreen(opening:)` (spec 05) |
 | Grab Lists | "Grab Lists" | `GrabCollectionScreen()` |
 | Which grab list? | `model.grabMenuOpen` set (the request, cleared at once) → the local `menuShown` | `GrabMenuScreen()` |
 | One grab list | a tile tap; `model.grabToOpen` | `GrabScreen(listId:)` |
@@ -305,10 +310,12 @@ Open-requests from outside are handled in `HomeScreen` with `onChange(…, initi
 - `tripToOpen`: it is set back to `nil` at once. If `library.trips` holds that id, the trip opens. An
   unknown id does nothing.
 - `grabMenuOpen`: set back to `false` at once; the menu opens unless it is already up.
+- `placeToOpen` (0.69): set back to `nil` at once; `PlaceOpening.of(code:in:today:)` decides — the trip being
+  packed opens on the place's lines, otherwise the place's page (also for a code nothing knows, which says so).
 - Each opening goes through `whenFree` (0.62): if one of Home's own sheets is up (Search, a trip, Grab
   Lists, a grab list, the menu), all of them are closed first and the asked-for one opens **0.8 s** later;
   otherwise it opens at once. Until then a Shortcut or a tapped reminder that arrived while, say, Grab
-  Lists was open could open nothing.
+  Lists was open could open nothing. Since 0.69 a place's page counts as one of Home's sheets too.
 
 **iPhone vs Mac.** All of these are `.sheet`s. On the iPhone a sheet can also be swiped down (no
 `interactiveDismissDisabled` anywhere here). On the Mac each sheet sets its own minimum size (given per
@@ -1633,14 +1640,18 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
      - each row, on ONE line (0.62): the name at the left (Body, one line, keeps its room first), its details at the
        right (Footnote `muted`, one line, cut in the middle; only when non-empty), a chevron, minimum
        `Metrics.compact` tall, a hairline under it (until 0.62: the details on a second line, 48 tall);
-     - row identifiers `search-<part>-<n>`, with part = `things`, `lists`, `trips`, `todos`.
+     - row identifiers `search-<part>-<n>`, with part = `things`, `lists`, `trips`, `todos`;
+     - (0.69) under a thing found by its NOTES and not by its name or Swedish name: the note line
+       (`search-things-<n>-note`, `NoteHitLine`): Footnote, one line; muted, the words searched for in Home blue
+       and semibold; a template's note starts with its name and ": ". A text of its own outside the row's button
+       (2 pt pulled up, 5 under it; a tap on it opens the thing too); the hairline is under the pair.
 
 **Matching.** `needle = normName(query)` (trimmed, lower-cased, whitespace runs collapsed). A hit is a
 **substring** of the same `normName` of a field:
 
 | Part | Heading | Searched fields | Order | Shown | Under-line |
 |---|---|---|---|---|---|
-| things | "THINGS" | name, Swedish name | library item order | first **30**; then "…and <N> more. Say more of the name." (`search-things-more`) | storage place (if any) · the Swedish name (only when the Swedish name matched) · "on no template" or "on <k> template(s)"; k = the thing's membership records, the bags list included |
+| things | "THINGS" | name, Swedish name; (0.69) its notes — `noteHits(query)`, spec 05 "Your things" | library item order | first **30**; then "…and <N> more. Say more of the name." (`search-things-more`) | storage place (if any) · the Swedish name (only when the Swedish name matched) · "on no template" or "on <k> template(s)"; k = the thing's membership records, the bags list included |
 | lists | "TEMPLATES" | name | `shownTemplates()` — the templates the Templates tab shows: bags list and the web app's loose bin excluded (the loose bin since spec 04's pass, 5 Oct 2026) | all | "<k> thing(s)" |
 | trips | "TRIPS" | name, destination | library trip order | all | destination · `countdownLabel(daysUntil(start, today))`: "Today", "Tomorrow", "Yesterday", "in N days", "N days ago"; empty parts dropped |
 | todos | "TO-DOS" | text, the linked thing's name | `sortedActions()` | all | "done" or "still to do" |
@@ -1661,6 +1672,8 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
 - UI `testOneSearchReachesEverything`, opened from **Care**: "zzzz" → `search-none`; "Headlamp" →
   `search-things-0` opens `thing-detail`; "Hiking" → `search-lists-0` opens `template-detail`.
 - UI `testTheCrossEmptiesASearch`: `search-field-clear` empties the field and `search-none` goes.
+- UI `testSearchFindsAThingByWordsInItsNotes` (0.69, `-uiTestingNotes`; its second half): "pouch" →
+  `search-things-0` is the Passport and `search-things-0-note` reads "Keep it in the blue pouch with the tickets".
 - UI `testASearchedToDoOpensTheToDoTab` (0.62): a to-do added on To do, Search opened from **Home**,
   "ferry" → `search-todos-0` → Search closes and `screen-actions` shows.
 - **Not covered:**

@@ -767,7 +767,8 @@ door (0.57), Sorting as ONE drop-down with a fifth sorting, **Section** (0.64 �
 likes sections because "it gives a visual structure to the packing", and asked for drop-downs everywhere).
 
 **How it is reached and left.** Opened as a sheet from a Trips row, from Home after Create trip, the
-countdown card, a reminder, a Shortcut, or Search. Left with **Done** (`trip-done`) or by swiping the
+countdown card, a reminder, a Shortcut, Search, or (0.69) a place's printed code while the trip is being packed —
+then on that place's lines ("Opened on a place", below). Left with **Done** (`trip-done`) or by swiping the
 sheet down (iPhone). Screen id `trip-detail`. Mac: minimum 520 × 640.
 
 The screen shows `startedId ?? openedId`: after *Start a new trip from this one* the NEW trip takes the
@@ -956,6 +957,34 @@ row that still exists (`thingId(of:)`), the THING's `storage` is set (`updateThi
 still ahead follow) and so is every line of that thing on this trip (a thing on a trip twice); a line
 with no thing behind it changes alone. A place not in his list (normName) is appended to his places
 (`setNames("places", …)`). The panel closes; the line moves under its place.
+
+### Opened on a place (0.69)
+
+A place's printed code, read while this trip is being packed (spec 05, "A place's code"), opens the trip on that
+place: `TripScreen(tripId:, place:)` — from Home (`openedPlace`) or from Open on a place's page in Your choices. The
+same happens nowhere else (a trip opened any other way shows every line).
+- As it appears the sorting becomes **From where** (`ams.view` = "stored", so it is remembered like a sorting he
+  chose).
+- Under the Sorting row, the place's chip (`placeChip`, id `trip-place-filter`): the place's name (Subheadline
+  semibold, one line) and a drawn ✕ (`M7 7L17 17M17 7L7 17`, stroke 2.2, `onGrid(14)`), white on a green capsule,
+  `Metrics.chip` tall, 12 sideways, 6 above, 16 in from the screen's sides; accessibility label "Only <place>. Show
+  every line", value = the place's name (what tests read — the Mac folds the button's words into it). A tap shows
+  every line again (`placeFilter = nil`); the sorting stays From where.
+- Only the lines kept at the place (`Library.isKept(line.storage, at: place)`, by choice key) go into `groupBy`, so
+  with From where there is ONE heading, the place's. Line ids stay their positions in the whole trip
+  (`trip-line-<n>`), so ticks, ⊘ and the heading's tick-all work as ever — the heading's tick-all ticks only that
+  place's lines.
+- Nothing else is on the page while it shows one place, so its lines are what he sees first (his plan: "the trip
+  opens showing only what to take from the garage"): no Check before you go, weather, Bags card or On site door
+  above; no Tick everything, Excel, Share or Delete trip below; no "Add a thing" bar (a line typed there has no
+  place and would vanish). When nothing on the trip is kept there: "Nothing on this trip is kept here. Tap the
+  place above to see every line." (Subheadline muted; id `trip-place-none`).
+- The header, the loop strip and the progress ("done/total" of the WHOLE trip) stay.
+
+UI `testAPlacesCodeOpensTheTripBeingPackedOnItsLines` (`-uiTestingPlaces soon -uiTestingOpen AMSPACKING://P/G4R`:
+the trip opens, chip value "Garage", sorting From where, ONE heading "Garage", two lines on screen — Headlamp and
+Map — no add bar; the heading's tick-all → "2/…"; the chip → its own heading `trip-group-1-label` and the add bar
+come back).
 
 ### Add a thing / Bought on site
 

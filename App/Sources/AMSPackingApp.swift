@@ -11,6 +11,9 @@ struct AMSPackingApp: App {
                 #if os(macOS)
                 .frame(minWidth: 480, idealWidth: 760, minHeight: 600, idealHeight: 900)
                 .onAppear { AMSPackingApp.useTheRunnersWindowSize() }
+                // A place's label link (0.69) goes to the window that is open: without these
+                // the Mac opens a NEW window for every link that reaches the app.
+                .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 #endif
         }
         #if os(macOS)
@@ -25,6 +28,7 @@ struct AMSPackingApp: App {
         // A thing's page from the keyboard (0.68): the Thing menu lists its keys, and is
         // on only while a thing's page is open (ThingKeys.swift).
         .commands { ThingCommands() }
+        .handlesExternalEvents(matching: ["*"])
         #endif
 
         #if os(macOS)
@@ -43,6 +47,8 @@ struct AMSPackingApp: App {
         // after the first one that opened it failed on GitHub (0.58, 4 Oct 2026).
         .restorationBehavior(.disabled)
         .defaultLaunchBehavior(.suppressed)
+        // Never the window a link opens in (0.69): links go to the app's own window.
+        .handlesExternalEvents(matching: [])
         #endif
     }
 }

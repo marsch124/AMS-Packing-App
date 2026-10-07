@@ -205,6 +205,8 @@ extension Library {
                 guard let n = list.firstIndex(of: key) else { return nil }
                 list[n] = name
                 setNames(kind, list)
+                // A place's code printed before the rename names the OLD name (0.69).
+                if kind == "places" { notePlaceRenamed(from: key, to: name) }
                 for i in items.indices { kind == "places" ? carry(&items[i].storage) : carry(&items[i].ownedBy) }
                 for t in trips.indices {
                     for e in trips[t].entries.indices {
