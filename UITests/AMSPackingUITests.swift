@@ -7867,12 +7867,9 @@ final class AMSPackingUITests: XCTestCase {
         if waitUntil(timeout: timeout, { self.focusOn(app) == id }) { return true }
         let line = app.staticTexts["thing-keys"]
         print("KEYS-REPORT focus is '\(focusOn(app))', not \(id); the line says '\(line.exists ? words(line) : "(no line)")'")
-        let tree = app.debugDescription
-        if let at = tree.range(of: "thing-keys") {
-            print("KEYS-REPORT tree near the line:\n" + String(tree[tree.index(at.lowerBound, offsetBy: -1500, limitedBy: tree.startIndex) ?? tree.startIndex..<at.upperBound]))
-        } else {
-            print("KEYS-REPORT no thing-keys in the tree; its end:\n" + String(tree.suffix(4000)))
-        }
+        let lines = app.debugDescription.components(separatedBy: "\n")
+        let near = lines.filter { $0.contains("thing-keys") || $0.contains("thing-detail") }
+        print("KEYS-REPORT the line in the tree:\n" + near.joined(separator: "\n"))
         return false
     }
 
