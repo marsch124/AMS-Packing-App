@@ -104,10 +104,16 @@ extension Library {
     public func cabinCheck(tripId: String) -> [CabinFlag] {
         guard let trip = trips.first(where: { $0.id == tripId }), trip.transport == "Plane" else { return [] }
         var notAllowed: [CabinFlag] = [], liquids: [CabinFlag] = []
+        let kits = kitIndex()
         for line in trip.entries where line.itemType != "reminder" && !isSetAside(line) && isCabin(container: line.container) {
             let thing = thingNow(line)
             if thing.restricted { notAllowed.append(CabinFlag(line: line, thingId: thingToOpen(line), why: .notAllowed)) }
             else if thing.liquid { liquids.append(CabinFlag(line: line, thingId: thingToOpen(line), why: .liquid)) }
+            // What is inside a kit goes where the kit goes (ThingKits).
+            for inside in insideLines(line, index: kits) {
+                if inside.restricted { notAllowed.append(CabinFlag(line: inside, thingId: inside.sourceItemId, why: .notAllowed)) }
+                else if inside.liquid { liquids.append(CabinFlag(line: inside, thingId: inside.sourceItemId, why: .liquid)) }
+            }
         }
         return notAllowed + liquids
     }
@@ -120,11 +126,13 @@ extension Library {
         guard let trip = trips.first(where: { $0.id == tripId }), isYMD(trip.endDate) else { return [] }
         let end = trip.endDate
         // The lines, carrying their thing's date, kind and retirement as they are now.
-        let lines: [Item] = trip.entries.filter { !isSetAside($0) }.map { line in
+        // …and what is inside a kit, by its own date (ThingKits).
+        let kits = kitIndex()
+        let lines: [Item] = trip.entries.filter { !isSetAside($0) }.flatMap { line -> [Item] in
             var l = line
             let t = thingNow(line)
             l.expiry = t.expiry; l.category = t.category; l.retired = t.retired
-            return l
+            return [l] + insideLines(line, index: kits)
         }
         let byId = Dictionary(trip.entries.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         func flags(_ found: [ExpiringEntry], document: Bool) -> [DateFlag] {

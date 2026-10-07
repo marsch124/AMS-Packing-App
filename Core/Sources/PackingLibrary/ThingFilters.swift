@@ -60,7 +60,7 @@ extension Library {
         if let path = Library.flagFields[column] { return [thing[keyPath: path] ? "yes" : "no"] }
         switch column {
         case "weight":
-            let grams = thing.weight.isNaN ? 0 : thing.weight
+            let grams = packedWeight(thing)      // a kit with what is inside it (ThingKits)
             if grams <= 0 { return [""] }
             return [FILTER_WEIGHTS.dropFirst().first { grams < $0.below }?.value ?? "w4"]
         case "listQty", "listSection":

@@ -35,7 +35,8 @@ extension Library {
         if let path = Library.flagFields[key] { return thing[keyPath: path] ? "0" : "1" }
         switch key {
         case "weight":
-            return thing.weight > 0 ? String(format: "%012.2f", thing.weight) : nil
+            let grams = packedWeight(thing)      // a kit with what is inside it (ThingKits)
+            return grams > 0 ? String(format: "%012.2f", grams) : nil
         case "listQty":
             guard mine.count == 1, let n = Double(jsTrim(mine[0].qty)) else { return nil }
             return String(format: "%012.2f", n)

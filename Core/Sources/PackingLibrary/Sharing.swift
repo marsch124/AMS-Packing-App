@@ -88,6 +88,7 @@ extension Library {
         t.extra[BAG_PHOTOS_KEY] = nil
         t.entries = t.entries.map { line in
             var l = line
+            l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)
             l.skipped = false
             l.edited = false
             for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt"] { l.extra[key] = nil }

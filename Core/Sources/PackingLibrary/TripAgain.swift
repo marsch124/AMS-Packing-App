@@ -33,6 +33,7 @@ extension Library {
         // (still kept by a rebuild), a line changed on the trip.
         copy.entries = old.entries.map { line in
             var fresh = line
+            fresh.extra[KIT_TICKED_KEY] = nil    // what was ticked inside a kit (ThingKits)
             fresh.id = PackingEnv.makeId()
             fresh.checked = false
             fresh.skipped = false

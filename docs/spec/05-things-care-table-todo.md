@@ -589,7 +589,8 @@ placed first, it kept the rows below it from being built at all on the Mac's sho
 
 - Left: the thing's name (17 semibold ink); the "when" line (15 medium, coloured by state, up to 2 lines); the
   templates it is on (`row.listName`, joined ", ", 14 muted, 1 line, only when not empty — his bag list reads
-  "Bags"; a thing on no template has none).
+  "Bags"; a thing on no template has none). A thing inside a kit (0.70) adds where it is: "Hiking · inside the
+  Camp pouch", or "Inside the Camp pouch" alone (`namingKits`).
 - Right, only for a SCHEDULED row: "Done today" (15 bold white on an orange capsule, min height 36), id
   `care-row-N-done`, accessibility label "`<name>` done today".
 - The row: 10 pt vertical padding, a 1 pt line under it, id `care-row-N` (contains its children).
@@ -765,10 +766,12 @@ on no template, retired things left out): `overdue`, `soon`, and `dueByMonth[m] 
 whose next due date falls `m` CALENDAR months after today's month, 0…11 (this month is 0; a service in the
 thirteenth month or later is on no bar). Until 0.62 the bars were 30-day blocks from today, the last one holding
 everything from day 330 on. `heaviest` =
-live weighed things by weight descending, first 8 (`name`, `grams`, `place`). `places` = live things grouped by
+live weighed things by weight descending, first 8 (`name`, `grams`, `place`) — a kit (0.70) by its weight WITH
+what is inside it (`packedWeight`: its own + each content's weight × how many, taken out not counted). `places` = live things grouped by
 trimmed storage ("Nowhere said" when empty), count and sum of max(0, weight), sorted by count descending then
 label. `lists` = every resolved template (his bag list as "Bags", 0.62) with its row count and the sum
-of its rows' weights (no quantities), sorted by weight descending. `unweighed` = things − weighed,
+of its rows' weights (no quantities; a kit's row adds what is inside it, 0.70), sorted by weight descending.
+`totalGrams` counts every thing once (a kit's own weight only), so nothing is counted twice. `unweighed` = things − weighed,
 `withoutPlace` = things − withPlace, `totalKilos` = grams ÷ 1000 rounded to 0.1 (used only by tests).
 
 **Tips, in this order, each only when true:**
@@ -1043,6 +1046,34 @@ apart; a field 6 pt under its heading):
     under it in red (`thing-weight-problem`, 15 semibold; gone as he types). On the Mac (0.68) kilos may carry their
     unit — "1,2 kg", "1.2kg", "0,35 kilo", "250 g" — read by `readGrams` (always grams), and the line says "The weight
     must be grams, like 250 or 12,5 — or kilos with their unit, like 1,2 kg."; the iPhone reads grams as before.
+11b. **Inside / In a kit** (0.70, spec 07 part 9; `ThingKitPart.swift`, in its own file so the page's code stays
+    its own; the page holds a `KitDraft`, filled when it loads a thing (`load(id)`, so ⌘↓ ⌘↑ on the Mac load each thing's own), written in Save's `model.change` FIRST — nothing is
+    stored before Save, Cancel leaves the kit as it was). Not shown for a bag or a to-do.
+    - **A thing inside a kit:** band "In a kit" (`thing-kit-title`); "Inside the `<kit>`" (Body ink,
+      `thing-kit-inside`); a switch "Taken out for now" (Callout semibold, orange tint, `thing-kit-taken-out`;
+      Save → `setTakenOut`); when it is ALSO on a template on its own (`kitAlsoOn`, his bag list left out): "Also on
+      `A and B` on its own — a trip packs the `<kit>` instead." (Subheadline orange, `thing-kit-also`). It cannot
+      hold things itself (one level deep): no Inside.
+    - **Any other thing:** band "Inside" (`thing-kit-title`). Holding nothing: "A pouch or a kit? Add the things
+      that stay packed in it." (Subheadline muted, `thing-kit-none`). Each thing inside, in his order
+      (`thing-kit-row-<n>`, value "taken out" / ""): its name (Body; muted and struck through when taken out, with
+      "Taken out" in red under it), its weight × how many (Footnote mono muted, when it has one), what is worth
+      saying about it (`Library.contentWarnings`: out of date, runs out within 60 days, care overdue or due soon —
+      Footnote semibold red, `thing-kit-row-<n>-says-<k>`); at the right "Take out" / "Put back" (Footnote
+      semibold orange capsule outline, `Metrics.chip` tall, `thing-kit-row-<n>-out`) and the ✕ disc
+      (`thing-kit-row-<n>-remove`, `Metrics.compact` square: out of the kit for good, it stays one of his things).
+      Then "Add from your things" / "Close the list" (Subheadline semibold orange capsule outline,
+      `thing-kit-add`) opening, inline, a card (`thing-kit-picker`): "Find a thing" (`thing-kit-search`, with the ✕)
+      and the first 8 things that can go in, A–Z (`thing-kit-pick-<n>`, label = the name; "in the `<other kit>`"
+      muted for one that is in another kit — it moves; "Add" orange), then "`N` more — type to find them"
+      (`thing-kit-more`) or "Nothing else can go in it." / "Nothing by that name can go in it."
+      (`thing-kit-nothing`). A tap adds it to the end and empties the search. Offered: every thing but itself, his
+      bags, to-dos, kits (a kit never goes inside a kit) and what is in it already (`kitRefusal`). Holding
+      something: a switch "Check before each trip" (`thing-kit-check`) and "With what is inside: 170 g"
+      (Subheadline semibold mono, `thing-kit-weight`, value = the grams) — the stored own weight plus the page's
+      contents (a weight typed above counts after Save).
+    - Save → `setKit(kitId:contents:takenOut:check:)` when the contents, the taken out or the check changed; a thing
+      that was in another kit leaves it; nothing inside = a plain thing (the keys go).
 12. **Brand** — band (`thing-heading-brand`); field (`thing-brand`), placeholder "e.g. " and a clothing brand
     (see the code).
 13. **Colour** — band (`thing-heading-colour`); field (`thing-colour`), placeholder "e.g. Black".
@@ -1633,6 +1664,12 @@ Its sheets (Filter, Sort, Columns, Change, a thing) do close with Escape, on the
 
 **Data.** Reads items, memberships, templates, his Settings lists. Each cell change is one `model.change`
 (usually one `items` or `memberships` record, plus trip lines through `followThing`).
+
+**A kit's weight (0.70).** In the Weight column a kit (a thing holding things, spec 07 part 9) shows its weight WITH
+what is inside it (`packedWeight`), read only: Footnote semibold mono in orange, no box to type in (its own weight
+is set on its page), tooltip "With what is inside it. Its own weight is on its page.", same id `table-<n>-weight`,
+label "Weight with what is inside", value the grams. Sorting by Weight and the Weight filter go by the same number
+(`sortValue`, `filterValues`); the "No weight" chip still asks for its OWN weight; Change all sets its own weight.
 
 **iPhone vs Mac.** The name column is 210 wide on the Mac, 172 on the iPhone (148 before the open arrow, 0.58).
 Mac: own window, at least 760 × 560; iPhone: a sheet. The open arrow's tooltip shows only on the Mac.

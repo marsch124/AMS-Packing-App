@@ -50,7 +50,7 @@ extension Library {
                 return e.sourceItemId == id && !e.checked && !e.custom && !e.edited
             }
             guard !open.isEmpty else { continue }
-            if lists == nil { lists = resolvedTemplates() }
+            if lists == nil { lists = templatesForTrips() }   // a thing inside a kit never gets a line (ThingKits)
             let fresh = buildTotalEntries(trips[t], lists ?? []).filter { $0.sourceItemId == id }
             var used = Set<Int>()
             var here = 0

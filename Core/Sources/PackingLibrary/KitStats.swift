@@ -96,10 +96,13 @@ extension Library {
             }
         }
 
-        out.heaviest = live.filter { $0.weight > 0 }
-            .sorted { $0.weight > $1.weight }
+        // A kit (a pouch of things, ThingKits) weighs what is inside it too.
+        let kits = kitIndex()
+        out.heaviest = live.map { (thing: $0, grams: packedWeight($0, index: kits)) }
+            .filter { $0.grams > 0 }
+            .sorted { $0.grams > $1.grams }
             .prefix(heaviestCount)
-            .map { KitStats.Heavy(name: $0.name, grams: $0.weight, place: $0.storage) }
+            .map { KitStats.Heavy(name: $0.thing.name, grams: $0.grams, place: $0.thing.storage) }
 
         // Where things live.
         var byPlace: [String: KitStats.Slice] = [:]
@@ -116,7 +119,9 @@ extension Library {
         // (it said the stored "Containers"; his words rule, 27 Sep 2026).
         out.lists = resolvedTemplates().map { list in
             KitStats.Slice(label: shownName(list), count: list.items.count,
-                           grams: list.items.reduce(0) { $0 + max(0, $1.weight) })
+                           grams: list.items.reduce(0) { sum, row in
+                               sum + max(0, row.weight) + Library.contentsWeight(row.itemId.flatMap { kits.contents[$0] } ?? [])
+                           })
         }.sorted { $0.grams > $1.grams }
 
         out.tips = tips(out)

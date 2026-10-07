@@ -20,7 +20,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 6. The door check | 0.69 | building |
 | 7. Apple Health fills in the review | 0.70 | designed here |
 | 8. A trip page in his Obsidian vault | 0.70 | designed here |
-| 9. Kits — things that hold things | 0.70 | designed here |
+| 9. Kits — things that hold things | 0.70 | built (0.70) |
 | 10. Hands-free packing (a test version) | 0.71 | designed here |
 | 11. Decision log | — | kept here |
 
@@ -167,26 +167,101 @@ the button, the picker answered by a test folder (`-uiTestingVault <path>`), the
 
 ## 9. Kits — things that hold things
 
-His words (7 Oct 2026): some things are "already existing as a permanently packed item consisting of items" —
-"a TechPouch with power bank, some cables, a microphone, an iPhone stand", "a Hiking-Pouch consisting of a screw
-driver inside, a knife, a light, a Leatherman, some tape". He said yes to kits on 7 Oct.
+> Built in 0.70 (`PackingLibrary/ThingKits.swift`, `App/Sources/Screens/ThingKitPart.swift`,
+> `App/Sources/Screens/TripKitLine.swift`). Written from the code; where it differs from the design of 7 Oct, the
+> difference is under *Open questions*. Details per screen: spec 01 §1.12 (the keys), 03 ("Kits", "A kit's
+> line"), 05 (a thing's page item 11b, Care, the table).
 
-- **A kit is a thing** with a list of the things inside it (its contents), set on its page ("Inside: …" — a list
-  with Add from your things). Its contents are real things with their own weight, care, condition and Valid until.
-- **One level deep.** A kit can go in a bag; a kit cannot go inside another kit; a thing is in at most one kit.
-- **On a trip** a kit is ONE line: "Tech pouch · 6 inside", with a fold arrow showing the contents (muted, not
-  ticked separately). Ticking the kit packs it. Its contents are never separate lines on a trip.
-- **Check before each trip** (optional, on the kit's page): the contents then show as small ticks under the kit's
-  line, and the kit counts as packed only when all are ticked.
-- **Taken out.** A thing taken out of its kit (on the thing's page or from the kit's fold) is marked "taken out";
-  the kit's line then says "1 missing: knife" until it is put back.
-- **Weight** of a kit = its own + its contents. **Care**: a content's Valid until or care warning also shows on the
-  kit ("plasters expire in May").
-- **Templates hold the kit**, not its contents. A content that is ALSO on a template on its own is pointed out on
-  the thing's page ("Also inside the Hiking pouch").
-- **"Where is my …?"** answers "Hiking pouch, in the backpack".
-- Model: a kit is an item with `kitContents` (ids) and `kitCheck` (bool); a content has `insideKitId`; stored,
-  synced and backed up with the item. The web app knows nothing of kits: parity must treat them as plain items.
+His words (7 Oct 2026): some things are "already existing as a permanently packed item consisting of items" —
+a pouch of cables and chargers, a pouch of small tools. He said yes to kits on 7 Oct.
+
+### What a kit is
+
+- **A kit is a thing that holds at least one thing.** Its contents are real things with their own weight, care,
+  condition and Valid until; they stay in Your things, the table and Care like any other.
+- **One level deep.** A kit can go in a bag; a kit never goes inside a kit; a thing is in one kit at most; a bag
+  is never a kit nor inside one (a bag holds its things by name); a to-do is never inside one.
+- **Taken out** (for now): a thing taken out of its kit is still its content, but not in it — "1 missing: Lighter"
+  until it is put back. Taken out on the thing's page, on the kit's page, or from the kit's fold on a trip — it is
+  the thing's, so every trip and both pages follow.
+- **Check before each trip** (on the kit's page): the contents show as small ticks under the kit's line, and the
+  kit counts as packed only when all inside it are ticked.
+
+### Where it is kept
+
+On the KIT, in three `extra` keys — `kitContents` (ids, his order), `kitOut` (ids taken out), `kitCheck` (true) —
+and, on a trip's kit line, `kitTicked` (the ticked ids while the line is not ticked). So the web app's model sees a
+plain thing (parity 211/211), and a kit is stored, synced through iCloud, backed up and restored with the thing,
+as every `extra` key is. Which kit holds a thing is read from the kits (`kitIndex`): in id order, a thing in the
+first kit that lists it.
+
+### On a thing's page (spec 05, item 11b)
+
+Under Weight: **Inside** — the things in it (name, weight, what is worth saying: out of date, runs out within 60
+days, care due), each with Take out / Put back and ✕ (out for good); **Add from your things** (an inline list:
+search, the first 8 that can go in, A–Z; one in another kit says so and moves); **Check before each trip**; **With
+what is inside: 170 g**. A thing inside a kit shows **In a kit** instead: "Inside the Wash bag", **Taken out for
+now**, and — when it is ALSO on a template on its own — "Also on Common base on its own — a trip packs the Wash
+bag instead." Everything waits for Save; Cancel leaves the kit as it was.
+
+### On a trip (spec 03)
+
+- **ONE line**: "Camp pouch · 3 inside", with a fold arrow beside its ⊘ showing what is inside, muted, each with
+  Take out / Put back. Ticking the kit packs it.
+- With **Check before each trip**: open until packed, small ticks, "Tick what is inside first: 2 to go."; the
+  kit's own tick is refused until all inside are ticked (a section's tick-all and Tick everything too); the last
+  tick packs it; unticking one unpacks it.
+- **"1 missing: Lighter"** under the line while something is taken out.
+- What is worth saying about what is inside, for this trip, under the line ("Plasters runs out in 10 days").
+- **Trip building never adds a content as a line.** Templates hold the kit. A thing inside a kit that is ALSO on a
+  template on its own: on a template with its kit, it is left out; on one without, the KIT comes in its place. Each
+  kit is one line per trip.
+- **Check before you go** looks inside kits: "Lighter, in the Camp pouch" in a cabin bag is not allowed on board;
+  "Plasters, in the Camp pouch" runs out before you are home.
+
+### Weight and Care
+
+A kit weighs its own weight plus what is inside it now (each content × its how-many; taken out not counted): on
+the Bags card and a bag's trips, in Care's heaviest things and what each template weighs, and in the table's
+Weight column (read only there; its own weight is set on its page; sorting and filtering by Weight go by it). Care's
+total counts each thing once. A care row of a thing inside a kit says "inside the Camp pouch".
+
+### Tests
+
+Model `ThingKitsTests` (15): his order and one kit at most (moving between kits; out for good; empty = a plain
+thing, no keys left); the refusals (itself, a kit into a kit, a content holding things, a bag either way, a to-do)
+and what is offered; two kits listing one thing settle on the first by id and the other drops it at its save;
+taken out and missing words; the weight on the bag bars, Care's heaviest, template weights, the table's sort and
+filter; one line and never a content (the kit in a content's place); a kit with its content on one template, a kit
+on two templates; a rebuild and a change to a thing never bring a content back (a ticked line stays); the checked
+kit's ticking; warnings (dates and care, before the trip ends, taken out not said) and Care's row naming the kit;
+the checks before you go looking inside; "also on" a template; stored / synced / backed up (as stored and rebuilt
+from rows) / restored, and plain to the web model; deleting a content or a kit; a shared trip and a trip started
+again carry no ticks inside a kit.
+
+UI (`-uiTestingKits`: the sample + a Camp pouch on Hiking with a Lighter, Spare cord and Plasters, and a Wash bag on
+no template, checked before each trip, with the Toothbrush — still on Common base — and Soap):
+`testAKitsPageHoldsItsThingsTakesOneOutAndAddsAnother` (190 g; the cord taken out → 110 g; the Map added → 170 g;
+kept after Save; the trip says "1 missing: Spare cord"), `testAKitIsOneLineOnATripAndWeighsWhatIsInside`,
+`testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked`, `testAThingInsideAKitSaysSoAndIsTakenOutFromItsPage`.
+Each was seen red with a planted fault: Save not writing the kit ("Save did not keep the map inside"), the bags not
+weighing the contents ("… '2.1 kg'"), the kit's tick not refused ("the kit was packed before what is inside it was
+ticked"), Save not writing taken out ("taken out on its page, it is not missing on the trip: ''"). The thing page's
+kit part also ran on the Mac (probe).
+
+### Open questions
+
+- **No `insideKitId` on a content** (the design had it): ONE record holds a kit's whole state, so the two sides
+  can never disagree; a content's kit is read from the kits.
+- **A content on a template whose kit is not on the trip** brings its KIT (the design said only "never a separate
+  line"). Leaving it out would have lost it silently. His word welcome.
+- **A trip made before a thing went into its kit** keeps that thing's line until a rebuild (Trip settings → Save).
+- **"Where is my …?"** (part 5) should answer "Camp pouch, in the backpack" for a thing inside a kit:
+  `Library.kitHolding(thingId:)` gives the kit; joining it to the pockets' answer is left for the merge with 0.69.
+- **The Mac's keys** (part 1): the kit part's buttons and switches are not in the page's Tab order yet.
+- **Past trips** show what is inside their kits as it is NOW (a trip line is a copy; its contents are not).
+- **The table's kit weight** is not typed in; its own weight is on its page. Not covered by a UI test (the model's
+  sort and filter are).
 
 ---
 

@@ -115,6 +115,8 @@ Fields: `id`, `text`, `kind` ("todo" or "shopping"; anything else → "todo"), `
 
 Fields: `id`, `name`, `emoji` (trimmed; "" = 🧰), `note`, `itemIds` (member catalogue ids; empties and repeats dropped, order kept), `createdAt`, `updatedAt`, `extra`.
 
+These are the WEB app's kits (a bundle poured onto a list as separate lines); the native app keeps and backs them up but shows none. The native app's own kits (0.70, "things that hold things", spec 07 part 9) are NOT these: a kit there is an ordinary `Item` with three `extra` keys (§1.12, `PackingLibrary/ThingKits.swift`).
+
 ### 1.8 `Phase` — a "When" step (PackingCore/Phases.swift)
 
 Fields: `id` (≤40), `label` (≤60), `hint` (≤200), `emoji` (≤8; "" → 📦), `color` (hex, else `TEMPLATE_COLORS[position % 10]`), `task` (holds to-dos, not things), `leadDays` (rounded, clamped −1…365; −1 = after the trip), `order`. No `extra`: unknown keys on a phase are NOT kept.
@@ -169,7 +171,13 @@ The native app adds its own fields as `extra` keys so the web app's model stays 
 | action | `reminderId` (`REMINDER_ID_KEY`) | string | the Apple Reminders id a buy line became |
 | template | `iconKey` (`Library.iconKey`) | icon key, or "letter" | the icon he picked |
 | item (a bag) | `cabin` (`CABIN_KEY`) | Bool | his word that this bag goes in the cabin (else judged by its name) |
+| item (a kit, 0.70) | `kitContents` (`KIT_CONTENTS_KEY`) | `[item id]`, his order | what is inside it; absent = holds nothing (a plain thing). Written only by `Library.setKit` (and `deleteThing`, which takes a deleted thing out) |
+| item (a kit, 0.70) | `kitOut` (`KIT_OUT_KEY`) | `[item id]` ⊆ `kitContents` | what is taken out for now ("1 missing: …"); absent when none |
+| item (a kit, 0.70) | `kitCheck` (`KIT_CHECK_KEY`) | true / absent | check what is inside before each trip |
+| trip line (a kit's, 0.70) | `kitTicked` (`KIT_TICKED_KEY`) | `[item id]` / absent | what inside a checked kit is ticked on this trip while the line is not; cleared when the line ticks, when it is unticked, by "start a new trip from this one" and in a shared trip |
 | trip head record only | `entryOrder` | `[entry id]` | the order of the lines (store-only, never in memory — §3) |
+
+**Kits are kept on the kit only (0.70).** Chapter 07 planned an `insideKitId` on each content too; it is not stored — one record holds a kit's whole state, so two sides can never disagree. Which kit holds a thing is READ (`Library.kitIndex()`): kits in id order, a thing in the first kit that lists it; never itself, a bag, a to-do, or a thing that lists contents of its own. Two devices putting one thing in two kits at once leave it listed twice: it is inside the kit whose id sorts first, and the other drops it at its next save. The web app's model sees a plain thing with keys it does not know (they ride through `coerceItem`); the parity check stays 211/211. Through the store, iCloud, a backup (as stored, or rebuilt from the rows) and a restore the keys come back exactly — `ThingKitsTests.testAKitIsStoredSyncedBackedUpAndRestoredWithTheThing`.
 
 Reserved: `owner` and `realmId` are never read into `extra`, never written (`RESERVED_SYNC_KEYS`); the web app lost 422 owners to `owner`.
 

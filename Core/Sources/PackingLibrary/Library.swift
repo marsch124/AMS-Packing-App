@@ -184,7 +184,7 @@ public struct Library: Equatable, Sendable {
     /// same bag first, so each keeps its own tick; and no id ever appears twice.
     public func regenerated(_ trip: TripEvent) -> [Item] {
         let known = Set(templates.map(\.id))
-        let fresh = buildTotalEntries(trip, resolvedTemplates())
+        let fresh = builtLines(trip)          // a thing inside a kit is never a line of its own (ThingKits)
         let prev = trip.entries
         var taken = Set<Int>()
         func match(_ f: Item) -> Item? {
@@ -231,6 +231,8 @@ public struct Library: Equatable, Sendable {
     public mutating func setChecked(_ checked: Bool, tripId: String, entryId: String) -> Bool {
         guard let t = trips.firstIndex(where: { $0.id == tripId }),
               let e = trips[t].entries.firstIndex(where: { $0.id == entryId }) else { return false }
+        // A kit to check before each trip is packed only when all inside it is ticked (ThingKits).
+        guard kitAllowsTick(checked, trip: t, entry: e) else { return false }
         trips[t].entries[e].checked = checked
         return true
     }
@@ -247,7 +249,7 @@ extension Library {
         var trip = coerceEvent(draft)
         if trip.id.isEmpty { trip.id = PackingEnv.makeId() }
         trip.nights = nightsBetween(trip.startDate, trip.endDate) ?? 0
-        trip.entries = buildTotalEntries(trip, resolvedTemplates())
+        trip.entries = builtLines(trip)       // a thing inside a kit is never a line of its own (ThingKits)
         trip.generatedAt = nowISO()
         trip.createdAt = nowISO()
         trip.updatedAt = trip.createdAt
@@ -397,7 +399,7 @@ extension Library {
             // to name. (An explicit id, so reading Care never draws a fresh one.)
             lists.append(PackList(id: "", name: "", items: loose, createdAt: "", updatedAt: ""))
         }
-        return maintenanceList(lists, today).filter { !$0.item.retired }
+        return namingKits(maintenanceList(lists, today).filter { !$0.item.retired })   // "· inside the Camp pouch" (ThingKits)
     }
 
     /// "Done today": log a service on the THING (care is intrinsic — it describes
@@ -555,6 +557,12 @@ extension Library {
         if !evenABag, bags().contains(where: { $0.id == id }) { return false }
         memberships.removeAll { $0.itemId == id }
         for k in kits.indices { kits[k].itemIds.removeAll { $0 == id } }
+        // …and out of the thing that held it (a kit, ThingKits); a kit's contents become things of their own.
+        for n in items.indices where Library.listedContents(items[n]).contains(id) {
+            let k = items[n]
+            Library.writeKit(&items[n], contents: Library.listedContents(k).filter { $0 != id },
+                             out: Set(Library.kitIds(k.extra[KIT_OUT_KEY])), check: Library.kitCheck(k))
+        }
         items.removeAll { $0.id == id }
         return true
     }

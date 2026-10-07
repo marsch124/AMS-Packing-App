@@ -314,6 +314,8 @@ struct ThingEditor: View {
         model.library.templatesForThings()
             .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
     }
+    /// What it holds, or the kit it is in (0.70, ThingKitPart.swift) — kept until Save.
+    @State private var kit = KitDraft()
 
     var body: some View {
         let templates = self.templates
@@ -414,6 +416,9 @@ struct ThingEditor: View {
                         }
                     }
                     .keyed(.weight)
+                    // Inside — a pouch or a kit and what it holds; or the kit it is in (0.70).
+                    ThingKitPart(thingId: current, draft: $kit)
+                        .id("kit-part-\(current)")    // a fresh list per thing (⌘↓ ⌘↑ on the Mac)
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand", .brand) }
@@ -512,6 +517,7 @@ struct ThingEditor: View {
         sectionsAtOpen = now
         newSections = [:]
         sectionEdits = [:]
+        kit = KitDraft(model.library, thingId: id)     // what it holds, or its kit (0.70)
         problem = ""
         weightProblem = ""
         askingToDelete = false
@@ -953,12 +959,14 @@ struct ThingEditor: View {
         let lists = onLists
         let every = careEvery, notes = jsTrim(careNotes)
         let chosen = sections, atOpen = sectionsAtOpen, typed = newSections, edited = sectionEdits
+        let kitSays = kit
         model.change { lib in
             // A template's sections changed in its Section list here (0.68), first: the
             // thing's own choice below is made among them as they now are.
             for (templateId, edits) in edited.sorted(by: { $0.key < $1.key }) {
                 _ = lib.applySectionEdits(templateId: templateId, edits)
             }
+            kitSays.save(&lib, thingId: itemId)      // what it holds, or taken out of its kit (0.70)
             _ = lib.updateThing(id: itemId) { thing in
                 thing.storage = jsTrim(d.storage)
                 thing.category = d.category
@@ -1317,6 +1325,7 @@ extension ThingEditor {
         sectionsAtOpen = none
         newSections = [:]
         sectionEdits = [:]
+        kit = KitDraft()
         problem = ""
         weightProblem = ""
         askingToDelete = false
