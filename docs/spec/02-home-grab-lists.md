@@ -17,7 +17,7 @@ is covered by another file. This file covers everything else on Home and everyth
   button's menu **"Which grab list?"**, and sharing a grab list;
 - the countdown card to the next trip;
 - the **This Device** count tiles;
-- the three Shortcuts actions (App Intents);
+- the three Shortcuts actions that open a place (App Intents) — a fourth, "Where is my …?" (0.69), answers in words and opens nothing (spec 06 §3b);
 - packing reminders (Settings → **Remind me to pack**; its code lives in `Countdown.swift` and
   `Store/Reminders.swift`);
 - **Search** (the magnifier), which opens from Home and from four other tabs.

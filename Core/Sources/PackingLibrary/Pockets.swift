@@ -219,8 +219,9 @@ extension Library {
         guard let t = trips.firstIndex(where: { $0.id == tripId }),
               let e = trips[t].entries.firstIndex(where: { $0.id == entryId }) else { return false }
         let clean = jsTrim(pocket)
+        // The line only, never the trip's head: like a tick, one small record, so two
+        // devices choosing pockets on different lines both win.
         trips[t].entries[e].extra[key] = clean.isEmpty ? nil : .string(clean)
-        trips[t].updatedAt = nowISO()
         return true
     }
 

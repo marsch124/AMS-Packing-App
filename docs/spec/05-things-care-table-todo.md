@@ -847,6 +847,14 @@ apart; a field 6 pt under its heading):
    LAST (value "", grey — the same "no bag" a bag's delete can leave; 0.62). Single choice; a bag named in other
    capitals ticks the offered spelling (`ThingEditor.bagChoices`). A long list (17 bags) scrolls inside the list,
    which opens scrolled to the ticked row.
+9a. **Pocket** (0.69, stop B of his idea plan: "A thing can have a usual pocket ('Backpack · front pocket'), so
+   most need no tap at all") — a second drop-down right under Usually packed in, **only while the bag chosen
+   there has pockets** (`pockets(bag:)`; band `thing-pocket-title`, field `thing-pocket`, list `thing-pocket-list`):
+   first **"Just in the bag"** (value "", grey, `thing-pocket-none`), then the bag's pockets in its order
+   (`thing-pocket-0…`), matched by `normName`. Choosing another bag clears the pocket unless the new bag has one of
+   that name. Kept on the draft (`extra.usualPocket`) and saved with the page (`thing.extra[USUAL_POCKET_KEY] =
+   draft's`); Cancel keeps nothing. A trip line ticked in this bag then gets this pocket by itself (spec 03,
+   "Bag pockets on a trip").
 10. **When** — drop-down (0.64; band `thing-when-title`, field `thing-when`, list `thing-when-list`), one row per
     live `PHASES` step (id stored, label shown; `thing-when-N`). A thing with no step, or one this device does not
     know, ticks no row; the field then says "Not said" (grey) or the raw id.
@@ -1099,6 +1107,21 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    Your bags.
 3. **Goes in the cabin** switch (`bag-detail-cabin`, orange): "Goes in the cabin" / "Carry-on. On a plane trip,
    the trip checks it for liquids and things not allowed on board."
+3a. **Pockets** `N` (0.69, `BagPockets` in `Screens/Pockets.swift`; his idea plan, stop B: "A bag's page lists its
+   pockets; you name them once"): heading "Pockets" (Body semibold ink) and the count (Subheadline semibold mono
+   muted, `bag-pockets-count`). None: "None yet. Name its pockets — main, front pocket, lid — and ticking a thing on
+   a trip asks which one it went into." (Footnote muted). Each pocket a row, 6 apart: its name IS a field
+   (`bag-pocket-<n>`, Callout ink, `Metrics.compact` tall, card fill, radius 8, 1-pt line) — typed over, **Rename**
+   appears beside it (Footnote semibold white on orange capsule, `bag-pocket-<n>-rename`; Return does the same);
+   then **Up** (a drawn chevron, muted, `Metrics.glyph` in a `Metrics.compact` square, `bag-pocket-<n>-up`, label
+   "Move <pocket> up" — none on the first, its room kept) and a small red **✕** last on the line
+   (`bag-pocket-<n>-remove`, label "Remove <pocket>"; removes at once — a thing or line in it is then simply in the
+   bag). A refused rename says under the rows in red (Footnote semibold, `bag-pockets-problem`): "A pocket needs a
+   name." / "The bag already has a pocket called that." Last: a field "A new pocket, e.g. Front pocket"
+   (`bag-pocket-new`, Body, `Metrics.tap` tall) and **Add** (`FieldButtonLabel`, orange, `bag-pocket-add`; Return
+   too) — always in colour; with nothing typed it says "Type a pocket first." under the field
+   (`bag-pocket-add-needs`), with a name the bag has, "The bag already has a pocket called that.". Model:
+   `addPocket` / `renamePocket` (carried to things and trip lines) / `movePocket` / `removePocket` (spec 03).
 4. **Usually in it** `N` (`bag-things-count`): "Nothing yet. A thing goes here when its “Usually packed in” is
    this bag." or up to 12 things (`bag-thing-i`: name 16 medium, weight when > 0), each opening its thing's page;
    "Show all `N`" / "Show fewer" (`bag-things-all`) when more than 12.
@@ -1145,7 +1168,7 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
   cabin from the trip (`setCabin(container:)`, field test 7.3, 3 Oct 2026): a name that is not a bag yet BECOMES
   one (and then shows here); "Other" and "" are refused.
 
-**Data.** The bag's item (`cabin` in its extra keys, so the web app's model is untouched); memberships;
+**Data.** The bag's item (`cabin` and, 0.69, `pockets` in its extra keys, so the web app's model is untouched); memberships;
 templates; trips (lines, `extra` scale/photos); photos.
 
 **iPhone vs Mac.** Mac: at least 520 × 640.
@@ -1162,7 +1185,12 @@ templates; trips (lines, `extra` scale/photos); photos.
 before a choice and says so (`bag-delete-needs`), explains plainly, offers No bag, moves the things; an unused bag deletes at once with no
 choices; a thing made a bag offers Keep it on / Delete completely, and Delete completely removes the thing);
 `testABagSaysWhetherItGoesInTheCabin` (a carry-on is in the cabin by its name; switched off, the plane trip no
-longer checks it); `testABagOnTheTripSaysWhetherItGoesInTheCabin` (from the trip).
+longer checks it); `testABagOnTheTripSaysWhetherItGoesInTheCabin` (from the trip). **0.69:**
+`testABagsPageListsItsPockets` (`-uiTestingPockets`: the Backpack's 3 pockets; Add with nothing typed says so; a
+fourth added; Front pocket renamed; the new one moved up; Main removed — red with Add not reaching the model: "the
+new pocket was not added: '3'"); `testAThingsUsualPocketIsOfferedWhenItsBagHasPockets` (the charger's Pocket says
+Front pocket; Lid chosen and saved is there when reopened; the Toothbrush, in a bag with no pockets, has no Pocket —
+red with the save line planted out: "the usual pocket was not kept: 'Front pocket'"); model `PocketsTests`.
 
 **Not covered by a test.** The rename refusal texts; "Show all"; the trips list beyond the first; "Heaviest:".
 

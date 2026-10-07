@@ -141,6 +141,9 @@ struct HowItWorksScreen: View {
             "This Device: how many trips, things and templates this device holds."]),
         Topic(section: .events, title: "Packing a trip", lines: [
             "Tap a line to tick it; tap again to take it back. The round button by a heading ticks the whole section.",
+            "A bag with pockets: ticking a line shows the bag's pockets in one short row under it, the thing's usual pocket already chosen \u{2014} tap another, or ignore it. The line then says \u{201C}Backpack \u{00B7} Front pocket\u{201D}.",
+            "I leave at, on Create new trip and in Trip settings: a time on the first day, and one on the last for home. 15 minutes before, the iPhone names what is still unticked \u{2014} on the last day, what is not in a bag yet; nothing if all is done. Tap the message: the trip opens on just those lines, and Show all brings the rest.",
+            "Where is my \u{2026}? On a trip under way, Search shows where a thing is first: \u{201C}Backpack \u{00B7} Front pocket\u{201D}. Or ask Siri, on the iPhone or the Mac: \u{201C}Where is my charger in Packing?\u{201D} With no trip under way, it says where the thing usually goes.",
             "Check before you go, at the top when something needs you: on a plane trip, what in a cabin bag is not allowed on board (red) or is a liquid (orange: 100 ml at most, in the clear bag); and what runs out before you are home \u{2014} a passport or ID card (Documents & money) six months ahead. Tap a line to open the thing and put it right.",
             "The pen beside the count: Trip settings. Change the name, Full trip or Quick, place, dates (Clear dates in the calendar takes them away), templates, each workout's Context, transport, season, food, laundry or Pack weather gear anyway; Save rebuilds the list, and what you ticked, added yourself or were sent stays. A swipe down closes it only when nothing is changed.",
             "At the bottom of Trip settings: Start a new trip from this one. The same list as it ended up, nothing ticked, no dates.",
@@ -164,6 +167,7 @@ struct HowItWorksScreen: View {
             "Pack to go home: what went (ticked on the way out) and what you bought on site, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
             "On the way home, Used up takes a thing off \u{2014} the same as leaving it on site; the heading counts it. Undo puts it on again.",
             "Search the way home at the top; the \u{2715} empties it. Tick everything ticks all that still comes home; pressed again it clears the ticks.",
+            "Pockets on the way home too: packing a thing for home shows its bag's pockets, the one it went out in already chosen.",
             "Note on the way home is the same maintenance note. Open opens the thing to change it; Save or Cancel brings you back where you were.",
             "The photos of every packed bag are at the top of the way home; tap one to see it large, Next steps through them."]),
         Topic(section: .events, title: "After a trip", lines: [
@@ -195,6 +199,7 @@ struct HowItWorksScreen: View {
             "Kind of thing, Whose it is, Kept at home, Usually packed in, When, Condition and Care each open a list: tap your choice. Kept at home lists your places, and a new place made there joins Your choices; Usually packed in offers your own bags and No bag.",
             "Under Notes, what your templates say about the thing (change that on the template). Under On these templates, each lit template has its own Section list \u{2014} with A new section at its foot \u{2014} and trips still ahead follow. Care \u{2014} how often, and what to do \u{2014} then shows on Care, where Done today moves it on.",
             "Bags: your bags with max weight, litres and empty weight. Tap a bag's name for its own page: rename it, say whether it goes in the cabin, see what usually goes in it and its trips, or delete it (its things move to a bag you choose).",
+            "On a bag's page, Pockets: name them once with Add; type over one to rename it, \u{2303} moves it up, the red \u{2715} removes it. A thing in that bag then has Pocket under Usually packed in \u{2014} its usual pocket.",
             "All your things · table: a spreadsheet. Sort, filter, choose columns; tick several and Change all: the line under it says what changed, and Undo puts back just that. If a search or filter hides some ticked things, the bar says how many. On the Mac it is a window of its own: drag it as wide as you like, or make it full screen.",
             "A column too narrow or too wide: drag the short line at the right edge of its heading \u{2014} Thing too. Each keeps its width on this device; a double tap on the line gives it its own width again.",
             "Filter: every column filters \u{2014} Owner, Packed by, Storage, each template and its sections, and the rest. Open a column and tick the answers your things have (the number says how many). Ticks in one column mean any of them; filtered columns must all hold. A pill above the table shows each filter; its \u{2715} takes it off, Clear takes them all.",
@@ -215,7 +220,7 @@ struct HowItWorksScreen: View {
             "Worth a look appears only when something in the library seems wrong. Where it can, it puts it right in one press \u{2014} a photo left behind by a deleted trip has Remove it; a photo with no date that nothing shows is listed on its own and goes only when you press Remove.",
             "Open a shared link: paste a link or code from the web app or this one. A trip arrives unticked; a template links to things you already have without changing them \u{2014} with a name you already have, it asks for one of its own, or Replace takes the shared things into yours and keeps your look, sections and bags (it says first what comes in and leaves); a grab list takes a free place on Home, or waits in Grab Lists when Home is full."]),
         Topic(section: .home, title: "Shortcuts and the Action button", lines: [
-            "Packing offers three actions to Shortcuts and the Action button: Choose a grab list (a menu of them all, every time), Open a grab list (always the same one) and Open my next trip.",
+            "Packing offers four actions to Shortcuts and the Action button: Choose a grab list (a menu of them all, every time), Open a grab list (always the same one), Open my next trip, and Where is my thing? \u{2014} it answers with the bag and pocket, and opens nothing.",
             "The Action button: iPhone Settings \u{2192} Action Button \u{2192} swipe to Shortcut \u{2192} Choose a Shortcut \u{2192} Packing \u{2192} Choose a grab list. Press it: your grab lists appear; tap the one for today.",
             "If Packing is not in the list there: open Packing once, then look again.",
             "Or add the Shortcut to the Home Screen, or say \u{201C}Open Swim in Packing\u{201D} to Siri."]),

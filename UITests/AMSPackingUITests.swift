@@ -2517,8 +2517,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["tripset-leave-home-check"]), "Check 09:45")
     }
 
-    /// With notifications not allowed on this device, "I leave at" says so under it.
-    func testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt() {
+    /// With notifications not allowed on this device, "I leave at" says so under it. The
+    /// check comes on the iPhone only, so the Mac neither asks nor says it.
+    func testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt() throws {
+        #if os(macOS)
+        throw XCTSkip("the door check comes on the iPhone")
+        #endif
         let app = launch("-uiTesting", ["-pretendRemindersBlocked"])
         tab(app, "events")
         tap(app, id: "trip-row-0")
