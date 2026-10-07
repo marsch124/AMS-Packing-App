@@ -564,8 +564,18 @@ the thing's. Section and kit: the row's. Everything else is the thing's.
 `effectiveQty(line, qtyNights(trip))` — see Laundry.
 
 ### Kits
-A line keeps its kit NAME (`kit`), and its `packer`, but the native trip screen does not show either
+A line keeps its web-app kit NAME (`kit`), and its `packer`, but the native trip screen does not show either
 (no kit clusters; `clusterByKit` is ported but unused — decided so, see Open questions 16).
+
+**Things that hold things (0.70, spec 07 part 9, `ThingKits.swift`).** A trip is built from
+`Library.templatesForTrips()`, not the plain resolved templates, and through `Library.builtLines(trip)`
+(`createTrip`, `regenerated`; `followThing` reads the same templates): a thing inside a kit is NEVER a line
+of its own. On a template that holds its kit too, the thing's row is left out; on one that does not, the
+KIT takes its place — once per template, the row resolved from the thing's place there with its bag, When,
+how many, note and kind cleared (so the kit's own bag and When), keeping its section and its "only on some
+trips" answers. Then `buildTotalEntries` as before, and each kit's line once per trip (a kit on two templates
+in two bags is still one line). A trip made BEFORE a thing went into its kit keeps that thing's line until a
+rebuild (Trip settings → Save) takes it away — unless it is ticked, edited or added by hand, as for every line.
 
 ### Tests
 `TripBuildingTests` (all): empty constraints, season, transport + catering, context only on WET,
@@ -574,7 +584,14 @@ weather-tagged items stay out, storage carried, retired excluded, section displa
 packer carried, base + matching transport, RV trip with no activities still gets base + RV kit,
 switching away from RV drops it, quick = only ticked, quick smaller than trip, the exact fields a
 built line carries, regenerate keeps checked/custom/edited. `RowTagsTests.testATaggedRowComesOnlyOnTripsThatMatch`.
-`CreateTripTests` (above). `ResolveTests`.
+`CreateTripTests` (above). `ResolveTests`. Kits (0.70): `ThingKitsTests` — one line per kit and never what is
+inside (the kit in the place of a thing that is on a template on its own), a kit with its contents on one
+template or on two templates still one line, a rebuild and a change to a thing never bring a content back, the
+checked kit's ticking rules, the checks before you go looking inside. UI (0.70, `-uiTestingKits`):
+`testAKitIsOneLineOnATripAndWeighsWhatIsInside` (8 lines, "3 inside", no ninth line; Bags 2.4 kg; the arrow opens
+three rows; the plasters' warning; Take out → "1 missing: Lighter", "2 inside"; Put back; Care's heaviest:
+Wash bag then Camp pouch at rows 2 and 3), `testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked` (the
+wash bag open with two ticks and "2 to go"; its own tap does not tick it; the second tick does).
 
 ---
 
@@ -888,6 +905,35 @@ smaller tick circles and less space between lines").
   green capsule outline, `Metrics.chip` tall, indented `Metrics.mark` + 8 so it starts under the name — 44 and
   30 tall until 0.67), 4 pt under the line (6 until 0.67), id `trip-line-<n>-place` — see "Set place". The
   place panel is indented the same.
+
+- **A kit's line (0.70, `TripKitLine.swift`).** A line whose thing holds things (`Library.kitLines(tripId:)`,
+  read once for the screen) is ONE line: its name says "Camp pouch · 3 inside" (`PackLine.kitWords`, the
+  count muted, after a middle dot: what is inside and not taken out). Between the line and its ⊘, a fold arrow
+  (`KitFoldButton`, the section fold's chevron at `Metrics.glyph`, muted, `Metrics.lineButton` − 10 wide;
+  id `trip-line-<n>-kit`, value "open" / "folded"). Under the line, indented `Metrics.mark` + 8 like Set place
+  (`KitLineParts`): "1 missing: Lighter" / "2 missing: Lighter, Spare cord" (Footnote semibold red,
+  `trip-line-<n>-kit-missing`) while something is taken out; with Check before each trip, while neither ticked
+  nor set aside, "Tick what is inside first: 2 to go." (Footnote semibold green, `trip-line-<n>-kit-togo`);
+  what is worth saying about what is inside for this trip (`kitWarnings(kitId:today:before: trip's last day)`:
+  out of date, runs out before the trip ends, care overdue or due soon; Footnote semibold orange,
+  `trip-line-<n>-kit-warning-<k>`); and, when open, one row per thing inside in his order
+  (`trip-line-<n>-kit-<k>`, value "taken out" / "ticked" / ""): its name, Subheadline muted (struck through when
+  taken out) — or, for a checked kit, a small tick circle (the mark at 0.8) and the name as a button
+  (`trip-line-<n>-kit-<k>-tick`, selected when ticked) — and at the right "Take out" / "Put back" (Footnote
+  semibold green, `trip-line-<n>-kit-<k>-out`, `Library.setTakenOut` — on the thing itself, so every trip and
+  the thing's page follow). A kit is open while it is checked before each trip and not yet packed, else folded;
+  the arrow changes that for this visit (`@State kitOpen`, not remembered). The parts are keyed by their own
+  state, so a lazy row never shows old ticks.
+  **Ticking a kit:** without the check, as any line. With it, `Library.setChecked(true)` is REFUSED while
+  something inside is not ticked (`kitAllowsTick`) — the tap does nothing, and "2 to go" is already under it;
+  this holds for a section's tick-all and Tick everything too. `setKitContentTicked`: the last one ticked ticks
+  the line (and forgets the list); unticking one unticks the line, the rest stay ticked. Unticking the line
+  itself starts its ticks over. Taken out = not asked for; with nothing left inside, the kit ticks as any line.
+  A set-aside kit's things do not tick. **Weight:** the Bags card and a bag's trips add each kit line as its own
+  weight plus what is inside it now (`linesWithKitWeights`: each content's weight × its how-many, the taken out
+  not counted). **Check before you go** looks inside each kit line (`insideLines`): "Lighter, in the Camp pouch"
+  in a cabin bag is not allowed on board; "Plasters, in the Camp pouch" runs out before you are home — each opens
+  that thing.
 
 Each row view is keyed by "id|checked|aside|group|placing|qtyNights", so it is rebuilt whenever its
 tick, set-aside, group, place panel or night count changes (bug B1, his Mac 2026-09-26: a row showed no
