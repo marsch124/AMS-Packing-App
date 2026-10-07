@@ -21,6 +21,25 @@ public func readAmount(_ typed: String) -> Double? {
     return value
 }
 
+/// A weight typed on the Mac's keys (0.68, his keyboard page for a thing): grams as
+/// before — "1200", "12,5" — or with a unit, "1,2 kg", "1.2kg", "250 g", always
+/// answered in GRAMS (the field's unit). Spaces anywhere are ignored ("1 200"). nil for
+/// what is not a weight ("abc", "kg", "-1"), so the page can say so; empty is 0.
+public func readGrams(_ typed: String) -> Double? {
+    var clean = jsTrim(typed).lowercased().replacingOccurrences(of: " ", with: "")
+    var factor = 1.0
+    for (unit, times) in [("kilos", 1000.0), ("kilo", 1000.0), ("kg", 1000.0), ("grams", 1.0), ("gram", 1.0), ("g", 1.0)]
+    where clean.hasSuffix(unit) {
+        clean.removeLast(unit.count)
+        guard !clean.isEmpty else { return nil }          // a unit and no number
+        factor = times
+        break
+    }
+    guard let value = readAmount(clean) else { return nil }
+    // 1.2 × 1000 must be 1200, not 1199.9999…: kept to the two decimals a weight shows.
+    return (value * factor * 100).rounded() / 100
+}
+
 /// An amount written back for him to read: whole numbers without a point, the rest
 /// with as many decimals as they need (up to two) — 88.7 stays 88.7, never 88.
 public func amountText(_ value: Double) -> String {
