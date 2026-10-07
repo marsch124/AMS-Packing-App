@@ -479,6 +479,7 @@ struct DropDown: View {
         #if os(macOS)
         namingByKeys = false
         keys?.typingInList = false
+        tool = nil                                   // Tab starts again at the pen
         #endif
     }
 

@@ -302,7 +302,10 @@ extension View {
     /// so nothing moves. Nothing on the iPhone.
     @ViewBuilder func focusRing(_ on: Bool, tint: Color = AppSection.care.color, radius: CGFloat = 8, gap: CGFloat = 3) -> some View {
         #if os(macOS)
-        overlay(RoundedRectangle(cornerRadius: radius + gap).stroke(tint, lineWidth: 2).padding(-gap).opacity(on ? 1 : 0))
+        // Never in the way of a click: drawn on top, it took the pill's clicks (GitHub's Mac,
+        // 7 Oct 2026: a ringed template pill could not be turned off).
+        overlay(RoundedRectangle(cornerRadius: radius + gap).stroke(tint, lineWidth: 2).padding(-gap).opacity(on ? 1 : 0)
+            .allowsHitTesting(false))
         #else
         self
         #endif
