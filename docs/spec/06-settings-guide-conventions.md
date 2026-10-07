@@ -1845,14 +1845,15 @@ so a change to `project.yml` is committed together with the regenerated files. "
   `TARGETED_DEVICE_FAMILY` "1" (iPhone only, no iPad); `INFOPLIST_FILE` `App/Config/Info.plist`, not generated;
   `PACKING_USES_ICLOUD` "NO" by default.
 - **Entitlements, plain build** (`AMSPacking.entitlements`, generated from project.yml): app sandbox,
-  user-selected files read/write (Save and Open windows), personal-information.calendars (Reminders on the Mac). No
+  user-selected files read/write (Save and Open windows), app-scoped bookmarks (`files.bookmarks.app-scope`, 0.70:
+  the Obsidian folder he picks once is remembered — spec 07 part 8), personal-information.calendars (Reminders on the Mac). No
   iCloud: an ad-hoc-signed Mac app carrying iCloud entitlements is refused at launch, and that is how CI builds.
   Since 0.70 this is the MAC's file: an iPhone build (device or simulator) signs with the hand-written
   `AMSPacking-iOS.entitlements` (`CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]` / `[sdk=iphonesimulator*]`) — the same
-  three keys + `com.apple.developer.healthkit` and `com.apple.developer.healthkit.access` [] (Apple Health in the
+  three keys (no file bookmarks: the vault page is the Mac's) + `com.apple.developer.healthkit` and `com.apple.developer.healthkit.access` [] (Apple Health in the
   review, read only; chapter 07 part 7). The TestFlight workflow adds those two keys to the shipped iPhone file and
   fails the run if the archived iPhone app lacks HealthKit.
-- **Entitlements, syncing build** (`AMSPacking-iCloud.entitlements`, hand-written): the three above + network client
+- **Entitlements, syncing build** (`AMSPacking-iCloud.entitlements`, hand-written): the four above + network client
   (a sandboxed Mac app may not reach iCloud without it), the iCloud container `iCloud.<bundle id>`, CloudKit, the
   container environment `Development`, the sandbox exception `mach-lookup` for `com.apple.cloudd` ("Without this the
   sandbox denies the app the CloudKit daemon and nothing syncs", found 2026-09-22; with it 1,438 records went up and

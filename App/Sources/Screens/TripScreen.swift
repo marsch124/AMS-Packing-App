@@ -198,6 +198,11 @@ struct TripScreen: View {
                 // has typed into it (found by the test, 2026-09-23).
                 VStack(alignment: .leading, spacing: 4) {
                 if placeFilter == nil {
+                // After the review: the trip's page in his Obsidian vault (0.70, spec 07 part 8).
+                if Library.isReviewed(trip) {
+                    VaultCard(tripId: trip.id).environmentObject(model)
+                        .padding(.top, 10).padding(.horizontal, 16)
+                }
                 // Check before you go (his ideas 4 and 5): first, and only when something needs him.
                 TripChecksCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)

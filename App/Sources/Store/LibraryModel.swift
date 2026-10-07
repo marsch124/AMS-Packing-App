@@ -16,7 +16,10 @@ final class LibraryModel: ObservableObject {
         case failed(String)
     }
 
-    @Published private(set) var library = Library()
+    @Published private(set) var library = Library() {
+        // The Mac writes the trip pages the library is waiting for (0.70, spec 07 part 8).
+        didSet { VaultShelf.shared.libraryChanged(self) }
+    }
     @Published private(set) var state: State = .loading
 
     /// Trips whose forecast is being looked up right now, and what went wrong.
@@ -257,6 +260,9 @@ extension LibraryModel {
     ///  -uiTestingHealth       → memory, the sample + Swim, Run and Bike and a trip of
     ///                           them six to two days ago; with invented Apple Health
     ///                           workouts (`AppleHealth.source`, 0.70)
+    ///  -uiTestingReviewed     → memory, the sample with its trip been and reviewed: a
+    ///                           photo, a scale reading, a thing bought, a note, a missed
+    ///                           thing — and no page asked for yet (Obsidian, 0.70)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -312,6 +318,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingHealth") {
             return LibraryModel(store: MemoryStore(SampleLibrary.health().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingReviewed") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.reviewed().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTesting") {
             return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false, sky: sky)

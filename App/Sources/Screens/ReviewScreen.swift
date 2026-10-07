@@ -10,6 +10,8 @@ struct ReviewScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var unused: Set<String> = []
+    /// Apple Health's rows as the review showed them (iPhone, 0.70) — kept for the vault page.
+    @State private var healthRows: [String] = []
     @State private var missed: [Library.Missed] = []
     @State private var missName = ""
     /// So the keyboard goes away once a missed thing has been added — it covered
@@ -51,7 +53,7 @@ struct ReviewScreen: View {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     // "From Apple Health" opens the review on the iPhone (0.70): the trip's
                     // workouts and "Use these". Nothing at all on the Mac or an undated trip.
-                    ReviewHealth(tripId: tripId, unused: $unused, answered: answered)
+                    ReviewHealth(tripId: tripId, unused: $unused, answered: answered, rows: $healthRows)
                     // The two parts' headings above the question asked inside them (17) and
                     // the pills (15) — field test, 3 Oct 2026: headings "dominant".
                     Text("Anything you wished you'd had?").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
@@ -168,7 +170,12 @@ struct ReviewScreen: View {
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
             Button {
-                model.change { _ = $0.saveReview(tripId: tripId, unused: unused, missed: missed, when: nowISO()) }
+                let rows = healthRows
+                model.change { lib in
+                    _ = lib.saveReview(tripId: tripId, unused: unused, missed: missed, when: nowISO())
+                    // Apple Health's rows, for the Workouts of his vault page (0.70, spec 07 parts 7 and 8).
+                    lib.setHealthWorkouts(tripId: tripId, rows: rows)
+                }
                 dismiss()
             } label: {
                 Text("Save review").font(.system(.body, weight: .semibold)).foregroundStyle(.white)

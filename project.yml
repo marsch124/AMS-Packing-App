@@ -38,6 +38,9 @@ targets:
         # the app a backup file anywhere he chooses.
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-write: true
+        # The trip's page in his Obsidian vault (0.70): the folder he picks once is
+        # remembered as a security-scoped bookmark, which the sandbox allows only with this.
+        com.apple.security.files.bookmarks.app-scope: true
         # To buy → Apple Reminders (0.50): the Mac's sandbox keeps the app out of
         # Reminders without it.
         com.apple.security.personal-information.calendars: true

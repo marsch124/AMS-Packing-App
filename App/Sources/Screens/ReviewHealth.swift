@@ -21,6 +21,8 @@ struct ReviewHealth: View {
     @Binding var unused: Set<String>
     /// The lines he answered himself: never changed by "Use these".
     let answered: Set<String>
+    /// The rows as shown — kept on the trip by Save review for the vault page's Workouts.
+    @Binding var rows: [String]
     @EnvironmentObject var model: LibraryModel
     @State private var phase: Phase = .reading
     /// What the last press marked, said under the button.
@@ -77,7 +79,7 @@ struct ReviewHealth: View {
             .accessibilityIdentifier("review-health")
             .padding(.bottom, 12)
             // Asked when the block first shows — the permission sheet the first time.
-            .task(id: tripId) { phase = await read(days) }
+            .task(id: tripId) { phase = await read(days); keepRows() }
         }
     }
 
@@ -114,6 +116,11 @@ struct ReviewHealth: View {
         }
     }
 
+    /// What Save review keeps for the vault page (`setHealthWorkouts`): the rows shown now.
+    private func keepRows() {
+        if case .shown(let review) = phase { rows = review.rows.map(\.words) }
+    }
+
     private func read(_ days: (first: String, last: String)) async -> Phase {
         switch await source.workouts(firstDay: days.first, lastDay: days.last) {
         case .refused: return .refused
@@ -126,6 +133,7 @@ struct ReviewHealth: View {
     private func use(_ days: (first: String, last: String)) async {
         let now = await read(days)
         phase = now
+        keepRows()
         guard case .shown(let review) = now else { said = ""; needs = ""; return }
         let marks = review.marks.filter { !answered.contains($0.key) }
         guard !marks.isEmpty else {

@@ -87,6 +87,9 @@ extension Library {
         var t = trip
         t.extra[WEIGHED_KEY] = nil
         t.extra[BAG_PHOTOS_KEY] = nil
+        // His review and his vault (0.70): what he missed, Apple Health's rows, and the
+        // page asked for or written on his Mac are his.
+        for key in [MISSED_AT_REVIEW_KEY, TRIP_WORKOUTS_KEY, VAULT_WAITING_KEY, VAULT_WRITTEN_KEY] { t.extra[key] = nil }
         t.entries = t.entries.map { line in
             var l = line
             l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)

@@ -9448,4 +9448,107 @@ final class AMSPackingUITests: XCTestCase {
                       "taken out on its page, it is not missing on the trip: '\(words(app.staticTexts["trip-line-2-kit-missing"]))'")
         XCTAssertTrue(words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go"), "it still asks for the toothbrush")
     }
+
+    // MARK: - The trip's page in his Obsidian vault (0.70, spec 07 part 8)
+
+    /// The sample's trip as `-uiTestingReviewed` has it: been (six to three days ago) and
+    /// reviewed, so it sits folded under Reviewed in Done. Its start day, as the sample
+    /// counts it (the device's own calendar).
+    private func reviewedTripStart() -> String {
+        let cal = Calendar(identifier: .gregorian)
+        let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: -6, to: Date())!)
+        return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+    }
+
+    private func openReviewedTrip(_ app: XCUIApplication) {
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        tap(app, id: "events-reviewed")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+    }
+
+    /// The iPhone does not write the page — the Mac does: Send to Obsidian on a reviewed
+    /// trip marks it "waiting for the Mac", and the button stays a button.
+    func testOnTheIPhoneSendToObsidianWaitsForTheMac() throws {
+        #if os(macOS)
+        throw XCTSkip("The Mac writes the page itself (testSendToObsidianWritesTheTripPageOnTheMac)")
+        #else
+        let app = launch("-uiTestingReviewed")
+        openReviewedTrip(app)
+        let send = app.buttons["trip-vault-send"]
+        XCTAssertTrue(send.waitForExistence(timeout: 5), "a reviewed trip offers Send to Obsidian")
+        XCTAssertTrue(app.staticTexts["trip-vault-status"].exists, "before: the line says the Mac writes the page")
+        XCTAssertFalse(app.staticTexts["trip-vault-waiting"].exists, "nothing is asked for yet")
+        shot(app, "vault-iphone-before")
+        tap(app, id: "trip-vault-send")
+        XCTAssertTrue(app.staticTexts["trip-vault-waiting"].waitForExistence(timeout: 5), "the trip does not wait for the Mac")
+        XCTAssertFalse(app.staticTexts["trip-vault-status"].exists, "two states at once")
+        XCTAssertTrue(send.isEnabled, "the button is never switched off")
+        shot(app, "vault-iphone-waiting")
+        #endif
+    }
+
+    /// The Mac: Send to Obsidian asks for the folder the first time (the test folder
+    /// answers the picker), writes "<yyyy-mm> Weekend in the hills.md" with its front
+    /// matter, and copies the bag's photo into attachments beside it.
+    func testSendToObsidianWritesTheTripPageOnTheMac() throws {
+        #if !os(macOS)
+        throw XCTSkip("The page is written on the Mac")
+        #else
+        let app = launch("-uiTestingReviewed", ["-uiTestingVault", "vault-send"])
+        openReviewedTrip(app)
+        XCTAssertTrue(app.staticTexts["trip-vault-nofolder"].waitForExistence(timeout: 5), "no folder is chosen yet, and the card says so")
+        tap(app, id: "trip-vault-send")
+        let written = app.staticTexts["trip-vault-written"]
+        XCTAssertTrue(written.waitForExistence(timeout: 10), "the page was not written")
+        let start = reviewedTripStart()
+        let file = "\(start.prefix(7)) Weekend in the hills.md"
+        XCTAssertTrue(words(written).contains(file), "the card names another file: '\(words(written))'")
+        // What is ON THE DISK, read back by the app (the Mac's test runner cannot look in).
+        let check = app.staticTexts["trip-vault-check"]
+        XCTAssertTrue(check.waitForExistence(timeout: 5), "nothing was read back from the folder")
+        let disk = words(check).components(separatedBy: "\n")
+        XCTAssertTrue(disk.contains(file), "the page is not in the folder: \(disk)")
+        XCTAssertTrue(disk.contains("attachments/\(start.prefix(7)) Weekend in the hills - Carry-on - hand luggage 1.jpg"),
+                      "the bag's photo is not beside the page: \(disk)")
+        for line in ["---", "type: trip", "start: \(start)", "nights: 3", "place: \"\"", "packed: \"8/8\"", "weight: 2.4"] {
+            XCTAssertTrue(disk.contains(line), "the front matter lacks '\(line)': \(disk)")
+        }
+        XCTAssertTrue(disk.contains { $0.hasPrefix("reviewed: 20") }, "no review day: \(disk)")
+        XCTAssertTrue(app.staticTexts["trip-vault-folder-name"].exists, "the chosen folder is named")
+        shot(app, "vault-mac-written")
+        #endif
+    }
+
+    /// A saved review asks for the page by itself: the iPhone marks the trip waiting for
+    /// the Mac; the Mac, with its folder chosen, writes it at once.
+    func testASavedReviewAsksForTheTripsPage() {
+        #if os(macOS)
+        let app = launch("-uiTesting", ["-uiTestingVault", "vault-auto", "-uiTestingVaultChosen"])
+        #else
+        let app = launch()
+        #endif
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertFalse(app.buttons["trip-vault-send"].exists, "a trip not reviewed yet has no page to send")
+        app.buttons["trip-line-0"].tap()
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        tap(app, id: "review-save")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["trip-vault-send"].waitForExistence(timeout: 5), "the reviewed trip offers Send to Obsidian")
+        #if os(macOS)
+        let written = app.staticTexts["trip-vault-written"]
+        XCTAssertTrue(written.waitForExistence(timeout: 10), "the review's page was not written at once")
+        XCTAssertTrue(words(written).hasSuffix(" Weekend in the hills.md") || words(written).contains(" Weekend in the hills.md "),
+                      "'\(words(written))'")
+        XCTAssertTrue(words(app.staticTexts["trip-vault-check"]).contains("type: trip"), "the page is not on the disk")
+        #else
+        XCTAssertTrue(app.staticTexts["trip-vault-waiting"].waitForExistence(timeout: 5), "the review did not ask the Mac for the page")
+        #endif
+        shot(app, "vault-after-review")
+    }
 }

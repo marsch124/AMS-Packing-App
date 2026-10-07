@@ -211,6 +211,40 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with its trip been and reviewed (`-uiTestingReviewed`), for the
+    /// trip's page in his Obsidian vault (0.70): it ran from six days ago to three days
+    /// ago, everything went, the carry-on was weighed (2.4 kg) and photographed, a sun hat
+    /// was bought on site, the rain jacket's zip broke, the map was not used and a power
+    /// bank was missed (onto Hiking). The review was saved yesterday — and no page is asked
+    /// for, as after a review saved before 0.70, so the button starts from the beginning.
+    static func reviewed() -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        guard !lib.trips.isEmpty else { return lib }
+        let id = lib.trips[0].id
+        lib.trips[0].startDate = day(-6)
+        lib.trips[0].endDate = day(-3)
+        lib.trips[0].nights = 3
+        for e in lib.trips[0].entries { lib.setChecked(true, tripId: id, entryId: e.id) }
+        let bag = "Carry-on / hand luggage"
+        lib.setWeighed(tripId: id, bag: bag, grams: 2400)
+        if let jpeg = JPEG.sample() { _ = lib.addBagPhoto(tripId: id, bag: bag, jpeg: jpeg) }
+        _ = lib.addBoughtOnSite(tripId: id, name: "Sun hat")
+        if let jacket = lib.trips[0].entries.first(where: { $0.name == "Rain jacket" }) {
+            lib.setHomeNote("zip broken", tripId: id, entryId: jacket.id)
+        }
+        let unused = Set(lib.trips[0].entries.filter { $0.name == "Map" }.map(\.id))
+        let hiking = lib.templates.first { $0.name == "Hiking" }?.id ?? ""
+        let when = cal.date(byAdding: .day, value: -1, to: Date()).map { ISO8601DateFormatter().string(from: $0) } ?? nowISO()
+        lib.saveReview(tripId: id, unused: unused, missed: [Library.Missed(name: "Power bank", templateId: hiking)], when: when)
+        lib.trips[0].extra[VAULT_WAITING_KEY] = nil
+        return lib
+    }
+
     /// The sample library with a photo nothing shows any more, from long ago — what a
     /// trip deleted before 0.59 left behind (`-uiTestingOldPhoto`).
     static func oldPhoto() -> Library {
