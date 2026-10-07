@@ -148,10 +148,17 @@ struct TripScreen: View {
                     .padding(.horizontal, 16).padding(.bottom, 8)
                     .accessibilityIdentifier("trip-rebuilt")
             }
-            // His marks (2026-09-25): "Sorting" on the left, the choice on the same line.
+            // His marks (2026-09-25): "Sorting" on the left, the choice on the same line —
+            // and on the iPhone, Pack by voice at its end (0.71, a test: spec 07 part 10).
+            #if os(iOS)
+            VoiceSortingRow(tripId: tripId) { sorting }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+            #else
             sorting
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
+            #endif
             KeyboardAwayScroll {
                 // The card is deliberately OUTSIDE the lazy stack: a lazy row is
                 // thrown away and rebuilt as it scrolls off, which loses what he

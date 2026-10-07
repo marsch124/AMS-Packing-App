@@ -28,10 +28,14 @@
 	<string>public.app-category.travel</string>
 	<key>NSCameraUsageDescription</key>
 	<string>A photo of a packed bag, kept with the trip, to repack from on the way home.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Pack by voice listens for packed, skip, later, where and stop while you pack. What you say stays on this iPhone.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Pack by voice understands your five words on this iPhone itself, without the internet. Nothing you say leaves it.</string>
 	<key>PackingUsesICloud</key>
 	<string>$(PACKING_USES_ICLOUD)</string>
 	<key>UIBackgroundModes</key>

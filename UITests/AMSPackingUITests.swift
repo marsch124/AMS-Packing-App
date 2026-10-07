@@ -1505,6 +1505,142 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "trip-all-set-aside")
     }
 
+    // MARK: - Pack by voice (0.71, a test version — spec 07 part 10; iPhone only)
+    //
+    // The speech is a fake under the tests (`ScriptedVoice`): `-uiTestingVoice "a,b,c"`
+    // makes it "hear" those words, one after each thing the walk says; `""` hears nothing,
+    // so the panel's buttons drive the walk. The sample trip, walked From where:
+    // Bathroom cabinet — Toothbrush (line 2); Chest of drawers — Passport (0), Phone
+    // charger (1); Garage — Headlamp (3), Map (6); Hall closet — Hiking boots (4), Rain
+    // jacket (5).
+
+    private func openSampleTrip(_ app: XCUIApplication) {
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip did not open")
+    }
+
+    /// The walk goes by what it HEARS: forgiving words ("Packed it", "next", "where is
+    /// it", "pack"; no apostrophe — a launch argument loses it), one it does not know ("hello" — asked again, and counted), and stop.
+    /// The trip's lines are ticked, set aside and left exactly as the words said.
+    func testPackByVoiceWalksTheTripByTheWordsItHears() throws {
+        #if os(macOS)
+        throw XCTSkip("Pack by voice is on the iPhone only")
+        #else
+        let app = launch("-uiTesting", ["-uiTestingVoice", "Packed it,hello,skip,next,where is it,pack,stop"])
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample trip is not as expected: '\(words(progress))'")
+        tap(app, id: "voice-start")
+        XCTAssertTrue(appears(app, "voice-panel", timeout: 5), "Pack by voice did not open its panel")
+        // It runs by itself; when it has heard stop, the panel says what it did.
+        let summary = app.staticTexts["voice-summary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 20), "the walk never ended")
+        shot(app, "voice-heard-over")
+        XCTAssertEqual(words(app.staticTexts["voice-said"]), "Stopped. 2 of 6 packed.")
+        XCTAssertEqual(words(summary), "Packed 2 · set aside 1 · later 1")
+        XCTAssertEqual(words(app.staticTexts["voice-understood"]), "Understood 6 of 7 times",
+                       "the word it did not know was not counted, or a known one was missed")
+        XCTAssertEqual(words(app.staticTexts["voice-later"]), "Left for later: Phone charger")
+        let log = (0..<6).map { words(app.staticTexts["voice-log-\($0)"]) }
+        XCTAssertEqual(log, ["Toothbrush · packed · \u{201C}Packed it\u{201D}", "Passport · skip · \u{201C}skip\u{201D}",
+                             "Phone charger · later · \u{201C}next\u{201D}", "Headlamp · where · \u{201C}where is it\u{201D}",
+                             "Headlamp · packed · \u{201C}pack\u{201D}", "Map · stop · \u{201C}stop\u{201D}"])
+        tap(app, id: "voice-done")
+        XCTAssertTrue(disappears(app, "voice-panel", timeout: 5), "Done did not close the panel")
+        // The trip, as the words left it.
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/6 · 1 set aside" }, "the trip does not show the words: '\(words(progress))'")
+        XCTAssertTrue(isOn(app.buttons["trip-line-2"]), "packed did not tick the Toothbrush")
+        XCTAssertTrue(isOn(app.buttons["trip-line-3"]), "pack did not tick the Headlamp")
+        XCTAssertFalse(isOn(app.buttons["trip-line-1"]), "later ticked the Phone charger")
+        XCTAssertFalse(isOn(app.buttons["trip-line-0"]), "skip left the Passport ticked")
+        XCTAssertEqual(app.buttons["trip-line-0-aside"].label, "Take it this time", "skip did not set the Passport aside")
+        XCTAssertEqual(app.buttons["trip-line-1-aside"].label, "Not this time", "later set the Phone charger aside")
+        #endif
+    }
+
+    /// The panel's five buttons do what the words do: the thing and its place on the big
+    /// card, the place said again by Where, the count at a new place, and Stop. Pictures
+    /// of the panel running and over (run day and night).
+    func testPackByVoiceButtonsDoWhatTheWordsDo() throws {
+        #if os(macOS)
+        throw XCTSkip("Pack by voice is on the iPhone only")
+        #else
+        let app = launch("-uiTesting", ["-uiTestingVoice", ""])
+        openSampleTrip(app)
+        // At the end of the Sorting row: on its line, after the field, as tall, on the screen.
+        let field = app.buttons["trip-view"], voice = app.buttons["voice-start"]
+        XCTAssertTrue(voice.waitForExistence(timeout: 5), "no Pack by voice on the trip")
+        XCTAssertLessThan(field.frame.maxX, voice.frame.minX, "Pack by voice is not at the end of the Sorting row")
+        XCTAssertLessThan(abs(field.frame.midY - voice.frame.midY), 4, "Pack by voice is not on the Sorting line")
+        XCTAssertLessThan(abs(field.frame.height - voice.frame.height), 4, "Pack by voice is not as tall as the field")
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(voice.frame), "Pack by voice runs off the screen")
+        shot(app, "voice-trip-button")
+        tap(app, id: "voice-start")
+        XCTAssertTrue(appears(app, "voice-panel", timeout: 5), "Pack by voice did not open its panel")
+        let place = app.staticTexts["voice-place"], thing = app.staticTexts["voice-current"]
+        let said = app.staticTexts["voice-said"], count = app.staticTexts["voice-progress"]
+        XCTAssertTrue(waitUntil { self.words(thing) == "Toothbrush" }, "it did not start with the Toothbrush: '\(words(thing))'")
+        XCTAssertEqual(words(place), "Bathroom cabinet")
+        XCTAssertEqual(words(said), "7 to pack. Bathroom cabinet. Toothbrush.")
+        XCTAssertEqual(words(count), "0 of 7 packed")
+        for w in ["packed", "skip", "later", "where", "stop"] {
+            XCTAssertTrue(app.buttons["voice-word-\(w)"].exists, "no \(w) button on the panel")
+        }
+        shot(app, "voice-panel")
+        tap(app, id: "voice-word-packed")
+        XCTAssertTrue(waitUntil { self.words(thing) == "Passport" }, "Packed did not move on: '\(words(thing))'")
+        XCTAssertEqual(words(place), "Chest of drawers")
+        XCTAssertEqual(words(count), "1 of 7 packed")
+        XCTAssertEqual(words(said), "Bathroom cabinet done, 1 of 7. Chest of drawers. Passport.")
+        tap(app, id: "voice-word-skip")
+        XCTAssertTrue(waitUntil { self.words(thing) == "Phone charger" }, "Skip did not move on: '\(words(thing))'")
+        XCTAssertEqual(words(said), "Phone charger.", "the same place was said again")
+        tap(app, id: "voice-word-later")
+        XCTAssertTrue(waitUntil { self.words(thing) == "Headlamp" }, "Later did not move on: '\(words(thing))'")
+        XCTAssertEqual(words(said), "Chest of drawers done, 1 of 6. Garage. Headlamp.")
+        tap(app, id: "voice-word-where")
+        XCTAssertTrue(waitUntil { self.words(said) == "Garage. Headlamp." }, "Where did not say the place again: '\(words(said))'")
+        XCTAssertEqual(words(thing), "Headlamp", "Where moved on")
+        tap(app, id: "voice-word-stop")
+        XCTAssertTrue(app.staticTexts["voice-summary"].waitForExistence(timeout: 5), "Stop did not end the walk")
+        XCTAssertFalse(app.buttons["voice-word-packed"].exists, "the words are still offered after Stop")
+        XCTAssertEqual(words(app.staticTexts["voice-said"]), "Stopped. 1 of 6 packed.")
+        XCTAssertEqual(words(app.staticTexts["voice-understood"]), "Nothing heard · 5 tapped")
+        shot(app, "voice-over")
+        tap(app, id: "voice-done")
+        XCTAssertTrue(disappears(app, "voice-panel", timeout: 5), "Done did not close the panel")
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/6 · 1 set aside" }, "the trip does not show the taps: '\(words(progress))'")
+        XCTAssertTrue(isOn(app.buttons["trip-line-2"]), "Packed did not tick the Toothbrush")
+        XCTAssertEqual(app.buttons["trip-line-0-aside"].label, "Take it this time", "Skip did not set the Passport aside")
+        XCTAssertFalse(isOn(app.buttons["trip-line-1"]), "Later ticked the Phone charger")
+        #endif
+    }
+
+    /// Never a grey button (his rule): refused the microphone, and with nothing left to
+    /// pack, Pack by voice says why under the Sorting row — and opens nothing.
+    func testPackByVoiceSaysWhyItCannotStart() throws {
+        #if os(macOS)
+        throw XCTSkip("Pack by voice is on the iPhone only")
+        #else
+        let app = launch("-uiTesting", ["-uiTestingVoiceRefused"])
+        openSampleTrip(app)
+        tap(app, id: "voice-start")
+        let needs = app.staticTexts["voice-start-needs"]
+        XCTAssertTrue(needs.waitForExistence(timeout: 5), "refused the microphone, the button said nothing")
+        XCTAssertTrue(words(needs).contains("microphone"), "it does not say the microphone is not allowed: '\(words(needs))'")
+        XCTAssertNil(find(app, "voice-panel"), "the panel opened without a microphone")
+        shot(app, "voice-refused")
+        tapVisible(app, app.buttons["trip-tickall"])
+        XCTAssertTrue(waitUntil { !app.buttons["trip-tickall"].exists }, "Tick everything did not tick everything")
+        tap(app, id: "voice-start")
+        XCTAssertTrue(waitUntil { self.words(needs) == "Everything on this trip is packed or set aside." },
+                      "with nothing to pack it did not say so: '\(words(needs))'")
+        XCTAssertNil(find(app, "voice-panel"), "the panel opened with nothing to pack")
+        #endif
+    }
+
     /// His rule (2026-09-26), the spec pass (5 Oct 2026): Set place's Save sat grey and
     /// switched off while its field was empty, and the review's Add did nothing at all
     /// with nothing typed. Both are there to press, and say what is missing. And in the

@@ -21,7 +21,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 7. Apple Health fills in the review | 0.70 | designed here |
 | 8. A trip page in his Obsidian vault | 0.70 | designed here |
 | 9. Kits — things that hold things | 0.70 | designed here |
-| 10. Hands-free packing (a test version) | 0.71 | designed here |
+| 10. Hands-free packing (a test version) | 0.71 | built (a test, iPhone only) — specified below from the code |
 | 11. Decision log | — | kept here |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
@@ -192,16 +192,184 @@ driver inside, a knife, a light, a Leatherman, some tape". He said yes to kits o
 
 ## 10. Hands-free packing (a test version)
 
-His yes of 7 Oct 2026, in English (his choice): on a trip, **"Pack by voice"** reads the unticked lines in "From
-where" order — the place, then the thing ("Garage. Goggles.") — and listens for five words: **packed**, **skip**
-(set aside, "not this time"), **later** (moves on, keeps it unticked), **where** (repeats the place), **stop**. Every
-few things it says the progress ("Garage done, 12 of 40"). Speech is recognised on the device (works offline);
-thing names are read as written. A place opened by its code (part 3) can start the walk at its place.
+His yes of 7 Oct 2026, in English (his choice). Built in 0.71 from this design; what follows is the code.
+Files: the walk's decisions in `Core/Sources/PackingLibrary/VoiceWalk.swift` (no speech in it — the model
+tests hold it); speaking and listening in `App/Sources/Voice/` — `VoiceIO.swift` (the protocol and the UI
+tests' fake), `DeviceVoice.swift` (the iPhone's own voice and ears), `VoiceWalker.swift` (runs one walk),
+`VoicePanel.swift` (the button and the panel). All of `App/Sources/Voice` is `#if os(iOS)`: **the Mac has no
+button and none of this code** (the Mac app is built without it).
 
-It is a TEST: kept only if, on a real trip, it understands him at least 9 times in 10 and beats tapping, and he
-wants to use it again. Otherwise it is removed and recorded in the decision log.
+### The button
 
----
+On a trip (`TripScreen`), at the END of the Sorting row — "Sorting", its drop-down, then **Pack by voice**
+(`VoiceSortingRow` wraps the row): an outlined green capsule (green words and a drawn microphone `MicMark`,
+18 pt, on 10 % green, 1.4 pt green stroke), `Metrics.tap` tall (36) like the drop-down's field, the words
+Subheadline semibold; id **`voice-start`**, accessibility label "Pack by voice". On an iPhone too narrow for
+"Sorting", the drop-down showing "From where" and "Pack by voice" on one line, the button says **Voice**
+(`ViewThatFits`: the first of the two rows that fits). The drop-down's field takes what the button leaves.
+
+Never grey (his rule): pressed when the walk cannot start, the reason is said under the row in red
+(Subheadline semibold, id **`voice-start-needs`**), and nothing opens:
+- nothing to pack — every line ticked or set aside: "Everything on this trip is packed or set aside.";
+- speech recognition not allowed: "Packing may not understand speech. Allow it in Settings → Privacy &
+  Security → Speech Recognition.";
+- microphone not allowed: "Packing may not use the microphone. Allow it in Settings → Privacy & Security →
+  Microphone.";
+- no English recognised on this iPhone by itself: "This iPhone cannot yet understand English by itself. Add an
+  English keyboard with Dictation on (Settings → General → Keyboard), then try again.";
+- the recogniser busy: "Speech recognition is not ready just now. Try again in a moment.";
+- the microphone cannot be opened: "The microphone could not be opened just now. Try again in a moment."
+The next press clears the line first. The first press asks for both permissions (the system's own questions,
+with the usage texts below); a later press asks nothing.
+
+**Usage texts** (Info.plist, from project.yml): microphone — "Pack by voice listens for packed, skip, later,
+where and stop while you pack. What you say stays on this iPhone."; speech recognition — "Pack by voice
+understands your five words on this iPhone itself, without the internet. Nothing you say leaves it."
+
+### The walk (`VoiceWalk`)
+
+- **Which lines, in which order:** the trip's lines NOT ticked and NOT set aside, in the trip's **From where**
+  order (`groupByStorage`: places A–Z, "No place set" last; inside a place the trip's own line order) —
+  whatever sorting the trip screen shows. The walk is fixed when it starts; a line ticked or set aside
+  meanwhile (by the other device) is passed over without being asked.
+- **A start place** (`VoiceWalk(trip:startAt:)`, `VoiceSortingRow(startAt:)`): the walk begins at that place
+  and goes round — that place, the places after it, then the ones before. Compared by `Library.choiceKey`
+  ("garage" is the Garage). A place the trip does not have, or one with nothing left, is no start: the walk
+  begins at the first place. For a place opened by its printed code (part 3): the place's link opens the trip
+  on that place, and whoever opens it passes the place on. (0.71 builds the start; the link side is part 3's.)
+- **What it says** (an English voice; names as written; "Name, 4" when a line counts more than one —
+  `effectiveQty` with the trip's laundry-capped nights):
+  - first: "7 to pack. Bathroom cabinet. Toothbrush." — how many, the place, the thing;
+  - the next thing in the same place: just the thing, "Phone charger.";
+  - the first thing of a new place: the count, then the place: "Bathroom cabinet done, 1 of 7. Chest of
+    drawers. Passport." The count is the trip's own — ticked / lines not set aside, as `trip-progress` shows;
+  - after every **5** answers in one place (`VoiceWalk.progressEvery`; packed, skip and later count): the
+    count first, "5 of 7. Thing 6.";
+  - **where**: the place and the thing again, "Garage. Headlamp." (nothing moves on);
+  - **stop**: "Stopped. 2 of 6 packed." — and the walk ends;
+  - the end of the list: "That was everything. 6 of 7 packed." and, when some were left, " 1 left for later.";
+  - something heard that is none of the words: "Sorry?" — and it listens again.
+- **The five words** and what they do to the line being asked about (`VoiceWalk.action`, applied by
+  `Library.apply` — one `model.change`, exactly as a tap does):
+  | Word | The line | Then |
+  |---|---|---|
+  | packed | ticked (`setChecked(true)`) | the next thing |
+  | skip | set aside — "not this time", as ⊘ does (`setAside(true)`, its tick goes too) | the next thing |
+  | later | left as it is, unticked | the next thing; named under "Left for later" at the end |
+  | where | left as it is | the place and the thing are said again |
+  | stop | left as it is | the walk ends |
+- **Forgiving words** — ONE list, `VoiceWord.accepted`, which is also what the recogniser is told to expect
+  (`contextualStrings`):
+  - packed: packed, pack, packs, packed it, pack it, packet, pact, backed, got it, have it, done, yes, yeah,
+    yep, ok, okay, check, tick, ticked, in the bag;
+  - skip: skip, skipped, skips, skipping, skip it, not this time, set aside, aside, leave it, nope, not needed,
+    dont need it, not taking it;
+  - later: later, later on, next, next one, not yet, after, afterwards, pass, come back, move on;
+  - where: where, wheres, where is it, where is that, wear, were, ware, repeat, again, say again, pardon,
+    sorry, what, which place;
+  - stop: stop, stop it, stopped, end, quit, finish, finished, enough, cancel, all done, im done, thats all,
+    thats it, halt.
+  Matching (`VoiceWord.heard`): lower case, an apostrophe left out ("that's" → "thats"), every other mark a
+  space; then the FIRST phrase in what was heard wins ("where did I pack it" is where), and at one place the
+  longest ("all done" is stop, "done" alone packed). Left out on purpose: a bare "no" (often the start of
+  something else — "no wait, packed"), "back", and "wait" (he is looking for it: the walk should wait, not move
+  on). "Next" is **later** (it moves on and leaves the line unticked).
+
+### Speaking and listening (`DeviceVoice`, iPhone)
+
+- **Voice:** `AVSpeechSynthesizer`, the system's English voice for the chosen English (`AVSpeechSynthesisVoice`),
+  default rate.
+- **Ears:** `SFSpeechRecognizer` with **`requiresOnDeviceRecognition`** — it works offline, and nothing he says
+  leaves the iPhone; partial results on, punctuation off, task hint "confirmation" (short answers).
+- **Which English:** his iPhone's own when it is US or British English; otherwise British, then American — the
+  first this iPhone recognises by itself (`supportsOnDeviceRecognition`).
+- **It never listens while it speaks** (so it cannot hear its own "Garage done …"): each line is said, and only
+  when it has been said does listening start. A word is acted on as soon as it is heard (from the partial
+  result); words that are none of the five count as said when he pauses for **1.2 s** (or the recogniser
+  finishes) — then "Sorry?". When the recogniser gives up on silence it listens again without a word; after
+  more than 5 such rounds in a row it stops: "Listening stopped working. Start again in a moment."
+- **Sound:** the audio session is play-and-record: the loudspeaker when nothing is plugged in, **AirPods**'
+  microphone allowed in (Bluetooth hands-free), other sound (music) quieter while it runs. AirPods put in or
+  taken out: the microphone is started again on the new route.
+- **Ended without his word:** a call, Siri or another app taking the sound — "Stopped by a call or another
+  app."; the microphone lost — "The microphone could not be opened just now. Try again in a moment."; Packing
+  put away (the iPhone stops listening in the background) — "Stopped when Packing was put away." Said on the
+  panel in red (id `voice-cut`). **The screen stays on** while a walk runs (`isIdleTimerDisabled`), so it is not
+  locked by itself mid-walk.
+
+### The panel (`VoicePanel`, a sheet over the trip, id `voice-panel`)
+
+While it runs (a swipe down does not close it — Stop does):
+- Header: "Pack by voice" (Title 3 bold, green) and a small outlined "A test" (Caption semibold, muted).
+- A line: a dot (green while listening, `Theme.line` while speaking) and "Listening" / "Speaking" (Subheadline
+  semibold muted, id `voice-listening`); at the right the trip's count "1 of 7 packed" (id `voice-progress`).
+- The big card (card fill, 1.2 pt green border, radius 14, padding 16): the place (Title 3 semibold green, id
+  `voice-place`) and the thing as said (Large Title bold ink, up to 3 lines, shrinking to 60 %; id
+  `voice-current`).
+- **Said** — the last line it spoke (Callout, id `voice-said`) — and **Heard** — what it heard, in quotes (id
+  `voice-heard`): a word it misheard can be seen.
+- At the bottom, outside the scroll, always there: the five words as buttons, 50 pt tall (Apple's large button
+  — to be hit while carrying things), Title 3 semibold, radius 12: **Packed** (filled green) and **Skip**;
+  **Later** and **Where** (outlined green); **Stop** (outlined red) on a line of its own. Ids
+  `voice-word-packed`, `-skip`, `-later`, `-where`, `-stop`. A tap does what the word does (and counts as tapped,
+  not heard).
+
+When it is over (Stop, the end of the list, or cut short): the word buttons go; **Done** (filled green, header,
+id `voice-done`) closes the panel (and so does a swipe down). The card says the last words it spoke (Title 3,
+id `voice-said`), what it did — "Packed 2 · set aside 1 · later 1" (id `voice-summary`), **his measure** —
+"Understood 6 of 7 times" (heard words understood / everything heard that was taken as an answer or a miss;
+"· 2 tapped" when buttons were used; "Nothing heard" when none; id `voice-understood`), and the time — "Took 2
+min 10 s · 3.1 things a minute" (packed + skip + later per minute; id `voice-time`); then "Left for later: …"
+(id `voice-later`, only when some were) and, under the card, every answer in order, one line each:
+"Toothbrush · packed · “packed it”", "Passport · skip · tapped" (ids `voice-log-0…`). Nothing of a walk is
+stored: it lives as long as its panel.
+
+### How he evaluates it (the test)
+
+It is kept only if, on a real trip: it understands him **at least 9 times in 10** (the panel's "Understood N
+of M times", and the log shows each miss), it is **faster than tapping** (the panel's time and things a
+minute, against packing the same kind of list by hand), and **he wants to use it again**. Otherwise it is
+removed and the decision log says so. Until then it is labelled a test on the panel, in How it works and in
+What's new.
+
+### Tests
+
+- Model (`Core/Tests/PackingLibraryTests/VoiceWalkTests.swift`, 13, invented things):
+  `testEachOfTheFiveWordsIsUnderstoodAsItIsWritten`, `testWhatIsHeardIsMatchedForgivingly` (31 sayings),
+  `testOtherWordsAreNotUnderstood` (incl. "no", "wait", "back"), `testTheFirstWordWinsAndTheLongestPhrase`,
+  `testTheListIsOneListAndEveryPhraseCanBeHeard` (no phrase in two lists, each written as heard, each
+  understood), `testTheWalkGoesFromWhereAndLeavesOutWhatIsDone`, `testAWalkCanStartAtAPlace`,
+  `testAThingOfSeveralSaysHowMany`, `testTheWalkSaysThePlaceThenTheThingAndTheCountAtEachNewPlace`,
+  `testEveryFiveThingsInOnePlaceItSaysTheCount`, `testTheEndOfTheListSaysSo`, `testALineTickedMeanwhileIsPassedOver`,
+  `testItCountsWhatItUnderstoodAndWhatWasTapped`.
+- UI (iPhone only — each skips on the Mac, which has no button): the speech is a fake (`ScriptedVoice`), chosen
+  under ANY `-uiTesting…` launch, so no test opens a microphone. `-uiTestingVoice "a,b,c"` makes it hear those
+  words, one after each thing said (a beat each); `-uiTestingVoice ""` hears nothing (the buttons drive);
+  `-uiTestingVoiceRefused` refuses the microphone.
+  - `testPackByVoiceWalksTheTripByTheWordsItHears` — heard "Packed it, hello, skip, next, where is it, pack,
+    stop": the panel ends "Stopped. 2 of 6 packed.", "Packed 2 · set aside 1 · later 1", "Understood 6 of 7
+    times", "Left for later: Phone charger", the six log lines; Done; the trip "2/6 · 1 set aside", the
+    Toothbrush and the Headlamp ticked, the Passport set aside, the Phone charger neither.
+  - `testPackByVoiceButtonsDoWhatTheWordsDo` — `voice-start` after the Sorting field on its line, as tall (±4),
+    on the screen; the Toothbrush in the Bathroom cabinet first, "7 to pack.
+    Bathroom cabinet. Toothbrush.", "0 of 7 packed", five word buttons; Packed → the Passport, "Bathroom cabinet
+    done, 1 of 7. Chest of drawers. Passport."; Skip → "Phone charger."; Later → "Chest of drawers done, 1 of 6.
+    Garage. Headlamp."; Where → "Garage. Headlamp." and no move; Stop → over, no word buttons, "Stopped. 1 of 6
+    packed.", "Nothing heard · 5 tapped"; Done; the trip "1/6 · 1 set aside". Pictures `voice-trip-button`,
+    `voice-panel`, `voice-over`.
+  - `testPackByVoiceSaysWhyItCannotStart` — refused: `voice-start-needs` names the microphone and no panel
+    opens; after Tick everything: "Everything on this trip is packed or set aside." and no panel.
+- Not covered by any test (judged on his iPhone): the real voice and recognition, AirPods, a call cutting in,
+  Packing put away, a narrow iPhone's "Voice".
+
+### Open questions (part 10)
+
+- At the end of the list the walk stops; the lines left for later are named, not asked again. A second round
+  over them is a small change if he wants it.
+- "Next" was made **later** (moves on, unticked); "done" and "yes" are **packed**. If he uses a word the list
+  does not have, the log shows it — add it to `VoiceWord.accepted` (one place).
+- The start place is accepted (part 3's link passes it); whether a place opened by its code should START the
+  walk by itself, or only start it there when he presses the button, is his call — 0.71 does the latter.
 
 ## 11. Decision log
 

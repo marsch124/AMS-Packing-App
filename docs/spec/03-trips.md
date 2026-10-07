@@ -14,7 +14,8 @@ trip is made. This file covers the whole life of a trip:
   time", sorting When / Into / From where / Category / Section (Section and the Sorting drop-down since
   0.64), folding, Set place, adding a thing,
   Tick everything / Clear every tick, Check before you go, the weather card, the Bags card (luggage
-  scale, cabin, photos), Trip settings, Start a new trip from this one, Save as Excel, Share, Delete.
+  scale, cabin, photos), Trip settings, Start a new trip from this one, Save as Excel, Share, Delete —
+  and, on the iPhone, Pack by voice (0.71, a test; spec 07 part 10).
 - **On site** — the On site page (bought, left, maintenance notes) and Pack to go home.
 - **Review** and **Refine** — the trip review and the Refine screen that learns from several reviews.
 - The **loop** strip and picture (Plan › Pack › On site › Review › Refine).
@@ -815,6 +816,11 @@ everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the cho
   `ams.view`) and closes the list; the ticked row closes it unchanged.
 - Until 0.64: four capsule pills on the line (`ViewThatFits`: full size; slimmer; or "Sorting" above them), the
   chosen one white on green with the selected trait.
+- **Pack by voice** (0.71, iPhone only — a test; spec 07 part 10): at the END of the row, 8 to the right of the
+  field, an outlined green capsule with a drawn microphone, `Metrics.tap` tall, id `voice-start` — "Voice" on an
+  iPhone too narrow for both (`VoiceSortingRow`, `ViewThatFits`); the field takes what the button leaves. Pressed
+  when it cannot start, the reason is said under the row in red (`voice-start-needs`). The Mac's row is the
+  drop-down alone, as before. See "Pack by voice" below.
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
 1. **Check before you go** card (only when something needs him) — own section below.
@@ -1006,6 +1012,25 @@ the field takes what the word leaves). The Sorting list is a popover on both.
   scroll line by line (`scrollUntil`).
 - 🪤 The fold arrow is its own button so the heading's words stay a text of their own (Mac folding).
 - 🪤 Never trap on a repeated line id (E.6): the screen's index keeps the first.
+
+---
+
+## Pack by voice (iPhone, a test — `App/Sources/Voice/`, `PackingLibrary/VoiceWalk.swift`)
+
+His yes of 7 Oct 2026, in English; built in 0.71 as a TEST, kept only if on a real trip it understands him at
+least 9 times in 10 and beats tapping. **Specified in full in spec 07 part 10**; in short:
+- `voice-start` at the end of the Sorting row (above) opens a panel (`voice-panel`) that walks the lines still
+  to pack (not ticked, not set aside) in **From where** order — whatever the screen is sorted by — saying the
+  place, then the thing ("Garage. Goggles."), and listening ON the iPhone for **packed** (ticks the line, as a
+  tap: `setChecked`), **skip** (sets it aside, as ⊘: `setAside`), **later** (leaves it), **where** (says the
+  place again) and **stop**. At each new place and after every 5 answers it says the trip's own count ("Garage
+  done, 12 of 40"). The five words are also buttons on the panel (`voice-word-<word>`); a tap does the same.
+- What it changes on the trip is only those ticks and set-asides, each one `model.change` like a tap — so they
+  sync, and the trip screen shows them when the panel closes. Nothing of the walk itself is stored.
+- Not on the Mac (no button; the code is iPhone-only).
+
+Tests: UI `testPackByVoiceWalksTheTripByTheWordsItHears`, `testPackByVoiceButtonsDoWhatTheWordsDo`,
+`testPackByVoiceSaysWhyItCannotStart` (iPhone; skipped on the Mac); model `VoiceWalkTests` (13).
 
 ---
 
@@ -1971,16 +1996,20 @@ testATripSomeoneSentKeepsItsListOnSave, testASetAsideLineIsNotPacked,
 testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen, testTheDateGridClosesOnlyOnAWholeRangeAndStaysStill,
 testABagWithNothingWeighedIsOnTheTrip, testWeatherGearCanBePackedAnyway, testATemplateWithNoActivityAreaGoesOnATrip,
 testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only) — and 0.67:
-testFullTripOrQuickIsChosenUnderTheName, testDatesAreAlwaysThereAndCanBeCleared, testEachWorkoutHasItsOwnContext.
+testFullTripOrQuickIsChosenUnderTheName, testDatesAreAlwaysThereAndCanBeCleared, testEachWorkoutHasItsOwnContext
+— and 0.71 (iPhone only): testPackByVoiceWalksTheTripByTheWordsItHears, testPackByVoiceButtonsDoWhatTheWordsDo,
+testPackByVoiceSaysWhyItCannotStart.
 UI launch modes used: `-uiTesting` (sample), `-uiTestingChecks` (a plane trip "Sunny weeks" 20–34 days
 out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passport day 180),
 `-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-uiTestingSections` (Hiking in
 two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings),
 `-uiTestingWorkouts` (0.67: the sample plus a WET template Run — Trail shoes Outdoor, Treadmill towel Indoor,
-Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-openNextTrip`. Under the
+Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-openNextTrip`, and with `-uiTesting`
+0.71's `-uiTestingVoice "<words, by commas>"` / `-uiTestingVoiceRefused` (Pack by voice's fake speech; under any
+`-uiTesting…` launch the fake is used, so no test opens a microphone). Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
 
-**Model (PackingLibraryTests):** WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
+**Model (PackingLibraryTests):** VoiceWalkTests (0.71), WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
 LoopTests, OnSiteTests, OnTheTripTests, RefineTests, TripAgainTests, TripBulkTests, TripCardsTests,
 TripChecksTests, TripEditsTests, SetPlaceTests, ChangeTripTests, TripWeatherTests, WayHomeTests,
 WeighingTests, TravelYearTests, PhotoTidyTests, CountdownTests, ThingFollowsTests, RowTagsTests,
