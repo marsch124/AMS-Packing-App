@@ -162,6 +162,8 @@ public enum Importer {
             if isFactoryList(kind, json: list) { continue }
             lib.shared.append(contentsOf: sharedRowsFrom(kind, json: list))
         }
+        // Which owner is him (0.70).
+        if let me = prefs?[Library.meKey]?.stringValue, !me.isEmpty { lib.meta[Library.meKey] = .string(me) }
         if let grab = prefs?["grab"]?.objectValue {
             let items = grab["items"]?.objectValue ?? [:]
             let looks = grab["meta"]?.objectValue ?? [:]

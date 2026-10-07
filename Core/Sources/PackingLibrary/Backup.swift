@@ -45,6 +45,8 @@ extension Library {
         if !people.isEmpty { prefs["people"] = .array(people.map { $0.json }) }
         let owners = namesFromRows(shared, "owners")
         if !owners.isEmpty { prefs["owners"] = JSONValue(owners) }
+        // Which owner is him (0.70) — ours, the web app has none.
+        if let me = meta[Library.meKey]?.stringValue, !me.isEmpty { prefs[Library.meKey] = .string(me) }
         let places = orderedNamesFromRows(shared, "places")
         if !places.isEmpty { prefs["storageLocations"] = JSONValue(places) }
         let presets = presetsFromRows(shared)

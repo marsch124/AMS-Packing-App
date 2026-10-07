@@ -224,11 +224,12 @@ extension Library {
 // MARK: - Whose things the workouts speak for
 
 extension Library {
-    /// Who he is, as "Whose it is" names him: the name on the most of his things (ties: the
-    /// first A–Z). "" when no thing names anyone — then every thing counts as his. There is
-    /// no "this is me" in the app; on his library one name is on most things and another
-    /// on a few (chapter 07, open questions).
+    /// Who he is, as "Whose it is" names him: the owner he marked "This is me" (Your choices
+    /// → Owners, `me()`); while nobody is marked, a guess — the name on the most of his
+    /// things (ties: the first A–Z). "" when no thing names anyone — then every thing counts
+    /// as his.
     public func mainOwner() -> String {
+        if let me = me() { return me }
         var count: [String: Int] = [:], spelling: [String: String] = [:]
         for i in items {
             let key = normName(i.ownedBy)

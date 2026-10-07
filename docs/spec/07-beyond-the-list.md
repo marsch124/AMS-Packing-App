@@ -187,9 +187,12 @@ context). Then:
 - **A workout without its gear** (a run on the treadmill of a hotel): it still marks the Run template's things as
   used where their context allows — the app cannot know; he corrects the few lines by hand.
 - **Things for someone else** (Whose it is ≠ him): left unchanged — his workouts say nothing about hers. "Him" is
-  the name on the MOST of his things (`mainOwner`; a tie → the first A–Z; names compared as names); "Both have
-  one" (no name) counts as his; with nobody named anywhere every thing is his. **(differs:** the app has no "this
-  is me" — see *Open questions*.)
+  the owner he marked **"This is me"** in Your choices → Owners (his answer of 7 Oct 2026 to "whose things?": "My
+  things."; `me()`, stored in `meta["me"]`, synced and in a backup's `prefs.me`, one at most, a small "Me" tag on
+  the row — spec 06 §2). "Both have one" (no name) counts as his. While nobody is marked, `mainOwner` GUESSES: the
+  name on the most of his things (a tie → the first A–Z; names compared as names; nobody named anywhere → every
+  thing is his) — and the card says, under Use these, "Who are you? Mark yourself in Your choices → Owners."
+  (Subheadline muted, `review-health-who`).
 - **Things on two templates** (a towel on Swim and on the common base): the common base wins — unchanged. On a
   Quick trip the base is not packed, so Swim alone brought the towel and it is marked.
 - **Workouts logged later** (a watch synced after the review opened): "Use these" reads again each time it is
@@ -238,7 +241,7 @@ An app that reads Apple Health carries the HealthKit entitlement — on the iPho
 
 ### Tests
 
-- Model — `AppleHealthReviewTests` (PackingLibrary, 19, invented workouts only):
+- Model — `AppleHealthReviewTests` (PackingLibrary, 20, invented workouts only):
   `testEveryAppleHealthWorkoutTypeMeetsItsKind` (every row of the table; a walk, tennis, rowing, "other" and a lone
   change-over ignored; Apple's numbers pinned), `testEachWorkoutGetsItsContextFromAppleHealth` (every context
   rule), `testATriathlonCountsAsItsSwimRideAndRun`, `testATemplateMeetsAWorkoutByItsName` (names, whole-name rule,
@@ -250,13 +253,15 @@ An app that reads Apple Health carries the HealthKit entitlement — on the iPho
   `testThingsForSomeoneElseAndBothHaveOneAndThingsOnTwoTemplates`, `testWhoHeIsIsTheNameOnMostOfHisThings`,
   `testLinesWithoutATemplateAndLinesThatNeverWentAreLeftAlone`, `testARowTakenOffItsTemplateSinceStillCountsForItsTemplate`,
   `testAWatchThatSyncsLaterIsReadAgain`, `testUseTheseKeepsHisOwnAnswersAndSavesNothing`,
-  `testTheSavedReviewTeachesTheThingsWhatAppleHealthMarked`.
+  `testTheSavedReviewTeachesTheThingsWhatAppleHealthMarked`, `testThisIsMeDecidesWhoseThingsAppleHealthMarks`.
 - UI (`-uiTestingHealth`, `SampleLibrary.health()`: the trip "Training camp", six to two days ago, Swim + Run + Bike
   + the base, 13 lines): `testAppleHealthFillsInTheReview` (the three rows and no fourth; his own mark kept; after
   Use these exactly lines 5 Goggles (his), 7 Wetsuit, 9 Treadmill towel, 12 Bike helmet "didn't use"; Cancel keeps
   nothing; Use these + Save → Reviewed; the Mac: no block), `testATemplateCountsAsWhatHeLinksItTo` (the base has
   no "Counts as"; Bike → Nothing, kept; then no "No bike" and the helmet unmarked),
-  `testAppleHealthSaysWhenItIsNotAllowedOrHasNothing` (iPhone only). Each seen red with a planted fault (7 Oct
+  `testAppleHealthSaysWhenItIsNotAllowedOrHasNothing` (iPhone only), `testThisIsMeDecidesWhoseThingsAppleHealthMarks`
+  (asks who he is; Robin marked in Owners → tag, no question, Robin's cap marked too; red with `mainOwner` planted
+  to ignore the mark — the model test too). Each seen red with a planted fault (7 Oct
   2026): his taps not remembered as answers → "line 5 should be didn't use"; the "No …" rows read by the name,
   not the link → "still “No bike”, though Bike counts as Nothing" (the model's
   `testALinkedTemplateIsMarkedAndANothingTemplateIsLeftAlone` went red on the same fault); a refusal read as "no
@@ -355,8 +360,8 @@ wants to use it again. Otherwise it is removed and recorded in the decision log.
 ## Open questions
 
 - Part 7 (Apple Health), where the code differs from the design or decides what it left open: (1) who "him" is —
-  the name on most of his things, as there is no "this is me" in the app; a choice of his own in Your choices →
-  Owners would settle it for a shared library; (2) a refusal cannot be read from Apple Health, so "not allowed"
+  SETTLED the same day: "This is me" in Your choices → Owners; only while nobody is marked, the name on most of his
+  things, and the card asks; (2) a refusal cannot be read from Apple Health, so "not allowed"
   is shown when no workout of any day is readable; (3) the settings path is the iPhone's real one, "Settings →
   Privacy & Security → Health → AMS Packing"; (4) a triathlon counts as its swim, ride and run; (5) a swim
   without a location counts for either context; (6) a line for Outdoor-or-Race with only workouts of the other

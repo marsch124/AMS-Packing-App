@@ -59,6 +59,14 @@ struct ReviewHealth: View {
                     }
                     useButton(days)
                         .padding(.top, 6)
+                    // Nobody marked "This is me": the marks rest on a guess — say how to settle it.
+                    if model.library.me() == nil {
+                        Text("Who are you? Mark yourself in Your choices \u{2192} Owners.")
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+                            .accessibilityIdentifier("review-health-who")
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -155,6 +163,47 @@ struct CountsAsField: View {
                  selected: Library.workoutKind(of: list)?.rawValue ?? Library.countsAsNothing,
                  id: "template-counts-as", tint: AppSection.templates.color) { value in
             model.change { _ = $0.setCountsAs(templateId: list.id, to: value) }
+        }
+    }
+}
+
+/// "Me" — the small tag on his own row in Your choices → Owners (0.70).
+struct MeTag: View {
+    var body: some View {
+        Text("Me").font(.system(.caption, weight: .semibold)).foregroundStyle(Color.white)
+            .padding(.horizontal, 8).frame(minHeight: 20)
+            .background(Capsule().fill(AppSection.settings.color))
+    }
+}
+
+/// "This is me" in an owner's editor (Your choices → Owners, 0.70): marks this owner as him
+/// — one at most, so marking another moves it; pressed on the one already marked, it takes
+/// the mark off. Apple Health's review then treats this owner's things (and "Both have one")
+/// as his. Ids: `list-owners-me` (`.isSelected` while this owner is him).
+struct ThisIsMeButton: View {
+    let owner: String
+    @EnvironmentObject var model: LibraryModel
+
+    var body: some View {
+        let on = model.library.me().map { normName($0) == normName(owner) } ?? false
+        HStack(spacing: 10) {
+            Button {
+                model.change { _ = $0.setMe(on ? nil : owner) }
+            } label: {
+                Text("This is me").font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(on ? Color.white : AppSection.settings.color)
+                    .lineLimit(1).fixedSize()
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                    .background(Capsule().fill(on ? AppSection.settings.color : AppSection.settings.color.opacity(0.10)))
+                    .overlay(Capsule().stroke(AppSection.settings.color, lineWidth: on ? 0 : 1.4))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("list-owners-me")
+            .accessibilityAddTraits(on ? .isSelected : [])
+            Text(on ? "Apple Health marks your things in a trip\u{2019}s review." : "Whose things Apple Health marks in a trip\u{2019}s review.")
+                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

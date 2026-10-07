@@ -4361,6 +4361,49 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    /// "This is me" (0.70, his answer "My things."): while nobody is marked the review's
+    /// Apple Health card asks "Who are you?"; marked in Your choices → Owners (the pen, then
+    /// This is me) the owner's row carries a "Me" tag, the question goes, and Apple Health
+    /// marks that owner's things — here Robin's Running cap too: "Marked 3 didn't use, 4 used."
+    /// instead of "…, 3 used." (Owners: 0 Kim, 1 Robin.)
+    func testThisIsMeDecidesWhoseThingsAppleHealthMarks() {
+        let app = launch("-uiTestingHealth")
+        #if os(iOS)
+        openHealthReview(app)
+        XCTAssertTrue(waitUntil(timeout: 10) { app.staticTexts["review-health-who"].exists }, "nobody is marked, and the card does not ask")
+        tap(app, id: "review-health-use")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["review-health-said"]) == "Marked 3 didn\u{2019}t use, 3 used." },
+                      "before: '\(words(app.staticTexts["review-health-said"]))'")
+        tap(app, id: "review-cancel")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        #endif
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-owners-name-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["list-owners-me-0"].exists || app.staticTexts["list-owners-me-1"].exists, "a Me tag before any mark")
+        tap(app, id: "list-owners-edit-1")
+        tap(app, id: "list-owners-me")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["list-owners-me"]) }, "This is me did not take")
+        XCTAssertTrue(waitUntil { app.staticTexts["list-owners-me-1"].exists }, "Robin's row has no Me tag")
+        XCTAssertFalse(app.staticTexts["list-owners-me-0"].exists, "two owners marked as him")
+        shot(app, "choices-owners-me")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        #if os(iOS)
+        openHealthReview(app)
+        XCTAssertTrue(appears(app, "review-health", timeout: 10))
+        tap(app, id: "review-health-use")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["review-health-said"]) == "Marked 3 didn\u{2019}t use, 4 used." },
+                      "Robin's cap is not his: '\(words(app.staticTexts["review-health-said"]))'")
+        XCTAssertFalse(app.staticTexts["review-health-who"].exists, "still asks who he is")
+        shot(app, "review-health-me")
+        #endif
+    }
+
     /// Refused, Apple Health says so and how to allow it; with no workouts on the trip's
     /// days it says that. Neither offers "Use these". (iPhone only: the Mac has no block.)
     func testAppleHealthSaysWhenItIsNotAllowedOrHasNothing() throws {

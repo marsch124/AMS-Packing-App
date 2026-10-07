@@ -79,6 +79,10 @@ struct ListsScreen: View {
                             HStack {
                                 Text(entry.label).font(.system(.body)).foregroundStyle(Theme.ink)
                                     .accessibilityIdentifier("list-\(kind.rawValue)-name-\(n)")
+                                // "This is me" (0.70): a small tag on his own row.
+                                if kind == .owners, let me = model.library.me(), normName(me) == normName(entry.key) {
+                                    MeTag().accessibilityIdentifier("list-owners-me-\(n)")
+                                }
                                 // The THINGS that use it — for a "When" step its trips and
                                 // templates are said when Remove is refused (the spec pass).
                                 if entry.uses.things > 0 {
@@ -182,6 +186,7 @@ struct ListsScreen: View {
                 Text("Owners are always in A\u{2013}Z order.")
                     .font(.system(.subheadline)).foregroundStyle(Theme.muted)
             }
+            if kind == .owners { ThisIsMeButton(owner: entry.key).environmentObject(model) }
         }
         .needsLine($editSays, typed: renaming, id: "list-\(kind.rawValue)-edit-needs")
         .padding(12)

@@ -1716,6 +1716,8 @@ Mac minimum 520 × 600.
     answer stays." / "your own K answers stay." when it skipped lines he answered) — Subheadline muted,
     `review-health-said`; or, when there was nothing to mark, Subheadline semibold red (`review-health-use-needs`):
     "None of this trip's lines come from a workout template." / "You have answered every line Apple Health could."
+    While nobody is marked "This is me" (Your choices → Owners), under that: "Who are you? Mark yourself in Your
+    choices → Owners." (Subheadline muted, `review-health-who`).
 - "Anything you wished you'd had?" (20 heavy). Field "e.g. Power bank" (`review-miss-input`, Return
   adds). When the trip has templates: question pills "Put it on which template, for next time?" (heading
   id `review-miss-where-title`) — one per template the trip's lines came from (`tripTemplates`: in the
@@ -1783,7 +1785,7 @@ Apple Health (0.70): UI `testAppleHealthFillsInTheReview` (`-uiTestingHealth`: r
 9, 12 marked; Cancel keeps nothing; Use these + Save → Reviewed; the Mac: no `review-health`),
 `testATemplateCountsAsWhatHeLinksItTo`, `testAppleHealthSaysWhenItIsNotAllowedOrHasNothing` (`-healthRefused` →
 `review-health-refused`, `-healthNone` → `review-health-none`, neither with `review-health-use`). Model
-`AppleHealthReviewTests` (19, chapter 07).
+`AppleHealthReviewTests` (20, chapter 07).
 **Not covered:** removing a missed thing, the no-ticks-at-all case in the UI; the real Apple Health (only on his
 iPhone — the tests feed invented workouts); "Reading Apple Health…" (the invented source answers at once).
 

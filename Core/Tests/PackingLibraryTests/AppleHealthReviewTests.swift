@@ -356,6 +356,44 @@ final class AppleHealthReviewTests: XCTestCase {
         XCTAssertEqual(c.lib.mainOwner(), "Kim", "a tie: the first A–Z")
     }
 
+    func testThisIsMeDecidesWhoseThingsAppleHealthMarks() {
+        var c = camp()
+        let week = [swim("2026-08-11")]
+        XCTAssertNil(c.lib.me(), "nobody marked yet")
+        XCTAssertEqual(c.lib.mainOwner(), "Kim", "the guess while nobody is marked")
+        XCTAssertNil(marks(c, week)["Running cap"], "Robin's, by the guess")
+
+        // He says he is Robin: Robin's things and "Both have one" are his now, Kim's are not.
+        XCTAssertTrue(c.lib.setMe("robin"))
+        XCTAssertEqual(c.lib.me(), "Robin", "spelled as Owners shows it")
+        XCTAssertEqual(c.lib.mainOwner(), "Robin", "the mark wins over the guess")
+        let cap = c.lib.items.firstIndex { $0.name == "Swim cap" }!
+        c.lib.items[cap].ownedBy = ""
+        var m = marks(c, week)
+        XCTAssertEqual(m["Running cap"], "didn't use", "his cap now — and no run")
+        XCTAssertNil(m["Goggles"], "Kim's goggles say nothing now")
+        XCTAssertEqual(m["Swim cap"], "used", "Both have one counts as his")
+
+        // One at most: marking another moves the mark; a name that is no owner is refused.
+        XCTAssertTrue(c.lib.setMe("Kim"))
+        XCTAssertEqual(c.lib.me(), "Kim")
+        XCTAssertFalse(c.lib.setMe("Nobody"))
+        XCTAssertEqual(c.lib.me(), "Kim", "a refused name moved the mark")
+
+        // Renamed in Your choices, the mark follows; iCloud's records and a backup keep it.
+        XCTAssertNil(c.lib.renameChoice("owners", key: "Kim", to: "Kim Berg"))
+        XCTAssertEqual(c.lib.me(), "Kim Berg", "a rename lost the mark")
+        XCTAssertEqual(Library(records: c.lib.records()).me(), "Kim Berg", "the stored records lost the mark")
+        let (back, report) = Importer.library(from: c.lib.backupFile(exportedAt: "2026-10-07T08:00:00.000Z"))
+        XCTAssertTrue(report.isFaithful, report.mismatches.prefix(3).joined(separator: "; "))
+        XCTAssertEqual(back.me(), "Kim Berg", "a backup lost the mark")
+
+        // Unmarked: back to the guess.
+        XCTAssertTrue(c.lib.setMe(nil))
+        XCTAssertNil(c.lib.me())
+        XCTAssertEqual(c.lib.mainOwner(), "Kim Berg")
+    }
+
     func testLinesWithoutATemplateAndLinesThatNeverWentAreLeftAlone() {
         var c = camp()
         let n = c.lib.trips.firstIndex { $0.id == c.trip }!

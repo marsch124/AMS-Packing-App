@@ -206,6 +206,8 @@ extension Library {
                 list[n] = name
                 setNames(kind, list)
                 for i in items.indices { kind == "places" ? carry(&items[i].storage) : carry(&items[i].ownedBy) }
+                // "This is me" follows the owner's new name (0.70).
+                if kind == "owners", let me = meta[Library.meKey]?.stringValue, normName(me) == old { meta[Library.meKey] = .string(name) }
                 for t in trips.indices {
                     for e in trips[t].entries.indices {
                         kind == "places" ? carry(&trips[t].entries[e].storage) : carry(&trips[t].entries[e].ownedBy)
