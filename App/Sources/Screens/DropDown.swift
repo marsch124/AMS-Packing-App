@@ -526,7 +526,9 @@ struct DropDown: View {
                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
                 .onSubmit { add(new) }
+                #if os(macOS)
                 .focused($footTyping)
+                #endif
                 .accessibilityIdentifier("\(ids.row)-new")
             Button { add(new) } label: { FieldButtonLabel(title: new.button, tint: tint) }
                 .buttonStyle(.plain).focusEffectDisabled()
