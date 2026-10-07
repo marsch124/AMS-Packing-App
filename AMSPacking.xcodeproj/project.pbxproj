@@ -14,6 +14,7 @@
 		0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 258F81799F958E5C5EF112C5 /* ListsScreen.swift */; };
 		0C6CADF139B1A87388BE3DD4 /* BagsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB48F2667254D2AD3862586 /* BagsScreen.swift */; };
 		0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35352F3BD8D2A7EE166961C9 /* Today.swift */; };
+		18BBB6F1544022B6A9540909 /* Pockets.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6A7521CAF9F486A9847AB2 /* Pockets.swift */; };
 		1A611EFAD56B0A1A1AF93E20 /* BagCabin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95CE795CC801DFFE3FD39642 /* BagCabin.swift */; };
 		1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9B041225333263C7547689 /* ThingsScreen.swift */; };
 		21419C900E931B9CBE73B314 /* BuyList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D25C9AA00E03651D86114 /* BuyList.swift */; };
@@ -21,6 +22,7 @@
 		2FAA29D4DFFCB38CA02C2EDB /* Buttons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2523F591EFB11AFB55FEFF2D /* Buttons.swift */; };
 		3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200B88877006E1F006B96632 /* DateRangePicker.swift */; };
 		38D87FC50351C1AC76DA3DE1 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */; };
+		39B68C038BC2CAA6DB6207D6 /* WhereIsIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A8F1D2ED5D5358B98D4BE9 /* WhereIsIntent.swift */; };
 		39B87583182066477449515D /* GuideScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */; };
 		3B34615E704B984738565FC3 /* Share.swift in Sources */ = {isa = PBXBuildFile; fileRef = C79C38939D0655EEE452D769 /* Share.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
@@ -41,6 +43,7 @@
 		8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34879BF77676913C07B69267 /* RestoreSheet.swift */; };
 		8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CEDA06EFED05D4A1612077 /* EventsScreen.swift */; };
 		9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8E667C951BD91655405B94 /* Countdown.swift */; };
+		A01FA7467EDE858441462FED /* DoorChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39A697D32B44D323BED24711 /* DoorChecks.swift */; };
 		A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5844FD1A40A106FF0878B093 /* TableColumns.swift */; };
 		A2EF7B9D15A856E17FB773D8 /* TemplateIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE240BD38035471259419B81 /* TemplateIcons.swift */; };
 		A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33289BF160D459176D7669 /* SmallDelete.swift */; };
@@ -111,6 +114,7 @@
 		34879BF77676913C07B69267 /* RestoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestoreSheet.swift; sourceTree = "<group>"; };
 		35352F3BD8D2A7EE166961C9 /* Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Today.swift; sourceTree = "<group>"; };
 		38F244475495E5E17D2F7126 /* WayHomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WayHomeScreen.swift; sourceTree = "<group>"; };
+		39A697D32B44D323BED24711 /* DoorChecks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoorChecks.swift; sourceTree = "<group>"; };
 		3A74DCE749078F203A8E87BF /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
 		403A4735005582B356D67F55 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
@@ -132,6 +136,7 @@
 		77CEDA06EFED05D4A1612077 /* EventsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsScreen.swift; sourceTree = "<group>"; };
 		7B024F8A00820DD9D55E10D0 /* TickAll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickAll.swift; sourceTree = "<group>"; };
 		7B24F2617CC7D137784F66F2 /* ThingsTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsTable.swift; sourceTree = "<group>"; };
+		84A8F1D2ED5D5358B98D4BE9 /* WhereIsIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereIsIntent.swift; sourceTree = "<group>"; };
 		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
@@ -158,6 +163,7 @@
 		DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareCalendarView.swift; sourceTree = "<group>"; };
 		DBCE6F6679B4724E0039268E /* SyncCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCard.swift; sourceTree = "<group>"; };
 		DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagPhoto.swift; sourceTree = "<group>"; };
+		DF6A7521CAF9F486A9847AB2 /* Pockets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pockets.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		ED9B041225333263C7547689 /* ThingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsScreen.swift; sourceTree = "<group>"; };
@@ -219,6 +225,7 @@
 			isa = PBXGroup;
 			children = (
 				A841D9340C8D1312A6814431 /* CloudStore.swift */,
+				39A697D32B44D323BED24711 /* DoorChecks.swift */,
 				09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */,
 				E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */,
 				3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */,
@@ -227,6 +234,7 @@
 				029AD64D1791D9D681EA7DDF /* ShopReminders.swift */,
 				76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */,
 				35352F3BD8D2A7EE166961C9 /* Today.swift */,
+				84A8F1D2ED5D5358B98D4BE9 /* WhereIsIntent.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
@@ -306,6 +314,7 @@
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
 				44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */,
 				01F66AF282FB2C3C22DC9F76 /* PickThings.swift */,
+				DF6A7521CAF9F486A9847AB2 /* Pockets.swift */,
 				6CC01537D593379C8EF1B84F /* RefineScreen.swift */,
 				4926F40EBD71822EA9165684 /* RemindersSend.swift */,
 				34879BF77676913C07B69267 /* RestoreSheet.swift */,
@@ -455,6 +464,7 @@
 				B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */,
 				9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */,
 				3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */,
+				A01FA7467EDE858441462FED /* DoorChecks.swift in Sources */,
 				4AD76B6494FA68210153D99C /* DropDown.swift in Sources */,
 				8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */,
 				4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */,
@@ -473,6 +483,7 @@
 				CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */,
 				E942A15DD0530D3181AEBD4C /* OnSiteScreen.swift in Sources */,
 				E2B76A8A26AB8A0D50EEA5C3 /* PickThings.swift in Sources */,
+				18BBB6F1544022B6A9540909 /* Pockets.swift in Sources */,
 				DAD37A1F2CA15C56CC068B58 /* RefineScreen.swift in Sources */,
 				80E3669131BEA0D1C726A660 /* Releases.swift in Sources */,
 				7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */,
@@ -506,6 +517,7 @@
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
 				D8BFC0A9124CC984A49C398B /* WayHomeScreen.swift in Sources */,
 				811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */,
+				39B68C038BC2CAA6DB6207D6 /* WhereIsIntent.swift in Sources */,
 				C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */,
 				DAE1DC1E5B87843793C1371E /* WorldMap.swift in Sources */,
 			);

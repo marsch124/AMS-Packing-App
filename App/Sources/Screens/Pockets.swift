@@ -176,8 +176,9 @@ struct BagPockets: View {
 // MARK: - "I leave at" (Create new trip, Trip settings)
 
 /// The door check's times: when he leaves on the first day, and on the last day for home
-/// — both optional. Each is "Add a time" until set; then the time, when the check comes,
-/// and Remove. Ids, from `id`: the heading `<id>-title`; per time (`out`, `home`)
+/// — both optional, in a grid so the times line up ("First day", "Last day"). Each is
+/// "Add a time" until set; then the time, when the check comes, and a small quiet ✕
+/// ("Remove" in words wrapped on Create new trip's narrower card). Ids, from `id`: the heading `<id>-title`; per time (`out`, `home`)
 /// `<id>-<kind>-add`, `<id>-<kind>-time` (the picker), `<id>-<kind>-check` ("Check
 /// 07:15") and `<id>-<kind>-remove`; the line under them `<id>-note`, and — when the
 /// device does not let the app remind him — `<id>-refused`.
@@ -191,8 +192,11 @@ struct LeaveTimes: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HeadingTitle(title: "I leave at", tint: tint, id: "\(id)-title")
-            row("First day", $out, kind: "out", start: "07:30")
-            row("Last day, home", $home, kind: "home", start: "10:00")
+            // A grid, so the two times line up under each other.
+            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
+                row("First day", $out, kind: "out", start: "07:30")
+                row("Last day", $home, kind: "home", start: "10:00")
+            }
             #if os(macOS)
             Text("Optional. 15 minutes before, your iPhone names what is still unticked \u{2014} on the last day, what is not in a bag yet.")
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
@@ -215,7 +219,7 @@ struct LeaveTimes: View {
     }
 
     private func row(_ label: String, _ time: Binding<String>, kind: String, start: String) -> some View {
-        HStack(spacing: 10) {
+        GridRow {
             Text(label).font(.system(.subheadline)).foregroundStyle(Theme.ink)
                 .lineLimit(1).fixedSize()
             if time.wrappedValue.isEmpty {
@@ -224,13 +228,14 @@ struct LeaveTimes: View {
                     Task { await ask() }
                 } label: {
                     Text("Add a time").font(.system(.footnote, weight: .semibold)).foregroundStyle(tint)
+                        .lineLimit(1).fixedSize()
                         .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
                         .overlay(Capsule().stroke(tint, lineWidth: 1.2))
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("\(id)-\(kind)-add")
-                Spacer(minLength: 0)
+                .gridCellColumns(3)
             } else {
                 DatePicker("", selection: Binding(get: { LeaveTimes.date(time.wrappedValue) },
                                                   set: { time.wrappedValue = LeaveTimes.words($0) }),
@@ -240,18 +245,20 @@ struct LeaveTimes: View {
                     .fixedSize()
                     .accessibilityIdentifier("\(id)-\(kind)-time")
                 // When the check comes (any day will do: only the time is shown).
-                if let when = Library.before(day: "2026-01-02", time: time.wrappedValue, minutes: DOOR_CHECK_LEAD_MINUTES) {
-                    Text("Check \(when.time)").font(.system(.footnote).monospacedDigit()).foregroundStyle(Theme.muted)
-                        .lineLimit(1).fixedSize()
-                        .accessibilityIdentifier("\(id)-\(kind)-check")
-                }
-                Spacer(minLength: 0)
+                Text("Check \(Library.before(day: "2026-01-02", time: time.wrappedValue, minutes: DOOR_CHECK_LEAD_MINUTES)?.time ?? "")")
+                    .font(.system(.footnote).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .lineLimit(1).fixedSize()
+                    .accessibilityIdentifier("\(id)-\(kind)-check")
+                // Remove: a small quiet ✕, last on the line.
                 Button { time.wrappedValue = "" } label: {
-                    Text("Remove").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .padding(.horizontal, 6).frame(minHeight: Metrics.chip).contentShape(Rectangle())
+                    SVGPath.path("M7 7l10 10M17 7L7 17")
+                        .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
+                        .frame(width: Metrics.compact, height: Metrics.compact).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("\(id)-\(kind)-remove")
+                .accessibilityLabel("Remove the time")
             }
         }
     }

@@ -2303,6 +2303,236 @@ final class AMSPackingUITests: XCTestCase {
                       "Cancel did not come back to the way home as it was")
     }
 
+    // MARK: - Bag pockets and the door check (0.69)
+
+    /// The pockets sample's trip, under way, open (`-uiTestingPockets`): Passport (line 0)
+    /// ticked; the Phone charger (line 1) and the Headlamp go in the Backpack, whose
+    /// pockets are Main, Front pocket and Lid — the charger usually in the Front pocket.
+    private func openPocketsTrip(_ app: XCUIApplication) {
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["trip-line-1"].waitForExistence(timeout: 5))
+    }
+
+    /// "A bag's page lists its pockets; you name them once": he adds one (Add with
+    /// nothing typed says so), renames one, moves one up and removes one — all by id.
+    func testABagsPageListsItsPockets() {
+        let app = launch("-uiTestingPockets")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the bag's page did not open")
+        let count = app.staticTexts["bag-pockets-count"]
+        func pocket(_ n: Int) -> String { app.textFields["bag-pocket-\(n)"].value as? String ?? "" }
+        XCTAssertTrue(waitUntil { self.words(count) == "3" }, "the Backpack does not list its 3 pockets: '\(words(count))'")
+        XCTAssertEqual((0..<3).map(pocket), ["Main", "Front pocket", "Lid"])
+        shot(app, "pockets-bag-page")
+        // Add with nothing typed: it says what is missing, under the field.
+        tap(app, id: "bag-pocket-add")
+        XCTAssertTrue(app.staticTexts["bag-pocket-add-needs"].waitForExistence(timeout: 3), "Add with nothing typed said nothing")
+        type("Shoe compartment", into: app.textFields["bag-pocket-new"])
+        tap(app, id: "bag-pocket-add")
+        XCTAssertTrue(waitUntil { self.words(count) == "4" }, "the new pocket was not added: '\(words(count))'")
+        XCTAssertEqual(pocket(3), "Shoe compartment")
+        // Rename: type over it, Rename.
+        replace("Outer pocket", in: app.textFields["bag-pocket-1"])
+        tap(app, id: "bag-pocket-1-rename")
+        XCTAssertTrue(waitUntil { pocket(1) == "Outer pocket" && !app.buttons["bag-pocket-1-rename"].exists }, "the rename was not taken: '\(pocket(1))'")
+        // Up: the last one moves above Lid.
+        tap(app, id: "bag-pocket-3-up")
+        XCTAssertTrue(waitUntil { pocket(2) == "Shoe compartment" && pocket(3) == "Lid" }, "Up did not move it: \((0..<4).map(pocket))")
+        // ✕ removes it.
+        tap(app, id: "bag-pocket-0-remove")
+        XCTAssertTrue(waitUntil { self.words(count) == "3" && pocket(0) == "Outer pocket" }, "✕ did not remove Main: \((0..<3).map(pocket))")
+        shot(app, "pockets-bag-page-after")
+    }
+
+    /// A thing's usual pocket: a second drop-down under "Usually packed in", offered only
+    /// when that bag has pockets, and kept when the page is saved.
+    func testAThingsUsualPocketIsOfferedWhenItsBagHasPockets() {
+        let app = launch("-uiTestingPockets")
+        openThing(app, "Phone charger")
+        let field = app.buttons["thing-pocket"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no Pocket on a thing whose bag has pockets")
+        XCTAssertEqual(field.value as? String, "Front pocket")
+        bringIntoView(app, field)
+        shot(app, "pockets-thing-page")
+        XCTAssertEqual(choose(app, "thing-pocket", 2), "Lid")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["thing-pocket"].value as? String == "Lid" },
+                      "the usual pocket was not kept: '\(app.buttons["thing-pocket"].value as? String ?? "none")'")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        // A thing whose bag has no pockets: no Pocket at all.
+        replace("Toothbrush", in: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["thing-bag"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["thing-pocket"].exists, "a Pocket for a bag with no pockets")
+    }
+
+    /// "Ticking a line shows the bag's pockets in one short row; tap one or ignore it":
+    /// the usual pocket chosen first; another one tapped; the line then says
+    /// "Backpack · Lid". A line whose bag has no pockets shows none.
+    func testTickingALineOffersItsBagsPockets() {
+        let app = launch("-uiTestingPockets")
+        openPocketsTrip(app)
+        tap(app, id: "trip-line-1")
+        let row = app.buttons["trip-line-1-pocket-1"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "ticking the charger did not offer the Backpack's pockets")
+        XCTAssertTrue(waitUntil { self.isOn(row) }, "its usual pocket (Front pocket) was not chosen first")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["trip-line-1"]).contains("Backpack \u{00B7} Front pocket") },
+                      "the line does not say its pocket: '\(words(app.buttons["trip-line-1"]))'")
+        shot(app, "pockets-trip-pills")
+        tap(app, id: "trip-line-1-pocket-2")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-line-1-pocket-2"].exists }, "the pills stayed after a pocket was chosen")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["trip-line-1"]).contains("Backpack \u{00B7} Lid") },
+                      "the line does not say the pocket chosen: '\(words(app.buttons["trip-line-1"]))'")
+        shot(app, "pockets-trip-line")
+        // The Toothbrush goes in the carry-on, which has no pockets: nothing offered.
+        tap(app, id: "trip-line-2")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-line-2"]) })
+        XCTAssertFalse(app.buttons["trip-line-2-pocket-0"].exists, "pockets offered for a bag with none")
+    }
+
+    /// Pack to go home keeps each pocket too: packing the charger for home offers the
+    /// Backpack's pockets, the one it went out in chosen first; another is kept.
+    func testPackToGoHomeKeepsItsPockets() {
+        let app = launch("-uiTestingPockets")
+        openPocketsTrip(app)
+        tap(app, id: "trip-line-1")
+        XCTAssertTrue(app.buttons["trip-line-1-pocket-1"].waitForExistence(timeout: 5))
+        openWayHome(app)
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5))
+        // Home lines: what went — the Passport (0) and the charger (1).
+        tap(app, id: "wayhome-line-1")
+        let out = app.buttons["wayhome-line-1-pocket-1"]
+        XCTAssertTrue(out.waitForExistence(timeout: 5), "packing the charger for home did not offer its pockets")
+        XCTAssertTrue(waitUntil { self.isOn(out) }, "the pocket it went out in was not chosen first")
+        shot(app, "pockets-wayhome-pills")
+        tap(app, id: "wayhome-line-1-pocket-0")
+        XCTAssertTrue(waitUntil { !app.buttons["wayhome-line-1-pocket-0"].exists }, "the pills stayed after a pocket was chosen")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["wayhome-line-1"]).contains("Main") },
+                      "the way home does not say the pocket: '\(words(app.buttons["wayhome-line-1"]))'")
+    }
+
+    /// Search, on a trip under way: where the thing is shows first — "Backpack · Front
+    /// pocket". With no trip under way, no such card.
+    func testSearchShowsWhereAThingIsOnTheTripUnderWay() {
+        let app = launch("-uiTestingPockets")
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("charger", into: app.textFields["search-field"])
+        let place = app.staticTexts["search-where-place"]
+        XCTAssertTrue(waitUntil { self.words(place) == "Backpack \u{00B7} Front pocket" }, "Search does not say where it is: '\(words(place))'")
+        let first = app.buttons["search-things-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        XCTAssertLessThan(place.frame.maxY, first.frame.minY, "where it is is not shown first")
+        shot(app, "pockets-search")
+        app.terminate()
+        let plain = launch("-uiTesting")
+        tap(plain, id: "search-open")
+        XCTAssertTrue(appears(plain, "search-detail", timeout: 5))
+        type("charger", into: plain.textFields["search-field"])
+        XCTAssertTrue(plain.buttons["search-things-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(plain.staticTexts["search-where-place"].exists, "a where card with no trip under way")
+    }
+
+    /// The door check: "I leave at" set in Trip settings; 15 minutes before, the unticked
+    /// are named (up to five, then how many more); everything ticked = no check. Seen
+    /// through the debug list (`-showDoorChecks`): no test can see a notification.
+    func testTheDoorCheckNamesWhatIsStillUnticked() {
+        let app = launch("-uiTesting", ["-showDoorChecks"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["door-check-none"].waitForExistence(timeout: 8), "a door check with no time to leave")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "tripset-leave-out-add")
+        let check = app.staticTexts["tripset-leave-out-check"]
+        XCTAssertTrue(waitUntil { self.words(check) == "Check 07:15" }, "'\(words(check))'")
+        bringIntoView(app, app.staticTexts["tripset-leave-note"])
+        shot(app, "door-tripsettings")
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        let out = app.staticTexts["door-check-out"]
+        XCTAssertTrue(out.waitForExistence(timeout: 8), "no door check after a time was set")
+        let said = words(out)
+        XCTAssertTrue(said.contains("07:15"), said)
+        XCTAssertTrue(said.contains("Leaving for Weekend in the hills?"), said)
+        XCTAssertTrue(said.contains("Still unticked: Passport, Phone charger, Toothbrush, Headlamp, Hiking boots and 2 more"), said)
+        // Everything ticked: nothing to say, so no check.
+        tap(app, id: "trip-tickall")
+        XCTAssertTrue(app.staticTexts["door-check-none"].waitForExistence(timeout: 8), "a door check with everything ticked: '\(words(out))'")
+    }
+
+    /// A tapped door check opens the trip on just the unticked lines (Show all brings the
+    /// rest back); the way home's opens Pack to go home on what is not in a bag yet.
+    func testATappedDoorCheckOpensTheTripOnWhatIsLeft() {
+        let app = launch("-uiTestingPockets", ["-tapDoorCheck", "out"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the tapped door check did not open its trip")
+        XCTAssertTrue(app.staticTexts["trip-unticked-only"].waitForExistence(timeout: 5), "the trip did not open on just what is left")
+        XCTAssertTrue(app.buttons["trip-line-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["trip-line-0"].exists, "the ticked Passport is still shown")
+        shot(app, "door-tapped-trip")
+        tap(app, id: "trip-show-all")
+        XCTAssertTrue(app.buttons["trip-line-0"].waitForExistence(timeout: 5), "Show all did not bring the ticked lines back")
+        app.terminate()
+        let home = launch("-uiTestingPockets", ["-tapDoorCheck", "home"])
+        XCTAssertTrue(appears(home, "wayhome-screen", timeout: 15), "the way home's door check did not open Pack to go home")
+        XCTAssertTrue(home.staticTexts["wayhome-left-only"].waitForExistence(timeout: 5))
+        XCTAssertTrue(home.buttons["wayhome-line-0"].waitForExistence(timeout: 5), "what is not in a bag yet is not shown")
+        shot(home, "door-tapped-wayhome")
+    }
+
+    /// Create new trip has "I leave at" once it has dates, and the trip made keeps it.
+    func testCreateNewTripTakesTheTimeHeLeaves() {
+        let app = launch("-uiTesting")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertFalse(app.buttons["trip-leave-out-add"].exists, "a time to leave with no days")
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        pickDay(app, cal.date(byAdding: .day, value: 3, to: today)!, grid: "trip-range")
+        pickDay(app, cal.date(byAdding: .day, value: 5, to: today)!, grid: "trip-range")
+        tap(app, id: "trip-leave-out-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-leave-out-check"]) == "Check 07:15" })
+        tap(app, id: "trip-leave-home-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-leave-home-check"]) == "Check 09:45" })
+        bringIntoView(app, app.staticTexts["trip-leave-note"])
+        shot(app, "door-newtrip")
+        type("Leaving early", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        select(app, app.buttons["trip-activity-0"])
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-leave-out-check"]) == "Check 07:15" },
+                      "the trip made did not keep the time he leaves")
+        XCTAssertEqual(words(app.staticTexts["tripset-leave-home-check"]), "Check 09:45")
+    }
+
+    /// With notifications not allowed on this device, "I leave at" says so under it.
+    func testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt() {
+        let app = launch("-uiTesting", ["-pretendRemindersBlocked"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertFalse(app.staticTexts["tripset-leave-refused"].exists, "it says so before any time is set")
+        tap(app, id: "tripset-leave-out-add")
+        XCTAssertTrue(app.staticTexts["tripset-leave-refused"].waitForExistence(timeout: 5),
+                      "nothing says the device does not allow the check")
+        bringIntoView(app, app.staticTexts["tripset-leave-refused"])
+        shot(app, "door-refused")
+    }
+
     /// Pack to go home lives on the trip's On site page (their field test, 3 Oct 2026):
     /// the trip's On site door, then the page's Pack to go home. With On site already
     /// open (back from the way home), straight to its button.
