@@ -22,6 +22,9 @@ struct AMSPackingApp: App {
         // rest of its background: a drag on a page's empty space should not carry it.
         .windowStyle(.hiddenTitleBar)
         .windowBackgroundDragBehavior(.disabled)
+        // A thing's page from the keyboard (0.68): the Thing menu lists its keys, and is
+        // on only while a thing's page is open (ThingKeys.swift).
+        .commands { ThingCommands() }
         #endif
 
         #if os(macOS)

@@ -114,7 +114,17 @@ struct ThingsScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: Binding(get: { editing.map { Editing(id: $0) } }, set: { editing = $0?.id })) { e in
-            ThingEditor(itemId: e.id).environmentObject(model)
+            // ⌘↓ ⌘↑ (Mac) go through the things as listed here; one made with ⌘N comes
+            // in under Just added, as one added at the foot does.
+            ThingEditor(itemId: e.id, order: { shownIds() }, made: { id in
+                // A search that would hide it is emptied, as for one added at the foot.
+                let name = model.library.items.first { $0.id == id }?.name ?? ""
+                let q = normName(query)
+                if !q.isEmpty && !normName(name).contains(q) { query = "" }
+                justAdded.removeAll { $0 == id }
+                justAdded.insert(id, at: 0)
+            })
+            .environmentObject(model)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("things-detail")
@@ -125,6 +135,17 @@ struct ThingsScreen: View {
     }
 
     private static let top = "things-top"
+
+    /// The things as listed now, top to bottom: Just added, then the rest A–Z, under the
+    /// search and the On no template chip — what a thing's page goes through (Mac keys).
+    private func shownIds() -> [String] {
+        let q = normName(query)
+        let shown = model.library.thingRows()
+            .filter { (!noListOnly || $0.templates.isEmpty) && (q.isEmpty || normName($0.item.name).contains(q)) }
+            .map(\.item.id)
+        let fresh = justAdded.filter { shown.contains($0) }
+        return fresh + shown.filter { !fresh.contains($0) }
+    }
 
     private func thingRow(_ row: (item: Item, templates: [String]), n: Int) -> some View {
         Button { editing = row.item.id } label: {
@@ -193,8 +214,17 @@ struct ThingsScreen: View {
 /// the bag stays that list's.
 struct ThingEditor: View {
     let itemId: String
+    /// The things of the list the page was opened from, in that list's order of the
+    /// moment — Your things as shown, the table as sorted and filtered: what ⌘↓ and ⌘↑ go
+    /// through on the Mac (0.68). nil = opened from no list (a trip, a bag, the search).
+    var order: (() -> [String])? = nil
+    /// A thing made on this page (⌘N on the Mac, 0.68): the list behind shows it.
+    var made: ((String) -> Void)? = nil
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
+    /// The thing on the page: the one it was opened on until ⌘↓ ⌘↑ go on (Mac); nil = a
+    /// new thing, made only when it is saved (⌘N, Mac).
+    @State private var shown: String?
     @State private var draft = Item()
     @State private var onLists: Set<String> = []
     @State private var problem = ""
@@ -217,9 +247,47 @@ struct ThingEditor: View {
     /// leaves the template as it was (as in the row editor).
     @State private var newSections: [String: String] = [:]
 
-    var body: some View {
-        let templates = model.library.templatesForThings()
+    // The Mac's keys (0.68) — see ThingKeys.swift. Unused on the iPhone.
+    /// The field in focus, as the page sees it: ringed, and named at the page's foot.
+    @State private var at: ThingField?
+    /// The text field that has the window's keys — the same field when `at` is one.
+    @FocusState private var typing: ThingField?
+    /// The template pill the arrows are on in On these templates.
+    @State private var pillAt: Int?
+    /// The drop-down whose list is open (its field's id), for the line at the foot.
+    @State private var listOpen: String?
+    /// Valid until as typed on the Mac ("30/6 27", "+6m"), read when the field is left or
+    /// the page is saved; and what was wrong with it.
+    @State private var expiryText = ""
+    @State private var expiryProblem = ""
+    /// The ⌘J box: open, what is typed in it, and where the focus was before.
+    @State private var jumping = false
+    @State private var jumpText = ""
+    @State private var beforeJump: ThingField?
+    /// Said at the foot instead of the keys for a moment ("That was the last thing…").
+    @State private var keyNote = ""
+    #if os(macOS)
+    @State private var keyHome = ThingKeyHome()
+    #endif
+
+    init(itemId: String, order: (() -> [String])? = nil, made: ((String) -> Void)? = nil) {
+        self.itemId = itemId
+        self.order = order
+        self.made = made
+        _shown = State(initialValue: itemId)
+    }
+
+    /// The thing on the page ("" while a new one is being made).
+    private var current: String { shown ?? "" }
+
+    /// Every template but the bag list, A–Z — the pills of On these templates.
+    private var templates: [PackList] {
+        model.library.templatesForThings()
             .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
+    }
+
+    var body: some View {
+        let templates = self.templates
         let owners = model.library.ownerChoices()          // each once (his screenshot, 2026-09-26)
         let bag = ThingEditor.bagChoices(model.library.bagNames(), current: draft.container)
         VStack(spacing: 0) {
@@ -236,18 +304,24 @@ struct ThingEditor: View {
                     .accessibilityIdentifier("thing-save")
             }
             .padding(16)
+            #if os(macOS)
+            if jumping { jumpBox }
+            #endif
+            ScrollViewReader { proxy in
             KeyboardAwayScroll {
                 // A field sits right under its heading, and the space goes BETWEEN the
                 // headings (his screenshot, 2026-09-28: "put the Bike field much nearer
                 // its heading, the same goes for everything").
                 VStack(alignment: .leading, spacing: 12) {
-                    labelled("Name") { field($draft.name, "Name", "thing-name") }
+                    labelled("Name") { field($draft.name, "Name", "thing-name", .name) }
+                        .keyed(.name)
                     // Notes right under the name — his ask (4 Oct 2026): "please put the
                     // notes field immediately under the name".
                     labelled("Notes") {
                         notesField
                         rowNotes
                     }
+                    .keyed(.notes)
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
@@ -255,12 +329,14 @@ struct ThingEditor: View {
                     // make these kinds of drop-downs everywhere?"); a kind of thing from the web app
                     // that is none of the app's is shown on a row of its own.
                     DropDown(title: "Kind of thing", options: CATEGORIES.map { ($0, $0) }, selected: draft.category,
-                             id: "thing-category", other: true) { draft.category = $0 }
+                             id: "thing-category", other: true, ring: ring(.category)) { draft.category = $0 }
+                        .keyed(.category)
                     if !owners.isEmpty {
                         // No owner means each has one of their own — his words (4 Oct 2026):
                         // "Replace 'Nobody's in particular' with 'Both have one'".
                         DropDown(title: "Whose it is", options: [("", OWNER_BOTH)] + owners.map { ($0, $0) },
-                                 selected: draft.ownedBy, id: "thing-owner", other: true) { draft.ownedBy = $0 }
+                                 selected: draft.ownedBy, id: "thing-owner", other: true, ring: ring(.owner)) { draft.ownedBy = $0 }
+                            .keyed(.owner)
                     } else {
                         // Nobody named anywhere yet: the heading stays, and says where the
                         // names come from (it vanished, so the first owner could not be
@@ -274,9 +350,15 @@ struct ThingEditor: View {
                         }
                     }
                     Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
-                          id: "thing-lists", tint: AppSection.templates.color, heading: .band) { id in
-                        if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
+                          id: "thing-lists", tint: AppSection.templates.color, heading: .band,
+                          cursor: at == .templates ? pillAt : nil) { id in
+                        toggleTemplate(id)
+                        #if os(macOS)
+                        // A click puts the arrows on that pill.
+                        if let n = templates.firstIndex(where: { $0.id == id }) { pillAt = n; land(.templates) }
+                        #endif
                     }
+                    .keyed(.templates)
                     sectionChoices(templates)
                     // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
                     Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
@@ -287,39 +369,56 @@ struct ThingEditor: View {
                     // at home into a drop-down … so that we have a list to choose from? If we write
                     // it this way, it's a possibility that the naming convention skews.")
                     keptAtHome
+                        .keyed(.storage)
                     DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
-                             selected: bag.selected, id: "thing-bag") { draft.container = $0 }
+                             selected: bag.selected, id: "thing-bag", ring: ring(.bag)) { draft.container = $0 }
+                        .keyed(.bag)
                     DropDown(title: "When", options: PHASES.map { ($0.id, $0.label) }, selected: draft.phase,
-                             id: "thing-when") { draft.phase = $0 }
+                             id: "thing-when", ring: ring(.when)) { draft.phase = $0 }
+                        .keyed(.when)
                     labelled("Weight, in grams (0 = not known)") {
-                        field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight")
+                        field(Binding(get: { weightText }, set: { weightText = $0; weightProblem = "" }), "0", "thing-weight", .weight)
                         if !weightProblem.isEmpty {
                             Text(weightProblem).font(.system(.subheadline, weight: .semibold))
                                 .foregroundStyle(AppSection.actions.color)
                                 .accessibilityIdentifier("thing-weight-problem")
                         }
                     }
+                    .keyed(.weight)
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
-                    labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand") }
-                    labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour") }
+                    labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand", .brand) }
+                        .keyed(.brand)
+                    labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour", .colour) }
+                        .keyed(.colour)
                     // The condition's ID is what is stored; a thing still holding a label
                     // (stored by the table before 0.62) lights its pill all the same.
                     DropDown(title: "Condition", options: [("", "Not said")] + ITEM_CONDITIONS.map { ($0.id, $0.label) },
                              selected: model.library.conditionId(for: draft.condition) ?? draft.condition,
-                             id: "thing-condition") { draft.condition = $0 }
+                             id: "thing-condition", ring: ring(.condition)) { draft.condition = $0 }
+                        .keyed(.condition)
                     careFields
                     // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
                     VStack(alignment: .leading, spacing: 8) {
                         HeadingBand(title: "On a plane", id: "thing-heading-plane")
                         Toggle(isOn: $draft.liquid) { flagWords("Liquid") }
                             .tint(AppSection.care.color)
+                            #if os(macOS)
+                            .focusRing(at == .liquid)
+                            .simultaneousGesture(TapGesture().onEnded { land(.liquid) })
+                            #endif
                             .accessibilityIdentifier("thing-liquid")
                         Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin") }
                             .tint(AppSection.care.color)
+                            #if os(macOS)
+                            .focusRing(at == .restricted)
+                            .simultaneousGesture(TapGesture().onEnded { land(.restricted) })
+                            #endif
                             .accessibilityIdentifier("thing-restricted")
                     }
+                    .keyed(.liquid)
                     labelled("Valid until") { validUntil }
+                        .keyed(.expiry)
                     if !problem.isEmpty {
                         Text(problem).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("thing-problem")
@@ -330,19 +429,35 @@ struct ThingEditor: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
+            #if os(macOS)
+            // The field the keys reach is brought into sight.
+            .onChange(of: at) { _, f in
+                guard let f else { return }
+                withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(ThingEditor.scrollKey(f)) }
+            }
+            #endif
+            }
+            #if os(macOS)
+            keysLine
+            #endif
         }
         .background(Theme.bg.ignoresSafeArea())
         .onAppear {
-            if let it = model.library.items.first(where: { $0.id == itemId }) {
-                draft = it
-                weightText = amountText(it.weight)
-                careEvery = it.maintenance?.intervalDays ?? 0
-                careNotes = it.maintenance?.notes ?? ""
-            }
-            onLists = Set(model.library.memberships.filter { $0.itemId == itemId }.map(\.templateId))
-            for t in onLists { sections[t] = model.library.thingSection(itemId: itemId, templateId: t) }
-            sectionsAtOpen = sections
+            if let id = shown { load(id) }
+            #if os(macOS)
+            startKeys()
+            #endif
         }
+        #if os(macOS)
+        .onDisappear { stopKeys() }
+        .background(WindowReader { w in
+            keyHome.window = w
+            keyHome.page.window = w
+        })
+        .environment(\.dropDownKeys, keyHome.drop)
+        .onChange(of: typing) { old, now in typed(from: old, to: now) }
+        .onChange(of: draft.expiry) { _, now in expiryText = now; expiryProblem = "" }
+        #endif
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-detail")
         #if os(macOS)
@@ -350,14 +465,45 @@ struct ThingEditor: View {
         #endif
     }
 
+    /// Fills the page from the thing — on opening, and on the Mac when ⌘↓ ⌘↑ go on.
+    private func load(_ id: String) {
+        if let it = model.library.items.first(where: { $0.id == id }) {
+            draft = it
+            weightText = amountText(it.weight)
+            careEvery = it.maintenance?.intervalDays ?? 0
+            careNotes = it.maintenance?.notes ?? ""
+        }
+        onLists = Set(model.library.memberships.filter { $0.itemId == id }.map(\.templateId))
+        var now: [String: String] = [:]
+        for t in onLists { now[t] = model.library.thingSection(itemId: id, templateId: t) }
+        sections = now
+        sectionsAtOpen = now
+        newSections = [:]
+        problem = ""
+        weightProblem = ""
+        askingToDelete = false
+        expiryText = draft.expiry
+        expiryProblem = ""
+    }
+
+    private func toggleTemplate(_ id: String) {
+        if onLists.contains(id) { onLists.remove(id) } else { onLists.insert(id) }
+    }
+
+    /// The ring of a drop-down in focus (Mac): the page's orange.
+    private func ring(_ f: ThingField) -> Color? {
+        at == f ? AppSection.care.color : nil
+    }
+
     /// A heading in the editor — as large as the pill headings (his ask, 2026-09-27).
     /// Delete the thing — his ask (2026-09-27). Small, at the side, and it asks
     /// first. A bag is deleted on its own page, which asks where its things go.
     @ViewBuilder private var deleteThing: some View {
-        let isBag = model.library.bags().contains { $0.id == itemId }
-        if !isBag {
+        let isBag = model.library.bags().contains { $0.id == current }
+        // A thing being made (⌘N, Mac) is not there to delete: Cancel leaves it unmade.
+        if !isBag && shown != nil {
             if askingToDelete {
-                let lists = model.library.listsOf(itemId: itemId)
+                let lists = model.library.listsOf(itemId: current)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Delete \u{201C}\(draft.name)\u{201D}?")
                         .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -372,7 +518,7 @@ struct ThingEditor: View {
                             .accessibilityIdentifier("thing-delete-no")
                         Spacer()
                         Button {
-                            let id = itemId
+                            let id = current
                             dismiss()
                             model.change { _ = $0.deleteThing(id: id) }
                         } label: {
@@ -407,6 +553,7 @@ struct ThingEditor: View {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(ticked, id: \.element.id) { pair in
                     sectionChoice(pair.element, n: pair.offset)
+                        .keyed(.section(pair.element.id))
                 }
             }
         }
@@ -420,7 +567,7 @@ struct ThingEditor: View {
                         tint: AppSection.templates.color, blank: "No section",
                         newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") {
                             newSection($0, on: t.id)
-                        }) { sections[t.id] = $0 }
+                        }, ring: ring(.section(t.id))) { sections[t.id] = $0 }
     }
 
     /// A section typed at the foot of a template's list: one of that name already on
@@ -454,7 +601,7 @@ struct ThingEditor: View {
                      var made: String?
                      model.change { made = $0.addPlace(typed) }
                      if let made { draft.storage = made }
-                 }) { draft.storage = $0 }
+                 }, ring: ring(.storage)) { draft.storage = $0 }
     }
 
     /// Care: how often the thing is looked after, and what to do. Care listed only
@@ -465,15 +612,19 @@ struct ThingEditor: View {
         let options = standard + (standard.contains { $0.0 == careEvery } ? [] : [(careEvery, "Every \(careEvery) days")])
         VStack(alignment: .leading, spacing: 6) {
             DropDown(title: "Care", options: options.map { (String($0.0), $0.1) }, selected: String(careEvery),
-                     id: "thing-care") { careEvery = Int($0) ?? 0 }
+                     id: "thing-care", ring: ring(.care)) { careEvery = Int($0) ?? 0 }
+                .keyed(.care)
             TextField("What to do, e.g. Wax the leather", text: $careNotes, axis: .vertical)
                 .lineLimit(1...6)
                 .textFieldStyle(.plain)
                 .font(.system(.body)).foregroundStyle(Theme.ink)
                 .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(at == .careNotes ? AppSection.care.color : Theme.line,
+                                                                   lineWidth: at == .careNotes ? 2 : 1))
+                .macFocused($typing, .careNotes)
                 .accessibilityIdentifier("thing-care-notes")
+                .keyed(.careNotes)
         }
     }
 
@@ -493,18 +644,25 @@ struct ThingEditor: View {
     /// A passport, an ID card, sun cream, medicine: the trip warns before it runs out.
     @ViewBuilder private var validUntil: some View {
         VStack(alignment: .leading, spacing: 8) {
+            #if os(macOS)
+            // The Mac (0.68): the date is TYPED — "2027-06-30", "30/6 27", "+6m", "+1y" —
+            // in a field of its own, where the date picker stood; Add a date, Remove the
+            // date and the quick spans stay as they were.
+            HStack(spacing: 12) {
+                expiryField.frame(width: 230)
+                if draft.expiry.isEmpty { addDate } else { removeDate }
+                Spacer(minLength: 0)
+            }
+            if !expiryProblem.isEmpty {
+                Text(expiryProblem).font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(AppSection.actions.color)
+                    .accessibilityIdentifier("thing-expiry-problem")
+            }
+            if !draft.expiry.isEmpty { expiryDistance; quickSpans }
+            #else
             if draft.expiry.isEmpty {
-                // Pill-sized, under a heading that is bigger (field test, 3 Oct 2026).
-                Button { draft.expiry = Today.local } label: {
-                    Text("Add a date").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
-                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                        .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("thing-expiry-add")
+                addDate
             } else {
-                let today = Today.local
                 HStack(spacing: 12) {
                     DatePicker("", selection: Binding(get: { ThingEditor.date(draft.expiry) ?? Date() },
                                                       set: { draft.expiry = ThingEditor.ymd($0) }),
@@ -512,42 +670,69 @@ struct ThingEditor: View {
                         .labelsHidden()
                         .accessibilityIdentifier("thing-expiry")
                     Spacer(minLength: 8)
-                    Button("Remove the date") { draft.expiry = "" }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("thing-expiry-clear")
+                    removeDate
                 }
-                // How far away it is, in words, as the date changes — their
-                // field test (Oct 2026): "It didn't say 10 days. You have to calculate
-                // that yourself." Large, and red once it has run out. A text of its own,
-                // outside any button, so the Mac does not fold it away.
-                Text(distanceWords(from: today, to: draft.expiry))
-                    .font(.system(.title3, weight: .bold))
-                    .foregroundStyle((daysBetween(today, draft.expiry) ?? 0) < 0 ? AppSection.actions.color : Theme.ink)
-                    .accessibilityIdentifier("thing-expiry-distance")
-                // The usual spans in one tap, counted from today; the date above still
-                // picks an exact day. The one matching the date is filled in.
-                FlowRow(spacing: 8) {
-                    ForEach(Array(ThingEditor.quickSpans.enumerated()), id: \.offset) { n, span in
-                        let on = draft.expiry == addMonths(today, span.months)
-                        Button { draft.expiry = addMonths(today, span.months) } label: {
-                            Text(span.label)
-                                .font(.system(.subheadline, weight: on ? .semibold : .regular).monospacedDigit())
-                                .foregroundStyle(on ? Color.white : AppSection.care.color)
-                                .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                                .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
-                                .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
-                                .contentShape(Capsule())
-                        }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("thing-expiry-quick-\(n)")
-                        .accessibilityAddTraits(on ? .isSelected : [])
-                    }
-                }
+                expiryDistance
+                quickSpans
             }
+            #endif
             Text("The trip warns before it runs out \u{2014} a document (Documents & money) six months ahead.")
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Pill-sized, under a heading that is bigger (field test, 3 Oct 2026).
+    private var addDate: some View {
+        Button { draft.expiry = Today.local } label: {
+            Text("Add a date").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("thing-expiry-add")
+    }
+
+    private var removeDate: some View {
+        Button("Remove the date") { draft.expiry = "" }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+            .accessibilityIdentifier("thing-expiry-clear")
+    }
+
+    /// How far away it is, in words, as the date changes — their field test (Oct 2026):
+    /// "It didn't say 10 days. You have to calculate that yourself." Large, and red once
+    /// it has run out. A text of its own, outside any button, so the Mac does not fold it
+    /// away.
+    private var expiryDistance: some View {
+        let today = Today.local
+        return Text(distanceWords(from: today, to: draft.expiry))
+            .font(.system(.title3, weight: .bold))
+            .foregroundStyle((daysBetween(today, draft.expiry) ?? 0) < 0 ? AppSection.actions.color : Theme.ink)
+            .accessibilityIdentifier("thing-expiry-distance")
+    }
+
+    /// The usual spans in one tap, counted from today; the date above still picks an
+    /// exact day. The one matching the date is filled in.
+    private var quickSpans: some View {
+        let today = Today.local
+        return FlowRow(spacing: 8) {
+            ForEach(Array(ThingEditor.quickSpans.enumerated()), id: \.offset) { n, span in
+                let on = draft.expiry == addMonths(today, span.months)
+                Button { draft.expiry = addMonths(today, span.months) } label: {
+                    Text(span.label)
+                        .font(.system(.subheadline, weight: on ? .semibold : .regular).monospacedDigit())
+                        .foregroundStyle(on ? Color.white : AppSection.care.color)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                        .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
+                        .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("thing-expiry-quick-\(n)")
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
         }
     }
 
@@ -592,7 +777,9 @@ struct ThingEditor: View {
             .font(.system(.body)).foregroundStyle(Theme.ink)
             .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(at == .notes ? AppSection.care.color : Theme.line,
+                                                               lineWidth: at == .notes ? 2 : 1))
+            .macFocused($typing, .notes)
             .accessibilityIdentifier("thing-notes")
     }
 
@@ -601,7 +788,7 @@ struct ThingEditor: View {
     /// there — Notes looked empty while a template said something. Changed on the
     /// template, so only shown here.
     @ViewBuilder private var rowNotes: some View {
-        let notes = model.library.rowNotes(itemId: itemId)
+        let notes = model.library.rowNotes(itemId: current)
         if !notes.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(notes.enumerated()), id: \.offset) { n, said in
@@ -615,30 +802,59 @@ struct ThingEditor: View {
         }
     }
 
-    private func field(_ text: Binding<String>, _ prompt: String, _ id: String) -> some View {
+    private func field(_ text: Binding<String>, _ prompt: String, _ id: String, _ key: ThingField) -> some View {
         TextField(prompt, text: text)
             .textFieldStyle(.plain)
             .font(.system(.body)).foregroundStyle(Theme.ink)
             .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(at == key ? AppSection.care.color : Theme.line,
+                                                               lineWidth: at == key ? 2 : 1))
+            .macFocused($typing, key)
             .accessibilityIdentifier(id)
     }
 
     private func save() {
-        guard let it = model.library.items.first(where: { $0.id == itemId }) else { dismiss(); return }
+        if commit() { dismiss() }
+    }
+
+    /// Writes the page to the library. False — the page stays, and says why — when the
+    /// weight, the date or the name stops it.
+    @discardableResult private func commit() -> Bool {
+        #if os(macOS)
+        guard readExpiry() else { return false }
+        #endif
+        let it = shown.flatMap { id in model.library.items.first { $0.id == id } }
+        // The thing is gone (deleted on the other device): the page just closes.
+        if shown != nil && it == nil { dismiss(); return false }
         // The weight first, so a typo saves nothing (and says so). Untouched, the
         // stored weight stays exactly as it is, however many decimals it has.
-        let weight = weightText == amountText(it.weight) ? it.weight : readAmount(weightText)
+        let weight = it.map { weightText == amountText($0.weight) } == true ? it?.weight : ThingEditor.readWeight(weightText)
         guard let grams = weight else {
-            weightProblem = "The weight must be a number of grams, like 250 or 12,5."
-            return
+            weightProblem = ThingEditor.weightSays
+            return false
         }
-        if jsTrim(draft.name) != it.name {
-            var ok = false
-            model.change { ok = $0.renameThing(id: itemId, to: draft.name) }
-            if !ok { problem = jsTrim(draft.name).isEmpty ? "A thing needs a name." : "You already have a thing called that."; return }
+        let itemId: String
+        if let it {
+            itemId = it.id
+            if jsTrim(draft.name) != it.name {
+                var ok = false
+                model.change { ok = $0.renameThing(id: itemId, to: draft.name) }
+                if !ok { problem = jsTrim(draft.name).isEmpty ? "A thing needs a name." : "You already have a thing called that."; return false }
+            }
+        } else {
+            // A new thing (⌘N, Mac): made now, with its name; the rest follows below.
+            var new: Item?
+            model.change { new = $0.addThing(name: draft.name) }
+            guard let new else {
+                problem = jsTrim(draft.name).isEmpty ? "A thing needs a name." : "You already have a thing called that."
+                return false
+            }
+            itemId = new.id
+            shown = new.id
+            made?(new.id)
         }
+        problem = ""
         let d = draft
         let lists = onLists
         let every = careEvery, notes = jsTrim(careNotes)
@@ -682,6 +898,519 @@ struct ThingEditor: View {
                                         newSection: fresh ? (typed[t.id] ?? "") : "")
             }
         }
-        dismiss()
+        return true
+    }
+
+    /// The weight as typed: on the Mac kilos may carry their unit too ("1,2 kg" = 1200 g,
+    /// 0.68); the iPhone reads grams as before.
+    private static func readWeight(_ typed: String) -> Double? {
+        #if os(macOS)
+        return readGrams(typed)
+        #else
+        return readAmount(typed)
+        #endif
+    }
+
+    #if os(macOS)
+    private static let weightSays = "The weight must be grams, like 250 or 12,5 — or kilos with their unit, like 1,2 kg."
+    #else
+    private static let weightSays = "The weight must be a number of grams, like 250 or 12,5."
+    #endif
+}
+
+extension View {
+    /// The thing page's text field tied to the field in focus — the Mac's keys only; the
+    /// iPhone's fields are as they were.
+    @ViewBuilder func macFocused(_ binding: FocusState<ThingField?>.Binding, _ f: ThingField) -> some View {
+        #if os(macOS)
+        focused(binding, equals: f)
+        #else
+        self
+        #endif
+    }
+
+    /// Where the Mac's keys scroll to for this field (`ThingEditor.scrollKey`).
+    @ViewBuilder func keyed(_ f: ThingField) -> some View {
+        #if os(macOS)
+        id(ThingEditor.scrollKey(f))
+        #else
+        self
+        #endif
     }
 }
+
+#if os(macOS)
+/// What the page keeps for the keys, by reference — none of it is drawn.
+final class ThingKeyHome {
+    weak var window: NSWindow?
+    let monitor = KeyMonitor()
+    let page = ThingKeys.Page()
+    let drop = DropDownKeys()
+    /// The letters typed on the template pills, and when the last came.
+    var ahead = ""
+    var aheadAt = Date.distantPast
+}
+
+// MARK: - The Mac's keys (0.68)
+
+extension ThingEditor {
+    /// The id a field's block scrolls by.
+    static func scrollKey(_ f: ThingField) -> String {
+        switch f {
+        case .section(let t): return "key-section-\(t)"
+        case .liquid, .restricted: return "key-plane"
+        case .jump: return "key-jump"
+        default: return "key-\(f)"
+        }
+    }
+
+    /// Every field, in his reading order — the order Tab walks.
+    fileprivate func fieldOrder() -> [ThingField] {
+        var out: [ThingField] = [.name, .notes, .category]
+        if !model.library.ownerChoices().isEmpty { out.append(.owner) }
+        let templates = self.templates
+        if !templates.isEmpty { out.append(.templates) }
+        for t in templates where onLists.contains(t.id) { out.append(.section(t.id)) }
+        out += [.storage, .bag, .when, .weight, .brand, .colour, .condition, .care, .careNotes, .liquid, .restricted, .expiry]
+        return out
+    }
+
+    /// A field's control id — what the line at the foot names as its value, for the tests.
+    fileprivate func fieldId(_ f: ThingField) -> String {
+        switch f {
+        case .name: return "thing-name"
+        case .notes: return "thing-notes"
+        case .category: return "thing-category"
+        case .owner: return "thing-owner"
+        case .templates: return "thing-lists"
+        case .section(let t): return "thing-section-\(templates.firstIndex { $0.id == t } ?? -1)"
+        case .storage: return "thing-storage"
+        case .bag: return "thing-bag"
+        case .when: return "thing-when"
+        case .weight: return "thing-weight"
+        case .brand: return "thing-brand"
+        case .colour: return "thing-colour"
+        case .condition: return "thing-condition"
+        case .care: return "thing-care"
+        case .careNotes: return "thing-care-notes"
+        case .liquid: return "thing-liquid"
+        case .restricted: return "thing-restricted"
+        case .expiry: return "thing-expiry"
+        case .jump: return "thing-jump"
+        }
+    }
+
+    /// A field's name, as its heading says it.
+    fileprivate func fieldName(_ f: ThingField) -> String {
+        switch f {
+        case .name: return "Name"
+        case .notes: return "Notes"
+        case .category: return "Kind of thing"
+        case .owner: return "Whose it is"
+        case .templates: return "On these templates"
+        case .section(let t): return "Section on \(templates.first { $0.id == t }?.name ?? "")"
+        case .storage: return "Kept at home"
+        case .bag: return "Usually packed in"
+        case .when: return "When"
+        case .weight: return "Weight"
+        case .brand: return "Brand"
+        case .colour: return "Colour"
+        case .condition: return "Condition"
+        case .care: return "Care"
+        case .careNotes: return "What to do"
+        case .liquid: return "Liquid"
+        case .restricted: return "Not allowed in the cabin"
+        case .expiry: return "Valid until"
+        case .jump: return "Jump to field"
+        }
+    }
+
+    /// The field of a drop-down's id (a click on it).
+    fileprivate func field(forId id: String) -> ThingField? {
+        fieldOrder().first { fieldId($0) == id }
+    }
+
+    /// The keys of the field in focus, in a few words — the line at the page's foot.
+    fileprivate func keysWords(_ f: ThingField?) -> String {
+        if listOpen != nil { return "↑ ↓ move · Return chooses · type to jump · Esc closes the list" }
+        guard let f else { return "Tab goes to the fields · Return saves · ⌘N saves and starts a new thing · ⌘J jumps to a field" }
+        switch f {
+        case .notes: return "Return starts a new line · Tab next · ⌘S saves"
+        case .careNotes: return "type what to do · Tab next · Return saves"
+        case .weight: return "grams, or kilos as 1,2 kg · Tab next · Return saves"
+        case .expiry: return "a date, 2027-06-30 or 30/6 27, or +6m, +1y · Return saves"
+        case .jump: return "type part of a field's name · Return goes there · Esc closes"
+        case .templates: return "← → move · Space turns it on or off · type to jump · Tab next"
+        case .liquid, .restricted: return "Space turns it on or off · Tab next · Return saves"
+        case .storage: return "type to pick, or a new place · Space opens · Tab next · Return saves"
+        case .section: return "type to pick, or a new section · Space opens · Tab next · Return saves"
+        case .category, .owner, .bag, .when, .condition, .care:
+            return "type to pick · Space opens · Tab next · Return saves"
+        case .name, .brand, .colour: return "type · Tab next · Return saves"
+        }
+    }
+
+    /// The line at the page's foot: the field in focus, and its keys — nothing to
+    /// remember (the concept: "a line at the foot of the page names its keys").
+    fileprivate var keysLine: some View {
+        let name = jumping ? fieldName(.jump) : at.map(fieldName) ?? "Keys"
+        let keys = !keyNote.isEmpty ? keyNote : keysWords(jumping ? .jump : at)
+        return (Text(name).font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                + Text("   " + keys).font(.system(.footnote)).foregroundStyle(Theme.muted))
+            .lineLimit(1).truncationMode(.tail)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.vertical, 7)
+            .background(Theme.bg)
+            .overlay(alignment: .top) { Theme.line.frame(height: 1) }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(name): \(keys)")
+            .accessibilityValue(jumping ? fieldId(.jump) : at.map(fieldId) ?? "")
+            .accessibilityIdentifier("thing-keys")
+    }
+
+    /// The ⌘J box: type part of a field's name, Return goes there.
+    fileprivate var jumpBox: some View {
+        let hit = jumpMatches().first
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Text("Jump to field").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                TextField("Type part of its name", text: $jumpText)
+                    .textFieldStyle(.plain)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppSection.care.color, lineWidth: 2))
+                    .focused($typing, equals: .jump)
+                    .accessibilityIdentifier("thing-jump")
+            }
+            Text(jumpText.isEmpty ? "Return goes to the field named" : hit.map { "Return goes to \(fieldName($0))" } ?? "No field is called that")
+                .font(.system(.footnote)).foregroundStyle(hit == nil && !jumpText.isEmpty ? AppSection.actions.color : Theme.muted)
+                .accessibilityIdentifier("thing-jump-match")
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+        .padding(.horizontal, 16).padding(.bottom, 10)
+    }
+
+    /// The fields whose name has what was typed: a word starting with it first ("wei" →
+    /// Weight, "val" → Valid until), then anywhere in the name; in the page's order.
+    fileprivate func jumpMatches() -> [ThingField] {
+        let q = jumpText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        let order = fieldOrder()
+        let names = order.map { fieldName($0).lowercased() }
+        let starts = order.indices.filter { i in
+            names[i].hasPrefix(q) || names[i].split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains { $0.hasPrefix(q) }
+        }
+        let inside = order.indices.filter { !starts.contains($0) && names[$0].contains(q) }
+        return (starts + inside).map { order[$0] }
+    }
+
+    // MARK: Focus
+
+    /// Puts the page's focus on a field: ringed, scrolled to, and — a text field — given
+    /// the window's keys, its words selected so typing replaces them (Notes: the cursor
+    /// at the end, so nothing is lost). `whole: false` puts the cursor at the end.
+    fileprivate func land(_ f: ThingField?, whole: Bool = true) {
+        if at == .expiry, f != .expiry { readExpiry() }
+        keyNote = ""
+        at = f
+        if f == .templates, pillAt == nil {
+            pillAt = templates.firstIndex { onLists.contains($0.id) } ?? 0
+        }
+        if let f, f.isText {
+            typing = f
+            let atEnd = !whole || f == .notes || f == .careNotes
+            // Once the field really has the keys (a turn or two of the run loop).
+            DispatchQueue.main.async { DispatchQueue.main.async { selectWords(of: f, atEnd: atEnd) } }
+        } else {
+            typing = nil
+        }
+    }
+
+    private func selectWords(of f: ThingField, atEnd: Bool) {
+        guard at == f || (jumping && f == .jump),
+              let editor = keyHome.window?.firstResponder as? NSTextView else { return }
+        if atEnd {
+            editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
+        } else {
+            editor.selectAll(nil)
+        }
+    }
+
+    /// A click into a text field moves the page's focus with it; a text field left for
+    /// nothing in particular takes the ring with it.
+    fileprivate func typed(from old: ThingField?, to now: ThingField?) {
+        if old == .expiry, now != .expiry { readExpiry() }
+        if let now, now != .jump, now != at { keyNote = ""; at = now }
+        if now == nil, at?.isText == true, !jumping { at = nil }
+    }
+
+    /// Tab (1) and Shift-Tab (−1): the next field in his order, round to the first.
+    fileprivate func move(_ dir: Int) {
+        let order = fieldOrder()
+        guard !order.isEmpty else { return }
+        if let at, let n = order.firstIndex(of: at) {
+            land(order[(n + dir + order.count) % order.count])
+        } else if case .section = at, let k = order.firstIndex(of: .storage) {
+            // A Section whose template was just turned off: on from where it stood.
+            land(order[dir > 0 ? k : max(k - 1, 0)])
+        } else {
+            land(dir > 0 ? order[0] : order[order.count - 1])
+        }
+    }
+
+    // MARK: Commands
+
+    fileprivate func startKeys() {
+        let home = keyHome
+        home.drop.changed = { id in listOpen = id }
+        home.drop.clicked = { id in if let f = field(forId: id) { land(f) } }
+        home.monitor.start { e in key(e) }
+        home.page.save = { save() }
+        home.page.saveAndNew = { saveAndNew() }
+        home.page.step = { step($0) }
+        home.page.canStep = order != nil
+        home.page.jump = { openJump() }
+        ThingKeys.shared.add(home.page)
+        // The page opens with the cursor in the name, at its end.
+        DispatchQueue.main.async { land(.name, whole: false) }
+    }
+
+    fileprivate func stopKeys() {
+        keyHome.monitor.stop()
+        ThingKeys.shared.remove(keyHome.page)
+    }
+
+    /// ⌘N: saves, then a new thing's page with this one's Kind of thing, Whose it is,
+    /// Kept at home, Usually packed in, When and templates (his answer, 7 Oct 2026) —
+    /// things come in groups, five dive things kept in one place — the cursor in Name.
+    fileprivate func saveAndNew() {
+        let was = draft
+        let lists = onLists
+        guard commit() else { return }
+        var fresh = newItem(name: "")
+        fresh.category = was.category
+        fresh.ownedBy = was.ownedBy
+        fresh.storage = was.storage
+        fresh.container = was.container
+        fresh.phase = was.phase
+        shown = nil
+        draft = fresh
+        weightText = ""
+        careEvery = 0
+        careNotes = ""
+        onLists = lists
+        let none = Dictionary(uniqueKeysWithValues: lists.map { ($0, "") })
+        sections = none
+        sectionsAtOpen = none
+        newSections = [:]
+        problem = ""
+        weightProblem = ""
+        askingToDelete = false
+        expiryText = ""
+        expiryProblem = ""
+        land(.name)
+    }
+
+    /// ⌘↓ (1) and ⌘↑ (−1): saves, then the next or previous thing of the list the page
+    /// came from, the cursor on the same field — "all weights" is one field after another.
+    /// The list as it stood BEFORE the save: a thing that leaves it by being filled in (the
+    /// table filtered to No weight) still leads to the one after it.
+    fileprivate func step(_ dir: Int) {
+        guard let order else { return }
+        let before = order()
+        guard commit(), let id = shown else { return }
+        var list = before
+        if !list.contains(id) { list = order() }
+        guard let n = list.firstIndex(of: id) else {
+            keyNote = "This thing is not in the list the page came from."
+            return
+        }
+        let alive = Set(model.library.items.map(\.id))
+        var k = n + dir
+        while list.indices.contains(k), !alive.contains(list[k]) { k += dir }
+        guard list.indices.contains(k) else {
+            keyNote = dir > 0 ? "Saved. That was the last thing in the list." : "Saved. That was the first thing in the list."
+            return
+        }
+        let keep = at
+        shown = list[k]
+        load(list[k])
+        // The same field on the next page — a Section of a template it is not on: the pills.
+        if let keep, fieldOrder().contains(keep) { land(keep) } else { land(keep == nil ? nil : .templates) }
+    }
+
+    fileprivate func openJump() {
+        beforeJump = at
+        jumpText = ""
+        jumping = true
+        DispatchQueue.main.async { typing = .jump }
+    }
+
+    fileprivate func closeJump(go f: ThingField?) {
+        jumping = false
+        jumpText = ""
+        land(f ?? beforeJump)
+    }
+
+    /// Reads Valid until as typed; false (and says how to write it) when it is no date.
+    @discardableResult fileprivate func readExpiry() -> Bool {
+        let typed = jsTrim(expiryText)
+        if typed == draft.expiry { expiryProblem = ""; return true }
+        guard let ymd = readDate(typed, today: Today.local) else {
+            expiryProblem = "Not a date: type 2027-06-30 or 30/6 27, or +6m, +1y."
+            return false
+        }
+        draft.expiry = ymd
+        expiryText = ymd
+        expiryProblem = ""
+        return true
+    }
+
+    /// The Mac's date field under Valid until.
+    fileprivate var expiryField: some View {
+        TextField("2027-06-30, 30/6 27 or +6m", text: Binding(get: { expiryText }, set: { expiryText = $0; expiryProblem = "" }))
+            .textFieldStyle(.plain)
+            .font(.system(.body).monospacedDigit()).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(at == .expiry ? AppSection.care.color : Theme.line,
+                                                               lineWidth: at == .expiry ? 2 : 1))
+            .focused($typing, equals: .expiry)
+            .accessibilityIdentifier("thing-expiry")
+    }
+
+    // MARK: The keys
+
+    /// Every key pressed while the page is open passes here first. Answers nil for a key
+    /// the page took, the key itself for one the window should have.
+    fileprivate func key(_ e: NSEvent) -> NSEvent? {
+        guard let mine = keyHome.window else { return e }
+        let drop = keyHome.drop
+        // Keys for this page only: its window, or the list one of its drop-downs has open.
+        guard e.window === mine || drop.open != nil else { return e }
+        let mods = e.keyModifiers
+        let code = e.keyCode
+
+        // The page's commands, from anywhere on it — the Thing menu's keys.
+        if mods == .command {
+            let letter = e.charactersIgnoringModifiers?.lowercased() ?? ""
+            let command: (() -> Void)?
+            switch (letter, code) {
+            case ("s", _): command = { save() }
+            case ("n", _): command = { saveAndNew() }
+            case ("j", _): command = { openJump() }
+            case (_, KeyCode.down): command = order == nil ? nil : { step(1) }
+            case (_, KeyCode.up): command = order == nil ? nil : { step(-1) }
+            default: command = nil
+            }
+            guard let command else { return e }
+            if let open = drop.open { _ = drop.answer[open]?(.close) }
+            if jumping { jumping = false }
+            command()
+            return nil
+        }
+
+        // ⌘J's box: Return goes, Esc closes; the rest is typing.
+        if jumping {
+            switch code {
+            case KeyCode.escape: closeJump(go: nil)
+            case KeyCode.returnKey, KeyCode.enter:
+                if let hit = jumpMatches().first { closeJump(go: hit) }
+            case KeyCode.tab: break
+            default: return e
+            }
+            return nil
+        }
+
+        // An open list: the arrows, the letters, Return and Esc are the list's.
+        if let open = drop.open, let answer = drop.answer[open] {
+            // Typing into the list's own field (A new place, clicked into): its keys, but Esc.
+            if !drop.openedByKeys, e.window?.firstResponder is NSTextView {
+                if code == KeyCode.escape { _ = answer(.close); return nil }
+                return e
+            }
+            switch code {
+            case KeyCode.escape: _ = answer(.close)
+            case KeyCode.returnKey, KeyCode.enter: _ = answer(.choose)
+            case KeyCode.down: _ = answer(.down)
+            case KeyCode.up: _ = answer(.up)
+            case KeyCode.delete: _ = answer(.back)
+            case KeyCode.space: _ = answer(.space)
+            case KeyCode.tab:
+                _ = answer(.close)
+                move(mods.contains(.shift) ? -1 : 1)
+            default:
+                guard mods.subtracting(.shift).isEmpty, let words = e.typedWords else { return e }
+                _ = answer(.letters(words))
+            }
+            return nil
+        }
+        guard e.window === mine else { return e }
+
+        switch code {
+        case KeyCode.tab:
+            guard mods.subtracting(.shift).isEmpty else { return e }
+            move(mods.contains(.shift) ? -1 : 1)
+            return nil
+        case KeyCode.returnKey, KeyCode.enter:
+            guard mods.isEmpty else { return e }
+            // Notes are many lines: Return starts a new one there (his answer, 7 Oct 2026).
+            if at == .notes, let editor = mine.firstResponder as? NSTextView {
+                editor.insertNewlineIgnoringFieldEditor(nil)
+                return nil
+            }
+            save()
+            return nil
+        default:
+            break
+        }
+
+        guard let f = at, mods.subtracting(.shift).isEmpty else { return e }
+        if f.isList, let answer = drop.answer[fieldId(f)] {
+            switch code {
+            case KeyCode.space, KeyCode.down: _ = answer(.open)
+            case KeyCode.up, KeyCode.left, KeyCode.right, KeyCode.delete: break
+            default:
+                guard let words = e.typedWords else { return e }
+                _ = answer(.letters(words))
+            }
+            return nil
+        }
+        switch f {
+        case .templates:
+            return pillKey(e)
+        case .liquid, .restricted:
+            guard code == KeyCode.space else { return e }
+            if f == .liquid { draft.liquid.toggle() } else { draft.restricted.toggle() }
+            return nil
+        default:
+            return e
+        }
+    }
+
+    /// On these templates: ← → move along the pills, Space turns the one lit on or off,
+    /// letters jump to the first template whose name starts so.
+    private func pillKey(_ e: NSEvent) -> NSEvent? {
+        let list = templates
+        guard !list.isEmpty else { return e }
+        let n = min(max(pillAt ?? 0, 0), list.count - 1)
+        switch e.keyCode {
+        case KeyCode.left: pillAt = max(n - 1, 0)
+        case KeyCode.right: pillAt = min(n + 1, list.count - 1)
+        case KeyCode.space: toggleTemplate(list[n].id)
+        case KeyCode.up, KeyCode.down, KeyCode.delete: break
+        default:
+            guard let words = e.typedWords else { return e }
+            let now = Date()
+            keyHome.ahead = now.timeIntervalSince(keyHome.aheadAt) <= 1 ? keyHome.ahead + words : words
+            keyHome.aheadAt = now
+            let typed = keyHome.ahead.lowercased()
+            if let hit = list.firstIndex(where: { $0.name.lowercased().hasPrefix(typed) }) { pillAt = hit }
+        }
+        return nil
+    }
+}
+#endif

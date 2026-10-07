@@ -7846,4 +7846,448 @@ final class AMSPackingUITests: XCTestCase {
         }
         shot(app, "share-grab-header")
     }
+
+    // MARK: - A thing's page from the keys (Mac, 0.68)
+
+    // His ask, decided 7 Oct 2026: fill in a thing on the Mac without touching the mouse.
+    // Tab walks every field; a drop-down picks as he types; Return saves (not in Notes);
+    // ⌘N saves and starts the next thing with this one's choices; ⌘↓ ⌘↑ go through the
+    // list; ⌘J jumps to a field; a Thing menu lists the keys. Mac only — the iPhone stays
+    // as it is, so every one of these is skipped there.
+
+    /// The field the thing's page has in focus: the line at its foot names it, and carries
+    /// the field's control id as its value.
+    private func focusOn(_ app: XCUIApplication) -> String {
+        for holder in [app.staticTexts, app.otherElements, app.groups] {
+            let e = holder["thing-keys"]
+            if e.exists { return e.value as? String ?? "" }
+        }
+        return ""
+    }
+
+    /// Waits for the focus to be on this field; false — with what the line said — if not.
+    private func focused(_ app: XCUIApplication, _ id: String, timeout: TimeInterval = 3) -> Bool {
+        if waitUntil(timeout: timeout, { self.focusOn(app) == id }) { return true }
+        print("KEYS-REPORT focus is '\(focusOn(app))', not \(id); the line says '\(words(app.staticTexts["thing-keys"]))'")
+        return false
+    }
+
+    /// Tab until the focus is on this field (at most once round the page).
+    private func tabTo(_ app: XCUIApplication, _ id: String, back: Bool = false) {
+        for _ in 0..<30 {
+            if focusOn(app) == id { return }
+            app.typeKey(.tab, modifierFlags: back ? .shift : [])
+            _ = waitUntil(timeout: 1) { self.focusOn(app) != "" }
+        }
+        XCTAssertEqual(focusOn(app), id, "Tab never reached \(id)")
+    }
+
+    /// What a text field holds.
+    private func says(_ app: XCUIApplication, _ id: String) -> String {
+        let e = app.textFields[id].exists ? app.textFields[id] : app.textViews[id]
+        return e.exists ? (e.value as? String ?? "") : ""
+    }
+
+    /// Tab walks EVERY field of a thing's page in his reading order, Shift-Tab back, and
+    /// round from the last to the first; the page opens with the cursor at the end of the
+    /// name, and what is typed lands in the field the line at the foot names.
+    func testTheThingPageTabsThroughEveryFieldInOrder() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")                                     // on Hiking only: one Section
+        XCTAssertTrue(focused(app, "thing-name"), "the page does not open in Name")
+        app.typeText(" case")
+        XCTAssertEqual(says(app, "thing-name"), "Map case", "the cursor was not at the end of the name")
+        let order = ["thing-notes", "thing-category", "thing-owner", "thing-lists", "thing-section-1",
+                     "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-brand", "thing-colour",
+                     "thing-condition", "thing-care", "thing-care-notes", "thing-liquid", "thing-restricted",
+                     "thing-expiry", "thing-name"]
+        for id in order {
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(focused(app, id), "Tab did not go on to \(id)")
+            if id == "thing-category" { shot(app, "keys-focus-kind-of-thing") }
+        }
+        app.typeKey(.tab, modifierFlags: .shift)
+        XCTAssertTrue(focused(app, "thing-expiry"), "Shift-Tab from Name did not go round to Valid until")
+        app.typeKey(.tab, modifierFlags: .shift)
+        XCTAssertTrue(focused(app, "thing-restricted"), "Shift-Tab did not go back")
+        // Typing lands where the line says.
+        tabTo(app, "thing-notes")
+        app.typeText("Dry bag")
+        XCTAssertTrue(says(app, "thing-notes").contains("Dry bag"), "what was typed did not reach Notes: '\(says(app, "thing-notes"))'")
+        tabTo(app, "thing-brand")
+        app.typeText("Trailco")
+        XCTAssertEqual(says(app, "thing-brand"), "Trailco", "what was typed did not reach Brand")
+        shot(app, "keys-focus-brand")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Escape no longer cancels the page")
+        #endif
+    }
+
+    /// A drop-down in focus picks as he types ("e" → Electronics, "food" → Food & drink);
+    /// Space or ↓ opens its list, ↑ ↓ move, Return chooses, Esc closes the list only; Tab
+    /// goes on. Saved, the choice is kept.
+    func testADropDownPicksAsHeTypesAndOpensWithSpace() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")
+        tabTo(app, "thing-category")
+        app.typeText("e")
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Electronics" },
+                      "typing e did not pick Electronics: '\(chosen(app, "thing-category"))'")
+        XCTAssertFalse(app.buttons["thing-category-0"].exists, "typing opened the list")
+        sleep(2)                                                  // a pause starts the letters afresh
+        app.typeText("food")
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Food & drink" },
+                      "typing food did not pick Food & drink: '\(chosen(app, "thing-category"))'")
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(appears(app, "thing-category-list", timeout: 5), "Space did not open the list")
+        shot(app, "keys-list-open")
+        app.typeKey(.downArrow, modifierFlags: [])
+        app.typeKey(.downArrow, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-category-list", timeout: 5), "Return did not close the list")
+        XCTAssertEqual(chosen(app, "thing-category"), "Pharmacy / meds", "↓ ↓ Return from Food & drink did not choose two rows on")
+        XCTAssertNotNil(find(app, "thing-detail"), "Return in the list saved the page")
+        app.typeKey(.downArrow, modifierFlags: [])
+        XCTAssertTrue(appears(app, "thing-category-list", timeout: 5), "↓ did not open the list")
+        app.typeKey(.upArrow, modifierFlags: [])
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-category-list", timeout: 5), "Esc did not close the list")
+        XCTAssertNotNil(find(app, "thing-detail"), "Esc in the list closed the page too")
+        XCTAssertEqual(chosen(app, "thing-category"), "Pharmacy / meds", "Esc changed the choice")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-owner"), "Tab did not leave the drop-down")
+        app.typeText("r")
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-owner") == "Robin" }, "typing r did not pick Robin")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Pharmacy / meds" }, "the kind picked by the keys was not kept")
+        XCTAssertEqual(chosen(app, "thing-owner"), "Robin", "the owner picked by the keys was not kept")
+        #endif
+    }
+
+    /// Kept at home from the keys: letters pick one of his places; a name that is none of
+    /// them is offered as "A new place: …" in the open list, and Return makes it — it joins
+    /// his places, as one made at the list's foot does.
+    func testKeptAtHomeMakesANewPlaceFromTheKeys() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")
+        tabTo(app, "thing-storage")
+        app.typeText("hall")
+        XCTAssertTrue(waitUntil { self.keptAtHome(app) == "Hall closet" }, "typing hall did not pick Hall closet: '\(keptAtHome(app))'")
+        XCTAssertFalse(app.buttons["thing-place-0"].exists, "a place that is there opened the list")
+        sleep(2)
+        app.typeText("Workbench")
+        let offer = app.buttons["thing-place-offer"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 5), "a place that is not there was not offered")
+        XCTAssertTrue(words(offer).contains("Workbench"), "the offer does not say the name: '\(words(offer))'")
+        shot(app, "keys-new-place-offered")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-places", timeout: 5), "Return did not close the list")
+        XCTAssertTrue(waitUntil { self.keptAtHome(app) == "Workbench" }, "Return did not make the new place: '\(keptAtHome(app))'")
+        XCTAssertNotNil(find(app, "thing-detail"), "Return in the list saved the page")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.keptAtHome(app) == "Workbench" }, "the new place was not kept")
+        openPlaces(app)
+        let last = (0..<60).map { app.buttons["thing-place-\($0)"] }.last { $0.exists }
+        XCTAssertEqual(last.map { words($0) }, "Workbench", "the new place did not join his places")
+        closeDropDown(app, "thing-place")
+        #endif
+    }
+
+    /// On these templates from the keys: ← → move along the pills, a letter jumps, Space
+    /// turns one on or off (and its Section comes into the Tab order); Liquid and Not
+    /// allowed in the cabin turn with Space.
+    func testTemplatePillsAndSwitchesAnswerArrowsAndSpace() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")                                     // on Hiking (pill 1) only
+        tabTo(app, "thing-lists")
+        app.typeKey(.rightArrow, modifierFlags: [])               // from Hiking to Swim
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-lists-2"]) }, "→ Space did not turn Swim on")
+        XCTAssertTrue(app.buttons["thing-section-2"].waitForExistence(timeout: 5), "Swim's Section did not come")
+        app.typeText("c")                                         // jumps to Common base
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-lists-0"]) }, "c Space did not turn Common base on")
+        XCTAssertTrue(isOn(app.buttons["thing-lists-1"]), "Hiking was turned off")
+        shot(app, "keys-pills")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-section-0"), "Tab did not go to the Section of the template turned on")
+        tabTo(app, "thing-liquid")
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-liquid") }, "Space did not turn Liquid on")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-restricted"))
+        app.typeKey(.space, modifierFlags: [])
+        app.typeKey(.space, modifierFlags: [])
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-restricted") }, "Space three times did not leave Not allowed in the cabin on")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-lists-0"]) && self.isOn(app.buttons["thing-lists-2"]) },
+                      "the templates turned on by the keys were not kept")
+        XCTAssertTrue(isSwitchOn(app, "thing-liquid") && isSwitchOn(app, "thing-restricted"), "the switches were not kept")
+        #endif
+    }
+
+    /// The weight from the keys: on arrival its number is selected, so typing replaces it,
+    /// and "1,2 kg" is 1200 g. Valid until is typed: "+6m" lights +6 months, "30/6 27" is
+    /// 2027-06-30, nonsense is refused with a line, and Return saves "+1y".
+    func testWeightAndValidUntilAreTypedFromTheKeys() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Headlamp")                                // 88 g
+        tabTo(app, "thing-weight")
+        app.typeText("1,2 kg")
+        XCTAssertEqual(says(app, "thing-weight"), "1,2 kg", "the 88 was not replaced")
+        tabTo(app, "thing-expiry")
+        app.typeText("+6m")
+        app.typeKey(.tab, modifierFlags: .shift)
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-expiry-quick-1"]) }, "+6m is not six months on (its pill is not lit)")
+        XCTAssertEqual(words(app.staticTexts["thing-expiry-distance"]), "in 6 months")
+        tabTo(app, "thing-expiry")
+        app.typeText("30/6 27")
+        app.typeKey(.tab, modifierFlags: .shift)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-expiry") == "2027-06-30" }, "30/6 27 is not 2027-06-30: '\(says(app, "thing-expiry"))'")
+        tabTo(app, "thing-expiry")
+        app.typeText("soon")
+        app.typeKey(.tab, modifierFlags: .shift)
+        XCTAssertTrue(app.staticTexts["thing-expiry-problem"].waitForExistence(timeout: 5), "a date that is none was not refused")
+        shot(app, "keys-date-refused")
+        tabTo(app, "thing-expiry")
+        app.typeText("+1y")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Return in Valid until did not save")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.says(app, "thing-weight") == "1200" }, "1,2 kg was not kept as 1200 g: '\(says(app, "thing-weight"))'")
+        XCTAssertTrue(isOn(app.buttons["thing-expiry-quick-2"]), "+1y was not kept as a year on")
+        #endif
+    }
+
+    /// Return saves the page from any field — but in Notes it starts a new line (his
+    /// answer, 7 Oct 2026); ⌘S saves too.
+    func testReturnSavesButNotInNotes() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")
+        app.typeText(" case")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-notes"))
+        app.typeText("line one")
+        app.typeKey(.return, modifierFlags: [])
+        app.typeText("line two")
+        XCTAssertNotNil(find(app, "thing-detail"), "Return in Notes saved the page")
+        XCTAssertTrue(says(app, "thing-notes").contains("line one\nline two"), "Return in Notes made no new line: '\(says(app, "thing-notes"))'")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-category"))
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Return on Kind of thing did not save")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).contains("Map case") }, "the name typed was not saved")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(says(app, "thing-notes").contains("line one\nline two"), "the two lines were not kept")
+        tabTo(app, "thing-colour")
+        app.typeText("Olive")
+        app.typeKey("s", modifierFlags: .command)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "⌘S did not save")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(says(app, "thing-colour"), "Olive", "⌘S did not keep the colour")
+        #endif
+    }
+
+    /// ⌘N saves the thing and opens a NEW thing's page with its Kind of thing, Whose it is,
+    /// Kept at home, Usually packed in, When and templates (his answer, 7 Oct 2026), the
+    /// cursor in Name; Esc on a new page makes nothing. With no page open, ⌘N is still
+    /// File ▸ New Window.
+    func testCommandNSavesAndStartsTheNextThingWithTheSameChoices() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")
+        tabTo(app, "thing-category")
+        app.typeText("e")                                         // Electronics
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Electronics" })
+        let owner = chosen(app, "thing-owner"), bag = chosen(app, "thing-bag"), when = chosen(app, "thing-when")
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name").isEmpty }, "⌘N did not open a new thing's page")
+        XCTAssertTrue(focused(app, "thing-name"), "the cursor is not in the new thing's Name")
+        XCTAssertEqual(chosen(app, "thing-category"), "Electronics", "Kind of thing was not carried over")
+        XCTAssertEqual(chosen(app, "thing-owner"), owner, "Whose it is was not carried over")
+        XCTAssertEqual(keptAtHome(app), "Garage", "Kept at home was not carried over")
+        XCTAssertEqual(chosen(app, "thing-bag"), bag, "Usually packed in was not carried over")
+        XCTAssertEqual(chosen(app, "thing-when"), when, "When was not carried over")
+        XCTAssertTrue(isOn(app.buttons["thing-lists-1"]) && !isOn(app.buttons["thing-lists-0"]), "the templates were not carried over")
+        XCTAssertEqual(says(app, "thing-weight"), "", "the weight was carried over")
+        XCTAssertFalse(app.buttons["thing-delete"].exists, "a thing not made yet offers Delete")
+        shot(app, "keys-command-n")
+        app.typeText("Compass")
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name").isEmpty }, "⌘N did not open a second new page")
+        app.typeText("Whistle")
+        app.typeKey("s", modifierFlags: .command)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "⌘S did not save the new thing")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["things-count"]) == "12 things" },
+                      "the two new things are not in Your things: '\(words(app.staticTexts["things-count"]))'")
+        XCTAssertTrue(words(app.buttons["thing-row-0"]).contains("Whistle"), "the newest is not on top")
+        XCTAssertTrue(words(app.buttons["thing-row-1"]).contains("Compass"), "Compass is not under it")
+        tap(app, id: "thing-row-1")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Electronics" }, "Compass did not get Electronics")
+        XCTAssertTrue(isOn(app.buttons["thing-lists-1"]), "Compass is not on Hiking")
+        // A new page left with Esc makes nothing.
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name").isEmpty })
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["things-count"]), "12 things", "Esc on a new page made a thing")
+        // No page open: ⌘N is File ▸ New Window, as always.
+        let windows = app.windows.count
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { app.windows.count > windows }, "with no thing's page open, ⌘N did not open a window")
+        #endif
+    }
+
+    /// ⌘↓ and ⌘↑ save and go on to the next or previous thing of the list the page came
+    /// from, the cursor on the same field — from Your things, and from the table filtered
+    /// to No weight, where a thing given its weight leaves the list and still leads on.
+    func testCommandArrowsGoThroughTheListOnTheSameField() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        tap(app, id: "table-filter-weight")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-0-name"]) == "Goggles" && self.words(app.staticTexts["table-2-name"]) == "Towel" },
+                      "No weight does not list Goggles, Swim cap, Towel")
+        tap(app, id: "table-0-open")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        tabTo(app, "thing-weight")
+        app.typeText("90")
+        app.typeKey(.downArrow, modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name") == "Swim cap" }, "⌘↓ did not go on to Swim cap: '\(says(app, "thing-name"))'")
+        XCTAssertTrue(focused(app, "thing-weight"), "the cursor did not stay on Weight")
+        app.typeText("40")
+        app.typeKey(.downArrow, modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name") == "Towel" }, "⌘↓ did not go on to Towel")
+        app.typeText("300")
+        app.typeKey(.upArrow, modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name") == "Swim cap" }, "⌘↑ did not go back to Swim cap")
+        XCTAssertEqual(says(app, "thing-weight"), "40", "Swim cap's weight was not saved by ⌘↓")
+        app.typeKey(.downArrow, modifierFlags: .command)
+        app.typeKey(.downArrow, modifierFlags: .command)              // past the last: stays, saved
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-keys"]).contains("last thing") }, "the end of the list was not said")
+        XCTAssertEqual(says(app, "thing-name"), "Towel")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["table-none"].waitForExistence(timeout: 5), "the three weights typed were not all saved")
+        tap(app, id: "table-filter-all")
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+
+        // Your things, A–Z: Goggles, Headlamp, Hiking boots …
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-1")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(says(app, "thing-name"), "Headlamp")
+        tabTo(app, "thing-colour")
+        app.typeKey(.downArrow, modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name") == "Hiking boots" }, "⌘↓ did not go on in Your things")
+        XCTAssertTrue(focused(app, "thing-colour"), "the cursor did not stay on Colour")
+        app.typeKey(.upArrow, modifierFlags: .command)
+        app.typeKey(.upArrow, modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name") == "Goggles" }, "⌘↑ twice did not reach Goggles")
+        XCTAssertEqual(says(app, "thing-weight"), "90", "the weight typed from the table was not kept")
+        #endif
+    }
+
+    /// ⌘J opens a small box: part of a field's name and Return go there ("wei" → Weight,
+    /// "val" → Valid until); a name that is none says so; Esc closes it.
+    func testCommandJJumpsToAFieldByName() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")                                     // 60 g
+        app.typeKey("j", modifierFlags: .command)
+        XCTAssertTrue(app.textFields["thing-jump"].waitForExistence(timeout: 5), "⌘J opened no box")
+        app.typeText("wei")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-jump-match"]).contains("Weight") }, "wei does not find Weight")
+        shot(app, "keys-jump")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !app.textFields["thing-jump"].exists }, "Return did not close the box")
+        XCTAssertTrue(focused(app, "thing-weight"), "Return did not go to Weight")
+        app.typeText("75")
+        XCTAssertEqual(says(app, "thing-weight"), "75", "the weight was not selected on arrival")
+        app.typeKey("j", modifierFlags: .command)
+        XCTAssertTrue(app.textFields["thing-jump"].waitForExistence(timeout: 5))
+        app.typeText("val")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-expiry"), "val did not go to Valid until")
+        app.typeKey("j", modifierFlags: .command)
+        XCTAssertTrue(app.textFields["thing-jump"].waitForExistence(timeout: 5))
+        app.typeText("zzz")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(app.textFields["thing-jump"].exists, "a name that is none closed the box")
+        XCTAssertTrue(words(app.staticTexts["thing-jump-match"]).contains("No field"), "a name that is none was not said")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !app.textFields["thing-jump"].exists }, "Esc did not close the box")
+        XCTAssertNotNil(find(app, "thing-detail"), "Esc in the box closed the page")
+        XCTAssertTrue(focused(app, "thing-expiry"), "the focus did not go back where it was")
+        #endif
+    }
+
+    /// The Thing menu in the menu bar lists the page's commands with their keys, the Apple
+    /// way — on while a thing's page is open, off otherwise; chosen from the menu, Save
+    /// and New does what ⌘N does.
+    func testTheThingMenuIsOnOnlyWhileAPageIsOpen() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        tab(app, "care")
+        let save = app.menuItems["thing-menu-save"], new = app.menuItems["thing-menu-new"]
+        let next = app.menuItems["thing-menu-next"], jump = app.menuItems["thing-menu-jump"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5), "no Thing menu:\n" + String(app.menuBars.firstMatch.debugDescription.prefix(3000)))
+        XCTAssertFalse(save.isEnabled || new.isEnabled || jump.isEnabled || next.isEnabled, "the Thing menu is on with no thing's page open")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { save.isEnabled && new.isEnabled && jump.isEnabled && next.isEnabled },
+                      "the Thing menu is off while a page from Your things is open")
+        new.click()                                               // XCTest opens the menu to it
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name").isEmpty }, "Save and New from the menu opened no new page")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { !save.isEnabled }, "the Thing menu stayed on after the page closed")
+        #endif
+    }
 }

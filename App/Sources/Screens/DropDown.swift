@@ -65,21 +65,38 @@ struct DropDown: View {
     /// (his places compare as names, ignoring capitals and spaces).
     let same: (String, String) -> Bool
     let newEntry: DropDownNew?
+    /// The 2-point ring of the field in focus on a thing's page (Mac, 0.68); nil = none.
+    let ring: Color?
     let choose: (String) -> Void
 
     @State private var open = false
     @State private var typed = ""
     @State private var needs = ""
+    #if os(macOS)
+    /// The Mac's keys on a thing's page (0.68): given by the page; nil elsewhere.
+    @Environment(\.dropDownKeys) private var keys
+    /// The row the arrows are on in the open list (an index into `keyRows`; one past the
+    /// last = the offer of a new entry).
+    @State private var lit: Int?
+    /// The letters typed, and when the last came: a pause of a second starts afresh.
+    @State private var ahead = ""
+    @State private var aheadAt = Date.distantPast
+    /// Words typed that are none of the rows, on a list that takes a new entry: offered
+    /// as "A new place: …" at the list's foot.
+    @State private var offer = ""
+    /// The list was opened by the keys: its foot offers what is typed instead of a field.
+    @State private var byKeys = false
+    #endif
 
     init(title: String?, heading: DropDownHeading = .band, options: [(value: String, label: String)],
          selected: String, id: DropDownIds,
          tint: Color = AppSection.care.color, blank: String? = nil, other: Bool = false,
          same: @escaping (String, String) -> Bool = { $0 == $1 }, newEntry: DropDownNew? = nil,
-         choose: @escaping (String) -> Void) {
+         ring: Color? = nil, choose: @escaping (String) -> Void) {
         self.title = title; self.heading = heading
         self.options = options; self.selected = selected; self.ids = id
         self.tint = tint; self.blank = blank; self.other = other; self.same = same
-        self.newEntry = newEntry; self.choose = choose
+        self.newEntry = newEntry; self.ring = ring; self.choose = choose
     }
 
     /// The words of the choice that stands — what the field shows and says.
@@ -121,7 +138,13 @@ struct DropDown: View {
     /// A blank choice ("Not said", "Same as the thing …") is in grey, as a field's own
     /// grey words are.
     private var field: some View {
-        Button { putKeyboardAway(); open = true } label: {
+        Button {
+            putKeyboardAway()
+            #if os(macOS)
+            keys?.clicked?(ids.field)
+            #endif
+            open = true
+        } label: {
             HStack(spacing: 8) {
                 Text(shown)
                     .font(.body).foregroundStyle(same("", selected) ? Theme.muted : Theme.ink)
@@ -134,7 +157,7 @@ struct DropDown: View {
             }
             .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(ring ?? Theme.line, lineWidth: ring == nil ? 1 : 2))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
@@ -150,24 +173,50 @@ struct DropDown: View {
         }
         .onChange(of: open) { _, now in
             if !now { typed = ""; needs = "" }
+            #if os(macOS)
+            if now {
+                if lit == nil { lit = chosenIndex }
+            } else {
+                lit = nil; ahead = ""; offer = ""; byKeys = false
+            }
+            keys?.opened(now ? ids.field : (keys?.open == ids.field ? nil : keys?.open), byKeys: now && byKeys)
+            #endif
         }
+        #if os(macOS)
+        .background {
+            if let keys { DropDownKeyAnswer(keys: keys, id: ids.field, answer: answer) }
+        }
+        #endif
     }
 
     private var list: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if let blank { row(blank, value: "", id: "\(ids.row)-none") }
+                    if let blank { row(blank, value: "", id: "\(ids.row)-none", n: 0) }
                     ForEach(Array(options.enumerated()), id: \.offset) { n, o in
-                        row(o.label, value: o.value, id: "\(ids.row)-\(n)")
+                        row(o.label, value: o.value, id: "\(ids.row)-\(n)", n: n + (blank == nil ? 0 : 1))
                     }
-                    if otherRow { row(selected, value: selected, id: "\(ids.row)-other") }
-                    if let newEntry { foot(newEntry) }
+                    if otherRow { row(selected, value: selected, id: "\(ids.row)-other", n: (blank == nil ? 0 : 1) + options.count) }
+                    if let newEntry {
+                        #if os(macOS)
+                        if byKeys { offerRow(newEntry) } else { foot(newEntry) }
+                        #else
+                        foot(newEntry)
+                        #endif
+                    }
                 }
                 .padding(12)
             }
             // A long list opens at the choice that stands, so the tick is seen.
             .onAppear { if let at = chosenRowId { proxy.scrollTo(at, anchor: .center) } }
+            #if os(macOS)
+            // …and the arrows' row stays in sight as they move.
+            .onChange(of: lit) { _, n in
+                guard let n else { return }
+                proxy.scrollTo(n < keyRows.count ? keyRows[n].id : "\(ids.row)-offer")
+            }
+            #endif
         }
         .frame(minWidth: 280, idealWidth: 320, maxHeight: 440)
         .background(Theme.bg)
@@ -185,8 +234,13 @@ struct DropDown: View {
     /// One choice: a tap takes it and closes the list. Filled and shaped as a whole
     /// row — on the Mac a slim whole-row plain button with nothing behind its words
     /// once took no clicks.
-    private func row(_ label: String, value: String, id: String) -> some View {
+    private func row(_ label: String, value: String, id: String, n: Int) -> some View {
         let on = same(value, selected)
+        #if os(macOS)
+        let arrows = lit == n
+        #else
+        let arrows = false
+        #endif
         return Button { choose(value); open = false } label: {
             HStack(spacing: 8) {
                 Text(label).font(.body).foregroundStyle(value.isEmpty ? Theme.muted : Theme.ink)
@@ -199,7 +253,8 @@ struct DropDown: View {
                 }
             }
             .padding(.vertical, 6).frame(minHeight: Metrics.tap)
-            .background(Theme.bg)
+            // The row the arrows are on (Mac keys): lit in the list's colour, as a menu's.
+            .background(arrows ? AnyShapeStyle(tint.opacity(0.18)) : AnyShapeStyle(Theme.bg))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
@@ -226,6 +281,147 @@ struct DropDown: View {
         .needsLine($needs, typed: typed, id: "\(ids.row)-add-needs")
         .padding(.top, 8)
     }
+
+    #if os(macOS)
+    // MARK: The Mac's keys (0.68, a thing's page)
+
+    /// The list's rows in order, as the arrows and the letters see them.
+    private var keyRows: [(label: String, value: String, id: String)] {
+        var out: [(label: String, value: String, id: String)] = []
+        if let blank { out.append((blank, "", "\(ids.row)-none")) }
+        for (n, o) in options.enumerated() { out.append((o.label, o.value, "\(ids.row)-\(n)")) }
+        if otherRow { out.append((selected, selected, "\(ids.row)-other")) }
+        return out
+    }
+
+    /// The ticked row's place in `keyRows`.
+    private var chosenIndex: Int? { keyRows.firstIndex { same($0.value, selected) } }
+
+    /// The first row whose words start with what was typed (capitals ignored), else the
+    /// first with a WORD that does — "hand" finds "Carry-on / hand luggage".
+    private func match(_ typed: String) -> Int? {
+        let t = typed.lowercased()
+        guard !t.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let rows = keyRows.map { $0.label.lowercased() }
+        if let n = rows.firstIndex(where: { $0.hasPrefix(t) }) { return n }
+        return rows.firstIndex { label in
+            label.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains { $0.hasPrefix(t) }
+        }
+    }
+
+    /// One key from the page. Closed: letters pick the first match at once (a list that
+    /// takes a new entry opens to offer what matches nothing); Space or ↓ opens. Open: ↑ ↓
+    /// move, letters jump, Return chooses, Esc closes the list only. Answers whether the
+    /// key was taken.
+    private func answer(_ key: DropDownKey) -> Bool {
+        switch key {
+        case .open:
+            openByKeys()
+        case .letters(let s):
+            let now = Date()
+            // A new name being typed in the open list keeps every letter, pause or not.
+            let naming = open && newEntry != nil && !offer.isEmpty
+            ahead = (naming || now.timeIntervalSince(aheadAt) <= 1) ? ahead + s : s
+            aheadAt = now
+            if open {
+                follow()
+            } else if let n = match(ahead) {
+                if !same(keyRows[n].value, selected) { choose(keyRows[n].value) }
+            } else if newEntry != nil {
+                offer = ahead
+                openByKeys(lit: keyRows.count)
+            }
+        case .space:
+            // In the middle of a name (a new place has spaces in it), a space is a letter;
+            // otherwise Space opens the list, or chooses in the open one.
+            let typing = !ahead.isEmpty && (Date().timeIntervalSince(aheadAt) <= 1 || (open && !offer.isEmpty))
+            if newEntry != nil && typing { return answer(.letters(" ")) }
+            if !open { openByKeys() } else { chooseLit() }
+        case .back:
+            guard open, !ahead.isEmpty else { return true }
+            ahead.removeLast()
+            aheadAt = Date()
+            follow()
+        case .down:
+            if !open { openByKeys(); return true }
+            let last = keyRows.count - (offer.isEmpty ? 1 : 0)
+            lit = min((lit ?? -1) + 1, last)
+        case .up:
+            guard open else { return true }
+            lit = max((lit ?? 1) - 1, 0)
+        case .choose:
+            guard open else { return false }
+            chooseLit()
+        case .close:
+            guard open else { return false }
+            close()
+        }
+        return true
+    }
+
+    private func openByKeys(lit at: Int? = nil) {
+        byKeys = true
+        lit = at ?? chosenIndex ?? 0
+        open = true
+        keys?.opened(ids.field, byKeys: true)
+    }
+
+    /// The arrows follow the letters: onto the match, or onto the offer of a new entry.
+    private func follow() {
+        if let n = match(ahead) {
+            lit = n
+            offer = ""
+        } else if newEntry != nil, !jsTrim(ahead).isEmpty {
+            offer = ahead
+            lit = keyRows.count
+        } else {
+            offer = ""
+            if let n = lit, n >= keyRows.count { lit = chosenIndex ?? 0 }
+        }
+    }
+
+    private func chooseLit() {
+        if let lit, lit == keyRows.count, let newEntry, !jsTrim(offer).isEmpty {
+            newEntry.add(jsTrim(offer))
+        } else if let lit, keyRows.indices.contains(lit) {
+            choose(keyRows[lit].value)
+        }
+        close()
+    }
+
+    private func close() {
+        open = false
+        keys?.opened(nil, byKeys: false)
+    }
+
+    /// The foot of a list opened by the keys, on a list that takes a new entry: what he
+    /// typed that is none of the rows — "A new place: Workbench" — lit, so Return makes it;
+    /// before that, a quiet line saying how.
+    @ViewBuilder private func offerRow(_ new: DropDownNew) -> some View {
+        if offer.isEmpty {
+            Text("\(new.placeholder): type its name")
+                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                .padding(.top, 8)
+                .accessibilityIdentifier("\(ids.row)-offer-hint")
+        } else {
+            Button { chooseLit() } label: {
+                HStack(spacing: 6) {
+                    Text("\(new.placeholder):").foregroundStyle(Theme.muted)
+                    Text(jsTrim(offer)).foregroundStyle(Theme.ink)
+                    Spacer(minLength: 8)
+                }
+                .font(.body).lineLimit(1)
+                .padding(.vertical, 6).padding(.horizontal, 6).frame(minHeight: Metrics.tap)
+                .background(RoundedRectangle(cornerRadius: 6).fill(lit == keyRows.count ? tint.opacity(0.18) : Color.clear))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .padding(.top, 4)
+            .accessibilityIdentifier("\(ids.row)-offer")
+            .id("\(ids.row)-offer")
+        }
+    }
+    #endif
 
     /// A field being typed in (the weight, a new place) keeps the keyboard up on the
     /// iPhone, and a list opened under it was squeezed into the space above the keys —
