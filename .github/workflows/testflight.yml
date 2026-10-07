@@ -30,15 +30,51 @@ on:
         required: false
         default: ""
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
+  # Already tested? (0.68) A version is checked in full on its branch before it is shipped; the
+  # release commit then only bumps the version. If the commit before this one passed the whole
+  # "Tests" workflow and this one changes nothing but project.yml / the generated project, the
+  # suite is not run a second time — it saved about an hour per release.
+  tested:
+    name: Already tested?
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.look.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: look
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          skip=false
+          parent=$(git rev-parse HEAD~1 2>/dev/null || true)
+          if [ -n "$parent" ]; then
+            changed=$(git diff --name-only HEAD~1 HEAD | grep -v -E '^(project\.yml|AMSPacking\.xcodeproj/project\.pbxproj)$' || true)
+            green=$(gh api "repos/${{ github.repository }}/actions/workflows/tests.yml/runs?head_sha=$parent&status=success&per_page=1" --jq '.total_count')
+            echo "parent $parent · green runs: $green · other changes: ${changed:-none}"
+            if [ -z "$changed" ] && [ "${green:-0}" -gt 0 ]; then skip=true; fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          echo "### Suite: $([ $skip = true ] && echo "already green on $parent — not run again" || echo "runs now")" >> $GITHUB_STEP_SUMMARY
+
   # A red suite must never reach a device.
   tests:
     name: The suite has to pass first
+    needs: tested
+    if: needs.tested.outputs.skip != 'true'
     uses: ./.github/workflows/tests.yml
 
   upload:
     name: Build and send to TestFlight
-    needs: tests
+    needs: [tested, tests]
+    # Runs after a green suite, or with none when the same code was already green (above).
+    if: always() && needs.tested.result == 'success' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
     runs-on: macos-26
     # 120 since 0.67: archive and upload take ~20 minutes, and the release step now
     # waits up to 90 for Apple to show both builds.

@@ -1876,7 +1876,7 @@ TestFlight job still `needs: tests` — every group must pass.
 
 Started by hand (Actions → TestFlight → Run workflow) with an optional `notes` input ("What is new in this build —
 testers see it as "What to Test""). "A red suite must never reach a
-device": job `tests` calls `tests.yml`; job `upload` (`needs: tests`, macos-26, 120 min since 0.67 — 60 before) then:
+device": since 0.68 a first job `tested` (ubuntu) looks whether the commit BEFORE this one passed the whole "Tests" workflow and this one changes only `project.yml` / `AMSPacking.xcodeproj/project.pbxproj` (the version bump) — then the suite is skipped (it ran on the release branch already; about an hour saved per release); otherwise job `tests` calls `tests.yml`; job `upload` (`needs: tests`, macos-26, 120 min since 0.67 — 60 before) then:
 0. Checks out with `fetch-depth: 30` and runs `tools/check-spec.sh` ("The specification moved with What's new",
    since 0.61): the last commit that changed `App/Sources/Guide/Releases.swift` must also change `docs/spec/`, or the
    job stops with "What's new changed in <commit> without docs/spec — update the specification in the same commit".
