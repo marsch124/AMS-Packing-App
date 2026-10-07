@@ -37,7 +37,7 @@ struct PickThingsScreen: View {
         let list = model.library.resolvedTemplate(id: templateId)
         let already = model.library.thingIds(onTemplate: templateId)
         let q = normName(query)
-        let things = model.library.items.filter { q.isEmpty || normName($0.name).contains(q) }
+        let things = model.library.ownThings().filter { q.isEmpty || normName($0.name).contains(q) }
         let grouping = ThingGrouping(rawValue: groupingRaw).flatMap { PickThingsScreen.ways.contains($0) ? $0 : nil } ?? .kind
         let groups = grouping.groups(things)
         let exact = model.library.items.contains { normName($0.name) == q }

@@ -147,7 +147,7 @@ struct TemplateCard: View {
             HStack(spacing: 8) {
                 Cover(list: list, size: 34)
                 Spacer(minLength: 0)
-                Text("\(list.items.count)")
+                Text("\(list.items.filter { !Library.isReminder($0) }.count)")
                     .font(.system(.subheadline, weight: .semibold).monospacedDigit())
                     .foregroundStyle(Theme.muted)
             }
@@ -360,9 +360,11 @@ struct TemplateDetail: View {
 
     var body: some View {
         let list = model.library.resolvedTemplate(id: listId) ?? newList()
+        // The things; the template's reminders have their own block (0.70, spec 07 part 12).
+        let rows = list.items.filter { !Library.isReminder($0) }
         // His lists are built in SECTIONS (511 of his 538 rows sit in one), so that
         // is how a list reads here. A list with no sections falls back to "When".
-        let sectioned = list.items.contains { !$0.section.isEmpty }
+        let sectioned = rows.contains { !$0.section.isEmpty }
         let ways: [ThingGrouping] = (sectioned ? [.section] : []) + [.when, .into, .fromWhere, .kind, .name]
         let grouping = ThingGrouping(rawValue: groupingRaw).flatMap { ways.contains($0) ? $0 : nil } ?? ways[0]
         // Arranging moves headings and the things under them, so it is offered while
@@ -373,7 +375,7 @@ struct TemplateDetail: View {
         // heading; a heading with none of them goes. The pills above are worked out
         // from the WHOLE template, so they stay put while he searches.
         let q = normName(finding)
-        let found = q.isEmpty ? list.items : list.items.filter { normName($0.name).contains(q) }
+        let found = q.isEmpty ? rows : rows.filter { normName($0.name).contains(q) }
         let groups: [(title: String, colour: Color?, items: [Item])] = grouping == .when
             ? entriesByPhase(found)
                 .filter { !$0.entries.isEmpty }
@@ -449,11 +451,11 @@ struct TemplateDetail: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.bottom, 4)
-            if canArrange && (!list.items.isEmpty || !list.sections.isEmpty) { arrangeDoor() }
+            if canArrange && (!rows.isEmpty || !list.sections.isEmpty) { arrangeDoor() }
             // Find a thing without scrolling (his ask, 4 Oct 2026). Not on a template
             // with nothing on it yet — there is nothing to find there. Not while
             // arranging: every heading and thing is in view then, in its place.
-            if !arranging && (!list.items.isEmpty || !finding.isEmpty) {
+            if !arranging && (!rows.isEmpty || !finding.isEmpty) {
                 HStack(spacing: 10) {
                     TextField("Find a thing on this template", text: $finding)
                         .textFieldStyle(.plain)
@@ -465,7 +467,7 @@ struct TemplateDetail: View {
                     // How many of the template's rows the search shows — only while it finds
                     // something; "0 of 4" would say again what the line under it says.
                     if !q.isEmpty && !found.isEmpty {
-                        Text("\(found.count) of \(list.items.count)")
+                        Text("\(found.count) of \(rows.count)")
                             .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                             .fixedSize()
                             .accessibilityIdentifier("template-find-count")
@@ -477,6 +479,13 @@ struct TemplateDetail: View {
                 arrangeList(list)
             } else {
                 KeyboardAwayScroll {
+                    VStack(alignment: .leading, spacing: 0) {
+                    // His reminders for this template (0.70), above the things — outside the
+                    // lazy stack, which would throw away what he is typing as it scrolls.
+                    if q.isEmpty {
+                        TemplateRemindersBlock(templateId: listId).environmentObject(model)
+                            .padding(.horizontal, 16)
+                    }
                     // No space between rows: each is as tall as its words (`Metrics.line`).
                     // His words (6 Oct 2026, testing 0.63): "Far too much line spacing between
                     // the items in a template … Change this dramatically, not only a bit" —
@@ -547,6 +556,7 @@ struct TemplateDetail: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 24)
+                    }
                 }
             }
             // While a heading's name is being changed the keyboard is up: the foot

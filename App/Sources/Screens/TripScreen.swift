@@ -51,6 +51,19 @@ struct TripScreen: View {
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"),
                                                        ("category", "Category"), ("section", "Section")]
 
+    /// The lines as a sorting reads them: sorted by Into, a reminder goes in no bag —
+    /// it stands under "To do" (spec 07, part 12). Every other sorting reads them as
+    /// they are.
+    static func grouped(_ view: String, _ lines: [Item]) -> [Item] {
+        guard view == "container" else { return lines }
+        return lines.map { line in
+            guard Library.isReminder(line) else { return line }
+            var l = line
+            l.container = "To do"
+            return l
+        }
+    }
+
     /// Laundry is on AND the trip is long enough for it to cap anything.
     private func washes(_ trip: TripEvent) -> Bool { laundryWashes(trip) }
 
@@ -174,7 +187,7 @@ struct TripScreen: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     // One level of groups; inside a group the lines keep the trip's own order.
                     // (The web app nests: When → by bag inside; the others → by When inside.)
-                    ForEach(Array(groupBy(view, trip.entries).enumerated()), id: \.offset) { g, group in
+                    ForEach(Array(groupBy(view, TripScreen.grouped(view, trip.entries)).enumerated()), id: \.offset) { g, group in
                         if !group.entries.isEmpty {
                             // The heading, and one press to tick the whole section
                             // (his ask: "so that I could toggle all done").
@@ -576,6 +589,12 @@ struct PackLine: View {
                 }
             }
             Spacer(minLength: 8)
+            // A reminder (spec 07, part 12) is something to DO: no count, no bag.
+            if Library.isReminder(line) {
+                if showBag {
+                    Text("To do").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
+                }
+            } else {
             if qty > 1 {
                 Text("×\(qty.rounded() == qty ? String(Int(qty)) : String(qty))")
                     .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
@@ -587,6 +606,7 @@ struct PackLine: View {
                 Text(line.container)
                     .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                     .frame(maxWidth: 150, alignment: .trailing)
+            }
             }
         }
         // A hair above and below, so a name on two lines keeps off the hairline.

@@ -211,6 +211,27 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with reminders on Hiking (`-uiTestingReminders`, 0.70 — spec
+    /// 07, part 12): "Check the forecast" a week ahead and "Leave a route note" the day
+    /// before; its trip starts in three days, so the first is due and the second not yet.
+    static func reminders() -> Library {
+        var lib = make()
+        guard let hiking = lib.templates.first(where: { $0.name == "Hiking" }) else { return lib }
+        lib.addReminder(templateId: hiking.id, name: "Check the forecast", when: "week")
+        lib.addReminder(templateId: hiking.id, name: "Leave a route note", when: "daybefore")
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if !lib.trips.isEmpty {
+            lib.trips[0].startDate = day(3)
+            lib.trips[0].endDate = day(5)
+            lib.trips[0].entries = buildTotalEntries(lib.trips[0], lib.resolvedTemplates())
+        }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that

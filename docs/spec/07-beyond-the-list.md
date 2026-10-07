@@ -23,6 +23,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 9. Kits — things that hold things | 0.70 | designed here |
 | 10. Hands-free packing (a test version) | 0.71 | designed here |
 | 11. Decision log | — | kept here |
+| 12. Reminders on a template | 0.70 | built (branch work/reminders070) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below.
@@ -203,6 +204,106 @@ wants to use it again. Otherwise it is removed and recorded in the decision log.
 
 ---
 
+## 12. Reminders on a template
+
+His idea, 7 Oct 2026: "Add a list of simple reminders for each Template" — for a run, prepare the course, prepare
+napkins, charged glasses and watch; for a bike the same plus the gear changer, the power bank and the crank sensor.
+
+### Built on what was there
+
+The web app has always known a reminder: a catalogue item whose `itemType` is `"reminder"` (a membership may also
+say `"reminder"` for one template only), put on a template by a membership, copied onto a trip as a line by
+`buildTotalEntries`. The model already treated such a line as something to DO: counted in the trip's progress, but
+not in the bag loads, the cabin check or the review (spec 03, Counting). The native app had no way to make one and
+showed the web app's as ordinary things. So nothing new is stored: a reminder made here is that same item, and the
+web app (and the parity check, 211/211 unchanged — PackingCore is not touched) read it as their own.
+
+### What he sees
+
+- **On a template's page**, above the things (under Find), a block **Reminders** (`template-reminders`; heading
+  `template-reminders-title`, count `template-reminders-count`). With none yet it is one line: "Reminders" and a small
+  outlined **Add a reminder** (`template-reminders-start`), which opens the foot.
+- Each reminder is a line (`template-reminder-<n>`, `Metrics.line` high, hairline under it): its name, and on the
+  right its When in the step's own colour (made readable for day or night). A press opens it in place:
+  - the name, a field (`template-reminder-name`; what was missing said under it, `template-reminder-name-needs`);
+  - **When**, a drop-down (`template-reminder-when`) — applied at once; its open lines on trips still ahead follow;
+  - ↑ and ↓ (`template-reminder-up` / `-down`, 36-pt squares) — move it one place among the reminders, at once;
+    at the top (bottom) the arrow is drawn in the hairline colour and does nothing;
+  - **Done** (`template-reminder-done`, the template's violet, never grey) — saves a changed name and closes;
+  - last, quiet and red, **Remove reminder** (`template-reminder-remove`), which asks first: "Remove “…” from this
+    template?" Keep it (`-remove-no`) / Remove (`-remove-yes`).
+  - Pressing the line again closes it without saving the name; Esc closes it on the Mac.
+- The foot: **Add a reminder** field (`template-reminder-add-name`) and **Add** (`template-reminder-add`), then
+  **When** (`template-reminder-add-when`). Add with nothing typed says "Type the reminder first."
+  (`template-reminder-add-needs`). A new reminder's When starts as the last reminder's on this template, else the
+  first step one day ahead ("Day before"), else the step a new thing gets.
+- While Find holds a word, the block is hidden (Find looks for things). The template's card on the Templates tab,
+  the "3 of 40" of Find, Group, Arrange and the Templates tab's summary count the THINGS only.
+- **On a trip**, a reminder is a line like the others, at its When, ticked the same way (and set aside with ⊘). In
+  place of the bag it says **To do**, and it has no count. Sorted by Into, the reminders stand under a heading
+  "To do", never under a bag. The bag weights, the cabin check and the review leave them out (as before).
+- **Check before you go** (top of the trip) lists the reminders that are due — their step's day (the trip's start
+  less the step's lead days) is today or past — and not ticked: a tick circle, the name, "To do · <step>"
+  (`trip-check-todo-<n>`). A press ticks the line, and it leaves the card. With only reminders, the card is in the
+  trip's green, not a warning's colour; its count includes them.
+- **Home's countdown** says the step as before, now with things and reminders apart — "≥1 week ahead: 7 to pack,
+  1 to do, now" (a Preparations step says all of it "to do") — and, when reminders are due, a green line
+  "To do: Check the forecast · …" (accessibility value "<n> to do"). The packing notifications (Remind me to pack)
+  read the same words.
+
+### Rules and edge cases
+
+- **Names.** Trimmed; blank refused; a name this template has as a reminder already (any capitals) refused ("This
+  template has that reminder already."); the name of one of his THINGS refused ("That is the name of one of your
+  things.") — one catalogue name is one item, and a reminder is no thing to pack.
+- **The same reminder on two templates** is ONE item with two memberships, as a thing is. Adding a name he has as a
+  reminder elsewhere reuses it.
+- **Rename is for this template only.** A reminder that sits on this template alone is renamed in place (its open
+  lines on trips still ahead follow). One that also sits on another template keeps its name there; this
+  template's membership moves to a reminder of the new name (one he has, or a new one), keeping its When and its
+  place. Lines already on trips keep the old name in that case.
+- **When** is the template's own answer (membership `phase`; blank when it equals the reminder's own).
+- **Order.** Up/down swaps the two reminders' places in the template's row order (the order a trip reads); the
+  rows are numbered 0, 1, 2… again and only changed numbers are written. Things keep their places. Arrange shows
+  things only (`arrangeLines` leaves reminders out); a reminder keeps its relative place when things are dragged.
+- **Remove** takes the membership away; a reminder on no other template is deleted with it. Trips keep their line.
+- **A new reminder item:** kind "Reminders", no bag (`container` ""), no weight, `shortList` true — so a Quick trip
+  brings it too. Its line on a template with its own bag carries that bag's name, but no screen shows it.
+- **Adding to a template does not reach trips already made** — as for things: Trip settings → Save rebuilds.
+- **Not among his things.** A reminder that sits on a template is left out of Your things, the table, Search,
+  Choose from your things and the Things counts on Home and Care (`Library.ownThings()`). A reminder on NO template
+  (left by the web app) still shows in Your things, so it can be seen and deleted.
+- **Progress still counts reminders** (spec 03's decision of 5 Oct, kept: they must be done before leaving), so
+  "All packed" waits for them. "To pack" counts (countdown, steps) do not.
+- **To do (the Actions tab) is NOT used.** Chosen 7 Oct 2026: the To do ↔ Apple Reminders link exists only for To
+  buy, and a copy in To do would be a second tick to keep in step with the trip's line. The trip line is the one
+  tick; Check before you go, Home and the packing notifications bring it to him when it is due.
+
+### Model (PackingLibrary/TemplateReminders.swift, Countdown.swift)
+
+`REMINDER_TYPE`, `REMINDERS_CATEGORY`; `Library.isReminder(_:)`; `reminders(templateId:)`;
+`reminderNameProblem(templateId:name:except:)` → `.blank` / `.alreadyHere` / `.aThing` / nil;
+`whenForNewReminder(templateId:)`; `addReminder(templateId:name:when:)`; `renameReminder(templateId:memId:to:)`;
+`setReminderWhen(templateId:memId:when:)`; `moveReminder(templateId:memId:by:)`; `removeReminder(templateId:memId:)`;
+`remindersOnTemplates()`, `ownThings()` (also used by `thingRows()`); `templateSummary` counts non-reminders.
+`PackingStep.todo` (reminders left on the step; `left` is things only) and its `says`; `NextTrip.left` (things only)
+and `NextTrip.due` (names); `dueReminders(tripId:today:)` — every step of the timeline (the After step too: its day is
+the start plus one), unticked, not set aside, in timeline then trip order; none for a trip without a start date.
+The UI-test library `-uiTestingReminders` (`SampleLibrary.reminders()`): Hiking with "Check the forecast" (≥1 week
+ahead) and "Leave a route note" (Day before), its trip three days ahead.
+
+### Tests
+
+Model `TemplateRemindersTests` (9): the web app's own kind of item; refused names; a new reminder's When; rename per
+template; order, When and remove; not among his things nor arranged; on a trip ticked but never packed, weighed or
+reviewed; due reminders; a step's words. Planted fault: `ownThings()` returning every item → red "Your things lists
+things only". UI (iPhone, light and dark): `testATemplateKeepsItsReminders` (planted: Add not adding → "the reminder
+was not added"), `testATripsRemindersShowWhenTheyAreDue` (planted: `dueReminders` empty → "the countdown does not
+name the reminder due"). Not covered by a UI test: Into's "To do" heading, the When drop-down on a reminder, Remove's
+"Keep it", the Mac (built, not run).
+
+---
+
 ## 11. Decision log
 
 | Date | Decision | His words / reason |
@@ -219,6 +320,10 @@ wants to use it again. Otherwise it is removed and recorded in the decision log.
 | 7 Oct 2026 | Voice in English; vault folder `Areas/Travel`; Apple Health versions may be uploaded from his Mac | His answers. |
 
 ## Open questions
+
+- Part 12: renaming a reminder that also sits on another template leaves the lines already on trips with the old
+  name. Progress still counts reminders (so "All packed" waits for them) — if "never counted as things to pack" was
+  meant to include the trip's x/y, that is a change to spec 03's decision of 5 Oct.
 
 - "Change" for sections (part 2) was taken as the ORDER of the sections; if he meant something else, change part 2.
 - "The road to 1.0" (all web-app features in, a real trip, a real restore, a quiet week): kept or dropped — his word

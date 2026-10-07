@@ -196,8 +196,9 @@ extension Library {
     /// match the numbers.
     public func templateSummary(_ shown: [PackList]) -> (templates: Int, things: Int, trips: Int) {
         let ids = Set(shown.map(\.id))
+        // A template's reminders are no things (0.70).
         let things = Set(memberships.filter { ids.contains($0.templateId) }.map(\.itemId))
-            .intersection(Set(items.map(\.id)))
+            .intersection(Set(items.filter { !Library.isReminder($0) }.map(\.id)))
         let trips = trips.filter { trip in
             trip.activities.contains(where: ids.contains)
                 || trip.entries.contains { ($0.sourceListId).map(ids.contains) ?? false }

@@ -63,7 +63,7 @@ struct CareScreen: View {
                 Button { opening = ThingsRequest(search: "") } label: {
                     HStack {
                         Text("Your things").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                        Text("\(model.library.items.count)").font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        Text("\(model.library.ownThings().count)").font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         Spacer()
                         SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                             .frame(width: 24, height: 24).foregroundStyle(Theme.muted)

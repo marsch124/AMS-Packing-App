@@ -131,7 +131,7 @@ struct SearchScreen: View {
 
         // His things. The web app searches the Swedish wording too but never shows
         // it, so a hit can look inexplicable; here it is said in the line under.
-        let things = library.items.filter {
+        let things = library.ownThings().filter {   // not a template's reminders (0.70)
             normName($0.name).contains(needle) || normName($0.swedish).contains(needle)
         }
         if !things.isEmpty {

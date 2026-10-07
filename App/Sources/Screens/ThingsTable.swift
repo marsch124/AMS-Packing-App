@@ -539,7 +539,7 @@ struct ThingsTable: View {
     /// The things the search and the quick chips keep — before any column filter.
     private func unfiltered() -> [Item] {
         let needle = normName(query)
-        return model.library.items.filter { thing in
+        return model.library.ownThings().filter { thing in   // not a template's reminders (0.70)
             if !needle.isEmpty, !normName(thing.name).contains(needle) { return false }
             switch only {
             case "weight": return thing.weight <= 0
