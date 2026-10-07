@@ -161,6 +161,16 @@ struct HowItWorksScreen: View {
             "Type a thing at the bottom to add it to this trip only. Bought it on site? Press Bought on site: it goes on ticked, marked so.",
             "At the very end of the list, Delete trip asks first, then removes the trip. Your things and templates stay.",
             "A trip someone sent you arrives Quick: tick one of your templates to add to it, or pick Full trip to bring your always-packed things. Sharing a trip sends just the list \u{2014} your marks, notes and scale readings stay with you."]),
+        // Spec 07 part 10 (0.71) — a test version, iPhone only.
+        Topic(section: .events, title: "Pack by voice (iPhone, a test)", lines: [
+            "Pack by voice, at the end of a trip's Sorting row, walks you through what is still to pack, place by place as From where sorts them. It says the place, then the thing \u{2014} \u{201C}Garage. Goggles.\u{201D} \u{2014} and listens for one of five words.",
+            "Packed ticks it. Skip sets it aside for this trip, as \u{2298} does. Later moves on and leaves it unticked. Where says the place again. Stop ends the walk.",
+            "It also takes a few other ways of saying them \u{2014} packed it, next, not this time, that\u{2019}s all. At each new place, and after every five things, it says how far you are: \u{201C}Garage done, 12 of 40.\u{201D}",
+            "It speaks and listens in English, and understands you on the iPhone itself, without the internet: nothing you say leaves it. AirPods work. The first time, it asks for the microphone and speech recognition; if they are not allowed, the button says where to allow them.",
+            "While it runs, a big panel shows the thing and its place, what it said and what it heard, and the five words as buttons \u{2014} a tap does the same as the word. The screen stays on; put Packing away and it stops.",
+            "At the end, if you left something for later, it asks \u{201C}once more?\u{201D} \u{2014} say packed (or yes) to go through those again, stop to finish.",
+            "A place code you scan starts it by itself, at that place. Don\u{2019}t want that? Switch off \u{201C}Start Pack by voice when a place code opens a trip\u{201D} on the panel.",
+            "When it ends: what it did, how often it understood you, how long it took, and each answer. It is a test: it stays only if it understands you at least 9 times in 10 and is quicker than tapping."]),
         Topic(section: .events, title: "On site", lines: [
             "On site is the step after Pack: the trip's On site door appears once the trip has begun, or as soon as something is bought on site. Its line says what it holds \u{2014} 2 bought \u{00B7} 1 left \u{00B7} 3 notes \u{00B7} home 4/9.",
             "Bought on site: what you bought while away. Type it and press Bought on site \u{2014} it goes on the list ticked, marked so, and comes home with you.",

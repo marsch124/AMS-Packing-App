@@ -725,7 +725,7 @@ no entry shows no marker anywhere (and fails the test).
 1. `FirstTripCard` (§8) — "at the very top" (his idea 13, 2 Oct 2026).
 2. `LoopGuideCard` (§9).
 3. `WordsCard` (§10).
-4. Eleven topic cards (padding 14, card, radius 12, line border, container id `guide-topic-<n>`): a header row —
+4. Twelve topic cards (eleven until 0.71) (padding 14, card, radius 12, line border, container id `guide-topic-<n>`): a header row —
    the topic's section mark (`SectionMark`, 24 pt, line 1.9, in the section's colour) and the title (19 heavy ink)
    — then each line as a 6-pt dot in the section colour + text (16 ink, wraps).
 
@@ -753,25 +753,36 @@ no entry shows no marker anywhere (and fails the test).
    colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
    under Sorting shows every line again; typing a thing adds it
    to this trip only, Bought on site adds it ticked; Delete trip at the very end asks first (things and
-   templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62). (17 lines.)
-2. **On site** (Trips mark): the door appears once the trip began or something was bought, with a summary line
+   templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62). (21 lines.)
+2. **Pack by voice (iPhone, a test)** (Trips mark, 0.71 — spec 07 part 10): the button at the end of a trip's
+   Sorting row walks what is still to pack, place by place as From where sorts them — the place, then the thing
+   ("Garage. Goggles.") — and listens for five words; Packed ticks, Skip sets aside (as ⊘), Later moves on
+   unticked, Where says the place again, Stop ends; other ways of saying them (packed it, next, not this time,
+   that's all); the count at each new place and after every five things ("Garage done, 12 of 40"); English,
+   understood on the iPhone itself without the internet, nothing leaves it, AirPods work; asks for the microphone
+   and speech recognition the first time, and says where to allow them; the panel (thing, place, said, heard, the
+   five words as buttons); the screen stays on, put away it stops; at the end what it did, how often it understood,
+   how long it took, each answer — and it stays only if it understands at least 9 times in 10 and beats tapping;
+   "once more?" over what was left for later; a scanned place code starts it at that place (switch on the panel).
+   (8 lines.)
+3. **On site** (Trips mark): the door appears once the trip began or something was bought, with a summary line
    ("2 bought · 1 left · 3 notes · home 4/9"); Bought on site; Left on site with Undo; Maintenance notes (also
    dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕, Tick everything;
-   notes and Open on the way home; the packed-bag photos at the top, Next steps through them. (9 lines.)
-3. **After a trip** (Trips mark): Review (tap unused, type missed, pick its template, Add, Save); the loop strip
+   notes and Open on the way home; the packed-bag photos at the top, Next steps through them. (10 lines.)
+4. **After a trip** (Trips mark): Review (tap unused, type missed, pick its template, Add, Save); the loop strip
    under a trip's name (Plan · Pack · On site · Review · Refine) with the tab mark; nothing is removed — "Didn't
-   use" adds to history, missed things go onto a template. (3 lines.)
-4. **Trips** (Trips mark): Now, Coming up and Done — Now always there; Planned / Packing / Ready; reviewed trips fold
+   use" adds to history, missed things go onto a template. (4 lines.)
+5. **Trips** (Trips mark): Now, Coming up and Done — Now always there; Planned / Packing / Ready; reviewed trips fold
    away; Your year; All your trips with the map; the pin opens Where you have been (pins with counts, line oldest
    first, card per place; a trip joins as soon as it has a place). (3 lines.)
-5. **Your templates** (Templates mark): templates are the building blocks, in activity areas (GA, WET…); each has
+6. **Your templates** (Templates mark): templates are the building blocks, in activity areas (GA, WET…); each has
    an icon (50 drawn ones, or Letter); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
    stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
    Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
    folding in the picker (Fold all / Unfold all, counts, search opens
    all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first, with Activity area beside it (0.62); Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (also on
-   a grab list); Refine (violet card) after two or more reviews — Keep / Drop. (11 lines.)
-6. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
+   a grab list); Refine (violet card) after two or more reviews — Keep / Drop. (13 lines.)
+7. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
    again — 0.62); Just added at the top until you
    leave; ✕ in search; (0.69) the search finds words in a thing's notes and its templates' notes, the matching line
    under the thing; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
@@ -780,11 +791,11 @@ no entry shows no marker anywhere (and fails the test).
    back just that, the bar counts ticked things out of sight — 0.62;
    own window on the Mac); Filter by every column (pills, Clear); Sort up to three levels (blank last); the arrow
    opens the thing and returns to the same spot; Services List or Calendar (Done today, Today); the numbers under
-   the services. (12 lines.)
-7. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
+   the services. (19 lines.)
+8. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
    "To buy · Packing", each once, dated, all day, ticks read back; ticks and removals here follow there, and a reminder deleted there can be sent again
    (0.62). (3 lines.)
-8. **Settings** (Settings mark): Remind me to pack (9 in the morning, per device, next reminder shown; says in red when the iPhone does not allow
+9. **Settings** (Settings mark): Remind me to pack (9 in the morning, per device, next reminder shown; says in red when the iPhone does not allow
    notifications, switch on or off, and where to allow them — 0.62); iCloud sync
    (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62); Save a backup / restore (a copy is kept
    first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, owners stay A–Z,
@@ -795,10 +806,10 @@ no entry shows no marker anywhere (and fails the test).
    shows the same on the Mac; Worth a look
    (only when something seems wrong; one-press fix such as Remove it; an undated photo nothing shows goes only on Remove — 0.62); Open a shared link (trip arrives unticked,
    template links to existing things — with a name he has, a name of its own or Replace (0.62) —, grab list takes a free Home place or waits). (9 lines.)
-9. **Shortcuts and the Action button** (Home mark): three actions (Choose a grab list, Open a grab list, Open my next
+10. **Shortcuts and the Action button** (Home mark): three actions (Choose a grab list, Open a grab list, Open my next
    trip); the Action-button path (iPhone Settings → Action Button → Shortcut → Packing → Choose a grab list); if
    Packing is missing, open it once; Home Screen or Siri ("Open Swim in Packing"). (4 lines.)
-10. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
+11. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
     so; the magnifier searches everything (a thing's notes too — 0.69); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62). (3 lines.)
 

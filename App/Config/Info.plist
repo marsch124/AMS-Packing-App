@@ -45,10 +45,14 @@
 	<string>AMS Packing reads your workouts during a trip to suggest what you used. It never writes to Apple Health.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>AMS Packing never writes to Apple Health. Apple requires this text all the same.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Pack by voice listens for packed, skip, later, where and stop while you pack. What you say stays on this iPhone.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Pack by voice understands your five words on this iPhone itself, without the internet. Nothing you say leaves it.</string>
 	<key>PackingUsesICloud</key>
 	<string>$(PACKING_USES_ICLOUD)</string>
 	<key>UIBackgroundModes</key>

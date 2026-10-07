@@ -212,7 +212,13 @@ struct HomeScreen: View {
             guard let code else { return }
             model.placeToOpen = nil
             let o = PlaceOpening.of(code: code, in: model.library, today: Today.local)
-            if let trip = o.packingTrip { whenFree { openedPlace = o.place; opened = trip } }
+            if let trip = o.packingTrip {
+                whenFree { openedPlace = o.place; opened = trip }
+                // Pack by voice starts there by itself (0.71, his yes; off by its switch on the panel).
+                #if os(iOS)
+                VoiceStarts.shared.startVoiceAt(place: o.place, tripId: trip)
+                #endif
+            }
             else { whenFree { placeShown = o } }
         }
         .sheet(isPresented: $showingGrabLists) { GrabCollectionScreen().environmentObject(model) }

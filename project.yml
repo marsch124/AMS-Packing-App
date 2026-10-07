@@ -89,6 +89,9 @@ targets:
         # only; Apple wants the second text all the same once an app uses HealthKit.
         NSHealthShareUsageDescription: AMS Packing reads your workouts during a trip to suggest what you used. It never writes to Apple Health.
         NSHealthUpdateUsageDescription: AMS Packing never writes to Apple Health. Apple requires this text all the same.
+        # Pack by voice (0.71, a test — spec 07 part 10): the iPhone listens for five words.
+        NSMicrophoneUsageDescription: Pack by voice listens for packed, skip, later, where and stop while you pack. What you say stays on this iPhone.
+        NSSpeechRecognitionUsageDescription: Pack by voice understands your five words on this iPhone itself, without the internet. Nothing you say leaves it.
         # YES only in builds that carry the iCloud entitlements (see settings below).
         PackingUsesICloud: $(PACKING_USES_ICLOUD)
         # A change on the other device arrives as a silent push (iPhone).
