@@ -29,7 +29,7 @@ runs on the iPhone and on the Mac; every difference between the two is written d
   templates "Common base", "Hiking" and "Swim"; things such as Passport, Hiking boots and Headlamp; owners
   Kim and Robin; the trip "Weekend in the hills") or other invented names.
 
-## The six files
+## The seven files
 
 **[01 — Storage, sync and backup](01-storage-sync-backup.md).** The foundation. The data model — `Library`
 and every collection it holds, every field of a thing, a place on a template, a template, a trip and its
@@ -76,6 +76,12 @@ stock icons, buttons and the rule that a main button is never grey, headings and
 the keyboard, accessibility identifiers, the Mac rules. And the machinery: windows and launch modes, the
 sample library, the project, CI on every push, shipping to TestFlight, crash reports, local tools, the parity
 check against the web app, the UI-test harness and the test inventory.
+
+**[07 — Beyond the list](07-beyond-the-list.md).** The ideas chosen on 7 Oct 2026 that span several screens:
+the keyboard on a thing's page (Mac), sections edited from a thing's page, places with stickers, search in notes,
+bag pockets and "Where is my …?", the door check, Apple Health filling in the review, a trip page in his Obsidian
+vault, kits (things that hold things) and hands-free packing — written BEFORE they were built, at his request —
+and the decision log of what he turned down.
 
 Some subjects are seen from two sides: the backup and Restore (storage in 01, the Settings screen in 06),
 Save as Excel and sharing (the file and the codes in 01, the trip screen in 03), Your choices (04 and 06),
