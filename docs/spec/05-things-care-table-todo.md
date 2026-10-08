@@ -831,8 +831,12 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
    - A row (`thing-row-N`, N = its position on screen counting the Just added rows first): a full-width button;
      ONE line (0.62, his word: "set the item name and the info on the same line"): the name at the left (Body, ink,
      one line, keeps its room first) and at the right (Footnote, one line, cut in the middle when long) the template
-     names (", "-joined) or "On no template", joined with " · " to the storage place when set — orange when on no
-     template, muted otherwise; 5 pt vertical padding (until 0.62: the details on a second line, 10 pt padding); a
+     names (", "-joined) or "On no template", joined with " · " to the storage place when set (`ThingDetailLine`,
+     Screens/ThingDetailLine.swift, one `Text` of two parts). Since 0.70 the TEMPLATE names are in the Templates
+     violet made readable day and night (`readableHex("#7c5cd6", dark:)`, as his "When" colours are; his ask testing
+     0.69: "make the Templates text on each row Lilac … so that the list pops a bit") and " · place" stays muted;
+     "On no template" is in Care orange (until 0.70 the whole line was muted, orange when on no template). Search's
+     "on 2 templates" (a count, not the names) and Choose from your things (a place only) are unchanged; 5 pt vertical padding (until 0.62: the details on a second line, 10 pt padding); a
      1 pt line under it (since 0.69 under the note line when there is one). A just-added row is lit for a moment: a
      rounded (8) orange 18 % background reaching 8 pt past the text on each side.
    - Under a thing found by its NOTES and not by its name (0.69): the note line (`thing-row-N-note`, `NoteHitLine`
@@ -1143,7 +1147,9 @@ When (`phases`) and Condition (`conditions`). Care is not one of his lists (a nu
   page's held `ChoiceEdits` — one per list (`choiceLists`, keyed by the list; a bag's pockets as `pockets:<bag>`). The
   look and ids are the Section list's: on each of his rows a pen (`<row>-rename`), ↑ ↓ (`-up`/`-down`) and a quiet red
   Remove (`-remove`); the rows that are not his list's ("Not said", "Both have one", "No bag", "Just in the bag", a
-  value from the web app) have none. Whose it is has no arrows: owners are A–Z.
+  value from the web app) have none. Whose it is has no arrows: owners are A–Z. **Drag and drop (0.70):** every row
+  with ↑ ↓ also has a grip ≡ at its LEFT (`<row>-grip`, `ReorderGrip`, spec 06 §21): hold it and drag; each place
+  passed is one press of ↑ / ↓ (held until Save, as they are). Whose it is has no grip.
 - **Rename**: the row becomes a field (grey words "Name"); Return takes it unless `choiceNameProblem` says what is
   wrong (under it, `-name-needs`): "Type a name first.", "You already have <entry>." (as the list shows them; a
   removed one still counts), "Some of your things already say <name>. Pick another name." (a place, owner or kind —

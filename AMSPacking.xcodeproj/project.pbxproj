@@ -71,10 +71,12 @@
 		BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5604CA6875D255BD93251 /* CareScreen.swift */; };
 		C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0A839566CDE77B068F47C5 /* BulkChange.swift */; };
 		C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A986BF2DF0FA5E39E42559C /* Words.swift */; };
+		C5EBD96485899E7E1255FBC7 /* Reorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE791F06F3140EAF34F98ADD /* Reorder.swift */; };
 		C6FE9965A251DF28F495E8BF /* VoiceWalker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C6CB980A090E605DD6CC2D /* VoiceWalker.swift */; };
 		C71A0323F1D4E4CFC1A8B0F2 /* CareCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */; };
 		C92C70F13CEE0569A0E0B014 /* ShopReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 029AD64D1791D9D681EA7DDF /* ShopReminders.swift */; };
 		C975EB375CF35E51BCE753A4 /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */; };
+		CB329E4EC8E63D1388187F82 /* ThingDetailLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E2F7EBD889FD3F4345F9E8 /* ThingDetailLine.swift */; };
 		CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5987DFEB47FC294A078D4D /* NewList.swift */; };
 		CE9F7F844B02914111C3E8E4 /* ChoiceDropDown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79BB950979BE60A59DD34766 /* ChoiceDropDown.swift */; };
 		D0D4A2EA2FA240B7D980E71C /* KitDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112E88E5E56E46CAA3F002CE /* KitDashboard.swift */; };
@@ -187,9 +189,11 @@
 		CE240BD38035471259419B81 /* TemplateIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateIcons.swift; sourceTree = "<group>"; };
 		D588E84D41CE3E84D62CA76F /* VaultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultCard.swift; sourceTree = "<group>"; };
 		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
+		D9E2F7EBD889FD3F4345F9E8 /* ThingDetailLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingDetailLine.swift; sourceTree = "<group>"; };
 		DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareCalendarView.swift; sourceTree = "<group>"; };
 		DBCE6F6679B4724E0039268E /* SyncCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCard.swift; sourceTree = "<group>"; };
 		DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagPhoto.swift; sourceTree = "<group>"; };
+		DE791F06F3140EAF34F98ADD /* Reorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reorder.swift; sourceTree = "<group>"; };
 		DF6A7521CAF9F486A9847AB2 /* Pockets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pockets.swift; sourceTree = "<group>"; };
 		E28540B3BBCD50AB31F2DF8D /* AppleHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealth.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
@@ -364,6 +368,7 @@
 				DF6A7521CAF9F486A9847AB2 /* Pockets.swift */,
 				6CC01537D593379C8EF1B84F /* RefineScreen.swift */,
 				4926F40EBD71822EA9165684 /* RemindersSend.swift */,
+				DE791F06F3140EAF34F98ADD /* Reorder.swift */,
 				34879BF77676913C07B69267 /* RestoreSheet.swift */,
 				4023CCF833EE4F1EA60FEE23 /* ReviewHealth.swift */,
 				84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */,
@@ -376,6 +381,7 @@
 				4F6491A9AB1E25EAC20F46EB /* TableFilterSort.swift */,
 				26111B23DAEE70145F81696C /* TemplateReminders.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
+				D9E2F7EBD889FD3F4345F9E8 /* ThingDetailLine.swift */,
 				A1A727717D19724FB903E1AA /* ThingKeys.swift */,
 				A807991F4D3D37B8ECD7F29C /* ThingKitPart.swift */,
 				ED9B041225333263C7547689 /* ThingsScreen.swift */,
@@ -545,6 +551,7 @@
 				80E3669131BEA0D1C726A660 /* Releases.swift in Sources */,
 				7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */,
 				DE244FF0F4F0D12DF0F82CF0 /* RemindersSend.swift in Sources */,
+				C5EBD96485899E7E1255FBC7 /* Reorder.swift in Sources */,
 				D509F70319744E67DEBE955A /* RescueCopies.swift in Sources */,
 				8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */,
 				92BFCF1AF636841A4A4B1D51 /* ReviewHealth.swift in Sources */,
@@ -567,6 +574,7 @@
 				EC8EF7A9BC050820AED9344A /* TemplateReminders.swift in Sources */,
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
 				E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */,
+				CB329E4EC8E63D1388187F82 /* ThingDetailLine.swift in Sources */,
 				993DD5931C9E6CDCDB4605AF /* ThingKeys.swift in Sources */,
 				192F5DC225468F6FC0E7E870 /* ThingKitPart.swift in Sources */,
 				1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */,

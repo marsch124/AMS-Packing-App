@@ -123,6 +123,9 @@ struct DropDown: View {
     @FocusState private var naming: Bool
     /// The row whose removal is being asked (its value).
     @State private var asking: String?
+    /// The row being carried by its grip (0.70), and each row's height — one place.
+    @State private var carried: ReorderDrag?
+    @State private var heights: [String: CGFloat] = [:]
     #if os(macOS)
     /// The Mac's keys on a thing's page (0.68): given by the page; nil elsewhere.
     @Environment(\.dropDownKeys) private var keys
@@ -256,8 +259,10 @@ struct DropDown: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     if let blank { row(blank, value: "", id: "\(ids.row)-none", n: 0) }
-                    ForEach(Array(options.enumerated()), id: \.offset) { n, o in
-                        row(o.label, value: o.value, id: "\(ids.row)-\(n)", n: n + (blank == nil ? 0 : 1))
+                    // Each row followed by its VALUE (by its place until 0.70): a row carried by
+                    // its grip keeps its gesture while the rows around it change places.
+                    ForEach(keyed) { k in
+                        row(k.label, value: k.value, id: "\(ids.row)-\(k.n)", n: k.n + (blank == nil ? 0 : 1))
                     }
                     if otherRow { row(selected, value: selected, id: "\(ids.row)-other", n: (blank == nil ? 0 : 1) + options.count) }
                     if let newEntry {
@@ -280,10 +285,28 @@ struct DropDown: View {
             }
             #endif
         }
-        .frame(minWidth: 280, idealWidth: 320, maxHeight: 440)
+        // A list with row tools is wider (0.70): the grip joined the pen, ↑ ↓ and Remove, and
+        // a name squeezed between them broke into a word a line ("Com / fort / & / misc").
+        .frame(minWidth: 280, idealWidth: tools == nil ? 320 : 370, maxHeight: 440)
         .background(Theme.bg)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(ids.list)
+    }
+
+    /// The options with a key each: the value, or — should two rows share one — the value
+    /// and its place.
+    private var keyed: [KeyedOption] {
+        var seen = Set<String>()
+        return options.enumerated().map { n, o in
+            KeyedOption(id: seen.insert(o.value).inserted ? o.value : "\(o.value)#\(n)", n: n, value: o.value, label: o.label)
+        }
+    }
+
+    private struct KeyedOption: Identifiable {
+        let id: String
+        let n: Int
+        let value: String
+        let label: String
     }
 
     /// The id of the row that is ticked, to scroll to.
@@ -417,12 +440,19 @@ struct DropDown: View {
             let on = same(value, selected)
             let gone = tools.isRemoved(value)
             let have = toolsOf(tools, value)
+            let lifted = carried?.key == value
             HStack(spacing: 2) {
+                // The grip (0.70): hold and drag — each place passed is one press of ↑ or ↓.
+                if tools.orders && !gone {
+                    ReorderGrip(id: "\(id)-grip", label: "Move \(label)", key: value, step: heights[value] ?? Metrics.tap,
+                                drag: $carried, canMove: { tools.canMove(value, $0) }, move: { move(tools, value, $0) })
+                }
                 Button { if !gone { choose(value); open = false } } label: {
                     HStack(spacing: 8) {
                         Text(label).font(.body).strikethrough(gone)
                             .foregroundStyle(gone ? Theme.muted : Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
+                            .layoutPriority(1)              // the name before the gap after it
                         Spacer(minLength: 6)
                         if on {
                             Tick().stroke(tint, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
@@ -459,9 +489,14 @@ struct DropDown: View {
                     }
                 }
             }
-            .background(arrows ? AnyShapeStyle(tint.opacity(0.18)) : AnyShapeStyle(Theme.bg))
+            .background(lifted ? AnyShapeStyle(Theme.card) : arrows ? AnyShapeStyle(tint.opacity(0.18)) : AnyShapeStyle(Theme.bg))
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-            .id(id)
+            .reorderStep(value, into: $heights)
+            .reorderLift(carried, key: value, tint: tint)
+            // The name to scroll to sits BEHIND the row, not on it: `.id` on the row itself
+            // gave it a new identity each time it changed places, which dropped the drag
+            // that was carrying it (it stayed lifted, half a row low — 8 Oct 2026).
+            .background { Color.clear.id(id) }
         }
     }
 
@@ -470,11 +505,15 @@ struct DropDown: View {
                                         @ViewBuilder face: () -> Face) -> some View {
         Button(action: action) {
             face()
+                .fixedSize()
                 .frame(minWidth: Metrics.compact, minHeight: Metrics.tap)
                 .padding(.horizontal, 2)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
+        // A tool keeps its own width and leaves the rest to the name (0.70: with the grip
+        // added, the tools' share of the row broke "Comfort & misc" over two lines).
+        .fixedSize(horizontal: true, vertical: false)
         .focusRing(lit, tint: tint, radius: 6, gap: 1)
         .accessibilityLabel(label)
         .accessibilityIdentifier(id)

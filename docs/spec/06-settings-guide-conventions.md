@@ -126,8 +126,8 @@ the sheet down on the iPhone. Nothing is ever
 - Header row (padding 16): **"Your choices"** (22 heavy, ink, id `choices-title`), Spacer, **Done**.
 - Then a `KeyboardAwayScroll` with a `VStack(spacing: 8)`, padding 16 horizontal / 24 bottom:
   - Intro (15 medium, muted, wraps, id `choices-intro`): **"The words the app offers you as buttons. Add your
-    own with the field under each part; the pen renames one or moves it up or down; one that is still in use
-    somewhere cannot be removed."**
+    own with the field under each part; hold the grip ≡ and drag one to its place; the pen renames one or moves it
+    up or down; one that is still in use somewhere cannot be removed."** (the grip sentence 0.70)
   - Five parts, in this fixed order (`Kind.allCases`): `places`, `owners`, `people`, `conditions`, `phases`. For each:
     - A `HeadingBand` (§21) in the Settings slate, 16 pt space above, id `choices-heading-<kind>`. Titles:
       **"Storage places"**, **"Owners"**, **"Packers"**, **"Item conditions"**, **""When" steps"**.
@@ -153,7 +153,12 @@ the sheet down on the iPhone. Nothing is ever
         a thing that needs replacing is suggested on To buy."
       - phases: "The steps of packing, from a week ahead to the day you leave. Every thing has its When, and a trip
         shows its list in this order, step by step."
-    - One row per entry (n = 0, 1, …): the label (17 medium, ink, id `list-<kind>-name-<n>`); if THINGS use the
+    - One row per entry (n = 0, 1, …; since 0.70 the rows are followed by the entry's key, not its place, so a row
+      being dragged keeps its gesture): where the order is his (`Library.canMove`: all but Owners, A–Z), first a
+      **grip ≡** (`list-<kind>-grip-<n>`, `ReorderGrip` → `GripMark`, 36 wide, 8 pt into the left margin; 0.70, his
+      ask testing 0.69: "Can we make the reordering easier for a human by introducing drag and drop?"): hold and
+      drag — each place passed is `moveChoice(kind, key, ±1)` at once, exactly the pen's ▲ ▼; the carried row is
+      lifted on the card colour with a slate edge and a shadow and follows the finger; then the label (17 medium, ink, id `list-<kind>-name-<n>`); if THINGS use the
       entry, how many (14 bold, monospaced digits, muted) right after it — things only, also for a "When" step;
       on the owner marked "This is me" (0.70), right after its name, a small **"Me"** tag (Caption semibold white on a
       slate capsule, min height 20, padding 8 sideways; id `list-owners-me-<n>`)
@@ -800,7 +805,7 @@ no entry shows no marker anywhere (and fails the test).
 9. **Settings** (Settings mark): Remind me to pack (9 in the morning, per device, next reminder shown; says in red when the iPhone does not allow
    notifications, switch on or off, and where to allow them — 0.62); iCloud sync
    (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62); Save a backup / restore (a copy is kept
-   first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, owners stay A–Z,
+   first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, the grip drags (0.70), owners stay A–Z,
    no duplicates, the reason for a refused remove right under it, Owners from his things when he has no list — 0.62);
    (0.69) each storage place's square code and its label for the P-touch, 12 mm tape (iPhone: Share → Save Image, and
    Brother's app takes it from Photos; Mac: saved as a picture), all places at once; the Camera on a label opens the
@@ -1569,6 +1574,22 @@ same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
   a thing's and a template row's Section lists, and every pick-one list of his own on a thing's page and a template's
   row (spec 05 "His lists inside their drop-downs", spec 07 part 13) — built by `ChoiceDrop`
   (`Screens/ChoiceDropDown.swift`) and `DropDownRowTools.sections`.
+- **Drag and drop (0.70, `Screens/Reorder.swift`)** — on a tool row whose list `orders` and that is not removed, a
+  **grip ≡** at the row's LEFT (`<row id>-grip`; `ReorderGrip` drawing Arrange's `GripMark`, the thin grey one: 24-pt
+  grid, 36 × `Metrics.compact`; read as "Move <name>", hint "Hold and drag to move it; the arrows move it one place").
+  iPhone: hold 0.2 s, then drag (a swipe over it still scrolls); Mac: drag with the mouse. As the row is carried past
+  one row-height (its own measured height, `reorderStep`) it takes ONE step with the list's own `move(value, ±1)` —
+  the call ↑ / ↓ make, so a drag is a row of arrow presses (held until Save; Cancel undoes), one step per drag event
+  (the list's `move` reads the list as last drawn). The carried row is drawn on the card colour with a 1-pt tint edge
+  and a shadow, `zIndex` 1, offset to follow the finger (at most 0.6 row past the first or last place); let go — or
+  the system cancels the gesture — it settles (0.15 s). The grip is not one of the tools Tab reaches: the keys keep
+  ↑ ↓. Since 0.70 the options are `ForEach`-ed by VALUE (a repeated value gets "<value>#<n>") and a tool row's scroll
+  name (`.id(<row id>)`) sits on a clear view BEHIND it — on the row itself it gave the row a new identity at each
+  step, which dropped the drag (the row stayed lifted half a row low). Also 0.70: the list with tools is 370 wide
+  (`idealWidth`; 320 without), each tool keeps its own width (`fixedSize`) and the name comes first (`layoutPriority`),
+  so names break less ("Comfort & misc" was broken a word a line with the grip added). Why not a `List` with
+  `.onMove` (Arrange's way): a popover is sized by its content, which a List does not give; its rows carry tools a
+  List row's drag would grab; and the Mac's List drops at a row's middle BELOW it (spec 04 §6a).
 - `ring: Color?` (0.68) — the field's border drawn 2 pt in this colour instead of the 1-pt line: the Mac's focus on a
   thing's page (spec 05, Keyboard (Mac)).
 - **The Mac's keys (0.68)** — only where the page hands the drop-down a `DropDownKeys` in the environment

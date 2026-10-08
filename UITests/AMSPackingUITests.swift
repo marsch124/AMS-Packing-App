@@ -9545,6 +9545,133 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    // MARK: - Lists reordered by dragging; templates in violet (0.70)
+
+    /// How many pixels of an element are the Templates violet (day or night: blue well over
+    /// green, red over green and under blue) — the colour of its words, read off the screen.
+    private func violetPixels(_ e: XCUIElement) -> Int {
+        let image = e.screenshot().image
+        #if os(iOS)
+        guard let cg = image.cgImage else { return 0 }
+        #else
+        guard let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return 0 }
+        #endif
+        let w = cg.width, h = cg.height
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        guard let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return 0 }
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        var n = 0
+        for i in stride(from: 0, to: px.count, by: 4) {
+            let r = Int(px[i]), g = Int(px[i + 1]), b = Int(px[i + 2])
+            if b > g + 50 && r > g + 12 && b > r + 20 { n += 1 }
+        }
+        return n
+    }
+
+    /// His ask, testing 0.69 (8 Oct 2026): "make the Templates text on each row Lilac (the
+    /// same color as the Templates) so that the list pops a bit". A thing on templates shows
+    /// their names in violet; one on none says so in Care's orange, with no violet.
+    func testYourThingsShowTheirTemplatesInViolet() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Map", into: app.textFields["things-search"])
+        let row = app.buttons["thing-row-0"]
+        XCTAssertTrue(waitUntil { self.words(row).contains("Hiking") }, "the Map's row does not name Hiking: '\(words(row))'")
+        XCTAssertGreaterThan(violetPixels(row), 20, "the Map's templates are not in the Templates violet")
+        shot(app, "things-templates-violet")
+        tap(app, id: "things-search-clear")
+        hideKeyboard(app)
+        if app.buttons["things-nolist"].waitForExistence(timeout: 3) {
+            tap(app, id: "things-nolist")
+            let lone = app.buttons["thing-row-0"]
+            XCTAssertTrue(waitUntil { self.words(lone).contains("On no template") }, "no thing on no template: '\(words(lone))'")
+            XCTAssertEqual(violetPixels(lone), 0, "a thing on no template has violet on its row")
+        }
+    }
+
+    /// His ask, testing 0.69 (8 Oct 2026): "Can we make the reordering easier for a human by
+    /// introducing drag and drop?" Kind of thing on a thing's page: a kind carried by its grip
+    /// moves as ↑ would, held until Save; saved, the order is kept.
+    func testAKindOfThingIsDraggedIntoPlace() {
+        let app = launch()
+        openThing(app, "Map")
+        openDropDown(app, "thing-category")
+        XCTAssertEqual(words(app.buttons["thing-category-10"]), "Comfort & misc")
+        let was9 = words(app.buttons["thing-category-9"])
+        XCTAssertFalse(grip(app, "thing-category-8-grip").exists, "Documents & money has a grip")
+        drag(app, "thing-category-10-grip", to: "thing-category-9-grip")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-category-9"]) == "Comfort & misc" },
+                      "the kind dragged up did not move: '\(words(app.buttons["thing-category-9"]))'")
+        XCTAssertEqual(words(app.buttons["thing-category-10"]), was9)
+        // Let go, it settles in its place: right under the row above, not left hanging.
+        XCTAssertTrue(waitUntil { abs(app.buttons["thing-category-9"].frame.minY - app.buttons["thing-category-8"].frame.maxY) < 6 },
+                      "the dragged kind did not settle: \(app.buttons["thing-category-9"].frame) under \(app.buttons["thing-category-8"].frame)")
+        shot(app, "drag-kind")
+        closeDropDown(app, "thing-category")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        openDropDown(app, "thing-category")
+        XCTAssertEqual(words(app.buttons["thing-category-9"]), "Comfort & misc", "the dragged order was not kept")
+        closeDropDown(app, "thing-category")
+    }
+
+    /// A template's row: its Section list — Clothes dragged above Lights, held until Save
+    /// (Cancel leaves the template as it was); saved, the template reads Clothes first.
+    func testASectionIsDraggedOnATemplatesRow() {
+        let app = launch("-uiTestingSections")
+        openSectionedHiking(app)
+        func openRow() {
+            tap(app, id: "template-item-0")
+            XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+            openDropDown(app, "row-section")
+            XCTAssertEqual(words(app.buttons["row-section-1"]), "Lights")
+            XCTAssertEqual(words(app.buttons["row-section-2"]), "Clothes")
+            XCTAssertFalse(grip(app, "row-section-0-grip").exists, "No section has a grip")
+            drag(app, "row-section-2-grip", to: "row-section-1-grip")
+            XCTAssertTrue(waitUntil { self.words(app.buttons["row-section-1"]) == "Clothes" },
+                          "the section dragged up did not move: '\(words(app.buttons["row-section-1"]))'")
+            shot(app, "drag-section-list")
+            closeDropDown(app, "row-section")
+        }
+        openRow()
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["template-group-0"]), "Lights", "a drag Cancelled moved the section")
+        openRow()
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Clothes" },
+                      "the template does not read Clothes first: '\(words(app.staticTexts["template-group-0"]))'")
+    }
+
+    /// Your choices: a place carried by its grip moves at once, as the pen's ▲ ▼ do; owners
+    /// stay A–Z (no grip).
+    func testAChoiceIsDraggedInYourChoices() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["list-places-name-2"]), "Hall closet")
+        let was0 = words(app.staticTexts["list-places-name-0"])
+        XCTAssertFalse(grip(app, "list-owners-grip-0").exists, "an owner has a grip")
+        drag(app, "list-places-grip-2", to: "list-places-grip-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-places-name-0"]) == "Hall closet" },
+                      "the place dragged up did not move: '\(words(app.staticTexts["list-places-name-0"]))'")
+        XCTAssertEqual(words(app.staticTexts["list-places-name-1"]), was0)
+        shot(app, "drag-choices")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertEqual(words(app.staticTexts["list-places-name-0"]), "Hall closet", "the dragged order was not kept")
+    }
+
     // MARK: - Kits — things that hold things (0.70, spec 07 part 9)
 
     /// `-uiTestingKits`: a Camp pouch (60 g) holding a Lighter (30), Spare cord (80) and

@@ -169,10 +169,7 @@ struct ThingsScreen: View {
                 Text(row.item.name).font(.body).foregroundStyle(Theme.ink)
                     .lineLimit(1).layoutPriority(1)
                 Spacer(minLength: 6)
-                Text([row.templates.isEmpty ? "On no template" : row.templates.joined(separator: ", "),
-                      row.item.storage].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .font(.system(.footnote)).foregroundStyle(row.templates.isEmpty ? AppSection.care.color : Theme.muted)
-                    .lineLimit(1).truncationMode(.middle)
+                ThingDetailLine(templates: row.templates, place: row.item.storage)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 5)

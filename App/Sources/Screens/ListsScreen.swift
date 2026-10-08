@@ -27,6 +27,9 @@ struct ListsScreen: View {
     /// What saving every label into a folder did (Mac, 0.69).
     @State private var labelsSaid = ""
     private struct CodeFor: Identifiable { let id: String }
+    /// The entry being carried by its grip (0.70), and each entry's row height — one place.
+    @State private var carried: ReorderDrag?
+    @State private var heights: [String: CGFloat] = [:]
 
     private enum Kind: String, CaseIterable {
         case places, owners, people, conditions, phases
@@ -69,7 +72,7 @@ struct ListsScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 8) {
                     // What this page is, once, at the top (K.3).
-                    Text("The words the app offers you as buttons. Add your own with the field under each part; the pen renames one or moves it up or down; one that is still in use somewhere cannot be removed.")
+                    Text("The words the app offers you as buttons. Add your own with the field under each part; hold the grip ≡ and drag one to its place; the pen renames one or moves it up or down; one that is still in use somewhere cannot be removed.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("choices-intro")
@@ -83,8 +86,20 @@ struct ListsScreen: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("choices-hint-\(kind.rawValue)")
                         if kind == .places { allLabels }
-                        ForEach(Array(entries.enumerated()), id: \.offset) { n, entry in
+                        // Followed by its key (by its place until 0.70): an entry carried by its
+                        // grip keeps its gesture while the others change places.
+                        ForEach(Array(entries.enumerated()), id: \.element.key) { n, entry in
                             HStack {
+                                // The grip (0.70): hold and drag; each place passed is one press
+                                // of the pen's ▲ or ▼, made at once as they are. Owners stay A–Z.
+                                if Library.canMove(kind.rawValue) {
+                                    ReorderGrip(id: "list-\(kind.rawValue)-grip-\(n)", label: "Move \(entry.label)",
+                                                key: "\(kind.rawValue)/\(entry.key)",
+                                                step: heights["\(kind.rawValue)/\(entry.key)"] ?? Metrics.tap, drag: $carried,
+                                                canMove: { by in canStep(kind, entry.key, by) },
+                                                move: { by in move(kind, entry, by: by) })
+                                        .padding(.leading, -8)
+                                }
                                 Text(entry.label).font(.system(.body)).foregroundStyle(Theme.ink)
                                     .accessibilityIdentifier("list-\(kind.rawValue)-name-\(n)")
                                 // "This is me" (0.70): a small tag on his own row.
@@ -137,9 +152,12 @@ struct ListsScreen: View {
                                 .accessibilityIdentifier("list-\(kind.rawValue)-remove-\(n)")
                                 .accessibilityLabel("Remove \(entry.label)")
                             }
+                            .background(carried?.key == "\(kind.rawValue)/\(entry.key)" ? Theme.card : Theme.bg)
                             .accessibilityElement(children: .contain)
                             .accessibilityIdentifier("list-\(kind.rawValue)-row-\(n)")
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                            .reorderStep("\(kind.rawValue)/\(entry.key)", into: $heights)
+                            .reorderLift(carried, key: "\(kind.rawValue)/\(entry.key)", tint: AppSection.settings.color)
                             if let p = problem, p.kind == kind.rawValue, p.key == entry.key {
                                 Text(p.says).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -336,6 +354,13 @@ struct ListsScreen: View {
         model.change { lib in moved = lib.moveChoice(kind.rawValue, key: entry.key, by: step) }
         // Pressed where it cannot go, it says so — a press always answers.
         editSays = moved ? "" : (step < 0 ? "\(entry.label) is already at the top." : "\(entry.label) is already at the bottom.")
+    }
+
+    /// Whether an entry has a place to go, up (−1) or down (1) — the grip's question.
+    private func canStep(_ kind: Kind, _ key: String, _ by: Int) -> Bool {
+        let keys = entries(kind).map(\.key)
+        guard Library.canMove(kind.rawValue), let at = keys.firstIndex(of: key) else { return false }
+        return keys.indices.contains(at + by)
     }
 
     private func add(_ kind: Kind) {
