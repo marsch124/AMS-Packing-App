@@ -9900,17 +9900,26 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
         XCTAssertTrue(grip(app, "columns-storage-grip").waitForExistence(timeout: 5), "a column has no grip")
         let storage = name("columns-storage-grip")
+        // The Hide buttons top to bottom, by where they are on screen (the Mac does not hand
+        // them back in that order).
+        func hidesInOrder() -> [String] {
+            let all = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH '-hide'")).allElementsBoundByIndex
+            return all.sorted { $0.frame.minY < $1.frame.minY }.map(\.identifier)
+        }
+        let before = hidesInOrder()
+        guard let at = before.firstIndex(of: "columns-storage-hide"), at + 1 < before.count else {
+            return XCTFail("Storage is not followed by another column: \(before)")
+        }
+        let next = before[at + 1]
         #if os(macOS)
         tap(app, id: "columns-storage-down")
         #else
         XCTAssertFalse(app.buttons["columns-storage-up"].exists, "a column has ↑ on the iPhone")
         XCTAssertFalse(app.buttons["columns-storage-down"].exists, "a column has ↓ on the iPhone")
-        let below = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH '-hide'")).element(boundBy: 1).identifier
-        drag(app, "columns-storage-grip", to: below.replacingOccurrences(of: "-hide", with: "-grip"))
+        drag(app, "columns-storage-grip", to: next.replacingOccurrences(of: "-hide", with: "-grip"))
         #endif
-        let hides = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH '-hide'"))
-        XCTAssertTrue(waitUntil { hides.element(boundBy: 1).identifier == "columns-storage-hide" },
-                      "\(storage) did not move down: second is '\(hides.element(boundBy: 1).identifier)'")
+        XCTAssertTrue(waitUntil { let now = hidesInOrder(); return now.firstIndex(of: "columns-storage-hide") == at + 1 && now[at] == next },
+                      "\(storage) did not move below the next column: \(hidesInOrder())")
         shot(app, "noarrows-columns")
         tap(app, id: "columns-done")
     }
