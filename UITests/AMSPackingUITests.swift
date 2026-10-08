@@ -3958,6 +3958,23 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    /// `drag`, once more if the first one moved NOTHING (`untouched` still true after a
+    /// few seconds). 🪤 GitHub's iPhone 17 runner (0.70, run 37828064987, twice on the
+    /// same commit that passed an hour before): the held row LIFTED but never followed
+    /// the finger — the recording shows it raised in place until let go, the order as it
+    /// was. The same code passes every time on a local iPhone 17 and passed there on
+    /// 26c0eea; Arrange's code did not change in 0.70. A busy runner starts the List's
+    /// drag after the synthesized finger has already moved. A second try is only made
+    /// when nothing moved, so a drag that lands in the WRONG place still fails, and a
+    /// broken drag fails both times.
+    private func dragAgainIfUntouched(_ app: XCUIApplication, _ from: String, to: String, edge: Bool = false,
+                                      untouched: () -> Bool) {
+        drag(app, from, to: to, edge: edge)
+        if waitUntil(timeout: 3, { !untouched() }) { return }
+        print("DRAG-RETRY \(from) → \(to): nothing moved the first time")
+        drag(app, from, to: to, edge: edge)
+    }
+
     /// The names of the things while arranging, top to bottom.
     private func arranged(_ app: XCUIApplication, _ count: Int) -> [String] {
         (0..<count).map { words(app.staticTexts["arrange-item-\($0)"]) }
@@ -4050,7 +4067,9 @@ final class AMSPackingUITests: XCTestCase {
         // 6 Oct 2026): carry Lights down past Clothes' last thing instead — the same order.
         drag(app, "arrange-heading-0-grip", to: "arrange-item-4-grip")       // Lights below Wool socks
         #else
-        drag(app, "arrange-heading-1-grip", to: "arrange-heading-0-grip", edge: true)    // Clothes above Lights
+        dragAgainIfUntouched(app, "arrange-heading-1-grip", to: "arrange-heading-0-grip", edge: true) {  // Clothes above Lights
+            self.words(app.buttons["arrange-heading-0"]) == "Lights" && self.words(app.buttons["arrange-heading-1"]) == "Clothes"
+        }
         #endif
         XCTAssertTrue(waitUntil { self.words(app.buttons["arrange-heading-0"]) == "Clothes" },
                       "Clothes did not move up: '\(words(app.buttons["arrange-heading-0"]))'")
