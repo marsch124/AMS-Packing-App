@@ -518,14 +518,25 @@ Add field at the list's top was hidden under them once Counts as joined the foot
 the 0.68–0.71 merge). The Delete question and the area card, once open, stay.
 
 **Activity area and Delete** (one row, side 16, bottom 8):
-- Only on an activity template (role ""): at the left, **"Activity area: <GA / WET / OE / none>"** — 15 semibold
-  violet plain text button, min height 36, id `template-area`, accessibility value the area id or "none". Tap →
-  in place of the row, a card (padding 14, card fill, violet 1-pt border, radius 12, side 16, bottom 10): "In which
-  activity area should it live?" (16 heavy ink) with "Cancel" (outlined muted, `template-area-cancel`), then the
-  rows New offers — "GA · Goal Activity", "WET · Workout, Exercise & Training", "OE · Other Events", "No activity
-  area" (min height 44, hairline under; the current one 16 heavy violet with `isSelected`, else 16 medium ink; ids
-  `template-area-GA`, `-WET`, `-OE`, `-none`). A press files it (`setTemplateArea`, §14) and the card goes. The
-  spec pass (5 Oct 2026): New asked for the area and nothing could put a wrong answer right.
+- On an activity template (role "") and, since 0.71, on an always-packed one (role "base"): at the left,
+  **"Activity area: <Always packed / GA / WET / OE / none>"** — 15 semibold violet plain text button, min height 36,
+  id `template-area`, accessibility value "base", the area id or "none". Tap → in place of the row, a card (padding
+  14, card fill, violet 1-pt border, radius 12, side 16, bottom 10): "In which activity area should it live?" (16
+  heavy ink) with "Cancel" (outlined muted, `template-area-cancel`), then the rows (`TemplateDetail.areaChoices`):
+  **"Always packed — comes on every full trip"** (0.71, id `template-area-base`), "GA · Goal Activity", "WET ·
+  Workout, Exercise & Training", "OE · Other Events", "No activity area" (min height 44, hairline under; the current
+  one 16 heavy violet with `isSelected`, else 16 medium ink; ids `template-area-GA`, `-WET`, `-OE`, `-none`), and
+  under them a footnote (13 muted, id `template-area-hint`): "Always packed comes on every full trip by itself
+  (Quick leaves it out); the others come when you tick them." A press files it (`setTemplateArea`, §14) and the
+  card goes. The spec pass (5 Oct 2026): New asked for the area and nothing could put a wrong answer right. 0.71
+  (8 Oct 2026): his always-packed template had grown too big for a weekend; the agreed way out is a small
+  always-packed core and the big one a template he ticks for longer trips — so a template moves into and out of
+  Always packed here. Transport templates still have no door.
+- **"Make a small core from this…"** (0.71, `SmallCoreDoor`, id `template-smallcore`): a line of its own above the
+  area/Delete row (15 semibold violet plain text, min height 28), only on an always-packed template with more than
+  20 things (`offersSmallCore`, `SMALL_CORE_FROM` = 20; reminders do not count), and only where the page was opened
+  from the Templates tab (Search opens it without). Opens the small core sheet (§14b). The sheet hangs on the
+  page's header, not on the door: once made, the big template is no longer always packed and the door goes.
 - At the right, when not asking: `SmallDeleteButton` "Delete template" (13 semibold red text in a red 60 %
   outlined capsule, min height 30; id `template-delete`). When asking, in place of the row a card
 (padding 14, card fill, red 1-pt border, radius 12, side 16, bottom 10):
@@ -612,8 +623,10 @@ both.
   1.5 pt of the centre line of `template-cover`; seen red with the header row planted as `.top`-aligned: "template-share
   sits -5.0 pt off the icon's centre line"; the mark inside the pill is checked in the pictures);
   `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
-  row); `testATemplateMovesToAnotherActivityArea` (Common base offers no `template-area`; Hiking's reads "GA",
-  `template-area-OE` → "OE", and on the tab OE appears and GA goes); `testATemplateCountsAsWhatHeLinksItTo` (0.70,
+  row); `testATemplateMovesToAnotherActivityArea` (until 0.71: Common base offered no `template-area`; Hiking's reads "GA",
+  `template-area-OE` → "OE", and on the tab OE appears and GA goes); `testATemplateMovesOutOfAndIntoAlwaysPacked` (0.71: Common
+  base's door reads "base", `template-area-base` marked; → none: under Other templates, Always packed gone, offered
+  as `trip-activity-2` on Create new trip; back to base: no longer offered); `testATemplateCountsAsWhatHeLinksItTo` (0.70,
   `-uiTestingHealth`: the Common base has no `template-counts-as`; Bike reads "Bike" by its name, `template-counts-as-9`
   → "Nothing", kept after Done and reopening; on the iPhone the review then has no "No bike" row and "Use these"
   leaves the Bike helmet alone); Arrange — §6a.
@@ -1366,16 +1379,102 @@ rename the existing."
 - `setTemplateArea(id:area:) -> Bool` (the spec pass, 5 Oct 2026): moves an ACTIVITY template (role "") to "GA",
   "WET", "OE" or "" (none) and sets `updatedAt` (not when the area is already that one). Refused (false) for an
   unknown id, an always-packed or transport template (filed by what they do) and an area that is not one of his.
+  **0.71:** also moves a template INTO Always packed (`area == Library.ALWAYS_PACKED_AREA`, "base": role "base",
+  group cleared) and an always-packed one OUT (role "", group = the area picked). Only role and group change —
+  its things, sections, notes, reminders and every row's own answers stay (memberships are untouched). Several
+  always-packed templates are allowed (every Full trip brings each, in template order, the first winning a name+bag
+  clash — `listsForEvent` already did this); so is none (Create new trip then needs a ticked template, as it always
+  does). Transport templates are still refused. Trips already made keep their lines (a template change adds or
+  takes no lines on a trip already made — only a thing's details follow, ThingFollows); their next Trip settings
+  Save rebuilds them from the new roles (a moved-out template's unticked lines then go unless it is ticked). A
+  trip's stored `activities` still holds the id of a template moved INTO Always packed; Trip settings keeps it
+  unshown, and a Quick trip whose only ticked template became always packed must get another tick to be saved.
 - `deleteTemplate(id:) -> Bool`: false for an unknown id; removes the template's memberships and the template. Things
   stay (also things that were on no other template — they become things on no template). Trips built from it are
   untouched ("a trip's lines stand on their own"); a rebuild never drops lines whose template is gone
   (`docs/store.md` rule 9, `Library.regenerated`).
 
-Tests: `TemplateFacesTests.testATemplateMovesToAnotherActivityArea`, `testANameIsTakenOnlyByATemplateHeCanSee`;
+Tests: `TemplateFacesTests.testATemplateMovesToAnotherActivityArea` (0.71: transport refused),
+`testATemplateMovesIntoAndOutOfAlwaysPacked` (0.71: rows, own answers and sections kept; out → offered to tick,
+comes only when ticked, a trip made before keeps its lines until its settings are saved; two always packed → both
+on a Full trip, neither on Quick; asking for where it is changes nothing), `testANameIsTakenOnlyByATemplateHeCanSee`;
 `EditListsTests` — `testARenameSticksAndRefusesANameHeAlreadyHas`,
 `testADeleteTakesTheListAndItsRowsButNeverTheThings`, `testTheOtherListIsUntouchedByTheDelete`,
 `testItRefusesAListThatIsNotThere`; `LibraryTests.testRegeneratingNeverDropsTheLinesOfADeletedTemplate`,
 `testRegeneratingStillDropsWhatALivingTemplateNoLongerHas`; UI `testAListIsRenamedAndAnotherIsDeleted`.
+
+
+## 14b. A small core from a big always-packed template (0.71, `PackingLibrary/SmallCore.swift`, `SmallCoreSheet.swift`)
+
+His words (8 Oct 2026): "I would like you to move stuff around for me, so that the complete solution is served to
+me. Always packed will be a small core, and [the big one] becomes a big kit that I tick." His library lives in his
+app, so the app makes the move, with one confirmation.
+
+**The sheet** (`SmallCoreSheet`, id `smallcore-detail`; Mac min 480×640): header "A small core" (title3 bold violet,
+`smallcore-title`) with Cancel (outlined muted, Escape, `smallcore-cancel` — changes nothing, keeps no copy). A
+footnote: Tick what comes on EVERY full trip…; then:
+1. **Paste a list** (`SectionTitle`, `smallcore-paste-title`), a footnote ("One per line or with commas. A line with
+   lines indented under it is a kit holding them."), a `TextEditor` (height 96, card fill, hairline, radius 10,
+   `smallcore-paste`) and **Tick these** (`FieldButtonLabel`, `smallcore-paste-tick`). Pressed: `planPaste` reads
+   the list (nothing changes yet), ticks become the plan's (his paste wins over the first ticks), and the result
+   line (footnote semibold ink, `smallcore-paste-result`) says e.g. "16 found · 2 not found: X, Y · matched 3
+   things for shirt · Cable pouch: a kit of 3 (new)". Each thing that sits in another kit (or under two kits in
+   the paste) gets a line "<thing> is already in <kit> — a thing sits in one kit only" (`smallcore-clash-N`) and
+   under it a capsule **"Make a second one"** (`smallcore-second-N`; on: filled, "A second one goes in <kit>",
+   `isSelected`).
+2. **Its name** (`smallcore-name`), filled with "<template> short" (`freeTemplateName`).
+3. "<n> of <N> things" (`smallcore-count`), then the template's things under its own headings in its order
+   ("Everything else" last; `smallCoreGroups`): each heading (`smallcore-section-G`, subheadline semibold) with
+   "Tick all" / "Untick all" (`smallcore-section-G-all`), each thing a row with a `TickCircle` (`smallcore-row-N`,
+   N counted top to bottom, `isSelected` when ticked; min height `Metrics.compact`). Ticked at first
+   (`smallCoreSuggestion`): every row under a heading whose name holds clothing, clothes, underwear, toiletries,
+   hygiene, wash, bathroom, kläder, hygien or toalett (case and accents aside), and every thing packed per night.
+4. **Where should "<template>" go?** — GA / WET / OE / "No activity area (Other templates)" (`smallcore-area-…`,
+   default none).
+Pinned under the scroll: **Make the small core** (full colour, height 50, `smallcore-make`); pressed too early the
+line under it (`smallcore-needs`) says "Give the small core a name." / "You already have a template called that." /
+"Tick at least one thing for the small core." The rows sit in a plain VStack (a lazy one dropped the paste answers
+once scrolled past).
+
+**Make** (`LibraryModel.makeSmallCore` → `Library.makeSmallCore`): tried on a copy first; if the model accepts, a
+**rescue copy** of the whole library is written (`RescueCopies.write`, the copies Settings lists under the restore —
+Settings now re-reads them when it appears), then ONE `change`: kits from the paste are made (a new kit thing when
+he has none of that name: kind = the most common kind inside, no bag) and filled (`setKit`; "Make a second one"
+copies the thing with all its details as "<name> 2" into this kit), the new template is added (role "base", the
+big one's default bag, a copy of each heading that holds a ticked row or a kit) with a copy of each ticked
+membership (same thing, How many, Note, Only on, When, bag; new id), each kit gets the big one's row if it has one,
+else a row of its own under the heading of its first thing; the big template is moved to the area picked
+(`setTemplateArea`) and keeps every row. The sheet and the page close; the Templates tab shows a card (callout
+semibold, violet border, `templates-news`, OK `templates-news-ok`): "“<core>” is always packed now; “<big>” is
+ticked when you need it."
+
+**Pasting** (`pastedLines`): lines by newline, names by comma or semicolon; in front of each, bullets (- – — * •
+· + >), "1." / "2)" and "[ ]"/"[x]" are dropped, repeatedly, never a number inside a name ("3-in-1"). A line indented
+deeper (spaces; a tab = 4) than the last line at the left is inside it (depth 1; deeper still counts as 1). A
+left line with lines under it is a KIT (only when it holds one name). Matching (`matches`), most certain first:
+the same name (case/accents aside); else the same without a trailing number or plural s ("Sock" = "Socks",
+"Cable" = "Cable 2"); else every thing whose name holds all its words ("T-shirts" → "Spare top / t-shirt").
+Left-hand names look among the template's rows; a kit's things among all his things (not bags, not to-dos). A
+name that finds nothing is listed, never added. A kit's thing already in another kit, or claimed by an earlier kit
+in the paste, is not moved (a clash). A thing that holds things itself cannot go in; a kit that sits inside
+another kit is not used (both said in the result line). A kit that would hold nothing is not made.
+
+Kits and trips: a thing inside a kit is never a line of its own (ThingKits) — this holds for the big template
+too, where the kit then takes its things' place.
+
+Tests: model `SmallCoreTests` — `testTheDoorShowsOnlyOnABigAlwaysPackedTemplate`,
+`testClothesWashingAndPerNightAreTickedAtFirst`, `testHisPastedListTicksWhatItNames` (bullets, plural, several, not found, a whole word),
+`testANestedLineMakesAKit`, `testAThingInAnotherKitIsNotMovedButCanBeMadeTwice`,
+`testTheSmallCoreIsMadeAndTheBigOneIsTickedFromThen` (rows and own answers equal, headings, refusals leave
+nothing, a Full trip brings the core and the big one only when ticked), `testTheBigOneCanGoToAnActivityArea`.
+UI (`-uiTestingBigBase`: the sample + "Long trips", 23 things, and a Camp pouch holding a Lighter):
+`testASmallCoreIsMadeFromABigAlwaysPackedTemplate` (8 of 23 first, Tick all, untick, OE, made, the card, the core
+always packed, a kept copy in Settings), `testCancellingASmallCoreChangesNothing`,
+`testAPastedListTicksMakesAKitAndOffersASecondOne`; `testATemplateMovesOutOfAndIntoAlwaysPacked` for the area door.
+Planted faults (each red, then restored): the Always packed answer left out of the card ("Always packed is not
+marked"); no rescue copy ("no copy was kept before the change"); the paste not winning ("his list did not win over
+the first ticks: '8 of 23 things'"); Cancel keeping a copy ("a copy was kept for nothing"); model — the group kept
+on the move in, a row's note not copied, the plural/word matching off, nesting ignored, the one-kit rule off.
 
 ---
 

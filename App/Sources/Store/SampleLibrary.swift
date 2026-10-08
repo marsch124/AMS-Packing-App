@@ -405,6 +405,31 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library + "Long trips", a BIG always-packed template (23 things under
+    /// Clothes, Toiletries, Tech, Papers and no heading; Socks and Snacks per night), and
+    /// a Camp pouch kit holding a Lighter (`-uiTestingBigBase`, 0.71: "Make a small core
+    /// from this…").
+    static func bigBase() -> Library {
+        var lib = make()
+        var big = newList(name: "Long trips", role: "base")
+        let heads = ["Clothes", "Toiletries", "Tech", "Papers"].map { TemplateSection(name: $0) }
+        big.sections = heads
+        func row(_ name: String, _ h: Int?, perNight: Bool = false) -> Item {
+            var i = newItem(name: name); i.section = h.map { heads[$0].id } ?? ""; i.perNight = perNight; return i
+        }
+        big.items = [row("Socks", 0, perNight: true), row("T-shirt", 0), row("Trousers", 0), row("Sweater", 0),
+                     row("Toothpaste", 1), row("Razor", 1), row("Deodorant", 1),
+                     row("Laptop", 2), row("Cable", 2), row("Power bank", 2), row("Earphones", 2), row("Adapter", 2),
+                     row("Wallet", 3), row("Notebook", 3), row("Pen", 3),
+                     row("Umbrella", nil), row("Sunglasses", nil), row("Book", nil), row("Snacks", nil, perNight: true),
+                     row("Water bottle", nil), row("Pillow", nil), row("Blanket", nil), row("Playing cards", nil)]
+        lib.saveTemplate(big)
+        if let pouch = lib.addThing(name: "Camp pouch"), let lighter = lib.addThing(name: "Lighter") {
+            lib.setKit(kitId: pouch.id, contents: [lighter.id])
+        }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that

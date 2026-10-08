@@ -4332,19 +4332,14 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// New asks for the activity area; the template page puts a wrong answer right
-    /// (the spec pass, 5 Oct 2026). An always-packed template has no area to change.
+    /// (the spec pass, 5 Oct 2026). Since 0.71 an always-packed template has the door
+    /// too (see testATemplateMovesOutOfAndIntoAlwaysPacked).
     func testATemplateMovesToAnotherActivityArea() {
         let app = launch()
         tab(app, "templates")
         XCTAssertTrue(appears(app, "screen-templates"))
         XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["templates-area-OE"].exists)
-        tap(app, id: "template-row-0")                            // Common base: always packed
-        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        XCTAssertTrue(app.buttons["template-delete"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["template-area"].exists, "an always-packed template offers an area")
-        tap(app, id: "template-detail-done")
-        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
 
         tap(app, id: "template-row-1")                            // Hiking, in GA
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
@@ -4362,6 +4357,157 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["templates-area-OE"].waitForExistence(timeout: 5), "Hiking is not under OE")
         XCTAssertFalse(app.staticTexts["templates-area-GA"].exists, "Hiking is still under GA")
+    }
+
+    /// 0.71: a template moves OUT of Always packed — then it comes on a trip only when
+    /// ticked, so Create new trip offers it — and back IN. None always packed is allowed.
+    func testATemplateMovesOutOfAndIntoAlwaysPacked() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        XCTAssertTrue(app.staticTexts["templates-area-base"].waitForExistence(timeout: 5))
+        tap(app, id: "template-row-0")                            // Common base: always packed
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        let door = app.buttons["template-area"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "an always-packed template cannot be moved")
+        XCTAssertEqual(door.value as? String, "base")
+        tap(app, id: "template-area")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["template-area-base"]) }, "Always packed is not marked")
+        XCTAssertFalse(isOn(app.buttons["template-area-none"]), "No activity area is marked too")
+        shot(app, "template-area-always")
+        tap(app, id: "template-area-none")
+        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "none" }, "it did not move")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["templates-area-other"].waitForExistence(timeout: 5), "it is not under Other templates")
+        XCTAssertFalse(app.staticTexts["templates-area-base"].exists, "Always packed still shows with nothing in it")
+
+        // Create new trip: Hiking 0, Swim 1 — and now Common base, to tick.
+        tab(app, "home")
+        XCTAssertTrue(scrollUntil(app, "trip-activity-2"), "the moved template is not offered to tick")
+        XCTAssertEqual(words(app.buttons["trip-activity-2"]), "Common base")
+
+        // And back in: it is no longer offered.
+        tab(app, "templates")
+        let row = app.buttons.matching(identifier: "template-row-2").firstMatch    // GA Hiking, WET Swim, then Other
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        tap(app, id: "template-row-2")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "none" }, "row 2 is not the moved one")
+        tap(app, id: "template-area")
+        tap(app, id: "template-area-base")
+        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "base" }, "it did not move back")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(app.staticTexts["templates-area-base"].waitForExistence(timeout: 5))
+        tab(app, "home")
+        XCTAssertTrue(scrollUntil(app, "trip-activity-1"))
+        XCTAssertFalse(app.buttons["trip-activity-2"].exists, "an always-packed template is offered to tick")
+    }
+
+    /// Opens "Make a small core from this…" on the big always-packed "Long trips".
+    private func openSmallCore(_ app: XCUIApplication) {
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-0")                            // Common base: small, no door
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-delete"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["template-smallcore"].exists, "a small always-packed template offers a small core")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-row-1")                            // Long trips: 23 things
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-smallcore")
+        XCTAssertTrue(appears(app, "smallcore-detail", timeout: 5), "the small core sheet did not open")
+    }
+
+    /// 0.71, his words: "Always packed will be a small core, and [the big one] becomes a
+    /// big kit that I tick." Clothes and toiletries come ticked; the rest he ticks; one
+    /// press makes the core and moves the big one — with a copy kept first.
+    func testASmallCoreIsMadeFromABigAlwaysPackedTemplate() {
+        let app = launch("-uiTestingBigBase")
+        openSmallCore(app)
+        let count = app.staticTexts["smallcore-count"]
+        XCTAssertTrue(count.waitForExistence(timeout: 5))
+        // Clothes (4) + Toiletries (3) + Snacks (per night).
+        XCTAssertEqual(words(count), "8 of 23 things")
+        XCTAssertEqual(app.textFields["smallcore-name"].value as? String, "Long trips short")
+        XCTAssertTrue(isOn(app.buttons["smallcore-row-0"]), "Socks are not ticked")
+        XCTAssertFalse(isOn(app.buttons["smallcore-row-7"]), "Laptop is ticked")
+        shot(app, "smallcore-sheet")
+        tap(app, id: "smallcore-section-3-all")                   // Papers: 3
+        XCTAssertTrue(waitUntil { self.words(count) == "11 of 23 things" }, "'\(words(count))'")
+        tap(app, id: "smallcore-row-0")                           // Socks off
+        XCTAssertTrue(waitUntil { self.words(count) == "10 of 23 things" })
+        XCTAssertTrue(scrollWithin(app, "smallcore-detail", until: "smallcore-area-OE"))
+        tap(app, id: "smallcore-area-OE")
+        tap(app, id: "smallcore-make")
+        XCTAssertTrue(disappears(app, "smallcore-detail", timeout: 5), "the sheet stayed")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "the template page stayed")
+        let news = app.staticTexts["templates-news"]
+        XCTAssertTrue(news.waitForExistence(timeout: 5), "nothing was said")
+        XCTAssertEqual(words(news), "\u{201C}Long trips short\u{201D} is always packed now; \u{201C}Long trips\u{201D} is ticked when you need it.")
+        XCTAssertTrue(app.staticTexts["templates-area-OE"].exists, "the big one is not under OE")
+        shot(app, "smallcore-made")
+        tap(app, id: "templates-news-ok")
+        XCTAssertTrue(disappears(app, "templates-news", timeout: 5))
+        // The core: always packed (row 1), with the 10 ticked.
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertEqual(app.textFields["template-name"].value as? String, "Long trips short")
+        XCTAssertEqual(app.buttons["template-area"].value as? String, "base")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        // A copy of the library from before was kept, under Settings.
+        tab(app, "settings")
+        XCTAssertTrue(scrollUntil(app, "rescue-row-0"), "no copy was kept before the change")
+    }
+
+    /// Cancel changes nothing — not even a kept copy.
+    func testCancellingASmallCoreChangesNothing() {
+        let app = launch("-uiTestingBigBase")
+        openSmallCore(app)
+        tap(app, id: "smallcore-section-2-all")
+        tap(app, id: "smallcore-cancel")
+        XCTAssertTrue(disappears(app, "smallcore-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-smallcore"].waitForExistence(timeout: 5), "the page closed or the door went")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        XCTAssertFalse(app.staticTexts["templates-news"].exists)
+        XCTAssertFalse(app.staticTexts["templates-area-other"].exists, "the big one moved")
+        XCTAssertTrue(app.buttons["template-row-1"].exists, "the big one went missing")
+        tab(app, "settings")
+        XCTAssertTrue(app.staticTexts["device-count-items"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["rescue-heading"].exists, "a copy was kept for nothing")
+    }
+
+    /// His own list, pasted: what it names is ticked (his list wins), an indented block is
+    /// a kit, a thing in another kit is not moved — a second one can be made instead.
+    func testAPastedListTicksMakesAKitAndOffersASecondOne() {
+        let app = launch("-uiTestingBigBase")
+        openSmallCore(app)
+        let paste = app.descendants(matching: .any).matching(identifier: "smallcore-paste").firstMatch
+        XCTAssertTrue(paste.waitForExistence(timeout: 5))
+        paste.tap()
+        app.typeText("- socks\n- T-shirts\nTech pouch\n  - Cable\n  - Lighter\nHammock")
+        hideKeyboard(app)
+        tap(app, id: "smallcore-paste-tick")
+        let result = app.staticTexts["smallcore-paste-result"]
+        XCTAssertTrue(result.waitForExistence(timeout: 5), "nothing was said about the paste")
+        XCTAssertEqual(words(result), "5 found \u{00B7} 1 not found: Hammock \u{00B7} Tech pouch: a kit of 1 (new)")
+        XCTAssertEqual(words(app.staticTexts["smallcore-clash-0"]), "Lighter is already in Camp pouch \u{2014} a thing sits in one kit only")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["smallcore-count"]) == "2 of 23 things" },
+                      "his list did not win over the first ticks: '\(words(app.staticTexts["smallcore-count"]))'")
+        XCTAssertTrue(scrollWithin(app, "smallcore-detail", until: "smallcore-second-0"), "no way to make a second one")
+        tap(app, id: "smallcore-second-0")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["smallcore-second-0"]) })
+        shot(app, "smallcore-pasted")
+        tap(app, id: "smallcore-make")
+        XCTAssertTrue(app.staticTexts["templates-news"].waitForExistence(timeout: 5), "the core was not made")
+        // The core holds Socks, T-shirt and the new kit: three rows.
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-item-2"].waitForExistence(timeout: 5), "the kit is not on the core")
+        XCTAssertFalse(app.buttons["template-item-3"].exists, "the kit's things are on the core too")
     }
 
     /// The Templates tab opens a template, Search and New one after another, each

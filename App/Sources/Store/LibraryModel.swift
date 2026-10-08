@@ -243,6 +243,8 @@ extension LibraryModel {
     ///  -uiTestingOnSite       → memory, the sample with its trip under way (On site)
     ///  -uiTestingKits         → memory, the sample + a Camp pouch and a Wash bag with things
     ///                           inside them (kits, 0.70)
+    ///  -uiTestingBigBase      → memory, the sample + a big always-packed "Long trips" and a
+    ///                           Camp pouch kit (a small core, 0.71)
     ///  -uiTestingOldPhoto     → memory, the sample + a photo nothing shows, from January
     ///                           and one with no date (Worth a look)
     ///  -uiTestingTwoLibraries → memory, every template of the sample twice (Worth a look)
@@ -289,6 +291,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingOnSite") {
             return LibraryModel(store: MemoryStore(SampleLibrary.underWay().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingBigBase") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.bigBase().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingKits") {
             return LibraryModel(store: MemoryStore(SampleLibrary.kits().records()), usesICloud: false, sky: sky)

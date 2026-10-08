@@ -298,6 +298,16 @@ whose group is empty or unknown, A–Z, as a group with id "" and label "Other t
 area" (the spec pass, 5 Oct 2026). The base, transport, container ("Bags") and loose roles are never
 offered.
 
+**Always packed is a choice, not a fixed template (0.71).** Every template with role "base" comes on every Full
+trip (`listsForEvent`: all of them, in template order, before the transport template and the ticked ones; the first
+wins a name+bag clash); Quick leaves them all out. A template is moved into or out of Always packed on its page
+(spec 04, Activity area; `setTemplateArea`): moved out, it is offered here like any activity template and comes only
+when ticked; moved in, it is no longer offered. None always packed is allowed — the screen still asks for one ticked
+template. Trips already made keep their lines; their next Trip settings Save rebuilds them by the new roles. "Make a
+small core from this…" (spec 04 §14b) makes a new always-packed template from part of a big one and moves the big
+one out in one step. Tests: `TemplateFacesTests.testATemplateMovesIntoAndOutOfAlwaysPacked`, UI
+`testATemplateMovesOutOfAndIntoAlwaysPacked`.
+
 ### Data
 Writes one `trips` record and one `entries` record per line. AppStorage: none.
 

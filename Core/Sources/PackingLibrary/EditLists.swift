@@ -25,17 +25,35 @@ extension Library {
         return true
     }
 
+    /// The area that is not an activity area: "Always packed" (role "base") — the
+    /// templates every Full trip brings, without being ticked.
+    public static let ALWAYS_PACKED_AREA = "base"
+
     /// Move a template to another activity area (GA, WET, OE, or "" = none) — his
     /// choice on New, which could not be put right afterwards until the spec pass
-    /// (5 Oct 2026). Only an activity template has an area: always packed and
-    /// transport templates are filed by what they do, so they are refused (false),
-    /// as is an area that is not one of his.
+    /// (5 Oct 2026) — or into and out of Always packed (0.71, `ALWAYS_PACKED_AREA`).
+    ///
+    /// 0.71 (8 Oct 2026): his always-packed template had grown too big for a short
+    /// trip. The way out he agreed: a small always-packed core, and the big one a
+    /// template he ticks for the longer trips. So an always-packed template can now
+    /// go to GA / WET / OE / none, and any activity template can become always packed.
+    /// Only the role and the area change: its things, sections, notes, reminders and
+    /// every row's own answers are the template's and stay as they are. Into Always
+    /// packed its area is cleared (it is filed by what it does); out of it, it gets
+    /// the area picked. Several always-packed templates are fine (every Full trip
+    /// brings each of them), and so is none. Transport templates stay where they are
+    /// (refused, false), as does an area that is not one of his.
     @discardableResult
     public mutating func setTemplateArea(id: String, area: String) -> Bool {
-        guard let n = templates.firstIndex(where: { $0.id == id }), templates[n].role.isEmpty,
-              area.isEmpty || GROUP_IDS.contains(area) else { return false }
-        guard templates[n].group != area else { return true }
-        templates[n].group = area
+        guard let n = templates.firstIndex(where: { $0.id == id }) else { return false }
+        let role = templates[n].role
+        guard role.isEmpty || role == Library.ALWAYS_PACKED_AREA else { return false }
+        let always = area == Library.ALWAYS_PACKED_AREA
+        guard always || area.isEmpty || GROUP_IDS.contains(area) else { return false }
+        let newRole = always ? Library.ALWAYS_PACKED_AREA : "", newGroup = always ? "" : area
+        guard templates[n].role != newRole || templates[n].group != newGroup else { return true }
+        templates[n].role = newRole
+        templates[n].group = newGroup
         templates[n].updatedAt = nowISO()
         return true
     }

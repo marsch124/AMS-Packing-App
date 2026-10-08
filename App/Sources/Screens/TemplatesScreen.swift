@@ -13,6 +13,8 @@ struct TemplatesScreen: View {
     @State private var opened: Opened?
     /// A template just made: opened as soon as New has closed.
     @State private var madeNow: String?
+    /// What a small core just made says (0.71), until OK.
+    @State private var news: String?
 
     enum Opened: Identifiable, Equatable {
         case template(String), search, new
@@ -93,6 +95,7 @@ struct TemplatesScreen: View {
                 // What his trip reviews say a list carries for nothing (roadmap stop E).
                 RefineDoor().environmentObject(model)
                     .padding(.bottom, 4)
+                if let said = news { newsCard(said) }
                 ForEach(areas) { area in
                     // His own code beside the name, as the web app has it:
                     // "GA · GOAL ACTIVITY".
@@ -122,7 +125,7 @@ struct TemplatesScreen: View {
             if let id = madeNow { madeNow = nil; opened = .template(id) }
         }) { destination in
             switch destination {
-            case .template(let id): TemplateDetail(listId: id).environmentObject(model)
+            case .template(let id): TemplateDetail(listId: id, onSmallCore: { news = $0 }).environmentObject(model)
             case .search: SearchScreen().environmentObject(model)
             case .new:
                 NewList(made: { list in
@@ -131,6 +134,27 @@ struct TemplatesScreen: View {
                 }, library: model.library)
             }
         }
+    }
+}
+
+extension TemplatesScreen {
+    /// "Short is always packed now; Big is ticked when you need it." — after a small
+    /// core is made (0.71), until OK.
+    func newsCard(_ said: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(said)
+                .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("templates-news")
+            Spacer(minLength: 4)
+            Button("OK") { news = nil }
+                .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
+                .accessibilityIdentifier("templates-news-ok")
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.templates.color, lineWidth: 1))
+        .padding(.bottom, 4)
     }
 }
 
@@ -320,6 +344,12 @@ struct IconPickerScreen: View {
 /// at the foot and taken off with ✕ (the thing itself survives).
 struct TemplateDetail: View {
     let listId: String
+    /// A small core was made from this template (0.71): what the Templates screen says.
+    /// The page closes. nil where the page is opened from elsewhere (Search).
+    var onSmallCore: ((String) -> Void)? = nil
+    /// "Make a small core from this…" is open, and what it said once made.
+    @State private var makingCore = false
+    @State private var coreNews: String?
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     /// His "When" colours, made readable for this screen (2026-09-26).
@@ -425,6 +455,12 @@ struct TemplateDetail: View {
                     // while arranging, when Escape ends Arrange instead (the Arrange pill).
                     .keyboardShortcut(arranging ? nil : .cancelAction)
                     .accessibilityIdentifier("template-detail-done")
+            }
+            // The small core's sheet hangs here, on the header that is always there (0.71).
+            .sheet(isPresented: $makingCore, onDismiss: {
+                if let said = coreNews { coreNews = nil; onSmallCore?(said); dismiss() }
+            }) {
+                SmallCoreSheet(templateId: listId) { coreNews = $0 }.environmentObject(model)
             }
             .needsLine($renameNeeds, typed: renaming ?? "", id: "template-rename-needs")
             .padding(16)
@@ -627,10 +663,17 @@ struct TemplateDetail: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16).padding(.bottom, 6)
                     }
+                    // A big always-packed template can give a small core (0.71).
+                    if onSmallCore != nil, model.library.offersSmallCore(templateId: listId) {
+                        SmallCoreDoor { makingCore = true }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16).padding(.bottom, 2)
+                    }
                     HStack(spacing: 8) {
-                        // Only an activity template lives in an area; always packed and
-                        // transport templates are filed by what they do.
-                        if list.role.isEmpty { areaDoor(list) }
+                        // An activity template lives in an area, and since 0.71 one can be
+                        // moved into Always packed and back. Transport templates are filed
+                        // by what they do.
+                        if list.role.isEmpty || list.role == Library.ALWAYS_PACKED_AREA { areaDoor(list) }
                         SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
                     }
                     .padding(.horizontal, 16).padding(.bottom, 8)
@@ -881,16 +924,27 @@ struct TemplateDetail: View {
     /// The area it lives in, as a quiet button beside Delete — rarely wanted, never
     /// in the way of the rows.
     private func areaDoor(_ list: PackList) -> some View {
-        Button { withAnimation(.easeOut(duration: 0.15)) { choosingArea = true } } label: {
-            Text("Activity area: \(list.group.isEmpty ? "none" : list.group)")
+        let always = list.role == Library.ALWAYS_PACKED_AREA
+        let said = always ? "Always packed" : (list.group.isEmpty ? "none" : list.group)
+        return Button { withAnimation(.easeOut(duration: 0.15)) { choosingArea = true } } label: {
+            Text("Activity area: \(said)")
                 .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.templates.color)
                 .lineLimit(1)
                 .frame(minHeight: Metrics.chip).contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("template-area")
-        .accessibilityValue(list.group.isEmpty ? "none" : list.group)
+        .accessibilityValue(always ? "base" : (list.group.isEmpty ? "none" : list.group))
     }
+
+    /// The answers of the area card, in order: Always packed first (0.71), his areas,
+    /// then none.
+    static let areaChoices: [(String, String)] = {
+        var out: [(String, String)] = [(Library.ALWAYS_PACKED_AREA, "Always packed \u{2014} comes on every full trip")]
+        out += GROUPS.map { ($0.id, "\($0.id) \u{00B7} \($0.label)") }
+        out.append(("", "No activity area"))
+        return out
+    }()
 
     /// The question New asks, asked again: one press files it, and the card goes.
     private func areaCard(_ list: PackList) -> some View {
@@ -905,8 +959,11 @@ struct TemplateDetail: View {
                     .accessibilityIdentifier("template-area-cancel")
             }
             .padding(.bottom, 6)
-            ForEach(GROUPS.map { ($0.id, "\($0.id) · \($0.label)") } + [("", "No activity area")], id: \.0) { id, label in
-                let on = list.group == id
+            // Always packed first (0.71): every full trip brings it, unticked. The others
+            // come on a trip when ticked.
+            ForEach(TemplateDetail.areaChoices, id: \.0) { id, label in
+                let always = list.role == Library.ALWAYS_PACKED_AREA
+                let on = id == Library.ALWAYS_PACKED_AREA ? always : (!always && list.group == id)
                 Button {
                     model.change { _ = $0.setTemplateArea(id: listId, area: id) }
                     choosingArea = false
@@ -924,6 +981,11 @@ struct TemplateDetail: View {
                 .accessibilityIdentifier("template-area-\(id.isEmpty ? "none" : id)")
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
+            Text("Always packed comes on every full trip by itself (Quick leaves it out); the others come when you tick them.")
+                .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+                .accessibilityIdentifier("template-area-hint")
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
