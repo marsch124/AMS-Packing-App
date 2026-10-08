@@ -72,7 +72,9 @@ struct ListsScreen: View {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 8) {
                     // What this page is, once, at the top (K.3).
-                    Text("The words the app offers you as buttons. Add your own with the field under each part; hold the grip ≡ and drag one to its place; the pen renames one or moves it up or down; one that is still in use somewhere cannot be removed.")
+                    Text(ReorderArrows.shown
+                         ? "The words the app offers you as buttons. Add your own with the field under each part; hold the grip ≡ and drag one to its place; the pen renames one or moves it up or down; one that is still in use somewhere cannot be removed."
+                         : "The words the app offers you as buttons. Add your own with the field under each part; hold the grip ≡ and drag one to its place; the pen renames one; one that is still in use somewhere cannot be removed.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("choices-intro")
@@ -263,7 +265,8 @@ struct ListsScreen: View {
     #endif
 
     /// One entry's editor, under its row: a new name with Rename, and ▲ ▼ (44 × 44,
-    /// drawn) where the list's order is his. What a press could not do is said under it.
+    /// drawn) where the list's order is his — on the Mac; the iPhone says to drag the grip
+    /// instead (0.72). What a press could not do is said under it.
     private func editor(_ kind: Kind, _ entry: Entry) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
@@ -279,7 +282,14 @@ struct ListsScreen: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("list-\(kind.rawValue)-rename")
             }
-            if Library.canMove(kind.rawValue) {
+            if Library.canMove(kind.rawValue) && !ReorderArrows.shown {
+                // The iPhone (0.72): no ▲ ▼ — the grip at the row's left moves it.
+                Text(kind == .phases ? "To move it up or down the timeline, hold the grip \u{2261} at its left and drag it: every trip follows this order."
+                                     : "To move it, hold the grip \u{2261} at its left and drag it.")
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("list-\(kind.rawValue)-drag-hint")
+            } else if Library.canMove(kind.rawValue) {
                 HStack(spacing: 12) {
                     moveButton(kind, entry, by: -1, mark: "M6 15l6-6 6 6", id: "list-\(kind.rawValue)-up", says: "Move \(entry.label) up")
                     moveButton(kind, entry, by: 1, mark: "M6 9l6 6 6-6", id: "list-\(kind.rawValue)-down", says: "Move \(entry.label) down")

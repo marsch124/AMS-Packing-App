@@ -830,12 +830,13 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
 - **On a template's page**, above the things (under Find), a block **Reminders** (`template-reminders`; heading
   `template-reminders-title`, count `template-reminders-count`). With none yet it is one line: "Reminders" and a small
   outlined **Add a reminder** (`template-reminders-start`), which opens the foot.
-- Each reminder is a line (`template-reminder-<n>`, `Metrics.line` high, hairline under it): its name, and on the
-  right its When in the step's own colour (made readable for day or night). A press opens it in place:
+- Each reminder is a line (`template-reminder-<n>`, `Metrics.line` high, hairline under it): with two or more, a
+  **grip ≡** at its left (0.72, both devices; `template-reminder-<n>-grip`, `ReorderGrip`: hold and drag, each place
+  passed one `moveReminder` at once), its name, and on the right its When in the step's own colour (made readable for day or night). A press opens it in place:
   - the name, a field (`template-reminder-name`; what was missing said under it, `template-reminder-name-needs`);
   - **When**, a drop-down (`template-reminder-when`) — applied at once; its open lines on trips still ahead follow;
-  - ↑ and ↓ (`template-reminder-up` / `-down`, 36-pt squares) — move it one place among the reminders, at once;
-    at the top (bottom) the arrow is drawn in the hairline colour and does nothing;
+  - ↑ and ↓ (`template-reminder-up` / `-down`, 36-pt squares; the Mac only since 0.72) — move it one place among the
+    reminders, at once; at the top (bottom) the arrow is drawn in the hairline colour and does nothing;
   - **Done** (`template-reminder-done`, the template's violet, never grey) — saves a changed name and closes;
   - last, quiet and red, **Remove reminder** (`template-reminder-remove`), which asks first: "Remove “…” from this
     template?" Keep it (`-remove-no`) / Remove (`-remove-yes`).
@@ -1015,6 +1016,7 @@ reordering easier for a human by introducing drag and drop?"
   the very call ↑ / ↓ make. So a drag changes nothing an arrow could not: in a drop-down it is held until Save (Cancel
   undoes), in Your choices it is made at once (`moveChoice`), as the arrows there are.
 - The arrows stay — for the keys (Tab reaches ↑ ↓ on the Mac; the grip is not one of Tab's tools) and for VoiceOver.
+  **Since 0.72 on the Mac only** — see "The iPhone drags only (0.72)" below.
 - `Screens/Reorder.swift`: `ReorderGrip` (the gesture), `reorderLift` (the carried row), `reorderStep` (each row's
   height). Not a `List` with `.onMove` as Arrange: see spec 06 §21.
 - Two traps found on the way: a row named for scrolling with `.id(<row id>)` (a name by its PLACE) became a new view at
@@ -1031,6 +1033,38 @@ move: 'Charging'", "the section dragged up did not move: 'Lights'", "the place d
 wardrobe'"). Mac probe (GitHub's Mac, 8 Oct 2026): the three drag tests, the violet test, `testHisListsAnswerTabAndSpaceOnTheMac`
 and `testKindOfThingIsChangedInsideItsList` — 6 of 6 green (the Mac's drag aims at a row's edge, the helper `drag`).
 
+### The iPhone drags only (0.72)
+
+> **Built in 0.72** (helper "noarrows", 8 Oct 2026) — written from the code; spec 06 §21 ("↑ ↓ are the Mac's only")
+> and §2, spec 05 (His lists inside their drop-downs; a bag's Pockets).
+
+His answer, 8 Oct 2026, to the open question below ("should the ↑ ↓ come off the iPhone?"): **"Drag and drop on the
+phone as well."**
+
+- On the iPhone no list he orders shows ↑ ↓: every drop-down with row tools (Kind of thing, Kept at home, Usually
+  packed in, Pocket, When, Condition, a thing's Section on each template, a template row's Bag, When and Section),
+  Your choices' pen, a bag's pockets and a template's reminders. One switch, `ReorderArrows.shown`
+  (`Screens/Reorder.swift`): false on the iPhone, true on the Mac.
+- Nothing lost a way to move: the drop-downs and Your choices had their grip since 0.70; a bag's pockets
+  (`bag-pocket-<n>-grip`) and a template's reminders (`template-reminder-<n>-grip`) got one now (on both devices).
+  VoiceOver moves a row by the grip's own actions, **Move up** / **Move down**.
+- The arrows' room goes to the name: a drop-down row on the iPhone is grip · name · pen · Remove, and "Pharmacy /
+  meds" and "Comfort & misc" are one line (two in 0.70).
+- The Mac keeps the arrows (Tab reaches them; the grip it does not) and the grip.
+- Your choices' pen on the iPhone says instead: "To move it, hold the grip ≡ at its left and drag it."
+  (`list-<kind>-drag-hint`; the steps' line names the timeline). The page's intro drops "or moves it up or down".
+
+**Tests.** New: `testTheIPhoneMovesByDragOnlyAndLongNamesStayOnOneLine` (iPhone: the Map's kinds — "Pharmacy / meds"
+and "Comfort & misc" each as tall as row 0's within 2 pt and with a grip; no `thing-category-<n>-up`/`-down` on any
+row; Mac: row 10 still has ↑, ↓ and its grip). Planted: `ReorderArrows.shown = true` on the iPhone → red
+(see the report of 0.72). Changed to drag on the iPhone, arrows kept on the Mac (helper `moveInList`, which taps
+`<list>-<n>-up|down` on the Mac and drags `<list>-<n>-grip` onto its neighbour's on the iPhone):
+`testASectionIsMovedFromAThingsPageAndANewTripReadsIt`, `testCancelLeavesTheSectionsAsTheyWere`,
+`testKindOfThingIsChangedInsideItsList` (its tools: rename + remove + a grip on the iPhone; + up, down on the Mac),
+`testKeptAtHomeIsChangedInsideItsListAndCancelUndoes`, `testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage`,
+`testABagsPageListsItsPockets`; `testAChoiceIsRenamedAndMovedAndItsThingsFollow` and `testATemplateKeepsItsReminders`
+drag on the iPhone and press ▲ / ↑ on the Mac.
+
 **Template names in violet (0.70, spec 05 Your things).** His ask the same day: "Let's make the Templates text on each
 row Lilac (the same color as the Templates) so that the list pops a bit." `ThingDetailLine`: the template names in the
 Templates violet made readable (`readableHex`), " · place" muted, "On no template" orange. UI
@@ -1045,9 +1079,11 @@ and red over green): the Map's row (Hiking · Garage) has violet; a thing on no 
   choices, not from the list.
 - A bag with no pockets shows no Pocket list, so its first pocket is made on the bag's page.
 - The row's own stored bag counts as a use when its Bag list refuses a remove, even after the row picked another.
-- (0.70) With the grip added, a drop-down row holds grip, name, pen, ↑, ↓ and Remove; on the iPhone a long name
-  ("Comfort & misc", "Pharmacy / meds") breaks over two lines. Now that a row can be dragged, the ↑ ↓ could leave
-  the iPhone (they stay for the Mac's keys) — his call.
+- ~~(0.70) Now that a row can be dragged, the ↑ ↓ could leave the iPhone — his call.~~ Answered 8 Oct 2026: "Drag and
+  drop on the phone as well" — done in 0.72 (above).
+- (0.72) The older reorderable lists keep their arrows on the iPhone and have no grip: the Grab lists' editor
+  (`grab-up-<n>`), the Grab lists' order (`grablists-up-<n>`) and the table's Columns (`columns-<id>-up`). Say if
+  they should drag too.
 - (0.70) Search ("on 2 templates", a count) and Choose from your things (a place only) show no template NAMES, so
   they are not violet; say if the count should be.
 

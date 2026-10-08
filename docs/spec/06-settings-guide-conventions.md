@@ -127,7 +127,8 @@ the sheet down on the iPhone. Nothing is ever
 - Then a `KeyboardAwayScroll` with a `VStack(spacing: 8)`, padding 16 horizontal / 24 bottom:
   - Intro (15 medium, muted, wraps, id `choices-intro`): **"The words the app offers you as buttons. Add your
     own with the field under each part; hold the grip ≡ and drag one to its place; the pen renames one or moves it
-    up or down; one that is still in use somewhere cannot be removed."** (the grip sentence 0.70)
+    up or down; one that is still in use somewhere cannot be removed."** (the grip sentence 0.70) — the Mac's; on
+    the iPhone (0.72, no ▲ ▼ there) "… the pen renames one; one that is still in use somewhere cannot be removed."
   - Five parts, in this fixed order (`Kind.allCases`): `places`, `owners`, `people`, `conditions`, `phases`. For each:
     - A `HeadingBand` (§21) in the Settings slate, 16 pt space above, id `choices-heading-<kind>`. Titles:
       **"Storage places"**, **"Owners"**, **"Packers"**, **"Item conditions"**, **""When" steps"**.
@@ -183,10 +184,13 @@ the sheet down on the iPhone. Nothing is ever
       slate border, container id `list-<kind>-editor`) holding a field **"New name"** pre-filled with the entry's
       label (17 medium, `Theme.bg` fill, radius 10, min height 44, id `list-<kind>-rename-name`; Return = Rename)
       and **Rename** (`FieldButtonLabel`, slate, id `list-<kind>-rename`); under them, for places, packers,
-      conditions and steps, two drawn chevrons ▲ ▼ (`M6 15l6-6 6 6` / `M6 9l6 6 6-6`, stroke 2.2, in 44×44 boxes,
+      conditions and steps, ON THE MAC two drawn chevrons ▲ ▼ (`M6 15l6-6 6 6` / `M6 9l6 6 6-6`, stroke 2.2, in 44×44 boxes,
       slate at 10 % with a 1.4-pt slate outline, ids `list-<kind>-up` / `list-<kind>-down`, VoiceOver "Move <label>
       up|down") and the line "Up or down the list." ("Up or down the timeline: every trip follows this order." for
-      steps; 15 medium muted); for owners instead "Owners are always in A–Z order.", and under it (0.70, his answer
+      steps; 15 medium muted); ON THE IPHONE (0.72, his answer 8 Oct 2026: "Drag and drop on the phone as well") no
+      chevrons, only the line "To move it, hold the grip ≡ at its left and drag it." ("To move it up or down the
+      timeline, hold the grip ≡ at its left and drag it: every trip follows this order." for steps; 15 medium
+      muted, id `list-<kind>-drag-hint`); for owners instead "Owners are always in A–Z order.", and under it (0.70, his answer
       "My things." to whose things Apple Health marks) **"This is me"** — a pill (Subheadline semibold, min height
       `Metrics.chip`; slate outline on 10 % slate, filled slate with white words while this owner is him; id
       `list-owners-me`, `.isSelected` when on) with a muted line beside it: "Whose things Apple Health marks in a
@@ -432,7 +436,8 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   Remove on "≥1 week ahead" → `lists-problem` says "on 1 trip" and sits within 60 points under the ✕ pressed),
   `testAChoiceIsRenamedAndMovedAndItsThingsFollow` (Hall closet → Hall cupboard through the pen; the editor
   closes; ▲ moves it to row 1 with the editor following; ▲ at the top says so; the Rain jacket's *Kept at home*
-  then reads "Hall cupboard").
+  then reads "Hall cupboard"). Since 0.72 the ▲ part is the Mac's; on the iPhone the pen shows no `list-places-up`
+  but `list-places-drag-hint`, and Hall cupboard's grip dragged onto row 1's moves it there.
 - UI — `testEachPlaceHasACodeToPrintAndOpen` (0.69): `list-places-name-5` is "Garage"; `list-places-code-5` opens
   `place-code-detail` titled "Garage"; `place-code` at least 200 wide; `place-label` 48 points tall (64 dots at ¾
   point); `place-label-share` (iPhone) / `place-label-save` (Mac); `place-code-open` → `place-detail` "Garage",
@@ -1578,14 +1583,22 @@ same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
   (`Screens/ChoiceDropDown.swift`) and `DropDownRowTools.sections`.
 - **Drag and drop (0.70, `Screens/Reorder.swift`)** — on a tool row whose list `orders` and that is not removed, a
   **grip ≡** at the row's LEFT (`<row id>-grip`; `ReorderGrip` drawing Arrange's `GripMark`, the thin grey one: 24-pt
-  grid, 36 × `Metrics.compact`; read as "Move <name>", hint "Hold and drag to move it; the arrows move it one place").
+  grid, 36 × `Metrics.compact`; read as "Move <name>", hint "Hold and drag to move it; the arrows move it one place"
+  — on the iPhone "Hold and drag to move it"; VoiceOver actions **Move up** / **Move down** (0.72) take one step).
   iPhone: hold 0.2 s, then drag (a swipe over it still scrolls); Mac: drag with the mouse. As the row is carried past
   one row-height (its own measured height, `reorderStep`) it takes ONE step with the list's own `move(value, ±1)` —
   the call ↑ / ↓ make, so a drag is a row of arrow presses (held until Save; Cancel undoes), one step per drag event
   (the list's `move` reads the list as last drawn). The carried row is drawn on the card colour with a 1-pt tint edge
   and a shadow, `zIndex` 1, offset to follow the finger (at most 0.6 row past the first or last place); let go — or
   the system cancels the gesture — it settles (0.15 s). The grip is not one of the tools Tab reaches: the keys keep
-  ↑ ↓. Since 0.70 the options are `ForEach`-ed by VALUE (a repeated value gets "<value>#<n>") and a tool row's scroll
+  ↑ ↓.
+- **↑ ↓ are the Mac's only (0.72, `ReorderArrows.shown`: true on the Mac, false on the iPhone).** His answer, 8 Oct
+  2026, to "now that rows can be dragged, should the arrows come off the iPhone?": "Drag and drop on the phone as
+  well." On the iPhone a tool row is grip · name · pen · Remove — no `-up` / `-down`, and `toolsOf` leaves `.up`
+  `.down` out — so the name has the arrows' room: "Pharmacy / meds" and "Comfort & misc" are one line (two in 0.70).
+  The Mac keeps grip · name · pen · ↑ · ↓ · Remove, Tab reaching ↑ ↓ as before. The same rule holds outside the
+  drop-downs: Your choices' pen (§2), a bag's pockets (spec 05) and a template's reminders (spec 07 part 12) — each
+  has a grip on both, arrows on the Mac only. Since 0.70 the options are `ForEach`-ed by VALUE (a repeated value gets "<value>#<n>") and a tool row's scroll
   name (`.id(<row id>)`) sits on a clear view BEHIND it — on the row itself it gave the row a new identity at each
   step, which dropped the drag (the row stayed lifted half a row low). Also 0.70: the list with tools is 370 wide
   (`idealWidth`; 320 without), each tool keeps its own width (`fixedSize`) and the name comes first (`layoutPriority`),

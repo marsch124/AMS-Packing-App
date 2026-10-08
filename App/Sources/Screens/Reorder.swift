@@ -3,8 +3,8 @@ import SwiftUI
 // Drag and drop to reorder his own lists (0.70). His ask, testing 0.69 (8 Oct 2026): "I like
 // all the lists now. One can add, rename and reorder. Can we make the reordering easier for
 // a human by introducing drag and drop?" Every list with ↑ ↓ gets a grip ≡ on each row —
-// the hand-drawn one Arrange uses (`GripMark`): hold it and drag. The arrows stay for the
-// keys (Tab reaches them on the Mac; the grip is not one of the tools Tab steps through).
+// the hand-drawn one Arrange uses (`GripMark`): hold it and drag. Since 0.72 the arrows are
+// the Mac's only (`ReorderArrows`): there Tab reaches them; the grip is not one of its tools.
 //
 // ONE way of moving, the arrows' own: as the row is carried past a neighbour's middle it
 // takes ONE step with the list's own `move(±1)` — the very call ↑ or ↓ makes — so a drag
@@ -17,6 +17,19 @@ import SwiftUI
 // drag would grab with them; and the Mac's List puts a drop at a row's middle BELOW it
 // (spec 04 §6a). A gesture on the grip alone keeps the list as it is and works the same
 // with a finger and a mouse.
+
+/// Where ↑ ↓ are drawn on a list he orders (0.72). His answer, 8 Oct 2026, to "now that rows
+/// can be dragged, should the arrows come off the iPhone?": "Drag and drop on the phone as
+/// well." On the iPhone a row is moved by its grip only — the arrows' room goes to the name,
+/// so a long one stays on one line — and VoiceOver moves it with the grip's own actions
+/// ("Move up", "Move down"). The Mac keeps the arrows: Tab reaches them, the grip it does not.
+enum ReorderArrows {
+    #if os(macOS)
+    static let shown = true
+    #else
+    static let shown = false
+    #endif
+}
 
 /// The row being carried: which (its key), how many steps it has taken, and how far the
 /// finger is from where the row now stands (the row is drawn there, lifted).
@@ -43,7 +56,11 @@ struct ReorderGrip: View {
 
     var body: some View {
         GripMark(id: id, label: label)
-            .accessibilityHint("Hold and drag to move it; the arrows move it one place")
+            .accessibilityHint(ReorderArrows.shown ? "Hold and drag to move it; the arrows move it one place"
+                                                   : "Hold and drag to move it")
+            // VoiceOver's way to move it (the iPhone has no arrows since 0.72): one place a time.
+            .accessibilityAction(named: "Move up") { if canMove(-1) { move(-1) } }
+            .accessibilityAction(named: "Move down") { if canMove(1) { move(1) } }
             #if os(iOS)
             // Hold, then drag (his words): a plain swipe over the grip still scrolls the list.
             .gesture(LongPressGesture(minimumDuration: 0.2)

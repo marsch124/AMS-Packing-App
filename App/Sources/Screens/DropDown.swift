@@ -42,7 +42,8 @@ struct DropDownNew {
 /// each template (0.68, his ask with a picture of that list open: "I would like to be able
 /// to Rename, Change and Delete Sections from this here as well"). Each row it `applies`
 /// to gets a pen (rename: the row becomes a field; Return takes the name, Esc leaves it),
-/// two small arrows (its place in the order) and a quiet red Remove at the far right,
+/// a grip ≡ and, on the Mac only (0.72), two small arrows (its place in the order), and a
+/// quiet red Remove at the far right,
 /// which asks inside the list first. The page holds every change until it is saved and
 /// gives the list its options as they stand; a removed row is struck out, with Put back.
 struct DropDownRowTools {
@@ -476,7 +477,9 @@ struct DropDown: View {
                     toolButton(id: "\(id)-rename", lit: toolLit(n, have, .rename), label: "Rename") { startName(value, label) } face: {
                         glyph("M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3zM13.5 7.5l3 3", Theme.muted)
                     }
-                    if tools.orders {
+                    // ↑ ↓ on the Mac only (0.72): the iPhone moves a row by its grip, and the
+                    // name gets their room.
+                    if tools.orders && ReorderArrows.shown {
                         toolButton(id: "\(id)-up", lit: toolLit(n, have, .up), label: "Move up") { move(tools, value, -1) } face: {
                             glyph("M6 15l6-6 6 6", tools.canMove(value, -1) ? tint : Theme.faint)
                         }
@@ -580,13 +583,13 @@ struct DropDown: View {
 
     /// The tools a row shows now, in the order Tab reaches them: Put back on a removed
     /// row; Remove and Keep while asked (OK, and the way on, when refused); otherwise the
-    /// pen, ↑ ↓ (on a list with an order of his) and Remove.
+    /// pen, ↑ ↓ (on a list with an order of his; the Mac's only since 0.72) and Remove.
     private func toolsOf(_ tools: DropDownRowTools, _ value: String) -> [DropDownTool] {
         if asking == value {
             return tools.refusal(value) == nil ? [.yes, .keep] : [.keep] + (tools.open == nil ? [] : [.open])
         }
         if tools.isRemoved(value) { return [.putBack] }
-        return [.rename] + (tools.orders ? [.up, .down] : []) + [.remove]
+        return [.rename] + (tools.orders && ReorderArrows.shown ? [.up, .down] : []) + [.remove]
     }
 
     /// Is this tool of row `n` the one Tab has reached (Mac)?

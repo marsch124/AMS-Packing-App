@@ -2533,7 +2533,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "bag-pocket-1-rename")
         XCTAssertTrue(waitUntil { pocket(1) == "Outer pocket" && !app.buttons["bag-pocket-1-rename"].exists }, "the rename was not taken: '\(pocket(1))'")
         // Up: the last one moves above Lid.
-        tap(app, id: "bag-pocket-3-up")
+        moveInList(app, "bag-pocket", 3, by: -1)
         XCTAssertTrue(waitUntil { pocket(2) == "Shoe compartment" && pocket(3) == "Lid" }, "Up did not move it: \((0..<4).map(pocket))")
         // ✕ removes it.
         tap(app, id: "bag-pocket-0-remove")
@@ -3955,6 +3955,17 @@ final class AMSPackingUITests: XCTestCase {
         } else {
             a.press(forDuration: 1.0, thenDragTo: b, withVelocity: .slow, thenHoldForDuration: 0.8)
         }
+        #endif
+    }
+
+    /// Move row `n` of a list he orders one place (`by` −1 up, 1 down): the Mac presses its
+    /// ↑ / ↓ (Tab's tools there); the iPhone has no arrows since 0.72 ("Drag and drop on the
+    /// phone as well") and drags the row's grip onto its neighbour's.
+    private func moveInList(_ app: XCUIApplication, _ list: String, _ n: Int, by: Int) {
+        #if os(macOS)
+        tap(app, id: "\(list)-\(n)-\(by < 0 ? "up" : "down")")
+        #else
+        drag(app, "\(list)-\(n)-grip", to: "\(list)-\(n + by)-grip")
         #endif
     }
 
@@ -6769,6 +6780,8 @@ final class AMSPackingUITests: XCTestCase {
                       "not renamed: '\(words(app.staticTexts["list-places-name-2"]))'")
         XCTAssertTrue(waitUntil { !app.textFields["list-places-rename-name"].exists }, "the editor stays open after a rename")
 
+        #if os(macOS)
+        // The Mac: the pen's ▲ ▼ (Tab reaches them).
         tap(app, id: "list-places-edit-2")
         hideKeyboard(app)
         tap(app, id: "list-places-up")
@@ -6781,6 +6794,18 @@ final class AMSPackingUITests: XCTestCase {
         let top = app.staticTexts["list-places-edit-needs"]
         XCTAssertTrue(top.waitForExistence(timeout: 5), "pressed at the top, it said nothing")
         XCTAssertEqual(words(top), "Hall cupboard is already at the top.")
+        #else
+        // The iPhone (0.72): the pen has no ▲ ▼ — it says to drag the grip, and the grip does.
+        tap(app, id: "list-places-edit-2")
+        hideKeyboard(app)
+        XCTAssertFalse(app.buttons["list-places-up"].exists, "the iPhone's pen still has ▲")
+        XCTAssertTrue(app.staticTexts["list-places-drag-hint"].waitForExistence(timeout: 5), "the pen does not say how to move it")
+        shot(app, "choices-editing")
+        tap(app, id: "list-places-edit-2")
+        drag(app, "list-places-grip-2", to: "list-places-grip-1")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-places-name-1"]) == "Hall cupboard" }, "it did not move up")
+        XCTAssertEqual(words(app.staticTexts["list-places-name-2"]), "Chest of drawers")
+        #endif
 
         // Every thing that was in the hall closet is in the hall cupboard now.
         tap(app, id: "lists-done")
@@ -9334,7 +9359,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch("-uiTestingSections")
         openThing(app, "Wool socks")
         openDropDown(app, "thing-section-1")
-        tap(app, id: "thing-section-1-1-up")
+        moveInList(app, "thing-section-1", 1, by: -1)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-section-1-0"]) == "Clothes" && self.words(app.buttons["thing-section-1-1"]) == "Lights" },
                       "↑ did not move Clothes above Lights")
         XCTAssertTrue(isOn(app.buttons["thing-section-1-0"]), "the tick did not go with Clothes")
@@ -9351,7 +9376,7 @@ final class AMSPackingUITests: XCTestCase {
 
         openThing(app, "Wool socks")
         openDropDown(app, "thing-section-1")
-        tap(app, id: "thing-section-1-0-down")
+        moveInList(app, "thing-section-1", 0, by: 1)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-section-1-0"]) == "Lights" }, "↓ did not move Clothes below Lights")
         closeDropDown(app, "thing-section-1")
         tap(app, id: "thing-save")
@@ -9415,7 +9440,7 @@ final class AMSPackingUITests: XCTestCase {
         replace("Lamps", in: field)
         field.typeText("\n")
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-section-1-0"]) == "Lamps" })
-        tap(app, id: "thing-section-1-1-up")
+        moveInList(app, "thing-section-1", 1, by: -1)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-section-1-0"]) == "Clothes" })
         tap(app, id: "thing-section-1-1-remove")
         tap(app, id: "thing-section-1-1-remove-yes")
@@ -9519,13 +9544,20 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         openThing(app, "Map")
         openDropDown(app, "thing-category")
-        for tool in ["rename", "up", "down", "remove"] {
+        // ↑ ↓ are the Mac's (0.72); the iPhone moves a kind by its grip.
+        #if os(macOS)
+        let tools = ["rename", "up", "down", "remove"]
+        #else
+        let tools = ["rename", "remove"]
+        XCTAssertTrue(grip(app, "thing-category-0-grip").exists, "a kind has no grip")
+        #endif
+        for tool in tools {
             XCTAssertTrue(app.buttons["thing-category-0-\(tool)"].exists, "a kind has no \(tool)")
         }
         XCTAssertFalse(app.buttons["thing-category-8-rename"].exists, "Documents & money has a pen")
         XCTAssertEqual(words(app.buttons["thing-category-10"]), "Comfort & misc")
         renameInList(app, "thing-category-10", to: "Comfort")
-        tap(app, id: "thing-category-10-up")
+        moveInList(app, "thing-category", 10, by: -1)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-category-9"]) == "Comfort" }, "↑ did not move the kind up")
         XCTAssertTrue(removeIsRefused(app, "thing-category-9").contains("still used by"), "the refusal does not say what uses it")
         shot(app, "lists-kind-refused")
@@ -9571,7 +9603,7 @@ final class AMSPackingUITests: XCTestCase {
         renameInList(app, "thing-place-5", to: "Workshop")
         XCTAssertTrue(removeIsRefused(app, "thing-place-5").contains("Workshop"), "the refusal does not name the place")
         tap(app, id: "thing-place-5-remove-no")
-        tap(app, id: "thing-place-0-down")
+        moveInList(app, "thing-place", 0, by: 1)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-place-0"]) == "Chest of drawers" }, "↓ did not move the place")
         shot(app, "lists-places-changed")
         closeDropDown(app, "thing-place")
@@ -9613,7 +9645,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-bag-list", timeout: 5))
         XCTAssertEqual(chosen(app, "thing-bag"), "Duffel", "the new bag was not chosen")
         openDropDown(app, "thing-bag")
-        tap(app, id: "thing-bag-1-up")
+        moveInList(app, "thing-bag", 1, by: -1)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-bag-0"]) == "Duffel" }, "↑ did not move the new bag up")
         // The Rucksack still has the Headlamp in it: its own page asks where that goes.
         let said = removeIsRefused(app, "thing-bag-1")
@@ -9765,6 +9797,43 @@ final class AMSPackingUITests: XCTestCase {
         openDropDown(app, "thing-category")
         XCTAssertEqual(words(app.buttons["thing-category-9"]), "Comfort & misc", "the dragged order was not kept")
         closeDropDown(app, "thing-category")
+    }
+
+    /// His answer, 8 Oct 2026, to "should the ↑ ↓ come off the iPhone?": "Drag and drop on the
+    /// phone as well." On the iPhone a list he orders has a grip and no arrows, and the arrows'
+    /// room goes to the name: "Pharmacy / meds" and "Comfort & misc" — two lines each in 0.70 —
+    /// are one line, as tall as a short kind's row. (The Mac keeps the arrows: its probe.)
+    func testTheIPhoneMovesByDragOnlyAndLongNamesStayOnOneLine() {
+        #if os(macOS)
+        let app = launch()
+        openThing(app, "Map")
+        openDropDown(app, "thing-category")
+        XCTAssertTrue(app.buttons["thing-category-10-up"].exists, "the Mac lost its ↑")
+        XCTAssertTrue(app.buttons["thing-category-10-down"].exists || app.buttons["thing-category-9-down"].exists, "the Mac lost its ↓")
+        XCTAssertTrue(grip(app, "thing-category-10-grip").exists, "the Mac lost its grip")
+        closeDropDown(app, "thing-category")
+        #else
+        let app = launch()
+        openThing(app, "Map")
+        openDropDown(app, "thing-category")
+        let short = app.buttons["thing-category-0"]
+        XCTAssertTrue(short.waitForExistence(timeout: 5))
+        for name in ["Pharmacy / meds", "Comfort & misc"] {
+            guard let n = (0...10).first(where: { words(app.buttons["thing-category-\($0)"]) == name }) else {
+                return XCTFail("no \(name) in the kinds")
+            }
+            let row = app.buttons["thing-category-\(n)"]
+            XCTAssertLessThan(abs(row.frame.height - short.frame.height), 2,
+                              "\(name) is not on one line: its row is \(row.frame.height) tall, a short kind's \(short.frame.height)")
+            XCTAssertTrue(grip(app, "thing-category-\(n)-grip").exists, "\(name) has no grip")
+        }
+        for n in 0...10 {
+            XCTAssertFalse(app.buttons["thing-category-\(n)-up"].exists, "kind \(n) has ↑ on the iPhone")
+            XCTAssertFalse(app.buttons["thing-category-\(n)-down"].exists, "kind \(n) has ↓ on the iPhone")
+        }
+        shot(app, "noarrows-kinds")
+        closeDropDown(app, "thing-category")
+        #endif
     }
 
     /// A template's row: its Section list — Clothes dragged above Lights, held until Save
@@ -10105,7 +10174,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.textFields["template-reminder-name"].waitForExistence(timeout: 5), "the reminder does not open")
         hideKeyboard(app)
         shot(app, "reminders-open")
+        #if os(macOS)
         tap(app, id: "template-reminder-up")
+        #else
+        // The iPhone (0.72): no ↑ ↓ in the open reminder — its line's grip moves it.
+        XCTAssertFalse(app.buttons["template-reminder-up"].exists, "the iPhone's reminder still has ↑")
+        drag(app, "template-reminder-1-grip", to: "template-reminder-0-grip")
+        #endif
         XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-0"]).contains("Pack the snacks") },
                       "Up did not move it: '\(words(app.buttons["template-reminder-0"]))'")
         type(" now", into: app.textFields["template-reminder-name"])

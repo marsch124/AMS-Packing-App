@@ -1002,7 +1002,8 @@ apart; a field 6 pt under its heading):
       iPhone and the Mac. Every SECTION row (not No section, not one typed here and not made yet) is a row of its own
       with, at its right (`DropDownRowTools`, spec 06 §21): a **pen** (`thing-section-<n>-<k>-rename`, a hand-drawn
       pencil, muted), **↑** and **↓** (`-up`, `-down`, chevrons in violet; faint where there is no place to go, and
-      pressing them then does nothing) and a quiet red **Remove** (`-remove`, Subheadline semibold) at the far right;
+      pressing them then does nothing — the Mac's only since 0.72: on the iPhone the row's grip ≡ moves it, below)
+      and a quiet red **Remove** (`-remove`, Subheadline semibold) at the far right;
       each tool `Metrics.compact` wide, `Metrics.tap` tall. `<k>` is the row's place in the list as it stands now.
       - The pen turns the row into a field with its name (`-name`, violet 1.5 border; the name selected for typing on
         the Mac); **Return takes the name**, Esc (Mac) leaves it unchanged. A blank name says "Type the section's name
@@ -1149,7 +1150,10 @@ When (`phases`) and Condition (`conditions`). Care is not one of his lists (a nu
   Remove (`-remove`); the rows that are not his list's ("Not said", "Both have one", "No bag", "Just in the bag", a
   value from the web app) have none. Whose it is has no arrows: owners are A–Z. **Drag and drop (0.70):** every row
   with ↑ ↓ also has a grip ≡ at its LEFT (`<row>-grip`, `ReorderGrip`, spec 06 §21): hold it and drag; each place
-  passed is one press of ↑ / ↓ (held until Save, as they are). Whose it is has no grip.
+  passed is one press of ↑ / ↓ (held until Save, as they are). Whose it is has no grip. **iPhone: drag only (0.72)**
+  — his answer, 8 Oct 2026: "Drag and drop on the phone as well." The iPhone shows no ↑ ↓ (`ReorderArrows`, spec 06
+  §21): a row is grip · name · pen · Remove, and a long name ("Pharmacy / meds", "Comfort & misc") stays on one line.
+  The Mac keeps ↑ ↓ for the keys.
 - **Rename**: the row becomes a field (grey words "Name"); Return takes it unless `choiceNameProblem` says what is
   wrong (under it, `-name-needs`): "Type a name first.", "You already have <entry>." (as the list shows them; a
   removed one still counts), "Some of your things already say <name>. Pick another name." (a place, owner or kind —
@@ -1568,10 +1572,12 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    a trip asks which one it went into." (Footnote muted). Each pocket a row, 6 apart: its name IS a field
    (`bag-pocket-<n>`, Callout ink, `Metrics.compact` tall, card fill, radius 8, 1-pt line) — typed over, **Rename**
    appears beside it (Footnote semibold white on orange capsule, `bag-pocket-<n>-rename`; Return does the same);
-   then **Up** (a drawn chevron, muted, `Metrics.glyph` in a `Metrics.compact` square, `bag-pocket-<n>-up`, label
-   "Move <pocket> up" — none on the first, its room kept) and a small red **✕** last on the line
+   then **Up** (the Mac only since 0.72: a drawn chevron, muted, `Metrics.glyph` in a `Metrics.compact` square,
+   `bag-pocket-<n>-up`, label "Move <pocket> up" — none on the first, its room kept) and a small red **✕** last on the line
    (`bag-pocket-<n>-remove`, label "Remove <pocket>"; removes at once — a thing or line in it is then simply in the
-   bag). A refused rename says under the rows in red (Footnote semibold, `bag-pockets-problem`): "A pocket needs a
+   bag). With two pockets or more each row starts with a **grip ≡** (0.72, both devices; `bag-pocket-<n>-grip`,
+   `ReorderGrip`, spec 06 §21): hold and drag, each place passed one `movePocket` at once; the rows are followed by
+   the pocket's name, not its place, so the carried one keeps its gesture. A refused rename says under the rows in red (Footnote semibold, `bag-pockets-problem`): "A pocket needs a
    name." / "The bag already has a pocket called that." Last: a field "A new pocket, e.g. Front pocket"
    (`bag-pocket-new`, Body, `Metrics.tap` tall) and **Add** (`FieldButtonLabel`, orange, `bag-pocket-add`; Return
    too) — always in colour; with nothing typed it says "Type a pocket first." under the field

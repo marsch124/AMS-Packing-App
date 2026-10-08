@@ -44,11 +44,13 @@ struct PocketPills: View {
 // MARK: - A bag's pockets (Care → Bags → a bag)
 
 /// "A bag's page lists its pockets; you name them once." Each pocket is its own field —
-/// press it, type, Rename (or Return) — with Up to move it and a small red ✕ last on its
-/// line. A bag with no pockets is a bag as it always was.
+/// press it, type, Rename (or Return) — with a grip ≡ to drag it to its place (0.72; the Mac
+/// also keeps Up) and a small red ✕ last on its line. A bag with no pockets is a bag as it
+/// always was.
 ///
 /// Ids: the count `bag-pockets-count`; a pocket's field `bag-pocket-<n>`, its Rename
-/// `bag-pocket-<n>-rename`, Up `bag-pocket-<n>-up` (not on the first), ✕
+/// `bag-pocket-<n>-rename`, its grip `bag-pocket-<n>-grip`, Up `bag-pocket-<n>-up` (the Mac
+/// only, not on the first), ✕
 /// `bag-pocket-<n>-remove`; a refused rename `bag-pockets-problem`; the new pocket's field
 /// `bag-pocket-new`, Add `bag-pocket-add`, and what Add was missing `bag-pocket-add-needs`.
 struct BagPockets: View {
@@ -59,6 +61,9 @@ struct BagPockets: View {
     /// What is typed into a pocket's field, by its place, until Rename.
     @State private var typed: [Int: String] = [:]
     @State private var problem = ""
+    /// The pocket carried by its grip, and each row's height — one place (0.72).
+    @State private var carried: ReorderDrag?
+    @State private var heights: [String: CGFloat] = [:]
 
     var body: some View {
         let pockets = model.library.pockets(bagId: bagId)
@@ -73,8 +78,10 @@ struct BagPockets: View {
                     .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            ForEach(Array(pockets.enumerated()), id: \.offset) { n, pocket in
-                row(n, pocket)
+            // Followed by its name (unique in a bag), not its place: a pocket carried by its
+            // grip keeps its gesture while the others change places (0.72).
+            ForEach(Array(pockets.enumerated()), id: \.element) { n, pocket in
+                row(n, pocket, count: pockets.count)
             }
             if !problem.isEmpty {
                 Text(problem).font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
@@ -99,8 +106,16 @@ struct BagPockets: View {
         }
     }
 
-    private func row(_ n: Int, _ pocket: String) -> some View {
+    private func row(_ n: Int, _ pocket: String, count: Int) -> some View {
         HStack(spacing: 6) {
+            // The grip (0.72, his "drag and drop on the phone as well"): hold and drag; each
+            // place passed is one step, made at once as Up is.
+            if count > 1 {
+                ReorderGrip(id: "bag-pocket-\(n)-grip", label: "Move \(pocket)", key: pocket,
+                            step: heights[pocket] ?? Metrics.tap, drag: $carried,
+                            canMove: { by in canStep(pocket, by) }, move: { by in step(pocket, by) })
+                    .padding(.leading, -6)
+            }
             TextField("", text: Binding(get: { typed[n] ?? pocket }, set: { typed[n] = $0; problem = "" }))
                 .textFieldStyle(.plain)
                 .font(.system(.callout)).foregroundStyle(Theme.ink)
@@ -119,8 +134,9 @@ struct BagPockets: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("bag-pocket-\(n)-rename")
             }
-            // Up: the first pocket has none, and its room is kept so the ✕ stay in line.
-            if n > 0 {
+            // Up (the Mac's; the iPhone drags the grip): the first pocket has none, and its
+            // room is kept so the ✕ stay in line.
+            if ReorderArrows.shown, n > 0 {
                 Button { move(n) } label: {
                     SVGPath.path("M6 15l6-6 6 6")
                         .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
@@ -130,7 +146,7 @@ struct BagPockets: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("bag-pocket-\(n)-up")
                 .accessibilityLabel("Move \(pocket) up")
-            } else {
+            } else if ReorderArrows.shown {
                 Color.clear.frame(width: Metrics.compact, height: Metrics.compact)
             }
             // Remove: one small red ✕, quiet, last on the line.
@@ -144,6 +160,21 @@ struct BagPockets: View {
             .accessibilityIdentifier("bag-pocket-\(n)-remove")
             .accessibilityLabel("Remove \(pocket)")
         }
+        .reorderStep(pocket, into: $heights)
+        .reorderLift(carried, key: pocket, tint: AppSection.care.color)
+    }
+
+    private func canStep(_ pocket: String, _ by: Int) -> Bool {
+        let list = model.library.pockets(bagId: bagId)
+        guard let n = list.firstIndex(of: pocket) else { return false }
+        return list.indices.contains(n + by)
+    }
+
+    private func step(_ pocket: String, _ by: Int) {
+        let list = model.library.pockets(bagId: bagId)
+        guard let n = list.firstIndex(of: pocket), list.indices.contains(n + by) else { return }
+        typed = [:]
+        model.change { _ = $0.movePocket(bagId: bagId, from: n, to: n + by) }
     }
 
     private func add() {

@@ -4,8 +4,8 @@ import PackingLibrary
 
 /// "Reminders" on a template's page — his idea of 7 Oct 2026: "Add a list of simple
 /// reminders for each Template" (spec 07, part 12). Above the things: each reminder a
-/// line with its When; a press opens it in place to rename it, change its When, move
-/// it up or down, or remove it. A new one is typed at the block's foot, with its When.
+/// line with its When and a grip ≡ to drag it to its place (0.72); a press opens it in
+/// place to rename it, change its When, move it up or down (the Mac's arrows), or remove it. A new one is typed at the block's foot, with its When.
 ///
 /// A reminder is the web app's own kind of line (`itemType` "reminder"): a trip made
 /// from the template ticks it like a line, never weighs it, never puts it in a bag and
@@ -27,6 +27,9 @@ struct TemplateRemindersBlock: View {
     @State private var newWhen = ""
     @State private var addNeeds = ""
     @FocusState private var typing: Bool
+    /// The reminder carried by its grip, and each line's height — one place (0.72).
+    @State private var carried: ReorderDrag?
+    @State private var heights: [String: CGFloat] = [:]
 
     private var tint: Color { AppSection.templates.color }
 
@@ -69,6 +72,16 @@ struct TemplateRemindersBlock: View {
         let mid = row.memId ?? ""
         let phase = phaseOrFallback(row.phase)
         VStack(alignment: .leading, spacing: 6) {
+          HStack(spacing: 2) {
+            // The grip (0.72, his "drag and drop on the phone as well"): hold and drag; each
+            // place passed is one step, made at once as the Mac's ↑ ↓ are.
+            if count > 1 {
+                ReorderGrip(id: "template-reminder-\(n)-grip", label: "Move \(row.name)", key: mid,
+                            step: heights[mid] ?? Metrics.line, drag: $carried,
+                            canMove: { by in canStep(mid, by) },
+                            move: { by in model.change { _ = $0.moveReminder(templateId: templateId, memId: mid, by: by) } })
+                    .padding(.leading, -6)
+            }
             Button {
                 // The keyboard of the foot goes down, so the opened reminder is in sight.
                 typing = false
@@ -90,6 +103,9 @@ struct TemplateRemindersBlock: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("template-reminder-\(n)")
             .accessibilityValue(phase.label)
+          }
+          .reorderStep(mid, into: $heights)
+          .reorderLift(carried, key: mid, tint: tint)
             if open == mid { panel(row, mid: mid, n: n, count: count) }
         }
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
@@ -112,8 +128,11 @@ struct TemplateRemindersBlock: View {
                 model.change { _ = $0.setReminderWhen(templateId: templateId, memId: mid, when: when) }
             }
             HStack(spacing: 8) {
-                arrow(up: true, enabled: n > 0, mid: mid)
-                arrow(up: false, enabled: n < count - 1, mid: mid)
+                // ↑ ↓ on the Mac only (0.72): the iPhone drags the line's grip.
+                if ReorderArrows.shown {
+                    arrow(up: true, enabled: n > 0, mid: mid)
+                    arrow(up: false, enabled: n < count - 1, mid: mid)
+                }
                 Spacer()
                 Button { done(row, mid: mid) } label: { FieldButtonLabel(title: "Done", tint: tint) }
                     .buttonStyle(.plain).focusEffectDisabled()
@@ -149,6 +168,12 @@ struct TemplateRemindersBlock: View {
         #if os(macOS)
         .onExitCommand { close() }
         #endif
+    }
+
+    private func canStep(_ mid: String, _ by: Int) -> Bool {
+        let rows = model.library.reminders(templateId: templateId)
+        guard let n = rows.firstIndex(where: { $0.memId == mid }) else { return false }
+        return rows.indices.contains(n + by)
     }
 
     private func arrow(up: Bool, enabled: Bool, mid: String) -> some View {
