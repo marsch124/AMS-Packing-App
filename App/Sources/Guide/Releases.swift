@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.72", date: "8 Oct 2026", title: "Drag only on the iPhone",
+                changed: ["On the iPhone you move things in your lists by dragging only: hold a row's grip \u{2261} and drag it. The arrows are gone there, so long names stay on one line. The Mac keeps its arrows.",
+                          "A bag's pockets, a template's reminders, a grab list's things while you edit it, the order of your grab lists on Home and the table's columns all have the grip \u{2261} too."]),
         Release(version: "0.71", date: "8 Oct 2026", title: "A small core, a big kit you tick",
                 new: ["On a big always-packed template: Make a small core from this\u{2026} Tick what comes on every trip, or paste your own list (indented lines become a kit), and the app makes the small always-packed template and turns the big one into one you tick for longer trips. A copy of everything is kept first."],
                 changed: ["A template can now move into Always packed, or out of it to GA, WET, OE or none \u{2014} always-packed ones come on every full trip, the others when you tick them."]),
