@@ -638,11 +638,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (70 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (71 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.71 | 8 Oct 2026 | A small core, a big kit you tick | N1 C1 | Activity area can be Always packed (and back); Make a small core from this… with Paste a list (indented lines = kits), a kept copy first (SmallCore.swift, SmallCoreSheet.swift; spec 04 §14b) |
 | 0.70 | 8 Oct 2026 | Drag to reorder | N1 C1 | a grip on every reorderable row (drop-downs and Your choices; Reorder.swift), template names violet in Your things (ThingDetailLine) |
 | 0.69 | 7 Oct 2026 | Change your lists where you pick from them | N2 C2 | chapter 07 part 13: rename, reorder, remove and add inside every pick-one list of his own (ChoiceEdits), held until Save; kinds of thing his own list (meta categories) |
 | 0.68 | 7 Oct 2026 | Beyond the list | N9 C3 | chapter 07 parts 1-12: Mac keyboard on a thing's page, sections edited from it, place codes + P-touch labels, search in notes, bag pockets + Siri "Where is my ...?", the door check, kits, Apple Health in the review + This is me, the vault page, template reminders, Pack by voice (test); the Weather freeze fixed; GitHub: an already-green commit is not tested twice |
