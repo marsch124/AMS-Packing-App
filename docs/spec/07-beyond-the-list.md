@@ -1070,7 +1070,10 @@ drag on the iPhone and press ▲ / ↑ on the Mac. Second new test, for the thre
 `testTheOlderListsMoveByGripOnTheIPhone` (Indoor swim's second thing dragged to the top while editing; Grab Lists'
 second Home list dragged first; Storage dragged below the next column — no ↑ ↓ on any of them on the iPhone, the
 Mac presses them). Planted: the arrows put back in the three screens → red "a grab list's thing has ↑ on the
-iPhone". `testTheTableTakesTheColumnsHeChooses` sizes the arrows on the Mac only. Green on the iPhone in light (14 tests) and dark (12); the Mac probe (GitHub's Mac, 8 Oct 2026) ran the new test,
+iPhone". `testTheTableTakesTheColumnsHeChooses` sizes the arrows on the Mac only. Columns' order is read by position on screen
+(the Mac's probe handed the Hide buttons back in another order and was red once: "Storage did not move down"). Green
+on the iPhone (light and dark) and on the Mac probe (GitHub's Mac, 8 Oct 2026: the test and
+`testTheTableTakesTheColumnsHeChooses`). Green on the iPhone in light (14 tests) and dark (12); the Mac probe (GitHub's Mac, 8 Oct 2026) ran the new test,
 the Section, Your choices and reminders tests on the Mac's arrows — 4 of 4 green.
 
 **Template names in violet (0.70, spec 05 Your things).** His ask the same day: "Let's make the Templates text on each
