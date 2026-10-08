@@ -998,6 +998,46 @@ the Mac test and the Kind/Kept at home tests, the Section keys test and the two 
 (`testADropDownPicksAsHeTypesAndOpensWithSpace` once its new name started with a letter no kind has: "rink" first
 picked Reminders on its "r", as a closed list does).
 
+### Drag and drop (0.70)
+
+> **Built in 0.70** (helper "drag", 8 Oct 2026) — written from the code; details in spec 06 §21 (`DropDown`, "Drag and
+> drop") and §2 (Your choices).
+
+His ask, testing 0.69 (8 Oct 2026): "I like all the lists now. One can add, rename and reorder. Can we make the
+reordering easier for a human by introducing drag and drop?"
+
+- Every list of this part that has ↑ ↓ — Kind of thing, Kept at home, Usually packed in, Pocket, When, Condition, a
+  thing's Section on each template, and a template row's Bag, When and Section — gets a **grip ≡** at each row's left
+  (`<row>-grip`), Arrange's own hand-drawn `GripMark` (the thin grey one). So does every list of Settings → Your
+  choices whose order is his (`list-<kind>-grip-<n>`). Owners stay A–Z: no grip, no arrows.
+- **Hold and drag** (iPhone: hold 0.2 s first, so a swipe over a grip still scrolls; Mac: drag with the mouse). The row
+  follows the finger, lifted on the card colour; each row-height passed is ONE step by the list's own `move(±1)` —
+  the very call ↑ / ↓ make. So a drag changes nothing an arrow could not: in a drop-down it is held until Save (Cancel
+  undoes), in Your choices it is made at once (`moveChoice`), as the arrows there are.
+- The arrows stay — for the keys (Tab reaches ↑ ↓ on the Mac; the grip is not one of Tab's tools) and for VoiceOver.
+- `Screens/Reorder.swift`: `ReorderGrip` (the gesture), `reorderLift` (the carried row), `reorderStep` (each row's
+  height). Not a `List` with `.onMove` as Arrange: see spec 06 §21.
+- Two traps found on the way: a row named for scrolling with `.id(<row id>)` (a name by its PLACE) became a new view at
+  each step and dropped the drag — the row stayed lifted half a row low; the name now sits behind the row. And the
+  gesture's end is also caught when the system cancels it (`@GestureState`), not only by `onEnded`.
+
+**Tests** (iPhone, light and dark): `testAKindOfThingIsDraggedIntoPlace` (Comfort & misc dragged above the row over
+it; it settles right under Documents & money; saved, the order is kept; Documents & money has no grip),
+`testASectionIsDraggedOnATemplatesRow` (`-uiTestingSections`, Hiking's first row: Clothes dragged above Lights; Cancel
+leaves Lights first on the template; again and Save → the template reads Clothes first; No section has no grip),
+`testAChoiceIsDraggedInYourChoices` (Hall closet dragged from the third place to the first, at once, and kept after
+Done; owners have no grip). Planted: `ReorderGrip` never calling `move` → all three red ("the kind dragged up did not
+move: 'Charging'", "the section dragged up did not move: 'Lights'", "the place dragged up did not move: 'Bedroom
+wardrobe'"). Mac probe (GitHub's Mac, 8 Oct 2026): the three drag tests, the violet test, `testHisListsAnswerTabAndSpaceOnTheMac`
+and `testKindOfThingIsChangedInsideItsList` — 6 of 6 green (the Mac's drag aims at a row's edge, the helper `drag`).
+
+**Template names in violet (0.70, spec 05 Your things).** His ask the same day: "Let's make the Templates text on each
+row Lilac (the same color as the Templates) so that the list pops a bit." `ThingDetailLine`: the template names in the
+Templates violet made readable (`readableHex`), " · place" muted, "On no template" orange. UI
+`testYourThingsShowTheirTemplatesInViolet` reads the row's colour off the screen (pixels where blue is well over green
+and red over green): the Map's row (Hiking · Garage) has violet; a thing on no template has none. Planted: the names in
+`Theme.muted` → red "("0") is not greater than ("20") - the Map's templates are not in the Templates violet".
+
 ### Open questions
 
 - A reminder's When (on a template's page) has no tools: it is applied at once, with nothing to hold changes until.
@@ -1005,6 +1045,11 @@ picked Reminders on its "r", as a closed list does).
   choices, not from the list.
 - A bag with no pockets shows no Pocket list, so its first pocket is made on the bag's page.
 - The row's own stored bag counts as a use when its Bag list refuses a remove, even after the row picked another.
+- (0.70) With the grip added, a drop-down row holds grip, name, pen, ↑, ↓ and Remove; on the iPhone a long name
+  ("Comfort & misc", "Pharmacy / meds") breaks over two lines. Now that a row can be dragged, the ↑ ↓ could leave
+  the iPhone (they stay for the Mac's keys) — his call.
+- (0.70) Search ("on 2 templates", a count) and Choose from your things (a place only) show no template NAMES, so
+  they are not violet; say if the count should be.
 
 ---
 
