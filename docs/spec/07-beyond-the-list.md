@@ -1057,13 +1057,14 @@ phone as well."**
 **Tests.** New: `testTheIPhoneMovesByDragOnlyAndLongNamesStayOnOneLine` (iPhone: the Map's kinds — "Pharmacy / meds"
 and "Comfort & misc" each as tall as row 0's within 2 pt and with a grip; no `thing-category-<n>-up`/`-down` on any
 row; Mac: row 10 still has ↑, ↓ and its grip). Planted: `ReorderArrows.shown = true` on the iPhone → red
-(see the report of 0.72). Changed to drag on the iPhone, arrows kept on the Mac (helper `moveInList`, which taps
+("Pharmacy / meds is not on one line: its row is 54.3 tall, a short kind's 36.0"). Changed to drag on the iPhone, arrows kept on the Mac (helper `moveInList`, which taps
 `<list>-<n>-up|down` on the Mac and drags `<list>-<n>-grip` onto its neighbour's on the iPhone):
 `testASectionIsMovedFromAThingsPageAndANewTripReadsIt`, `testCancelLeavesTheSectionsAsTheyWere`,
 `testKindOfThingIsChangedInsideItsList` (its tools: rename + remove + a grip on the iPhone; + up, down on the Mac),
 `testKeptAtHomeIsChangedInsideItsListAndCancelUndoes`, `testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage`,
 `testABagsPageListsItsPockets`; `testAChoiceIsRenamedAndMovedAndItsThingsFollow` and `testATemplateKeepsItsReminders`
-drag on the iPhone and press ▲ / ↑ on the Mac.
+drag on the iPhone and press ▲ / ↑ on the Mac. Green on the iPhone in light (14 tests) and dark (12); the Mac probe (GitHub's Mac, 8 Oct 2026) ran the new test,
+the Section, Your choices and reminders tests on the Mac's arrows — 4 of 4 green.
 
 **Template names in violet (0.70, spec 05 Your things).** His ask the same day: "Let's make the Templates text on each
 row Lilac (the same color as the Templates) so that the list pops a bit." `ThingDetailLine`: the template names in the
