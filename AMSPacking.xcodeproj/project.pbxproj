@@ -51,6 +51,7 @@
 		8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34879BF77676913C07B69267 /* RestoreSheet.swift */; };
 		8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CEDA06EFED05D4A1612077 /* EventsScreen.swift */; };
 		92BFCF1AF636841A4A4B1D51 /* ReviewHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4023CCF833EE4F1EA60FEE23 /* ReviewHealth.swift */; };
+		940117517D3A376ADAF5F4CF /* SmallCoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9713345B304E68E88C1CFCB0 /* SmallCoreSheet.swift */; };
 		993DD5931C9E6CDCDB4605AF /* ThingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A727717D19724FB903E1AA /* ThingKeys.swift */; };
 		9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8E667C951BD91655405B94 /* Countdown.swift */; };
 		9EE318CF900961BD87E38068 /* TripKitLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395725EE98C38DC3A86648AF /* TripKitLine.swift */; };
@@ -165,6 +166,7 @@
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
 		9303A9912D1C193EBFA773D8 /* VoiceStarts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStarts.swift; sourceTree = "<group>"; };
 		95CE795CC801DFFE3FD39642 /* BagCabin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagCabin.swift; sourceTree = "<group>"; };
+		9713345B304E68E88C1CFCB0 /* SmallCoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallCoreSheet.swift; sourceTree = "<group>"; };
 		9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsScreen.swift; sourceTree = "<group>"; };
 		A1A727717D19724FB903E1AA /* ThingKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingKeys.swift; sourceTree = "<group>"; };
 		A644B6F78A0C7B86EF26025E /* AMSPacking.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPacking.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -375,6 +377,7 @@
 				F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */,
 				3A74DCE749078F203A8E87BF /* SettingsScreen.swift */,
 				C79C38939D0655EEE452D769 /* Share.swift */,
+				9713345B304E68E88C1CFCB0 /* SmallCoreSheet.swift */,
 				6C33289BF160D459176D7669 /* SmallDelete.swift */,
 				DBCE6F6679B4724E0039268E /* SyncCard.swift */,
 				5844FD1A40A106FF0878B093 /* TableColumns.swift */,
@@ -566,6 +569,7 @@
 				3B34615E704B984738565FC3 /* Share.swift in Sources */,
 				C92C70F13CEE0569A0E0B014 /* ShopReminders.swift in Sources */,
 				38D87FC50351C1AC76DA3DE1 /* Shortcuts.swift in Sources */,
+				940117517D3A376ADAF5F4CF /* SmallCoreSheet.swift in Sources */,
 				A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */,
 				FBC13904D9EB455D6F6AEDE9 /* SyncCard.swift in Sources */,
 				A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */,

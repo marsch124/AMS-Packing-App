@@ -224,6 +224,8 @@ struct SettingsScreen: View {
                 }
             }
         }
+        // A copy is also kept before a small core is made (0.71), away from this screen.
+        .onAppear { copies = RescueCopies.all() }
         .fileImporter(isPresented: $picking, allowedContentTypes: [.json]) { result in
             switch result {
             case .success(let url):

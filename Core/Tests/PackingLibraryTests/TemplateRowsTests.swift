@@ -287,8 +287,78 @@ final class TemplateFacesTests: XCTestCase {
         XCTAssertTrue(lib.setTemplateArea(id: hiking, area: ""))
         XCTAssertEqual(lib.templates.first { $0.id == hiking }?.group, "")
         XCTAssertFalse(lib.setTemplateArea(id: hiking, area: "XX"), "an area that is not his")
-        let base = lib.templates.first { $0.name == "Base" }!.id
-        XCTAssertFalse(lib.setTemplateArea(id: base, area: "GA"), "an always-packed template has no area")
         XCTAssertFalse(lib.setTemplateArea(id: "no-such", area: "GA"))
+        // A transport template stays where it is (0.71 left "By transport" alone).
+        var car = newList(name: "By car", role: "transport"); car.transport = "Car"
+        lib.saveTemplate(car)
+        XCTAssertFalse(lib.setTemplateArea(id: car.id, area: "GA"), "a transport template got an area")
+        XCTAssertFalse(lib.setTemplateArea(id: car.id, area: Library.ALWAYS_PACKED_AREA), "a transport template became always packed")
+        XCTAssertEqual(lib.templates.first { $0.id == car.id }?.role, "transport")
+    }
+
+    private func names(_ trip: TripEvent) -> [String] { trip.entries.map(\.name).sorted() }
+
+    /// 0.71: his always-packed template had grown too big for a short trip. The way
+    /// out: a small always-packed core he makes himself, and the big one becomes a
+    /// template he ticks for longer trips. So a template moves INTO Always packed and
+    /// back OUT of it from its own page — keeping everything that is its own.
+    func testATemplateMovesIntoAndOutOfAlwaysPacked() {
+        var lib = library()
+        let base = lib.templates.first { $0.name == "Base" }!.id
+        let hiking = lib.templates.first { $0.name == "Hiking" }!.id
+        // What is the template's own: a section, a row's own note and bag.
+        let pockets = lib.addSection(templateId: base, name: "Pockets")!
+        let keysRow = lib.memberships.first { $0.templateId == base && lib.items.first { $0.name == "Keys" }?.id == $0.itemId }!
+        XCTAssertTrue(lib.updateMembership(memId: keysRow.id) { $0.note = "On the hook"; $0.container = "Duffel bag"; $0.section = pockets.id })
+        let rowsBefore = lib.memberships.filter { $0.templateId == base }
+        let sectionsBefore = lib.templates.first { $0.id == base }!.sections
+
+        // A trip made before the move: its lines stand on their own.
+        var weekend = newEvent(name: "Weekend", startDate: "2099-05-01", endDate: "2099-05-02")
+        weekend.activities = [hiking]
+        weekend = lib.createTrip(weekend)
+        XCTAssertEqual(names(weekend), ["Boots", "Keys", "Map"])
+
+        // OUT of Always packed, into OE: it comes only when ticked.
+        XCTAssertTrue(lib.setTemplateArea(id: base, area: "OE"))
+        let moved = lib.templates.first { $0.id == base }!
+        XCTAssertEqual(moved.role, "", "still always packed")
+        XCTAssertEqual(moved.group, "OE")
+        XCTAssertEqual(lib.memberships.filter { $0.templateId == base }, rowsBefore, "a row or its own answers changed")
+        XCTAssertEqual(moved.sections, sectionsBefore, "its sections changed")
+        XCTAssertTrue(lib.activityChoices().flatMap(\.lists).contains { $0.id == base }, "it cannot be ticked for a trip")
+        var full = newEvent(name: "Full, Hiking ticked"); full.activities = [hiking]
+        XCTAssertEqual(names(lib.createTrip(full)), ["Boots", "Map"], "it came on a Full trip without being ticked")
+        full.activities = [hiking, base]
+        XCTAssertEqual(names(lib.createTrip(full)), ["Boots", "Keys", "Map"], "ticked, it did not come")
+        // None always packed is allowed: a Full trip is then what is ticked.
+        XCTAssertTrue(lib.templates.allSatisfy { $0.role != Library.ALWAYS_PACKED_AREA })
+        // The trip made before keeps its lines until its settings are saved (a template
+        // change adds or takes no lines on a trip already made) — then it follows.
+        XCTAssertEqual(names(lib.trips.first { $0.id == weekend.id }!), ["Boots", "Keys", "Map"])
+        XCTAssertNotNil(lib.changeTrip(id: weekend.id) { _ in })
+        XCTAssertEqual(names(lib.trips.first { $0.id == weekend.id }!), ["Boots", "Map"], "Trip settings' Save kept an unticked template")
+
+        // INTO Always packed — two at once: every Full trip brings both, Quick neither.
+        XCTAssertTrue(lib.setTemplateArea(id: base, area: Library.ALWAYS_PACKED_AREA))
+        XCTAssertTrue(lib.setTemplateArea(id: hiking, area: Library.ALWAYS_PACKED_AREA))
+        XCTAssertEqual(lib.templates.first { $0.id == hiking }?.role, "base")
+        XCTAssertEqual(lib.templates.first { $0.id == hiking }?.group, "", "an always-packed template kept an activity area")
+        XCTAssertEqual(lib.memberships.filter { $0.templateId == base }, rowsBefore)
+        XCTAssertFalse(lib.activityChoices().flatMap(\.lists).contains { $0.id == hiking }, "an always-packed template is offered to tick")
+        XCTAssertEqual(names(lib.createTrip(newEvent(name: "Full, nothing ticked"))), ["Boots", "Keys", "Map"],
+                       "a Full trip did not bring every always-packed template")
+        var swim = newList(name: "Swim", group: "WET"); swim.items = [newItem(name: "Goggles")]
+        lib.saveTemplate(swim)
+        var quick = newEvent(name: "Quick swim"); quick.mode = "quick"; quick.activities = [swim.id]
+        XCTAssertEqual(names(lib.createTrip(quick)), ["Goggles"], "Quick brought an always-packed template")
+        // Its row kept its own note and bag all the way through.
+        let row = lib.resolvedTemplate(id: base)!.items.first { $0.name == "Keys" }!
+        XCTAssertEqual(row.note, "On the hook")
+        XCTAssertEqual(row.container, "Duffel bag")
+        // Asking for where it already is changes nothing (not even its date).
+        let stamp = lib.templates.first { $0.id == base }!.updatedAt
+        XCTAssertTrue(lib.setTemplateArea(id: base, area: Library.ALWAYS_PACKED_AREA))
+        XCTAssertEqual(lib.templates.first { $0.id == base }!.updatedAt, stamp)
     }
 }
