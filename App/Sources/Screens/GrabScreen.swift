@@ -168,6 +168,12 @@ struct GrabScreen: View {
     @State private var flash = false
     @State private var editing = false
     @State private var draft: [String] = []
+    /// One key per draft row, moved with it (0.72): the rows are followed by these, not by
+    /// their place, so a row carried by its grip keeps its gesture as the others move.
+    @State private var rowKeys: [Int] = []
+    @State private var nextKey = 0
+    @State private var carried: ReorderDrag?
+    @State private var heights: [String: CGFloat] = [:]
     @State private var newThing = ""
     /// What Add was missing, said under the field (never a grey button).
     @State private var addNeeds = ""
@@ -343,10 +349,19 @@ struct GrabScreen: View {
         VStack(spacing: 0) {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Tap a name to change it · ▲▼ move · ✕ remove. Saved for both your devices.")
+                    Text(ReorderArrows.shown ? "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. Saved for both your devices."
+                                             : "Tap a name to change it · hold ≡ and drag to move · ✕ remove. Saved for both your devices.")
                         .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                    ForEach(draft.indices, id: \.self) { n in
+                    ForEach(Array(rowKeys.prefix(draft.count).enumerated()), id: \.element) { n, key in
                         HStack(spacing: 2) {
+                            // The grip (0.72, his "drag and drop on the phone as well"): hold and
+                            // drag; each place passed is one swap, as ▲ ▼ make (the Mac's only).
+                            if draft.count > 1 {
+                                ReorderGrip(id: "grab-grip-\(n)", label: "Move \(n < draft.count ? draft[n] : "")", key: "\(key)",
+                                            step: (heights["\(key)"] ?? Metrics.tap) + 4, drag: $carried,   // a row and the gap under it
+                                            canMove: { by in canSwap(key, by) }, move: { by in swapRow(key, by) })
+                                    .padding(.leading, -8)
+                            }
                             TextField("Name", text: Binding(get: { n < draft.count ? draft[n] : "" },
                                                             set: { if n < draft.count { draft[n] = $0 } }))
                                 .textFieldStyle(.plain)
@@ -354,8 +369,10 @@ struct GrabScreen: View {
                                 .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
                                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
                                 .accessibilityIdentifier("grab-rename-\(n)")
-                            mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { draft.swapAt(n, n - 1) }
-                            mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { draft.swapAt(n, n + 1) }
+                            if ReorderArrows.shown {
+                                mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { swapRow(key, -1) }
+                                mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { swapRow(key, 1) }
+                            }
                             // "Only sometimes": it starts skipped every time.
                             Button {
                                 let name = n < draft.count ? draft[n] : ""
@@ -373,8 +390,10 @@ struct GrabScreen: View {
                             .accessibilityIdentifier("grab-sometimes-\(n)")
                             .accessibilityLabel("Take \(n < draft.count ? draft[n] : "") only sometimes")
                             .accessibilityAddTraits(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? .isSelected : [])
-                            mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: draft.count > 1, label: "Remove") { draft.remove(at: n) }
+                            mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: draft.count > 1, label: "Remove") { draft.remove(at: n); rowKeys.remove(at: n) }
                         }
+                        .reorderStep("\(key)", into: $heights)
+                        .reorderLift(carried, key: "\(key)", tint: tint)
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -442,6 +461,18 @@ struct GrabScreen: View {
         GrabStore.shared.forget(id)
     }
 
+    private func canSwap(_ key: Int, _ by: Int) -> Bool {
+        guard let n = rowKeys.firstIndex(of: key), n < draft.count else { return false }
+        return draft.indices.contains(n + by)
+    }
+
+    /// A row and its neighbour change places — the draft and its keys together.
+    private func swapRow(_ key: Int, _ by: Int) {
+        guard canSwap(key, by), let n = rowKeys.firstIndex(of: key) else { return }
+        draft.swapAt(n, n + by)
+        rowKeys.swapAt(n, n + by)
+    }
+
     private func mark(_ d: String, id: String, enabled: Bool, label: String, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
             SVGPath.path(d).stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -456,6 +487,8 @@ struct GrabScreen: View {
 
     private func startEditing() {
         draft = list.items
+        rowKeys = Array(0..<draft.count)
+        nextKey = draft.count
         draftSometimes = Set(model.library.sometimes(listId: listId).map(normName))
         newThing = ""
         saveNeeds = ""
@@ -472,7 +505,10 @@ struct GrabScreen: View {
     private func addToDraft() {
         let name = jsTrim(newThing)
         guard !name.isEmpty else { addNeeds = "Type a thing first."; return }
-        if !draft.contains(where: { normName($0) == normName(name) }) { draft.append(name) }
+        if !draft.contains(where: { normName($0) == normName(name) }) {
+            draft.append(name)
+            rowKeys.append(nextKey); nextKey += 1
+        }
         newThing = ""
     }
 

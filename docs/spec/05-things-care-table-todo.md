@@ -1896,8 +1896,10 @@ tick; the red and blank tints.
 
 Opened by "Columns" (`table-columns`) as a sheet (container `columns-detail`; Mac at least 460 × 540). Header
 "Columns" (20 heavy orange) and "Done" (`columns-done`, filled; Escape too, 0.62). "SHOWING, IN THIS ORDER" (12 heavy muted,
-kerning 0.6): one row per shown column of `TableColumns.ids` — live ids only (min height 44, line under): its
-title (16 semibold), an up arrow (`columns-<key>-up`, disabled on the first row; `<key>` = `TableKeys.safe`, so a
+kerning 0.6): one row per shown column of `TableColumns.ids` — live ids only (min height 44, line under): with two
+or more, a **grip ≡** first (0.72, both devices; `columns-<key>-grip`, "Move <title>", `ReorderGrip`, spec 06 §21:
+hold and drag, each place passed one swap, written at once); its
+title (16 semibold), on the Mac only since 0.72 (his "Drag and drop on the phone as well") an up arrow (`columns-<key>-up`, disabled on the first row; `<key>` = `TableKeys.safe`, so a
 template column is `list-<n>` — 0.62), a down arrow (`columns-<key>-down`, disabled on the last) — each a
 22 pt drawn chevron pressed anywhere in a 44 × 44 square (his ask, 4 Oct 2026: "These arrows are rather
 difficult to hit") — and "Hide" (`columns-<id>-hide`, 15 bold red, at least 52 × 44). "NOT SHOWING": every other
@@ -1906,7 +1908,7 @@ column, a row with its title (16 medium muted) and "Show" (14 bold orange), the 
 which cannot be hidden (an empty list would mean "nothing chosen" and bring the starting columns back). Every
 change is written at once to `ams.table.columns` — live ids only, so a gone template's id is forgotten at the
 next change (0.62; it kept an invisible place that arrows and "the last column" counted).
-Tests: `testTheTableTakesTheColumnsHeChooses` (arrows and Hide at least 44 × 44; hiding six and showing Liquid;
+Tests: `testTheTableTakesTheColumnsHeChooses` (arrows — the Mac — and Hide at least 44 × 44; hiding six and showing Liquid;
 the grid has Liquid and not Storage), `testManyThingsAreChangedAtOnceAndCanBePutBack`,
 `testARowOpensItsThingAndComesBackToTheSameSpot`. Not tested: up/down order.
 

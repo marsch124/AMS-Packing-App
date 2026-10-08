@@ -1597,8 +1597,10 @@ same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
   well." On the iPhone a tool row is grip · name · pen · Remove — no `-up` / `-down`, and `toolsOf` leaves `.up`
   `.down` out — so the name has the arrows' room: "Pharmacy / meds" and "Comfort & misc" are one line (two in 0.70).
   The Mac keeps grip · name · pen · ↑ · ↓ · Remove, Tab reaching ↑ ↓ as before. The same rule holds outside the
-  drop-downs: Your choices' pen (§2), a bag's pockets (spec 05) and a template's reminders (spec 07 part 12) — each
-  has a grip on both, arrows on the Mac only. Since 0.70 the options are `ForEach`-ed by VALUE (a repeated value gets "<value>#<n>") and a tool row's scroll
+  drop-downs: Your choices' pen (§2), a bag's pockets (spec 05), a template's reminders (spec 07 part 12), a grab
+  list's things while edited and Grab Lists' Home order (spec 02) and the table's Columns (spec 05) — each has a grip
+  on both, arrows on the Mac only. Rows are followed by a key, never their place (a grab list's draft keeps
+  `rowKeys` beside its names); where rows have a gap, the grip's step is the row plus the gap. Since 0.70 the options are `ForEach`-ed by VALUE (a repeated value gets "<value>#<n>") and a tool row's scroll
   name (`.id(<row id>)`) sits on a clear view BEHIND it — on the row itself it gave the row a new identity at each
   step, which dropped the drag (the row stayed lifted half a row low). Also 0.70: the list with tools is 370 wide
   (`idealWidth`; 320 without), each tool keeps its own width (`fixedSize`) and the name comes first (`layoutPriority`),

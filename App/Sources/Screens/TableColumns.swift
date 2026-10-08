@@ -429,6 +429,9 @@ struct ColumnPicker: View {
     @Binding var chosen: String
     let library: Library
     @Environment(\.dismiss) private var dismiss
+    /// The column carried by its grip, and each row's height — one place (0.72).
+    @State private var carried: ReorderDrag?
+    @State private var heights: [String: CGFloat] = [:]
 
     private var ids: [String] { TableColumns.ids(chosen, library: library) }
 
@@ -455,15 +458,25 @@ struct ColumnPicker: View {
                     ForEach(Array(shown.enumerated()), id: \.element) { n, id in
                         if let column = all.first(where: { $0.id == id }) {
                             HStack(spacing: 4) {
+                                // The grip (0.72, his "drag and drop on the phone as well"): hold
+                                // and drag; each place passed is one swap, as ▲ ▼ make (the Mac's only).
+                                if shown.count > 1 {
+                                    ReorderGrip(id: "columns-\(TableKeys.safe(column.id, library))-grip", label: "Move \(column.title)",
+                                                key: id, step: heights[id] ?? Metrics.tap, drag: $carried,
+                                                canMove: { by in canStep(id, by) }, move: { by in step(id, by) })
+                                        .padding(.leading, -8)
+                                }
                                 Text(column.title)
                                     .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                                 Spacer()
+                              if ReorderArrows.shown {
                                 Button { move(n, by: -1) } label: { arrow("M18 15l-6-6-6 6") }
                                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == 0)
                                     .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-up")
                                 Button { move(n, by: 1) } label: { arrow("M6 9l6 6 6-6") }
                                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == shown.count - 1)
                                     .accessibilityIdentifier("columns-\(TableKeys.safe(column.id, library))-down")
+                              }
                                 Button { hide(id) } label: {
                                     Text("Hide").font(.system(.subheadline, weight: .semibold))
                                         .foregroundStyle(AppSection.actions.color)
@@ -475,6 +488,8 @@ struct ColumnPicker: View {
                             }
                             .frame(minHeight: Metrics.tap)
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                            .reorderStep(id, into: $heights)
+                            .reorderLift(carried, key: id, tint: AppSection.care.color)
                         }
                     }
 
@@ -525,6 +540,16 @@ struct ColumnPicker: View {
         guard order.indices.contains(n), order.indices.contains(to) else { return }
         order.swapAt(n, to)
         chosen = order.joined(separator: ",")
+    }
+
+    private func canStep(_ id: String, _ by: Int) -> Bool {
+        guard let n = ids.firstIndex(of: id) else { return false }
+        return ids.indices.contains(n + by)
+    }
+
+    private func step(_ id: String, _ by: Int) {
+        guard let n = ids.firstIndex(of: id) else { return }
+        move(n, by: by)
     }
 
     private func hide(_ id: String) {

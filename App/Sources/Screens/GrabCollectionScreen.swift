@@ -9,6 +9,9 @@ struct GrabCollectionScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var newName = ""
+    /// The Home list carried by its grip, and each row's height — one place (0.72).
+    @State private var carried: ReorderDrag?
+    @State private var heights: [String: CGFloat] = [:]
     /// What Make was missing, said under the field (never a grey button).
     @State private var newNeeds = ""
     /// The one window this screen opens over itself: "Which one steps back?" when
@@ -146,6 +149,14 @@ struct GrabCollectionScreen: View {
     @ViewBuilder
     private func homeRow(_ list: GrabDefinition, n: Int, count: Int) -> some View {
         HStack(spacing: 10) {
+            // The grip (0.72, his "drag and drop on the phone as well"): hold and drag; each
+            // place passed is one step of Home's order, made at once as the Mac's ▲ ▼ are.
+            if count > 1 {
+                ReorderGrip(id: "grablists-grip-\(n)", label: "Move \(list.label)", key: list.id,
+                            step: (heights[list.id] ?? 54) + 8, drag: $carried,      // a row and the gap under it
+                            canMove: { by in canStep(list.id, by) }, move: { by in move(list.id, by: by) })
+                    .padding(.leading, -8)
+            }
             GrabDoodle(icon: list.icon, size: 30, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
             VStack(alignment: .leading, spacing: 1) {
                 Text(list.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
@@ -154,12 +165,15 @@ struct GrabCollectionScreen: View {
             }
             Spacer(minLength: 8)
             Group {
+              // ▲ ▼ on the Mac only (0.72): the iPhone drags the grip.
+              if ReorderArrows.shown {
                 Button { move(list.id, by: -1) } label: { chevron("M6 14l6-6 6 6", on: n > 0) }
                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == 0)
                     .accessibilityIdentifier("grablists-up-\(n)").accessibilityLabel("Move \(list.label) earlier")
                 Button { move(list.id, by: 1) } label: { chevron("M6 10l6 6 6-6", on: n < count - 1) }
                     .buttonStyle(.plain).focusEffectDisabled().disabled(n >= count - 1)
                     .accessibilityIdentifier("grablists-down-\(n)").accessibilityLabel("Move \(list.label) later")
+              }
                 Button { takeOff(list.id) } label: { pill("Off Home", filled: false) }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("grablists-off-\(n)")
@@ -171,6 +185,14 @@ struct GrabCollectionScreen: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("grablists-home-\(n)")
+        .reorderStep(list.id, into: $heights)
+        .reorderLift(carried, key: list.id, tint: AppSection.home.color)
+    }
+
+    private func canStep(_ id: String, _ by: Int) -> Bool {
+        let ids = model.library.homeGrabLists().map(\.id)
+        guard let n = ids.firstIndex(of: id) else { return false }
+        return ids.indices.contains(n + by)
     }
 
     private func pill(_ words: String, filled: Bool) -> some View {

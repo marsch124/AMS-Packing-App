@@ -6347,7 +6347,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
         // The arrows are a fingertip each (his ask, 4 Oct 2026: "rather difficult to
         // hit") — and so is Hide.
-        for id in ["columns-storage-up", "columns-storage-down", "columns-storage-hide"] {
+        // (The arrows are the Mac's since 0.72; the iPhone drags the grip.)
+        #if os(macOS)
+        let tools = ["columns-storage-up", "columns-storage-down", "columns-storage-hide"]
+        #else
+        let tools = ["columns-storage-hide"]
+        #endif
+        for id in tools {
             let f = app.buttons[id].frame
             XCTAssertTrue(f.width >= 44 && f.height >= 44, "\(id) is only \(f.width) × \(f.height)")
         }
@@ -9834,6 +9840,79 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "noarrows-kinds")
         closeDropDown(app, "thing-category")
         #endif
+    }
+
+    /// The three older lists he orders follow the same rule (his "Drag and drop on the phone
+    /// as well", 8 Oct 2026): a grab list's things (editing), Grab Lists' Home order and the
+    /// table's Columns each have a grip; on the iPhone no ↑ ↓ and the grip moves the row, on
+    /// the Mac the ↑ ↓ do.
+    func testTheOlderListsMoveByGripOnTheIPhone() {
+        let app = launch()
+        func name(_ id: String) -> String { grip(app, id).label.replacingOccurrences(of: "Move ", with: "") }
+        func step(_ prefix: String, _ n: Int, by: Int, grips: (Int) -> String) {
+            #if os(macOS)
+            tap(app, id: "\(prefix)\(by < 0 ? "up" : "down")-\(n)")
+            #else
+            drag(app, grips(n), to: grips(n + by))
+            #endif
+        }
+        // A grab list, while it is edited: the second thing moves to the top.
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        tap(app, id: "grab-edit")
+        let thing = { (n: Int) in app.textFields["grab-rename-\(n)"].value as? String ?? "" }
+        XCTAssertTrue(app.textFields["grab-rename-1"].waitForExistence(timeout: 5))
+        let second = thing(1)
+        #if os(iOS)
+        XCTAssertFalse(app.buttons["grab-up-1"].exists, "a grab list's thing has ↑ on the iPhone")
+        XCTAssertFalse(app.buttons["grab-down-0"].exists, "a grab list's thing has ↓ on the iPhone")
+        #endif
+        XCTAssertTrue(grip(app, "grab-grip-1").exists, "a grab list's thing has no grip")
+        step("grab-", 1, by: -1) { "grab-grip-\($0)" }
+        XCTAssertTrue(waitUntil { thing(0) == second }, "the thing did not move to the top: '\(thing(0))'")
+        shot(app, "noarrows-grab-edit")
+        tap(app, id: "grab-edit")                                    // Save
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+
+        // Grab Lists: the second list on Home moves to the first place.
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        XCTAssertTrue(grip(app, "grablists-grip-1").waitForExistence(timeout: 5), "a Home list has no grip")
+        let list = name("grablists-grip-1")
+        #if os(iOS)
+        XCTAssertFalse(app.buttons["grablists-up-1"].exists, "a Home list has ↑ on the iPhone")
+        XCTAssertFalse(app.buttons["grablists-down-0"].exists, "a Home list has ↓ on the iPhone")
+        #endif
+        step("grablists-", 1, by: -1) { "grablists-grip-\($0)" }
+        XCTAssertTrue(waitUntil { name("grablists-grip-0") == list },
+                      "the Home list did not move up: '\(name("grablists-grip-0"))'")
+        shot(app, "noarrows-grablists")
+        tap(app, id: "grablists-done")
+        XCTAssertTrue(disappears(app, "grablists-detail", timeout: 5))
+
+        // The table's Columns: Storage (the first) moves below the second.
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+        tap(app, id: "table-columns")
+        XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
+        XCTAssertTrue(grip(app, "columns-storage-grip").waitForExistence(timeout: 5), "a column has no grip")
+        let storage = name("columns-storage-grip")
+        #if os(macOS)
+        tap(app, id: "columns-storage-down")
+        #else
+        XCTAssertFalse(app.buttons["columns-storage-up"].exists, "a column has ↑ on the iPhone")
+        XCTAssertFalse(app.buttons["columns-storage-down"].exists, "a column has ↓ on the iPhone")
+        let below = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH '-hide'")).element(boundBy: 1).identifier
+        drag(app, "columns-storage-grip", to: below.replacingOccurrences(of: "-hide", with: "-grip"))
+        #endif
+        let hides = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH '-hide'"))
+        XCTAssertTrue(waitUntil { hides.element(boundBy: 1).identifier == "columns-storage-hide" },
+                      "\(storage) did not move down: second is '\(hides.element(boundBy: 1).identifier)'")
+        shot(app, "noarrows-columns")
+        tap(app, id: "columns-done")
     }
 
     /// A template's row: its Section list — Clothes dragged above Lights, held until Save

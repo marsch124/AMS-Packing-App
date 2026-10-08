@@ -112,7 +112,7 @@ struct BagPockets: View {
             // place passed is one step, made at once as Up is.
             if count > 1 {
                 ReorderGrip(id: "bag-pocket-\(n)-grip", label: "Move \(pocket)", key: pocket,
-                            step: heights[pocket] ?? Metrics.tap, drag: $carried,
+                            step: (heights[pocket] ?? Metrics.compact) + 6, drag: $carried,   // a row and the gap under it
                             canMove: { by in canStep(pocket, by) }, move: { by in step(pocket, by) })
                     .padding(.leading, -6)
             }

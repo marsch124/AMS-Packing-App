@@ -838,13 +838,17 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
    shared `NeedsLine`). It goes as soon as the draft changes (a name typed, a thing added or removed) and
    when editing starts again.
 2. A scroll (4 pt spacing, 16 pt side padding):
-   - The hint "Tap a name to change it · ▲▼ move · ✕ remove. Saved for both your devices." (14 pt
-     medium `muted`).
-   - One row per draft name:
+   - The hint — Mac: "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. Saved for both your devices.";
+     iPhone (0.72): "Tap a name to change it · hold ≡ and drag to move · ✕ remove. Saved for both your devices."
+     (14 pt medium `muted`).
+   - One row per draft name (since 0.72 followed by a key that moves with it, `rowKeys`, not by its place):
+     - with two or more, a **grip ≡** first (0.72, both devices; `grab-grip-<n>`, `ReorderGrip`, spec 06 §21): hold
+       and drag, each place passed (a row and its 4-pt gap) one swap, as ▲ ▼ make — in the draft, kept on Save;
      - a text field (`grab-rename-<n>`, placeholder "Name", 17 pt medium `ink`, a radius-8 `card`
        background with no border, minimum 44 tall);
-     - **up** (`grab-up-<n>`, accessibility label "Move up"), disabled on the first row;
-     - **down** (`grab-down-<n>`, "Move down"), disabled on the last row;
+     - **up** (`grab-up-<n>`, accessibility label "Move up"), disabled on the first row — the Mac only since 0.72
+       (his "Drag and drop on the phone as well");
+     - **down** (`grab-down-<n>`, "Move down"), disabled on the last row — the Mac only too;
      - **"1 in 10"** (`grab-sometimes-<n>`, accessibility label "Take <name> only sometimes", the
        `.isSelected` trait when marked): a 30-tall capsule, 12 pt heavy. Marked = tone fill and white
        text; unmarked = `card` fill and `muted` text; `line` stroke either way;
@@ -1056,12 +1060,15 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
    - **"On Home · <n> of 8"** (`grablists-home-heading`, 15 pt heavy `muted`); n can be anything from 0 to
      8.
    - One row per list on Home (container `grablists-home-<n>`):
+     - with two or more, a **grip ≡** first (0.72, both devices; `grablists-grip-<n>`, "Move <label>", `ReorderGrip`):
+       hold and drag, each place passed (a row and its 8-pt gap) one step of Home's order, at once;
      - drawing 30 pt;
      - label (17 pt semibold, one line; the label, not the title, so the two "Swim" lists read alike);
      - "<k> thing" or "<k> things" (13 pt medium `muted`);
      - **up chevron** (`grablists-up-<n>`, label "Move <label> earlier"), disabled on the first row;
      - **down chevron** (`grablists-down-<n>`, label "Move <label> later"), disabled on the last row;
-       the chevrons are `muted` when enabled and `line` when disabled, in a 34 × 36 hit area;
+       the chevrons are `muted` when enabled and `line` when disabled, in a 34 × 36 hit area — both the Mac's only
+       since 0.72;
      - **"Off Home"** (`grablists-off-<n>`, label "Take <label> off Home; it waits with everything on
        it"): an outlined pill, 13 pt heavy `muted` on `bg`, 28 tall.
      - The row is minimum 54 tall, `card` fill, radius 12, hairline stroke.
@@ -1711,13 +1718,13 @@ nothing on GitHub's slower runner, and would have on the phone too.
   - `grab-detail`, `grab-edit`, `grab-share`, `grab-done`, `grab-count`, `grab-allthere`;
   - `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`, `grab-reset`, `grab-empty` (0.62);
   - `grab-notyet`, `grab-message`, `grab-message-ok`;
-  - editing: `grab-rename-<n>`, `grab-up-<n>`, `grab-down-<n>`, `grab-sometimes-<n>`, `grab-remove-<n>`,
+  - editing: `grab-rename-<n>`, `grab-grip-<n>` (0.72), `grab-up-<n>`, `grab-down-<n>` (Mac), `grab-sometimes-<n>`, `grab-remove-<n>`,
     `grab-add-name`, `grab-add`, `grab-add-needs`, `grab-save-needs` (0.62);
   - deleting one of his own (0.61): `grab-delete`, `grab-delete-question`, `grab-delete-no`,
     `grab-delete-yes`.
 - Grab Lists: `grablists-detail`, `grablists-done`, `grablists-made` (replaced `grablists-problem` in
   0.61), `grablists-home-heading`,
-  `grablists-home-<n>`, `grablists-up-<n>`, `grablists-down-<n>`, `grablists-off-<n>`,
+  `grablists-home-<n>`, `grablists-grip-<n>` (0.72), `grablists-up-<n>`, `grablists-down-<n>` (Mac), `grablists-off-<n>`,
   `grablists-waiting-heading`, `grablists-waiting-<n>` (opens the list since 0.62), `grablists-on-<n>`
   (0.62, puts it on Home), `grablists-new-name`, `grablists-new`,
   `grablists-new-needs`.

@@ -1043,10 +1043,13 @@ phone as well."**
 
 - On the iPhone no list he orders shows ↑ ↓: every drop-down with row tools (Kind of thing, Kept at home, Usually
   packed in, Pocket, When, Condition, a thing's Section on each template, a template row's Bag, When and Section),
-  Your choices' pen, a bag's pockets and a template's reminders. One switch, `ReorderArrows.shown`
+  Your choices' pen, a bag's pockets, a template's reminders — and, the same evening (his rule again), a grab list's
+  things while edited, Grab Lists' Home order and the table's Columns. One switch, `ReorderArrows.shown`
   (`Screens/Reorder.swift`): false on the iPhone, true on the Mac.
 - Nothing lost a way to move: the drop-downs and Your choices had their grip since 0.70; a bag's pockets
-  (`bag-pocket-<n>-grip`) and a template's reminders (`template-reminder-<n>-grip`) got one now (on both devices).
+  (`bag-pocket-<n>-grip`), a template's reminders (`template-reminder-<n>-grip`), a grab list's things
+  (`grab-grip-<n>`), Grab Lists' Home order (`grablists-grip-<n>`) and Columns (`columns-<key>-grip`) got one now
+  (on both devices).
   VoiceOver moves a row by the grip's own actions, **Move up** / **Move down**.
 - The arrows' room goes to the name: a drop-down row on the iPhone is grip · name · pen · Remove, and "Pharmacy /
   meds" and "Comfort & misc" are one line (two in 0.70).
@@ -1063,7 +1066,11 @@ row; Mac: row 10 still has ↑, ↓ and its grip). Planted: `ReorderArrows.shown
 `testKindOfThingIsChangedInsideItsList` (its tools: rename + remove + a grip on the iPhone; + up, down on the Mac),
 `testKeptAtHomeIsChangedInsideItsListAndCancelUndoes`, `testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage`,
 `testABagsPageListsItsPockets`; `testAChoiceIsRenamedAndMovedAndItsThingsFollow` and `testATemplateKeepsItsReminders`
-drag on the iPhone and press ▲ / ↑ on the Mac. Green on the iPhone in light (14 tests) and dark (12); the Mac probe (GitHub's Mac, 8 Oct 2026) ran the new test,
+drag on the iPhone and press ▲ / ↑ on the Mac. Second new test, for the three older lists:
+`testTheOlderListsMoveByGripOnTheIPhone` (Indoor swim's second thing dragged to the top while editing; Grab Lists'
+second Home list dragged first; Storage dragged below the next column — no ↑ ↓ on any of them on the iPhone, the
+Mac presses them). Planted: the arrows put back in the three screens → red "a grab list's thing has ↑ on the
+iPhone". `testTheTableTakesTheColumnsHeChooses` sizes the arrows on the Mac only. Green on the iPhone in light (14 tests) and dark (12); the Mac probe (GitHub's Mac, 8 Oct 2026) ran the new test,
 the Section, Your choices and reminders tests on the Mac's arrows — 4 of 4 green.
 
 **Template names in violet (0.70, spec 05 Your things).** His ask the same day: "Let's make the Templates text on each
@@ -1082,9 +1089,8 @@ and red over green): the Map's row (Hiking · Garage) has violet; a thing on no 
 - The row's own stored bag counts as a use when its Bag list refuses a remove, even after the row picked another.
 - ~~(0.70) Now that a row can be dragged, the ↑ ↓ could leave the iPhone — his call.~~ Answered 8 Oct 2026: "Drag and
   drop on the phone as well" — done in 0.72 (above).
-- (0.72) The older reorderable lists keep their arrows on the iPhone and have no grip: the Grab lists' editor
-  (`grab-up-<n>`), the Grab lists' order (`grablists-up-<n>`) and the table's Columns (`columns-<id>-up`). Say if
-  they should drag too.
+- ~~(0.72) The older reorderable lists (Grab lists' editor and order, Columns) keep their arrows on the iPhone.~~
+  His rule again — done in 0.72: grips, arrows on the Mac only.
 - (0.70) Search ("on 2 templates", a count) and Choose from your things (a place only) show no template NAMES, so
   they are not violet; say if the count should be.
 
