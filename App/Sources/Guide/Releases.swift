@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.70", date: "8 Oct 2026", title: "Drag to reorder",
+                new: ["Every list you can reorder has a grip \u{2261} on each row: hold it and drag the row to its place. The arrows still work too."],
+                changed: ["Your things: the templates a thing is on are in violet, so the list is easier to read."]),
         Release(version: "0.69", date: "7 Oct 2026", title: "Change your lists where you pick from them",
                 new: ["Every list on a thing's page and on a template's row can now be changed right inside it: rename an entry with the pen, move it with the arrows, remove it, or make a new one at the bottom. Everything that used the old name follows, and nothing changes until you press Save.",
                       "Something still in use can't be removed from the list; it tells you what uses it. A bag with things in it opens its own page instead."],

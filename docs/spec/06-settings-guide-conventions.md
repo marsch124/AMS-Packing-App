@@ -638,11 +638,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (69 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (70 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.70 | 8 Oct 2026 | Drag to reorder | N1 C1 | a grip on every reorderable row (drop-downs and Your choices; Reorder.swift), template names violet in Your things (ThingDetailLine) |
 | 0.69 | 7 Oct 2026 | Change your lists where you pick from them | N2 C2 | chapter 07 part 13: rename, reorder, remove and add inside every pick-one list of his own (ChoiceEdits), held until Save; kinds of thing his own list (meta categories) |
 | 0.68 | 7 Oct 2026 | Beyond the list | N9 C3 | chapter 07 parts 1-12: Mac keyboard on a thing's page, sections edited from it, place codes + P-touch labels, search in notes, bag pockets + Siri "Where is my ...?", the door check, kits, Apple Health in the review + This is me, the vault page, template reminders, Pack by voice (test); the Weather freeze fixed; GitHub: an already-green commit is not tested twice |
 | 0.67 | 7 Oct 2026 | Your field test: lines without air, an open calendar | N2 C6 | his ten points on the field-test page (6 Oct, testing 0.63): Create new trip's month grid always open, Create waits for the last day, Clear dates, no Dates switch; Full trip \| Quick under the name; Context per workout (`activityContexts`, spec 01/03); list lines `Metrics.line` 30 / 22 (trip, template, To do, To buy, grab list), Settings' doors one card, slim grab tiles; one centre line for every tab header (`ScreenHeader`), Home leads with Grab and go, `Metrics.screenTop`; the Mac's main window without a title bar, its headers in the strip after the window buttons (`Metrics.windowButtons`); Share's mark centred (`GridShape`); Arrange's two grips; GitHub on five machines, the release waits 90 minutes (§27, §28) |

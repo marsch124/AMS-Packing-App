@@ -29,6 +29,10 @@ on:
         description: What is new in this build — testers see it as "What to Test"
         required: false
         default: ""
+      always_test:
+        description: Run the whole suite even when the same code is already green (a second check)
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -67,7 +71,7 @@ jobs:
   tests:
     name: The suite has to pass first
     needs: tested
-    if: needs.tested.outputs.skip != 'true'
+    if: needs.tested.outputs.skip != 'true' || inputs.always_test == 'true'
     uses: ./.github/workflows/tests.yml
 
   upload:
