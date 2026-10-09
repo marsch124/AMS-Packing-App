@@ -766,7 +766,9 @@ thenHoldForDuration: 0.8)` on the grips; they were run on the iPhone simulator o
   three with no heading lines); `testAThingIsDraggedUnderAnotherHeading` (the Map's grip dragged onto the
   Headlamp's: the Map is among the first three — under Lights; ended, the page has no third group, and it is kept
   after closing and opening the template); `testAHeadingIsDraggedWithItsThings` (Clothes' grip onto Lights': Clothes
-  first with its three things, then Lights; the page reads Clothes first); `testAHeadingIsRenamed` (the field holds
+  first with its three things, then Lights; the page reads Clothes first. On the iPhone the drag is made once more
+  if the first moved NOTHING — `dragAgainIfUntouched`, since 0.70: GitHub's busy iPhone runner lifted the row
+  without it following the finger; a drag to the wrong place, or one that never moves, still fails); `testAHeadingIsRenamed` (the field holds
   "Clothes"; "lights" → the needs line says "already"; it goes as he types; "Clothing" saved; the page reads
   "Clothing"); `testAHeadingIsRemovedAndItsThingsStay` (Lights removed: Clothes is heading 0, no heading 1, the six
   things in order with Headlamp and Spare batteries under no heading; the page reads Clothes, Everything else);
