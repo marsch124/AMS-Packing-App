@@ -101,13 +101,16 @@ jobs:
           xcrun simctl bootstatus "$SIM_UDID" -b
 
       - name: UI tests on the iPhone simulator
+        id: ui
+        # tools/ui-test.sh: the group, then ONE retry of just the tests that failed (at
+        # most 5) on the same build — a flake costs minutes, not a 45-minute re-run. The
+        # retried tests are listed in the job summary.
         run: |
-          xcodebuild test $(python3 tools/ui-shard.py iphone ${{ matrix.group }} 3) \
+          tools/ui-test.sh TestResults-iPhone-${{ matrix.group }} iphone ${{ matrix.group }} 3 -- \
             -project AMSPacking.xcodeproj \
             -scheme AMSPacking \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -derivedDataPath build \
-            -resultBundlePath TestResults-iPhone-${{ matrix.group }}.xcresult \
             -collect-test-diagnostics never \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 480 \
@@ -115,12 +118,14 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=""
 
-      - name: Keep the results when it goes red
-        if: failure()
+      - name: Keep the results when it goes red (or needed a retry)
+        if: failure() || steps.ui.outputs.retried == '1'
         uses: actions/upload-artifact@v4
         with:
           name: TestResults-iPhone-${{ matrix.group }}
-          path: TestResults-iPhone-${{ matrix.group }}.xcresult
+          path: |
+            TestResults-iPhone-${{ matrix.group }}.xcresult
+            TestResults-iPhone-${{ matrix.group }}-retry.xcresult
 
   mac:
     name: UI tests — Mac (${{ matrix.group }} of 2)
@@ -181,15 +186,16 @@ jobs:
       - name: Generate the project
         run: xcodegen generate
       - name: UI tests on the Mac
+        id: ui
         run: |
           # Signed "to run locally" (-): a Mac app cannot be driven unsigned,
-          # and the runner has no developer certificate.
-          xcodebuild test $(python3 tools/ui-shard.py mac ${{ matrix.group }} 2) \
+          # and the runner has no developer certificate. One retry of what failed,
+          # as on the iPhone (tools/ui-test.sh); the model bundles are never retried.
+          tools/ui-test.sh TestResults-Mac-${{ matrix.group }} mac ${{ matrix.group }} 2 -- \
             -project AMSPacking.xcodeproj \
             -scheme AMSPacking \
             -destination "platform=macOS" \
             -derivedDataPath build \
-            -resultBundlePath TestResults-Mac-${{ matrix.group }}.xcresult \
             -collect-test-diagnostics never \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 300 \
@@ -198,9 +204,11 @@ jobs:
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER=""
 
-      - name: Keep the results when it goes red
-        if: failure()
+      - name: Keep the results when it goes red (or needed a retry)
+        if: failure() || steps.ui.outputs.retried == '1'
         uses: actions/upload-artifact@v4
         with:
           name: TestResults-Mac-${{ matrix.group }}
-          path: TestResults-Mac-${{ matrix.group }}.xcresult
+          path: |
+            TestResults-Mac-${{ matrix.group }}.xcresult
+            TestResults-Mac-${{ matrix.group }}-retry.xcresult
