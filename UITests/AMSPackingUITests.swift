@@ -10344,27 +10344,3 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "trip-checks", timeout: 5), "ticking it did not take it off the card")
     }
 }
-
-// TEMPORARY (work/retry073): proves the CI retry. Removed before merging.
-extension AMSPackingUITests {
-    private var retryMarkers: [String] {
-        var dirs = [NSTemporaryDirectory(), "/tmp"]
-        if let host = ProcessInfo.processInfo.environment["SIMULATOR_HOST_HOME"] { dirs.append(host) }
-        return dirs.map { ($0 as NSString).appendingPathComponent("ams-retry-probe.marker") }
-    }
-
-    /// Fails the first time, passes on the retry: the marker it leaves outlives the run.
-    func testZZRetryProbeFlaky() {
-        let seen = retryMarkers.filter { FileManager.default.fileExists(atPath: $0) }
-        print("retry probe: markers present = \(seen)")
-        if seen.isEmpty {
-            for m in retryMarkers { FileManager.default.createFile(atPath: m, contents: Data("1".utf8)) }
-            XCTFail("first run: planted failure (retry probe)")
-        }
-    }
-
-    /// Fails every time: the retry must keep the job red.
-    func testZZRetryProbeAlwaysFails() {
-        XCTFail("planted failure that never passes (retry probe)")
-    }
-}
