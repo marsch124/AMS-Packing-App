@@ -57,15 +57,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           skip=false
+          # The exact commit already passed (its release branch was checked before the
+          # fast-forward, 0.72 on 9 Oct 2026 ran the whole suite twice without this).
+          here=$(gh api "repos/${{ github.repository }}/actions/workflows/tests.yml/runs?head_sha=$(git rev-parse HEAD)&status=success&per_page=1" --jq '.total_count')
+          echo "this commit · green runs: $here"
+          if [ "${here:-0}" -gt 0 ]; then skip=true; fi
           parent=$(git rev-parse HEAD~1 2>/dev/null || true)
-          if [ -n "$parent" ]; then
+          if [ "$skip" = false ] && [ -n "$parent" ]; then
             changed=$(git diff --name-only HEAD~1 HEAD | grep -v -E '^(project\.yml|AMSPacking\.xcodeproj/project\.pbxproj)$' || true)
             green=$(gh api "repos/${{ github.repository }}/actions/workflows/tests.yml/runs?head_sha=$parent&status=success&per_page=1" --jq '.total_count')
             echo "parent $parent · green runs: $green · other changes: ${changed:-none}"
             if [ -z "$changed" ] && [ "${green:-0}" -gt 0 ]; then skip=true; fi
           fi
           echo "skip=$skip" >> "$GITHUB_OUTPUT"
-          echo "### Suite: $([ $skip = true ] && echo "already green on $parent — not run again" || echo "runs now")" >> $GITHUB_STEP_SUMMARY
+          echo "### Suite: $([ $skip = true ] && echo "already green — not run again" || echo "runs now")" >> $GITHUB_STEP_SUMMARY
 
   # A red suite must never reach a device.
   tests:
