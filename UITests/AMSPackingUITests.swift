@@ -9349,7 +9349,14 @@ final class AMSPackingUITests: XCTestCase {
         openThing(app, "Wool socks")
         openDropDown(app, "thing-section-1")
         XCTAssertEqual(words(app.buttons["thing-section-1-0"]), "Lights")
-        for tool in ["rename", "up", "down", "remove"] {
+        // ↑ ↓ are the Mac's (0.72); the iPhone moves a section by its grip.
+        #if os(macOS)
+        let tools = ["rename", "up", "down", "remove"]
+        #else
+        let tools = ["rename", "remove"]
+        XCTAssertTrue(grip(app, "thing-section-1-0-grip").exists, "a section row has no grip")
+        #endif
+        for tool in tools {
             XCTAssertTrue(app.buttons["thing-section-1-0-\(tool)"].exists, "a section row has no \(tool)")
         }
         XCTAssertFalse(app.buttons["thing-section-1-none-rename"].exists, "No section has a pen")
