@@ -1929,7 +1929,8 @@ so a change to `project.yml` is committed together with the regenerated files. "
 
 "Every push runs the suite — the model's own tests, then the UI tests on the iPhone AND on the Mac … A red run means
 the build is not fit to install." Triggers: push, pull_request, manual, and `workflow_call` (the TestFlight workflow
-runs it first). Since 0.67 FIVE machines in parallel — `iphone` (3 groups) and `mac` (2 groups); the model's
+runs it first). Since 9 Oct 2026 a push whose every change is in `.github/workflows/testflight.yml`, `docs/**` or a
+`*.md` file starts no suite (`paths-ignore`; such a commit once held all five Mac machines for an hour). Since 0.67 FIVE machines in parallel — `iphone` (3 groups) and `mac` (2 groups); the model's
 tests ride in Mac group 1 and the parity check in Mac group 2 (`if: matrix.group == …` steps before the UI tests).
 Until 0.67 `core` and `parity` were jobs of their own (seven machines with the groups of 0.65–0.66), and on 0.66's
 release one Mac group waited 40 minutes for a free machine. The rows `core` and `parity` below describe those steps:

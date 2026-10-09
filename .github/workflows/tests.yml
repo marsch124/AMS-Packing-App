@@ -1,6 +1,6 @@
 name: Tests
 
-# Every push runs the suite — the model's own tests, then the UI tests on the
+# Every push (but docs-only ones, below) runs the suite — the model's own tests, then the UI tests on the
 # iPhone AND on the Mac, because he uses this app on both. A red run means the
 # build is not fit to install.
 #
@@ -10,6 +10,13 @@ name: Tests
 # release one Mac group waited 40 minutes for a free machine.
 on:
   push:
+    # Commits that cannot change the app or its tests start no suite (9 Oct 2026: a
+    # TestFlight-workflow-only commit held all five Mac machines for an hour). The
+    # TestFlight release still runs the suite through workflow_call; a manual run too.
+    paths-ignore:
+      - .github/workflows/testflight.yml
+      - docs/**
+      - '**/*.md'
   pull_request:
   workflow_dispatch:
   workflow_call:      # the TestFlight workflow runs this suite first
