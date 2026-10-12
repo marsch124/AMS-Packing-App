@@ -10440,8 +10440,12 @@ final class AMSPackingUITests: XCTestCase {
             return (query[id].value as? String) ?? ""
         }
         #if os(macOS)
-        let line = words(app.buttons["trip-line-\(n)"])
-        if let r = line.range(of: "From ") { return String(line[r.upperBound...]) }
+        // Sorted by Template a line stands under two headings: two buttons of one name
+        // (a plain query for it is a hard failure on the Mac — GitHub's probe, 12 Oct 2026).
+        for e in app.buttons.matching(identifier: "trip-line-\(n)").allElementsBoundByIndex where e.exists {
+            let line = words(e)
+            if let r = line.range(of: "From ") { return String(line[r.upperBound...]) }
+        }
         #endif
         return ""
     }

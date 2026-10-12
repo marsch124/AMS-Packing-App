@@ -1210,7 +1210,9 @@ cards: "Sorting is 204.0 pt above the first heading — not directly above the l
 under 1 template(s), not both"), `testATripsLineShowsTheTemplatesItComesFrom` (0.74: the Headlamp's
 `trip-line-3-from` names "Common base, Hiking", the Passport only "Common base", the Hiking boots "Hiking"; the line
 at most 36 tall; a line typed on the trip (Tripod, `trip-line-7`) names none; sorted by Template, none; picture
-`trip-line-templates`; on the Mac read from the line's own words after "From "; seen red with the "same thing" rule
+`trip-line-templates`; on the Mac read from the line's own words after "From " — from every copy of the line:
+sorted by Template it is two buttons of one name, and a plain query for one was a hard failure on GitHub's Mac
+probe, 12 Oct 2026; seen red with the "same thing" rule
 taken out: "the Headlamp does not name both its templates: 'Common base'"),
 `testTheTripsPenSitsBesideItsNameAndReviewedBesideDone` (0.73, `-uiTestingReviewed`, both devices: the pen's
 middle on the name's first line, after it (at most 16 pt away) and above the count; the pen round (as wide as
