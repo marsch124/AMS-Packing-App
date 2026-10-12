@@ -172,22 +172,105 @@ final class PocketsTests: XCTestCase {
     }
 
     func testWhereIsAThingInsideAKit() {
-        // A thing inside a kit (0.70) is where the kit is, the kit named first; taken out
-        // of the kit, it is its own again.
+        // A thing inside a kit (0.70) is where the KIT is: the kit first, then the kit's
+        // bag with its pocket (0.73, his ask: the kit's name, then the bag it is in). Taken
+        // out of the kit, it says so, then its own place if it has one.
         var lib = Library()
-        let bag = lib.addBag(name: "Backpack")!
-        _ = lib.addPocket(bagId: bag.id, name: "Lid")
+        let bag = lib.addBag(name: "Day pack")!
+        _ = lib.addPocket(bagId: bag.id, name: "Front pocket")
+        let pouch = lib.addThing(name: "Camp pouch")!
+        _ = lib.updateThing(id: pouch.id) { $0.container = "Day pack" }
+        _ = lib.setUsualPocket(thingId: pouch.id, pocket: "Front pocket")
+        let lighter = lib.addThing(name: "Lighter")!
+        _ = lib.updateThing(id: lighter.id) { $0.container = "" }   // no bag of its own
+        XCTAssertTrue(lib.setKit(kitId: pouch.id, contents: [lighter.id]))
+        // No trip under way: where the kit usually goes.
+        var a = lib.whereIs("lighter", today: "2026-10-03")
+        XCTAssertEqual(a?.name, "Lighter")
+        XCTAssertEqual(a?.kind, .usual)
+        XCTAssertEqual(a?.kit, "Camp pouch")
+        XCTAssertEqual(a?.kitWords, "In the Camp pouch")
+        XCTAssertEqual(a?.shown, "Day pack \u{00B7} Front pocket", "the place is not where the kit is")
+        XCTAssertEqual(a?.said, "In the Camp pouch, usually in the Day pack (front pocket).")
+        XCTAssertEqual(lib.whereIs(thingId: lighter.id, today: "2026-10-03"), a, "Siri and Search answer differently")
+        // The kit asked about itself: its own place, no kit named.
+        XCTAssertEqual(lib.whereIs("camp pouch", today: "2026-10-03")?.said, "Usually in Day pack, front pocket.")
+        XCTAssertEqual(lib.whereIs("camp pouch", today: "2026-10-03")?.kitWords, "")
+        // Taken out, with no place of its own: just that.
+        XCTAssertTrue(lib.setTakenOut(thingId: lighter.id, true))
+        a = lib.whereIs("lighter", today: "2026-10-03")
+        XCTAssertEqual(a?.kit, "")
+        XCTAssertEqual(a?.takenOutOf, "Camp pouch")
+        XCTAssertEqual(a?.kitWords, "Taken out of the Camp pouch")
+        XCTAssertEqual(a?.said, "Taken out of the Camp pouch.")
+        XCTAssertEqual(a?.shown, "Not in a bag")
+        // Taken out, with a usual bag of its own: that as well.
+        _ = lib.updateThing(id: lighter.id) { $0.container = "Tote" }
+        XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-03")?.said, "Taken out of the Camp pouch. Usually in Tote.")
+        XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-03")?.shown, "Tote")
+        // Put back: the kit again, never its own bag.
+        XCTAssertTrue(lib.setTakenOut(thingId: lighter.id, false))
+        XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-03")?.said, "In the Camp pouch, usually in the Day pack (front pocket).")
+        // A kit in no bag: just the kit.
+        _ = lib.updateThing(id: pouch.id) { $0.container = "" }
+        a = lib.whereIs("lighter", today: "2026-10-03")
+        XCTAssertEqual(a?.said, "In the Camp pouch.")
+        XCTAssertEqual(a?.shown, "Not in a bag")
+        XCTAssertEqual(a?.kitWords, "In the Camp pouch")
+    }
+
+    func testWhereIsAThingInsideAKitOnTheTripUnderWay() {
+        // On the trip under way the kit's LINE answers: not packed yet, packed in the pocket
+        // chosen, packed for home. Taken out, the thing has no line: it says so and where
+        // it usually goes.
+        var lib = Library()
+        let backpack = lib.addBag(name: "Backpack")!.id
+        for p in ["Main", "Lid"] { _ = lib.addPocket(bagId: backpack, name: p) }
+        lib.saveTemplate(newList(name: "Base", role: "base"))
+        let base = lib.templates.first { $0.role == "base" }!.id
         let pouch = lib.addThing(name: "Camp pouch")!
         _ = lib.updateThing(id: pouch.id) { $0.container = "Backpack" }
         _ = lib.setUsualPocket(thingId: pouch.id, pocket: "Lid")
+        _ = lib.setOnTemplate(itemId: pouch.id, templateId: base, on: true)
         let lighter = lib.addThing(name: "Lighter")!
-        _ = lib.updateThing(id: lighter.id) { $0.container = "Tote" }
+        _ = lib.updateThing(id: lighter.id) { $0.container = "" }   // no bag of its own
         XCTAssertTrue(lib.setKit(kitId: pouch.id, contents: [lighter.id]))
-        let a = lib.whereIs("lighter", today: "2026-10-03")
-        XCTAssertEqual(a?.name, "Lighter")
-        XCTAssertEqual(a?.shown, "Camp pouch, Backpack \u{00B7} Lid")
-        XCTAssertEqual(a?.said, "Usually in Camp pouch, Backpack, lid.")
-        _ = lib.setTakenOut(thingId: lighter.id, true)
-        XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-03")?.said, "Usually in Tote.")
+        var trip = newEvent(name: "Away", startDate: "2026-10-01", endDate: "2026-10-05")
+        trip.entries = lib.builtLines(trip)
+        lib.trips = [trip]
+        let kitLine = lib.trips[0].entries.first { $0.sourceItemId == pouch.id }!
+        XCTAssertFalse(lib.trips[0].entries.contains { $0.sourceItemId == lighter.id }, "what is inside became a line")
+        var a = lib.whereIs("lighter", today: "2026-10-03")
+        XCTAssertEqual(a?.kind, .notPacked)
+        XCTAssertEqual(a?.tripName, "Away")
+        XCTAssertEqual(a?.said, "In the Camp pouch, not packed yet. It goes in the Backpack (lid).")
+        XCTAssertTrue(lib.setChecked(true, tripId: trip.id, entryId: kitLine.id))
+        XCTAssertTrue(lib.setPocket("Main", tripId: trip.id, entryId: kitLine.id))
+        a = lib.whereIs(thingId: lighter.id, today: "2026-10-03")
+        XCTAssertEqual(a?.kind, .packed)
+        XCTAssertEqual(a?.said, "In the Camp pouch, in the Backpack (main).", "not where the kit was packed")
+        XCTAssertEqual(a?.shown, "Backpack \u{00B7} Main")
+        XCTAssertTrue(lib.setPackedHome(true, tripId: trip.id, entryId: kitLine.id))
+        XCTAssertTrue(lib.setHomePocket("Lid", tripId: trip.id, entryId: kitLine.id))
+        a = lib.whereIs("lighter", today: "2026-10-05")
+        XCTAssertEqual(a?.kind, .packedHome)
+        XCTAssertEqual(a?.said, "In the Camp pouch, in the Backpack (lid).")
+        // Taken out on the trip: the lighter is not on it (no line of its own).
+        XCTAssertTrue(lib.setTakenOut(thingId: lighter.id, true))
+        a = lib.whereIs("lighter", today: "2026-10-03")
+        XCTAssertEqual(a?.kind, .usual)
+        XCTAssertEqual(a?.said, "Taken out of the Camp pouch.")
+        XCTAssertEqual(a?.kitWords, "Taken out of the Camp pouch")
+        // A trip made before the lighter went into the kit keeps its own line: asked by
+        // name, it still answers with its kit — as Siri does.
+        XCTAssertTrue(lib.setTakenOut(thingId: lighter.id, false))
+        var old = lib.trips[0]
+        var own = newItem(name: "Lighter")
+        own.sourceItemId = lighter.id
+        own.container = "Backpack"
+        old.entries.append(own)
+        lib.trips[0] = old
+        XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-05")?.said, "In the Camp pouch, in the Backpack (lid).")
+        XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-05"), lib.whereIs(thingId: lighter.id, today: "2026-10-05"))
     }
 }

@@ -2216,10 +2216,20 @@ new trip from this one leave the line pockets out (`justTheList`, `startAgain`).
   finds a line typed on the trip), not set aside: **packed for home** → its bag + home pocket; **ticked** → its bag
   + pocket; **not ticked** → where it goes: its bag + the usual pocket ("Not packed yet. It goes in …").
 - No trip under way, or the thing not on it: **usual** — its usual bag + usual pocket ("Usually in …").
-- **Inside a kit** (0.70, `kitHolding(thingId:)`, not taken out of it): the kit's own answer, the thing's name kept and
-  `kit` = the kit's name — `shown` "Camp pouch, Backpack · Lid" (just "Camp pouch" when the kit is in no bag),
-  `said` "Usually in Camp pouch, Backpack, lid." / "Camp pouch, Backpack, lid." Taken out: its own answer
-  (`testWhereIsAThingInsideAKit`).
+- **Inside a kit** (0.70; worded 0.73 — his ask: "in <the kit>, in the <bag>";
+  `kitHolding(thingId:)`, not taken out of it): the KIT's own answer — its line on the trip under way (packed for
+  home, ticked, not ticked), else its usual bag + usual pocket — with the thing's name kept and `kit` = the kit's
+  name. `shown` is where the kit is ("Day pack · Front pocket"; "Not in a bag"); `kitWords` = "In the Camp pouch";
+  `said`: packed → "In the Camp pouch, in the Day pack (front pocket)."; not ticked → "In the Camp pouch, not
+  packed yet. It goes in the Day pack (front pocket)."; usual → "In the Camp pouch, usually in the Day pack (front
+  pocket)." The bag gets "the", the pocket goes in brackets (softened as below); a kit in no bag: "In the Camp
+  pouch." / "…, packed but not in a bag." / "…, not packed yet." (a pocket with no bag says nothing).
+- **Taken out of its kit** (0.73): its OWN answer (its line on the trip under way — normally none, since what is
+  inside a kit is never a line — else its usual bag + pocket) with `takenOutOf` = the kit's name: `kitWords` =
+  "Taken out of the Camp pouch"; `said` = "Taken out of the Camp pouch." followed by its own words ("Usually in
+  Tote."), or nothing more when it has no usual bag. `kit` and `takenOutOf` are never both set.
+- A trip made before a thing went into its kit keeps the thing's own line until a rebuild: asked by name
+  (`whereIs(words)`), that line answers as the thing does — with its kit — so Search and Siri agree.
 - Names: a whole-name match first, else the shortest name containing the words. Nil = nothing by that name.
 - `shown` = "Backpack · Front pocket" ("Not in a bag" for none); `said` = "Backpack, front pocket." (a pocket's
   first capital softened when the second letter is small: "USB pocket" stays).
@@ -2233,8 +2243,11 @@ See spec 06 §3b.
 **Search** (`WhereCard`, top of the results): while a trip is under way and the search finds a thing (or line) on
 it, a card first: the name (Body semibold, `search-where-name`), "Backpack · Front pocket" (Callout semibold green,
 `search-where-place`) and a line (Footnote muted, `search-where-says`): "Packed on <trip>." / "Packed for home from
-<trip>." / "On <trip>, not packed yet — it goes there." Card: padding 12 × 8, corner 10, card fill, green 1-pt
-border at 60 %, 10 above, id `search-where`. No trip under way: no card.
+<trip>." / "On <trip>, not packed yet — it goes there." A thing inside a kit (0.73): the place is where the KIT is,
+and between the two a line of its own (Subheadline semibold, ink, wraps, `search-where-kit`) names the kit: "In
+the Camp pouch". A thing taken out of its kit gets the card too, even with no line on the trip: its own place, "Taken
+out of the Camp pouch", and "Where it usually goes." ("It has no usual bag." without one). Card: padding 12 × 8,
+corner 10, card fill, green 1-pt border at 60 %, 10 above, id `search-where`. No trip under way: no card.
 
 ### Tests
 UI `testTickingALineOffersItsBagsPockets` (`-uiTestingPockets`: ticking the charger shows `trip-line-1-pocket-*`,
@@ -2243,11 +2256,24 @@ Front pocket selected, the line says "Backpack · Front pocket"; Lid tapped → 
 did not offer the Backpack's pockets"), `testPackToGoHomeKeepsItsPockets` (the way home's pills, the way-out pocket
 first, Main kept — red with `prechooseHomePocket` not called: "the pocket it went out in was not chosen first"),
 `testSearchShowsWhereAThingIsOnTheTripUnderWay` ("Backpack · Front pocket" above the things; none with no trip
-under way — red with the card's condition turned round: "Search does not say where it is: ''"). Model
-`PocketsTests` (8: a bag's list, add/rename/move/remove and their refusals; the usual pocket comes with a tick and
+under way — red with the card's condition turned round: "Search does not say where it is: ''"),
+`testWhereIsAThingInsideAKitNamesTheKitAndWhereTheKitIs` (0.73, `-uiTestingKits -kitsUnderWay`: the Lighter's
+card says "Day pack · Front pocket" and "In the Camp pouch"; taken out on its page, "Taken out of the Camp pouch" —
+red with the kit line never drawn: "XCTAssertEqual failed: ("") is not equal to ("In the Camp pouch") - Search
+does not name the kit", and with a taken-out thing's card not shown: "taken out, Search does not say so: ''"; green on
+the iPhone in light and dark).
+Model `PocketsTests` (10: a bag's list, add/rename/move/remove and their refusals; the usual pocket comes with a tick and
 his choice stands; records and a backup keep all three keys; a usual pocket only while its bag has it; a rename
 reaches things and lines, a remove leaves them in the bag; a bag deleted into another; the way home's own
-pocket, Start again and a share without pockets; Where is my charger in every case; an absent key changes nothing).
+pocket, Start again and a share without pockets; Where is my charger in every case; an absent key changes nothing;
+a thing inside a kit with no trip under way, taken out with and without a place of its own, put back, a kit in no
+bag (`testWhereIsAThingInsideAKit`); on the trip under way by the kit's line — not packed, packed in the pocket
+chosen, packed for home — taken out with no line, and an old trip's own line answering with the kit
+(`testWhereIsAThingInsideAKitOnTheTripUnderWay`). Red with a planted fault: the bag without "the" and brackets
+("In the Camp pouch, usually in Day pack, front pocket." is not equal to "… in the Day pack (front pocket)."),
+`takenOutOf` never set ("It has no usual bag." is not equal to "Taken out of the Camp pouch."), and the old trip's
+line not routed through the thing ("Not packed yet. It goes in Backpack." is not equal to "In the Camp pouch, in
+the Backpack (lid).")).
 
 ---
 

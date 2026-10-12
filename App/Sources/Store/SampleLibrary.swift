@@ -321,7 +321,11 @@ enum SampleLibrary {
     /// (still on Common base on its own) and Soap (90 g). Its trip is rebuilt as a new trip
     /// would be: the Wash bag in the toothbrush's place, the Camp pouch last — eight lines,
     /// the kits at `trip-line-2` (Wash bag) and `trip-line-7` (Camp pouch).
-    static func kits() -> Library {
+    ///
+    /// `underWay` (`-uiTestingKits -kitsUnderWay`, 0.73 "Where is my …?" for a thing in a
+    /// kit): the trip began yesterday and ends in two days, and the Camp pouch usually goes
+    /// in a Day pack with two pockets — Main, Front pocket — in its Front pocket.
+    static func kits(underWay: Bool = false) -> Library {
         var lib = make()
         let cal = Calendar(identifier: .gregorian)
         func day(_ n: Int) -> String {
@@ -344,6 +348,15 @@ enum SampleLibrary {
         _ = lib.setOnTemplate(itemId: pouch, templateId: hiking.id, on: true)
         lib.setKit(kitId: pouch, contents: ["Lighter", "Spare cord", "Plasters"].compactMap { made[$0] })
         lib.setKit(kitId: wash, contents: [brush] + ["Soap"].compactMap { made[$0] }, check: true)
+        if underWay, let pack = lib.addBag(name: "Day pack") {
+            for p in ["Main", "Front pocket"] { _ = lib.addPocket(bagId: pack.id, name: p) }
+            _ = lib.updateThing(id: pouch) { $0.container = "Day pack" }
+            _ = lib.setUsualPocket(thingId: pouch, pocket: "Front pocket")
+            if !lib.trips.isEmpty {
+                lib.trips[0].startDate = day(-1)
+                lib.trips[0].endDate = day(2)
+            }
+        }
         if !lib.trips.isEmpty { lib.trips[0].entries = lib.builtLines(lib.trips[0]) }
         return lib
     }

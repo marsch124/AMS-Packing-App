@@ -273,39 +273,76 @@ public struct WhereAnswer: Equatable, Sendable {
     public var pocket: String
     /// The trip under way ("" for the usual answer).
     public var tripName: String
-    /// The kit it is inside (0.70, not taken out of it): the bag and pocket are the kit's.
+    /// The kit it is inside (0.70, not taken out of it): the kind, bag and pocket are the
+    /// KIT's — its line on the trip under way, else its usual bag and pocket.
     public var kit: String = ""
+    /// The kit it is taken out of for now (0.73): the kind, bag and pocket are the thing's
+    /// own. Never set together with `kit`.
+    public var takenOutOf: String = ""
 
-    /// What the screen shows: "Backpack · Front pocket" ("Not in a bag" for none).
-    /// Inside a kit: "Camp pouch, Backpack · Front pocket" (just "Camp pouch" when the kit
-    /// is in no bag).
+    /// What the screen shows as the place: "Backpack · Front pocket" ("Not in a bag" for
+    /// none). Inside a kit it is where the KIT is; `kitWords` names the kit.
     public var shown: String {
         let place = Library.bagAndPocket(bag, pocket)
-        if !kit.isEmpty { return place.isEmpty ? kit : "\(kit), \(place)" }
         return place.isEmpty ? "Not in a bag" : place
     }
 
+    /// The kit, as a line of its own under the place (0.73): "In the Camp pouch",
+    /// "Taken out of the Camp pouch", or "" for a thing in no kit.
+    public var kitWords: String {
+        if !kit.isEmpty { return "In the \(kit)" }
+        if !takenOutOf.isEmpty { return "Taken out of the \(takenOutOf)" }
+        return ""
+    }
+
     /// What Siri says: "Backpack, front pocket." — the pocket's first capital softened
-    /// ("Front pocket" → "front pocket"; "USB pocket" stays as it is).
+    /// ("Front pocket" → "front pocket"; "USB pocket" stays as it is). Inside a kit, the
+    /// kit first and then where the kit is: "In the Camp pouch, in the Backpack (front
+    /// pocket)." Taken out of it: "Taken out of the Camp pouch." and then the thing's own
+    /// place, when it has one.
     public var said: String {
+        if !kit.isEmpty { return saidInKit }
+        let own = saidOwn
+        guard !takenOutOf.isEmpty else { return own }
+        let out = "Taken out of the \(takenOutOf)."
+        // Its own place only when it has one: "It has no usual bag." says nothing here.
+        if kind == .usual && bag.isEmpty && pocket.isEmpty { return out }
+        return "\(out) \(own)"
+    }
+
+    /// The thing's own answer (no kit).
+    private var saidOwn: String {
         let place: String
         if bag.isEmpty && pocket.isEmpty { place = "not in a bag" }
         else if pocket.isEmpty { place = bag }
         else if bag.isEmpty { place = WhereAnswer.soft(pocket) }
         else { place = "\(bag), \(WhereAnswer.soft(pocket))" }
-        // Inside a kit (0.70): "Camp pouch, Backpack, front pocket." — the kit first.
-        if !kit.isEmpty {
-            let inKit = bag.isEmpty && pocket.isEmpty ? kit : "\(kit), \(place)"
-            switch kind {
-            case .packed, .packedHome: return "\(inKit)."
-            case .notPacked: return "Not packed yet. It goes in \(inKit)."
-            case .usual: return "Usually in \(inKit)."
-            }
-        }
         switch kind {
         case .packed, .packedHome: return bag.isEmpty && pocket.isEmpty ? "Packed, but not in a bag." : "\(place)."
         case .notPacked: return bag.isEmpty && pocket.isEmpty ? "Not packed yet." : "Not packed yet. It goes in \(place)."
         case .usual: return bag.isEmpty && pocket.isEmpty ? "It has no usual bag." : "Usually in \(place)."
+        }
+    }
+
+    /// Inside a kit (0.73, his ask: the kit's name, then the bag it is in): the kit, then
+    /// the kit's bag with its pocket in brackets — "In the Camp pouch, in the
+    /// Backpack (front pocket)." A pocket with no bag says nothing (a pocket is a bag's).
+    private var saidInKit: String {
+        let inKit = "In the \(kit)"
+        let bagWords = jsTrim(bag)
+        guard !bagWords.isEmpty else {
+            switch kind {
+            case .packed, .packedHome: return "\(inKit), packed but not in a bag."
+            case .notPacked: return "\(inKit), not packed yet."
+            case .usual: return "\(inKit)."
+            }
+        }
+        let p = jsTrim(pocket)
+        let place = p.isEmpty ? "the \(bagWords)" : "the \(bagWords) (\(WhereAnswer.soft(p)))"
+        switch kind {
+        case .packed, .packedHome: return "\(inKit), in \(place)."
+        case .notPacked: return "\(inKit), not packed yet. It goes in \(place)."
+        case .usual: return "\(inKit), usually in \(place)."
         }
     }
 
@@ -345,6 +382,11 @@ extension Library {
         let thing = best(items, { $0.name })
         if let line, let trip,
            normName(line.name) == needle || thing == nil || normName(thing!.name) != needle {
+            // A line of a thing that has gone into a kit since the trip was made (it keeps
+            // its line until a rebuild) answers as the thing does: with its kit (0.73).
+            if let src = line.sourceItemId, kitHolding(thingId: src) != nil {
+                return whereIs(thingId: src, today: today)
+            }
             return answer(line: line, trip: trip)
         }
         guard let thing else { return nil }
@@ -352,21 +394,26 @@ extension Library {
     }
 
     /// Where is this thing? Its line on the trip under way, else its usual bag and pocket.
+    /// Inside a kit: where the KIT is, the kit named (`kit`). Taken out of its kit for now:
+    /// its own answer, saying so (`takenOutOf`).
     public func whereIs(thingId: String, today: String) -> WhereAnswer? {
         guard let thing = items.first(where: { $0.id == thingId }) else { return nil }
-        // Inside a kit (0.70) and not taken out of it: where the kit is, the kit named first.
-        if let kit = kitHolding(thingId: thingId), kit.id != thingId, !isTakenOut(thingId: thingId),
-           var a = whereIs(thingId: kit.id, today: today) {
+        let holder = kitHolding(thingId: thingId).flatMap { $0.id == thingId ? nil : $0 }
+        if let kit = holder, !isTakenOut(thingId: thingId), var a = whereIs(thingId: kit.id, today: today) {
             a.name = thing.name
             a.kit = kit.name
             return a
         }
+        var a: WhereAnswer
         if let trip = tripUnderWay(today: today),
            let line = trip.entries.first(where: { $0.sourceItemId == thingId && !isSetAside($0) }) {
-            return answer(line: line, trip: trip)
+            a = answer(line: line, trip: trip)
+        } else {
+            a = WhereAnswer(kind: .usual, name: thing.name, bag: jsTrim(thing.container),
+                            pocket: usualPocket(thingId: thingId), tripName: "")
         }
-        return WhereAnswer(kind: .usual, name: thing.name, bag: jsTrim(thing.container),
-                           pocket: usualPocket(thingId: thingId), tripName: "")
+        if let kit = holder { a.takenOutOf = kit.name }
+        return a
     }
 
     private func answer(line: Item, trip: TripEvent) -> WhereAnswer {

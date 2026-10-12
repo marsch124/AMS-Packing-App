@@ -10156,6 +10156,43 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go"), "it still asks for the toothbrush")
     }
 
+    /// "Where is my …?" for a thing inside a kit (0.73, `-uiTestingKits -kitsUnderWay`): on
+    /// the trip under way Search says where the KIT is — "Day pack · Front pocket" — and
+    /// names the kit, "In the Camp pouch". Taken out on its page, it says "Taken out of the
+    /// Camp pouch" and where the thing itself usually goes.
+    func testWhereIsAThingInsideAKitNamesTheKitAndWhereTheKitIs() {
+        let app = launch("-uiTestingKits", ["-kitsUnderWay"])
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("lighter", into: app.textFields["search-field"])
+        let place = app.staticTexts["search-where-place"]
+        let kit = app.staticTexts["search-where-kit"]
+        XCTAssertTrue(waitUntil { self.words(place) == "Day pack \u{00B7} Front pocket" },
+                      "Search does not say where the kit is: '\(words(place))'")
+        XCTAssertEqual(words(kit), "In the Camp pouch", "Search does not name the kit")
+        XCTAssertEqual(words(app.staticTexts["search-where-name"]), "Lighter")
+        XCTAssertTrue(words(app.staticTexts["search-where-says"]).contains("not packed yet"),
+                      "'\(words(app.staticTexts["search-where-says"]))'")
+        shot(app, "where-kit-search")
+        tap(app, id: "search-done")
+        XCTAssertTrue(disappears(app, "search-detail", timeout: 5))
+
+        // Taken out on its page: the card says so, and the place is its own.
+        openKitThing(app, search: "Lighter")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-condition"))
+        setSwitch(app, "thing-kit-taken-out", on: true)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("lighter", into: app.textFields["search-field"])
+        XCTAssertTrue(waitUntil { self.words(kit) == "Taken out of the Camp pouch" },
+                      "taken out, Search does not say so: '\(words(kit))'")
+        XCTAssertNotEqual(words(place), "Day pack \u{00B7} Front pocket", "taken out, it is still where the kit is")
+        shot(app, "where-kit-taken-out")
+    }
+
     // MARK: - The trip's page in his Obsidian vault (0.70, spec 07 part 8)
 
     /// The sample's trip as `-uiTestingReviewed` has it: been (six to three days ago) and

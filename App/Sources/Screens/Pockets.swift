@@ -353,8 +353,11 @@ struct DoorCheckList: View {
 
 /// Search, while a trip is under way: the thing searched for, and where it is on that
 /// trip — "Backpack · Front pocket" — first, above every other result ("Ask Siri, or type
-/// in Search: the bag and pocket show first"). Ids: `search-where` (the card),
-/// `search-where-name`, `search-where-place`, `search-where-says`.
+/// in Search: the bag and pocket show first"). A thing inside a kit (0.73): where the KIT
+/// is, and the kit named on a line of its own — "In the Camp pouch"; one taken out of its
+/// kit is shown too, "Taken out of the Camp pouch", with where it usually goes. Ids:
+/// `search-where` (the card), `search-where-name`, `search-where-place`, `search-where-kit`
+/// (only for a thing in a kit), `search-where-says`.
 struct WhereCard: View {
     let query: String
     @EnvironmentObject var model: LibraryModel
@@ -362,7 +365,7 @@ struct WhereCard: View {
     var body: some View {
         let today = Today.local
         if model.library.tripUnderWay(today: today) != nil,
-           let a = model.library.whereIs(query, today: today), a.kind != .usual {
+           let a = model.library.whereIs(query, today: today), a.kind != .usual || !a.takenOutOf.isEmpty {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(a.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -372,6 +375,12 @@ struct WhereCard: View {
                     Text(a.shown).font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.events.color)
                         .lineLimit(1)
                         .accessibilityIdentifier("search-where-place")
+                }
+                // The kit, on a line of its own: the place above is where the KIT is.
+                if !a.kitWords.isEmpty {
+                    Text(a.kitWords).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("search-where-kit")
                 }
                 Text(WhereCard.says(a)).font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -391,7 +400,8 @@ struct WhereCard: View {
         case .packed: return "Packed on \(a.tripName)."
         case .packedHome: return "Packed for home from \(a.tripName)."
         case .notPacked: return "On \(a.tripName), not packed yet \u{2014} it goes there."
-        case .usual: return "Usually."
+        // Shown only for a thing taken out of its kit: where it usually goes, if anywhere.
+        case .usual: return a.bag.isEmpty ? "It has no usual bag." : "Where it usually goes."
         }
     }
 }
