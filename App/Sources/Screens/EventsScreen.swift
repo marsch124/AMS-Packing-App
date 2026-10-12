@@ -175,15 +175,6 @@ struct TripRow: View {
         }
     }
 
-    private var badge: String {
-        switch card.state {
-        case .planned: return "Planned"
-        case .packing: return "Packing"
-        case .packed: return "Ready"
-        case .reviewed: return "Reviewed"
-        }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
@@ -197,12 +188,7 @@ struct TripRow: View {
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 3) {
                     // Narrow on purpose: the trip's own words matter more.
-                    Text(badge)
-                        .font(.system(.footnote, weight: .semibold))
-                        .foregroundStyle(card.state == .planned || card.state == .reviewed ? Theme.muted : .white)
-                        .padding(.horizontal, 10).frame(minHeight: 22)
-                        .background(Capsule().fill(card.state == .planned || card.state == .reviewed
-                                                   ? Theme.line : tint))
+                    TripStateBadge(state: card.state)
                         .accessibilityIdentifier("trip-state")
                     Text(card.aside > 0 ? "\(card.done)/\(card.total) · \(card.aside) set aside"
                                         : "\(card.done)/\(card.total)")
@@ -244,6 +230,34 @@ struct TripRow: View {
     /// Check before you go and the map write a day (the spec pass, 5 Oct 2026: this one
     /// alone followed the device, "Oct 3, 2026" on an American-set phone).
     static func day(_ ymd: String) -> String { TripChecksCard.day(ymd) }
+}
+
+
+/// A trip's state as a small capsule: **Planned** and **Reviewed** muted on the hairline
+/// colour, **Packing** white on orange, **Ready** white on green. ONE badge for the Trips
+/// row and the trip itself (0.73, his ask of 12 Oct 2026: the trip said "Reviewed" in
+/// bare grey words beside Done, off its centre line — "make it look better").
+struct TripStateBadge: View {
+    let state: Library.TripState
+
+    static func words(_ state: Library.TripState) -> String {
+        switch state {
+        case .planned: return "Planned"
+        case .packing: return "Packing"
+        case .packed: return "Ready"
+        case .reviewed: return "Reviewed"
+        }
+    }
+
+    var body: some View {
+        let quiet = state == .planned || state == .reviewed
+        Text(TripStateBadge.words(state))
+            .font(.system(.footnote, weight: .semibold))
+            .foregroundStyle(quiet ? Theme.muted : .white)
+            .padding(.horizontal, 10).frame(minHeight: 22)
+            .background(Capsule().fill(quiet ? Theme.line
+                                       : state == .packing ? AppSection.care.color : AppSection.events.color))
+    }
 }
 
 

@@ -80,6 +80,12 @@ struct TripScreen: View {
         }
     }
 
+    /// The middle of a text's FIRST line: its height less the distance between its first
+    /// and last baselines is one line's height. A one-line name is centred as before.
+    static func firstLineCentre(_ d: ViewDimensions) -> CGFloat {
+        (d.height - (d[.lastTextBaseline] - d[.firstTextBaseline])) / 2
+    }
+
     /// Laundry is on AND the trip is long enough for it to cap anything.
     private func washes(_ trip: TripEvent) -> Bool { laundryWashes(trip) }
 
@@ -131,49 +137,55 @@ struct TripScreen: View {
         // Every bag's pockets, asked once for all the lines (0.69).
         let pockets = model.library.pocketsByBag()
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
+            // ONE centre line (0.73, his ask of 12 Oct 2026): the name, its pen right
+            // beside it, and at the right the state and Done — "Reviewed" sat in grey
+            // words on the line's top, off Done's centre, and the bare pen on the count's
+            // line did not read as a button. A name on two lines keeps them all on its
+            // FIRST line (`firstLineCentre`), Done where the thumb expects it.
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .center, spacing: 8) {
                     Text(trip.name.isEmpty ? "Untitled event" : trip.name)
                         .font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                         .lineLimit(2).minimumScaleFactor(0.85)          // the whole name, not "Weekend in the…"
+                        .alignmentGuide(VerticalAlignment.center, computeValue: TripScreen.firstLineCentre)
+                        .layoutPriority(1)
                         .accessibilityIdentifier("trip-name")
-                    HStack(spacing: 10) {
-                        Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
-                            .font(.system(.callout, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
-                            .accessibilityIdentifier("trip-progress")
-                            .accessibilityValue(allPacked ? "all packed" : "")
-                        // Its settings, after it is made (the gap list's first High item):
-                        // beside the count, where there is room even on a small iPhone.
-                        TripSettingsDoor(tripId: tripId, rebuilt: { rebuiltNote = TripScreen.saying($0) },
-                                         startedAgain: { new in
-                            let from = trip.name
-                            startedId = new.id
-                            rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are under the pen."
-                        })
-                        .environmentObject(model)
+                    // Its settings, after it is made (the gap list's first High item): a pen
+                    // in a ring, beside the name it changes.
+                    TripSettingsDoor(tripId: tripId, rebuilt: { rebuiltNote = TripScreen.saying($0) },
+                                     startedAgain: { new in
+                        let from = trip.name
+                        startedId = new.id
+                        rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are under the pen."
+                    })
+                    .environmentObject(model)
+                    Spacer(minLength: 8)
+                    // After the trip: what did I use, what did I miss. Once, then it says so —
+                    // by the one rule every screen uses (the spec pass, 5 Oct 2026: a trip with
+                    // only a review time looked reviewed on its card and offered Review here) —
+                    // in the Trips row's own badge (0.73).
+                    if Library.isReviewed(trip) {
+                        TripStateBadge(state: .reviewed).fixedSize()
+                            .accessibilityIdentifier("trip-reviewed")
+                    } else if !trip.entries.isEmpty {
+                        Button("Review") { reviewing = true }
+                            .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: false)).focusEffectDisabled()
+                            .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                            .accessibilityIdentifier("trip-review")
                     }
-                }
-                Spacer()
-                // After the trip: what did I use, what did I miss. Once, then it says so —
-                // by the one rule every screen uses (the spec pass, 5 Oct 2026: a trip with
-                // only a review time looked reviewed on its card and offered Review here).
-                if Library.isReviewed(trip) {
-                    Text("Reviewed").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("trip-reviewed")
-                } else if !trip.entries.isEmpty {
-                    Button("Review") { reviewing = true }
-                        .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: false)).focusEffectDisabled()
+                    Button("Done") { dismiss() }
+                        .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                         .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
-                        .accessibilityIdentifier("trip-review")
+                        // Escape closes it, as Done does (the spec pass, 5 Oct 2026 — on the Mac,
+                        // and on an iPhone with a keyboard).
+                        .keyboardShortcut(.cancelAction)
+                        .accessibilityIdentifier("trip-done")
                 }
-                Button("Done") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
-                    // Escape closes it, as Done does (the spec pass, 5 Oct 2026 — on the Mac,
-                    // and on an iPhone with a keyboard).
-                    .keyboardShortcut(.cancelAction)
-                    .accessibilityIdentifier("trip-done")
+                Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
+                    .font(.system(.callout, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
+                    .accessibilityIdentifier("trip-progress")
+                    .accessibilityValue(allPacked ? "all packed" : "")
             }
             .padding(16)
             // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
@@ -211,11 +223,6 @@ struct TripScreen: View {
                 // has typed into it (found by the test, 2026-09-23).
                 VStack(alignment: .leading, spacing: 4) {
                 if placeFilter == nil {
-                // After the review: the trip's page in his Obsidian vault (0.70, spec 07 part 8).
-                if Library.isReviewed(trip) {
-                    VaultCard(tripId: trip.id).environmentObject(model)
-                        .padding(.top, 10).padding(.horizontal, 16)
-                }
                 // Check before you go (his ideas 4 and 5): first, and only when something needs him.
                 TripChecksCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
@@ -398,6 +405,13 @@ struct TripScreen: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.top, 12)
+                // After the review: the trip's page in his Obsidian vault (0.70, spec 07 part 8)
+                // — at the foot since 0.73, under Excel and Share and in their style (his ask,
+                // 12 Oct 2026; until then a card at the top). Only Delete comes after it.
+                if Library.isReviewed(trip) {
+                    VaultCard(tripId: trip.id).environmentObject(model)
+                        .padding(.horizontal, 16).padding(.top, 12)
+                }
                 // Last on the screen, quiet and red, and it asks first — his rule for
                 // removing anything. His two test trips had no way out (2026-09-26).
                 deleteTrip(trip)

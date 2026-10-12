@@ -14,6 +14,11 @@ import PackingLibrary
 /// open. A saved review asks for the page by itself (`saveReview`), on either device.
 /// The button is never grey (his rule): it always does something, and the line under it
 /// says what happened.
+///
+/// Where (0.73, his ask of 12 Oct 2026): at the foot of the trip, under Save as Excel and
+/// Share and in their style (`WideButtonLabel`) — until then a card of its own at the TOP
+/// of a reviewed trip, with a filled button. Its lines (where the page stands, the Mac's
+/// folder) sit small under the button, as Save as Excel's own line does.
 struct VaultCard: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
@@ -27,19 +32,12 @@ struct VaultCard: View {
         let waiting = trip.map(Library.isWaitingForVault) ?? false
         let written = model.library.vaultWritten(tripId: tripId)
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Obsidian").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .accessibilityIdentifier("trip-vault-title")
-                    status(waiting: waiting, written: written)
-                }
-                Spacer(minLength: 8)
-                Button { send() } label: {
-                    FieldButtonLabel(title: "Send to Obsidian", tint: AppSection.events.color)
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("trip-vault-send")
+            Button { send() } label: {
+                WideButtonLabel(title: "Send to Obsidian", tint: AppSection.events.color) { VaultMark() }
             }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("trip-vault-send")
+            status(waiting: waiting, written: written)
             #if os(macOS)
             if let name = shelf.folderName {
                 HStack(spacing: 6) {
@@ -60,9 +58,6 @@ struct VaultCard: View {
             }
             #endif
         }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("trip-vault")
         #if os(macOS)
@@ -74,7 +69,7 @@ struct VaultCard: View {
         #endif
     }
 
-    /// The line under "Obsidian": where the page stands. Each state has its own id, so a
+    /// The line under the button: where the page stands. Each state has its own id, so a
     /// test reads the state without reading the words.
     @ViewBuilder
     private func status(waiting: Bool, written: (file: String, at: String, beside: Bool)?) -> some View {
@@ -142,4 +137,15 @@ struct VaultCard: View {
         }
     }
     #endif
+}
+
+/// A stone, drawn — obsidian is one: a crystal's outline and the edges of its faces, for
+/// Send to Obsidian at the foot of a trip (0.73), beside Save as Excel's sheet and Share's
+/// box. Hand-drawn like every mark in the app, never the vault app's own logo.
+struct VaultMark: View {
+    var body: some View {
+        GridShape(d: "M12 3L18.5 8.5L15.5 20.5H8.5L5.5 8.5ZM5.5 8.5L12 12L18.5 8.5M12 12V20.5")
+            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+            .accessibilityHidden(true)
+    }
 }

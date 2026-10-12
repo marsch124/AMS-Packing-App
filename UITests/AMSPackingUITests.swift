@@ -10259,6 +10259,81 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "vault-after-review")
     }
 
+    // MARK: - The trip's header and its foot (0.73, his ask of 12 Oct 2026)
+
+    /// His picture of a reviewed trip (12 Oct 2026): the pen sat bare on the count's line
+    /// and did not read as a button, and "Reviewed" stood in grey words off Done's centre
+    /// line. Now the pen is a round button right after the NAME, on its line; "Reviewed"
+    /// is the Trips row's badge; the pen, the badge and Done share ONE centre line; the
+    /// count is under them. Everything is measured, so one red run names every fault.
+    func testTheTripsPenSitsBesideItsNameAndReviewedBesideDone() {
+        continueAfterFailure = true
+        let app = launch("-uiTestingReviewed")
+        openReviewedTrip(app)
+        let name = app.staticTexts["trip-name"], pen = app.buttons["trip-settings"]
+        let badge = app.staticTexts["trip-reviewed"], done = app.buttons["trip-done"]
+        let count = app.staticTexts["trip-progress"]
+        for (id, e) in [("trip-name", name), ("trip-settings", pen), ("trip-reviewed", badge),
+                        ("trip-done", done), ("trip-progress", count)] {
+            XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id) on the reviewed trip")
+        }
+        _ = waitUntil { self.settled(done) && self.settled(pen) }
+        shot(app, "trip-header-reviewed")
+        let n = name.frame, p = pen.frame, b = badge.frame, d = done.frame, c = count.frame
+        // The pen: on the name's FIRST line (a long name wraps), right after it, above the count.
+        XCTAssertTrue(p.midY > n.minY && p.midY <= n.minY + n.height / 2 + 1.5,
+                      "the pen is not on the name's line: pen \(p) vs name \(n)")
+        XCTAssertGreaterThanOrEqual(p.minX, n.maxX - 1, "the pen is not after the name: pen \(p) vs name \(n)")
+        XCTAssertLessThanOrEqual(p.minX - n.maxX, 16, "the pen is not beside the name: pen \(p) vs name \(n)")
+        XCTAssertLessThanOrEqual(p.maxY, c.minY + 1, "the pen is on the count's line: pen \(p) vs count \(c)")
+        // A round button: as wide as it is tall.
+        XCTAssertLessThanOrEqual(abs(p.width - p.height), 0.5, "the pen is not a round button: \(p)")
+        // Reviewed, Done and the pen on one centre line; Reviewed before Done.
+        let off = b.midY - d.midY
+        XCTAssertLessThanOrEqual(abs(off), 1.5, "Reviewed sits \(off) pt off Done's centre line (\(b) vs \(d))")
+        XCTAssertLessThanOrEqual(abs(p.midY - d.midY), 1.5,
+                                 "the pen sits \(p.midY - d.midY) pt off Done's centre line (\(p) vs \(d))")
+        XCTAssertLessThanOrEqual(b.maxX, d.minX, "Reviewed is not before Done: \(b) vs \(d)")
+        // The Trips row's badge, a capsule 22 tall — not bare words.
+        XCTAssertGreaterThanOrEqual(b.height, 21.5, "Reviewed is bare words, not the Trips row's badge: \(b)")
+    }
+
+    /// Send to Obsidian at the FOOT of a reviewed trip (his ask, 12 Oct 2026; until 0.73 a
+    /// card at the very top): under every line, under Save as Excel and Share, the same size
+    /// as Save as Excel and on its left edge — and only Delete trip after it.
+    func testSendToObsidianIsAtTheFootOfAReviewedTrip() {
+        continueAfterFailure = true
+        let app = launch("-uiTestingReviewed")
+        openReviewedTrip(app)
+        let send = app.buttons["trip-vault-send"], first = app.buttons["trip-line-0"]
+        XCTAssertTrue(send.waitForExistence(timeout: 5), "a reviewed trip offers Send to Obsidian")
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "the trip has no lines")
+        XCTAssertGreaterThan(send.frame.minY, first.frame.maxY,
+                             "Send to Obsidian is above the trip's lines: \(send.frame) vs \(first.frame)")
+        bringIntoView(app, send)
+        _ = waitUntil { self.settled(send) }
+        shot(app, "trip-foot-obsidian")
+        // The last line on the screen: the lowest of the lines now in the tree.
+        let lines = app.buttons.matching(NSPredicate(format: "identifier MATCHES %@", "trip-line-[0-9]+"))
+        var lowest = CGRect.null
+        for i in 0..<lines.count {
+            let f = lines.element(boundBy: i).frame
+            if lowest.isNull || f.maxY > lowest.maxY { lowest = f }
+        }
+        XCTAssertFalse(lowest.isNull, "no line of the trip is in sight at its foot")
+        let s = send.frame, excel = app.buttons["trip-excel"], share = app.buttons["trip-share"]
+        XCTAssertTrue(excel.exists && share.exists, "no Save as Excel or Share on the trip")
+        let e = excel.frame
+        XCTAssertGreaterThanOrEqual(s.minY, lowest.maxY, "Send to Obsidian is not under the last line: \(s) vs \(lowest)")
+        XCTAssertGreaterThanOrEqual(s.minY, max(e.maxY, share.frame.maxY),
+                                    "Send to Obsidian is not under Save as Excel and Share: \(s) vs \(e), \(share.frame)")
+        XCTAssertLessThanOrEqual(abs(s.height - e.height), 0.5, "Send to Obsidian is not as tall as Save as Excel: \(s) vs \(e)")
+        XCTAssertLessThanOrEqual(abs(s.minX - e.minX), 0.5, "Send to Obsidian does not start where Save as Excel does: \(s) vs \(e)")
+        let delete = app.buttons["trip-delete"]
+        XCTAssertTrue(delete.exists, "no Delete trip")
+        XCTAssertGreaterThanOrEqual(delete.frame.minY, s.maxY, "Delete trip is no longer last: \(delete.frame) vs \(s)")
+    }
+
     // MARK: - Reminders on a template (0.70, spec 07 part 12)
 
     /// A template keeps a list of reminders above its things (his idea, 7 Oct 2026): Add

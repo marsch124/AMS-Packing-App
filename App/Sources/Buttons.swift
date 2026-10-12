@@ -99,6 +99,28 @@ struct WideButtonLabel<Mark: View>: View {
     }
 }
 
+/// A drawn mark in a ring — a button that is ONLY a mark, and must still read as a
+/// button. The app's round icon button (the Reviewed fold on Trips, the ✕ over Take it
+/// off: a soft disc of the tint) with the outline of the header's outlined buttons
+/// (`HeaderButtonStyle`, unfilled: the tint at 10 % and a 1.4-pt ring of it), so it sits
+/// in their family. `Metrics.tap` across (36 on the iPhone, 26 on the Mac), the mark at
+/// `Metrics.glyph` (20 / 16) in the tint. First for the trip's pen (0.73, his ask of
+/// 12 Oct 2026: the bare pen did not read as an edit button).
+struct RoundIconLabel<Mark: View>: View {
+    let tint: Color
+    @ViewBuilder var mark: () -> Mark
+
+    var body: some View {
+        mark()
+            .frame(width: Metrics.glyph, height: Metrics.glyph)
+            .foregroundStyle(tint)
+            .frame(width: Metrics.tap, height: Metrics.tap)
+            .background(Circle().fill(tint.opacity(0.10)))
+            .overlay(Circle().stroke(tint, lineWidth: 1.4))
+            .contentShape(Circle())
+    }
+}
+
 /// A pen, drawn — for changing a trip. His words (tests C.3 and D.1): the gear
 /// "should be a pen or something like that".
 struct PenMark: View {
