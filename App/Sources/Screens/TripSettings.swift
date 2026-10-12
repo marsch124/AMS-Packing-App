@@ -349,10 +349,9 @@ struct TripSettingsDoor: View {
 
     var body: some View {
         Button { open = true } label: {
-            // A pen, not a gear (his tests C.3 and D.1): this CHANGES the trip.
-            PenMark().frame(width: 24, height: 24)
-                .foregroundStyle(AppSection.events.color)
-                .frame(width: 36, height: 34).contentShape(Rectangle())
+            // A pen, not a gear (his tests C.3 and D.1): this CHANGES the trip. In a ring
+            // since 0.73 (12 Oct 2026: the bare pen did not read as a button).
+            RoundIconLabel(tint: AppSection.events.color) { PenMark() }
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-settings")

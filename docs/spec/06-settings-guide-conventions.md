@@ -1260,7 +1260,9 @@ an unknown command used to end the drawing silently and the map pin on Trips was
 
 **Marks in use.** Chevron `M9 6l6 6-6 6` (doors, fold arrows — rotated 90° when open), cross `M6 6L18 18M18 6L6 18`
 (remove), `PenMark` (`M15.2 5.3L18.7 8.8L8.6 18.9L4.3 19.7L5.1 15.4ZM13 7.5L16.5 11M5.1 15.4L8.6 18.9`, Trip
-settings), `ShareMark` (a box with an arrow up), `ClearMark` (a muted disc with `M8.5 8.5L15.5 15.5M15.5 8.5L8.5 15.5`
+settings — since 0.73 in a ring, `RoundIconLabel`), `ShareMark` (a box with an arrow up), `VaultMark` (0.73, a stone:
+`M12 3L18.5 8.5L15.5 20.5H8.5L5.5 8.5ZM5.5 8.5L12 12L18.5 8.5M12 12V20.5`, line 1.8, Send to Obsidian — never the
+vault app's logo), `ClearMark` (a muted disc with `M8.5 8.5L15.5 15.5M15.5 8.5L8.5 15.5`
 cut out in card colour, line 2.2), the six section marks, 50 template icons (`TemplateIcons`, one stroke, round
 ends, 24-point box, only the commands SVGPath draws). Strokes are round-capped and round-joined, usually 1.8–2.4.
 Marks are `.accessibilityHidden(true)` where words already say it (Pen, Share, Clear, a template cover).
@@ -1310,9 +1312,15 @@ outstays the problem it was about"). Convention: the id is `<button id>-needs` (
 "needs" lines built by hand follow the same naming: `trip-create-needs`, `tripset-needs`, `tripset-again-needs`,
 `newlist-needs`, `onsite-bought-needs`, `onsite-note-needs`, `range-needs`.
 
-**`WideButtonLabel(title:, tint:, mark:)`** — the wide outlined buttons at the foot of a trip (Save as Excel, Share):
-a 22×22 drawn mark and the word (17 bold, scales to 80 %), tint colour, full width, min height 48, 8 % tint fill,
-1.4-pt tint border, radius 12.
+**`WideButtonLabel(title:, tint:, mark:)`** — the wide outlined buttons at the foot of a trip (Save as Excel, Share;
+since 0.73 Send to Obsidian on a reviewed trip, under them): a 22×22 drawn mark and the word (17 bold, scales to
+80 %), tint colour, full width, min height 48, 8 % tint fill, 1.4-pt tint border, radius 12.
+
+**`RoundIconLabel(tint:, mark:)`** (0.73) — a button that is ONLY a drawn mark and must still read as a button: a
+circle `Metrics.tap` across (36 on the iPhone, 26 on the Mac), the tint at 10 % inside a 1.4-pt ring of the tint —
+the outlined `HeaderButtonStyle`'s look, round — and the mark at `Metrics.glyph` (20 / 16) in the tint; the whole
+circle takes the tap. His ask of 12 Oct 2026: the trip's bare pen did not read as an edit button. Used by: the
+trip's pen (`trip-settings`, Trip settings — spec 03).
 
 **`.clearButton($text, id:)`** (`ClearButton` modifier) — the ✕ at the end of a search field; their field test
 (3 Oct 2026): "please add an X so that it's quick to delete all typed alphanumeric characters". It names the FIELD

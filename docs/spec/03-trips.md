@@ -813,7 +813,8 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
   Check before you go and the map write them; until then they followed the device ("Oct 3, 2026").
 - Right: the state badge (13 heavy, capsule, min height 22, id `trip-state`): **Planned** (muted on
   `Theme.line`), **Packing** (white on orange), **Ready** (white on green), **Reviewed** (muted on
-  `Theme.line`); under it "done/total" or "done/total · N set aside" (15 bold mono; green when Ready,
+  `Theme.line`) — ONE view, `TripStateBadge` (EventsScreen.swift), which the trip screen's header shows too
+  for Reviewed since 0.73; under it "done/total" or "done/total · N set aside" (15 bold mono; green when Ready,
   else muted).
 - Bottom edge: an 8 pt bar, `Theme.line` track, filled to done/total in the state colour (Planned
   and Reviewed muted, Packing orange, Ready green). Card corner 12, 1 pt line stroke.
@@ -896,20 +897,33 @@ screen shows an empty placeholder trip ("Untitled event", 0/0).
 
 ### What is on screen (top to bottom)
 
-**Header** (padding 16):
-- Trip name — 22 heavy ink, up to 2 lines, scales to 0.85 (the whole name, not "Weekend in the…"),
-  "Untitled event" when empty; id `trip-name`.
-- Under it, one line: the progress "done/total" or "done/total · N set aside" (16 bold mono; green when
-  all packed, else muted; id `trip-progress`; accessibility value "all packed" when all packed, else
-  ""), and the **pen** (Trip settings door: drawn pen 24 pt green in a 36×34 target, id
-  `trip-settings`, label "Trip settings").
-- Right: "Reviewed" (15 bold muted, id `trip-reviewed`) when `Library.isReviewed(trip)` (0.62: a trip with
-  only a review time, from the web app, offered Review again here); otherwise, if the trip
-  has lines, **Review** (outlined green, id `trip-review`) — offered at ANY time, before the trip too.
+**Header** (padding 16) — since 0.73 ONE centre line, then the count under it (his picture of a reviewed
+trip, 12 Oct 2026: the bare pen on the count's line did not read as a button, and "Reviewed" stood in grey
+words on the line's top, off Done's centre). An `HStack(alignment: .center, spacing: 8)`:
+- Trip name — Title 3 bold ink, up to 2 lines, scales to 0.85 (the whole name, not "Weekend in the…"),
+  "Untitled event" when empty; id `trip-name`; `layoutPriority(1)`, so it takes the line's room before the
+  space between. Its centre for the line is the middle of its FIRST line (`TripScreen.firstLineCentre`:
+  height less the distance between the first and last baselines, halved): a name on two lines keeps the pen,
+  the badge and Done on its first line, Done where the thumb expects it.
+- Right after it, 8 pt away, the **pen** (Trip settings door, `TripSettingsDoor`): a round button
+  (`RoundIconLabel`, Buttons.swift) — `Metrics.tap` across (36 on the iPhone, 26 on the Mac), green at 10 %
+  inside a 1.4-pt green ring (the outlined header buttons' look, round), the drawn pen at `Metrics.glyph`
+  (20 / 16) in green; id `trip-settings`, label "Trip settings". Until 0.73: a bare 24-pt pen in a 36×34
+  target, on the count's line.
+- Then the space, and at the right: the **Reviewed** badge when `Library.isReviewed(trip)` (0.62: a trip with
+  only a review time, from the web app, offered Review again here) — since 0.73 the Trips row's own badge,
+  `TripStateBadge(state: .reviewed)` (Footnote semibold muted on a `Theme.line` capsule, padding 10 sideways,
+  min height 22 — see `TripRow`), never squeezed (`fixedSize`), id `trip-reviewed` (a text); until 0.73
+  "Reviewed" in Subheadline semibold muted words. Otherwise, if the trip has lines, **Review** (outlined green,
+  id `trip-review`) — offered at ANY time, before the trip too.
   Then **Done** (filled green, id `trip-done`; **Escape** presses it — `.keyboardShortcut(.cancelAction)`,
-  ⌘. on an iPhone keyboard — 0.62). Both use `HeaderButtonStyle`, whose own font wins over the
+  ⌘. on an iPhone keyboard — 0.62). Both buttons use `HeaderButtonStyle`, whose own font wins over the
   one the call site sets — 17 pt bold since 0.62, the size the call sites ask for (16 until then; the same
-  everywhere in this area: Done, Cancel, Next, Close).
+  everywhere in this area: Done, Cancel, Next, Close). Badge (22) and Done (`Metrics.header`, 30 / 24) share
+  the line's centre.
+- Under the line, 2 pt away, at the left: the progress "done/total" or "done/total · N set aside" (Callout
+  semibold mono; green when all packed, else muted; id `trip-progress`; accessibility value "all packed" when
+  all packed, else "").
 
 **Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
 
@@ -942,8 +956,6 @@ everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the cho
   drop-down alone, as before. See "Pack by voice" below.
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
-0. **Obsidian** card (`VaultCard`, only on a REVIEWED trip — `Library.isReviewed`; 0.70, top padding 10) — see
-   "The trip's page in his vault".
 1. **Check before you go** card (only when something needs him) — own section below.
 2. **Weather card** (always) — own section below.
 3. **Bags card** (only when some bag has lines AND weight or a scale reading) — own section below.
@@ -970,7 +982,11 @@ everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the cho
 6. **Tick everything / Clear every tick** (`TickAllRow`) — own section.
 7. **Save as Excel** and **Share** side by side, equal width (ids `trip-excel`, `trip-share`) — own
    sections.
-8. **Delete trip** — small red button at the right, own section.
+8. **Send to Obsidian** (`VaultCard`, only on a REVIEWED trip — `Library.isReviewed`; padding 16 sideways, 12 on
+   top) — the whole width, in Save as Excel's style; see "The trip's page in his vault". At the top of the
+   scroll area, as a card, from 0.70 until 0.73 (his ask, 12 Oct 2026: to the very bottom, like Save as Excel).
+9. **Delete trip** — small red button at the right, own section; still LAST (his rule for removing anything),
+   so the only thing after Send to Obsidian.
 
 **Add bar** (fixed under the scroll area, padding h16 v10; `Theme.bg` behind it, transparent when all
 packed so the green reaches it):
@@ -1182,7 +1198,16 @@ Lights), `testAWholeSectionIsTickedInOnePress`, `testTheScreenSaysSoWhenEverythi
 (the button appears only after typing, "1/8", "Bought on site" on line 7), `testAChangeToAThingReachesATripStillAhead`,
 `testASetAsideLineIsNotPacked` (⊘ takes the tick, a set-aside line does not tick, ↻ brings it back unticked,
 a section with every line set aside has no `trip-group-0-all`), `testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen`
-(`trip-place-save-needs`), `testEscapeClosesTheTripsWindows`.
+(`trip-place-save-needs`), `testEscapeClosesTheTripsWindows`,
+`testTheTripsPenSitsBesideItsNameAndReviewedBesideDone` (0.73, `-uiTestingReviewed`, both devices: the pen's
+middle on the name's first line, after it (at most 16 pt away) and above the count; the pen round (as wide as
+tall, within 0.5); the badge, the pen and Done on ONE centre line (within 1.5 pt); the badge before Done and at
+least 21.5 tall; pictures `trip-header-reviewed`. Seen red on 0.72's header: "the pen is on the count's line",
+"the pen is not a round button" (36 wide, 34 tall), "Reviewed sits -6.0 pt off Done's centre line", "Reviewed is
+bare words, not the Trips row's badge"), `testSendToObsidianIsAtTheFootOfAReviewedTrip` (0.73: Send to Obsidian
+under the trip's first line, then — scrolled to — under the lowest line, under Save as Excel and Share, as tall
+as Save as Excel and on its left edge, with Delete trip under it; picture `trip-foot-obsidian`. Seen red with the
+card back at the top: "Send to Obsidian is above the trip's lines").
 Model: `CustomLineTests.testATypedThingJoinsTheTripAndSurvivesARegenerate`, `SetPlaceTests.testAPlaceSetOnTheTripReachesTheThingAndItsTwin`,
 `TripCardsTests.testEverythingDecidedIsPacked`, `OnTheTripTests.testABoughtOnSiteLineIsInHandMarkedAndKept`,
 `testTheStoredMarkKeepsItsFirstName`, `CountingTests.testProgress*`, `GroupingTests` (groupBy, container, category, storage).
@@ -1262,7 +1287,8 @@ place is not shown in the edit view", 0.40). Save in a bar at the bottom, always
 cloud test lost it" 2026-09-27). 0.67: the same three changes as Create new trip — Full trip | Quick under
 the name, the date picker always there (Clear dates instead of a Dates switch), Context per workout.
 
-**How it is reached and left.** The pen beside the trip's count (`trip-settings`) opens it as a sheet
+**How it is reached and left.** The pen beside the trip's name (`trip-settings`, a round button since 0.73;
+beside the count until then) opens it as a sheet
 (`TripSettingsDoor` owns the sheet because the trip screen already has one for the review). Left with
 **Cancel** (no change; **Escape** too, ⌘. on an iPhone keyboard — 0.62), **Save changes** (when nothing
 is missing), **Start it** (Start again), or a swipe down on the iPhone (= Cancel) — but only while
@@ -2043,12 +2069,22 @@ markers is never overwritten (the app's goes beside it as `<name> (AMS Packing).
 itself (front matter, sections, file names, escaping), the marks on the trip and the Mac's writing are in spec
 07 part 8; this is the card on the trip (0.70).
 
-**Where.** The trip screen's scroll area, FIRST (above Check before you go), only on a reviewed trip; padding
-16 sideways, 10 on top.
+**Where.** The FOOT of the trip screen's scroll area, only on a reviewed trip: under Save as Excel and Share,
+above Delete trip (still last — his rule for removing anything); padding 16 sideways, 12 on top. Since 0.73 (his
+ask, 12 Oct 2026: "Send to Obsidian" to the very bottom of the trip page, styled like Save as Excel); from 0.70 a
+card FIRST in the scroll area (above Check before you go), "Obsidian" on its left and a filled Send button at its
+right.
 
-### What is on screen (card: padding 14, corner 12, `Theme.card`, 1 pt `Theme.line` stroke; id `trip-vault`, children contained)
-- Left: **"Obsidian"** (Body semibold, ink; id `trip-vault-title`) and under it, 2 pt apart, ONE status line
-  (Footnote, muted, wraps), whose id says the state:
+### What is on screen (a column, 6 pt apart, no card of its own; id `trip-vault`, children contained)
+- **Send to Obsidian** — `WideButtonLabel`, exactly Save as Excel's: the whole width, `Metrics.tap` tall, Body
+  semibold green words beside a drawn mark (22 pt), green at 8 % inside a 1.4-pt green outline, corner 12; plain
+  button style, id `trip-vault-send`. The mark is `VaultMark` (VaultCard.swift): a stone — obsidian is one — a
+  crystal's outline and its faces' edges, drawn on the 24 grid with a 1.8-pt round stroke; never the vault
+  app's own logo. Never grey, never switched off (his rule). Until 0.73: a `FieldButtonLabel` (white on green,
+  Callout semibold, corner 8) at the right of the card, and the word **"Obsidian"** (Body semibold, ink; id
+  `trip-vault-title`, used by no test, gone since) at its left.
+- Under it, ONE status line (Footnote, muted, wraps — as `trip-excel-status` sits under Save as Excel), whose id
+  says the state:
   - iPhone: `trip-vault-status` "The Mac writes this trip's page into your vault." · `trip-vault-waiting`
     "Waiting for the Mac — it writes the page the next time it is open." (while `vaultWaiting` is set) ·
     `trip-vault-written` "Written by the Mac: <file> · 7 Oct 2026" (once written, nothing waiting).
@@ -2062,8 +2098,6 @@ itself (front matter, sections, file names, escaping), the marks on the trip and
     `trip-vault-written` says "Written beside your page, as <file> · <day> — your page has no AMS Packing markers, so
     it is left as it is." (iPhone: "Written by the Mac beside your page, as …").
   - The day is the device's day of the write, in fixed English words.
-- Right, 12 pt away: **Send to Obsidian** — `FieldButtonLabel` (Callout semibold, white on green, `Metrics.tap`
-  tall, corner 8), plain button style, id `trip-vault-send`. Never grey, never switched off (his rule).
 - Mac only, under them (6 pt): "Folder: <name>" (Footnote, muted, one line, cut in the middle; id
   `trip-vault-folder-name`) and **Change** (Footnote semibold, green words; id `trip-vault-folder`) — only
   once a folder is chosen.
@@ -2083,7 +2117,9 @@ itself (front matter, sections, file names, escaping), the marks on the trip and
 
 ### Tests
 UI `testOnTheIPhoneSendToObsidianWaitsForTheMac` (iPhone; `-uiTestingReviewed`), `testSendToObsidianWritesTheTripPageOnTheMac`
-(Mac, GitHub's), `testASavedReviewAsksForTheTripsPage` (both: iPhone waiting, Mac written at once). Model
+(Mac, GitHub's), `testASavedReviewAsksForTheTripsPage` (both: iPhone waiting, Mac written at once),
+`testSendToObsidianIsAtTheFootOfAReviewedTrip` (0.73, both: where it is and its size — see the trip screen's
+tests). Model
 `VaultPageTests` (20). **Not covered:** the system folder picker, Change, a folder that has gone away, night
 mode on the Mac (looked at on the iPhone only).
 
