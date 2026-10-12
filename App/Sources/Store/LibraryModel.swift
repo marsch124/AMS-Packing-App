@@ -229,6 +229,23 @@ extension LibraryModel {
            let url = URL(string: args[n + 1]) {
             model.open(url)
         }
+        #if os(iOS)
+        // The same link handed to the RUNNING app, each time it comes back to the front after
+        // being put away — as the Camera hands it over while a trip is open (0.73;
+        // `XCUIApplication.open` launches the app afresh instead, so it cannot play that). Not
+        // at launch: the first coming-to-the-front is the launch itself.
+        if AMSPackingApp.testing, let n = args.firstIndex(of: "-uiTestingOpenOnReturn"), n + 1 < args.count,
+           let url = URL(string: args[n + 1]) {
+            let center = NotificationCenter.default
+            center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in
+                var back: NSObjectProtocol?
+                back = center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { _ in
+                    if let back { center.removeObserver(back) }
+                    Task { @MainActor in model.open(url) }
+                }
+            }
+        }
+        #endif
         if AMSPackingApp.testing, args.contains("-openNextTrip"),
            let next = model.library.nextTrip(today: Today.local) {
             model.tripToOpen = next.id

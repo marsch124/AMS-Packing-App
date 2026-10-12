@@ -1698,6 +1698,48 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    /// Part 3's link wired to Pack by voice (spec 07 part 10): the Garage's code, read while
+    /// its trip is being packed AND already on screen — opened from Trips, then as Home's own
+    /// window — opens the trip on the Garage and the walk starts there by itself. Switched
+    /// off on the panel, the same code opens the trip and starts nothing. Opened as the Camera
+    /// opens it: the link handed to the RUNNING app as it comes back to the front
+    /// (`-uiTestingOpenOnReturn`; `XCUIApplication.open` would launch it afresh). The sample's
+    /// Garage has the code G4R; "soon": its trip starts in 2 days.
+    func testAPlacesCodeStartsPackByVoiceWithItsTripAlreadyOpen() throws {
+        #if os(macOS)
+        throw XCTSkip("Pack by voice is on the iPhone only")
+        #else
+        let app = launch("-uiTestingPlaces", ["soon", "-uiTestingVoice", "", "-uiTestingOpenOnReturn", "AMSPACKING://P/G4R"])
+        openSampleTrip(app)
+        XCTAssertFalse(appears(app, "voice-panel", timeout: 2), "Pack by voice started with no code read")
+        let thing = app.staticTexts["voice-current"], chip = app.buttons["trip-place-filter"]
+        // Read with the trip open from Trips, then with it open on Home (closed and opened again).
+        for (n, over) in ["Trips", "Home"].enumerated() {
+            XCUIDevice.shared.press(.home)
+            app.activate()
+            XCTAssertTrue(appears(app, "voice-panel", timeout: 10),
+                          "the place code did not start Pack by voice on its trip already open (from \(over))")
+            XCTAssertTrue(waitUntil { self.words(thing) == "Headlamp" }, "it did not start at the Garage's first thing: '\(words(thing))'")
+            XCTAssertEqual(words(app.staticTexts["voice-place"]), "Garage")
+            XCTAssertEqual(words(app.staticTexts["voice-said"]), "7 to pack. Garage. Headlamp.")
+            if n == 0 { shot(app, "voice-place-code-trip-open") }
+            tap(app, id: "voice-word-stop")
+            XCTAssertTrue(app.staticTexts["voice-summary"].waitForExistence(timeout: 5), "Stop did not end the walk")
+            if n == 1 { setSwitch(app, "voice-autostart", on: false) }
+            tap(app, id: "voice-done")
+            XCTAssertTrue(disappears(app, "voice-panel", timeout: 5), "Done did not close the panel")
+            XCTAssertTrue(chip.waitForExistence(timeout: 5), "the code did not open the trip on its place")
+            XCTAssertEqual(chip.value as? String, "Garage")
+        }
+        // Switched off: the code opens the trip on the Garage again, and nothing starts.
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the code did not open the trip")
+        XCTAssertFalse(appears(app, "voice-panel", timeout: 4), "switched off, the place code still started Pack by voice")
+        XCTAssertTrue(chip.waitForExistence(timeout: 5), "switched off, the code did not open the trip on its place")
+        #endif
+    }
+
     /// His rule (2026-09-26), the spec pass (5 Oct 2026): Set place's Save sat grey and
     /// switched off while its field was empty, and the review's Add did nothing at all
     /// with nothing typed. Both are there to press, and say what is missing. And in the

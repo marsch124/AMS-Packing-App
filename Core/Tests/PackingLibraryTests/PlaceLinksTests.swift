@@ -163,6 +163,40 @@ final class PlaceLinksTests: XCTestCase {
         XCTAssertEqual(lib.placeVisit(today: "2026-10-02"), .packing(tripId: next), "then packing for the next")
     }
 
+    /// Spec 07 part 10 (his yes of 7 Oct 2026): a place's code that opens a trip being packed
+    /// also starts Pack by voice (iPhone) — on that trip, at the place as his list spells it,
+    /// so the walk begins with that place's lines. Nothing else a code opens starts it, and
+    /// nor does Open on the place's page (not a code).
+    func testAPlacesCodeStartsPackByVoiceOnlyOnTheTripBeingPacked() {
+        var (lib, trip) = library(start: "2026-10-06", end: "2026-10-08")
+        let code = lib.givePlaceCode("garage")!
+        let o = PlaceOpening.of(code: code.lowercased(), in: lib, today: "2026-10-01")
+        XCTAssertEqual(o.packingTrip, trip, "the code did not open the trip being packed")
+        XCTAssertEqual(o.voiceStart, VoiceStartAt(tripId: trip, place: "Garage"),
+                       "the code opening the trip being packed does not start Pack by voice there")
+        let walk = VoiceWalk(trip: lib.trip(trip)!, startAt: o.voiceStart?.place)
+        XCTAssertEqual(walk.steps.prefix(2).map(\.name).sorted(), ["Helmet", "Pump"],
+                       "the walk does not begin with the code's place (however its lines spell it)")
+        XCTAssertEqual(walk.steps.map(\.name).count, 4, "the walk is not the whole trip")
+
+        let byName = PlaceOpening.of(place: "GARAGE", in: lib, today: "2026-10-01")
+        XCTAssertEqual(byName.packingTrip, trip, "Open on the place's page opens the same trip")
+        XCTAssertNil(byName.voiceStart, "Open on the place's page started Pack by voice: it is not a code")
+
+        let kept = PlaceOpening.of(code: code, in: lib, today: "2026-09-28")
+        XCTAssertEqual(kept.visit, .keptThere)
+        XCTAssertNil(kept.voiceStart, "everything kept there started Pack by voice")
+        XCTAssertNil(PlaceOpening.of(code: "ZZ9", in: lib, today: "2026-10-01").voiceStart,
+                     "a label whose place nothing knows started Pack by voice")
+
+        var (home, was) = library(start: "2026-09-26", end: "2026-09-30")
+        for line in home.trips[0].entries { _ = home.setChecked(true, tripId: was, entryId: line.id) }
+        let back = PlaceOpening.of(code: home.givePlaceCode("Garage")!, in: home, today: "2026-10-01")
+        XCTAssertEqual(back.visit, .goingBack(tripId: was))
+        XCTAssertNil(back.packingTrip)
+        XCTAssertNil(back.voiceStart, "what goes back to the place started Pack by voice")
+    }
+
     func testATripWithoutDatesNeverOpens() {
         let (lib, _) = library()
         XCTAssertEqual(lib.placeVisit(today: "2026-10-01"), .keptThere)

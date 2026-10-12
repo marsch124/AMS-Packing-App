@@ -207,3 +207,65 @@ extension Library {
             .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
     }
 }
+
+/// Where a place's link leads, decided once, as it opens (spec 07 part 3) — and whether it
+/// starts Pack by voice there (part 10). The screens act on it: `HomeScreen` for a link
+/// that came in, the place's page in Your choices for its Open.
+public struct PlaceOpening: Identifiable, Equatable, Sendable {
+    /// As his list spells it — or as the link said, when nothing knows that name.
+    public let place: String
+    /// Something knows the place (his list, a renamed place, a thing).
+    public let known: Bool
+    public let visit: Library.PlaceVisit
+    /// Opened by its printed code (a link that came in), not by Open on the place's page.
+    public let byCode: Bool
+    public var id: String { place }
+
+    public init(place: String, known: Bool, visit: Library.PlaceVisit, byCode: Bool = false) {
+        self.place = place
+        self.known = known
+        self.visit = visit
+        self.byCode = byCode
+    }
+
+    /// A label's code: the place it was given to, as his list spells it today.
+    public static func of(code: String, in library: Library, today: String) -> PlaceOpening {
+        guard let place = library.place(forCode: code) else {
+            return PlaceOpening(place: "", known: false, visit: .keptThere, byCode: true)
+        }
+        return PlaceOpening(place: place, known: true, visit: library.placeVisit(today: today), byCode: true)
+    }
+
+    /// A place by its name (Open, on the place's page in Your choices).
+    public static func of(place asked: String, in library: Library, today: String) -> PlaceOpening {
+        guard let place = library.placeNamed(asked) else {
+            return PlaceOpening(place: jsTrim(asked), known: false, visit: .keptThere)
+        }
+        return PlaceOpening(place: place, known: true, visit: library.placeVisit(today: today))
+    }
+
+    /// The trip a code opens on this place's lines — a trip being packed. Every other
+    /// case shows the place's own list (`PlaceScreen`).
+    public var packingTrip: String? {
+        if known, case .packing(let id) = visit { return id }
+        return nil
+    }
+
+    /// Pack by voice, started by the code itself (spec 07 part 10, his yes of 7 Oct 2026;
+    /// the iPhone only): on the trip the code opens, at this place. Only a CODE that opens
+    /// a trip being packed — nothing for what goes back there, for everything kept there,
+    /// for a label whose place is gone, or for Open on the place's page (not a code). The
+    /// iPhone then starts it unless he switched that off on the panel, or a walk is running
+    /// (`VoiceStarts`, `VoiceSortingRow`).
+    public var voiceStart: VoiceStartAt? {
+        guard byCode, let trip = packingTrip else { return nil }
+        return VoiceStartAt(tripId: trip, place: place)
+    }
+}
+
+/// Where a place's code starts Pack by voice: the trip, and the place the walk begins at
+/// (`VoiceWalk(trip:startAt:)`).
+public struct VoiceStartAt: Equatable, Sendable {
+    public let tripId: String
+    public let place: String
+}

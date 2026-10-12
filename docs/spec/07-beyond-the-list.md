@@ -43,7 +43,8 @@ there. Parts 7–10 are specified in full below (part 8 from the code since 0.70
    (up/down), remove (asks first; the things stay, with no section). Applied on Save; Cancel undoes. → spec 04/05.
 3. **Places opened by a code.** A place (Your choices → Places) can be shown as a printed square code; the iPhone's
    Camera opens it, and it opens the trip on that place's lines (or what goes back there on the way home, or
-   everything kept there). NFC stickers were planned and dropped the same day ("let's skip the NFC"). → spec 05/06.
+   everything kept there). NFC stickers were planned and dropped the same day ("let's skip the NFC"). On the iPhone
+   a code that opens a trip being packed also starts Pack by voice at that place (part 10). → spec 05/06.
 4. **Search finds notes.** Your things and Search match a thing's own Notes and the notes its templates keep for
    it; the matching note shows under the name. → spec 05.
 5. **Bag pockets and "Where is my …?"** Bags have pockets; a thing a usual pocket; a trip line the pocket it went
@@ -655,9 +656,22 @@ understands your five words on this iPhone itself, without the internet. Nothing
   (`tripId` nil = whichever trip screen is open or opens next). The row (`VoiceSortingRow`,
   `.onChange(of: starts.request, initial: true)`) takes the request, and — when the setting below is on and no
   walk is running — starts exactly as the button does (permissions, "nothing to pack" said under the row).
-  **To wire at the merge:** where part 3's link handler opens a trip on a place (`Library.PlaceVisit.packing(tripId:)`,
-  branch work/places069), add `#if os(iOS) VoiceStarts.shared.startVoiceAt(place: <the place's name>, tripId: <that
-  trip>) #endif` right after it sets the trip to open; nothing for `.goingBack` or `.keptThere`.
+  **Wired to part 3's link** (merged in 0.71; made reliable, and the decision moved into the model, in 0.73):
+  `HomeScreen`'s `onChange(of: model.placeToOpen)` asks `PlaceOpening.of(code:in:today:)`
+  (`PackingLibrary/PlaceLinks.swift`). When the code opens a trip being packed (`packingTrip`), it sets, inside
+  `whenFree`, `openedPlace` + `opened` (the trip, on the place) and `voiceAsked` = `PlaceOpening.voiceStart`
+  (`VoiceStartAt`: that trip, and the place as his list spells it today). Home's trip window, as it appears
+  (`TripScreen(...).onAppear` → `startVoiceAsked(on:)`), takes `voiceAsked` once (it is cleared there and when the
+  window closes) and — iPhone only, `#if os(iOS)`, and only for that trip with `openedPlace` set — calls
+  `VoiceStarts.shared.startVoiceAt(place:tripId:)`; that window's Sorting row then takes the request.
+  `voiceStart` is nil — nothing starts — for a code that shows what goes back there (`.goingBack`), everything kept
+  there (`.keptThere`), a label whose place is gone, and for **Open** on the place's page in Your choices (not a
+  code: `byCode` false; it opens the trip on the place and nothing more).
+  **Why not at once** (0.71–0.72 asked as the code came in): with that trip already on screen — opened from Trips,
+  or as Home's own window, which `whenFree` closes and opens again 0.8 s later — the trip window on its way out
+  took the request and lost it with itself: the trip opened on the place and no walk started (and on the device a
+  walk could begin in the closing window). Asked from the window that will stay, it always starts. The Mac has none
+  of this (no `VoiceStarts`): a code opens the trip on the place, as part 3 says.
 - **The setting** "Start Pack by voice when a place code opens a trip" — a switch on the panel (under Said/Heard
   while it runs, under the log when over; Subheadline, green tint; id `voice-autostart`), stored on this device
   (`ams.voice.autostart`), **on by default**. Off: a place code opens the trip as part 3 says and nothing starts.
@@ -802,6 +816,25 @@ What's new.
     by itself at Garage · Headlamp, "7 to pack. Garage. Headlamp.", `voice-autostart` on; Stop, switch it off, Done;
     away and back (the code again): no panel. Planted faults: the place ignored → "…'Toothbrush'"; the switch
     ignored → "switched off, a place code still started Pack by voice". Picture `voice-place-start`.
+  - The link itself (0.73, part 3's wiring): `testAPlacesCodeStartsPackByVoiceWithItsTripAlreadyOpen` —
+    `-uiTestingPlaces soon -uiTestingVoice "" -uiTestingOpenOnReturn AMSPACKING://P/G4R` (the link handed to the
+    RUNNING app each time it comes back to the front after being put away — as the Camera hands it over;
+    `XCUIApplication.open` launches the app afresh, so it cannot play a trip already open). The trip opened from
+    Trips, no panel; away and back: the panel opens by itself at Garage · Headlamp, "7 to pack. Garage.
+    Headlamp."; Stop, Done, the trip on the Garage (`trip-place-filter` "Garage"); away and back again (the trip
+    now Home's own window, closed and opened again): the same; Stop, switch `voice-autostart` off, Done; away and
+    back: the trip on the Garage, and no panel. Run day and night. Picture `voice-place-code-trip-open`. Planted
+    faults: the request made as the code comes in (0.71–0.72) → "the place code did not start Pack by voice on its
+    trip already open (from Trips)"; the switch ignored → "switched off, the place code still started Pack by
+    voice". And
+    `testAPlacesCodeOpensTheTripBeingPackedOnItsLines` (part 3, `-uiTestingOpen` at launch) sees the panel start at
+    the Garage on the iPhone before it checks the trip's place lines.
+  - Model: `PlaceLinksTests.testAPlacesCodeStartsPackByVoiceOnlyOnTheTripBeingPacked` — a code (any case) opening
+    the trip being packed → `voiceStart` = that trip at "Garage", and the walk from there begins with the
+    Garage's lines; Open on the place's page → the same trip, no `voiceStart`; everything kept there, an unknown
+    label, what goes back there → none. Planted faults: `byCode` ignored → "Open on the place's page started
+    Pack by voice: it is not a code"; a trip being unpacked counted → "what goes back to the place started Pack by
+    voice".
 - Not covered by any test (judged on his iPhone): the real voice and recognition, AirPods, a call cutting in,
   Packing put away, a narrow iPhone's "Voice".
 
@@ -809,7 +842,9 @@ What's new.
 
 - "Next" was made **later** (moves on, unticked); "done" and "yes" are **packed**. If he uses a word the list
   does not have, the log shows it — add it to `VoiceWord.accepted` (one place).
-- Wiring part 3's link to `VoiceStarts` is left for the merge (described above); until then only the tests play it.
+- ~~Wiring part 3's link to `VoiceStarts` is left for the merge~~ — **closed (0.73):** wired as described under
+  "A start place" above (`PlaceOpening.voiceStart`, asked once Home's trip window is up), held by a model test and
+  a UI test that hands the link to the running app with the trip already open.
 
 ## 12. Reminders on a template
 
