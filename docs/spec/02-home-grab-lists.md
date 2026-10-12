@@ -137,7 +137,8 @@ marks "On this device".
 - **A place's printed label** (0.69, spec 05 "A place's code"): `onOpenURL` hands any link that reaches the app
   to `LibraryModel.open(_:)`, which keeps only a place's link (`AMSPACKING://P/<code>`, any case) as
   `model.placeToOpen` (the code); `onChange(of: model.placeToOpen, initial: true)` switches to `.home`.
-  Under UI tests `-uiTestingOpen <link>` plays the same at launch (`LibraryModel.shared`).
+  Under UI tests `-uiTestingOpen <link>` plays the same at launch (`LibraryModel.shared`), and (iPhone, 0.73)
+  `-uiTestingOpenOnReturn <link>` each time the running app comes back to the front after being put away.
 - **A tab asked for from inside a window** (0.62): `onChange(of: model.tabToOpen)` switches to that
   section and sets it back to nil. Search sets it to `.actions` for a to-do (section 15).
 - **Under UI tests only**, when the app comes back to the front after being in the background
@@ -312,6 +313,11 @@ Open-requests from outside are handled in `HomeScreen` with `onChange(…, initi
 - `grabMenuOpen`: set back to `false` at once; the menu opens unless it is already up.
 - `placeToOpen` (0.69): set back to `nil` at once; `PlaceOpening.of(code:in:today:)` decides — the trip being
   packed opens on the place's lines, otherwise the place's page (also for a code nothing knows, which says so).
+  On the iPhone, opening that trip also asks Pack by voice to start at the place: `whenFree` sets `voiceAsked`
+  (`PlaceOpening.voiceStart`) with the trip, and the trip window's `onAppear` (`startVoiceAsked(on:)`) calls
+  `VoiceStarts.shared.startVoiceAt` once — so a trip already on screen (from Trips, or Home's own, closed and
+  opened again) still starts (0.73; spec 07 part 10). `voiceAsked` is cleared when it is used and when the window
+  closes.
 - Each opening goes through `whenFree` (0.62): if one of Home's own sheets is up (Search, a trip, Grab
   Lists, a grab list, the menu), all of them are closed first and the asked-for one opens **0.8 s** later;
   otherwise it opens at once. Until then a Shortcut or a tapped reminder that arrived while, say, Grab

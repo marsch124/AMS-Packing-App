@@ -367,7 +367,16 @@ A code nothing knows → the place's page saying so.
 (`onChange(of: placeToOpen)`) → `HomeScreen` clears it and, with `PlaceOpening.of(code:in:today:)`, either opens
 the trip (`openedPlace` + `opened`) or `placeShown` (the place's page) — through `whenFree`, which first closes any
 of Home's own windows (Search, Grab Lists, a trip, a grab list, the grab menu, a place's page). The Mac takes the
-same link.
+same link. `PlaceOpening` (where a link leads: `place`, `known`, `visit`, `byCode`, `packingTrip`) is the model's
+since 0.73 (`PackingLibrary/PlaceLinks.swift`; it was in `PlaceScreen.swift`).
+
+**Pack by voice from a code** (iPhone, 0.71; spec 07 part 10). When the code opens a trip being packed, the walk
+starts there by itself: `whenFree` keeps `PlaceOpening.voiceStart` (that trip, the place as his list spells it)
+with the trip it opens, and Home's trip window, once it is up, asks `VoiceStarts.shared.startVoiceAt` — never
+earlier, or a trip window on its way out (Home's own, or the Trips tab's) takes the request and loses it (0.71–0.72);
+its Sorting row takes it, unless "Start Pack by voice when a place code opens a trip" (`voice-autostart`, on the panel, on by default) is
+off or a walk is running. Nothing starts for what goes back there, everything kept there, an unknown label, or
+**Open** on the place's page (not a code). The Mac has no Pack by voice.
 
 **The place's page** (`PlaceScreen`, in `Screens/PlaceScreen.swift`; a sheet, container `place-detail`; Mac
 minimum 460 × 480):
@@ -429,14 +438,19 @@ that reads it places it at 9 mm:
 `testAPlaceIsFoundAsTheListSpellsItOrAsThingsSayIt`, `testThePackingWindowIsTheEarliestPackingStep`,
 `testATripBeingPackedOpensOnItsPlace`, `testTheSoonestTripIsTheOneBeingPacked`,
 `testBackFromATripShowsWhatGoesBackThere`, `testComingHomeComesBeforeTheNextTripsPacking`,
-`testATripWithoutDatesNeverOpens`, `testEverythingKeptThereIsAToZ`); `PlaceLabelTests`
+`testATripWithoutDatesNeverOpens`, `testEverythingKeptThereIsAToZ`,
+`testAPlacesCodeStartsPackByVoiceOnlyOnTheTripBeingPacked` — 0.73); `PlaceLabelTests`
 (`testTheLabelReadsBackAsThePlacesLink` — the PNG, as it is, read by Core Image's QR reader, gives exactly
 "AMSPACKING://P/G4R"; `testTheLabelIsAsTallAsTheTapePrintsAndMarked180Dots`;
 `testTheCodeIsTheSmallestSizeInWholeDots` — 21 squares, 3 dots each, every dot black or white, each 3 × 3 block
 one colour and equal to the code's square, 6 white dots to its left; `testTheFileIsNamedAfterThePlace`). UI
 `testAPlacesCodeOpensTheTripBeingPackedOnItsLines`, `testAPlacesCodeShowsWhatGoesBackAfterATrip` (the link handed
-to the app with `XCUIApplication.open`, as the Camera does), `testAPlacesCodeShowsEverythingKeptThereWhenNoTripIsBeingPacked`
-(lower-case link; a thing opens; an unknown code says so), `testEachPlaceHasACodeToPrintAndOpen` (spec 06 §2).
+to the app with `XCUIApplication.open`, as the Camera does — 🪤 on the iPhone simulator that LAUNCHES the app afresh
+(seen 12 Oct 2026), so it cannot play a link reaching a running app: `-uiTestingOpenOnReturn` does that), `testAPlacesCodeShowsEverythingKeptThereWhenNoTripIsBeingPacked`
+(lower-case link; a thing opens; an unknown code says so), `testEachPlaceHasACodeToPrintAndOpen` (spec 06 §2),
+`testAPlacesCodeStartsPackByVoiceWithItsTripAlreadyOpen` (iPhone, 0.73 — the link handed to the running app with
+its trip on screen — from Trips, then as Home's own window — starts Pack by voice at the Garage; switched off, it
+does not; spec 07 part 10).
 
 **Not covered by a test.** The Camera itself (no simulator has one) and Brother's app; the Mac's Save windows (no
 test can drive them); the labels' look on real tape.

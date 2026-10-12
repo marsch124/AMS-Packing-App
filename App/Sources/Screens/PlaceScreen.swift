@@ -11,40 +11,8 @@ import PackingLibrary
 // AMSPACKING://P/<the place's code> (`PlaceLink`). What it opens depends on the day
 // (`Library.placeVisit`): a trip being packed → that trip, only its lines from there;
 // back from a trip → what goes back there; otherwise everything kept there. The Mac
-// shows the same lists, from the place's page in Your choices (Open).
-
-/// Where a place's link leads, decided once, as it opens.
-struct PlaceOpening: Identifiable, Equatable {
-    /// As his list spells it — or as the link said, when nothing knows that name.
-    let place: String
-    /// Something knows the place (his list, a renamed place, a thing).
-    let known: Bool
-    let visit: Library.PlaceVisit
-    var id: String { place }
-
-    /// A label's code: the place it was given to, as his list spells it today.
-    static func of(code: String, in library: Library, today: String) -> PlaceOpening {
-        guard let place = library.place(forCode: code) else {
-            return PlaceOpening(place: "", known: false, visit: .keptThere)
-        }
-        return PlaceOpening(place: place, known: true, visit: library.placeVisit(today: today))
-    }
-
-    /// A place by its name (Open, on the place's page in Your choices).
-    static func of(place asked: String, in library: Library, today: String) -> PlaceOpening {
-        guard let place = library.placeNamed(asked) else {
-            return PlaceOpening(place: jsTrim(asked), known: false, visit: .keptThere)
-        }
-        return PlaceOpening(place: place, known: true, visit: library.placeVisit(today: today))
-    }
-
-    /// The trip a code opens on this place's lines — a trip being packed. Every other
-    /// case shows `PlaceScreen`.
-    var packingTrip: String? {
-        if known, case .packing(let id) = visit { return id }
-        return nil
-    }
-}
+// shows the same lists, from the place's page in Your choices (Open). Where a link leads
+// (and whether it starts Pack by voice, iPhone) is the model's: `PlaceOpening`.
 
 /// One place's list, when no trip is being packed: what goes back there from a trip,
 /// or everything kept there.

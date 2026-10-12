@@ -38,6 +38,8 @@ struct HomeScreen: View {
     @State private var opened: String?
     /// The place a code opened the trip on (0.69): the trip shows only its lines.
     @State private var openedPlace: String?
+    /// Pack by voice asked by that code (0.71, iPhone): started once THAT trip screen is up.
+    @State private var voiceAsked: VoiceStartAt?
     /// A place's list, opened by its code when no trip is being packed (0.69).
     @State private var placeShown: PlaceOpening?
     @State private var grab: GrabDefinition?
@@ -208,8 +210,9 @@ struct HomeScreen: View {
         }
         .headerOnTheMac { grabHeader }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
-        .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id; if $0 == nil { openedPlace = nil } })) { o in
+        .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id; if $0 == nil { openedPlace = nil; voiceAsked = nil } })) { o in
             TripScreen(tripId: o.id, place: openedPlace).environmentObject(model)
+                .onAppear { startVoiceAsked(on: o.id) }
         }
         .sheet(item: $placeShown) { PlaceScreen(opening: $0).environmentObject(model) }
         // A place's printed code, read by the Camera (0.69): a trip being packed opens on
@@ -219,11 +222,9 @@ struct HomeScreen: View {
             model.placeToOpen = nil
             let o = PlaceOpening.of(code: code, in: model.library, today: Today.local)
             if let trip = o.packingTrip {
-                whenFree { openedPlace = o.place; opened = trip }
-                // Pack by voice starts there by itself (0.71, his yes; off by its switch on the panel).
-                #if os(iOS)
-                VoiceStarts.shared.startVoiceAt(place: o.place, tripId: trip)
-                #endif
+                // Pack by voice starts there by itself (0.71, his yes; off by its switch on
+                // the panel) — asked once this trip screen is up (`startVoiceAsked`).
+                whenFree { openedPlace = o.place; opened = trip; voiceAsked = o.voiceStart }
             }
             else { whenFree { placeShown = o } }
         }
@@ -270,6 +271,17 @@ struct HomeScreen: View {
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("grab-lists")
         }
+    }
+
+    /// The code's Pack by voice, asked only now that Home's trip screen is up (spec 07 part
+    /// 10): asked at once, the trip screen still on its way out — Home's own, or the Trips
+    /// tab's when the code came in over it — took the request and lost it with itself.
+    private func startVoiceAsked(on trip: String) {
+        guard let v = voiceAsked else { return }
+        voiceAsked = nil
+        #if os(iOS)
+        if v.tripId == trip, openedPlace != nil { VoiceStarts.shared.startVoiceAt(place: v.place, tripId: v.tripId) }
+        #endif
     }
 
     /// Something asked from outside — a Shortcut, the Action button, a tapped packing

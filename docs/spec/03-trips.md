@@ -1166,7 +1166,9 @@ same happens nowhere else (a trip opened any other way shows every line).
 UI `testAPlacesCodeOpensTheTripBeingPackedOnItsLines` (`-uiTestingPlaces soon -uiTestingOpen AMSPACKING://P/G4R`:
 the trip opens, chip value "Garage", sorting From where, ONE heading "Garage", two lines on screen — Headlamp and
 Map — no add bar; the heading's tick-all → "2/…"; the chip → its own heading `trip-group-1-label` and the add bar
-come back).
+come back; on the iPhone the code first starts Pack by voice at the Garage, stopped and closed by the test).
+On the iPhone such a code also starts Pack by voice at the place — even with the trip already open (from Trips,
+or as Home's own window) (`testAPlacesCodeStartsPackByVoiceWithItsTripAlreadyOpen`; spec 07 part 10).
 
 ### Add a thing / Bought on site
 
@@ -1244,8 +1246,9 @@ least 9 times in 10 and beats tapping. **Specified in full in spec 07 part 10**;
 - Not on the Mac (no button; the code is iPhone-only).
 
 Tests: UI `testPackByVoiceWalksTheTripByTheWordsItHears`, `testPackByVoiceButtonsDoWhatTheWordsDo`,
-`testPackByVoiceSaysWhyItCannotStart`, `testPackByVoiceGoesOnceMoreOverWhatWasLeft`, `testAPlaceCodeStartsPackByVoiceAtThePlace`
-(iPhone; skipped on the Mac); model `VoiceWalkTests` (15). At the end, what was left for later is offered once more;
+`testPackByVoiceSaysWhyItCannotStart`, `testPackByVoiceGoesOnceMoreOverWhatWasLeft`, `testAPlaceCodeStartsPackByVoiceAtThePlace`,
+`testAPlacesCodeStartsPackByVoiceWithItsTripAlreadyOpen` (0.73, the real link) (iPhone; skipped on the Mac); model
+`VoiceWalkTests` (15), `PlaceLinksTests.testAPlacesCodeStartsPackByVoiceOnlyOnTheTripBeingPacked` (0.73). At the end, what was left for later is offered once more;
 a place opened by its printed code starts the walk there by itself (switch `voice-autostart`, on by default).
 
 ---
@@ -2518,7 +2521,8 @@ testABagWithNothingWeighedIsOnTheTrip, testWeatherGearCanBePackedAnyway, testATe
 testASharedListOfOneSaysOneThing, testASwipeDownKeepsWhatIsNotSavedYet (iPhone only) — and 0.67:
 testFullTripOrQuickIsChosenUnderTheName, testDatesAreAlwaysThereAndCanBeCleared, testEachWorkoutHasItsOwnContext
 — and 0.71 (iPhone only): testPackByVoiceWalksTheTripByTheWordsItHears, testPackByVoiceButtonsDoWhatTheWordsDo,
-testPackByVoiceSaysWhyItCannotStart, testPackByVoiceGoesOnceMoreOverWhatWasLeft, testAPlaceCodeStartsPackByVoiceAtThePlace.
+testPackByVoiceSaysWhyItCannotStart, testPackByVoiceGoesOnceMoreOverWhatWasLeft, testAPlaceCodeStartsPackByVoiceAtThePlace;
+0.73: testAPlacesCodeStartsPackByVoiceWithItsTripAlreadyOpen.
 — and 0.70: testOnTheIPhoneSendToObsidianWaitsForTheMac, testSendToObsidianWritesTheTripPageOnTheMac,
 testASavedReviewAsksForTheTripsPage.
 UI launch modes used: `-uiTesting` (sample), `-uiTestingChecks` (a plane trip "Sunny weeks" 20–34 days
@@ -2527,7 +2531,7 @@ out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passpo
 two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings),
 `-uiTestingWorkouts` (0.67: the sample plus a WET template Run — Trail shoes Outdoor, Treadmill towel Indoor,
 Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), with `-uiTesting`
-0.71's `-uiTestingVoice "<words, by commas>"` / `-uiTestingVoiceRefused` / `-uiTestingVoiceStartAt <place>` (Pack by voice's fake speech; under any
+0.71's `-uiTestingVoice "<words, by commas>"` / `-uiTestingVoiceRefused` / `-uiTestingVoiceStartAt <place>` (and 0.73's `-uiTestingOpenOnReturn <link>`, a place's link handed to the running app as it comes back to the front) (Pack by voice's fake speech; under any
 `-uiTesting…` launch the fake is used, so no test opens a microphone), `-uiTestingReviewed` (0.70: the
 sample's trip six to three days ago, everything ticked, the carry-on weighed 2.4 kg and photographed, a sun hat
 bought on site, "zip broken" on the rain jacket, the map not used, a power bank missed onto Hiking; reviewed

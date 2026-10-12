@@ -4,8 +4,8 @@ import UIKit
 
 /// "Start Pack by voice at this place" — the entry point for a place opened by its
 /// printed code (spec 07 parts 3 and 10; his yes of 7 Oct 2026: the code STARTS the walk
-/// by itself, at that place). Whoever opens a trip on a place calls
-/// `VoiceStarts.shared.startVoiceAt(place:tripId:)`; the trip's Sorting row
+/// by itself, at that place). The place's link (`HomeScreen`, with `PlaceOpening.voiceStart`,
+/// as it sets the trip to open) calls `VoiceStarts.shared.startVoiceAt(place:tripId:)`; the trip's Sorting row
 /// (`VoiceSortingRow`) takes the request when that trip is on screen — at once if it is
 /// open already — and starts the walk there, unless he switched "Start Pack by voice when
 /// a place code opens a trip" off on the panel (`autoStartKey`, on by default, per device).
