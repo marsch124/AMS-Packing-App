@@ -14,11 +14,11 @@ import PackingCore
 // home's tick, used up, a maintenance note).
 
 extension Library {
-    /// Coming up or under way, and not reviewed: what a change may still reach.
+    /// Coming up or under way, and not reviewed: what a change may still reach — the
+    /// Trips tab's own piles (`tripWhen`), so a trip is ahead here exactly when it is
+    /// not in Done there.
     func tripStillAhead(_ trip: TripEvent, today: String) -> Bool {
-        guard !Library.isReviewed(trip) else { return false }
-        let start = jsTrim(trip.startDate), end = jsTrim(trip.endDate).isEmpty ? start : jsTrim(trip.endDate)
-        return start.isEmpty || end >= today
+        Library.tripWhen(trip, today: today) != .been
     }
 
     /// Today as YYYY-MM-DD where he IS — the date every screen goes by (`Today.local` in

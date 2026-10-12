@@ -267,6 +267,31 @@ extension Library {
         return trip
     }
 
+    /// What a trip drafted with NO template ticked still needs before it is made (or
+    /// saved in Trip settings) — nil when it has something to pack.
+    ///
+    /// 0.73, his must-fix: Create new trip refused a short trip of his small
+    /// always-packed core alone ("Pick at least one template."), although a Full trip
+    /// brings every always-packed template, and its transport's kit, without a tick
+    /// (`listsForEvent`). So those alone are enough whenever they put a line on the trip;
+    /// a ticked template always is, as before. Only a trip that would have nothing to
+    /// pack at all is asked for one, in words that say why: Quick packs only what is
+    /// ticked; nothing is always packed yet; or nothing always packed fits this trip
+    /// (its season, transport or food rules every thing out). The lines are counted as
+    /// `createTrip` builds them.
+    public func templateMissing(_ draft: TripEvent) -> String? {
+        guard draft.activities.isEmpty else { return nil }
+        var trip = coerceEvent(draft)
+        trip.nights = nightsBetween(trip.startDate, trip.endDate) ?? 0
+        guard builtLines(trip).isEmpty else { return nil }
+        if trip.mode == "quick" { return "Pick a template \u{2014} Quick packs only the templates you tick." }
+        let anyAlways = templatesForTrips().contains { list in
+            list.role == Library.ALWAYS_PACKED_AREA && list.items.contains { !jsTrim($0.name).isEmpty && !$0.retired }
+        }
+        return anyAlways ? "Pick a template \u{2014} nothing always packed fits this trip."
+                         : "Pick a template \u{2014} nothing is always packed yet."
+    }
+
     /// The templates a trip can be built from: the tickable activities, in his
     /// order (Swim / Bike / Run…), grouped by his activity groups — and, last, every
     /// template with no activity area, under "Other templates" (group id "").

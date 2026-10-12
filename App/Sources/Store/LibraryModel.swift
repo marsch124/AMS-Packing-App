@@ -267,6 +267,8 @@ extension LibraryModel {
     ///  -uiTestingReviewed     → memory, the sample with its trip been and reviewed: a
     ///                           photo, a scale reading, a thing bought, a note, a missed
     ///                           thing — and no page asked for yet (Obsidian, 0.70)
+    ///  -uiTestingReviewedUndated → memory, the -uiTestingReviewed sample with its trip's
+    ///                           dates taken away (a reviewed trip goes to Done, 0.73)
     ///  -uiTestingReminders    → memory, the sample + two reminders on Hiking, its trip
     ///                           three days ahead (reminders on a template, 0.70)
     ///  -uiTesting             → memory, holding the invented sample library
@@ -331,6 +333,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingHealth") {
             return LibraryModel(store: MemoryStore(SampleLibrary.health().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingReviewedUndated") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.reviewedUndated().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingReviewed") {
             return LibraryModel(store: MemoryStore(SampleLibrary.reviewed().records()), usesICloud: false, sky: sky)

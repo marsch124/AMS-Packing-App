@@ -235,7 +235,8 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
 10. **Laundry switch** — see "Laundry" below; id prefix `trip-laundry`.
 11. **"Create trip"** button: 18 bold white on BLUE, full width, min height 52, corner 12, id
     `trip-create`. Never disabled, never grey.
-12. **Still-needed line** (only after a press with something missing), 15 bold red, centred, id
+12. **Still-needed line** (only after a press with something missing), 15 bold red, centred — every line of
+    it when it wraps (`multilineTextAlignment(.center)`, 0.73: two sentences often take two lines), id
     `trip-create-needs`.
 
 Pills (`Pills` view, shared with Trip settings): 15 pt, bold when picked / medium when not; picked =
@@ -250,17 +251,28 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
 
 ### Behaviour
 
-- **Still needed** (`needs()`): name blank (jsTrim) AND no template → "Give the trip a name and pick
-  at least one template."; name blank → "Give the trip a name."; no template → "Pick at least one
-  template."; else "" — and, after any of these, "Tap the trip's last day — the same day again for a
-  day trip." while only the first day is tapped (0.67: Create never makes a day trip by accident; the
-  grid tells Home through `onWaiting`). The line appears only after a press of Create; from then on it
-  follows every change of the name, the template pills or the grid, and disappears when nothing is
-  missing.
+- **Still needed** (`needs(flat)`), sentences joined by a space: name blank (jsTrim) → "Give the trip a
+  name."; then the template rule (`Library.templateMissing(draft)`, 0.73 — below); then "Tap the trip's
+  last day — the same day again for a day trip." while only the first day is tapped (0.67: Create never
+  makes a day trip by accident; the grid tells Home through `onWaiting`); else "". The line appears only
+  after a press of Create; from then on it follows every change of the name, the template pills, the
+  grid, Full trip | Quick, Transport, Season and Food (0.73: those decide whether Always packed alone has
+  something to pack), and disappears when nothing is missing.
+- **The template rule** (`Library.templateMissing(_ draft:)`, 0.73 — his must-fix: Create refused a short
+  trip of his small always-packed core alone with "Pick at least one template."). A ticked template is
+  always enough (nil). With NONE ticked, the draft is built as `createTrip` builds it (`coerceEvent`,
+  nights from the dates, `builtLines`): any line → nil — a Full trip brings every always-packed template
+  and its transport's kit without a tick, so those alone make the trip. Only a trip with nothing to pack
+  at all is asked for a template, in words that say why: Quick → "Pick a template — Quick packs only the
+  templates you tick."; an always-packed template holds a thing (named, not "Not in use") but none fits
+  this trip (season, transport or food rule it out) → "Pick a template — nothing always packed fits this
+  trip."; else → "Pick a template — nothing is always packed yet." With no name too, e.g. "Give the trip
+  a name. Pick a template — nothing is always packed yet." (Until 0.73: no template → "Pick at least one
+  template.", with no name "Give the trip a name and pick at least one template.")
 - **Create** with something missing: nothing is made; the line says what; a missing name focuses the
   name field.
-- **Create** with name + ≥1 template: a draft `newEvent(name: jsTrim(name), mode: quick ? "quick" :
-  "trip")` gets transport, season, catering, laundry, `extra.laundryNights = laundryNights`,
+- **Create** with nothing missing: the draft (`draft(flat)` — the same one `needs` asks about)
+  `newEvent(name: jsTrim(name), mode: quick ? "quick" : "trip")` gets transport, season, catering, laundry, `extra.laundryNights = laundryNights`,
   `activities` = the ticked template ids **in the order offered** (not tap order),
   `activityContexts` = an entry for EVERY ticked WET template (`WorkoutContexts.stored`: its picks in
   `CONTEXTS` order, Indoor, Outdoor, Race; nothing picked = an empty entry, which narrows nothing) —
@@ -288,7 +300,9 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   here uses the default tint (blue, `AppSection.home.color`); Trip settings passes green.
 
 **Model rule vs screen rule.** The model (`createTrip`) needs no template: a full ("trip") trip with
-no ticked template still gets the base and transport templates. The screen always requires one.
+no ticked template still gets the base and transport templates. Since 0.73 the screen agrees: it asks for
+a template only when the trip would have nothing to pack at all (`templateMissing`, above); until then it
+always required one.
 
 **Templates offered** (`Library.activityChoices()`): resolved templates with `role == ""` whose
 `group` is one of GA, WET, OE, grouped and ordered as above — then, last, every `role == ""` template
@@ -302,8 +316,9 @@ offered.
 trip (`listsForEvent`: all of them, in template order, before the transport template and the ticked ones; the first
 wins a name+bag clash); Quick leaves them all out. A template is moved into or out of Always packed on its page
 (spec 04, Activity area; `setTemplateArea`): moved out, it is offered here like any activity template and comes only
-when ticked; moved in, it is no longer offered. None always packed is allowed — the screen still asks for one ticked
-template. Trips already made keep their lines; their next Trip settings Save rebuilds them by the new roles. "Make a
+when ticked; moved in, it is no longer offered. None always packed is allowed. With something always packed, a Full
+trip needs no ticked template (0.73, `templateMissing`); with nothing always packed, Create asks for one ("Pick a
+template — nothing is always packed yet."). Trips already made keep their lines; their next Trip settings Save rebuilds them by the new roles. "Make a
 small core from this…" (spec 04 §14b) makes a new always-packed template from part of a big one and moves the big
 one out in one step. Tests: `TemplateFacesTests.testATemplateMovesIntoAndOutOfAlwaysPacked`, UI
 `testATemplateMovesOutOfAndIntoAlwaysPacked`.
@@ -316,9 +331,14 @@ Same view. On the Mac the screen column is at most 720 pt wide (`RootView`). The
 a sheet window.
 
 ### Tests
-UI: `testHomeBuildsATrip` (Create never greyed; early press says "Give the trip a name and pick at
-least one template.", then "Pick at least one template." after typing; the line goes; the trip opens
-with lines; it is listed as `trip-row-1`), `testDatesArePickedLikeBooking` (0.67: the grid open at once,
+UI: `testHomeBuildsATrip` (Create never greyed; early press says "Give the trip a name." — the sample's
+Common base is always packed, so no template is missing; the line goes once the name is typed; the trip opens
+with lines; it is listed as `trip-row-1`), `testAlwaysPackedAloneMakesATrip` (0.73: Trip settings saves the
+sample trip with Hiking unticked → 0/4, the Common base alone; Create with a name and Quick says "Pick a template
+— Quick packs only the templates you tick." and makes nothing; Full trip → the line goes and the trip opens at
+0/4 — red with the old rule planted in Trip settings: "Save with no template ticked was refused: 'Pick at least
+one template.'", and planted on Home only: "the line stayed on a Full trip that Always packed fills: 'Pick at
+least one template.'"), `testDatesArePickedLikeBooking` (0.67: the grid open at once,
 no field, "No dates"; first day → "Now tap the last day", last day → "<d> – <d> · 2 nights" with no OK; a
 tap after a range starts a new one, an earlier day becomes the first; Create with only the first day says
 "last day" and makes nothing; the last day tapped, the line goes and the trip keeps its dates — red with
@@ -342,7 +362,13 @@ Context: '0/7'"),
 `testLaundryCountsPerNightThingsFourNightsAtMost`, `testTheEditorsLeadWithTheirHeadings` (heading ids
 exist), `testATemplateWithNoActivityAreaGoesOnATrip` (a "No activity area" template is `trip-activity-2`,
 a Quick trip is made of it). Model: `CreateTripTests.testATripIsBuiltFromItsTemplatesAndTheBase`,
-`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder` (GA, WET, then "Other templates");
+`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder` (GA, WET, then "Other templates"),
+`testAlwaysPackedAloneIsEnoughForAFullTrip` (0.73: `templateMissing` — nothing always packed → "…nothing is
+always packed yet."; a base template → nil and the trip is its two things; `changeTrip` with every template
+unticked → rebuilt to the base alone; Quick → "…Quick packs only the templates you tick."; a ticked template →
+nil; a winter-only base on a summer trip → "…nothing always packed fits this trip.", on a winter trip nil — red
+with the old rule planted, `templateMissing` returning "Pick at least one template." for no ticked template:
+"a Full trip of Always packed alone was refused", "Save with no template ticked was refused");
 `WorkoutContextsTests` (PackingCore, 0.67: each workout narrowed by its own; the fallback to the trip's
 `contexts`; an empty entry narrows nothing; an entry for a non-WET template changes nothing; the JSON round
 trip, no key when empty, junk read as nothing; a shared file and link carry it) and
@@ -764,13 +790,17 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
    `events-pile-been`): heading `SectionTitle` (UPPER CASE 18 heavy, 0.8 kerning; Now in green, the
    others ink) with the count (18 heavy mono muted, id `events-pile-<x>-count`). A pile is shown when
    it holds trips; **Now is always shown when there is any trip**; an empty Now shows a dashed green
-   box "No trip under way today." (16 medium muted, min height 48, id `events-now-empty`).
+   box "No trip under way today." (16 medium muted, min height 48, id `events-now-empty`). A reviewed
+   trip is always in Done (0.73, see Pile), so Now and Coming up hold only trips still to finish.
 4. Each trip a `TripRow` button, id **`trip-row-<n>` where n is the trip's index in the WHOLE sorted
    list**, not within its pile.
 5. In Done: reviewed trips are folded under a toggle row — a 38 pt circle (14 % green) with a 22 pt
    chevron (rotates 90° when open), "Reviewed" (17 heavy) and the count (17 heavy mono muted); id
    `events-reviewed`, `.isSelected` when open. Starts folded every time the screen is built (not
-   remembered). Reviewed trips in Now or Coming up are NOT folded.
+   remembered). Every reviewed trip is here, whatever its dates (0.73 — until then a reviewed trip with no
+   dates, or today's or later ones, stayed unfolded in Coming up or Now, among his active trips). Inside
+   the fold the rows keep the whole list's order, so a reviewed trip without dates (sort rank 1) or with
+   dates still ahead (rank 0) comes before the past ones.
 6. When there is any trip: **Your year** and **All your trips** (below).
 
 ### `TripRow` (one trip)
@@ -796,8 +826,12 @@ raw value is "events"). A row opens the trip as a sheet; closing the trip return
 - **State**: `Library.isReviewed(trip)` (`status == "done"` or `reviewedAt` set — ONE rule for every
   screen since 0.62) → reviewed; else total > 0 and done == total →
   packed ("Ready"); else done > 0 or anything set aside → packing; else planned.
-- **Pile** (string comparison of YYYY-MM-DD with today): start > today → Coming up; start ≤ today ≤ end
-  (end = start when empty) → Now; no start → Coming up; else → Done.
+- **Pile** (`Library.tripWhen(trip, today:)`, 0.73 — ONE rule, also "still ahead" for a change to a
+  thing): **reviewed (`isReviewed`) → Done, whatever the dates** (his must-fix, 12 Oct 2026: a trip he
+  reviewed stayed among his active trips); else, string comparison of YYYY-MM-DD (trimmed) with today:
+  no start → Coming up; start > today → Coming up; start ≤ today ≤ end (end = start when empty) → Now;
+  else → Done. The countdown and the packing reminders already leave a reviewed trip out
+  (`stillToLeave`), as do the place codes and the door check.
 - **Weather** words: the forecast's `rangeLabel` when the trip has a forecast with days, "" if it
   contains "NaN".
 
@@ -824,10 +858,15 @@ UI: `testATickCountsAndStays` (Now pile with "0" and the empty box), `testEachTr
 (summary contains "trip", "Planned" → "Packing", the to-do chip opens To do),
 `testHomeBuildsATrip`, `testTheMapShowsWhereTheTripsWent` (All your trips heading, mini map value).
 Model: `TripCardsTests` (planned/coming up; one tick → packing and part; set aside counts as decided →
-packed; reviewed → been; today and the last day → now, the day after → been; open to-dos counted),
+packed; reviewed → been; today and the last day → now, the day after → been; open to-dos counted;
+0.73 `testAReviewedTripIsDoneWhateverItsDates`: reviewed undated / today / later → been and not still ahead,
+an undated trip not reviewed → coming up and still ahead, the pile and "still ahead" never disagree — red with
+the reviewed rule planted out of `tripWhen`: "the reviewed trip 'No dates' is not in Done"),
+UI 0.73 `testAReviewedTripWithoutDatesIsDone` (`-uiTestingReviewedUndated`: Done counts 1, no Coming up, the
+row folded until `events-reviewed` is tapped, then under it),
 `TripEventsTests.testSortEventsForListOrdersNearestUpcomingFirstThenUndatedThenPast`,
 `testSortEventsForListAnUnreadableStartDateCountsAsUndated`, `TravelYearTests` (all 4).
-**Not covered:** the Reviewed fold, "N set aside" on a row, the Done pile, the weather words on a row.
+**Not covered:** "N set aside" on a row, the weather words on a row.
 
 ### Traps and history
 - 🪤 Read a row's words through the ROW button: the Mac folds children into the button's label, the
@@ -1259,7 +1298,8 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   headings `…-title`), Laundry (`tripset-laundry`, `-says`, `-nights-*`).
 - "Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things
   no longer asked for go." (14 muted), a divider, and **Start a new trip from this one** (next section).
-- Bottom bar (top hairline, `Theme.bg`): the still-needed line (15 bold red, id `tripset-needs`) and
+- Bottom bar (top hairline, `Theme.bg`): the still-needed line (15 bold red, centred also when it wraps —
+  0.73, id `tripset-needs`) and
   **Save changes** (18 bold white on green, min height 52, id `tripset-save`), never disabled.
 
 ### Behaviour
@@ -1272,8 +1312,10 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   "Car"/"Summer"/"mixed"), weather anyway = `trip.weatherOn`; the trip's template ids this screen does
   not offer (a template deleted since, or the sender's templates on a trip someone sent) are noted
   (`unshown`). An undated trip's field says "Add dates"; its grid opens on this month.
-- **Still needed** (same words as Create new trip) is computed on Save; after that it follows the
-  template pills (not the name field).
+- **Still needed** (same words and the same template rule as Create new trip, `needs(flat)`: the trip as
+  Save would store it — `edited(&trip, flat)` — asked `Library.templateMissing`; 0.73: none ticked is fine
+  when Always packed or the transport kit puts a line on it) is computed on Save; after that it follows the
+  template pills, Full trip | Quick, Transport, Season, Food and Pack weather gear anyway (not the name field).
 - **Save**: nothing missing → `Library.changeTrip(id:)` with: name, place (trimmed; **a NEW place
   — compared trimmed — sets `destination` and clears `weather` and `geo`**, so the weather line looks
   the new place up), mode, `activities` = the ticked ids that are offered templates, in the order
@@ -1285,7 +1327,8 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   transport, season, catering, `weatherOn` (`WEATHER_CONDITION_IDS` order), laundry, `extra.laundryNights`,
   dates (no dates — never picked, or Clear dates — → both "").
   `changeTrip`: trims the name; refuses (nil, nothing changed) a blank name, or a QUICK trip with no
-  templates; `nights = nightsBetween ?? 0`; `entries = regenerated(trip)`; `updatedAt = now`; returns
+  templates (a Full trip with none is rebuilt from Always packed and the transport kit — the screen asks
+  first whether that packs anything, 0.73); `nights = nightsBetween ?? 0`; `entries = regenerated(trip)`; `updatedAt = now`; returns
   `TripRebuilt(added:removed:)` = line ids new / gone. The sheet then closes and the trip says what
   changed (`trip-rebuilt`).
 - **`Library.regenerated(trip)`** (the web app's `regenerateEntries`, with two fixes):
@@ -1320,7 +1363,8 @@ with "name" in the message; Cancel changes nothing), `testLaundryCountsPerNightT
 `testATripChecksTheCabinAndTheDatesBeforeYouGo` (Car via Trip settings removes cabin checks); 0.67:
 `testFullTripOrQuickIsChosenUnderTheName` (Quick shown; Full trip saved brings the common base, 0/4 → 0/7),
 `testDatesAreAlwaysThereAndCanBeCleared` (no `tripset-dates` switch; dates given and saved; Clear dates and
-saved → "No dates"), `testEachWorkoutHasItsOwnContext` (each workout's picks shown; Swim changed alone).
+saved → "No dates"), `testEachWorkoutHasItsOwnContext` (each workout's picks shown; Swim changed alone);
+0.73: `testAlwaysPackedAloneMakesATrip` (Hiking unticked and saved → rebuilt to the Common base alone, 0/7 → 0/4).
 Model: `WorkoutContextsLibraryTests` (a change of one workout's Context rebuilds 1 added / 1 removed),
 `ChangeTripTests.testAChangedTripRebuildsAndKeepsWhatHeDid` ((2 added, 1 removed), ticked and
 typed lines stay, name trimmed, nights 3, refusals),
@@ -1381,8 +1425,10 @@ weight, place, name — reaches the trips already made, but only where nothing h
 ### Behaviour
 `Library.followThing(id:today:)` runs after every `updateThing`, `renameThing` (and so after setPlace,
 Keep in Refine, cabin changes):
-- A trip is still ahead when not reviewed (`Library.isReviewed`) AND (undated, or its end — the start
-  when no end — ≥ today). `today` defaults to `Library.localToday()`, the date in the device's time zone
+- A trip is still ahead when the Trips tab does not put it in Done (`Library.tripWhen(…) != .been`, 0.73 —
+  one rule): not reviewed (`Library.isReviewed`) AND (undated, or its start after today, or its end — the
+  start when no end — ≥ today). (Until 0.73 its own copy of the rule; the one difference: a start after
+  today with an end before it — broken dates — was not ahead here.) `today` defaults to `Library.localToday()`, the date in the device's time zone
   as every screen goes by (0.62; it was the UTC date, so just after midnight in Sweden a trip that
   ended yesterday still took a change).
 - Only lines with that `sourceItemId` that are not ticked, not custom and not edited.
@@ -2385,7 +2431,8 @@ testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt; testATickCountsAndStays, testHo
 testDatesArePickedLikeBooking, testEveryRowShowsTheTickTheTripHolds, testASectionFoldsAndStaysFolded,
 testATripIsDeletedOnlyAfterAsking, testWorthALookRemovesAPhotoLeftBehind, testAPlaceIsSetFromTheTrip,
 testRefineOffersWhatTheReviewsFoundAndKeepAndDropSettleIt, testTheLoopShowsWhereATripStands,
-testATripsSettingsAreChangedAfterItIsMade, testANewTripStartsFromThisOne,
+testATripsSettingsAreChangedAfterItIsMade, testANewTripStartsFromThisOne, (0.73) testAlwaysPackedAloneMakesATrip,
+testAReviewedTripWithoutDatesIsDone,
 testLaundryCountsPerNightThingsFourNightsAtMost, testHomeCountsDownToTheNextTrip,
 testATripChecksTheCabinAndTheDatesBeforeYouGo, testABagSaysWhetherItGoesInTheCabin,
 testABagIsWeighedOnTheLuggageScale, testAShortcutOpensAGrabListOrTheNextTrip, testAPackedBagKeepsItsPhoto,
@@ -2423,7 +2470,9 @@ Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), with `
 `-uiTesting…` launch the fake is used, so no test opens a microphone), `-uiTestingReviewed` (0.70: the
 sample's trip six to three days ago, everything ticked, the carry-on weighed 2.4 kg and photographed, a sun hat
 bought on site, "zip broken" on the rain jacket, the map not used, a power bank missed onto Hiking; reviewed
-yesterday, no page asked for; `SampleLibrary.reviewed`), `-uiTestingVault <name>` / `-uiTestingVaultChosen`
+yesterday, no page asked for; `SampleLibrary.reviewed`), `-uiTestingReviewedUndated` (0.73: the same with
+the trip's dates taken away — a reviewed trip goes to Done whatever its dates; `SampleLibrary.reviewedUndated`),
+`-uiTestingVault <name>` / `-uiTestingVaultChosen`
 (0.70, Mac: a throwaway vault folder — spec 07 part 8), `-openNextTrip`. Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
 

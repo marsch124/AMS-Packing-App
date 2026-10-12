@@ -68,6 +68,32 @@ final class TripCardsTests: XCTestCase {
         XCTAssertEqual(card.when, .been)
     }
 
+    /// 0.73, his must-fix: a REVIEWED trip stayed among his active trips — the pile went by
+    /// the dates alone. Reviewed = Done (folded under Reviewed), whatever its dates: none,
+    /// today's or later ones. And "still ahead" (a change to a thing) goes by the same rule.
+    func testAReviewedTripIsDoneWhateverItsDates() {
+        var lib = library()
+        let undated = addTrip(&lib, "No dates", "", "")
+        let today = addTrip(&lib, "Today", "2026-10-01", "2026-10-03")
+        let later = addTrip(&lib, "Later", "2026-11-01", "2026-11-03")
+        let open = addTrip(&lib, "Not reviewed", "", "")
+        for id in [undated, today, later] { _ = lib.saveReview(tripId: id, unused: [], missed: [], when: nowISO()) }
+        let cards = lib.tripCards(today: "2026-10-01")
+        func card(_ id: String) -> Library.TripCard { cards.first { $0.id == id }! }
+        for id in [undated, today, later] {
+            XCTAssertEqual(card(id).state, .reviewed)
+            XCTAssertEqual(card(id).when, .been, "the reviewed trip '\(card(id).name)' is not in Done")
+            XCTAssertFalse(lib.tripStillAhead(lib.trip(id)!, today: "2026-10-01"), "a reviewed trip still takes a thing's change")
+        }
+        XCTAssertEqual(card(open).when, .comingUp, "an undated trip not reviewed is still ahead")
+        XCTAssertTrue(lib.tripStillAhead(lib.trip(open)!, today: "2026-10-01"))
+        // One rule: the Trips tab's pile and "still ahead" never disagree.
+        for c in cards {
+            XCTAssertEqual(c.when, Library.tripWhen(lib.trip(c.id)!, today: "2026-10-01"))
+            XCTAssertEqual(c.when != .been, lib.tripStillAhead(lib.trip(c.id)!, today: "2026-10-01"), c.name)
+        }
+    }
+
     func testATripHappeningTodayIsNow() {
         var lib = library()
         addTrip(&lib, "On it", "2026-10-01", "2026-10-04")

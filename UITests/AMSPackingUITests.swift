@@ -638,12 +638,13 @@ final class AMSPackingUITests: XCTestCase {
         tapVisible(app, create)
         let needs = app.staticTexts["trip-create-needs"]
         XCTAssertTrue(needs.waitForExistence(timeout: 5), "an early press said nothing about what is missing")
-        XCTAssertEqual(words(needs), "Give the trip a name and pick at least one template.")
-        XCTAssertNil(find(app, "trip-detail"), "a trip was made with nothing chosen")
+        // Only the name: the sample's Common base is always packed, so no template is
+        // missing (0.73 — `testAlwaysPackedAloneMakesATrip`).
+        XCTAssertEqual(words(needs), "Give the trip a name.")
+        XCTAssertNil(find(app, "trip-detail"), "a trip was made without a name")
         type("Test trip", into: field)
-        XCTAssertTrue(waitUntil { self.words(needs) == "Pick at least one template." }, "the hint did not follow: '\(words(needs))'")
+        XCTAssertTrue(waitUntil { !needs.exists }, "the hint stayed after everything was there: '\(words(needs))'")
         select(app, app.buttons["trip-activity-0"])
-        XCTAssertTrue(waitUntil { !needs.exists }, "the hint stayed after everything was there")
         tapVisible(app, create)
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the new trip did not open")
         let progress = app.staticTexts["trip-progress"]
@@ -656,6 +657,52 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-events"))
         XCTAssertTrue(app.buttons["trip-row-1"].waitForExistence(timeout: 5), "the new trip is not listed beside the sample one")
     }
+    /// 0.73, his must-fix: a short trip of his Always packed alone. Trip settings saves
+    /// the sample trip with its one template unticked — rebuilt from the always-packed
+    /// Common base (4 things); Create new trip makes a Full trip from a name alone, of
+    /// those 4; a Quick trip with nothing ticked would pack nothing and says so under
+    /// Create, and the line follows Full trip | Quick.
+    func testAlwaysPackedAloneMakesATrip() {
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample trip is not 0/7: '\(words(progress))'")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        let hiking = app.buttons["tripset-activity-0"]
+        XCTAssertTrue(waitUntil { self.isOn(hiking) }, "the trip's own template is not shown as on")
+        tapVisible(app, hiking)
+        XCTAssertTrue(waitUntil { !self.isOn(hiking) }, "the template did not untick")
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5),
+                      "Save with no template ticked was refused: '\(words(app.staticTexts["tripset-needs"]))'")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/4" }, "not rebuilt from Always packed alone: '\(words(progress))'")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        tab(app, "home")
+        XCTAssertTrue(appears(app, "screen-home"))
+        type("Short trip", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        select(app, app.buttons["trip-kind-quick"])
+        let create = app.buttons["trip-create"]
+        tapVisible(app, create)
+        let needs = app.staticTexts["trip-create-needs"]
+        XCTAssertTrue(waitUntil { self.words(needs) == "Pick a template \u{2014} Quick packs only the templates you tick." },
+                      "a Quick trip with nothing to pack did not say so: '\(words(needs))'")
+        XCTAssertNil(find(app, "trip-detail"), "a Quick trip with nothing to pack was made")
+        bringIntoView(app, needs)
+        shot(app, "home-create-needs-template")
+        select(app, app.buttons["trip-kind-full"])
+        XCTAssertTrue(waitUntil { !needs.exists }, "the line stayed on a Full trip that Always packed fills: '\(words(needs))'")
+        tapVisible(app, create)
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "a trip of Always packed alone was refused: '\(words(needs))'")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/4" }, "the trip is not the 4 always-packed things: '\(words(progress))'")
+    }
+
     /// The trip's dates, Booking.com's way — his example (2026-09-26): a month grid,
     /// tap the first day and then the last; a tap before the first starts again; and
     /// the trip made keeps the dates he picked. On Create new trip the grid is always
@@ -10500,6 +10547,24 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "events-reviewed")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+    }
+
+    /// 0.73, his must-fix: a trip he REVIEWED stayed among his active trips — the piles
+    /// went by the dates alone, so a reviewed trip with no dates sat in Coming up. Now it
+    /// is in Done, folded under Reviewed, and Coming up is not there at all.
+    func testAReviewedTripWithoutDatesIsDone() {
+        let app = launch("-uiTestingReviewedUndated")
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        XCTAssertTrue(app.staticTexts["events-pile-been-count"].waitForExistence(timeout: 5), "no Done pile")
+        XCTAssertEqual(words(app.staticTexts["events-pile-been-count"]), "1", "the reviewed trip is not counted in Done")
+        XCTAssertFalse(app.staticTexts["events-pile-comingUp-count"].exists, "a reviewed trip still sits in Coming up")
+        XCTAssertFalse(app.buttons["trip-row-0"].exists, "the reviewed trip is not folded away")
+        tap(app, id: "events-reviewed")
+        XCTAssertTrue(app.buttons["trip-row-0"].waitForExistence(timeout: 5), "the reviewed trip is not under the Reviewed fold")
+        XCTAssertGreaterThan(app.buttons["trip-row-0"].frame.minY, app.buttons["events-reviewed"].frame.maxY,
+                             "the trip is not under Reviewed")
+        shot(app, "events-reviewed-undated")
     }
 
     /// The iPhone does not write the page — the Mac does: Send to Obsidian on a reviewed

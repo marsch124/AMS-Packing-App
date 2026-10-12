@@ -109,7 +109,7 @@ struct TripSettingsScreen: View {
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
                               tones: choice.group.id == "WET" ? WorkoutTone.of : nil) { id in
                             if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
-                            if !stillNeeded.isEmpty { stillNeeded = needs() }
+                            if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
                         }
                         if choice.group.id == "WET" && anyWorkout {
                             WorkoutContexts(workouts: WorkoutContexts.ticked(choice.lists, activities, flat),
@@ -145,6 +145,7 @@ struct TripSettingsScreen: View {
                 if !stillNeeded.isEmpty {
                     Text(stillNeeded)
                         .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                        .multilineTextAlignment(.center)                // two sentences wrap (0.73): still centred
                         .frame(maxWidth: .infinity)
                         .accessibilityIdentifier("tripset-needs")
                 }
@@ -164,6 +165,11 @@ struct TripSettingsScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .onAppear(perform: load)
+        // Full trip | Quick, and the answers that rule things in or out, decide whether
+        // Always packed alone has something to pack (0.73): the line follows them.
+        .onChange(of: [quick ? "quick" : "trip", transport, season, catering, weatherOn.sorted().joined(separator: ",")]) { _, _ in
+            if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
+        }
         .interactiveDismissDisabled(loaded && snapshot() != opened)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("tripset-screen")
@@ -279,53 +285,56 @@ struct TripSettingsScreen: View {
          transport, season, catering, weatherOn.sorted().joined(separator: ","), leaveOut, leaveHome]
     }
 
-    private func needs() -> String {
-        let noName = jsTrim(name).isEmpty, noList = activities.isEmpty
-        if noName && noList { return "Give the trip a name and pick at least one template." }
-        if noName { return "Give the trip a name." }
-        if noList { return "Pick at least one template." }
-        return ""
+    /// What is still missing before Save, in the words of Create new trip — "" when
+    /// nothing. No template ticked is fine when Always packed (or the transport kit)
+    /// puts something on the trip as it would be saved (0.73, `Library.templateMissing`).
+    private func needs(_ flat: [PackList]) -> String {
+        var said: [String] = []
+        if jsTrim(name).isEmpty { said.append("Give the trip a name.") }
+        if var trip = model.library.trips.first(where: { $0.id == tripId }) {
+            edited(&trip, flat)
+            if let missing = model.library.templateMissing(trip) { said.append(missing) }
+        }
+        return said.joined(separator: " ")
     }
 
     private func save(_ flat: [PackList]) {
-        stillNeeded = needs()
+        stillNeeded = needs(flat)
         guard stillNeeded.isEmpty else { return }
-        let n = name, dated = hasDates, s = start, e = end, q = quick
+        var result: Library.TripRebuilt?
+        model.change { lib in result = lib.changeTrip(id: tripId) { edited(&$0, flat) } }
+        if let result { rebuilt(result) }
+        dismiss()
+    }
+
+    /// The screen's answers written onto the trip: what Save stores, and what `needs`
+    /// asks first whether it would pack anything.
+    private func edited(_ t: inout TripEvent, _ flat: [PackList]) {
         // The ticked ones in the order offered — then the trip's templates this screen
         // does not show, as they were (see `unshown`).
         let acts = flat.map(\.id).filter { activities.contains($0) } + unshown.filter { activities.contains($0) }
         // Each ticked workout its own; a template not shown here keeps its entry as it was.
         var perWorkout = WorkoutContexts.stored(acts, flat, workoutContexts)
         for id in unshown where activities.contains(id) { if let kept = storedContexts[id] { perWorkout[id] = kept } }
-        let ctx = WorkoutContexts.union(perWorkout)
-        let wx = WEATHER_CONDITION_IDS.filter { weatherOn.contains($0) }
-        let tr = transport, se = season, ca = catering, la = laundry, pl = jsTrim(place), ln = laundryNights
-        let lo = leaveOut, lh = leaveHome
-        var result: Library.TripRebuilt?
-        model.change { lib in
-            result = lib.changeTrip(id: tripId) { t in
-                t.name = n
-                // A NEW place: the old weather and map point were for somewhere else,
-                // so they go; the weather line looks the new place up.
-                if pl != jsTrim(t.destination) { t.destination = pl; t.weather = nil; t.geo = nil }
-                t.mode = q ? "quick" : "trip"
-                t.activities = acts
-                t.activityContexts = perWorkout
-                t.contexts = ctx
-                t.transport = tr
-                t.season = se
-                t.catering = ca
-                t.weatherOn = wx
-                t.laundry = la
-                t.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(ln))
-                t.startDate = dated ? HomeScreen.ymd(s) : ""
-                t.endDate = dated ? HomeScreen.ymd(max(s, e)) : ""
-                _ = Library.setLeaveTime(&t, lo, home: false)
-                _ = Library.setLeaveTime(&t, lh, home: true)
-            }
-        }
-        if let result { rebuilt(result) }
-        dismiss()
+        let pl = jsTrim(place)
+        t.name = name
+        // A NEW place: the old weather and map point were for somewhere else,
+        // so they go; the weather line looks the new place up.
+        if pl != jsTrim(t.destination) { t.destination = pl; t.weather = nil; t.geo = nil }
+        t.mode = quick ? "quick" : "trip"
+        t.activities = acts
+        t.activityContexts = perWorkout
+        t.contexts = WorkoutContexts.union(perWorkout)
+        t.transport = transport
+        t.season = season
+        t.catering = catering
+        t.weatherOn = WEATHER_CONDITION_IDS.filter { weatherOn.contains($0) }
+        t.laundry = laundry
+        t.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(laundryNights))
+        t.startDate = hasDates ? HomeScreen.ymd(start) : ""
+        t.endDate = hasDates ? HomeScreen.ymd(max(start, end)) : ""
+        _ = Library.setLeaveTime(&t, leaveOut, home: false)
+        _ = Library.setLeaveTime(&t, leaveHome, home: true)
     }
 }
 
