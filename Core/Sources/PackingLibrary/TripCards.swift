@@ -18,9 +18,26 @@ extension Library {
         case reviewed
     }
 
-    /// Which pile a trip belongs in, by its dates against today.
+    /// Which pile a trip belongs in: reviewed = done; else by its dates against today.
     public enum TripWhen: String, Sendable {
         case comingUp, now, been
+    }
+
+    /// Which pile a trip belongs in — ONE rule for the Trips tab and for "still ahead"
+    /// (a change to a thing reaching a trip, `tripStillAhead`); the countdown and the
+    /// packing reminders already leave a reviewed trip out (`stillToLeave`).
+    ///
+    /// 0.73, his must-fix: a trip he had REVIEWED stayed among his active trips. The
+    /// pile went by the dates alone, so a reviewed trip with no dates (or with today's
+    /// or later ones) sat in Coming up or Now. Reviewed means finished with: it goes to
+    /// Done, folded under Reviewed there, whatever its dates. Otherwise: no start date
+    /// → Coming up (still ahead); start after today → Coming up; start to end (end =
+    /// start when empty) holding today → Now; else Done. YYYY-MM-DD compared as strings.
+    public static func tripWhen(_ trip: TripEvent, today: String) -> TripWhen {
+        guard !isReviewed(trip) else { return .been }
+        let start = jsTrim(trip.startDate), end = jsTrim(trip.endDate).isEmpty ? start : jsTrim(trip.endDate)
+        if start.isEmpty || start > today { return .comingUp }
+        return end >= today ? .now : .been
     }
 
     public struct TripCard: Equatable, Sendable {
@@ -60,12 +77,7 @@ extension Library {
             else if p.done > 0 || p.aside > 0 { state = .packing }
             else { state = .planned }
 
-            let start = trip.startDate, end = trip.endDate.isEmpty ? trip.startDate : trip.endDate
-            let when: TripWhen
-            if !start.isEmpty, start > today { when = .comingUp }
-            else if !start.isEmpty, start <= today, end >= today { when = .now }
-            else if start.isEmpty { when = .comingUp }          // no dates yet: still ahead
-            else { when = .been }
+            let when = Library.tripWhen(trip, today: today)
 
             var weather = ""
             if let sky = deriveWeather(trip), !sky.days.isEmpty {

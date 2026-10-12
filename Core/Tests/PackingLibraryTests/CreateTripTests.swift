@@ -38,6 +38,54 @@ final class CreateTripTests: XCTestCase {
         XCTAssertTrue(trip.entries.contains { $0.name == "Headlamp" })
     }
 
+    /// 0.73, his must-fix: a short trip of Always packed alone. A Full trip with NO
+    /// template ticked is enough whenever Always packed puts something on it; the words
+    /// come only when there would be nothing to pack at all, and say why.
+    func testAlwaysPackedAloneIsEnoughForAFullTrip() {
+        var lib = LibraryTests.sample()
+        lib.trips = []
+        let draft = newEvent(name: "Short trip")             // a Full trip, nothing ticked
+        XCTAssertEqual(lib.templateMissing(draft), "Pick a template \u{2014} nothing is always packed yet.",
+                       "no always-packed template: a template is still needed")
+
+        var core = newList(name: "Small core", role: "base")
+        core.items = [newItem(name: "Passport"), newItem(name: "Toothbrush")]
+        lib.saveTemplate(core)
+        XCTAssertNil(lib.templateMissing(draft), "a Full trip of Always packed alone was refused")
+        let trip = lib.createTrip(draft)
+        XCTAssertEqual(trip.entries.map(\.name), ["Passport", "Toothbrush"], "the trip is not its always-packed things")
+
+        // Trip settings → Save with every template unticked: rebuilt from Always packed alone.
+        var hills = newEvent(name: "Hills")
+        hills.activities = [lib.templates.first { $0.name == "Hiking" }!.id]
+        let made = lib.createTrip(hills)
+        XCTAssertTrue(made.entries.contains { $0.name == "Spare batteries" })
+        var unticked = made
+        unticked.activities = []
+        XCTAssertNil(lib.templateMissing(unticked), "Save with no template ticked was refused")
+        XCTAssertNotNil(lib.changeTrip(id: made.id) { $0.activities = [] })
+        XCTAssertEqual(lib.trips.first { $0.id == made.id }?.entries.map(\.name), ["Passport", "Toothbrush"],
+                       "the rebuild did not come down to Always packed alone")
+
+        // Quick leaves Always packed out: nothing to pack, said so.
+        var quick = draft
+        quick.mode = "quick"
+        XCTAssertEqual(lib.templateMissing(quick), "Pick a template \u{2014} Quick packs only the templates you tick.")
+        // A ticked template is enough, as before — Quick or Full.
+        quick.activities = [lib.templates.first { $0.name == "Night run" }!.id]
+        XCTAssertNil(lib.templateMissing(quick))
+
+        // Always packed holds things, but none for THIS trip (winter only, on a summer trip).
+        var winter = LibraryTests.sample()
+        var cold = newList(name: "Cold core", role: "base")
+        cold.items = [newItem(name: "Ice spikes", seasons: ["Winter"])]
+        winter.saveTemplate(cold)
+        XCTAssertEqual(winter.templateMissing(draft), "Pick a template \u{2014} nothing always packed fits this trip.")
+        var snowy = draft
+        snowy.season = "Winter"
+        XCTAssertNil(winter.templateMissing(snowy), "a winter trip of Always packed alone was refused")
+    }
+
     func testTheChoicesAreHisGroupsInHisOrder() {
         var lib = LibraryTests.sample()
         var swim = newList(name: "Swim", group: "WET"); swim.items = [newItem(name: "Goggles")]

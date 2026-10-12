@@ -111,7 +111,7 @@ struct HomeScreen: View {
                         .overlay(RoundedRectangle(cornerRadius: 10)
                             .stroke(stillNeeded.contains("name") ? AppSection.actions.color : Color.clear, lineWidth: 2))
                         .focused($naming)
-                        .onChange(of: name) { _, _ in if !stillNeeded.isEmpty { stillNeeded = needs() } }
+                        .onChange(of: name) { _, _ in if !stillNeeded.isEmpty { stillNeeded = needs(flat) } }
                         .accessibilityIdentifier("trip-name")
 
                     // What KIND of trip, first, under the name — his ask (6 Oct 2026): "the
@@ -124,7 +124,7 @@ struct HomeScreen: View {
                     // Trip". First day, then last day, set at once; no day tapped = no dates.
                     DateRangePicker(start: $start, end: $end, dated: $hasDates, inline: true, grid: "trip-range") { waiting in
                         pickingEnd = waiting
-                        if !stillNeeded.isEmpty { stillNeeded = needs() }
+                        if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
                     }
                     // The door check (0.69): a time on a day needs the days.
                     if hasDates {
@@ -139,7 +139,7 @@ struct HomeScreen: View {
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
                               tones: choice.group.id == "WET" ? WorkoutTone.of : nil) { id in
                             if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
-                            if !stillNeeded.isEmpty { stillNeeded = needs() }
+                            if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
                         }
                         if choice.group.id == "WET" && anyWorkout {
                             WorkoutContexts(workouts: WorkoutContexts.ticked(choice.lists, activities, flat),
@@ -171,6 +171,7 @@ struct HomeScreen: View {
                     if !stillNeeded.isEmpty {
                         Text(stillNeeded)
                             .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                            .multilineTextAlignment(.center)            // two sentences wrap (0.73): still centred
                             .frame(maxWidth: .infinity)
                             .accessibilityIdentifier("trip-create-needs")
                     }
@@ -178,6 +179,11 @@ struct HomeScreen: View {
                 .padding(14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line, lineWidth: 1))
+                // Full trip | Quick, and the answers that rule things in or out, decide
+                // whether Always packed alone has something to pack (0.73): the line follows.
+                .onChange(of: [quick ? "quick" : "trip", transport, season, catering]) { _, _ in
+                    if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
+                }
 
                 // His marks on the Mac: the heading struck out and written down the
                 // SIDE instead, and Trips and Templates swapped over.
@@ -278,15 +284,16 @@ struct HomeScreen: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
     }
 
-    private var canCreate: Bool { !jsTrim(name).isEmpty && !activities.isEmpty && !pickingEnd }
-
     /// What is still missing before a trip can be made, in his words — "" when nothing.
-    private func needs() -> String {
-        let noName = jsTrim(name).isEmpty, noList = activities.isEmpty
+    ///
+    /// No template ticked is fine when Always packed (or the transport kit) puts
+    /// something on a Full trip — his short trip of the small core alone (0.73, his
+    /// must-fix: it said "Pick at least one template."). Only a trip with nothing to
+    /// pack at all is asked for one (`Library.templateMissing`).
+    private func needs(_ flat: [PackList]) -> String {
         var said: [String] = []
-        if noName && noList { said.append("Give the trip a name and pick at least one template.") }
-        else if noName { said.append("Give the trip a name.") }
-        else if noList { said.append("Pick at least one template.") }
+        if jsTrim(name).isEmpty { said.append("Give the trip a name.") }
+        if let missing = model.library.templateMissing(draft(flat)) { said.append(missing) }
         // Only the first day tapped: never a day trip by accident (the spec pass, 5 Oct
         // 2026 — a grid closed on its first day stored one).
         if pickingEnd { said.append("Tap the trip's last day \u{2014} the same day again for a day trip.") }
@@ -294,12 +301,24 @@ struct HomeScreen: View {
     }
 
     private func create(_ flat: [PackList]) {
-        guard canCreate else {
-            stillNeeded = needs()
+        let missing = needs(flat)
+        guard missing.isEmpty else {
+            stillNeeded = missing
             if jsTrim(name).isEmpty { naming = true }
             return
         }
         stillNeeded = ""
+        let made = draft(flat)
+        var stored: TripEvent?
+        model.change { stored = $0.createTrip(made) }
+        name = ""; activities = []; workoutContexts = [:]; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
+        leaveOut = ""; leaveHome = ""
+        opened = stored?.id
+    }
+
+    /// The trip Create makes from what the screen holds now — also what `needs` asks
+    /// whether it would pack anything.
+    private func draft(_ flat: [PackList]) -> TripEvent {
         var draft = newEvent(name: jsTrim(name), mode: quick ? "quick" : "trip")
         draft.transport = transport
         draft.season = season
@@ -315,11 +334,7 @@ struct HomeScreen: View {
             _ = Library.setLeaveTime(&draft, leaveOut, home: false)
             _ = Library.setLeaveTime(&draft, leaveHome, home: true)
         }
-        var made: TripEvent?
-        model.change { made = $0.createTrip(draft) }
-        name = ""; activities = []; workoutContexts = [:]; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
-        leaveOut = ""; leaveHome = ""
-        opened = made?.id
+        return draft
     }
 
     static func ymd(_ d: Date) -> String {

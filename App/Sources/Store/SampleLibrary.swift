@@ -245,6 +245,18 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The reviewed sample with its trip's dates taken away (`-uiTestingReviewedUndated`,
+    /// 0.73): a trip reviewed but undated belongs in Done, folded under Reviewed — it sat
+    /// in Coming up while the piles went by the dates alone.
+    static func reviewedUndated() -> Library {
+        var lib = reviewed()
+        guard !lib.trips.isEmpty else { return lib }
+        lib.trips[0].startDate = ""
+        lib.trips[0].endDate = ""
+        lib.trips[0].nights = 0
+        return lib
+    }
+
     /// The sample library with a photo nothing shows any more, from long ago — what a
     /// trip deleted before 0.59 left behind (`-uiTestingOldPhoto`).
     static func oldPhoto() -> Library {
