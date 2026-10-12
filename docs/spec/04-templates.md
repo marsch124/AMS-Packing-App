@@ -848,7 +848,11 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
      the thing's note>" when it has one, else "e.g. with the red filter" — so a blank field never looks as if the
      thing's note had gone.
   7. "Blank means the same as the thing itself, so a change to the thing still reaches this template." — 14 muted.
-  8. **"Only on some trips"** (band, `row-heading-some`), then "Leave these off and it always comes along. Pick one
+  8. **"Only on some trips"** (band, `row-heading-some`) — **since 0.73 each kind FOLLOWS the thing's own answer
+     (set on the thing's page, spec 05 item 7) unless this row sets its own** (spec 07 part 14): under each kind's
+     pills `row-<kind>-from` says "Same as the thing: Winter" (lit pills drawn "borrowed": outlined, not filled) or
+     "Own choice on this template. The thing says: Winter." with **Same as the thing** (`row-<kind>-same`) to go
+     back; a tap on a pill makes the kind this row's own, starting from what was shown. Then "Leave these off and it always comes along. Pick one
      or more and it comes only on trips that match — on this template." (15 medium muted, pulled 6 pt up), then
      four pill rows with a smaller heading each (`HeadingTitle`, 20 heavy violet after a 4 × 18 violet capsule),
      several choices each; this block's parts are 14 pt apart:
@@ -867,7 +871,8 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
 
 ### Behaviour
 - On appear the state is loaded from the **membership itself** (not the resolved row): bag = `m.container`, when =
-  `m.phase`, qty, note, section, seasons, contexts, transports, catering. A blank membership value selects the
+  `m.phase`, qty, note, section — and (0.73) seasons, contexts, transports, catering as the row's EFFECTIVE answers
+  (its own list when the kind is its own, else the thing's — spec 07 part 14). A blank membership value selects the
   "Same as the thing" / "No section" pill (and leaves How many / Note blank, showing the thing's own in grey). A
   stored When or section that is not among the rows ticks none, and is kept unchanged on Save; a stored bag that is
   not among them has its own ticked row (`row-bag-other`, 0.64) and is kept the same way. A stored
@@ -886,7 +891,9 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
     `note = jsTrim(note)` — **each stored as "" when it equals the thing's own** ("the same as the thing", so a
     later change to the thing reaches the row; the spec pass) — and the four condition lists: the app's own words
     **in the app's own order** (SEASONS, CONTEXTS, TRANSPORTS, CATERING order) "so the stored lists read the same
-    every time", then any stored word it does not know that is still switched on (`keptConditions`);
+    every time", then any stored word it does not know that is still switched on (`keptConditions`) — since 0.73
+    per kind: equal to the thing's answer → stored [] (follows the thing); empty while the thing has a limit →
+    [] plus the kind in the membership's `onlyAnyHere` (own "any"); else the list, own (spec 07 part 14, rules 4–5);
     `coerceMembership`. `weather`, `kit`, `itemType` and `order` are left as they were (no UI for them). Contexts
     stay stored on a non-WET template even though their pills are hidden there (and ignored there when a trip is
     built);
@@ -1150,7 +1157,7 @@ overrides), **TRIP LINE** (thing ↔ trip: a frozen copy).
 | `id` | — | Random id; the record key. |
 | `itemId` | — | The thing. |
 | `templateId` | — | The template; the record's `parent`. |
-| `seasons`, `contexts`, `transports`, `catering` | always comes (no restriction) | Any strings kept (not checked against the vocabularies); on resolve they **replace** the thing's own. |
+| `seasons`, `contexts`, `transports`, `catering` | (0.73) follows the THING's answer (its `only…` keys); the thing having none = always comes | Any strings kept (not checked against the vocabularies). Non-empty = this row's own answer. PackingCore's resolve copies them as they are; `Library.resolveOne` puts the thing's answer in where the row follows it (spec 07 part 14). |
 | `weather` | not conditional gear | Only `rain`, `cold`, `hot`, `wind`, `snow` kept. A tagged row is held back from a trip unless the trip forces that weather on. No UI here. |
 | `container` | the template's `defaultContainer`, then the thing's own bag | Non-string → "". |
 | `section` | no section | A section id of THIS template; no item default. Not carried between templates by id (only by name). Written by the row editor's Save (`saveRow`, §7), by Arrange (`moveRow`/`removeSection`, §13a) and, since 0.64, from the thing's page (`setThingSection`, below) — the first place only when the thing is on the template twice. An id that is not one of this template's sections reads as none everywhere (`groupItemsBySection`, `thingSection`) and is kept until something else is chosen. |
@@ -1160,7 +1167,7 @@ overrides), **TRIP LINE** (thing ↔ trip: a frozen copy).
 | `qty` | the thing's own qty | Text; a JSON number becomes JS number text ("3", "0.5", "1e+21"); 0 → "". |
 | `note` | the thing's own note | Text. |
 | `order` | — | Position on the template (a Double, never floored); non-finite or a numeric string → 0. |
-| `extra` | — | Unknown keys kept, `owner`/`realmId` dropped. |
+| `extra` | — | Unknown keys kept, `owner`/`realmId` dropped. (0.73) `onlyAnyHere`: the kinds ("seasons", "contexts", "transports", "catering") for which this row comes on ANY trip whatever the thing says (spec 07 part 14). |
 
 Field lists: `INTRINSIC_FIELDS` (name, swedish, category, charging, chargeType, liquid, restricted, perNight,
 consumable, shortList, weight, storage, packer, sub, photos, thumb, maintenance, stats, color, size, manufacturer,
@@ -1191,7 +1198,9 @@ Tests: `MembershipsTests` — `testCoerceMembershipNormalizesConditionsAndKeepsO
 - `resolveTemplateItems` / `resolveTemplate`: the template's memberships, **stable-sorted by `order`**, each joined
   to its thing (a membership whose thing is missing is skipped; a repeated catalogue id → the last wins); then
   `coerceList`.
-- `Library.resolveOne` does the same and stamps each row's `itemId` and `memId` (the web app's `resolveOne`). Views:
+- `Library.resolveOne` does the same and stamps each row's `itemId` and `memId` (the web app's `resolveOne`) — and
+  (0.73) makes each row's `seasons`/`contexts`/`transports`/`catering` its EFFECTIVE answer: the row's own list where
+  the kind is its own, else the thing's (`only…` keys; spec 07 part 14). Views:
   `resolved(_:)`, `resolvedTemplate(id:)`, `resolvedTemplates()` (all, **A–Z by name**), `thingsOnNoList()`.
 - 🪤 "The same item can sit on ONE template more than once … Whoever needs to tell the rows of a template apart keys
   them by MEMBERSHIP id, never by item id."
@@ -1226,7 +1235,11 @@ Takes an edited **resolved** template apart:
      resolved to before keeps what the place stored ("" stays "", a real exception stays one even when it equals
      the thing's); a changed or new value is stored only where it differs from the thing's own, else "". (Until the
      spec pass, 5 Oct 2026, putting a thing on a template — or any later save of it — copied the thing's note and
-     how-many into every row, and a change to the thing's note never reached them again.)
+     how-many into every row, and a change to the thing's note never reached them again.) (0.73) The same for
+     "Only on some trips", per kind: a row whose answer is unchanged from what it resolved to keeps exactly what it
+     stored (list and `onlyAnyHere`); a NEW row whose answer is empty or the thing's follows the thing; a changed one
+     equal to the thing's follows, empty while the thing has a limit is its own "any", else its own list — so the
+     thing's answers are never frozen onto its rows (spec 07 part 14).
 2. Memberships of this template not seen in this save are deleted. **Things are never deleted.**
 3. The shell is stored with `items = []`, coerced, `updatedAt = now` (added if new).
 

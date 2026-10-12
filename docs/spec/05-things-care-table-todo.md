@@ -1024,8 +1024,16 @@ apart; a field 6 pt under its heading):
         keeps its things (the same section, its name changed); a removed one's things stay on the template under no
         section; trips already made keep the headings they were made with, as after Arrange. The page holds them
         per template (`sectionEdits`), and forgets them when it moves to another thing (⌘↓, ⌘N: they were saved).
-7. "Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and
-    tap this thing." (`thing-tags-hint`, 15 medium muted).
+7. **Only on some trips** (0.73, spec 07 part 14 — his words, 10 Oct 2026: "if I have an item on five templates, I
+    need to change this in five places. Doesn't seem optimal."). Until 0.73 a grey line here said it was "set per
+    template: open the template and tap this thing" (`thing-tags-hint`, gone). Now the same block as a template's
+    row, as the THING's answer — every template it is on follows it unless that template's row sets its own: band
+    "Only on some trips" (`thing-heading-some`, Templates violet), the line `thing-some-hint`, pill rows Season
+    (`thing-seasons-<n>`), Context (`thing-contexts-<n>`, only while the thing is on a workout template or already has
+    a Context — "Context counts on workout templates only."), Transport (`thing-transports-<n>`), Food
+    (`thing-catering-<n>`); then `thing-some-own` naming the templates that set their own ("Set on the template
+    instead: Swim (Season)."). Stored on Save in the thing's `extra` keys `onlySeasons`, `onlyContexts`,
+    `onlyTransports`, `onlyCatering`.
 8. **Kept at home** — band (`thing-heading-kept`); since 0.64 CHOSEN, never typed (his word, 6 Oct 2026: "Can we
    turn Kept at home into a drop-down … so that we have a list to choose from? If we write it this way, it's a
    possibility that the naming convention skews"). The first drop-down, which the others copy — rebuilt on
