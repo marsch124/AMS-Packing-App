@@ -18,6 +18,12 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.74", date: "12 Oct 2026", title: "Pack by template",
+                new: ["Sorting \u{2192} Template: the trip's lines under the templates they come from, so you can pack Bike, Run or Golf on its own. A thing on two templates shows under both; one tick ticks it everywhere.",
+                      "Each line shows the small violet icon of its template just before the bag. Hover on the Mac for the names.",
+                      "40 new template icons, 90 in all, grouped under six headings in the picker \u{2014} among them a lounger under a parasol for On the beach, which a beach template now gets suggested."],
+                changed: ["The Bags card is folded to one line \u{2014} the total and how many are over \u{2014} until you tap it.",
+                          "Sorting sits right above the packing list."]),
         Release(version: "0.73", date: "12 Oct 2026", title: "Set it once",
                 new: ["\u{201C}Only on some trips\u{201D} is now on a thing's own page too: set Winter once on the base layer and every template it is on follows. A template can still choose its own, and \u{201C}Same as the thing\u{201D} puts it back.",
                       "\u{201C}Where is my \u{2026}?\u{201D} knows your kits: \u{201C}In the Camp pouch, in the Day pack (front pocket).\u{201D} Taken out of its kit, it says so.",
