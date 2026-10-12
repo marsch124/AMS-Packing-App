@@ -791,7 +791,7 @@ no entry shows no marker anywhere (and fails the test).
    away; Your year; All your trips with the map; the pin opens Where you have been (pins with counts, line oldest
    first, card per place; a trip joins as soon as it has a place). (3 lines.)
 6. **Your templates** (Templates mark): templates are the building blocks, in activity areas (GA, WET…); each has
-   an icon (50 drawn ones, or Letter); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
+   an icon (the one its name suggests — a beach template gets the lounger under its parasol — or one of 90 drawn ones under six headings, or Letter; 50 until 0.74); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
    stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
    Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
    folding in the picker (Fold all / Unfold all, counts, search opens
