@@ -646,11 +646,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (72 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (73 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.73 | 12 Oct 2026 | Set it once | N4 C5 F1 | Only on some trips on the thing (OnlySomeTrips, chapter 07 part 14); Where is my … names the kit (Pockets); a place's code starts Pack by voice on its trip already open (PlaceOpening.voiceStart); reviewed trips keep their kits (kitThen); a full trip from Always packed alone (templateMissing); reviewed → Done (tripWhen); trip header pen/badge, Send to Obsidian at the foot; first owner / pocket / reminder When inside their lists; Mac Tab through a kit; weather reach 15 days + truthful refusals (ForecastAsk) |
 | 0.72 | 8 Oct 2026 | Drag only on the iPhone | C2 | ReorderArrows.shown false on the iPhone; grips on pockets, reminders, grab-list editing, Home's grab-list order and the table's Columns; ↑↓ Mac only |
 | 0.71 | 8 Oct 2026 | A small core, a big kit you tick | N1 C1 | Activity area can be Always packed (and back); Make a small core from this… with Paste a list (indented lines = kits), a kept copy first (SmallCore.swift, SmallCoreSheet.swift; spec 04 §14b) |
 | 0.70 | 8 Oct 2026 | Drag to reorder | N1 C1 | a grip on every reorderable row (drop-downs and Your choices; Reorder.swift), template names violet in Your things (ThingDetailLine) |

@@ -18,6 +18,17 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.73", date: "12 Oct 2026", title: "Set it once",
+                new: ["\u{201C}Only on some trips\u{201D} is now on a thing's own page too: set Winter once on the base layer and every template it is on follows. A template can still choose its own, and \u{201C}Same as the thing\u{201D} puts it back.",
+                      "\u{201C}Where is my \u{2026}?\u{201D} knows your kits: \u{201C}In the Camp pouch, in the Day pack (front pocket).\u{201D} Taken out of its kit, it says so.",
+                      "Point the iPhone at a place's code during a trip and you can pack that place hands-free.",
+                      "A reviewed trip keeps what was inside each kit at the time."],
+                changed: ["A full trip can be made from Always packed alone \u{2014} no template needs ticking. The message under Create now only appears when there is nothing to pack, and says why.",
+                          "A reviewed trip always moves to Done, folded under Reviewed, whatever its dates.",
+                          "The trip's pen is a round button beside its name; Reviewed is the same badge as in the Trips list, on one line with Done; Send to Obsidian sits at the foot of the trip, like Save as Excel.",
+                          "Whose it is, a bag's Pocket and a reminder's When can all get their first entry, or be changed, right inside the list.",
+                          "On the Mac, Tab also walks through the things inside a kit."],
+                fixed: ["The weather asked one day too far ahead and then said to check the connection. It now asks only for days the forecast covers, and says plainly when there is no forecast yet."]),
         Release(version: "0.72", date: "8 Oct 2026", title: "Drag only on the iPhone",
                 changed: ["On the iPhone you move things in your lists by dragging only: hold a row's grip \u{2261} and drag it. The arrows are gone there, so long names stay on one line. The Mac keeps its arrows.",
                           "A bag's pockets, a template's reminders, a grab list's things while you edit it, the order of your grab lists on Home and the table's columns all have the grip \u{2261} too."]),
