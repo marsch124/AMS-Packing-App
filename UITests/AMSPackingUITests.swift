@@ -10337,10 +10337,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
     }
 
-    private func openKitTrip(_ app: XCUIApplication) {
+    /// Opens trip row `row` of the Trips tab (its index in the whole sorted list). Since 0.73
+    /// a reviewed trip is in Done, folded under Reviewed whatever its dates, so the fold is
+    /// opened first when the row is not on the screen (found when 0.73 was joined).
+    private func openKitTrip(_ app: XCUIApplication, row: Int = 0) {
         tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
-        app.buttons["trip-row-0"].tap()
+        let fold = app.buttons["events-reviewed"]
+        if !app.buttons["trip-row-\(row)"].waitForExistence(timeout: 2), fold.exists, !fold.isSelected { fold.tap() }
+        app.buttons["trip-row-\(row)"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
     }
 
@@ -10500,7 +10505,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         tap(app, id: "things-done")
 
-        // The reviewed trip: what was inside then.
+        // The reviewed trip: what was inside then (still row 0 — a row's number is its place
+        // in the date order — but now shown in Done, under the Reviewed fold).
         openKitTrip(app)
         XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-kit"), "no Camp pouch line")
         let pouch = app.buttons["trip-line-7"]
