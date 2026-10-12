@@ -433,7 +433,7 @@ is on screen."
 - **Not covered:** tone colours, the initial letter, the runner fallback for unknown icons, the
   accessibility label being the title.
 
-**Template icons are not used here.** The 50 template icons (`TemplateIcons.swift`,
+**Template icons are not used here.** The 90 template icons (`TemplateIcons.swift`, `PackingLibrary/TemplateIconCatalog.swift`,
 `PackingLibrary/TemplateIcon.swift`) belong to templates only. The grab tiles, the grab screen header,
 the Grab Lists rows and the menu all use `GrabDoodle`. Template icons appear on Your templates and in
 Check before you go, which are other files.

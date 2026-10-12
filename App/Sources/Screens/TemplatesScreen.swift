@@ -250,9 +250,10 @@ struct CoverDoor: View {
     }
 }
 
-/// Choose a template's icon: the 50 drawn icons in rows, the one it has now
-/// ringed; "Suggested" goes back to the icon its name suggests, "Letter" shows
-/// the first letter instead.
+/// Choose a template's icon: the 90 drawn icons in rows under their headings
+/// (Travel, Outdoors, Sport, Beach and summer, City, food and fun, Everyday — 0.74),
+/// the one it has now ringed; "Suggested" goes back to the icon its name suggests,
+/// "Letter" shows the first letter instead.
 struct IconPickerScreen: View {
     let templateId: String
     @EnvironmentObject var model: LibraryModel
@@ -264,9 +265,6 @@ struct IconPickerScreen: View {
         let now = Library.icon(of: list)
         let chosen = model.library.chosenIcon(templateId: templateId)
         let tint = Color(hexString: Library.coverColour(list))
-        let rows = stride(from: 0, to: TemplateIcons.all.count, by: columns).map {
-            Array(TemplateIcons.all[$0..<min($0 + columns, TemplateIcons.all.count)])
-        }
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Cover(list: list, size: 40)
@@ -291,16 +289,25 @@ struct IconPickerScreen: View {
                             Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold))
                         } pick: { pick(Library.letterIcon) }
                     }
-                    SectionTitle(title: "All icons")
-                    // Plain rows, not a lazy grid (the Mac builds only what is on screen).
-                    ForEach(rows.indices, id: \.self) { r in
-                        HStack(spacing: 10) {
-                            ForEach(rows[r]) { icon in
-                                choice(title: icon.label, on: chosen != nil && now == icon.key, id: "icon-\(icon.key)", tint: tint) {
-                                    IconMark(path: icon.path, size: 30)
-                                } pick: { pick(icon.key) }
+                    // One heading per group (0.74: 90 icons are too many for one block).
+                    ForEach(TemplateIcons.grouped, id: \.group) { section in
+                        SectionTitle(title: section.group.title, id: "icon-group-\(section.group.rawValue)")
+                        // Plain rows, not a lazy grid (the Mac builds only what is on screen).
+                        let rows = stride(from: 0, to: section.icons.count, by: columns).map {
+                            Array(section.icons[$0..<min($0 + columns, section.icons.count)])
+                        }
+                        ForEach(rows.indices, id: \.self) { r in
+                            HStack(spacing: 10) {
+                                ForEach(rows[r]) { icon in
+                                    choice(title: icon.label, on: chosen != nil && now == icon.key, id: "icon-\(icon.key)", tint: tint) {
+                                        IconMark(path: icon.path, size: 30)
+                                    } pick: { pick(icon.key) }
+                                }
+                                // A short last row keeps the tiles the width of the others.
+                                ForEach(0..<(columns - rows[r].count), id: \.self) { _ in
+                                    Color.clear.frame(maxWidth: .infinity, minHeight: 74)
+                                }
                             }
-                            if rows[r].count < columns { Spacer(minLength: 0) }
                         }
                     }
                 }

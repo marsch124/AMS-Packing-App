@@ -207,12 +207,23 @@ column width, whole card tappable):
 
 ---
 
-## 3. The cover and the template icons (`Cover`, `IconMark`, `CoverDoor`, `TemplateIcons`, `TemplateIcon.swift`)
+## 3. The cover and the template icons (`Cover`, `IconMark`, `CoverDoor`, `TemplateIcons`, `TemplateIconCatalog.swift`, `TemplateIcon.swift`)
 
 ### Purpose and origin
 His test H.1. 50 icons "of my own, drawn in the app's style (one stroke, round ends, a 24-point box)"; he saw them
 on a sample sheet in day and night mode and said (2 Oct 2026): "Your suggestions are fine. Please implement."
 Released in 0.46. No stock art, no emoji in the icon set.
+
+**0.74: 90 icons.** His request (12 Oct 2026, a picture of the Mac's picker open on his template "On the Beach",
+whose Suggested was the plain umbrella): "Add approximately 40 new icons, specifically one that is related to
+'On the beach'." 40 more drawings in the same hand — one stroke 1.9 wide on the 24-point grid, round caps and joins,
+no fill, no two lines closer than about 2 points so a mark still reads at 14 points (the size a trip line will use) —
+checked at 30, 16 and 14 points and on a 26-point cover, day and night, iPhone and Mac. "On the beach" is a sun
+lounger under a parasol on a line of sand (key `lounger`), and a template whose name says beach is now given it
+(§ Which icon). The drawings moved from the app into the model package (`PackingLibrary/TemplateIconCatalog.swift`)
+so the model's tests can check every one; the app's `TemplateIcons` (`all`, `icon(_:)`, `Icon` with `key`, `label`,
+`path`; since 0.74 also `grouped`) reads them from there unchanged. **A key is what a template stores and never
+changes; a label may** — 0.74 relabelled `gift` from "Party" to "Gift", "Party" being its own icon now.
 
 ### `Cover(list, size = 40)` — what is drawn
 - A rounded square (`cornerRadius = size × 0.28`) filled with **`Library.coverColour(list)`**: the template's own
@@ -241,44 +252,94 @@ Released in 0.46. No stock art, no emoji in the icon set.
 - `setTemplateIcon(id:key:)`: a non-empty key is stored; nil or "" removes the key ("back to the suggestion");
   sets the template's `updatedAt`; false for an unknown template.
 - `suggestedIcon(for:)` — **first rule that matches wins** (`name = normName(list.name)`; *has* = substring of
-  name; *word* = a whole word, words split on any non-letter):
+  name; *word* = a whole word, words split on any non-letter). Since 0.74 (marked ✱) the new icons have their words,
+  in English and in Swedish; rules that are new for an OLD icon stand at the end, so a template that had a suggestion
+  keeps it unless a new icon fits it better (a beach, a motorbike, a sailing boat, yoga, a business trip):
   1. role `container` → `box`
-  2. has "freediv" → `fin`
-  3. has "diving", word "dive", has "scuba" or "snorkel" → `diving`
+  2. has "freediv" or ✱"fridyk" → `fin`
+  3. has "diving", word "dive", has "scuba", "snorkel" or ✱"dykning" → `diving`
   4. word "car" → `car`
   5. has "plane", "flight" or word "fly" → `plane`
   6. word "rv", has "camper", "motorhome", "caravan" → `rv`
-  7. word "train" or "trains", or has "railway" → `train` (whole words since the spec pass, 5 Oct 2026:
+  7. ✱ has "motorbike", "motorcycl", "motorcykel" or word "mc" → `motorbike` (before "bike" and "cycl": until 0.74 a
+     motorbike was given the bicycle)
+  8. word "train" or "trains", or has "railway" → `train` (whole words since the spec pass, 5 Oct 2026:
      "Strength training" and "Swim training" were given a train)
-  8. has "ferry" or "boat" → `ferry`
-  9. has "golf" → `golf`
-  10. has "hik" or "trek" → `hiking`
-  11. has "climb" → `climb`
-  12. word "ski" or has "skiing" → `ski`
-  13. word "camp", "camping" or "camps", or has "campsite", "campground", "campfire" → `tent` (whole words since
+  9. ✱ has "sail", "segl", "segel" or "yacht" → `sail` (before "boat": a sailing boat was a ferry)
+  10. has "ferry" or "boat" → `ferry`
+  11. ✱ word "bus", "buses", "buss" or "coach" → `bus`
+  12. has "golf" → `golf`
+  13. has "hik" or "trek" → `hiking`
+  14. has "climb" → `climb`
+  15. word "ski" or has "skiing" → `ski`
+  16. word "camp", "camping" or "camps", or has "campsite", "campground", "campfire" → `tent` (whole words since
       the spec pass: "Campus" was a tent)
-  14. has "bike" or "cycl" → `bike`
-  15. word "run" or has "running" → `run`
-  16. has "swim" → `swim`
-  17. has "strength" or word "gym" → `strength`
-  18. has "breath" → `breath` ("his 'Mobility & Breath work' is breath")
-  19. has "mobility", "stretch", "yoga" → `mobility`
-  20. has "padel" or "tennis" → `racket`
-  21. has "beach" → `beach`
-  22. has "fish" → `fishing`
-  23. word "work" or has "business" → `laptop`
-  24. has "travel" → `suitcase`
-  25. none matched: role `base` → `suitcase`, else nil (the letter).
+  17. ✱ has "triathlon", "ironman" or word "tri" → `triathlon` (before swim, bike and run)
+  18. has "bike" or "cycl" → `bike`
+  19. word "run" or has "running" → `run`
+  20. ✱ has "ice bath", "icebath", "isbad", "cold plunge", "kallbad" → `icebath` (before swim)
+  21. has "swim" → `swim`
+  22. has "strength" or word "gym" → `strength`
+  23. has "breath" → `breath` ("his 'Mobility & Breath work' is breath")
+  24. ✱ has "yoga" → `lotus` (the seated Yoga; until 0.74 yoga gave `mobility`)
+  25. has "mobility" or "stretch" → `mobility`
+  26. has "padel" or "tennis" → `racket`
+  27. ✱ has "kite" → `kite` (before "surf": kitesurfing is the kite)
+  28. ✱ has "surf" → `surf`
+  29. has "beach", ✱word "strand", ✱has "sunbath" or "solsemester" → ✱**`lounger`** ("On the beach"; until 0.74 the
+      umbrella `beach`, which no name suggests any more — it stays in the picker)
+  30. ✱ has "tropic", word "palm", "palms" or "island" → `palm`
+  31. has "fish" → `fishing`
+  32. has "business", ✱"conference", ✱"konferens" or ✱"tjänsteresa" → ✱`briefcase` (until 0.74 business was `laptop`)
+  33. word "work", ✱"jobb" or ✱"arbete" → `laptop`
+  34. ✱ has "hotel" → `hotel`
+  35. ✱ has "city", word "town" or "stad", has "storstad" → `city`
+  36. ✱ has "restaurant", "restaurang", "dinner", "middag" → `restaurant`
+  37. ✱ has "wine", word "vin", has "vingård" → `wine`
+  38. ✱ has "concert", "konsert", "festival", "music", "musik" → `music`
+  39. ✱ has "party", word "fest", has "kalas", "wedding", "bröllop" → `party`
+  40. ✱ has "birthday", "födelsedag", "christmas", word "jul" → `gift`
+  41. ✱ has "shopping", word "shop", has "shoppa", "handla" → `shopping`
+  42. ✱ has "picnic", "picknick" → `picnic`
+  43. ✱ has "bbq", "barbecue", "grill" → `bbq`
+  44. ✱ word "kids" or "barn", has "children", "family", "barnen", "familj" → `kids`
+  45. ✱ has "walk" or "promenad" → `walk` ("City walk" is the city — rule 35 comes first)
+  46. has "travel" → `suitcase`
+  47. ✱ old icons that had no words: has "summer"/"sommar" → `sun`; "winter"/"vinter" → `snow`; "sauna"/"bastu" →
+      `sauna`; "kayak", "canoe", "paddl", "kajak", "kanot" → `kayak`; "orienteer"/"orientering" → `compass`; word
+      "dog", "dogs", "hund" → `paw`; has "coffee", "kaffe", word "fika" → `coffee`; has "photo"/"foto" → `camera`;
+      "kettlebell" → `kettlebell`
+  48. ✱ Swedish names for old icons: word "bil"/"bilen" → `car`; has "flyg" → `plane`; word "tåg"/"tåget" → `train`;
+      has "färja", word "båt"/"båten" → `ferry`; has "vandr" → `hiking`; "skidor"/"skidåkning" → `ski`;
+      "cykel"/"cykling" → `bike`; "löpning", word "löp" → `run`; "simning", word "sim" → `swim`; "styrka" →
+      `strength`; "fiske" → `fishing`; word "resa"/"resor" → `suitcase`
+  49. ✱ has "mountain", "summit" or "fjäll" → `mountain` (after "vandr": "Fjällvandring" is a hike)
+  50. none matched: role `base` → `suitcase`, else nil (the letter).
 
-### The 50 icons (`TemplateIcons.all`, key → label shown in the picker; path data in the file, a 24-pt box, only the SVG commands M L H V C S Q A Z that `SVGPath` draws)
-car Car · plane Plane · rv Camper · train Train · ferry Ferry · suitcase Travel · backpack Backpack · box Boxes ·
-hiking Hiking · mountain Summit · diving Diving · fin Freediving · golf Golf · bike Bike · run Run · strength
-Strength · kettlebell Kettlebell · swim Swim · mobility Mobility · breath Breath work · yoga Stretch · tent Camping ·
-fire Campfire · ski Skiing · snow Winter · sun Summer · beach Beach · rain Rain · compass Orienteering · kayak
-Paddling · fishing Fishing · climb Climbing · racket Racket sports · passport Passport · firstaid First aid · pill
-Medicine · toiletry Toiletries · plug Electronics · laptop Work · camera Camera · coffee Coffee · food Food · sleep
-Sleeping · sauna Sauna · paw Dog · book Reading · gift Party · glasses Sunglasses · headlamp Headlamp · heart Health.
-`TemplateIcons.icon(key)` → the icon or nil (unknown key → nil → the cover falls back to letter/emoji).
+### The 90 icons (`TemplateIconCatalog.all`, read by `TemplateIcons.all`; key → label shown in the picker; path data in the file, a 24-pt box, only the SVG commands M L H V C S Q A Z that `SVGPath` draws)
+In the picker's order, under its six headings (`TemplateIconGroup`, 0.74); ✱ = new in 0.74.
+- **Travel** (`travel`): car Car · plane Plane · rv Camper · train Train · ✱bus Bus · ✱motorbike Motorbike · ferry
+  Ferry · suitcase Travel · backpack Backpack · box Boxes · passport Passport · ✱ticket Tickets · ✱map Map · ✱hotel
+  Hotel (a building with a door and its awning).
+- **Outdoors** (`outdoors`): hiking Hiking · ✱walk Walking · mountain Summit · compass Orienteering · tent Camping ·
+  fire Campfire · headlamp Headlamp · ski Skiing · snow Winter · rain Rain · fishing Fishing.
+- **Sport** (`sport`): run Run · bike Bike · swim Swim · ✱triathlon Triathlon (a medal on its ribbon) · diving
+  Diving · fin Freediving · kayak Paddling · climb Climbing · golf Golf · racket Racket sports · strength Strength ·
+  kettlebell Kettlebell · mobility Mobility · yoga Stretch · ✱lotus Yoga (seated, legs crossed) · breath Breath work ·
+  sauna Sauna · ✱icebath Ice bath (a head in a tub, two ice cubes) · ✱watch Watch · ✱bottle Water bottle.
+- **Beach and summer** (`beach`): sun Summer · ✱lounger On the beach (a lounger under a parasol, a line of sand) ·
+  beach Beach (the umbrella) · ✱palm Palm tree · glasses Sunglasses · ✱sunhat Sun hat · ✱suncream Sun cream ·
+  ✱flipflops Flip-flops · ✱towel Towel (two folded) · ✱beachball Beach ball · ✱swimring Swim ring · ✱shell Shell
+  (a scallop) · ✱surf Surfing (a curling wave) · ✱sail Sailing · ✱kite Kite.
+- **City, food and fun** (`city`): ✱city City · ✱restaurant Restaurant (fork, plate, knife) · food Food · coffee
+  Coffee · ✱wine Wine · ✱picnic Picnic · ✱bbq Barbecue · ✱shopping Shopping · ✱party Party (two balloons) · gift
+  Gift (was labelled "Party" until 0.74) · ✱music Music · camera Camera · book Reading.
+- **Everyday** (`everyday`): laptop Work · ✱briefcase Business · ✱phone Phone · plug Electronics · ✱headphones
+  Headphones · ✱wallet Money · ✱keys Keys · ✱clothes Clothes · ✱shoes Shoes · ✱laundry Laundry · toiletry Toiletries ·
+  pill Medicine · firstaid First aid · heart Health · sleep Sleeping · ✱kids Kids · paw Dog.
+`TemplateIconCatalog.firstFifty` lists the 50 keys of 0.46, which must never go. `TemplateIconCatalog.icon(key)` /
+`TemplateIcons.icon(key)` → the icon or nil (unknown key → nil → the cover falls back to the letter).
+`TemplateIconCatalog.grouped` → the headings in order with their icons (a heading with none is left out).
 `IconMark` is also used by `TripChecks.swift` — and (0.74) by every trip line, which shows the icon of each template
 it comes from, small and violet, before its bag (`TemplateMarks`; spec 03, "A line" → "Where it comes from"); a
 template showing its letter is its name's first word there.
@@ -300,6 +361,17 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   training" → nil, "Night train" → train, "Campus visit" → nil, "Training camp" → tent);
   `TemplateFacesTests.testACoverShowsALetterNeverAnEmoji`, `testNoTemplateIsGivenTealOrCyan` (200 ids: never teal
   or cyan, every colour that was never teal unchanged, his own teal kept).
+- Model (0.74): `testOnTheBeachSuggestsTheLoungerUnderItsParasol` ("On the beach", "On the Beach", "Beach", "Beach
+  week", "Strand", "Sunbathing" → `lounger`; its label is "On the beach") — seen red with the beach rule planted
+  back on the umbrella ("Optional("beach") is not equal to Optional("lounger") - On the beach");
+  `testTheNewIconsAreSuggestedByTheirWords` (63 names: each ✱ rule in English and Swedish, motorbike/sailing/
+  triathlon/yoga/kite ordering, "City walk" → city, "Fjällvandring" → hiking, and six names that still suggest
+  nothing); `testEveryIconHasADrawingALabelAndItsOwnKey` (90 icons, keys and labels unique, the 50 keys of 0.46
+  all there, no key "letter" or blank, no emoji in a label, every path starts with M, uses only M L H V C S Q A Z
+  with their numbers and arc flags 0/1 and keeps every point inside 1…23 of the 24 box, the headings hold every
+  icon once in `all`'s order) — seen red with a planted duplicate key and a `T` command ("a key used twice:
+  ["shell"]", "cannot draw 'T'"); `testEverySuggestionIsAnIconThatExists` (67 probe names, each suggestion has a
+  drawing, at least 50 different ones reached).
 - **Not covered:** an unknown stored key.
 
 ---
@@ -317,10 +389,13 @@ pick (each pick saves and closes), or a swipe down on the iPhone.
   - Two tiles side by side: **"Suggested"** (id `icon-suggested`; shows the suggested icon at 30, or the letter
     (`coverLetter`) 22 heavy when there is no suggestion; selected when no choice is stored) and **"Letter"** (id
     `icon-letter`; the letter 22 heavy; selected when the stored choice is "letter").
-  - `SectionTitle` "All icons" (shown in capitals, 18 heavy, kerning 0.8, 16 above).
-  - The 50 icons in rows of **5** (plain `HStack` rows, not a lazy grid: "the Mac builds only what is on screen").
-    Each tile: icon at 30 + its label; id `icon-<key>`; selected when a choice is stored and the icon in force is
-    this key.
+  - Since 0.74 one `SectionTitle` per heading of `TemplateIcons.grouped` — "Travel", "Outdoors", "Sport", "Beach and
+    summer", "City, food and fun", "Everyday" (`.headline`, ink, 12 above; id `icon-group-<group>`: `travel`,
+    `outdoors`, `sport`, `beach`, `city`, `everyday`). Until 0.74 one title, "All icons", over all 50.
+  - Under each heading its icons in rows of **5** (plain `HStack` rows, not a lazy grid: "the Mac builds only what is
+    on screen"). A heading's last row, when short, is filled with empty cells (`Color.clear`, full width share, min
+    74 high) so its tiles keep the width of the others. Each tile: icon at 30 + its label; id `icon-<key>`; selected
+    when a choice is stored and the icon in force is this key.
 - Tile look: mark 32 high; label 12 bold, 1 line, shrinks to 70 %; min height 74, full width share; selected =
   filled with the template's own colour (`coverColour`), white mark and label, 2-pt stroke in that colour, trait
   `isSelected`; not selected = `Theme.card`, ink mark, muted label, 1-pt `Theme.line` stroke.
@@ -330,14 +405,20 @@ pick (each pick saves and closes), or a swipe down on the iPhone.
 - `pick(key)` → `model.change { setTemplateIcon(id:, key:) }` then dismiss. Suggested = nil (removes the key),
   Letter = "letter", an icon = its key. Picking the very icon that is suggested **stores** it, so it no longer
   follows later renames.
-- When the stored key is not one of the 50 (e.g. from a newer build), no tile is ringed and the cover shows the
-  letter.
+- When the stored key is not one of the 90 (e.g. from a newer build), no tile is ringed and the cover shows the
+  letter. A build before 0.74 that meets a 0.74 key (a template's icon synced from a newer device) shows the letter
+  the same way; its own 50 keys are all still drawn by 0.74.
 
 ### Tests
 UI `testATemplatesIconIsSuggestedAndCanBeChosen`: Hiking's cover value "hiking"; Suggested is selected; picking
 `icon-tent` closes the picker and the value becomes "tent"; it survives closing/reopening; Letter → "letter";
 Suggested → "hiking".
 
+UI `testThePickerHoldsNinetyIconsAndKeepsANewOne` (0.74): Hiking's picker has exactly 90 buttons whose id starts
+`icon-` apart from `icon-suggested`, `icon-letter` and `icon-cancel`; the six `icon-group-<group>` headings exist;
+`icon-lounger`, `icon-palm`, `icon-hotel`, `icon-triathlon`, `icon-kids` exist; picking `icon-lounger` closes the
+picker and the cover's value becomes "lounger"; it survives closing and reopening the template; reopened, the picker
+rings `icon-lounger` (`isSelected`); Cancel closes it.
 ---
 
 ## 5. A new template (`NewList`)

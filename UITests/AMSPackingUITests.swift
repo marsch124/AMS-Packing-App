@@ -4775,6 +4775,46 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { (app.buttons["template-cover"].value as? String) == "hiking" }, "Suggested did not go back")
     }
 
+    /// 0.74 (his "Add approximately 40 new icons, specifically one that is related to
+    /// 'On the beach'", 12 Oct 2026): the picker holds all 90, under their six headings;
+    /// a new one — the lounger under its parasol — is chosen, kept, and still there after
+    /// the template is closed and opened again.
+    func testThePickerHoldsNinetyIconsAndKeepsANewOne() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                        // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the icons")
+        // Every tile is a button called icon-<key>; Suggested, Letter and Cancel are not icons.
+        let notIcons = ["icon-suggested", "icon-letter", "icon-cancel"]
+        let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND NOT (identifier IN %@)", "icon-", notIcons))
+        XCTAssertTrue(waitUntil { tiles.count == 90 }, "the picker shows \(tiles.count) icons, not 90")
+        for group in ["travel", "outdoors", "sport", "beach", "city", "everyday"] {
+            XCTAssertTrue(app.staticTexts["icon-group-\(group)"].exists, "no heading icon-group-\(group)")
+        }
+        for key in ["lounger", "palm", "hotel", "triathlon", "kids"] {
+            XCTAssertTrue(app.buttons["icon-\(key)"].exists, "no icon-\(key) in the picker")
+        }
+
+        tap(app, id: "icon-lounger")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+        let cover = app.buttons["template-cover"]
+        XCTAssertTrue(waitUntil { (cover.value as? String) == "lounger" }, "the lounger was not taken: '\(cover.value as? String ?? "")'")
+
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        app.buttons["template-row-1"].tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.buttons["template-cover"].value as? String) == "lounger" }, "the lounger was lost on the way out and back")
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["icon-lounger"].isSelected }, "the chosen lounger is not ringed in the picker")
+        tap(app, id: "icon-cancel")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+    }
+
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.
     func testCareShowsWhatIsOverdueAndDoneTodayMovesItOn() {
         let app = launch()
