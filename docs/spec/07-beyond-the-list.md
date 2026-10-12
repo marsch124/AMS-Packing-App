@@ -593,8 +593,8 @@ records, as every `extra` key.
 
 ### Weight and Care
 
-A kit weighs its own weight plus what is inside it now (each content × its how-many; taken out not counted): on
-the Bags card and a bag's trips, in Care's heaviest things and what each template weighs, and in the table's
+A kit weighs its own weight plus what is inside it now (each content × its how-many; taken out not counted) — on a
+reviewed trip, what was inside it then (above): on the Bags card and a bag's trips, in Care's heaviest things and what each template weighs, and in the table's
 Weight column (read only there; its own weight is set on its page; sorting and filtering by Weight go by it). Care's
 total counts each thing once. A care row of a thing inside a kit says "inside the Camp pouch".
 
@@ -636,7 +636,10 @@ was…" with the Plasters and no Take out; the trip ahead "1 missing: Spare cord
 Tab → row 1's ✕, row 2's Take out, ✕; Space removes the plasters and the focus stays on row 1's ✕; Tab → Add; Space
 opens the list with the cursor in Find a thing; "map" lights the Map, Return adds it, the page stays, the search
 empties; Esc closes the list, focus on Add; Tab → Check before each trip, Space on; Tab → Brand, Shift-Tab back;
-Return saves; reopened, all kept).
+Return saves; reopened, all kept). Both seen red with a planted fault: the review keeping nothing (iPhone: "the
+reviewed trip shows the pouch as it is now: 'Camp pouch · 1 inside, Carry-on / hand luggage'"), and the kit rows
+left out of the Tab order (GitHub's Mac probe: "Tab did not go on to thing-kit-row-0-out"); green on GitHub's Mac
+with `testTheThingPageTabsThroughEveryFieldInOrder` and the kits tests.
 
 ### Open questions
 
