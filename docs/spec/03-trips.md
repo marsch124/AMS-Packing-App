@@ -1530,7 +1530,7 @@ passport; Liquid off removes one; clearing the passport's date removes it; Car r
 
 ---
 
-## The weather card (`WeatherCard.swift`, `Store/Forecast.swift`, `TripWeather.swift`, `PackingCore/Weather.swift`)
+## The weather card (`WeatherCard.swift`, `Store/Forecast.swift`, `ForecastAsk.swift`, `TripWeather.swift`, `PackingCore/Weather.swift`)
 
 **Purpose and origin.** "The weather on a trip: one line of what it will be like, and under it the
 gear that weather calls for which is not on the trip yet — each with one press to take it along"
@@ -1563,8 +1563,10 @@ card when the forecast arrives, and leaving with the keyboard still up froze the
 - Nothing missing: "You have what this weather asks for." (14 semibold muted, id
   `weather-nothing-missing`).
 
-**Trouble** (either state; 14 semibold red, id `weather-trouble`): "No place found for “<name>”." /
-"Could not reach the weather service — check the connection." / "No forecast for those dates yet."
+**Trouble** (either state; 14 semibold red, id `weather-trouble`; `ForecastTrouble` in PackingLibrary, all four words
+model-tested): "No place found for “<name>”." / "Could not reach the weather service — check the connection." (no
+answer at all, only) / "No forecast for those dates yet." / "The weather service could not answer just now — try
+again later." (0.73)
 
 ### Behaviour
 - **Looking up** (`LibraryModel.lookUpWeather`): name = trimmed typed place (or the trip's); blank or
@@ -1574,12 +1576,30 @@ card when the forecast arrives, and leaving with the keyboard still up froze the
   snapshot, geo with the snapshot's place). Any error → the trouble line.
 - **Open-Meteo** (`OpenMeteo`): geocoding `…/v1/search?name=<n>&count=1&language=en&format=json`; label
   "<name>, <country_code>". Forecast `…/v1/forecast?latitude&longitude&timezone=auto&daily=weathercode,
-  temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max`; when the trip
-  starts 0…16 days ahead, `start_date` = start and `end_date` = start + nights (cut at today + 16);
-  otherwise the service's default days. No days → "No forecast for those dates yet."; HTTP ≥ 400 or
-  any network/parse failure → offline.
-- **Automatic look-up** (`forecastWorthFetching`): the trip has a place AND a start date AND starts
-  between −nights and +16 days from today (`OpenMeteo.days`, rounded whole days) AND the held forecast
+  temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max`. The days asked
+  for (`ForecastAsk.days`, pure, model-tested): the service forecasts today and the 15 days after it
+  (`ForecastAsk.reachDays = 15`) — its LAST DAY (`ForecastAsk.lastDay`) is 15 days after the earlier of the
+  phone's date (`Today.local`) and the UTC date (`todayYMD()`), because the service's "today" is the UTC date wherever
+  the place is (same last day at UTC−10, 0 and +14, checked 12 Oct 2026) and in Sweden the phone's date is a
+  day ahead of it from midnight to 01:00 (02:00 in summer). When the trip starts between the phone's today
+  and that last day, `start_date` = start and `end_date` = start + nights, cut at the last day; otherwise
+  (started already, or past the last day) no dates — the service's default days, as the web app does.
+- **What an answer means** (`ForecastAsk.trouble`, pure, model-tested): no answer at all (the request
+  throws) → offline, "check the connection" — the ONLY case. An answer with HTTP ≥ 400 is never offline: its
+  `{"error": true, "reason": …}` saying "out of allowed range" for `start_date`/`end_date` → "No forecast for
+  those dates yet."; any other (400 of another kind, 429, 5xx, an unreadable body) → "The weather service
+  could not answer just now — try again later." A 2xx answer that is not JSON → the same. The service's own
+  reason is never shown (his rule: no computer talk). No days in a forecast → "No forecast for those dates
+  yet."
+- 🪤 **0.73, his report 12 Oct 2026** (a trip to Spain about two weeks ahead said "check the connection" with
+  a working internet): the reach was 16, so a trip running past it asked for `end_date` = today + 16; the
+  service refuses that with HTTP 400 ("Parameter 'end_date' is out of allowed range from … to <today + 15>"),
+  and every HTTP ≥ 400 was read as offline. Both fixed. The web app (`js/weather.js`, `MAX_AHEAD_DAYS = 16`,
+  "Could not fetch the forecast — check your connection.") still has the same day too many and the same
+  words — the native app deliberately differs there.
+- **Automatic look-up** (`forecastWorthFetching`): the trip has a place AND a start date AND a forecast can
+  exist for it (`ForecastAsk.inReach`: it started at most `nights` days before the phone's today, i.e. it is not
+  over, and starts no later than the service's last day above — whole civil days) AND the held forecast
   is stale (`forecastIsStale`: none or no days; or the forecast's place name does NOT begin with the
   first three letters of the trip's place, both lower-cased (only when both are non-empty); or
   `fetchedAt` older than 6 hours or unreadable). Asked (a) once when the card first appears on the open
@@ -1627,8 +1647,13 @@ UI `testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing`, `testWeatherAddAllTakes
 (`weather-look`). Model `TripWeatherTests` (6: kept and read back, missing gear, staleness incl. a
 different place, survives a backup, `testRetiredGearIsNeverOfferedAndTheBasesOwnGearIs`,
 `testTwoTripsWithOneIdAreReadAsTheFirst`), `TripBulkTests.testAddAllTakesEveryWeatherSuggestionOnce`,
-`testHisOwnWeatherGearKeepsItsSource`, `WeatherTests` (all 19).
-**Not covered:** the automatic look-up rules; "Look again"; the trouble words for offline.
+`testHisOwnWeatherGearKeepsItsSource`, `WeatherTests` (all 19), `ForecastAskTests` (8, 0.73: the reach is 15;
+a trip starting on the last day / a day past it; a trip running past it is cut; after midnight the reach counts
+from the UTC date, west of UTC from the phone's; a trip under way is in reach until its last day; the service
+refusing the days → "No forecast for those dates yet."; any other HTTP "no" → the service-trouble words, never
+"check the connection"; all four trouble words).
+**Not covered:** the staleness half of the automatic look-up as the card appears; "Look again"; the network
+call itself (`OpenMeteo.read` — no real network in tests; its two rules are `ForecastAsk`'s, tested).
 
 ---
 

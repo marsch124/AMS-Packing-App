@@ -184,8 +184,8 @@ final class LibraryModel: ObservableObject {
     /// a forecast to exist, and only when what we hold is stale.
     func forecastWorthFetching(tripId: String) -> Bool {
         guard let trip = library.trip(tripId), !jsTrim(trip.destination).isEmpty else { return false }
-        guard let ahead = OpenMeteo.days(from: Today.local, to: trip.startDate) else { return false }
-        guard ahead >= -Int(max(0, trip.nights)), ahead <= OpenMeteo.reachDays else { return false }
+        guard ForecastAsk.inReach(startDate: trip.startDate, nights: trip.nights,
+                                  today: Today.local, utcToday: todayYMD()) else { return false }
         return library.forecastIsStale(tripId: tripId)
     }
 
