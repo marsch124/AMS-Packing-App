@@ -933,18 +933,21 @@ list."; (0, g) "Saved: g no longer on the list."; (a, g) "Saved: a new, g no lon
 Start again: "New trip from “<old name>”: N things, nothing ticked. Its dates are under the pen."
 It stays until the sheet is closed.
 
-**Sorting row** (0.64; padding 16 sideways): "Sorting" on the left and, on the SAME line to its right, ONE
-drop-down (`DropDown`, spec 06 §21, with `heading: .beside`) holding the five sortings — **When**, **Into**,
-**From where**, **Category**, **Section**. Five pills do not fit an iPhone's line, and he asked for drop-downs
-everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the choice beside it) are kept.
+**Sorting row** (0.64; padding 16 sideways) — since 0.74 in the SCROLL AREA, directly above the first heading of
+the list (item 5 below; his ask of 12 Oct 2026: the choices sat far above the list, "disconnected from it", under
+the loop strip with the cards between them and the lines); top padding 10. "Sorting" on the left and, on the SAME
+line to its right, ONE drop-down (`DropDown`, spec 06 §21, with `heading: .beside`) holding the six sortings —
+**When**, **Into**, **From where**, **Category**, **Section**, **Template** (0.74). Five pills did not fit an
+iPhone's line, and he asked for drop-downs everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the
+left, the choice beside it) are kept.
 - "Sorting": Subheadline semibold, muted, one line, never squeezed (`fixedSize`); id `trip-view-label`.
 - The field, 10 to its right, takes the rest of the line: the chosen sorting's words in Body ink and a drawn ▾
   (`Metrics.tap` tall, card fill, radius 10, a hairline border); id `trip-view`; accessibility label "Sorting",
-  value = the chosen sorting's words (what tests read). A stored value that is none of the five (it cannot be,
+  value = the chosen sorting's words (what tests read). A stored value that is none of the six (it cannot be,
   but a device keeps it) shows and ticks When, which is what `groupBy` does with it.
 - A tap opens the list as a popover beside the field (on the iPhone too; the system puts it above or below,
-  wherever it fits — under the field, near the top of the screen): container `trip-view-list`, five rows
-  `trip-view-0…4` (When, Into, From where, Category, Section — the ids the pills had, Section the new 4), the
+  wherever it fits): container `trip-view-list`, six rows `trip-view-0…5` (When, Into, From where, Category,
+  Section, Template — the ids the pills had, Section the new 4 in 0.64, Template 5 in 0.74), the
   chosen one with a green tick and the selected trait. A tap on a row sorts the trip at once (stored in
   `ams.view`) and closes the list; the ticked row closes it unchanged.
 - Until 0.64: four capsule pills on the line (`ViewThatFits`: full size; slimmer; or "Sorting" above them), the
@@ -958,8 +961,11 @@ everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the left, the cho
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
 1. **Check before you go** card (only when something needs him) — own section below.
 2. **Weather card** (always) — own section below.
-3. **Bags card** (only when some bag has lines AND weight or a scale reading) — own section below.
+3. **Bags card** (only when some bag has lines; FOLDED to one line by default since 0.74) — own section below.
 4. **On site door** (only once On site has begun) — see "On site".
+4a. **The Sorting row** (above), then — opened on a place — the place's chip, the debug door-check list (tests
+   only), and "Only what is still unticked" with Show all (a tapped door check). Until 0.74 all of these sat above
+   the scroll area, under the loop strip.
 5. **The groups** (a lazy stack with **no spacing** — 4 until 0.67), one per non-empty group of
    `groupBy(view, trip.entries)`; `g` = the group's position in that list:
    - Heading row (top padding **6** — 12 until 0.67, his words of 6 Oct 2026, "Far too much space between the
@@ -1017,14 +1023,35 @@ smaller tick circles and less space between lines").
   the name (Body; muted when ticked; muted and struck through — 3 px his call in the comment, drawn with
   `.strikethrough` — when set aside; up to 2 lines); "Bought on site" (Footnote semibold green) right under
   the name when marked; at the right "×N" (Subheadline semibold mono muted) when the quantity > 1, plus the
-  washtub at `Metrics.glyph` when laundry washes and the line is per night; then the bag name (Footnote muted,
-  one line, max 150 pt wide) — except when sorted Into. **0.69:** a ticked line with a pocket says
+  washtub at `Metrics.glyph` when laundry washes and the line is per night; then **where it comes from** (0.74,
+  below); then the bag name (Footnote muted, one line, max 150 pt wide) — except when sorted Into. **0.69:** a ticked line with a pocket says
   **"Backpack · Front pocket"** there instead (max 200 wide); sorted Into (the heading names the bag), just
   "Front pocket". An unticked or set-aside line never shows a pocket. 2 pt above and below the words (5 until 0.67), at
   least `Metrics.line` tall, a hairline under it.
   Tap: toggles `checked` (`Library.setChecked`) — **a set-aside line does not tick**. **0.69:** ticking a line
   whose bag has pockets (`Library.pocketsByBag()`, asked once per screen) opens its **pocket pills** under it —
   see "Bag pockets on a trip".
+- **Where it comes from** (0.74, his ask of 12 Oct 2026: "When I pack, it is valuable to know from which template
+  the item comes — run, swim, bike, golf…"; of three looks he picked the template's own icon). On the line, just
+  BEFORE the bag (before "To do" on a reminder), on the iPhone and the Mac alike (`TemplateMarks`, TripScreen.swift):
+  the ICON of each template the line comes from — `Library.lineTemplates(tripId:)`, the same templates "Sorted by
+  Template" puts it under (a line made from one template and brought by another shows both) — drawn by the app's own
+  template icons (`TemplateIcons`, `IconMark`, the icon the template's cover shows: his pick or the suggestion;
+  never an SF Symbol or emoji), in the Templates violet made readable day and night (`ThingDetailLine.violet`),
+  **15 pt on the iPhone, 12 on the Mac** (about Footnote), stroke 1.9 at that scale, 3 pt apart, in the trip's
+  template order. Up to THREE icons; four or more = the first two and "+N" (Footnote semibold violet). A template
+  without an icon (its cover shows a letter) is its name's FIRST WORD in Footnote semibold violet instead. Never
+  squeezed (`fixedSize`): the icons and the bag's words are laid out together (`MarksBeforeBag`, 6 apart, at the
+  line's right): the words at most 150 wide (200 with a pocket) and cut first when the line is short of room, the
+  icons right beside them — the bag's own frame of 150 left a gap between them on a short bag name.
+  - Nothing at all on a line added on the trip (typed, Bought on site, sent) — and nothing while the trip is sorted
+    by **Template** (the heading says it already).
+  - A kit's line shows its own templates like any line.
+  - One element for VoiceOver and the tests: label "From <names joined by ", ">" (never icon ids), value = the
+    names joined by ", ", id **`trip-line-<n>-from`**; the Mac shows the same words as a tooltip (`.help`). 🪤 On
+    the Mac the line's button folds the element into its own words (label "… From Common base, Hiking …"), so a
+    test reads it there.
+  - The line keeps its height (`Metrics.line`, 30 / 22): the icons are no taller than the bag's words.
 - **⊘ / ↻** (`AsideMark`, drawn on the 24-pt grid, stroked 1.8, muted, shown at `Metrics.glyph` — 20 / 16 —
   with `onGrid`), in a **`Metrics.lineButton` × `Metrics.line`** target — 40 × 30 on the iPhone, 30 × 22 on
   the Mac (24 pt in 40 × 40 until 0.67): as tall as the line, no taller, generous across; id
@@ -1089,6 +1116,7 @@ each device keeps its own. Within every group the lines keep the trip's list ord
 | From where | `stored` | `storage` (trimmed, exact text) | A–Z (localeCompare); "No place set" last | place |
 | Category | `category` | category (empty → "Comfort & misc") | `CATEGORIES` order, then others A–Z | category |
 | Section (0.64) | `section` | the line's `section` (trimmed): the section's NAME on the template the line came from | first appearance in the trip's list order; "Everything else" (lines with no section) last | section name |
+| Template (0.74) | `template` | EVERY template of the trip the line comes from — a line can be under several (below) | the trip's template order (`listsForEvent`: base, transport, ticked); then templates no longer on the trip; "Added on the trip" last | template name (violet) |
 
 **Section** (0.64; until then the model's `groupBy` knew "section" and the app did not offer it) uses
 PackingCore's `groupBySection`, unchanged. What it reads:
@@ -1110,6 +1138,39 @@ PackingCore's `groupBySection`, unchanged. What it reads:
   it — after a change to its thing or its row.
 - Everything else on the screen behaves as under any sorting: green headings, the count, the whole-section tick,
   folding (keys `<trip>|section|<name>`), the bag name on each line.
+
+**Template** (0.74, his ask of 12 Oct 2026: "pack focused on e.g. Bike, Run or Golf") —
+`Library.linesByTemplate(tripId:lines:)` (PackingLibrary/TripByTemplate.swift), NOT the web app's `groupBy` (which
+knows no such mode and stays as the parity check holds it). It is built on ONE function, `Library.lineTemplates(tripId:)`
+— each line's id → the templates it comes from, in the trip's template order (none for a line added on the trip) —
+which the line's template icons read too ("Where it comes from", under "A line"). What it reads:
+- **Which templates.** The trip's templates are `listsForEvent(trip, templatesForTrips())` — the common base
+  ("Always packed": the template whose role is `base`), the transport's, then the ticked ones in their order; Quick
+  mode: the ticked ones only. A template BRINGS a thing when one of its rows would come onto this trip as Trip
+  settings' Save builds it: a name, not retired, `itemMatchesEvent` (season, transport, catering, its Context), and
+  no weather tag unless the trip forces that condition on (`buildTotalEntries`' own rules, without the
+  de-duplication).
+- **A line's headings.** A line stands under the template it was made from (`sourceListId`) AND under every other
+  trip template that brings the SAME thing (`sourceItemId`) — the sample's Headlamp, made from the base template,
+  is also on Hiking, so it stands under both. A line whose own template is no longer on the trip (unticked later,
+  its line kept because it was ticked or changed) stands under that template's name after the trip's templates, as
+  long as the template exists. A line typed on the trip, Bought on site, or sent (a shared trip's lines carry no
+  template) — and a line whose template is gone — stands under **"Added on the trip"**, last. Weather gear added
+  from the forecast carries its template (`sourceListId`) and stands under it.
+- **One line, one tick.** A line under two headings is the SAME line shown twice: ticking it under one ticks it
+  under the other (the screen re-reads the trip; `trip-line-<n>` names both copies), setting it aside sets both
+  aside. The trip's count (`trip-progress`) counts it ONCE; each heading's count "ticked/packable" counts its own
+  lines, so the headings' counts can add up to more than the trip's. A heading's whole-section tick ticks its own
+  lines — a shared line is then ticked under its other heading too.
+- **Kits** stay one line: a kit is a line like any other (its things are shown under it, `KitLineParts`), under the
+  templates that bring the kit. The pocket pills of the line just ticked show under the copy that was tapped only.
+- **Headings** in the Templates violet made readable day and night (`ThingDetailLine.violet`, the colour a thing's
+  template names have in Your things); "Added on the trip" in the trip's green (it is the trip's own). Two templates
+  of the same name are two headings with the same words (their folds share a key — `<trip>|template|<name>`).
+- **Elsewhere, unchanged:** Pack to go home (On site) keeps its own order, by bag; the voice walk walks the trip by
+  place (spec 07 part 10), whatever the sorting; a place's code opens the trip sorted From where (it sets
+  `ams.view` to `stored`), and the place filter and "Only what is still unticked" narrow the lines BEFORE they are
+  grouped, under this sorting too. Set place shows only under From where.
 
 ### Folding
 
@@ -1190,7 +1251,7 @@ each chosen from the drop-down — every row shows its tick), `testASectionFolds
 `testAPlaceIsSetFromTheTrip` (From where chosen from the drop-down), `testTheTripSaysSortingBesideItsDropDown`
 (0.64; until then `testTheTripSaysSortingBesideItsThreeButtons`: "Sorting" left of the field `trip-view` on the
 same line, neither off the screen; no row out before it is opened; the list reads When/Into/From where/Category/
-Section with no sixth, When ticked, every row on the screen; Into re-sorts, From where headings are the sample's
+Section/Template (0.74) with no seventh, When ticked, every row on the screen; Into re-sorts, From where headings are the sample's
 places), `testATripSortedBySectionReadsUnderItsSections` (0.64, `-uiTestingSections`: 0/9; Section chosen; the
 headings Clothes, Lights, Everything else and no fourth; Lights' one press ticks its line (1/9, `trip-line-7`, the
 spare batteries, ticked); folding Lights hides the line and opening shows it), `testAThingsPageSetsItsSectionOnATemplate`
@@ -1201,6 +1262,19 @@ Lights), `testAWholeSectionIsTickedInOnePress`, `testTheScreenSaysSoWhenEverythi
 `testASetAsideLineIsNotPacked` (⊘ takes the tick, a set-aside line does not tick, ↻ brings it back unticked,
 a section with every line set aside has no `trip-group-0-all`), `testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen`
 (`trip-place-save-needs`), `testEscapeClosesTheTripsWindows`,
+`testTheSortingSitsDirectlyAboveTheList` (0.74: the first heading at most 24 pt under the Sorting field, the
+weather line and the Bags card above the field; picture `trip-sorting-above-list`; seen red with the row above the
+cards: "Sorting is 204.0 pt above the first heading — not directly above the list"),
+`testATripSortedByTemplateShowsAThingUnderBothItsTemplates` (0.74: Template is row 5; headings "Common base" then
+"Hiking" and no third; `trip-line-3`, the Headlamp, twice; a tap → 1/7 and both copies selected; pictures
+`trip-by-template`, `trip-by-template-ticked`; seen red with the "same thing" rule taken out: "the Headlamp stands
+under 1 template(s), not both"), `testATripsLineShowsTheTemplatesItComesFrom` (0.74: the Headlamp's
+`trip-line-3-from` names "Common base, Hiking", the Passport only "Common base", the Hiking boots "Hiking"; the line
+at most 36 tall; a line typed on the trip (Tripod, `trip-line-7`) names none; sorted by Template, none; picture
+`trip-line-templates`; on the Mac read from the line's own words after "From " — from every copy of the line:
+sorted by Template it is two buttons of one name, and a plain query for one was a hard failure on GitHub's Mac
+probe, 12 Oct 2026; seen red with the "same thing" rule
+taken out: "the Headlamp does not name both its templates: 'Common base'"),
 `testTheTripsPenSitsBesideItsNameAndReviewedBesideDone` (0.73, `-uiTestingReviewed`, both devices: the pen's
 middle on the name's first line, after it (at most 16 pt away) and above the count; the pen round (as wide as
 tall, within 0.5); the badge, the pen and Done on ONE centre line (within 1.5 pt); the badge before Done and at
@@ -1210,6 +1284,13 @@ bare words, not the Trips row's badge"), `testSendToObsidianIsAtTheFootOfAReview
 under the trip's first line, then — scrolled to — under the lowest line, under Save as Excel and Share, as tall
 as Save as Excel and on its left edge, with Delete trip under it; picture `trip-foot-obsidian`. Seen red with the
 card back at the top: "Send to Obsidian is above the trip's lines").
+Model: `TripByTemplateTests` (7, invented templates Always packed / Run / Bike):
+`testEachLineKnowsItsTemplatesInTheTripsOrder` (`lineTemplates`: the Headlamp → Always packed, Bike, Run; a typed
+line none; the icon read from the resolved template), `testALineStandsUnderEveryTemplateThatBringsIt`, `testOneTickShowsUnderEveryHeading`,
+`testLinesAddedOnTheTripComeLast`, `testATemplateThatWouldNotBringTheThingDoesNotClaimIt` (a summer-only row in
+winter), `testQuickAndATemplateNoLongerOnTheTrip`, `testOnlyTheLinesGivenAreGroupedAndEmptyHeadingsGo`; seen red
+with the "same thing" rule taken out ("the Headlamp is not under Bike too") and with the season check taken out
+("Run claims a summer-only Headlamp in winter").
 Model: `CustomLineTests.testATypedThingJoinsTheTripAndSurvivesARegenerate`, `SetPlaceTests.testAPlaceSetOnTheTripReachesTheThingAndItsTwin`,
 `TripCardsTests.testEverythingDecidedIsPacked`, `OnTheTripTests.testABoughtOnSiteLineIsInHandMarkedAndKept`,
 `testTheStoredMarkKeepsItsFirstName`, `CountingTests.testProgress*`, `GroupingTests` (groupBy, container, category, storage).
@@ -1669,10 +1750,20 @@ bar"); Goes in the cabin on the trip (field test 7.3/6.1, 0.55); photos of the p
 0.52) — up to three (field test 3 Oct 2026, 0.56: "sometimes you would like a photo from different
 angles").
 
-### What is on screen (card id `bags-card`; padding 14, corner 12; border red when any bag is over)
-- Header: "Bags" (15 heavy ink); ⓘ (a drawn circle with "i", id `bags-key-open`, label "What the colours
-  mean") toggles the key; "N over" (13 heavy white on red capsule, id `bags-over`) when any bag is over;
-  the total weight of the shown bags (14 heavy mono muted, id `bags-total`).
+### What is on screen (card id `bags-card`; corner 12; border red when any bag is over)
+**Folded to ONE line by default** (0.74, his ask of 12 Oct 2026: the overview "is good but takes too much space"):
+only the header line shows, padding 14 sideways and 6 above and below; a tap on the fold (or anywhere else on the
+line) opens the card — padding 14 all round, as before — and a second folds it. Open or folded is remembered on the
+device in AppStorage **`ams.trip.bags`** (default folded; the same for every trip; cleared at launch under the
+tests, like `ams.view`). Until 0.74 the card was always open.
+- Header: the **fold** — a button (id `bags-toggle`; label "Open the bags" / "Fold the bags"; value "folded" /
+  "open"): a drawn chevron at `Metrics.glyph` (pointing right when folded, down when open; ink, 2.4 stroke) and
+  "Bags" (Subheadline semibold ink), at least 28 tall; then, only while open, ⓘ (a drawn circle with "i", id
+  `bags-key-open`, label "What the colours mean") toggling the key; "N over" (Footnote semibold white on a red
+  capsule, id `bags-over`) when any bag is over — on the folded line too: it is a warning; at the right the total
+  weight of the shown bags (Footnote semibold mono muted, id `bags-total`), folded or not. The badge and the total
+  stay texts of their own, outside the fold button (the Mac folds a button's texts into it).
+- Everything below — the key and the bag rows — only while open.
 - Key (id `bags-key`): "Blue — well within its max", "Orange — nine tenths of its max or more", "Red,
   “over” — more than its max", and "No bar: no max set. Set one in Care → Bags. Tap a bag for the luggage
   scale, and a photo of it packed."
@@ -1734,7 +1825,12 @@ angles").
   things).
 
 ### Tests
-UI `testABagWithNothingWeighedIsOnTheTrip` (a thing moved to another bag with no weight: that bag is on the
+UI `testTheTripsBagsAreOneFoldedLineUntilOpened` (0.74: `bags-toggle` "folded" at first, no `bag-0`, the total on
+the folded line (±1.5), the card at most 48 tall; a tap opens it — `bag-0`, "open" — and a second folds it; pictures
+`trip-bags-folded`, `trip-bags-open`; seen red with the card open by default: "the Bags card is not folded to begin
+with", "a bag's row shows on the folded card", "the folded card is not one slim line"); every test below opens the
+card first (`openBags`); `testABagsLimitReachesTheTrip` reads "N over" on the FOLDED line.
+`testABagWithNothingWeighedIsOnTheTrip` (a thing moved to another bag with no weight: that bag is on the
 card, "not weighed", and its scale opens), `testABagIsWeighedOnTheLuggageScale` (25 % fine → 7.5 kg close 94 % → 9.5 kg over 119 % with
 "9.5 kg weighed" and "N over" → Clear), `testABagsLimitReachesTheTrip` (his own limit reaches the trip;
 the ⓘ opens and closes the key), `testAPackedBagKeepsItsPhoto` (three photos, no fourth, "2 of 3", Next

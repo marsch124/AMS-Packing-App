@@ -491,6 +491,15 @@ final class AMSPackingUITests: XCTestCase {
         e.tap()
     }
 
+    /// The trip's Bags card is folded to one line by default (0.74): open it, unless it is
+    /// open already, and wait for its first bag.
+    private func openBags(_ app: XCUIApplication) {
+        let toggle = app.buttons["bags-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "no Bags card on the trip")
+        if (toggle.value as? String) != "open" { tap(app, id: "bags-toggle") }
+        XCTAssertTrue(app.buttons["bag-0"].waitForExistence(timeout: 5), "the Bags card did not open")
+    }
+
     /// A screen's container exists the moment it is created; its controls can be a
     /// beat behind on a slow machine. So: wait for the control, then tap it.
     private func tap(_ app: XCUIApplication, id: String, timeout: TimeInterval = 10) {
@@ -914,6 +923,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         // A photo of a packed bag, which must go with the trip (his ask, 4 Oct 2026).
+        openBags(app)
         tap(app, id: "bag-0")
         tap(app, id: "bag-0-photo")
         XCTAssertTrue(app.buttons["bag-0-photo-thumb-0"].waitForExistence(timeout: 5), "no bag photo to delete with the trip")
@@ -1053,6 +1063,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        openBags(app)
         let firstBag = app.descendants(matching: .any)["bag-0"]
         XCTAssertTrue(firstBag.waitForExistence(timeout: 5), "no Bags card")
         XCTAssertTrue(waitUntil { self.words(firstBag).contains("Cabin bag") }, "the trip kept the old name: '\(words(firstBag))'")
@@ -1912,7 +1923,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        XCTAssertTrue(app.buttons["bag-0"].waitForExistence(timeout: 5), "no Bags card")
+        openBags(app)
         let unweighed = (0..<4).map { app.buttons["bag-\($0)"] }.first { $0.exists && ($0.value as? String) == "not weighed" }
         let said = (0..<4).map { n -> String in
             let e = app.buttons["bag-\(n)"]
@@ -2250,6 +2261,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        openBags(app)
         let bag = app.buttons["bag-0"]
         XCTAssertTrue(bag.waitForExistence(timeout: 5), "no bag on the trip")
         XCTAssertFalse(app.staticTexts["bags-over"].exists, "the sample's carry-on starts over its max")
@@ -2336,6 +2348,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        openBags(app)
         tap(app, id: "bag-0")
         XCTAssertTrue(app.buttons["bag-0-photo"].waitForExistence(timeout: 5), "an open bag offers no photo")
         XCTAssertFalse(app.buttons["bag-0-photo-thumb-0"].exists, "a photo before one was taken")
@@ -3052,6 +3065,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         XCTAssertTrue(waitUntil { app.buttons["trip-check-cabin-0"].exists }, "the carry-on is not checked to begin with")
+        openBags(app)
         tap(app, id: "bag-0")
         XCTAssertTrue(waitUntil { self.isSwitchOn(app, "bag-0-cabin") }, "the trip's carry-on does not say it goes in the cabin")
         setSwitch(app, "bag-0-cabin", on: false)
@@ -4879,12 +4893,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(screen.contains(label.frame) && screen.contains(field.frame), "the Sorting row runs off the screen")
         XCTAssertEqual(chosen(app, "trip-view"), "When", "When is not the starting sort")
 
-        // The list: the five sortings, When ticked, every row on the screen.
+        // The list: the six sortings (Template since 0.74), When ticked, every row on the screen.
         openDropDown(app, "trip-view")
-        let rows = (0..<5).map { app.buttons["trip-view-\($0)"] }
-        XCTAssertTrue(rows[4].waitForExistence(timeout: 5), "Section is not offered")
-        XCTAssertEqual(rows.map { words($0) }, ["When", "Into", "From where", "Category", "Section"])
-        XCTAssertFalse(app.buttons["trip-view-5"].exists, "more than five sortings")
+        let rows = (0..<6).map { app.buttons["trip-view-\($0)"] }
+        XCTAssertTrue(rows[5].waitForExistence(timeout: 5), "Template is not offered")
+        XCTAssertEqual(rows.map { words($0) }, ["When", "Into", "From where", "Category", "Section", "Template"])
+        XCTAssertFalse(app.buttons["trip-view-6"].exists, "more than six sortings")
         XCTAssertTrue(isOn(rows[0]), "When is not the ticked row")
         XCTAssertTrue(rows.allSatisfy { screen.contains($0.frame) }, "a sorting runs off the screen")
         shot(app, "trip-sorting-open")
@@ -6730,6 +6744,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["bags-over"].waitForExistence(timeout: 10),
                       "the limit he set did not reach the trip")
+        openBags(app)
         // His ask (2026-09-26): a small ⓘ that explains the colours.
         tap(app, id: "bags-key-open")
         XCTAssertTrue(appears(app, "bags-key", timeout: 5), "the ⓘ did not explain the colours")
@@ -10766,6 +10781,140 @@ final class AMSPackingUITests: XCTestCase {
         let delete = app.buttons["trip-delete"]
         XCTAssertTrue(delete.exists, "no Delete trip")
         XCTAssertGreaterThanOrEqual(delete.frame.minY, s.maxY, "Delete trip is no longer last: \(delete.frame) vs \(s)")
+    }
+
+    /// The Bags card folded to ONE line by default (his ask, 12 Oct 2026: "takes too much
+    /// space"): "Bags", and the total on the same line; no bag rows until it is opened; a
+    /// tap opens it and a second folds it. (The over badge stays on the folded line:
+    /// `testABagsLimitReachesTheTrip` reads it there.)
+    func testTheTripsBagsAreOneFoldedLineUntilOpened() {
+        continueAfterFailure = true
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let toggle = app.buttons["bags-toggle"], total = app.staticTexts["bags-total"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "no Bags card on the trip")
+        XCTAssertTrue(total.exists, "the folded card does not say what the bags weigh")
+        XCTAssertEqual(toggle.value as? String, "folded", "the Bags card is not folded to begin with")
+        XCTAssertFalse(app.buttons["bag-0"].exists, "a bag's row shows on the folded card")
+        XCTAssertLessThanOrEqual(abs(total.frame.midY - toggle.frame.midY), 1.5,
+                                 "the total is not on the folded line: \(total.frame) vs \(toggle.frame)")
+        if let card = find(app, "bags-card") {
+            XCTAssertLessThanOrEqual(card.frame.height, 48, "the folded card is not one slim line: \(card.frame)")
+        }
+        shot(app, "trip-bags-folded")
+        tap(app, id: "bags-toggle")
+        XCTAssertTrue(app.buttons["bag-0"].waitForExistence(timeout: 5), "a tap did not open the Bags card")
+        XCTAssertTrue(waitUntil { (toggle.value as? String) == "open" }, "the open card does not say so")
+        shot(app, "trip-bags-open")
+        tap(app, id: "bags-toggle")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-0"].exists }, "a second tap did not fold the Bags card")
+    }
+
+    /// The Sorting row directly above the list it sorts (his ask, 12 Oct 2026: it sat far
+    /// above, "disconnected from it"): under the cards (the weather, the bags), and the
+    /// first heading right under it.
+    func testTheSortingSitsDirectlyAboveTheList() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let field = app.buttons["trip-view"], heading = app.staticTexts["trip-group-0-label"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no Sorting")
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "no first heading")
+        bringIntoView(app, heading)
+        _ = waitUntil { self.settled(field) && self.settled(heading) }
+        shot(app, "trip-sorting-above-list")
+        let gap = heading.frame.minY - field.frame.maxY
+        XCTAssertGreaterThanOrEqual(gap, 0, "the first heading is not under Sorting: \(heading.frame) vs \(field.frame)")
+        XCTAssertLessThanOrEqual(gap, 24, "Sorting is \(gap) pt above the first heading — not directly above the list")
+        for id in ["bags-toggle", "weather-line"] {
+            let card = app.descendants(matching: .any)[id]
+            if card.exists {
+                XCTAssertLessThanOrEqual(card.frame.maxY, field.frame.minY, "\(id) sits between Sorting and the list")
+            }
+        }
+    }
+
+    /// Sorted by Template (his ask, 12 Oct 2026: "pack focused on e.g. Bike, Run or
+    /// Golf"): the lines under the templates they come from, in the trip's order — the
+    /// base template, then Hiking. The sample's Headlamp is on both: it stands under
+    /// both, and one tick shows under both; the trip counts it once.
+    func testATripSortedByTemplateShowsAThingUnderBothItsTemplates() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample's trip: '\(words(progress))'")
+        XCTAssertEqual(choose(app, "trip-view", 5), "Template")
+        func heading(_ g: Int) -> String { words(app.staticTexts["trip-group-\(g)-label"]) }
+        XCTAssertTrue(waitUntil { heading(0) == "Common base" }, "the first heading is not the base template: '\(heading(0))'")
+        XCTAssertEqual(heading(1), "Hiking")
+        XCTAssertFalse(app.staticTexts["trip-group-2-label"].exists, "a third heading: '\(heading(2))'")
+        // The Headlamp — line 3, made from the base template — under BOTH.
+        let lamps = app.buttons.matching(identifier: "trip-line-3")
+        XCTAssertTrue(waitUntil { lamps.count == 2 }, "the Headlamp stands under \(lamps.count) template(s), not both")
+        XCTAssertTrue(words(lamps.element(boundBy: 0)).contains("Headlamp"), "line 3 is not the Headlamp")
+        shot(app, "trip-by-template")
+        tapVisible(app, lamps.element(boundBy: 0))
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the trip does not count the shared line once: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { lamps.count == 2 && lamps.element(boundBy: 0).isSelected && lamps.element(boundBy: 1).isSelected },
+                      "one tick does not show under both templates")
+        shot(app, "trip-by-template-ticked")
+    }
+
+    /// Where a trip's line says it comes from (`trip-line-<n>-from`): its value on the
+    /// iPhone; on the Mac the line's button folds it into its own words ("… From Common
+    /// base, Hiking …"), so it is read there. "" = nothing shown.
+    private func fromWords(_ app: XCUIApplication, _ n: Int) -> String {
+        let id = "trip-line-\(n)-from"
+        for query in [app.otherElements, app.images, app.staticTexts] where query[id].exists {
+            return (query[id].value as? String) ?? ""
+        }
+        #if os(macOS)
+        // Sorted by Template a line stands under two headings: two buttons of one name
+        // (a plain query for it is a hard failure on the Mac — GitHub's probe, 12 Oct 2026).
+        for e in app.buttons.matching(identifier: "trip-line-\(n)").allElementsBoundByIndex where e.exists {
+            let line = words(e)
+            if let r = line.range(of: "From ") { return String(line[r.upperBound...]) }
+        }
+        #endif
+        return ""
+    }
+
+    /// The icons of the templates a line comes from, before its bag (his ask, 12 Oct 2026:
+    /// "valuable to know from which template the item comes"; his pick: the template's own
+    /// icon). The sample's Headlamp, made from the base template and on Hiking too, names
+    /// both; a line typed on the trip names none; sorted by Template, no line names any
+    /// (the headings say it).
+    func testATripsLineShowsTheTemplatesItComesFrom() {
+        continueAfterFailure = true
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["trip-line-3"].waitForExistence(timeout: 5), "no Headlamp line")
+        XCTAssertTrue(waitUntil { self.fromWords(app, 3).hasPrefix("Common base, Hiking") },
+                      "the Headlamp does not name both its templates: '\(fromWords(app, 3))'")
+        XCTAssertTrue(fromWords(app, 0).hasPrefix("Common base"), "the Passport: '\(fromWords(app, 0))'")
+        XCTAssertFalse(fromWords(app, 0).contains("Hiking"), "the Passport is not on Hiking: '\(fromWords(app, 0))'")
+        XCTAssertTrue(fromWords(app, 4).hasPrefix("Hiking"), "the Hiking boots: '\(fromWords(app, 4))'")
+        // The line keeps its height: the icons are no taller than its words.
+        XCTAssertLessThanOrEqual(app.buttons["trip-line-3"].frame.height, 36, "the icons made the line taller")
+        shot(app, "trip-line-templates")
+        // Typed on the trip: no template.
+        let field = app.textFields["trip-add-name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
+        type("Tripod", into: field)
+        tap(app, id: "trip-add")
+        hideKeyboard(app)
+        XCTAssertTrue(scrollUntil(app, "trip-line-7", near: "trip-line-0"), "the typed line is not on the trip")
+        XCTAssertEqual(fromWords(app, 7), "", "a line typed on the trip names a template")
+        // Sorted by Template: the headings say it, the lines do not.
+        XCTAssertEqual(choose(app, "trip-view", 5), "Template")
+        XCTAssertTrue(waitUntil { self.fromWords(app, 3).isEmpty }, "sorted by Template, a line still names its templates")
     }
 
     // MARK: - Reminders on a template (0.70, spec 07 part 12)

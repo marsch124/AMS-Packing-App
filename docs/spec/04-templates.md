@@ -279,7 +279,9 @@ Paddling · fishing Fishing · climb Climbing · racket Racket sports · passpor
 Medicine · toiletry Toiletries · plug Electronics · laptop Work · camera Camera · coffee Coffee · food Food · sleep
 Sleeping · sauna Sauna · paw Dog · book Reading · gift Party · glasses Sunglasses · headlamp Headlamp · heart Health.
 `TemplateIcons.icon(key)` → the icon or nil (unknown key → nil → the cover falls back to letter/emoji).
-`IconMark` is also used by `TripChecks.swift`.
+`IconMark` is also used by `TripChecks.swift` — and (0.74) by every trip line, which shows the icon of each template
+it comes from, small and violet, before its bag (`TemplateMarks`; spec 03, "A line" → "Where it comes from"); a
+template showing its letter is its name's first word there.
 
 ### `CoverDoor` (on the template page)
 A plain button showing `Cover(size: 40)`; id `template-cover`; accessibility label "Icon of <name>";
