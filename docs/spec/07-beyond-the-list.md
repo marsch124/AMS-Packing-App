@@ -48,7 +48,8 @@ there. Parts 7–10 are specified in full below (part 8 from the code since 0.70
 4. **Search finds notes.** Your things and Search match a thing's own Notes and the notes its templates keep for
    it; the matching note shows under the name. → spec 05.
 5. **Bag pockets and "Where is my …?"** Bags have pockets; a thing a usual pocket; a trip line the pocket it went
-   into; Siri and Search answer bag + pocket. → spec 03/05.
+   into; Siri and Search answer bag + pocket — for a thing inside a kit, the kit and where the kit is (0.73: "In the
+   Camp pouch, in the Day pack (front pocket)."). → spec 03/05/06.
 6. **The door check.** "I leave at" on a trip's first (and last) day; 15 minutes before, one notification names
    what is still unticked (on the way home: not yet in a bag). His choice of trigger: a time he sets (7 Oct 2026),
    not location and not the car. → spec 03/06.
@@ -640,7 +641,9 @@ empties; Esc closes the list, focus on Add; Tab → Check before each trip, Spac
 Return saves; reopened, all kept). Both seen red with a planted fault: the review keeping nothing (iPhone: "the
 reviewed trip shows the pouch as it is now: 'Camp pouch · 1 inside, Carry-on / hand luggage'"), and the kit rows
 left out of the Tab order (GitHub's Mac probe: "Tab did not go on to thing-kit-row-0-out"); green on GitHub's Mac
-with `testTheThingPageTabsThroughEveryFieldInOrder` and the kits tests.
+with `testTheThingPageTabsThroughEveryFieldInOrder` and the kits tests. 0.73 also: `-uiTestingKits -kitsUnderWay` (the trip under way, the Camp pouch
+usually in a Day pack's Front pocket — pockets Main, Front pocket) for
+`testWhereIsAThingInsideAKitNamesTheKitAndWhereTheKitIs` (spec 03).
 
 ### Open questions
 
@@ -649,8 +652,12 @@ with `testTheThingPageTabsThroughEveryFieldInOrder` and the kits tests.
 - **A content on a template whose kit is not on the trip** brings its KIT (the design said only "never a separate
   line"). Leaving it out would have lost it silently. His word welcome.
 - **A trip made before a thing went into its kit** keeps that thing's line until a rebuild (Trip settings → Save).
-- **"Where is my …?"** (part 5) should answer "Camp pouch, in the backpack" for a thing inside a kit:
-  `Library.kitHolding(thingId:)` gives the kit; joining it to the pockets' answer is left for the merge with 0.69.
+- ~~**"Where is my …?"** (part 5) should answer "Camp pouch, in the backpack" for a thing inside a kit~~ — CLOSED
+  in 0.73 (his ask: "in <the kit>, in the <bag>"): Siri and Search name the kit and where the
+  KIT is — its line on the trip under way, else its Usually packed in and pocket: "In the Camp pouch, in the Day
+  pack (front pocket)."; taken out: "Taken out of the Camp pouch." and the thing's own place, if it has one. Search's
+  card names the kit on a line of its own (`search-where-kit`). Details: spec 03, "Bag pockets on a trip, and Where
+  is my …?"; spec 06 §3b.
 - **Resolved 12 Oct 2026 (0.73)** — ~~**The Mac's keys** (part 1): the kit part's buttons and switches are not in
   the page's Tab order yet.~~ (Taken out for now, Add from your things and Check before each trip had joined it in
   the merge of 0.69/0.70.) Each thing inside — Take out / Put back, then ✕ — and the list's Find a thing are in it

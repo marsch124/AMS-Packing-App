@@ -553,13 +553,16 @@ Stop B of his idea plan: "On site you ask 'Where is my charger?' and the answer 
 pocket.'" — on the iPhone and the Mac, on site and on the way home. `WhereIsIntent` ("Where is my thing?";
 `openAppWhenRun = false`) takes a `ThingEntity` (`ThingQuery`: his things not "Not in use", A–Z, also found by a
 typed or said part of the name) and answers `WhereAnswer.said` as a dialog and as its value; a thing gone since:
-"That thing is not in Packing any more." Phrases (in `PackingShortcuts`, the fourth App Shortcut, tile "Where is my
+"That thing is not in Packing any more." A thing inside a kit (0.73): the kit, then where the kit is — "In the Camp
+pouch, in the Backpack (front pocket)."; taken out of it: "Taken out of the Camp pouch." and its own place. The
+action's description says so: "… A thing inside a kit: the kit, and where the kit is." Phrases (in `PackingShortcuts`, the fourth App Shortcut, tile "Where is my
 thing?", symbol `bag` — the Shortcuts app's own tile, as the other three): "Where is my <thing> in Packing",
 "Where's my <thing> in Packing", "Ask Packing where something is" (Siri asks "Which thing?"). The things offered
 by name follow his library (`updateAppShortcutParameters` on every change, as for the grab lists). The answer's
 rules: spec 03, "Bag pockets on a trip, and Where is my …?". **Not covered by a UI test** (no test can speak to
-Siri): the words come from `Library.whereIs`, covered by `PocketsTests.testWhereIsMyCharger`, and the same answer
-shows first in Search (`testSearchShowsWhereAThingIsOnTheTripUnderWay`).
+Siri): the words come from `Library.whereIs`, covered by `PocketsTests.testWhereIsMyCharger` and (kits) the two
+`testWhereIsAThingInsideAKit…` tests, and the same answer shows first in Search
+(`testSearchShowsWhereAThingIsOnTheTripUnderWay`, `testWhereIsAThingInsideAKitNamesTheKitAndWhereTheKitIs`).
 
 ---
 

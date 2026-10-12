@@ -5,7 +5,9 @@ import PackingLibrary
 // "Where is my charger?" — stop B of his idea plan (7 Oct 2026): asked of Siri on the
 // iPhone or the Mac, on site or on the way home, the answer comes back in words —
 // "Backpack, front pocket." For the trip under way; with none, the thing's usual bag and
-// pocket. Nothing opens and nothing changes. The words are the model's
+// pocket. A thing inside a kit (0.73): the kit, then where the kit is — "In the Camp pouch,
+// in the Backpack (front pocket)."; taken out of it: "Taken out of the Camp pouch." and its
+// own place. Nothing opens and nothing changes. The words are the model's
 // (`Library.whereIs` → `WhereAnswer.said`), the same answer Search shows first.
 
 /// One of his things, as Siri and Shortcuts name them.
@@ -38,7 +40,7 @@ struct ThingQuery: EntityStringQuery {
 
 struct WhereIsIntent: AppIntent {
     static var title: LocalizedStringResource = "Where is my thing?"
-    static var description = IntentDescription("Says which bag, and which pocket, a thing is in on the trip under way — or where it usually goes.")
+    static var description = IntentDescription("Says which bag, and which pocket, a thing is in on the trip under way — or where it usually goes. A thing inside a kit: the kit, and where the kit is.")
     static var openAppWhenRun = false
 
     @Parameter(title: "Thing", requestValueDialog: "Which thing?") var thing: ThingEntity
