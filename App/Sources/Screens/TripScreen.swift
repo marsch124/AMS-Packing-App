@@ -51,7 +51,8 @@ struct TripScreen: View {
     /// Kits opened or folded on this visit (0.70); a kit not in here is open only while
     /// it is checked before each trip and not packed yet.
     @State private var kitOpen: [String: Bool] = [:]
-    /// The line just ticked whose bag has pockets: its pockets show under it (0.69).
+    /// The line just ticked whose bag has pockets: its pockets show under it (0.69) —
+    /// "<group>|<line id>", the copy tapped (under Template a line can stand twice, 0.74).
     @State private var pocketing: String?
     /// Only the lines still unticked — a tapped door check opens the trip so (0.69).
     @State private var onlyUnticked = false
@@ -64,8 +65,11 @@ struct TripScreen: View {
     // Section since 0.64 (his ask, 6 Oct 2026): sections "give a visual structure to the
     // packing" — the lines under their templates' section NAMES, in the order they first
     // come, "Everything else" last (`groupBySection`).
+    // Template since 0.74 (his ask, 12 Oct 2026): "pack focused on e.g. Bike, Run or Golf" — the lines
+    // under the templates they come from, a line on two templates under both (`linesByTemplate`).
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"),
-                                                       ("category", "Category"), ("section", "Section")]
+                                                       ("category", "Category"), ("section", "Section"),
+                                                       ("template", "Template")]
 
     /// The lines as a sorting reads them: sorted by Into, a reminder goes in no bag —
     /// it stands under "To do" (spec 07, part 12). Every other sorting reads them as
@@ -111,6 +115,24 @@ struct TripScreen: View {
     /// asked for drop-downs everywhere (6 Oct 2026). "Sorting" stays to the left of its
     /// field, on the same line (his marks, 2026-09-25). Its rows keep the pills' ids,
     /// `trip-view-0…4`; the field is `trip-view`, the word `trip-view-label`.
+    /// The groups the lines stand in under the chosen sorting: Template is the library's
+    /// (it reads the templates); every other sorting is the web app's `groupBy`.
+    private func groups(_ lines: [Item]) -> [EntryGroup] {
+        view == "template" ? model.library.linesByTemplate(tripId: tripId, lines: lines)
+                           : groupBy(view, TripScreen.grouped(view, lines))
+    }
+
+    /// A heading's colour: under When the colour of its first line's "When"; under
+    /// Template the Templates violet (the colour template names have in Your things) —
+    /// the trip's green for "Added on the trip"; otherwise the trip's green.
+    private func headingColour(_ group: EntryGroup) -> Color {
+        switch view {
+        case "when": return Color(hexString: readableHex(phaseColor(group.entries[0].phase), dark: scheme == .dark))
+        case "template" where group.label != Library.addedOnTheTrip: return ThingDetailLine.violet(scheme)
+        default: return AppSection.events.color
+        }
+    }
+
     private var sorting: some View {
         DropDown(title: "Sorting", heading: .beside, options: TripScreen.views.map { ($0.id, $0.label) },
                  selected: TripScreen.views.contains { $0.id == view } ? view : "when",
@@ -136,6 +158,9 @@ struct TripScreen: View {
         let kits = model.library.kitLines(tripId: tripId)
         // Every bag's pockets, asked once for all the lines (0.69).
         let pockets = model.library.pocketsByBag()
+        // Where each line comes from (0.74): its templates' icons, before its bag — not when
+        // sorted by Template, whose headings say it.
+        let from = view == "template" ? [:] : model.library.lineTemplates(tripId: tripId)
         VStack(spacing: 0) {
             // ONE centre line (0.73, his ask of 12 Oct 2026): the name, its pen right
             // beside it, and at the right the state and Done — "Reviewed" sat in grey
@@ -199,24 +224,6 @@ struct TripScreen: View {
                     .padding(.horizontal, 16).padding(.bottom, 8)
                     .accessibilityIdentifier("trip-rebuilt")
             }
-            // His marks (2026-09-25): "Sorting" on the left, the choice on the same line —
-            // and on the iPhone, Pack by voice at its end (0.71, a test: spec 07 part 10).
-            #if os(iOS)
-            VoiceSortingRow(tripId: tripId) { sorting }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-            #else
-            sorting
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-            #endif
-            if let place = placeFilter { placeChip(place) }
-            #if DEBUG
-            if AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-showDoorChecks") {
-                DoorCheckList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
-            }
-            #endif
-            if onlyUnticked { untickedBar }
             KeyboardAwayScroll {
                 // The card is deliberately OUTSIDE the lazy stack: a lazy row is
                 // thrown away and rebuilt as it scrolls off, which loses what he
@@ -236,7 +243,28 @@ struct TripScreen: View {
                     onSiteDoor(trip)
                         .padding(.top, 6).padding(.horizontal, 16)
                 }
-                } else if shownLines.isEmpty {
+                }
+                // The sorting, DIRECTLY above the list it sorts (0.74, his ask of 12 Oct 2026:
+                // under the loop strip it sat far above the lines, "disconnected from it").
+                // His marks (2026-09-25): "Sorting" on the left, the choice on the same line —
+                // and on the iPhone, Pack by voice at its end (0.71, a test: spec 07 part 10).
+                Group {
+                    #if os(iOS)
+                    VoiceSortingRow(tripId: tripId) { sorting }
+                    #else
+                    sorting
+                    #endif
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.top, 10)
+                if let place = placeFilter { placeChip(place) }
+                #if DEBUG
+                if AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-showDoorChecks") {
+                    DoorCheckList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
+                }
+                #endif
+                if onlyUnticked { untickedBar }
+                if placeFilter != nil && shownLines.isEmpty {
                     Text("Nothing on this trip is kept here. Tap the place above to see every line.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -247,7 +275,7 @@ struct TripScreen: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     // One level of groups; inside a group the lines keep the trip's own order.
                     // (The web app nests: When → by bag inside; the others → by When inside.)
-                    ForEach(Array(groupBy(view, TripScreen.grouped(view, shownLines)).enumerated()), id: \.offset) { g, group in
+                    ForEach(Array(groups(shownLines).enumerated()), id: \.offset) { g, group in
                         if !group.entries.isEmpty {
                             // The heading, and one press to tick the whole section
                             // (his ask: "so that I could toggle all done").
@@ -271,7 +299,7 @@ struct TripScreen: View {
                                 .accessibilityLabel(folded ? "Open \(group.label)" : "Fold \(group.label)")
                                 Text(group.label)
                                     .font(.system(.subheadline, weight: .semibold))
-                                    .foregroundStyle(view == "when" ? Color(hexString: readableHex(phaseColor(group.entries[0].phase), dark: scheme == .dark)) : AppSection.events.color)
+                                    .foregroundStyle(headingColour(group))
                                     .accessibilityIdentifier("trip-group-\(g)-label")
                                     .onTapGesture { toggleFold(group.label) }
                                 Text("\(mine.filter { $0.checked }.count)/\(mine.count)")
@@ -314,12 +342,14 @@ struct TripScreen: View {
                                             let on = !line.checked
                                             model.change { _ = $0.setChecked(on, tripId: tripId, entryId: line.id) }
                                             // Its bag has pockets: they show under it, the usual one chosen (0.69).
-                                            pocketing = on && pockets[normName(line.container)] != nil ? line.id : nil
+                                            // Under the copy tapped only: under Template a line can stand twice.
+                                            pocketing = on && pockets[normName(line.container)] != nil ? "\(g)|\(line.id)" : nil
                                         }
                                     } label: {
                                         PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
                                                  showBag: view != "container", washed: washes(trip),
-                                                 kitWords: kits[line.id]?.insideWords ?? "")
+                                                 kitWords: kits[line.id]?.insideWords ?? "",
+                                                 from: from[line.id] ?? [], fromId: "trip-line-\(n)-from")
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("trip-line-\(n)")
@@ -348,7 +378,7 @@ struct TripScreen: View {
                                 if let kit = kits[line.id] { kitParts(kit, line, n: n, trip: trip) }
                                 // Which pocket (0.69): one short row of small pills under the line just
                                 // ticked — tap one, or ignore it.
-                                if pocketing == line.id, line.checked, let choices = pockets[normName(line.container)] {
+                                if pocketing == "\(g)|\(line.id)", line.checked, let choices = pockets[normName(line.container)] {
                                     PocketPills(pockets: choices, chosen: Library.pocket(line), tint: AppSection.events.color,
                                                 id: "trip-line-\(n)-pocket") { picked in
                                         let id = tripId, entry = line.id
@@ -382,7 +412,7 @@ struct TripScreen: View {
                                 // closes: a lazy row that MOVED kept its old face ("Set place" still
                                 // showing under the place just chosen — the same staleness, seen
                                 // 2026-09-26 in the Set place test).
-                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)|\(qtyNights(trip))|\(pocketing == line.id)|\(Library.pocket(line))")
+                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)|\(qtyNights(trip))|\(pocketing == "\(g)|\(line.id)")|\(Library.pocket(line))")
                             }
                             }
                         }
@@ -741,6 +771,9 @@ struct PackLine: View {
     var washed = false
     /// A kit's "3 inside", after its name (0.70).
     var kitWords = ""
+    /// The templates it comes from (0.74): their icons, before the bag. Empty = nothing.
+    var from: [PackList] = []
+    var fromId = ""
 
     /// "×4 · laundry", "×7", or nothing — what the line says about how many.
     static func count(_ line: Item, _ nights: Int, washed: Bool) -> String {
@@ -772,6 +805,7 @@ struct PackLine: View {
             Spacer(minLength: 8)
             // A reminder (spec 07, part 12) is something to DO: no count, no bag.
             if Library.isReminder(line) {
+                if !from.isEmpty { TemplateMarks(from: from, id: fromId) }
                 if showBag {
                     Text("To do").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
@@ -786,10 +820,21 @@ struct PackLine: View {
             // The pocket it went into, once ticked (0.69): "Backpack · Front pocket" — just
             // the pocket when the list is sorted by bag (the heading names the bag).
             let pocket = line.checked && !aside ? Library.pocket(line) : ""
-            if showBag || !pocket.isEmpty {
-                Text(showBag ? Library.bagAndPocket(line.container, pocket) : pocket)
+            let bag = showBag ? Library.bagAndPocket(line.container, pocket) : pocket
+            let cap: CGFloat = pocket.isEmpty ? 150 : 200
+            if !from.isEmpty {
+                // Where it comes from (0.74): its templates' icons, right before the bag —
+                // the bag's words are cut first, never the icons.
+                MarksBeforeBag(cap: cap) {
+                    TemplateMarks(from: from, id: fromId)
+                    if showBag || !pocket.isEmpty {
+                        Text(bag).font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
+                    }
+                }
+            } else if showBag || !pocket.isEmpty {
+                Text(bag)
                     .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                    .frame(maxWidth: pocket.isEmpty ? 150 : 200, alignment: .trailing)
+                    .frame(maxWidth: cap, alignment: .trailing)
             }
             }
         }
@@ -798,6 +843,89 @@ struct PackLine: View {
         .frame(minHeight: Metrics.line)
         .contentShape(Rectangle())
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+    }
+}
+
+/// Where a trip's line comes from (0.74, his ask of 12 Oct 2026 — "valuable to know from
+/// which template the item comes"; of three looks he picked the template's OWN icon): the
+/// icon of each template, small and in the Templates violet, in the trip's template order.
+/// Up to three; four or more = two and "+N". A template that shows a letter on its cover
+/// is its name's first word. Never squeezed: the bag's words are cut first. ONE element
+/// for VoiceOver and the tests — the template NAMES, never icon ids — and a tooltip on the Mac.
+struct TemplateMarks: View {
+    let from: [PackList]
+    let id: String
+    @Environment(\.colorScheme) private var scheme
+
+    #if os(macOS)
+    static let size: CGFloat = 12
+    #else
+    static let size: CGFloat = 15
+    #endif
+
+    static func names(_ from: [PackList]) -> String {
+        from.map { jsTrim($0.name).isEmpty ? "Untitled template" : $0.name }.joined(separator: ", ")
+    }
+
+    var body: some View {
+        let violet = ThingDetailLine.violet(scheme)
+        let shown = from.count > 3 ? Array(from.prefix(2)) : from
+        HStack(spacing: 3) {
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, list in
+                if let icon = TemplateIcons.icon(Library.icon(of: list)) {
+                    IconMark(path: icon.path, size: TemplateMarks.size, weight: 1.9)
+                } else {
+                    Text(String(jsTrim(list.name).split(separator: " ").first ?? ""))
+                        .font(.system(.footnote, weight: .semibold)).lineLimit(1)
+                }
+            }
+            if from.count > 3 {
+                Text("+\(from.count - 2)").font(.system(.footnote, weight: .semibold).monospacedDigit())
+            }
+        }
+        .foregroundStyle(violet)
+        .fixedSize()
+        .layoutPriority(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("From \(TemplateMarks.names(from))")
+        .accessibilityValue(TemplateMarks.names(from))
+        .accessibilityIdentifier(id)
+        #if os(macOS)
+        .help("From \(TemplateMarks.names(from))")
+        #endif
+    }
+}
+
+/// A line's template icons and its bag's words, side by side at the line's right: the
+/// words at most `cap` wide and cut first when the line is short of room, the icons always
+/// whole, right beside them (a bag text framed at its full cap would leave a gap between).
+struct MarksBeforeBag: Layout {
+    var cap: CGFloat
+    var spacing: CGFloat = 6
+
+    private func sizes(_ proposal: ProposedViewSize, _ subviews: Subviews) -> [CGSize] {
+        guard let marks = subviews.first else { return [] }
+        let m = marks.sizeThatFits(.unspecified)
+        guard subviews.count > 1 else { return [m] }
+        let room = max(0, min(cap, (proposal.width ?? .infinity) - m.width - spacing))
+        let t = subviews[1].sizeThatFits(ProposedViewSize(width: room, height: proposal.height))
+        return [m, CGSize(width: min(t.width, room), height: t.height)]
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let all = sizes(proposal, subviews)
+        let width = all.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(0, all.count - 1))
+        return CGSize(width: width, height: all.map(\.height).max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let all = sizes(proposal, subviews)
+        var x = bounds.maxX
+        for (i, sub) in subviews.enumerated().reversed() where i < all.count {
+            x -= all[i].width
+            sub.place(at: CGPoint(x: x, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(all[i]))
+            x -= spacing
+        }
     }
 }
 

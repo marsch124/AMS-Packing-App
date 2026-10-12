@@ -19,9 +19,15 @@ import PackingLibrary
 /// The luggage scale (his idea 8, 2 Oct 2026): tap a bag and type what the scale
 /// says. From then on that is the weight the bag is judged by — the bag itself and
 /// everything never weighed included — and the things' sum stays beside it.
+///
+/// Folded to ONE line by default (0.74, his ask of 12 Oct 2026: the overview "takes too
+/// much space"): "Bags", the over badge — a warning, so it stays — and the total; a tap
+/// opens it. Open or folded is remembered on this device (`ams.trip.bags`), for every trip.
 struct BagsCard: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
+    @AppStorage(BagsCard.openKey) private var unfolded = false
+    static let openKey = "ams.trip.bags"
     /// His ask (2026-09-26): "a small information button that explains the colors".
     @State private var showKey = false
     /// The bag whose scale reading is being typed, and what is typed.
@@ -37,17 +43,35 @@ struct BagsCard: View {
         if !bags.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
-                    Text("Bags").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
-                    Button { showKey.toggle() } label: {
-                        ZStack {
-                            Circle().stroke(Theme.muted, lineWidth: 1.4).frame(width: 18, height: 18)
-                            Text("i").font(.system(.caption, design: .serif, weight: .semibold)).foregroundStyle(Theme.muted)
+                    // The fold: its own button, so the over badge and the total stay texts of
+                    // their own (the Mac folds a button's texts into the button).
+                    Button { unfolded.toggle() } label: {
+                        HStack(spacing: 6) {
+                            SVGPath.path("M9 6l6 6-6 6")
+                                .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                                .onGrid(Metrics.glyph)
+                                .rotationEffect(.degrees(unfolded ? 90 : 0))
+                                .foregroundStyle(Theme.ink)
+                            Text("Bags").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                         }
-                        .frame(width: 32, height: 28).contentShape(Rectangle())
+                        .frame(minHeight: 28).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("bags-key-open")
-                    .accessibilityLabel("What the colours mean")
+                    .accessibilityIdentifier("bags-toggle")
+                    .accessibilityLabel(unfolded ? "Fold the bags" : "Open the bags")
+                    .accessibilityValue(unfolded ? "open" : "folded")
+                    if unfolded {
+                        Button { showKey.toggle() } label: {
+                            ZStack {
+                                Circle().stroke(Theme.muted, lineWidth: 1.4).frame(width: 18, height: 18)
+                                Text("i").font(.system(.caption, design: .serif, weight: .semibold)).foregroundStyle(Theme.muted)
+                            }
+                            .frame(width: 32, height: 28).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("bags-key-open")
+                        .accessibilityLabel("What the colours mean")
+                    }
                     let over = bags.filter(\.over).count
                     if over > 0 {
                         Text("\(over) over")
@@ -56,30 +80,36 @@ struct BagsCard: View {
                             .background(Capsule().fill(AppSection.actions.color))
                             .accessibilityIdentifier("bags-over")
                     }
-                    Spacer()
+                    Spacer(minLength: 8)
                     Text(BagsCard.kilos(bags.reduce(0) { $0 + $1.grams }))
                         .font(.system(.footnote, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("bags-total")
                 }
-                if showKey { key }
-                ForEach(Array(bags.enumerated()), id: \.offset) { n, bag in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button { open(bag) } label: { row(bag) }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("bag-\(n)")
-                            // What the bar shows, in words: the colour cannot be read
-                            // any other way (VoiceOver, and the tests).
-                            .accessibilityValue(BagsCard.gauge(bag))
-                        if weighing == bag.load.container {
-                            scaleEditor(bag, n)
-                            BagCabinRow(bag: bag.load.container, n: n).environmentObject(model)
-                            // A photo of it packed (his idea 11), to repack from on the way home.
-                            BagPhotoRow(tripId: tripId, bag: bag.load.container, n: n).environmentObject(model)
+                // The rest of the line opens and folds it too.
+                .contentShape(Rectangle())
+                .onTapGesture { unfolded.toggle() }
+                if unfolded {
+                    if showKey { key }
+                    ForEach(Array(bags.enumerated()), id: \.offset) { n, bag in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button { open(bag) } label: { row(bag) }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("bag-\(n)")
+                                // What the bar shows, in words: the colour cannot be read
+                                // any other way (VoiceOver, and the tests).
+                                .accessibilityValue(BagsCard.gauge(bag))
+                            if weighing == bag.load.container {
+                                scaleEditor(bag, n)
+                                BagCabinRow(bag: bag.load.container, n: n).environmentObject(model)
+                                // A photo of it packed (his idea 11), to repack from on the way home.
+                                BagPhotoRow(tripId: tripId, bag: bag.load.container, n: n).environmentObject(model)
+                            }
                         }
                     }
                 }
             }
-            .padding(14)
+            // Folded: one slim line.
+            .padding(.horizontal, 14).padding(.vertical, unfolded ? 14 : 6)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .stroke(bags.contains(where: \.over) ? AppSection.actions.color : Theme.line, lineWidth: 1))
