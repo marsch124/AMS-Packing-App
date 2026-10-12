@@ -2541,8 +2541,8 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "pockets-bag-page-after")
     }
 
-    /// A thing's usual pocket: a second drop-down under "Usually packed in", offered only
-    /// when that bag has pockets, and kept when the page is saved.
+    /// A thing's usual pocket: a second drop-down under "Usually packed in", offered for a
+    /// bag of his (since 0.73 one with no pockets too), and kept when the page is saved.
     func testAThingsUsualPocketIsOfferedWhenItsBagHasPockets() {
         let app = launch("-uiTestingPockets")
         openThing(app, "Phone charger")
@@ -2560,12 +2560,46 @@ final class AMSPackingUITests: XCTestCase {
                       "the usual pocket was not kept: '\(app.buttons["thing-pocket"].value as? String ?? "none")'")
         tap(app, id: "thing-cancel")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
-        // A thing whose bag has no pockets: no Pocket at all.
+        // A thing whose bag is none of his (here the carry-on is only a name): no Pocket at all.
         replace("Toothbrush", in: app.textFields["things-search"])
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(app.buttons["thing-bag"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["thing-pocket"].exists, "a Pocket for a bag with no pockets")
+        XCTAssertFalse(app.buttons["thing-pocket"].exists, "a Pocket for a bag that is none of his")
+    }
+
+    /// A bag of his with no pockets yet (`-uiTestingChecks`: the carry-on, where every thing
+    /// goes) still gives a thing its Pocket list — Just in the bag and the foot — and the
+    /// FIRST pocket is made right there (0.73; until then only on the bag's page). Saved, the
+    /// thing keeps it and the bag has it, with its pen; No bag has no Pocket list.
+    func testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage() {
+        let app = launch("-uiTestingChecks")
+        openThing(app, "Map")
+        XCTAssertEqual(chosen(app, "thing-bag"), "Carry-on / hand luggage")
+        XCTAssertTrue(app.buttons["thing-pocket"].waitForExistence(timeout: 5), "no Pocket list for a bag of his with no pockets")
+        XCTAssertEqual(chosen(app, "thing-pocket"), "Just in the bag")
+        openDropDown(app, "thing-pocket")
+        XCTAssertTrue(app.buttons["thing-pocket-none"].exists)
+        XCTAssertFalse(app.buttons["thing-pocket-0"].exists, "a pocket is offered: '\(words(app.buttons["thing-pocket-0"]))'")
+        shot(app, "pockets-first-on-thing")
+        type("Side pocket", into: app.textFields["thing-pocket-new"])
+        tap(app, id: "thing-pocket-add")
+        XCTAssertTrue(disappears(app, "thing-pocket-list", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-pocket"), "Side pocket", "the first pocket was not chosen")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-pocket"), "Side pocket", "the first pocket was not kept")
+        openDropDown(app, "thing-pocket")
+        XCTAssertEqual(words(app.buttons["thing-pocket-0"]), "Side pocket", "the bag did not get its first pocket")
+        XCTAssertTrue(app.buttons["thing-pocket-0-rename"].exists, "the first pocket has no pen")
+        closeDropDown(app, "thing-pocket")
+        // No bag: no Pocket list at all.
+        choose(app, "thing-bag", 1)
+        XCTAssertTrue(waitUntil { !app.buttons["thing-pocket"].exists }, "No bag still offers a Pocket list")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
     }
 
     /// "Ticking a line shows the bag's pockets in one short row; tap one or ignore it":
@@ -7489,8 +7523,10 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// With nobody named on any thing or in Settings, the thing's page still shows
-    /// "Whose it is", and says where the names come from.
-    func testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed() {
+    /// "Whose it is" as its list — Both have one and the foot — and the FIRST owner is made
+    /// right there (0.73; until then a line sent him to Your choices). Saved, the thing
+    /// says it, and the name is his list's, with its pen.
+    func testTheFirstOwnerIsMadeInsideWhoseItIs() {
         let app = launch()
         tab(app, "care")
         tap(app, id: "care-table")
@@ -7504,11 +7540,25 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "bulk-detail", timeout: 5))
         tap(app, id: "table-0-open")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        let none = app.staticTexts["thing-owner-none"]
-        XCTAssertTrue(none.waitForExistence(timeout: 5), "with nobody named, Whose it is just vanished")
-        XCTAssertTrue(words(none).contains("Your choices"), "'\(words(none))'")
-        bringIntoView(app, none)
-        shot(app, "thing-owner-none")
+        XCTAssertTrue(app.buttons["thing-owner"].waitForExistence(timeout: 5), "with nobody named, Whose it is is no list")
+        XCTAssertFalse(app.staticTexts["thing-owner-none"].exists, "the old line is still there")
+        openDropDown(app, "thing-owner")
+        XCTAssertEqual(words(app.buttons["thing-owner-0"]), "Both have one")
+        XCTAssertFalse(app.buttons["thing-owner-1"].exists, "somebody is offered: '\(words(app.buttons["thing-owner-1"]))'")
+        shot(app, "thing-owner-first")
+        type("Alex", into: app.textFields["thing-owner-new"])
+        tap(app, id: "thing-owner-add")
+        XCTAssertTrue(disappears(app, "thing-owner-list", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-owner"), "Alex", "the first owner was not chosen")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "table-0-open")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-owner"), "Alex", "the first owner was not kept")
+        openDropDown(app, "thing-owner")
+        XCTAssertEqual(words(app.buttons["thing-owner-1"]), "Alex", "the first owner did not join his list")
+        XCTAssertTrue(app.buttons["thing-owner-1-rename"].exists, "the first owner has no pen")
+        closeDropDown(app, "thing-owner")
     }
 
     /// His bag list is no column of the table, no filter and no sort key: a tick
@@ -10597,6 +10647,71 @@ final class AMSPackingUITests: XCTestCase {
         hideKeyboard(app)
         tap(app, id: "template-find-clear")
         XCTAssertTrue(app.buttons["template-reminder-0"].waitForExistence(timeout: 5))
+    }
+
+    /// A reminder's When has his steps' tools (0.73), made AT ONCE — the reminders block
+    /// saves as it goes: a step renamed, one in use refused, an unused one removed, one
+    /// moved, and a new one made at the foot and given to the reminder. Closed without
+    /// Done, it all stays; a thing's When reads the same list. (`-uiTestingReminders`:
+    /// Hiking's "Check the forecast" a week ahead.)
+    func testAReminderWhenIsChangedInsideItsList() {
+        let app = launch("-uiTestingReminders")
+        openSectionedHiking(app)
+        tap(app, id: "template-reminder-0")
+        XCTAssertTrue(app.textFields["template-reminder-name"].waitForExistence(timeout: 5), "the reminder does not open")
+        hideKeyboard(app)
+        openDropDown(app, "template-reminder-when")
+        #if os(macOS)
+        let tools = ["rename", "up", "down", "remove"]
+        #else
+        let tools = ["rename", "remove"]
+        XCTAssertTrue(grip(app, "template-reminder-when-1-grip").exists, "a step has no grip")
+        #endif
+        for tool in tools {
+            XCTAssertTrue(app.buttons["template-reminder-when-1-\(tool)"].exists, "a step has no \(tool)")
+        }
+        XCTAssertEqual(words(app.buttons["template-reminder-when-1"]), "\u{2265}1 week ahead")
+        renameInList(app, "template-reminder-when-2", to: "The evening before")
+        // The reminder's own step is in use; the unused Wear goes at once — no Put back.
+        XCTAssertTrue(removeIsRefused(app, "template-reminder-when-1").contains("still used"), "the refusal does not say what uses it")
+        tap(app, id: "template-reminder-when-1-remove-no")
+        XCTAssertEqual(words(app.buttons["template-reminder-when-5"]), "Wear / carry on the day")
+        tap(app, id: "template-reminder-when-5-remove")
+        XCTAssertTrue(app.staticTexts["template-reminder-when-5-ask"].waitForExistence(timeout: 5), "Remove did not ask first")
+        tap(app, id: "template-reminder-when-5-remove-yes")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-when-5"]) == "After / recovery" },
+                      "the unused step was not removed at once: '\(words(app.buttons["template-reminder-when-5"]))'")
+        XCTAssertFalse(app.buttons["template-reminder-when-5-putback"].exists, "a step removed at once waits to be put back")
+        moveInList(app, "template-reminder-when", 1, by: -1)
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-when-0"]) == "\u{2265}1 week ahead" },
+                      "the step was not moved: '\(words(app.buttons["template-reminder-when-0"]))'")
+        shot(app, "reminder-when-tools")
+        type("At the trailhead", into: app.textFields["template-reminder-when-new"])
+        tap(app, id: "template-reminder-when-add")
+        XCTAssertTrue(disappears(app, "template-reminder-when-list", timeout: 5))
+        XCTAssertEqual(chosen(app, "template-reminder-when"), "At the trailhead", "the new step was not chosen")
+        XCTAssertTrue(waitUntil { (app.buttons["template-reminder-0"].value as? String) == "At the trailhead" },
+                      "the reminder's When is not the new step: '\(app.buttons["template-reminder-0"].value as? String ?? "")'")
+        // Closed without Done: nothing waits — the steps and the reminder's When stay.
+        tap(app, id: "template-reminder-0")
+        XCTAssertTrue(waitUntil { !app.textFields["template-reminder-name"].exists }, "the reminder did not close")
+        XCTAssertEqual(app.buttons["template-reminder-0"].value as? String, "At the trailhead", "closing undid the When")
+        // The foot's When is the same list, with the same tools.
+        openDropDown(app, "template-reminder-add-when")
+        XCTAssertTrue(app.buttons["template-reminder-add-when-0-rename"].exists, "the foot's When has no pen")
+        XCTAssertEqual(words(app.buttons["template-reminder-add-when-2"]), "The evening before")
+        closeDropDown(app, "template-reminder-add-when")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        openThing(app, "Map")
+        openDropDown(app, "thing-when")
+        XCTAssertEqual(words(app.buttons["thing-when-0"]), "\u{2265}1 week ahead", "the move did not reach a thing's When")
+        XCTAssertEqual(words(app.buttons["thing-when-2"]), "The evening before", "the rename did not reach a thing's When")
+        let last = (0..<30).map { app.buttons["thing-when-\($0)"] }.last { $0.exists }
+        XCTAssertEqual(last.map { words($0) }, "At the trailhead", "the new step did not reach a thing's When")
+        XCTAssertFalse((0..<30).contains { self.words(app.buttons["thing-when-\($0)"]) == "Wear / carry on the day" },
+                       "the removed step is still offered")
+        closeDropDown(app, "thing-when")
     }
 
     /// On a trip a reminder is a line to tick, and when its step has come it shows on

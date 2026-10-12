@@ -6,6 +6,8 @@ import PackingLibrary
 /// reminders for each Template" (spec 07, part 12). Above the things: each reminder a
 /// line with its When and a grip ≡ to drag it to its place (0.72); a press opens it in
 /// place to rename it, change its When, move it up or down (the Mac's arrows), or remove it. A new one is typed at the block's foot, with its When.
+/// Both When lists are his steps with their tools — rename, drag, remove, "A new step"
+/// (0.73) — each change made at once, as everything on this block is.
 ///
 /// A reminder is the web app's own kind of line (`itemType` "reminder"): a trip made
 /// from the template ticks it like a line, never weighs it, never puts it in a bag and
@@ -123,10 +125,13 @@ struct TemplateRemindersBlock: View {
                 .onSubmit { done(row, mid: mid) }
                 .accessibilityIdentifier("template-reminder-name")
                 .needsLine($nameNeeds, typed: name, id: "template-reminder-name-needs")
-            DropDown(title: "When", heading: .beside, options: PHASES.map { ($0.id, $0.label) },
-                     selected: row.phase, id: "template-reminder-when", tint: tint, other: true) { when in
-                model.change { _ = $0.setReminderWhen(templateId: templateId, memId: mid, when: when) }
-            }
+            // His When steps, with their tools and "A new step" (0.73) — made at once, as the
+            // reminder's When is: this block has no Save to hold them until (`steps`).
+            let steps = self.steps
+            DropDown(title: "When", heading: .beside, options: steps.options,
+                     selected: row.phase, id: "template-reminder-when", tint: tint, other: true,
+                     newEntry: steps.newEntry("A new step", needs: "Type the step first.") { when in setWhen(mid, when) },
+                     tools: steps.tools) { when in setWhen(mid, when) }
             HStack(spacing: 8) {
                 // ↑ ↓ on the Mac only (0.72): the iPhone drags the line's grip.
                 if ReorderArrows.shown {
@@ -170,6 +175,19 @@ struct TemplateRemindersBlock: View {
         #endif
     }
 
+    /// His When steps as this block's two When lists show them (0.73, spec 07 part 13): the
+    /// pen, the grip (and the Mac's ↑ ↓), Remove and "A new step", as on a thing's page —
+    /// but each change made AT ONCE, by the writes a page's Save makes: the block saves as
+    /// it goes (a reminder's When, its place, its removal), so nothing here could hold them.
+    private var steps: ChoiceDrop {
+        ChoiceDrop.atOnce(model, kind: "phases", words: "your \u{201C}When\u{201D} steps")
+    }
+
+    /// A reminder's When, at once; its open lines on trips still ahead follow.
+    private func setWhen(_ mid: String, _ when: String) {
+        model.change { _ = $0.setReminderWhen(templateId: templateId, memId: mid, when: when) }
+    }
+
     private func canStep(_ mid: String, _ by: Int) -> Bool {
         let rows = model.library.reminders(templateId: templateId)
         guard let n = rows.firstIndex(where: { $0.memId == mid }) else { return false }
@@ -196,7 +214,10 @@ struct TemplateRemindersBlock: View {
 
     /// The foot: When, then the new reminder's name and Add.
     private var foot: some View {
-        let when = newWhen.isEmpty ? model.library.whenForNewReminder(templateId: templateId) : newWhen
+        // A step picked here and then removed from its list (0.73) leaves the pick: the one a
+        // new reminder would get stands again.
+        let picked = !newWhen.isEmpty && model.library.timeline().contains { $0.id == newWhen }
+        let when = picked ? newWhen : model.library.whenForNewReminder(templateId: templateId)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 TextField("Add a reminder", text: $newName)
@@ -214,8 +235,11 @@ struct TemplateRemindersBlock: View {
                     .accessibilityIdentifier("template-reminder-add")
             }
             .needsLine($addNeeds, typed: newName, id: "template-reminder-add-needs")
-            DropDown(title: "When", heading: .beside, options: PHASES.map { ($0.id, $0.label) },
-                     selected: when, id: "template-reminder-add-when", tint: tint, other: true) { newWhen = $0 }
+            let steps = self.steps
+            DropDown(title: "When", heading: .beside, options: steps.options,
+                     selected: when, id: "template-reminder-add-when", tint: tint, other: true,
+                     newEntry: steps.newEntry("A new step", needs: "Type the step first.") { newWhen = $0 },
+                     tools: steps.tools) { newWhen = $0 }
         }
         .padding(.top, 8)
         .onAppear { if adding { typing = true } }

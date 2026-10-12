@@ -956,14 +956,15 @@ apart; a field 6 pt under its heading):
    choice; the thing's category is ticked. Pen, arrows, Remove and "A new kind" (0.69): see "His lists inside their
    drop-downs" below. A category that is none of these (from the web app) is shown on the
    field and on a row of its own at the end, ticked (`thing-category-other`).
-5. **Whose it is** — drop-down (0.64; band `thing-owner-title`, field `thing-owner`, list `thing-owner-list`) when
-    `ownerChoices()` is not empty: first "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026,
+5. **Whose it is** — drop-down (0.64; band `thing-owner-title`, field `thing-owner`, list `thing-owner-list`),
+    always (0.73; until then only when `ownerChoices()` was not empty): first "Both have one" (`OWNER_BOTH`; value "" = no owner — his words 4 Oct 2026,
     replacing "Nobody's in particular"; `thing-owner-0`, grey), then each owner once (`thing-owner-1`…). Every owner
     named on a thing is offered, but once per `normName`, in the FIRST spelling met (his owners list before the
     things' names) — the value compared is the exact text, so a thing saying "kim" while "Kim" is offered shows
     "kim" on the field and on a row of its own, ticked (`thing-owner-other`; until 0.64 no pill was lit). With
-    nobody named anywhere (0.62): the band stays, over "Nobody is named yet. Add the names in Settings, under Your
-    choices." (`thing-owner-none`, 15 medium muted) — it used to vanish; no drop-down then. Since 0.69 the rows of
+    nobody named anywhere the list is "Both have one" and its foot, "A new owner" — the FIRST owner is made right
+    there (0.73, the open question of spec 07 part 13: from 0.62 the band stood over "Nobody is named yet. Add the
+    names in Settings, under Your choices." (`thing-owner-none`), and before that it vanished). Since 0.69 the rows of
     his Owners list (`owners()`) come first, as edited on the page, then any other name a thing carries; pen and
     Remove (no arrows: A–Z) and "A new owner" — see below.
 6. **On these templates** — pills band in VIOLET (templates colour, `thing-lists-title`): every template except
@@ -1063,12 +1064,15 @@ apart; a field 6 pt under its heading):
    words since 0.69). A long list (17 bags) scrolls inside the list, which opens scrolled to the ticked row. His own
    bags (not the 17 built-in names) take the tools, "A new bag" at the foot (0.69) — see below.
 9a. **Pocket** (0.69, stop B of his idea plan: "A thing can have a usual pocket ('Backpack · front pocket'), so
-   most need no tap at all") — a second drop-down right under Usually packed in, **only while the bag chosen
-   there has pockets** (`pockets(bag:)`; band `thing-pocket-title`, field `thing-pocket`, list `thing-pocket-list`):
+   most need no tap at all") — a second drop-down right under Usually packed in, **while the bag chosen there is
+   one of his own** (`takesPockets(bag:)` — it has a record to keep pockets on; until 0.73 only while it HAD pockets;
+   band `thing-pocket-title`, field `thing-pocket`, list `thing-pocket-list`):
    first **"Just in the bag"** (value "", grey, `thing-pocket-none`), then the bag's pockets in its order
    (`thing-pocket-0…`), matched by `normName`. Choosing another bag clears the pocket unless the new bag has one of
-   that name. The bag's pockets take the tools and "A new pocket" (0.69, below); a bag with none still shows no
-   Pocket list (its first pocket is made on the bag's page). Kept on the draft (`extra.usualPocket`) and saved with the page (`thing.extra[USUAL_POCKET_KEY] =
+   that name. The bag's pockets take the tools and "A new pocket" (0.69, below); a bag with none yet (0.73) shows
+   the list with only "Just in the bag" and the foot, where its FIRST pocket is made — held until Save like any new
+   entry, then made on the bag (`addPocket`) and chosen. No bag, a built-in name he does not have and a bag made at
+   Usually packed in's foot and not saved yet (its `addedKey`) have no Pocket list. Kept on the draft (`extra.usualPocket`) and saved with the page (`thing.extra[USUAL_POCKET_KEY] =
    draft's`); Cancel keeps nothing. A trip line ticked in this bag then gets this pocket by itself (spec 03,
    "Bag pockets on a trip").
 10. **When** — drop-down (0.64; band `thing-when-title`, field `thing-when`, list `thing-when-list`), one row per
@@ -1191,6 +1195,8 @@ When (`phases`) and Condition (`conditions`). Care is not one of his lists (a nu
   place", "A new bag" ("Type the bag's name first."), "A new pocket" ("Type the pocket's name first."), "A new step"
   ("Type the step first."), "A new condition" ("Type the condition first."). One he has (as the list shows them) is
   simply chosen; a new one is the list's last row, chosen, with the tools of any other (renamed, moved, taken back).
+  **The first entry (0.73):** a list with none of his entries yet still opens, so its foot makes the first — Whose it
+  is with nobody named anywhere, and Pocket for a bag of his with no pockets (items 5 and 9a).
 - **Held until Save**, like the sections: the list shows itself as it will be (`choicesAsEdited`), Cancel leaves every
   list as it was. Save, in its one `model.change`: the sections, then `applyPageChoices` (each list's renames, new
   entries and order — a bag's pockets before the bags), then the thing with its choices FOLLOWED (`choiceValue`: a
@@ -1205,9 +1211,10 @@ When (`phases`) and Condition (`conditions`). Care is not one of his lists (a nu
   Remove and Keep while asked; OK and Open the bag when refused), Space or Return presses. Letters in Kind of thing,
   Whose it is, Usually packed in, When and Condition now go by a name's START only (a list with a new entry, as Kept at
   home since 0.68): "rink" is offered as "A new kind: rink", no longer finding Food & drink inside a word.
-- Tests: model `ChoiceEditsTests` (14, PackingLibrary); UI `testKindOfThingIsChangedInsideItsList`,
+- Tests: model `ChoiceEditsTests` (14, PackingLibrary; 17 since 0.73); UI `testKindOfThingIsChangedInsideItsList`,
   `testKeptAtHomeIsChangedInsideItsListAndCancelUndoes`, `testUsuallyPackedInIsChangedInsideItsListAndABagInUseOpensItsPage`,
-  `testWhenIsChangedInsideItsListOnATemplatesRow` (iPhone) and `testHisListsAnswerTabAndSpaceOnTheMac` (Mac); spec 07
+  `testWhenIsChangedInsideItsListOnATemplatesRow`, (0.73) `testTheFirstOwnerIsMadeInsideWhoseItIs` and
+  `testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage` (iPhone) and `testHisListsAnswerTabAndSpaceOnTheMac` (Mac); spec 07
   part 13 has the planted faults.
 
 The headings are `HeadingBand`s in orange (violet for On these templates); a drop-down's field is Body, `Metrics.tap`
@@ -1282,9 +1289,9 @@ focus too: into a text field (the focus follows `typing`), on a drop-down's fiel
 switch (a tap gesture beside its own). A text field left for nothing (a click on empty space) takes the ring away.
 
 **The order Tab walks** (`fieldOrder()`; Shift-Tab back; round from the last to the first and back): Name · Notes ·
-Kind of thing · Whose it is (when anyone is named) · On these templates (when he has any) · the Section of each template
+Kind of thing · Whose it is (always since 0.73; until then when anyone was named) · On these templates (when he has any) · the Section of each template
 lit, in the pills' order (one lit by the keys comes in at once; one unlit goes) · Kept at home · Usually packed in ·
-Pocket (0.69, when that bag has pockets; `thing-pocket`, a drop-down like the others) · When · Weight · the kit part
+Pocket (0.69, when that bag is one of his — since 0.73 one with no pockets too; `thing-pocket`, a drop-down like the others) · When · Weight · the kit part
 (0.70; scroll id `key-kit`): Taken out for now (a thing inside a kit) — or, for any other thing, each thing inside
 in his order (0.73; `kitOut(id)` then `kitRemove(id)`, scroll id `key-kit-row-<id>`): its Take out / Put back, then
 its ✕; Add from your things; while its list is open, Find a thing (0.73, `kitFind`, a text field, scroll id
@@ -1496,8 +1503,9 @@ kept; "No bag" is the last row of Usually packed in, chosen, and still ticked wh
 + what to do → kept, and Care says "1 due soon"); `testAThingIsOfferedOnlyHisOwnBags` (0.64, -uiTestingChecks: the
 opened bag list is his one bag then "No bag", nothing more); `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen`
 (0.64: every heading in his order; a new place made at the list's foot is taken, joins his places and is ticked;
-"Not said" chosen → the field says "Not said"); `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`
-(every owner blanked by Change all → `thing-owner-none` names Your choices);
+"Not said" chosen → the field says "Not said"); `testTheFirstOwnerIsMadeInsideWhoseItIs` (0.73, was
+`testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`: every owner blanked by Change all → Whose it is is still its
+list, "Both have one" and the foot; "Alex" made there is chosen, kept on Save and is his list's, with its pen);
 `testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (a condition set in the table ticks
 `thing-condition-4`).
 
@@ -1694,8 +1702,13 @@ longer checks it); `testABagOnTheTripSaysWhetherItGoesInTheCabin` (from the trip
 `testABagsPageListsItsPockets` (`-uiTestingPockets`: the Backpack's 3 pockets; Add with nothing typed says so; a
 fourth added; Front pocket renamed; the new one moved up; Main removed — red with Add not reaching the model: "the
 new pocket was not added: '3'"); `testAThingsUsualPocketIsOfferedWhenItsBagHasPockets` (the charger's Pocket says
-Front pocket; Lid chosen and saved is there when reopened; the Toothbrush, in a bag with no pockets, has no Pocket —
-red with the save line planted out: "the usual pocket was not kept: 'Front pocket'"); model `PocketsTests`.
+Front pocket; Lid chosen and saved is there when reopened; the Toothbrush, in a bag that is none of his (the
+carry-on is only a name in that sample), has no Pocket — red with the save line planted out: "the usual pocket was
+not kept: 'Front pocket'"); model `PocketsTests`. **0.73:** `testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage`
+(`-uiTestingChecks`, the Map in the carry-on, a bag of his with no pockets: Pocket shows "Just in the bag", no
+pocket row; "Side pocket" made at the foot is chosen, kept on Save and is the bag's first pocket, with its pen; No
+bag takes the Pocket list away — red with the 0.69 rule planted back (`!pockets.rows.isEmpty`): "no Pocket list for
+a bag of his with no pockets"); model `ChoiceEditsTests.testABagWithNoPocketsTakesItsFirstPocketFromAThingsPage`.
 
 **Not covered by a test.** The rename refusal texts; "Show all"; the trips list beyond the first; "Heaviest:".
 
@@ -1825,7 +1838,7 @@ shown Colour column; Done closes); `testManyThingsAreChangedAtOnceAndCanBePutBac
 `testWhatBelongsToAListIsEditedPerList`.
 
 UI (0.62): `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight` (two ticked, a search shows one → "2 ticked ·
-1 not shown"), `testATemplateDeletedTakesItsFilterAndColumnAlong`, `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`
+1 not shown"), `testATemplateDeletedTakesItsFilterAndColumnAlong`, `testTheFirstOwnerIsMadeInsideWhoseItIs`
 (`table-pick-all` ticks all ten). Model: `ThingsAndCareFixesTests.testUndoPutsBackOnlyWhatChangeAllChanged`.
 
 **Not covered by a test.** "No place"; the empty-state texts; the band titles holding still.
@@ -2408,7 +2421,8 @@ pins · [idea] a gap worth deciding on.
    (`testAConditionStoredAsItsLabelIsRepairedToItsId`, UI `testAConditionStoredTheOldWayIsRepairedOnLoad`).
 3. [bug] Resolved in 0.62: the table and Change all offer `ownerChoices()` (every owner his things name); with
    nobody named anywhere the thing's page keeps "Whose it is" and says the names come from Settings → Your choices
-   (UI `testTheTableOffersHisOwnBags…`, `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed`).
+   (UI `testTheTableOffersHisOwnBags…`). Since 0.73 the list itself is there, its foot making the first owner
+   (`testTheFirstOwnerIsMadeInsideWhoseItIs`).
 4. [bug] Resolved in 0.62: his bag list is no table column, filter or sort key (`templatesForThings()`); a bag is
    made and deleted on Your bags only (`testHisBagListIsNotATemplateAThingIsTickedOnto`, UI
    `testTheBagListIsNoColumnOfTheTable`).

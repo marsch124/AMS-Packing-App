@@ -368,6 +368,18 @@ extension Library {
         }
     }
 
+    /// One list's change made AT ONCE, where nothing holds changes until a Save — a
+    /// reminder's When on a template's page (0.73, spec 07 part 13), which saves as it
+    /// goes, as Your choices does. The very writes a page's Save makes, in its order:
+    /// `applyChoiceEdits`, then `applyChoiceRemovals` (one still in use stays). Answers the
+    /// same map (an added entry's `addedKey` → the key it was made under).
+    @discardableResult
+    public mutating func applyChoiceEditsNow(_ e: ChoiceEdits) -> [String: String] {
+        let map = applyChoiceEdits(e)
+        applyChoiceRemovals(e, renamed: map)
+        return map
+    }
+
     /// The page's own value after its list's edits were written: a renamed entry's new
     /// key, an added one's made key — matched as the list matches names.
     public static func choiceValue(_ value: String, after map: [String: String]) -> String {

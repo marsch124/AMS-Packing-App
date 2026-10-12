@@ -42,6 +42,13 @@ extension Library {
         bagRecord(named: name).map(Library.pockets(of:)) ?? []
     }
 
+    /// Whether a thing usually packed in `bag` is offered a Pocket list: the bag is one of
+    /// his own (it has a record to keep pockets on) — pockets or not yet (0.73: a bag with
+    /// none shows the list with only "Just in the bag" and its "A new pocket" foot, so the
+    /// first pocket is made right there). Never for No bag, a built-in name he does not
+    /// have, or a bag made on the same page and not saved yet.
+    public func takesPockets(bag name: String) -> Bool { bagRecord(named: name) != nil }
+
     public func pockets(bagId: String) -> [String] {
         items.first { $0.id == bagId }.map(Library.pockets(of:)) ?? []
     }

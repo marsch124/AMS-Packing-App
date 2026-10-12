@@ -261,4 +261,80 @@ final class ChoiceEditsTests: XCTestCase {
         XCTAssertNil(lib.removeChoice("pockets", key: "Main", bag: "Backpack"))
         XCTAssertEqual(lib.pockets(bag: "Backpack"), ["Outer pocket"])
     }
+
+    // MARK: The three gaps of part 13 (0.73)
+
+    /// A reminder's When on a template's page has his steps' tools, made AT ONCE (the block
+    /// saves as it goes): renamed, a new one made and given to the reminder, moved, and an
+    /// unused one removed — each the moment it is done; the reminder's own step stays.
+    func testAReminderStepIsChangedAtOnce() {
+        var lib = library()
+        let base = lib.templates.first { $0.role == "base" }!.id
+        let mid = lib.addReminder(templateId: base, name: "Check the forecast", when: "week")!.memId!
+        func reminderStep() -> String { lib.reminders(templateId: base).first { $0.memId == mid }!.phase }
+        var e = ChoiceEdits(kind: "phases")
+        e.names["week"] = "A week ahead"
+        lib.applyChoiceEditsNow(e)
+        XCTAssertEqual(lib.timeline().first { $0.id == "week" }?.label, "A week ahead", "the rename was not made at once")
+        XCTAssertEqual(reminderStep(), "week", "a step is kept by its id")
+        e = ChoiceEdits(kind: "phases")
+        e.added = ["At the gate"]
+        let made = lib.applyChoiceEditsNow(e)[ChoiceEdits.addedKey(0)]
+        XCTAssertNotNil(made, "the new step was not made at once")
+        XCTAssertEqual(lib.timeline().last?.id, made)
+        XCTAssertTrue(lib.setReminderWhen(templateId: base, memId: mid, when: made!))
+        XCTAssertEqual(reminderStep(), made)
+        e = ChoiceEdits(kind: "phases")
+        e.order = lib.timeline().map(\.id).filter { $0 != made }
+        e.order!.insert(made!, at: 0)
+        lib.applyChoiceEditsNow(e)
+        XCTAssertEqual(lib.timeline().first?.id, made, "the move was not made at once")
+        // The reminder's own step is in use: it stays. An unused one goes at once.
+        XCTAssertEqual(lib.choiceRemoveProblem("phases", key: made!, label: "At the gate"),
+                       "At the gate is still used on 1 template, so it stays.")
+        e = ChoiceEdits(kind: "phases")
+        e.removed = [made!, "wear"]
+        lib.applyChoiceEditsNow(e)
+        XCTAssertTrue(lib.timeline().contains { $0.id == made }, "the reminder's own step was removed")
+        XCTAssertFalse(lib.timeline().contains { $0.id == "wear" }, "an unused step was not removed at once")
+    }
+
+    /// A bag of his with no pockets is still offered a Pocket list — its foot makes the
+    /// first pocket; No bag, a name he does not have and a bag not made yet are not.
+    func testABagWithNoPocketsTakesItsFirstPocketFromAThingsPage() {
+        var lib = library()
+        XCTAssertEqual(lib.pockets(bag: "Tote"), [])
+        XCTAssertTrue(lib.takesPockets(bag: "Tote"), "a bag of his with no pockets offers no Pocket list")
+        XCTAssertTrue(lib.takesPockets(bag: " tote "), "a bag is found by its name, as elsewhere")
+        XCTAssertTrue(lib.takesPockets(bag: "Backpack"))
+        XCTAssertFalse(lib.takesPockets(bag: ""), "No bag offers a Pocket list")
+        XCTAssertFalse(lib.takesPockets(bag: "Checked luggage"), "a bag he does not have offers a Pocket list")
+        XCTAssertFalse(lib.takesPockets(bag: ChoiceEdits.addedKey(0)), "a bag not made yet offers a Pocket list")
+        var e = ChoiceEdits(kind: "pockets", bag: "Tote")
+        e.added = ["Inner sleeve"]
+        let map = lib.applyChoiceEdits(e)
+        XCTAssertEqual(lib.pockets(bag: "Tote"), ["Inner sleeve"], "the first pocket was not made")
+        let pocket = Library.choiceValue(ChoiceEdits.addedKey(0), after: map)
+        XCTAssertEqual(pocket, "Inner sleeve")
+        XCTAssertTrue(lib.setUsualPocket(thingId: thing(lib, "Book"), pocket: pocket))
+        XCTAssertEqual(Library.usualPocket(item(lib, "Book")), "Inner sleeve")
+    }
+
+    /// With nobody named anywhere, the first owner is made from Whose it is's foot: it
+    /// starts his Owners list and the page's thing says it.
+    func testTheFirstOwnerIsMadeFromWhoseItIs() {
+        var lib = Library()
+        let book = lib.addThing(name: "Book")!.id
+        XCTAssertEqual(lib.owners(), [])
+        XCTAssertEqual(lib.ownerChoices(), [], "somebody is named")
+        var e = ChoiceEdits(kind: "owners")
+        e.added = ["Sam"]
+        XCTAssertEqual(lib.choicesAsEdited(e).map(\.label), ["Sam"], "the page does not show the new owner")
+        let map = lib.applyChoiceEdits(e)
+        let owner = Library.choiceValue(ChoiceEdits.addedKey(0), after: map)
+        XCTAssertEqual(owner, "Sam", "the first owner was not made")
+        XCTAssertEqual(lib.owners(), ["Sam"])
+        _ = lib.updateThing(id: book) { $0.ownedBy = owner }
+        XCTAssertEqual(lib.ownerChoices(), ["Sam"])
+    }
 }
