@@ -91,10 +91,17 @@ extension Library {
             r.qty = qty == thing.qty ? "" : qty
             r.note = note == thing.note ? "" : note
             r.section = section
-            r.seasons = Library.keptConditions(a.seasons, SEASONS, r.seasons)
-            r.contexts = Library.keptConditions(a.contexts, CONTEXTS, r.contexts)
-            r.transports = Library.keptConditions(a.transports, TRANSPORTS, r.transports)
-            r.catering = Library.keptConditions(a.catering, CATERING.map(\.id), r.catering)
+            // "Only on some trips", per kind (0.73, spec 07 part 14): what the editor shows
+            // is the row's EFFECTIVE answer. The thing's answer → the row follows the thing;
+            // nothing while the thing has a limit → this row's own "any"; else its own.
+            // Words the app does not know — the row's or the thing's — are kept while on.
+            let picked: [TripLimit: Set<String>] = [.seasons: a.seasons, .contexts: a.contexts,
+                                                     .transports: a.transports, .catering: a.catering]
+            for k in TripLimit.allCases {
+                let shown = Library.keptConditions(picked[k] ?? [], k.vocabulary,
+                                                   k.list(r) + Library.thingLimit(thing, k))
+                Library.storeRowLimit(&r, k, shown: shown, thing: thing)
+            }
         }
         followThing(id: thing.id)
         return true

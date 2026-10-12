@@ -1078,11 +1078,9 @@ struct RowEditor: View {
     /// A section typed here, waiting for Save: it is made only then, so Cancel leaves
     /// the template as it was (the spec pass, 5 Oct 2026 — it used to stay behind).
     @State private var pendingSection = ""
-    /// Only on some trips (his ask, 2 Oct 2026): none = always comes along.
-    @State private var seasons: Set<String> = []
-    @State private var contexts: Set<String> = []
-    @State private var transports: Set<String> = []
-    @State private var catering: Set<String> = []
+    /// Only on some trips (his ask, 2 Oct 2026): none = always comes along. Since 0.73 the
+    /// row's EFFECTIVE answers — each kind the thing's own until changed here (spec 07 part 14).
+    @State private var limits = TripLimits()
     /// His bags and When steps, and this template's sections, changed inside their lists
     /// here (0.69) — held until Save, as on a thing's page (ChoiceDropDown.swift).
     @State private var choiceLists: [String: ChoiceEdits] = [:]
@@ -1166,29 +1164,23 @@ struct RowEditor: View {
                     Text("Blank means the same as the thing itself, so a change to the thing still reaches this template.")
                         .font(.system(.footnote)).foregroundStyle(Theme.muted)
 
-                    // Only on some trips — per template, as the web app keeps it: a towel
-                    // can be summer-only on Beach and always on Swim (his ask, 2 Oct 2026).
+                    // Only on some trips — a towel can be summer-only on Beach and always on
+                    // Swim (his ask, 2 Oct 2026). Since 0.73 each kind follows the THING's own
+                    // answer, set once on its page, until it is changed here (spec 07 part 14).
                     // A band like the others; its four parts are headings INSIDE it, a size down.
                     VStack(alignment: .leading, spacing: 14) {
                         HeadingBand(title: "Only on some trips", tint: AppSection.templates.color, id: "row-heading-some")
-                        Text("Leave these off and it always comes along. Pick one or more and it comes only on trips that match — on this template.")
+                        Text("Each kind follows the thing's own answer until you change it here; then it is this template's own. Nothing lit: it comes on every trip.")
                             .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, -6)
                         // A word the app does not know (a web-app "summer") is a pill of its
                         // own after the app's words: kept on Save, and switched off like any.
-                        Pills(title: "Season", options: RowEditor.words(SEASONS, stored.seasons), selected: seasons,
-                              id: "row-seasons", tint: AppSection.templates.color) { toggle(&seasons, $0) }
                         // Context narrows only workout (WET) templates, as the trip builder reads it.
-                        if contextApplies(list) {
-                            Pills(title: "Context", options: RowEditor.words(CONTEXTS, stored.contexts), selected: contexts,
-                                  id: "row-contexts", tint: AppSection.templates.color) { toggle(&contexts, $0) }
-                        }
-                        Pills(title: "Transport", options: RowEditor.words(TRANSPORTS, stored.transports), selected: transports,
-                              id: "row-transports", tint: AppSection.templates.color) { toggle(&transports, $0) }
-                        Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) }
-                                + Library.unknownConditions(stored.catering, CATERING.map(\.id)).map { ($0, $0) },
-                              selected: catering, id: "row-catering", tint: AppSection.templates.color) { toggle(&catering, $0) }
+                        OnlySomeTripsPills(id: "row", picks: $limits,
+                                           stored: TripLimits(seasons: stored.seasons, contexts: stored.contexts,
+                                                              transports: stored.transports, catering: stored.catering),
+                                           showContext: contextApplies(list), thing: Library.thingLimits(thing))
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -1203,8 +1195,7 @@ struct RowEditor: View {
             guard let f = model.library.row(templateId: templateId, memId: memId) else { return }
             bag = f.membership.container; when = f.membership.phase
             qty = f.membership.qty; note = f.membership.note; section = f.membership.section
-            seasons = Set(f.membership.seasons); contexts = Set(f.membership.contexts)
-            transports = Set(f.membership.transports); catering = Set(f.membership.catering)
+            limits = Library.effectiveLimits(f.membership, thing: f.thing)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("row-detail")
@@ -1238,20 +1229,10 @@ struct RowEditor: View {
         }
     }
 
-    /// The pills of one "Only on" kind: the app's words, then any stored word it
-    /// does not know.
-    static func words(_ vocabulary: [String], _ stored: [String]) -> [(id: String, label: String)] {
-        (vocabulary + Library.unknownConditions(stored, vocabulary)).map { ($0, $0) }
-    }
-
     /// A blank field's grey words: the thing's own answer when it has one.
     static func sameAs(_ own: String, else example: String) -> String {
         let first = own.split(separator: "\n").first.map(String.init) ?? ""
         return jsTrim(first).isEmpty ? example : "Same as the thing: \(jsTrim(first))"
-    }
-
-    private func toggle(_ set: inout Set<String>, _ value: String) {
-        if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
 
     /// The model decides what is stored (`Library.saveRow`): the app's own words in
@@ -1261,7 +1242,7 @@ struct RowEditor: View {
         let fresh = section == RowEditor.newSectionKey
         let held = choiceLists, edits = sectionEdits
         let (bag, when, section, pendingSection) = (bag, when, section, pendingSection)
-        let (qty, note, seasons, contexts, transports, catering) = (qty, note, seasons, contexts, transports, catering)
+        let (qty, note, limits) = (qty, note, limits)
         model.change { lib in
             // The lists changed here first (0.69): the row's answers then follow them.
             _ = lib.applySectionEdits(templateId: templateId, edits)
@@ -1270,7 +1251,8 @@ struct RowEditor: View {
                                              when: Library.choiceValue(when, after: maps["phases"] ?? [:]),
                                              qty: qty, note: note,
                                              section: fresh ? "" : section, newSection: fresh ? pendingSection : "",
-                                             seasons: seasons, contexts: contexts, transports: transports, catering: catering)
+                                             seasons: Set(limits.seasons), contexts: Set(limits.contexts),
+                                             transports: Set(limits.transports), catering: Set(limits.catering))
             _ = lib.saveRow(templateId: templateId, memId: memId, answers)
             lib.applyPageRemovals(held, maps)
         }

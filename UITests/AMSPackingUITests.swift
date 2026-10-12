@@ -5236,6 +5236,131 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(isChosen(app, "thing-bag", 1), "the thing's own bag was changed by a list's exception")
     }
+
+    // MARK: - Only on some trips, set once on the thing (0.73, spec 07 part 14)
+
+    /// Winter on the thing's own page, once: open the Headlamp from Your things, Winter, Save.
+    private func headlampOnlyInWinter(_ app: XCUIApplication) {
+        openThing(app, "Headlamp")                                // on Common base and Hiking
+        let winter = app.buttons["thing-seasons-1"]
+        XCTAssertTrue(winter.waitForExistence(timeout: 5), "the thing's page has no Only on some trips")
+        select(app, winter)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+    }
+
+    /// A summer trip from Hiking (and the base template, as every full trip is): its count.
+    private func summerTripFromHiking(_ app: XCUIApplication) -> XCUIElement {
+        tab(app, "home")
+        type("Summer hills", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        select(app, app.buttons["trip-activity-0"])               // Hiking
+        XCTAssertTrue(isOn(app.buttons["trip-season-0"]), "Summer is not the season")
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip was not made")
+        return app.staticTexts["trip-progress"]
+    }
+
+    /// His words (10 Oct 2026): "if I have an item on five templates, I need to change this
+    /// in five places." Winter set ONCE on the Headlamp's page reaches both its templates; a
+    /// summer trip leaves it off from both (6 of the sample's 7), the same trip made a winter
+    /// one in Trip settings has it (7). The Context pills wait for a workout template.
+    func testOnlyOnSomeTripsSetOnceOnAThingReachesBothItsTemplates() {
+        let app = launch()
+        openThing(app, "Headlamp")
+        XCTAssertTrue(app.staticTexts["thing-heading-some"].waitForExistence(timeout: 5), "no Only on some trips")
+        XCTAssertTrue(app.buttons["thing-seasons-0"].exists && app.buttons["thing-transports-0"].exists
+                      && app.buttons["thing-catering-0"].exists, "a kind is missing on the thing's page")
+        XCTAssertFalse(app.buttons["thing-contexts-0"].exists, "Context offered on a thing on no workout template")
+        bringIntoView(app, app.buttons["thing-catering-0"])
+        shot(app, "thing-only-some")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        headlampOnlyInWinter(app)
+
+        // Both templates say it — set in one place.
+        for (n, name) in [(0, "Common base"), (1, "Hiking")] {
+            tab(app, "templates")
+            tap(app, id: "template-row-\(n)")
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+            var said = ""
+            XCTAssertTrue(waitUntil {
+                said = (0..<8).map { self.words(app.buttons["template-item-\($0)"]) }.first { $0.contains("Headlamp") } ?? ""
+                return said.contains("Only on: Winter")
+            }, "\(name)'s Headlamp does not say it is only on winter trips: '\(said)'")
+            tap(app, id: "template-detail-done")
+            XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        }
+
+        let progress = summerTripFromHiking(app)
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/6" },
+                      "a summer trip packs the winter-only headlamp: '\(words(progress))'")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-season-1"))
+        select(app, app.buttons["tripset-season-1"])              // a winter trip now
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" },
+                      "the winter trip has no headlamp: '\(words(progress))'")
+    }
+
+    /// A template's own answer wins: Hiking's Headlamp row shows the thing's Winter as the
+    /// thing's ("Same as the thing: Winter"); Winter tapped off there makes it Hiking's own —
+    /// any season — so a summer trip has it again from Hiking (7 of 7), the base template
+    /// still leaving it off; "Same as the thing" puts the thing's Winter back.
+    func testATemplatesOwnOnlyOnSomeTripsWinsOverTheThings() {
+        let app = launch()
+        headlampOnlyInWinter(app)
+        func openHikingsHeadlamp() {
+            tab(app, "templates")
+            tap(app, id: "template-row-1")
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+            tap(app, id: "template-item-0")                       // the Headlamp, under Lights
+            XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        }
+        openHikingsHeadlamp()
+        let winter = app.buttons["row-seasons-1"], from = app.staticTexts["row-seasons-from"]
+        bringIntoView(app, winter)
+        XCTAssertTrue(waitUntil { self.isOn(winter) }, "the row does not show the thing's Winter")
+        XCTAssertEqual(words(from), "Same as the thing: Winter")
+        XCTAssertFalse(app.buttons["row-seasons-same"].exists, "a row that follows the thing offers to go back to it")
+        shot(app, "row-only-some-follows")
+        tapVisible(app, winter)                                   // Hiking: any season
+        XCTAssertTrue(waitUntil { !self.isOn(winter) }, "Winter did not go")
+        XCTAssertTrue(waitUntil { self.words(from).hasPrefix("Own choice on this template") },
+                      "the row does not say it is its own: '\(words(from))'")
+        XCTAssertTrue(app.buttons["row-seasons-same"].exists, "no way back to the thing's answer")
+        shot(app, "row-only-some-own")
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-item-0"]).contains("Headlamp") })
+        XCTAssertFalse(words(app.buttons["template-item-0"]).contains("Only on"),
+                       "Hiking's own any season still says a limit: '\(words(app.buttons["template-item-0"]))'")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        let progress = summerTripFromHiking(app)
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" },
+                      "Hiking's own answer did not win over the thing's: '\(words(progress))'")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // One tap back to the thing's answer.
+        openHikingsHeadlamp()
+        bringIntoView(app, app.buttons["row-seasons-same"])
+        tap(app, id: "row-seasons-same")
+        XCTAssertTrue(waitUntil { self.isOn(winter) }, "Same as the thing did not bring Winter back")
+        XCTAssertEqual(words(from), "Same as the thing: Winter")
+        tap(app, id: "row-save")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-item-0"]).contains("Only on: Winter") },
+                      "the row did not follow the thing again: '\(words(app.buttons["template-item-0"]))'")
+    }
     /// His own lists: a storage place is added, is offered to a thing, and cannot
     /// be removed while something uses it.
     /// A restore REPLACES: the sheet shows what the file holds beside what the

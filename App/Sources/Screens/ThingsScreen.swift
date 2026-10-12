@@ -318,6 +318,9 @@ struct ThingEditor: View {
     }
     /// What it holds, or the kit it is in (0.70, ThingKitPart.swift) — kept until Save.
     @State private var kit = KitDraft()
+    /// Its own "Only on some trips" (0.73, spec 07 part 14): every template it is on follows
+    /// it unless that template's row sets its own — kept until Save.
+    @State private var limits = TripLimits()
 
     var body: some View {
         let templates = self.templates
@@ -406,11 +409,10 @@ struct ThingEditor: View {
                     }
                     .keyed(.templates)
                     sectionChoices(templates)
-                    // Where the trip tags live (his ask, 2 Oct 2026, to have them here).
-                    Text("Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and tap this thing.")
-                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("thing-tags-hint")
+                    // Only on some trips, set once HERE (0.73 — his words, 10 Oct 2026: "if I have
+                    // an item on five templates, I need to change this in five places"). Until then
+                    // a grey line said it was set per template.
+                    onlySomeTrips(templates)
                     // Chosen from his places, never typed (6 Oct 2026, his word: "Can we turn Kept
                     // at home into a drop-down … so that we have a list to choose from? If we write
                     // it this way, it's a possibility that the naming convention skews.")
@@ -570,11 +572,44 @@ struct ThingEditor: View {
         sectionEdits = [:]
         choiceLists = [:]
         kit = KitDraft(model.library, thingId: id)     // what it holds, or its kit (0.70)
+        limits = model.library.items.first { $0.id == id }.map(Library.thingLimits) ?? TripLimits()
         problem = ""
         weightProblem = ""
         askingToDelete = false
         expiryText = draft.expiry
         expiryProblem = ""
+    }
+
+    /// The thing's own "Only on some trips", in the Templates violet as the template pills and
+    /// the Sections above it: what every template it is on follows unless that template's row
+    /// says otherwise — and which of them do (spec 07 part 14).
+    @ViewBuilder private func onlySomeTrips(_ templates: [PackList]) -> some View {
+        let stored = model.library.items.first { $0.id == current }.map(Library.thingLimits) ?? TripLimits()
+        // Context counts on a workout template only: offered while the thing is on one, or
+        // says one already (so it can be seen and switched off).
+        let workout = templates.contains { onLists.contains($0.id) && contextApplies($0) }
+            || !stored.contexts.isEmpty || !limits.contexts.isEmpty
+        let own = current.isEmpty ? "" : model.library.ownLimitWords(thingId: current, against: limits, on: onLists)
+        VStack(alignment: .leading, spacing: 14) {
+            HeadingBand(title: "Only on some trips", tint: AppSection.templates.color, id: "thing-heading-some")
+            Text("Leave these off and it always comes along. Pick one or more and it comes only on trips that match \u{2014} on every template it is on, unless a template sets its own.")
+                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, -6)
+                .accessibilityIdentifier("thing-some-hint")
+            OnlySomeTripsPills(id: "thing", picks: $limits, stored: stored, showContext: workout)
+            if workout {
+                Text("Context counts on workout templates only.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("thing-contexts-note")
+            }
+            if !own.isEmpty {
+                Text(own)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("thing-some-own")
+            }
+        }
     }
 
     private func toggleTemplate(_ id: String) {
@@ -988,6 +1023,7 @@ struct ThingEditor: View {
         let every = careEvery, notes = jsTrim(careNotes)
         let chosen = sections, atOpen = sectionsAtOpen, typed = newSections, edited = sectionEdits
         let kitSays = kit
+        let only = limits
         let held = choiceLists
         var written = d
         model.change { lib in
@@ -1012,6 +1048,8 @@ struct ThingEditor: View {
             page.container = follow(page.container, "bags")
             written = page
             kitSays.save(&lib, thingId: itemId)      // what it holds, or taken out of its kit (0.70)
+            // Its own "Only on some trips" (0.73); `updateThing` below brings trips ahead along.
+            lib.setThingLimits(id: itemId, only, follow: false)
             _ = lib.updateThing(id: itemId) { thing in
                 thing.storage = jsTrim(page.storage)
                 thing.category = page.category
@@ -1432,6 +1470,7 @@ extension ThingEditor {
         sectionEdits = [:]
         choiceLists = [:]
         kit = KitDraft()
+        limits = TripLimits()
         problem = ""
         weightProblem = ""
         askingToDelete = false

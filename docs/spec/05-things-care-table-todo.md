@@ -1024,8 +1024,22 @@ apart; a field 6 pt under its heading):
         keeps its things (the same section, its name changed); a removed one's things stay on the template under no
         section; trips already made keep the headings they were made with, as after Arrange. The page holds them
         per template (`sectionEdits`), and forgets them when it moves to another thing (⌘↓, ⌘N: they were saved).
-7. "Only on some trips — Season, Indoor/Outdoor, Transport, Food — is set per template: open the template and
-    tap this thing." (`thing-tags-hint`, 15 medium muted).
+7. **Only on some trips** (0.73, spec 07 part 14 — his words, 10 Oct 2026: "if I have an item on five templates, I
+    need to change this in five places. Doesn't seem optimal."). Until 0.73 a grey line here said it was "set per
+    template: open the template and tap this thing" (`thing-tags-hint`, gone). Now the same block as a template's
+    row, as the THING's answer — every template it is on follows it unless that template's row sets its own: band
+    "Only on some trips" (`thing-heading-some`, Templates violet), the line `thing-some-hint`, pill rows Season
+    (`thing-seasons-<n>`), Context (`thing-contexts-<n>`, only while the thing is on a workout template or already has
+    a Context, then "Context counts on workout templates only." under the pills, `thing-contexts-note`), Transport
+    (`thing-transports-<n>`), Food (`thing-catering-<n>`) — headings `thing-<kind>-title`, the pills as a row's
+    (`OnlySomeTripsPills`, `OnlySomeTrips.swift`; never borrowed here); then `thing-some-own` (Footnote muted) naming
+    the templates lit in On these templates whose row sets its own answer, measured against what the page holds
+    (`Library.ownLimitWords(thingId:against:on:)`: "Set on the template instead: Hiking (Season), Swim (Food)."; a
+    row's own Context on a template that is no workout is not named). Held until Save like everything here; Save
+    writes it (`Library.setThingLimits(id:_:follow: false)`, before `updateThing`, which brings trips still ahead
+    along) into the thing's `extra` keys `onlySeasons`, `onlyContexts`, `onlyTransports`, `onlyCatering` — and every
+    row of the thing whose own answer now equals the thing's goes back to following it (spec 07 part 14, rule 4).
+    ⌘N (Mac) starts the new thing with none. Not in the Mac's Tab order yet.
 8. **Kept at home** — band (`thing-heading-kept`); since 0.64 CHOSEN, never typed (his word, 6 Oct 2026: "Can we
    turn Kept at home into a drop-down … so that we have a list to choose from? If we write it this way, it's a
    possibility that the naming convention skews"). The first drop-down, which the others copy — rebuilt on

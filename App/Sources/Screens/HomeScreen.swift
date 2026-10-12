@@ -351,6 +351,10 @@ struct Pills: View {
     /// The pill the Mac's arrows are on (a thing's On these templates, 0.68): ringed in
     /// the pills' colour, just outside it. nil = none (everywhere else).
     var cursor: Int? = nil
+    /// The picked pills are an answer BORROWED from elsewhere — on a template's row, the
+    /// thing's own "Only on some trips" (0.73, OnlySomeTrips.swift): drawn with a wash and
+    /// an outline in the tint and the words in ink, instead of filled.
+    var borrowed = false
     let choose: (String) -> Void
 
     var body: some View {
@@ -369,14 +373,15 @@ struct Pills: View {
                 ForEach(Array(options.enumerated()), id: \.element.id) { n, o in
                     let on = selected.contains(o.id)
                     let tone = tones?(o.label)
+                    let lent = on && borrowed
                     Button { choose(o.id) } label: {
                         Text(o.label)
                             .font(.system(.subheadline, weight: on ? .semibold : .regular))
-                            .foregroundStyle(on ? (tone?.ink ?? Color.white) : Theme.ink)
+                            .foregroundStyle(lent ? Theme.ink : on ? (tone?.ink ?? Color.white) : Theme.ink)
                             .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                            .background(Capsule().fill(on ? (tone?.fill ?? tint) : Theme.bg))
+                            .background(Capsule().fill(lent ? tint.opacity(0.18) : on ? (tone?.fill ?? tint) : Theme.bg))
                             .overlay(Capsule().stroke(on ? (tone?.fill ?? tint) : (tone?.fill ?? Theme.line),
-                                                      lineWidth: tone == nil || on ? 1 : 1.8))
+                                                      lineWidth: lent ? 1.6 : tone == nil || on ? 1 : 1.8))
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
