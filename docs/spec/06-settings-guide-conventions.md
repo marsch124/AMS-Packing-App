@@ -1581,7 +1581,11 @@ same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
   "Name" for his lists). The tools of a row, in Tab's order, come from one place (`toolsOf`). Which lists have tools:
   a thing's and a template row's Section lists, and every pick-one list of his own on a thing's page and a template's
   row (spec 05 "His lists inside their drop-downs", spec 07 part 13) — built by `ChoiceDrop`
-  (`Screens/ChoiceDropDown.swift`) and `DropDownRowTools.sections`.
+  (`Screens/ChoiceDropDown.swift`) and `DropDownRowTools.sections` — and (0.73) a reminder's two When lists on a
+  template's page, built by `ChoiceDrop.atOnce`: the same tools with nothing held, each change written as it is made
+  (`applyChoiceEditsNow`), so a removed row goes at once instead of being struck out (spec 07 part 13, "The last three
+  lists"). A list with none of his rows yet still opens to its foot (Whose it is with nobody named, Pocket for a bag
+  with none).
 - **Drag and drop (0.70, `Screens/Reorder.swift`)** — on a tool row whose list `orders` and that is not removed, a
   **grip ≡** at the row's LEFT (`<row id>-grip`; `ReorderGrip` drawing Arrange's `GripMark`, the thin grey one: 24-pt
   grid, 36 × `Metrics.compact`; read as "Move <name>", hint "Hold and drag to move it; the arrows move it one place"

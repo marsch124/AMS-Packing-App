@@ -834,7 +834,9 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
   **grip ≡** at its left (0.72, both devices; `template-reminder-<n>-grip`, `ReorderGrip`: hold and drag, each place
   passed one `moveReminder` at once), its name, and on the right its When in the step's own colour (made readable for day or night). A press opens it in place:
   - the name, a field (`template-reminder-name`; what was missing said under it, `template-reminder-name-needs`);
-  - **When**, a drop-down (`template-reminder-when`) — applied at once; its open lines on trips still ahead follow;
+  - **When**, a drop-down (`template-reminder-when`) — applied at once; its open lines on trips still ahead follow.
+    Its rows are his steps (`timeline()`) with their tools and "A new step" since 0.73 — each change made at once
+    (part 13, "A reminder's When");
   - ↑ and ↓ (`template-reminder-up` / `-down`, 36-pt squares; the Mac only since 0.72) — move it one place among the
     reminders, at once; at the top (bottom) the arrow is drawn in the hairline colour and does nothing;
   - **Done** (`template-reminder-done`, the template's violet, never grey) — saves a changed name and closes;
@@ -842,7 +844,7 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
     template?" Keep it (`-remove-no`) / Remove (`-remove-yes`).
   - Pressing the line again closes it without saving the name; Esc closes it on the Mac.
 - The foot: **Add a reminder** field (`template-reminder-add-name`) and **Add** (`template-reminder-add`), then
-  **When** (`template-reminder-add-when`). Add with nothing typed says "Type the reminder first."
+  **When** (`template-reminder-add-when`; the same list and tools, 0.73). Add with nothing typed says "Type the reminder first."
   (`template-reminder-add-needs`). A new reminder's When starts as the last reminder's on this template, else the
   first step one day ahead ("Day before"), else the step a new thing gets.
 - While Find holds a word, the block is hidden (Find looks for things). The template's card on the Templates tab,
@@ -907,8 +909,8 @@ template; order, When and remove; not among his things nor arranged; on a trip t
 reviewed; due reminders; a step's words. Planted fault: `ownThings()` returning every item → red "Your things lists
 things only". UI (iPhone, light and dark): `testATemplateKeepsItsReminders` (planted: Add not adding → "the reminder
 was not added"), `testATripsRemindersShowWhenTheyAreDue` (planted: `dueReminders` empty → "the countdown does not
-name the reminder due"). Not covered by a UI test: Into's "To do" heading, the When drop-down on a reminder, Remove's
-"Keep it", the Mac (built, not run).
+name the reminder due"). Not covered by a UI test: Into's "To do" heading, Remove's "Keep it", the Mac (built, not
+run). The When drop-down on a reminder: `testAReminderWhenIsChangedInsideItsList` (0.73, part 13).
 
 ## 13. His lists changed inside their drop-downs
 
@@ -932,10 +934,11 @@ pick-one list whose choices are his own.
 | Condition | thing's page | `conditions` | yes | A new condition |
 | Bag on this template | template's row | `bags` | yes | A new bag |
 | When, on this template | template's row | `phases` | yes | A new step |
+| When, of a reminder (0.73) | template's page, Reminders (open reminder and the foot) | `phases` — made AT ONCE | yes | A new step |
 | Section of this template | template's row | the template's sections (part 2's tools) | yes | A new section (as before) |
 
 Not included: **Care** (its choices are numbers of days, not a list of his); the trip's Sorting, Counts as (the
-review), a reminder's When (applied at once, no Save to hold changes for — open question) and the table's menus.
+review) and the table's menus. (A reminder's When was left out until 0.73 — below.)
 
 ### How it works (one mechanism)
 
@@ -1083,12 +1086,63 @@ Templates violet made readable (`readableHex`), " · place" muted, "On no templa
 and red over green): the Map's row (Hiking · Garage) has violet; a thing on no template has none. Planted: the names in
 `Theme.muted` → red "("0") is not greater than ("20") - the Map's templates are not in the Templates violet".
 
+### The last three lists (0.73)
+
+> **Built in 0.73** (helper "ddfirst", 12 Oct 2026) — written from the code. His wish (8 Oct 2026): every pick-one list
+> of his own can be changed — added to, renamed, reordered, removed — from inside its drop-down. Three were still
+> short of it (the open questions below).
+
+- **A reminder's When** (spec 07 part 12; `Screens/TemplateReminders.swift`). Both its drop-downs — the open
+  reminder's (`template-reminder-when`) and the block foot's (`template-reminder-add-when`) — list his steps
+  (`timeline()`; until 0.73 the app's `PHASES`, which follow it) with the tools of every other list: the pen, the grip
+  ≡ (the Mac's ↑ ↓ too), Remove and "A new step" ("Type the step first."); ids as everywhere, `<id>-<n>`,
+  `-<n>-rename`, `-<n>-grip`, `-<n>-remove`, `-new`, `-add`. **Made at once, not held** — the decision: the
+  template's page has no Save (Done only closes it) and everything on the Reminders block is made the moment it is
+  done — the When picked, a reminder dragged, a reminder removed — as Your choices, the list's own home, makes
+  these very changes. Holding the list until the open reminder's Done would have meant holding the When pick too
+  (a step made at the foot does not exist before), and pressing the line again — which closes it without the
+  name — would then have thrown away a When that has always been made at once. So: the same `ChoiceDrop`
+  (`ChoiceDrop.atOnce`, `Screens/ChoiceDropDown.swift`) with nothing held: each change is written as it is made by
+  the writes a page's Save makes (`Library.applyChoiceEditsNow` = `applyChoiceEdits` then `applyChoiceRemovals`).
+  A rename shows at once (also on every reminder's line and every thing — steps are kept by id); a removal, after
+  its question, takes the step away at once (no struck-out row, no Put back); one in use — the reminder's own step
+  counts, as its thing and on its template — is refused with Your choices' words and OK; a drag moves it at once;
+  "A new step" is made and chosen at once (`ChoiceDrop.made` finds the key it was made under): for the open reminder
+  that is its When at once; for the foot, the new reminder's When. A step picked at the foot and then removed gives
+  way to the one a new reminder would get.
+- **Whose it is with nobody named** (spec 05 item 5): the drop-down is always there — "Both have one" and the foot
+  "A new owner", so the FIRST owner is made right there (held until Save like any new entry; Save makes it the first
+  of his Owners list, `addChoice("owners")`, and the thing says it). The line "Nobody is named yet. Add the names in
+  Settings, under Your choices." (`thing-owner-none`, 0.62) is gone. The Mac's Tab reaches Whose it is always.
+- **A bag with no pockets** (spec 05 item 9a): Pocket shows for any bag of his own (`Library.takesPockets(bag:)` — the
+  bag has its record), pockets or not: "Just in the bag" and the foot "A new pocket", where its FIRST pocket is made
+  (held until Save; Save adds it to the bag, `addPocket`, and the thing's usual pocket follows). Not for No bag, a
+  built-in name he does not have, or a bag made at Usually packed in's foot and not saved yet.
+
+**Tests.** Model (`ChoiceEditsTests`, now 17): `testAReminderStepIsChangedAtOnce` (renamed, made and given to a
+reminder, moved, an unused one removed — each at once; the reminder's own step refused, "At the gate is still used on
+1 template, so it stays."), `testABagWithNoPocketsTakesItsFirstPocketFromAThingsPage`, `testTheFirstOwnerIsMadeFromWhoseItIs`.
+Planted: `applyChoiceEditsNow` without its removals → red "an unused step was not removed at once"; `takesPockets` as
+the 0.69 rule (`!pockets(bag:).isEmpty`) → red "a bag of his with no pockets offers no Pocket list"; `addChoice`
+refusing an owner → red "the first owner was not made". UI (iPhone, light and
+dark), each seen red first with its fault planted: `testAReminderWhenIsChangedInsideItsList` (`-uiTestingReminders`:
+the open reminder's When — a pen and Remove and a grip on a step; Day before renamed "The evening before"; ≥1 week
+ahead refused; Wear removed at once, no Put back; ≥1 week ahead dragged first; "At the trailhead" made at the foot is
+the reminder's When; closed without Done it all stays; the foot's When has the pen and the new name; a thing's When
+reads the same order, names and new step, without Wear — planted: `ChoiceDrop.atOnce` keeping nothing → red
+"Return did not take the new name: 'Day before (stage / move to RV)'"); `testTheFirstOwnerIsMadeInsideWhoseItIs`
+(replaces `testWhoseItIsSaysWhereNamesComeFromWhenNobodyIsNamed` — planted: the drop-down shown only while somebody
+is named → red "with nobody named, Whose it is is no list"); `testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage`
+(planted: the 0.69 rule → red "no Pocket list for a bag of his with no pockets").
+
 ### Open questions
 
-- A reminder's When (on a template's page) has no tools: it is applied at once, with nothing to hold changes until.
-- With nobody named anywhere, Whose it is still shows its line instead of a list, so the first owner is made in Your
-  choices, not from the list.
-- A bag with no pockets shows no Pocket list, so its first pocket is made on the bag's page.
+- ~~A reminder's When (on a template's page) has no tools: it is applied at once, with nothing to hold changes
+  until.~~ Done 12 Oct 2026 (0.73): its steps' tools, made at once — "The last three lists" above.
+- ~~With nobody named anywhere, Whose it is still shows its line instead of a list, so the first owner is made in Your
+  choices, not from the list.~~ Done 12 Oct 2026 (0.73): the list with its foot; the first owner is made there.
+- ~~A bag with no pockets shows no Pocket list, so its first pocket is made on the bag's page.~~ Done 12 Oct 2026
+  (0.73): the Pocket list with its foot for any bag of his.
 - The row's own stored bag counts as a use when its Bag list refuses a remove, even after the row picked another.
 - ~~(0.70) Now that a row can be dragged, the ↑ ↓ could leave the iPhone — his call.~~ Answered 8 Oct 2026: "Drag and
   drop on the phone as well" — done in 0.72 (above).
@@ -1114,6 +1168,7 @@ and red over green): the Map's row (Hiking · Garage) has violet; a thing on no 
 | 7 Oct 2026 | Return saves a thing's page; ⌘N carries over the choices; the keyboard work is Mac only | His three answers. |
 | 7 Oct 2026 | Voice in English; vault folder `Areas/Travel`; Apple Health versions may be uploaded from his Mac | His answers. |
 | 8 Oct 2026 | Always packed becomes a small core he makes; the big always-packed template becomes one he ticks for longer trips. A template moves into and out of Always packed on its page (several or none allowed; By transport unchanged). "Make a small core from this…" does the move in one step — with a pasted list (kits from indented lines; a thing in one kit only, a second one on request) and a copy kept first | "Always packed will be a small core, and [the big one] becomes a big kit that I tick." / "I would like you to move stuff around for me, so that the complete solution is served to me." Spec 04 (Activity area, §14, §14b), spec 03. |
+| 12 Oct 2026 | A reminder's When list is changed AT ONCE, not held until a Save: the template's page has none, and the Reminders block makes everything at once (the When pick, a drag, a removal), as Your choices does | The open question of part 13 left it to the build ("if that page saves at once, the least surprising equivalent"); part 13, "The last three lists". |
 
 ## Open questions
 

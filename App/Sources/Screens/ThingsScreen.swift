@@ -372,29 +372,19 @@ struct ThingEditor: View {
                              newEntry: kinds.newEntry("A new kind", needs: "Type the kind first.") { draft.category = $0 },
                              tools: kinds.tools, ring: ring(.category)) { draft.category = $0 }
                         .keyed(.category)
-                    if !owners.isEmpty {
-                        // No owner means each has one of their own — his words (4 Oct 2026):
-                        // "Replace 'Nobody's in particular' with 'Both have one'".
-                        // His owners (A–Z, no ↑ ↓), then anyone a thing names who is not one of them.
-                        let listed = Set(model.library.owners().map(normName))
-                        DropDown(title: "Whose it is",
-                                 options: [("", OWNER_BOTH)] + whose.options + owners.filter { !listed.contains(normName($0)) }.map { ($0, $0) },
-                                 selected: draft.ownedBy, id: "thing-owner", other: true,
-                                 newEntry: whose.newEntry("A new owner", needs: "Type the name first.") { draft.ownedBy = $0 },
-                                 tools: whose.tools, ring: ring(.owner)) { draft.ownedBy = $0 }
-                            .keyed(.owner)
-                    } else {
-                        // Nobody named anywhere yet: the heading stays, and says where the
-                        // names come from (it vanished, so the first owner could not be
-                        // found from here — the spec pass, 5 Oct 2026).
-                        VStack(alignment: .leading, spacing: 6) {
-                            HeadingBand(title: "Whose it is", id: "thing-owner-title")
-                            Text("Nobody is named yet. Add the names in Settings, under Your choices.")
-                                .font(.system(.subheadline)).foregroundStyle(Theme.muted)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .accessibilityIdentifier("thing-owner-none")
-                        }
-                    }
+                    // No owner means each has one of their own — his words (4 Oct 2026):
+                    // "Replace 'Nobody's in particular' with 'Both have one'".
+                    // His owners (A–Z, no ↑ ↓), then anyone a thing names who is not one of them.
+                    // With nobody named anywhere yet the list is Both have one and its foot, so
+                    // the FIRST owner is made right here (0.73; until then a line sent him to
+                    // Your choices).
+                    let listed = Set(model.library.owners().map(normName))
+                    DropDown(title: "Whose it is",
+                             options: [("", OWNER_BOTH)] + whose.options + owners.filter { !listed.contains(normName($0)) }.map { ($0, $0) },
+                             selected: draft.ownedBy, id: "thing-owner", other: true,
+                             newEntry: whose.newEntry("A new owner", needs: "Type the name first.") { draft.ownedBy = $0 },
+                             tools: whose.tools, ring: ring(.owner)) { draft.ownedBy = $0 }
+                        .keyed(.owner)
                     Pills(title: "On these templates", options: templates.map { ($0.id, $0.name) }, selected: onLists,
                           id: "thing-lists", tint: AppSection.templates.color, heading: .band,
                           cursor: at == .templates ? pillAt : nil) { id in
@@ -427,10 +417,12 @@ struct ThingEditor: View {
                         }
                     }
                         .keyed(.bag)
-                    // Its usual pocket (0.69), when that bag has pockets: "Backpack · Front pocket".
+                    // Its usual pocket (0.69): "Backpack · Front pocket". Offered for any bag of his
+                    // own — one with no pockets yet shows Just in the bag and the foot, where its
+                    // first pocket is made (0.73).
                     let pockets = drop("pockets", bag: draft.container, chosen: Library.usualPocket(draft),
                                        words: "the \(jsTrim(draft.container))\u{2019}s pockets")
-                    if !pockets.rows.isEmpty {
+                    if model.library.takesPockets(bag: draft.container) {
                         DropDown(title: "Pocket", options: pockets.options, selected: Library.usualPocket(draft),
                                  id: "thing-pocket", blank: "Just in the bag", same: { normName($0) == normName($1) },
                                  newEntry: pockets.newEntry("A new pocket", needs: "Type the pocket's name first.") { Library.setUsualPocket(&draft, $0) },
@@ -1122,12 +1114,12 @@ extension ThingEditor {
     /// Every field, in his reading order — the order Tab walks.
     fileprivate func fieldOrder() -> [ThingField] {
         var out: [ThingField] = [.name, .notes, .category]
-        if !model.library.ownerChoices().isEmpty { out.append(.owner) }
+        out.append(.owner)                                                               // always (0.73)
         let templates = self.templates
         if !templates.isEmpty { out.append(.templates) }
         for t in templates where onLists.contains(t.id) { out.append(.section(t.id)) }
         out += [.storage, .bag]
-        if !model.library.pockets(bag: draft.container).isEmpty { out.append(.pocket) }   // 0.69
+        if model.library.takesPockets(bag: draft.container) { out.append(.pocket) }       // 0.69; 0.73
         out += [.when, .weight]
         // The kit part (0.70), as it shows: a thing in a kit, or one that may hold things.
         if !kit.none {

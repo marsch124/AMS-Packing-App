@@ -28,6 +28,9 @@ struct ChoiceDrop {
     var same: (String, String) -> Bool = { normName($0) == normName($1) }
     /// Under a refusal: where the entry can be dealt with (a bag's page).
     var open: DropDownOpen? = nil
+    /// For a list changed AT ONCE (`atOnce`): the key a new entry was made under, found by
+    /// its name once `keep` has written it. nil = held: it waits under its `addedKey`.
+    var made: ((String) -> String?)? = nil
 
     var rows: [ChoiceRow] { library.choicesAsEdited(edits) }
     var options: [(value: String, label: String)] { rows.map { ($0.key, $0.label) } }
@@ -93,8 +96,24 @@ struct ChoiceDrop {
             var next = e
             next.added.append(jsTrim(typed))
             keep(next)
-            choose(ChoiceEdits.addedKey(next.added.count - 1))
+            choose(made?(jsTrim(typed)) ?? ChoiceEdits.addedKey(next.added.count - 1))
         }
+    }
+
+    /// One of his lists changed AT ONCE — where nothing holds changes until a Save: a
+    /// reminder's When on a template's page (0.73), whose block saves as it goes (its When,
+    /// its place, its removal), as Your choices does. The same rows, tools and foot as a
+    /// held list; each change is written as it is made, by the writes a page's Save makes
+    /// (`applyChoiceEditsNow`), so nothing waits to be struck out or put back, and a new
+    /// entry typed at the foot is made and chosen by the key it was made under. `chosen` is
+    /// left out: what the block holds is stored already, and counted as stored.
+    @MainActor static func atOnce(_ model: LibraryModel, kind: String, words: String) -> ChoiceDrop {
+        var drop = ChoiceDrop(library: model.library, edits: ChoiceEdits(kind: kind),
+                              keep: { e in model.change { _ = $0.applyChoiceEditsNow(e) } }, listWords: words)
+        drop.made = { name in
+            model.library.choiceRows(kind).first { Library.choiceKey($0.label) == Library.choiceKey(name) }?.key
+        }
+        return drop
     }
 }
 
