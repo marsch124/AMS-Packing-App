@@ -137,17 +137,6 @@ jobs:
       - name: Generate the project
         run: xcodegen generate
 
-      - name: Number this build
-        run: |
-          # The version in project.yml is the single source; the run number keeps
-          # every upload unique within it (Apple refuses a repeated build number).
-          APP_VERSION=$(sed -n 's/^ *MARKETING_VERSION: *"\([^"]*\)".*/\1/p' project.yml | head -1)
-          [ -n "$APP_VERSION" ] || { echo "::error::no MARKETING_VERSION in project.yml"; exit 1; }
-          BUILD="${{ github.run_number }}"
-          echo "App version: $APP_VERSION, build $BUILD"
-          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
-          echo "BUILD=$BUILD" >> $GITHUB_ENV
-
       - name: Entitlements for a build that ships
         run: |
           # The iCloud entitlements, but for Production: the store, the push
@@ -185,6 +174,27 @@ jobs:
           head -1 "$F" | grep -q "BEGIN PRIVATE KEY" || { echo "::error::ASC_KEY_P8 does not start with -----BEGIN PRIVATE KEY-----"; exit 1; }
           tail -1 "$F" | grep -q "END PRIVATE KEY" || { echo "::error::ASC_KEY_P8 does not end with -----END PRIVATE KEY-----"; exit 1; }
           openssl pkey -in "$F" -noout || { echo "::error::ASC_KEY_P8 is not a valid private key"; exit 1; }
+
+      - name: Number this build
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          # The version in project.yml is the single source. The build number: the run number,
+          # unless App Store Connect already has a higher one — since 12 Oct 2026 the normal path
+          # is the fast lane from his Mac (tools/quick-release.sh), which counts on from the highest
+          # build, and Apple refuses a repeated number (and a Mac build lower than the last).
+          APP_VERSION=$(sed -n 's/^ *MARKETING_VERSION: *"\([^"]*\)".*/\1/p' project.yml | head -1)
+          [ -n "$APP_VERSION" ] || { echo "::error::no MARKETING_VERSION in project.yml"; exit 1; }
+          BUILD=$(ASC_KEY_PATH="$HOME/private_keys/AuthKey_$ASC_KEY_ID.p8" APP_BUNDLE_ID=com.schabbauer.AMSPacking \
+                  MIN_BUILD="${{ github.run_number }}" python3 tools/release-to-testers.py --next-build) || BUILD=""
+          if [ -z "$BUILD" ]; then
+            BUILD="${{ github.run_number }}"
+            echo "::warning::App Store Connect could not be asked for its highest build number — using the run number $BUILD"
+          fi
+          echo "App version: $APP_VERSION, build $BUILD"
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "BUILD=$BUILD" >> $GITHUB_ENV
 
       - name: Archive for the iPhone and for the Mac
         env:

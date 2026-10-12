@@ -52,8 +52,9 @@ go in `private/`, which git ignores. The parity checker reads them from there.
 - 🎨 Every colour the app uses, and the workout colours he chose:
   [`docs/colours.md`](docs/colours.md).
 - ✅ iCloud sync, proved end to end on his Mac (1,438 records up, wiped, all back).
-- ✅ TestFlight: both the iPhone and the Mac build go to his group from the
-  Actions tab ([`TESTFLIGHT.md`](TESTFLIGHT.md)).
+- ✅ TestFlight: both the iPhone and the Mac build go to his group — since
+  12 Oct 2026 by the fast lane from his Mac (`tools/quick-release.sh`), the
+  Actions tab's workflow as the fallback ([`TESTFLIGHT.md`](TESTFLIGHT.md)).
 - 🔨 Screens: Home (build a trip), Events and Packing Mode (tick, "not this
   time", the review at the end), Templates with their sections and a row's own
   answers, Your things (every thing, on a list or not, and everything about
@@ -79,7 +80,10 @@ attributes that `codesign` refuses ("detritus not allowed"); the scripts clear t
 
 His standing rule, from the first commit: UI tests in CI on every push, every
 control found by its `accessibilityIdentifier` and never by its words, starting
-with two and growing one at a time. A red run blocks a release. The web app's UI
+with two and growing one at a time. A red run blocks a release — since 12 Oct 2026
+(the fast lane) the run that blocks it is the short one on his Mac, the model, parity
+and the smoke set of `tools/smoke-tests.txt`; GitHub's full suite follows on main,
+and a red there is fixed by the next build. The web app's UI
 suite also runs at Mac size — this one should test both devices from the start.
 
 Every test is SEEN TO FAIL before it is committed: the fault it guards against is

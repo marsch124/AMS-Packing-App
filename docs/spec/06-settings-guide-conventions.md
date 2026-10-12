@@ -1899,7 +1899,8 @@ so a change to `project.yml` is committed together with the regenerated files. "
 
 - **Project:** name `AMSPacking`; bundle id prefix and `DEVELOPMENT_TEAM` set in the file (the owner's); deployment
   targets **iOS 18.0, macOS 15.0**; automatic signing; Swift language mode 5.0; **`MARKETING_VERSION` "0.60"**,
-  **`CURRENT_PROJECT_VERSION` "2"** (local builds; TestFlight overrides the build number with the run number).
+  **`CURRENT_PROJECT_VERSION` "2"** (local builds; a release overrides the build number — one above the highest App
+  Store Connect has, §28).
 - **Package** `PackingCore` at `Core/` (Swift tools 5.9; platforms iOS 17 / macOS 14) with products `PackingCore`
   (the port of the web app's `js/model.js` — pure logic) and `PackingLibrary` (the library in memory, records, import,
   backups; depends on PackingCore), the executables `parity` (depends on PackingCore only — public API) and
@@ -1943,6 +1944,13 @@ so a change to `project.yml` is committed together with the regenerated files. "
 
 ## 27. CI on every push (`.github/workflows/tests.yml`)
 
+**Since 12 Oct 2026 the safety net, not the gate.** His decision ("yes, switch to the fast lane"): a release is
+checked on his Mac before it goes up — the model, parity and the iPhone smoke set (§28a) — and is uploaded from
+there; then the release commit is pushed to main, and THIS workflow runs every test on both devices after the fact.
+If it goes red, the next build fixes it. Helper branches cancel the run their push starts (one full suite per
+release, on main); the TestFlight workflow (§28b, the fallback) still runs it first, unless the same code is
+already green.
+
 "Every push runs the suite — the model's own tests, then the UI tests on the iPhone AND on the Mac … A red run means
 the build is not fit to install." Triggers: push, pull_request, manual, and `workflow_call` (the TestFlight workflow
 runs it first). Since 9 Oct 2026 a push whose every change is in `.github/workflows/testflight.yml`, `docs/**` or a
@@ -1971,10 +1979,109 @@ iPhone and two Mac groups because a free account gets five macOS machines at onc
 minute or two each inside Mac groups 1 and 2. At 0.63's times: iPhone 3 × ~47 min, Mac 2 × ~51 min of tests, plus each group's own build. The
 TestFlight job still `needs: tests` — every group must pass.
 
-## 28. Shipping to TestFlight (`.github/workflows/testflight.yml`, `tools/release-to-testers.py`, `TESTFLIGHT.md`)
+## 28. Shipping to TestFlight — the fast lane (`tools/quick-release.sh`) and the fallback workflow (`.github/workflows/testflight.yml`, `tools/release-to-testers.py`, `TESTFLIGHT.md`)
 
-Started by hand (Actions → TestFlight → Run workflow) with an optional `notes` input ("What is new in this build —
-testers see it as "What to Test""). "A red suite must never reach a
+### 28a. The fast lane — the normal path since 12 Oct 2026 (`tools/quick-release.sh`, `tools/smoke-tests.txt`, `tools/ExportOptions.plist`)
+
+His decision (12 Oct 2026, "yes, switch to the fast lane"), as for his Workout Sync app: a finished change reaches
+TestFlight in about half an hour instead of about three hours. A short check on his Mac gates the upload; GitHub's
+full suite (§27 — every UI test on both devices, ~80 minutes) runs AFTER, on main, as the safety net. If it goes
+red, the next build fixes it. Small versions, one change or fix each, shipped when ready.
+
+`tools/quick-release.sh VERSION "notes" [extra UI tests…]` runs on his Mac (Claude runs it; he never needs the
+Terminal). `VERSION` e.g. 0.73; `notes` become both builds' What to Test; the extra tests are the changed screens'
+own, by name (`testATickCountsAndStays`) or as `-only-testing:` ids — each checked against the test file first, as
+a misspelt name would quietly run nothing. bash, `set -euo pipefail`. Every stage is timed and printed in plain
+words; the first failure stops everything with `STOPPED at "<stage>": <why>` and the times so far (an `EXIT` trap
+says the same for any other failing command). The stages:
+
+1. **Ready?** — xcodebuild, xcodegen, node, gh, python3, git and the private helpers (below) are there; `git fetch`;
+   the checkout is clean; `origin/main` is an ancestor of HEAD (main can fast-forward to it); the newest What's new
+   entry (`Releases.swift`) is VERSION — otherwise "What's new leads with X, not VERSION", before any test runs.
+   When project.yml still says another version it is set to VERSION, and with the regenerated project that is the
+   release commit "AMS Packing VERSION" (project.yml, the project, the generated entitlements and Info.plist — any
+   other change stops it). Extended attributes are cleared (never inside .git), xcodegen runs, and
+   `tools/check-spec.sh` must pass (§28b step 0).
+2. **Model tests** — `tools/test-core.sh` (both bundles).
+3. **Parity** — `tools/parity/run.sh --invented` (§31) with the web app's model beside the MAIN checkout
+   (`../AMS Packing/js/model.js`, or `PARITY_MODEL`): it must end "differences: none".
+4. **iPhone build** — on the simulator named by `PACKING_SIM` (default "Packing CI iPhone 18 Pro"). Several sessions
+   share that simulator and two test runs on one kill each other: while another `xcodebuild` names it, the script
+   waits (up to `SIM_WAIT_MIN`, 30 minutes). It boots it (`bootstatus -b`) and runs `build-for-testing` unsigned,
+   like GitHub's iPhone job, into `$TMPDIR/AMSPacking-quick-<8 hex of the checkout path>` (outside Documents, kept
+   between runs).
+5. **iPhone tests** — `test-without-building` with the smoke set and the extras, `-collect-test-diagnostics never
+   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300`; it prints "N passed, N failed, N skipped"
+   from the result bundle. Red → `tools/ui-failed.py` and ONE retry of only the failed tests, as on GitHub (§27); a
+   test red twice, more than 5 failures or a red run with no failed test stop the release.
+6. **Build number** — one above the highest build App Store Connect has for the app (any version, either platform):
+   Apple refuses a repeated number, and a Mac build lower than the last. The workflow counts on the same way (§28b
+   step 6).
+7. **Certificates** — counts the "Created via API" development certificates (every GitHub archive of his apps mints
+   one; at about a dozen, signing stops). At `CERT_NEAR` (7) or more, `revoke-api-certs.sh` revokes them — his
+   standing OK, 9 Oct 2026; never the one with his name. A dry run only says so.
+8. **Archive** — the workflow's ship entitlements (§28b step 4), made the same way into the run's folder, not into
+   App/Config. `xcodebuild archive` for `generic/platform=iOS` and `generic/platform=macOS` with
+   `-allowProvisioningUpdates` and Xcode's own account (no API key): `DEVELOPMENT_TEAM` from ExportOptions.plist,
+   automatic signing, the matching entitlements file, `PACKING_USES_ICLOUD=YES`, VERSION and the build number;
+   derived data `$TMPDIR/AMSPacking-archive-<8 hex>`. Each must log "** ARCHIVE SUCCEEDED **" and its Info.plist
+   must say "VERSION (BUILD)". Then the signed app's entitlements (`codesign -d --entitlements - --xml`): the iPhone
+   needs Apple Health (`com.apple.developer.healthkit`), the container `iCloud.com.schabbauer.AMSPacking`, CloudKit
+   and `aps-environment`; the Mac the container, CloudKit, the sandbox, `com.apple.security.network.client` and
+   `com.apple.developer.aps-environment`. One missing stops the release ("MISSING: Apple Health (…)"). A signing
+   error about the account says what to do in plain words: Xcode ▸ Settings ▸ Accounts, sign in.
+9. **Upload** — `xcodebuild -exportArchive -exportOptionsPlist tools/ExportOptions.plist -allowProvisioningUpdates`
+   for each archive: method app-store-connect, destination upload, the team, automatic signing (the cloud-managed
+   distribution certificate), symbols uploaded, `manageAppVersionAndBuildNumber` false. The script waits on it with
+   its progress lines shown as they come; when it says nothing for `EXPORT_IDLE_MIN` (10) minutes it is stopped (a
+   background export once hung silently on "The Internet connection appears to be offline" — Workout Sync, 14 Sep
+   2026). A hang or a dropped connection gets ONE more try after 30 s, then it stops with a plain message. Each must
+   log "EXPORT SUCCEEDED".
+10. **Testers** — `ensure-group.sh BUILD notes` waits (every minute, up to 90) until both builds are VALID, adds each
+    to the tester group and sets its What to Test. Then the script checks rather than trusts: both builds of BUILD
+    in the group (else it stops, naming the helper to run again later), each with What to Test — filled in when
+    Apple's record is empty, made (POST) when there is none; fewer than 2 with notes only warns.
+11. **Main** — `git fetch`; when main moved meanwhile it stops ("the builds ARE in TestFlight … merge origin/main and
+    push by hand"); otherwise `git push origin HEAD:main`, then it prints the "Tests" run GitHub starts on that
+    commit (`gh run list --workflow tests.yml --commit`, up to 3 minutes): the full suite, after the fact.
+
+At the end: the time of each stage and all together.
+
+**`--dry-run [VERSION] [extra tests…]`** — every stage but the upload, on the version in project.yml (another VERSION
+stops it); uncommitted changes and a main that moved on are only noted; nothing is committed, revoked, released or
+pushed. Stage 9 exports with a copy of ExportOptions.plist whose `destination` is `export`, so the App Store signing
+really happens; the exported `.ipa` (unzipped) and `.pkg` (`pkgutil --expand-full`) are checked for the same
+entitlements, and who signed each is printed. Stage 10 only reads the tester group; stage 11 says whether main could
+fast-forward.
+
+**Where things go** — `$TMPDIR/AMSPacking-release/<version>-<date-time>[-dry]/`: the logs, the ship entitlements, the
+archives, the export. All of it outside `~/Documents` (codesign refuses the extended attributes that folder collects).
+
+**The private helpers** — `private/release-tools/` of the MAIN checkout (git-ignored; found from a worktree too, or
+named in `RELEASE_TOOLS`): `asc.py` (App Store Connect with the Admin key; the issuer id is read from a note outside
+the repository), `ensure-group.sh` (the tester group's id is written only there), `revoke-api-certs.sh`. They are
+called, never copied into the repository. They name `asc.py` by a folder of their own and call it unquoted, so the
+script runs them from a temporary folder without spaces that links to `asc.py`.
+
+**The smoke set** (`tools/smoke-tests.txt`) — one test per line, the comment line above it saying what it guards;
+`#` lines are ignored. Chosen on 12 Oct 2026 from the test names and `tools/ui-test-times.json` — the main flows,
+quick tests preferred — and timed on his Mac: the warm-up `testAAAWarmsUpTheSimulator` and 20 checks. Start and Home: `testStartsOnHomeAndNamesItsVersion`, `testAnEmptyDeviceShowsTheTwoDoors`, `testEveryTabOpensItsScreen`, `testHomeCountsDownToTheNextTrip`; making a trip: `testHomeBuildsATrip`, `testCreateNewTripTakesTheTimeHeLeaves`; ticking and unticking: `testATickCountsAndStays`, `testAWholeSectionIsTickedInOnePress`; templates: `testATemplateOpensAndCloses`, `testAThingAddedToATemplateStays`; a thing's page saved (its kind chosen from a drop-down): `testAThingsOwnDetailsAndItsListsAreChanged`; the review: `testATripReviewIsSavedAndTheMissedThingIsFiled`; a drop-down: `testTheTripSaysSortingBesideItsDropDown`; bags and kits: `testABagSaysWhetherItGoesInTheCabin`, `testYourBagsShowsANumberChangedOnTheBagsPage`, `testAKitIsOneLineOnATripAndWeighsWhatIsInside`; To do: `testAToDoIsAddedAndTicked`; backup and restore: `testSettingsOffersABackup`, `testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything`; What's new: `testWhatsNewStartsWithThisVersion`. `testThePickOneListsAreDropDownsThatChooseAndKeep` was in the first draft and took 162 s of the 10 minutes alone; the trip's Sorting drop-down (44 s) took its place. No dark-mode test exists (night mode is looked at by hand,
+§32), so none is in the set.
+
+**The first dry runs** (12 Oct 2026, main at `13c8082` = 0.72, build 95 would have been next; on the simulator
+"Packing CI fast", his Mac busy with other sessions' builds). Cold — new build folders, the draft smoke set with the
+162-second test: Ready? 2 s · Model tests 50 s · Parity 1 min 12 s · iPhone build 1 min 22 s · iPhone tests 10 min 6 s
+(21 passed) · Build number 2 s · Certificates 1 s · Archive 4 min 49 s · Export 56 s · Testers 2 s · Main 0 s —
+19 min 22 s. Warm, with the final set: 1 s · 6 s · 24 s · 3 s · 7 min 58 s (21 passed) · 2 s · 1 s · 4 min 8 s · 56 s ·
+1 s · 1 s — 13 min 41 s. Both exports were signed "Apple Distribution" (the Mac installer "3rd Party Mac Developer
+Installer"), with push set to production, iCloud, and Apple Health on the iPhone; Xcode's account signed without
+asking him for anything. A real run uploads instead of exporting, then waits for Apple's processing (usually 5–30
+minutes) before the testers have it.
+
+### 28b. The fallback — the TestFlight workflow
+
+Since 12 Oct 2026 the FALLBACK — for when his Mac cannot release (§28a). Started by hand (Actions → TestFlight → Run
+workflow) with an optional `notes` input ("What is new in this build — testers see it as "What to Test""). "A red suite must never reach a
 device": since 0.68 a first job `tested` (ubuntu) looks whether the commit BEFORE this one passed the whole "Tests" workflow and this one changes only `project.yml` / `AMSPacking.xcodeproj/project.pbxproj` (the version bump) — then the suite is skipped (it ran on the release branch already; about an hour saved per release); otherwise job `tests` calls `tests.yml`; job `upload` (`needs: tests`, macos-26, 120 min since 0.67 — 60 before) then:
 0. Checks out with `fetch-depth: 30` and runs `tools/check-spec.sh` ("The specification moved with What's new",
    since 0.61): the last commit that changed `App/Sources/Guide/Releases.swift` must also change `docs/spec/`, or the
@@ -1988,14 +2095,18 @@ device": since 0.68 a first job `tested` (ubuntu) looks whether the commit BEFOR
    under Settings > Secrets and variables > Actions > Variables…" before anything is built. 🚨 The key must have the **Admin** role: an App Manager key uploads but fails cloud signing ("Cloud
    signing permission error").
 3. xcodegen.
-4. Numbers the build: `APP_VERSION` = `MARKETING_VERSION` read from project.yml (fails if absent); `BUILD` = the
-   workflow's run number (unique, as Apple requires).
-5. Entitlements for a build that ships: from the iCloud file, `Development` → `Production` and `development` →
+4. Entitlements for a build that ships: from the iCloud file, `Development` → `Production` and `development` →
    `production` (`AMSPacking-Ship.entitlements`, Mac); a copy with the push key renamed to the iPhone's
    `aps-environment` (`AMSPacking-Ship-iOS.entitlements`) — with only the Mac's name the iPhone never got iCloud's
    "something changed" notice (his test A.4, 2026-09-28; fixed in 0.44). Both are grep-checked.
-6. Writes the key file (CR stripped, blank lines dropped, mode 600) and verifies its BEGIN/END lines and that
+5. Writes the key file (CR stripped, blank lines dropped, mode 600) and verifies its BEGIN/END lines and that
    `openssl pkey` reads it.
+6. Numbers the build: `APP_VERSION` = `MARKETING_VERSION` read from project.yml (fails if absent); `BUILD` = one
+   above the highest build App Store Connect has for the app, and never below the workflow's run number
+   (`release-to-testers.py --next-build` with `MIN_BUILD` = the run number; it needs the key, so since 12 Oct 2026 this
+   step comes after step 5). The fast lane (§28a) numbers its uploads from App Store Connect, so the run number alone
+   would repeat a number Apple has seen — refused, and a Mac build may not be numbered lower than the last. When App
+   Store Connect cannot be asked, the run number, with a warning. (Until 12 Oct 2026: the run number alone, as step 4.)
 7. Archives for `generic/platform=iOS` and `generic/platform=macOS` with `-allowProvisioningUpdates` and the API key
    (registers the bundle id and iCloud container on the first run), automatic signing, the matching entitlements,
    `PACKING_USES_ICLOUD=YES`, the version and build; each must log "** ARCHIVE SUCCEEDED **".
@@ -2018,7 +2129,8 @@ device": since 0.68 a first job `tested` (ubuntu) looks whether the commit BEFOR
    only WARNS ("the build is released all the same") — it never fails a release. Then it POSTs each build to the
    group, lists the group's builds and warns when this number is there fewer than 2 times.
    `release-to-testers.py --self-check` (run by the `core` job on every push, §27) checks the request bodies and the
-   GET → POST / PATCH / 409 conversation against a pretend App Store Connect, without the network. 🪤 0.27 (build 33): the old loop gave up after 5 minutes with one build and the Mac
+   GET → POST / PATCH / 409 conversation against a pretend App Store Connect, without the network — and (12 Oct 2026)
+   the next build number of step 6: above every number Apple has, never below the run number. 🪤 0.27 (build 33): the old loop gave up after 5 minutes with one build and the Mac
    never got it.
 10. Only when every step before it succeeded (`if: success()`): writes the run's step summary — "### Sent to
     TestFlight — iPhone and Mac", "AMS Packing <version>, build <n>.", "Apple processes it for a few minutes, then it
@@ -2062,7 +2174,11 @@ none), writes each to `crash-reports/<n>-<date>.txt` and always uploads the fold
 - **`tools/prepare-migration.py`** — turns a web-app backup into the clean migration file in `private/` (one copy of
   each doubled template — the ORIGINAL, created first; test trips left behind by a name list in `private/`; trips
   repointed to the kept copies).
-- **`tools/release-to-testers.py`** — §28.
+- **`tools/release-to-testers.py`** — §28b; `--next-build` prints the next build number (§28b step 6).
+- **`tools/quick-release.sh VERSION "notes" [extra UI tests…]`** and **`--dry-run`** — the fast lane to TestFlight from
+  his Mac (§28a); **`tools/smoke-tests.txt`** — the iPhone UI tests it runs before every upload (§28a);
+  **`tools/ExportOptions.plist`** — how it exports and uploads (method app-store-connect, destination upload, team,
+  automatic signing, symbols, the build number left alone).
 - `private/` and `*backup*.json` are git-ignored: real data never enters the public repository.
 
 ## 31. The parity check against the web app (`Core/Sources/parity`, `tools/parity/`)
@@ -2264,3 +2380,7 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
 31. **Resolved in 0.62** — ~~"Kit" means two things.~~ "Kit" is his word for all his things (Words); the table
     of the web app's named groups is counted as "Groups of things" in *This device holds* (§16).
 32. **Resolved in 0.62** — ~~An undated unused photo is kept for ever and never mentioned.~~ Worth a look names it on its own and removes it only on his press (§12, worry 4).
+33. [idea] **The fast lane checks the Mac only by building it** (12 Oct 2026, §28a): before an upload the UI tests run
+    on the iPhone simulator alone (Mac UI tests are not run on his Mac); the Mac archive proves the Mac app builds and
+    carries its entitlements, but a break only the Mac's UI shows reaches TestFlight and turns GitHub's suite red
+    after the fact (§27) — fixed by the next build, by his choice.

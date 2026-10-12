@@ -1,0 +1,50 @@
+# The fast lane's smoke set — tools/quick-release.sh runs these iPhone UI tests on his Mac's simulator
+# before every upload (his decision, 12 Oct 2026; spec 06 §28a). The main flows, quick tests preferred;
+# GitHub's full suite (every test, iPhone and Mac) runs AFTER the upload, as the safety net.
+#
+# One test per line, by name; the comment line above each says what it guards. The changed screens'
+# own tests are not added here: they are given to quick-release.sh as extra arguments.
+# There is no dark-mode test to add: night mode is looked at by hand (AMSPackingUITests.swift, `shot`).
+
+# (not a check) opens the app once, so a cold simulator's slow first launch fails no real test
+testAAAWarmsUpTheSimulator
+# the app starts on Home and names its version
+testStartsOnHomeAndNamesItsVersion
+# an empty device shows the two doors and plants no starter lists
+testAnEmptyDeviceShowsTheTwoDoors
+# every tab opens its own screen and leaves the one before
+testEveryTabOpensItsScreen
+# Home counts down to the next trip, and a tap opens it
+testHomeCountsDownToTheNextTrip
+# Home builds a trip — a name, one activity, Create — and it opens with lines
+testHomeBuildsATrip
+# Create new trip keeps "I leave at" once it has dates
+testCreateNewTripTakesTheTimeHeLeaves
+# a tick counts, and it is still there after leaving the trip and coming back
+testATickCountsAndStays
+# one press ticks a whole section, and the same press takes it back (untick)
+testAWholeSectionIsTickedInOnePress
+# a template opens from the Templates tab and shows its things
+testATemplateOpensAndCloses
+# a thing added to a template is still there after closing and reopening
+testAThingAddedToATemplateStays
+# a thing's page saves (its kind chosen from a drop-down): the details reach every list, and a list it is put on holds it
+testAThingsOwnDetailsAndItsListsAreChanged
+# the review after a trip saves, and the missed thing is filed for next time
+testATripReviewIsSavedAndTheMissedThingIsFiled
+# the trip's Sorting drop-down opens, lists its five sortings, and a choice re-sorts the trip
+testTheTripSaysSortingBesideItsDropDown
+# a bag says whether it goes in the cabin, and the plane trip's check follows
+testABagSaysWhetherItGoesInTheCabin
+# Your bags shows a number changed on the bag's own page as soon as it closes
+testYourBagsShowsANumberChangedOnTheBagsPage
+# a kit is one line on a trip and weighs what is inside it
+testAKitIsOneLineOnATripAndWeighsWhatIsInside
+# the To do tab adds a to-do and ticks it
+testAToDoIsAddedAndTicked
+# Settings offers a backup and opens the place to save it
+testSettingsOffersABackup
+# a restore shows what the file holds, then replaces everything
+testARestoreShowsWhatTheFileHoldsAndThenReplacesEverything
+# What's new starts with the version being built (a release without its line fails here)
+testWhatsNewStartsWithThisVersion

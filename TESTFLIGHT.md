@@ -1,7 +1,16 @@
 # Getting AMS Packing onto the iPhone and the Mac (TestFlight)
 
 Everything is automated except two things only the account owner can do, once.
-After that, a new version is one click: **Actions → TestFlight → Run workflow**.
+
+**Since 12 Oct 2026 a new version goes out by the fast lane** — his decision: a
+finished change reaches TestFlight in about half an hour. `tools/quick-release.sh
+VERSION "notes"` runs on his Mac (Claude runs it; he never needs the Terminal): the
+model tests, parity and about twenty iPhone UI tests there, then the iPhone and the
+Mac build are archived and uploaded from the Mac with Xcode's account, released to
+the tester group with the notes as What to Test, and only then pushed to main —
+where GitHub's full suite runs after the fact, as the safety net. Details: spec 06
+§28. The workflow below stays as the fallback (one click: **Actions → TestFlight →
+Run workflow**), for when the Mac cannot do it.
 
 ## 1. Create the app's record in App Store Connect (browser, once)
 
@@ -28,7 +37,7 @@ page — a long code with dashes. Copy it, then in GitHub:
 <https://github.com/marsch124/AMS-Packing-App/settings/secrets/actions> →
 **New repository secret** → name `ASC_ISSUER_ID`, paste, Add.
 
-## 3. Ship
+## 3. Ship (the fallback — normally `tools/quick-release.sh`, above)
 
 **Actions → TestFlight → Run workflow.** It runs the whole test suite first (a
 red suite ships nothing), then builds for the iPhone and for the Mac, sends both

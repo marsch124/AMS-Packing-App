@@ -237,7 +237,9 @@ An app that reads Apple Health carries the HealthKit entitlement — on the iPho
   from the iCloud file) get the two HealthKit keys (PlistBuddy) — the Mac's ship file does not. After the
   archive, the step **"The iPhone archive must carry the HealthKit entitlement"** reads the archived app's
   entitlements (`codesign -d --entitlements -`) and FAILS the run if `com.apple.developer.healthkit` is missing —
-  a version without it would show "not allowed" and say nothing else.
+  a version without it would show "not allowed" and say nothing else. The fast lane (`tools/quick-release.sh`,
+  12 Oct 2026, spec 06 §28) makes the same ship file and stops the same way — on the archive, and in a dry run on
+  the exported app too.
 - Workout Sync showed (30 Sep 2026) that GitHub's cloud-signed archive can lose it; the owner allowed (7 Oct
   2026) that such versions are archived and uploaded from his Mac when GitHub cannot sign them. The App ID
   `com.schabbauer.AMSPacking` has HealthKit switched on (7 Oct 2026).

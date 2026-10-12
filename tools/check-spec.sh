@@ -2,7 +2,7 @@
 # The specification moves with What's new — his rule (4 Oct 2026): "every nit and
 # nitty-bitty documented", so the app can be rewritten and hardened from docs/spec.
 # The last commit that changed What's new (Releases.swift) must also change docs/spec/.
-# Run by the TestFlight workflow before anything is built, and by the local ship script.
+# Run before anything is built by the fast lane (tools/quick-release.sh) and by the TestFlight workflow.
 set -e
 cd "$(dirname "$0")/.."
 last=$(git log -1 --format=%H -- App/Sources/Guide/Releases.swift)
