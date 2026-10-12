@@ -95,8 +95,9 @@ Each tab button (`TabButtonLabel`):
 
 The version marker (`app-version`): text `AppInfo.version` = `"<CFBundleShortVersionString> (<CFBundleVersion>)"`,
 e.g. "0.61 (130)". The short version is `MARKETING_VERSION` in `project.yml` ("0.61"); the build number is
-`CURRENT_PROJECT_VERSION` ("2" for a local build), which the TestFlight workflow overrides with its own run
-number. Each part falls back to "?" when missing. **11 pt semibold**, `muted` at 70 %
+`CURRENT_PROJECT_VERSION` ("2" for a local build), which a release overrides: one above the highest build App
+Store Connect has (the fast lane, `tools/quick-release.sh`; the TestFlight workflow takes its run number when that
+is higher — spec 06 §28). Each part falls back to "?" when missing. **11 pt semibold**, `muted` at 70 %
 opacity, right-aligned with 8 pt trailing padding, so it sits under the Settings tab. It does not take
 taps (`allowsHitTesting(false)`). Because it reads the bundle, the number on screen and the number
 TestFlight shows can never disagree. `AppInfo.marketing` (the short version alone) is what What's new

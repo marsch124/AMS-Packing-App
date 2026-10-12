@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- How tools/quick-release.sh sends the iPhone and the Mac archive to App Store Connect
+     from his Mac (the fast lane, 12 Oct 2026; docs/spec/06 §28). The same choices as the
+     TestFlight workflow's own file, plus the team: signed by Xcode's account (automatic,
+     cloud-managed distribution certificate), symbols uploaded, the build number left as
+     the script set it. A dry run copies this file and changes only "destination" to
+     "export", so it signs exactly as an upload would but keeps the result in a folder. -->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>destination</key>
+	<string>upload</string>
+	<key>teamID</key>
+	<string>D24ENP83QQ</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+</dict>
+</plist>

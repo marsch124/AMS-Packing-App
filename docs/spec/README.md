@@ -19,8 +19,9 @@ runs on the iPhone and on the Mac; every difference between the two is written d
   document or the in-app guide disagrees with the code, the code wins and the disagreement is listed under
   the file's *Open questions*.
 - **Updated in every release, in the same commit.** A change that alters behaviour updates the section that
-  describes it, its tests list and its open questions. `tools/check-spec.sh` enforces it: the TestFlight
-  workflow runs it before anything is built, and refuses a release whose last *What's new* change
+  describes it, its tests list and its open questions. `tools/check-spec.sh` enforces it: the fast lane
+  (`tools/quick-release.sh`, the normal release path since 12 Oct 2026) and the TestFlight workflow run it before
+  anything is built, and refuse a release whose last *What's new* change
   (`App/Sources/Guide/Releases.swift`) did not change this folder in the same commit.
 - When a file is checked against the code, the line under its title records the date and the app version,
   for example `> Verified against the code on 5 Oct 2026 (app 0.61).`

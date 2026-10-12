@@ -17,6 +17,14 @@ notes typed when the release was started. Standard library and openssl only.
 
 checks, without the network, that the "What to Test" requests are built the way
 App Store Connect wants them (CI runs it on every push).
+
+    python3 tools/release-to-testers.py --next-build
+
+prints the build number the next upload must have: one above the highest App Store
+Connect has, and never below MIN_BUILD (the workflow's run number). Since the fast lane
+(tools/quick-release.sh, 12 Oct 2026) uploads from his Mac, the run number alone would
+repeat a number Apple has already seen. Needs ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH
+and APP_BUNDLE_ID.
 """
 import base64, json, os, subprocess, sys, time, urllib.parse, urllib.request, urllib.error
 
@@ -48,6 +56,52 @@ def token(key_id: str, issuer: str, key_path: str) -> str:
 
 def q(params: dict) -> str:
     return "?" + urllib.parse.urlencode(params)
+
+
+def api(key_id: str, issuer: str, key_path: str):
+    """call(method, path, body=None) -> (HTTP status, JSON answer), with a fresh token each time."""
+    def call(method: str, path: str, body=None):
+        req = urllib.request.Request(
+            API + path, method=method,
+            data=json.dumps(body).encode() if body else None,
+            headers={"Authorization": f"Bearer {token(key_id, issuer, key_path)}",
+                     "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.status, json.loads(r.read() or b"{}")
+        except urllib.error.HTTPError as e:
+            try:
+                return e.code, json.loads(e.read() or b"{}")
+            except ValueError:
+                return e.code, {}
+    return call
+
+
+# --- the next build number ------------------------------------------------------
+#
+# Apple refuses a build number it has seen for the version, and a Mac build numbered
+# lower than the last. The workflow numbered builds by its run number; the fast lane
+# (tools/quick-release.sh) uploads from his Mac with one above the highest App Store
+# Connect has — so the workflow, now the fallback, must count on from there too.
+
+def next_build_number(versions, floor: int = 0) -> int:
+    """One above the highest numeric build number, and never below `floor`."""
+    highest = max((int(v) for v in versions if str(v).isdigit()), default=0)
+    return max(highest + 1, floor)
+
+
+def print_next_build() -> None:
+    call = api(os.environ["ASC_KEY_ID"], os.environ["ASC_ISSUER_ID"], os.environ["ASC_KEY_PATH"])
+    bundle = os.environ.get("APP_BUNDLE_ID", "com.schabbauer.AMSPacking")
+    code, apps = call("GET", "/v1/apps" + q({"filter[bundleId]": bundle}))
+    if code != 200 or not apps.get("data"):
+        sys.exit(f"could not find the app for {bundle}: HTTP {code}")
+    code, builds = call("GET", "/v1/builds" + q({"filter[app]": apps["data"][0]["id"], "sort": "-uploadedDate",
+                                                  "limit": 200, "fields[builds]": "version"}))
+    if code != 200:
+        sys.exit(f"could not list the builds: HTTP {code}")
+    versions = [b["attributes"].get("version", "") for b in builds.get("data", [])]
+    print(next_build_number(versions, int(os.environ.get("MIN_BUILD") or 0)))
 
 
 # --- "What to Test" -----------------------------------------------------------
@@ -147,7 +201,12 @@ def self_check() -> None:
     assert [c[0] for c in calls] == ["GET", "POST", "GET", "PATCH"] and calls[3][1].endswith("/L7"), calls
     calls.clear()
     assert not set_whats_new(pretend(None, post_code=409), "b1", "Notes"), "a 409 with nothing to change only warns"
-    print("self-check: the What to Test requests are well formed")
+
+    # The next build number: above every number Apple has, never below the run number.
+    assert next_build_number(["94", "93", "1.2", ""], 0) == 95
+    assert next_build_number(["94"], 120) == 120, "the run number wins when it is higher"
+    assert next_build_number([], 7) == 7 and next_build_number([], 0) == 1
+    print("self-check: the What to Test requests are well formed; the next build number counts on")
 
 
 def main() -> None:
@@ -163,21 +222,7 @@ def main() -> None:
         sys.exit("::error::TESTER_GROUP is empty — set the repository variable TESTER_GROUP "
                  "(Settings > Secrets and variables > Actions > Variables) to the tester group's name.")
     notes = whats_new_text(os.environ.get("WHAT_TO_TEST", ""))
-
-    def call(method: str, path: str, body=None):
-        req = urllib.request.Request(
-            API + path, method=method,
-            data=json.dumps(body).encode() if body else None,
-            headers={"Authorization": f"Bearer {token(key_id, issuer, key_path)}",
-                     "Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return r.status, json.loads(r.read() or b"{}")
-        except urllib.error.HTTPError as e:
-            try:
-                return e.code, json.loads(e.read() or b"{}")
-            except ValueError:
-                return e.code, {}
+    call = api(key_id, issuer, key_path)
 
     code, apps = call("GET", "/v1/apps" + q({"filter[bundleId]": bundle}))
     if code != 200 or not apps.get("data"):
@@ -248,5 +293,7 @@ def main() -> None:
 if __name__ == "__main__":
     if sys.argv[1:] == ["--self-check"]:
         self_check()
+    elif sys.argv[1:] == ["--next-build"]:
+        print_next_build()
     else:
         main()
