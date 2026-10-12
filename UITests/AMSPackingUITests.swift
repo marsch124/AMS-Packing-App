@@ -10156,6 +10156,121 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go"), "it still asks for the toothbrush")
     }
 
+    /// A past trip keeps what was inside its kits (0.73): reviewed, the Camp pouch's line
+    /// still holds what was inside it then after the pouch changes — its fold says so and
+    /// offers no Take out; the trip still ahead (`trip-row-1`) follows the pouch.
+    func testAReviewedTripShowsWhatWasInsideItsKitThen() {
+        let app = launch("-uiTestingKits")
+        openKitTrip(app)
+        tap(app, id: "trip-review")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5))
+        tap(app, id: "review-save")
+        XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["trip-reviewed"].waitForExistence(timeout: 5), "the trip was not reviewed")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // Afterwards the pouch changes: the cord taken out, the plasters out of it for good.
+        openKitThing(app)
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"), "no Add from your things")
+        tap(app, id: "thing-kit-row-1-out")
+        XCTAssertTrue(waitUntil { (app.staticTexts["thing-kit-row-1"].value as? String) == "taken out" }, "the cord was not taken out")
+        tap(app, id: "thing-kit-row-2-remove")
+        XCTAssertTrue(waitUntil { !app.staticTexts["thing-kit-row-2"].exists }, "the plasters did not leave the pouch")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+
+        // The reviewed trip: what was inside then.
+        openKitTrip(app)
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-kit"), "no Camp pouch line")
+        let pouch = app.buttons["trip-line-7"]
+        XCTAssertTrue(words(pouch).contains("3 inside"), "the reviewed trip shows the pouch as it is now: '\(words(pouch))'")
+        XCTAssertFalse(app.staticTexts["trip-line-7-kit-missing"].exists,
+                       "the reviewed trip says what is missing now: '\(words(app.staticTexts["trip-line-7-kit-missing"]))'")
+        tap(app, id: "trip-line-7-kit")
+        XCTAssertTrue(app.staticTexts["trip-line-7-kit-then"].waitForExistence(timeout: 5), "the fold does not say it is as it was")
+        XCTAssertEqual(words(app.staticTexts["trip-line-7-kit-2-name"]), "Plasters", "the plasters are not inside on the reviewed trip")
+        XCTAssertFalse(app.buttons["trip-line-7-kit-0-out"].exists, "a reviewed trip's kit offers Take out")
+        shot(app, "kit-reviewed-trip")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // The trip still ahead: the pouch as it is now.
+        app.buttons["trip-row-1"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-kit"), "no Camp pouch line on the trip ahead")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-7-kit-missing"]) == "1 missing: Spare cord" },
+                      "the trip ahead does not follow the pouch: '\(words(app.staticTexts["trip-line-7-kit-missing"]))'")
+        XCTAssertTrue(words(app.buttons["trip-line-7"]).contains("1 inside"), "'\(words(app.buttons["trip-line-7"]))'")
+        shot(app, "kit-live-trip")
+    }
+
+    /// The kit part from the keys (Mac, 0.73): Tab walks each thing inside — its Take out /
+    /// Put back, then its ✕ — then Add from your things, the list's Find a thing while it is
+    /// open, and Check before each trip; Space presses or switches; in Find a thing typing
+    /// finds, Return adds the lit thing (the page stays), Esc closes the list only.
+    func testTheKitPartIsWalkedByTheKeys() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch("-uiTestingKits")
+        openKitThing(app)                                         // the Camp pouch: Lighter, Spare cord, Plasters
+        tabTo(app, "thing-weight")
+        for id in ["thing-kit-row-0-out", "thing-kit-row-0-remove", "thing-kit-row-1-out"] {
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(focused(app, id), "Tab did not go on to \(id)")
+        }
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { (app.staticTexts["thing-kit-row-1"].value as? String) == "taken out" },
+                      "Space on Take out did not take the cord out")
+        shot(app, "keys-kit-row")
+        for id in ["thing-kit-row-1-remove", "thing-kit-row-2-out", "thing-kit-row-2-remove"] {
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(focused(app, id), "Tab did not go on to \(id)")
+        }
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !app.staticTexts["thing-kit-row-2"].exists }, "Space on ✕ did not take the plasters out of the kit")
+        XCTAssertTrue(focused(app, "thing-kit-row-1-remove"), "the focus did not stay on the ✕ before it")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-kit-add"), "Tab did not go on to Add from your things")
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(app.textFields["thing-kit-search"].waitForExistence(timeout: 5), "Space did not open the list")
+        XCTAssertTrue(focused(app, "thing-kit-search"), "the list opened without the cursor in Find a thing")
+        app.typeText("map")
+        XCTAssertTrue(waitUntil { self.says(app, "thing-kit-search") == "map" }, "what was typed did not reach Find a thing: '\(says(app, "thing-kit-search"))'")
+        XCTAssertTrue(waitUntil { (app.buttons["thing-kit-pick-0"].value as? String) == "lit" }, "the thing found is not lit")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitUntil { app.staticTexts["thing-kit-row-2"].exists }, "Return did not add the map")
+        XCTAssertNotNil(find(app, "thing-detail"), "Return in the list saved the page")
+        XCTAssertTrue(waitUntil { self.says(app, "thing-kit-search") == "" }, "the search was not emptied for the next one")
+        shot(app, "keys-kit-find")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !app.textFields["thing-kit-search"].exists }, "Esc did not close the list")
+        XCTAssertNotNil(find(app, "thing-detail"), "Esc in the list cancelled the page")
+        XCTAssertTrue(focused(app, "thing-kit-add"), "Esc did not go back to Add from your things")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-kit-check"), "Tab did not go on to Check before each trip")
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-kit-check") }, "Space did not switch Check before each trip on")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-brand"), "Tab did not leave the kit part for Brand")
+        app.typeKey(.tab, modifierFlags: .shift)
+        XCTAssertTrue(focused(app, "thing-kit-check"), "Shift-Tab did not come back into the kit part")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Return did not save")
+
+        // Kept: the cord out, the plasters gone, the map in, checked before each trip.
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-kit-row-2"]) == "Map" },
+                      "the map added by the keys was not kept: '\(words(app.staticTexts["thing-kit-row-2"]))'")
+        XCTAssertEqual(app.staticTexts["thing-kit-row-1"].value as? String, "taken out", "the cord taken out by the keys was not kept")
+        XCTAssertTrue(isSwitchOn(app, "thing-kit-check"), "Check before each trip was not kept")
+        #endif
+    }
+
     // MARK: - The trip's page in his Obsidian vault (0.70, spec 07 part 8)
 
     /// The sample's trip as `-uiTestingReviewed` has it: been (six to three days ago) and

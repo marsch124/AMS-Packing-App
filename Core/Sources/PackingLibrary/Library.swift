@@ -463,6 +463,9 @@ extension Library {
         // What was missed, kept on the trip, and the page in his vault asked for (0.70,
         // spec 07 part 8 — VaultPage.swift): the Mac writes it.
         noteReviewForVault(trip: t, missed: missed, when: when)
+        // What is inside each kit, kept on its line as it is now (0.73, ThingKits) — at
+        // the first review only: from then on the trip shows what was inside then.
+        if !Library.isReviewed(trips[t]) { keepKitsAtReview(trip: t) }
         for m in missed {
             let name = jsTrim(m.name)
             guard !name.isEmpty else { continue }

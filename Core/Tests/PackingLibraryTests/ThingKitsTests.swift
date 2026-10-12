@@ -374,4 +374,150 @@ final class ThingKitsTests: XCTestCase {
         XCTAssertNil(again.entries.first { $0.name == "Wash bag" }!.extra[KIT_TICKED_KEY])
         XCTAssertNotNil(lib.trips[0].entries.first { $0.id == line.id }!.extra[KIT_TICKED_KEY], "the trip itself keeps its own")
     }
+
+    // MARK: - A past trip keeps what was inside its kits (0.73)
+
+    /// Reviewed: a trip line is a copy, and since 0.73 so is what is inside a kit line.
+    func review(_ lib: inout Library, _ tripId: String, when: String = "2026-10-21T18:00:00.000Z") {
+        XCTAssertTrue(lib.saveReview(tripId: tripId, unused: [], missed: [], when: when))
+    }
+
+    func line(_ lib: Library, _ tripId: String, _ name: String) -> Item {
+        lib.trips.first { $0.id == tripId }!.entries.first { $0.name == name }!
+    }
+
+    func testAReviewedTripKeepsWhatWasInsideItsKitsAndALiveTripFollowsThem() {
+        var lib = ThingKitsTests.library()
+        let past = trip(&lib).id
+        let live = trip(&lib, end: "2026-11-20").id
+        let pouch = id(lib, "Camp pouch"), lighter = id(lib, "Lighter"), cord = id(lib, "Spare cord")
+        // On the trip: the lighter taken out, the soap ticked in the wash bag.
+        XCTAssertTrue(lib.setTakenOut(thingId: lighter, true))
+        let washLine = line(lib, past, "Wash bag")
+        XCTAssertTrue(lib.setKitContentTicked(true, tripId: past, entryId: washLine.id, contentId: id(lib, "Soap")))
+        review(&lib, past)
+        XCTAssertEqual(lib.trips.first { $0.id == past }!.extra[KITS_KEPT_KEY], .bool(true))
+        XCTAssertNil(lib.trips.first { $0.id == live }!.extra[KITS_KEPT_KEY], "only the reviewed trip")
+        XCTAssertNotNil(line(lib, past, "Camp pouch").extra[KIT_THEN_KEY])
+        XCTAssertNil(line(lib, past, "Map").extra[KIT_THEN_KEY], "a plain thing keeps nothing")
+        XCTAssertNil(line(lib, live, "Camp pouch").extra[KIT_THEN_KEY])
+
+        // Afterwards the pouch changes: the lighter back, the plasters out for good, the map
+        // in, the cord renamed, two more of them and heavier.
+        XCTAssertTrue(lib.setTakenOut(thingId: lighter, false))
+        XCTAssertTrue(lib.removeFromKit(thingId: id(lib, "Plasters")))
+        XCTAssertTrue(lib.addToKit(kitId: pouch, thingId: id(lib, "Map")))
+        XCTAssertTrue(lib.renameThing(id: cord, to: "Paracord"))
+        XCTAssertTrue(lib.updateThing(id: cord) { $0.qty = "4"; $0.weight = 90 })
+
+        // The past trip: what was inside at its review — names, how many, taken out.
+        let then = lib.kitLines(tripId: past)[line(lib, past, "Camp pouch").id]!
+        XCTAssertTrue(then.kept)
+        XCTAssertEqual(names(then.contents), ["Lighter", "Spare cord", "Plasters"], "what was inside then, in his order")
+        XCTAssertEqual(then.contents.map(\.takenOut), [true, false, false])
+        XCTAssertEqual(then.contents.map { effectiveQty($0.thing, 0) }, [1, 2, 1], "how many were inside then")
+        XCTAssertEqual(then.missingWords, "1 missing: Lighter")
+        XCTAssertEqual(then.insideWords, "2 inside")
+        XCTAssertEqual(then.kit.id, pouch)
+        // The live trip follows the kit.
+        let now = lib.kitLines(tripId: live)[line(lib, live, "Camp pouch").id]!
+        XCTAssertFalse(now.kept)
+        XCTAssertEqual(names(now.contents), ["Lighter", "Paracord", "Map"])
+        XCTAssertEqual(now.missingWords, "")
+
+        // Its weight then: the pouch 60 + the cord 80 × 2 + the plasters 20 (the lighter was
+        // out); the wash bag 100 + 18 + 90; the passport 0; the map 70 on its own line.
+        let carry = { (trip: String) in lib.weighedBags(tripId: trip).first { $0.load.container == "Carry-on / hand luggage" }!.load.grams }
+        XCTAssertEqual(carry(past), 240 + 208 + 70)
+        // Now: 60 + 30 + 90 × 4 + 70 — and the map's own line still on the trip made before.
+        XCTAssertEqual(carry(live), 520 + 208 + 70)
+        XCTAssertEqual(lib.bagFacts(name: "Carry-on / hand luggage").trips.first { $0.tripId == past }?.grams, 518,
+                       "a bag's trips weigh the past one as it was")
+
+        // A checked kit on a past trip asks for no ticks; what was ticked stays as it was.
+        let wash = lib.kitLines(tripId: past)[washLine.id]!
+        XCTAssertTrue(wash.kept)
+        XCTAssertFalse(wash.check)
+        XCTAssertEqual(wash.toTickWords, "")
+        XCTAssertEqual(wash.ticked, [id(lib, "Soap")])
+        XCTAssertFalse(lib.setKitContentTicked(true, tripId: past, entryId: washLine.id, contentId: id(lib, "Toothbrush")),
+                       "nothing inside a past trip's kit is ticked any more")
+        XCTAssertTrue(lib.setChecked(true, tripId: past, entryId: washLine.id), "its own tick is a plain tick")
+
+        // A thing that became a kit after the review held nothing then.
+        XCTAssertTrue(lib.setKit(kitId: id(lib, "Passport"), contents: [id(lib, "Soap")]))
+        XCTAssertNil(lib.kitLines(tripId: past)[line(lib, past, "Passport").id], "the passport held nothing on that trip")
+        XCTAssertNotNil(lib.kitLines(tripId: live)[line(lib, live, "Passport").id], "the live trip follows it")
+
+        // Reviewed again: what the first review kept stays.
+        review(&lib, past, when: "2026-11-01T18:00:00.000Z")
+        XCTAssertEqual(names(lib.kitLines(tripId: past)[line(lib, past, "Camp pouch").id]!.contents), ["Lighter", "Spare cord", "Plasters"])
+        XCTAssertNil(lib.kitLines(tripId: past)[line(lib, past, "Passport").id], "a second review keeps nothing new")
+
+        // The kit deleted: the past trip still says what was in it.
+        XCTAssertTrue(lib.deleteThing(id: pouch))
+        let gone = lib.kitLines(tripId: past)[line(lib, past, "Camp pouch").id]
+        XCTAssertEqual(gone.map { names($0.contents) }, ["Lighter", "Spare cord", "Plasters"])
+        XCTAssertEqual(gone?.kit.name, "Camp pouch")
+    }
+
+    func testATripReviewedBeforeKitsWereKeptShowsThemAsTheyAreNow() {
+        var lib = ThingKitsTests.library()
+        let t = trip(&lib).id
+        review(&lib, t)
+        // As a review saved before 0.73 left it: reviewed, nothing kept.
+        let n = lib.trips.firstIndex { $0.id == t }!
+        lib.trips[n].extra[KITS_KEPT_KEY] = nil
+        for e in lib.trips[n].entries.indices { lib.trips[n].entries[e].extra[KIT_THEN_KEY] = nil }
+        XCTAssertTrue(lib.removeFromKit(thingId: id(lib, "Plasters")))
+        let kit = lib.kitLines(tripId: t)[line(lib, t, "Camp pouch").id]!
+        XCTAssertFalse(kit.kept)
+        XCTAssertEqual(names(kit.contents), ["Lighter", "Spare cord"], "as it always did: the kit as it is now")
+        // …and no later review keeps anything for it.
+        review(&lib, t, when: "2026-11-01T18:00:00.000Z")
+        XCTAssertNil(line(lib, t, "Camp pouch").extra[KIT_THEN_KEY])
+        XCTAssertFalse(Library.kitsKept(lib.trips[n]))
+    }
+
+    func testWhatAPastTripKeptIsStoredSyncedBackedUpAndRestoredButNeverSentOrStartedAgain() throws {
+        var lib = ThingKitsTests.library()
+        _ = lib.setTakenOut(thingId: id(lib, "Lighter"), true)
+        let t = trip(&lib).id
+        review(&lib, t)
+        _ = lib.removeFromKit(thingId: id(lib, "Plasters"))
+        let pouchLine = line(lib, t, "Camp pouch").id
+        /// What the past trip shows inside each kit.
+        func shape(_ l: Library) -> [String: [String]] {
+            l.kitLines(tripId: t).mapValues { $0.contents.map { "\($0.thing.name)\($0.takenOut ? " out" : "")" } }
+        }
+        let shown = shape(lib)
+        XCTAssertEqual(shown[pouchLine], ["Lighter out", "Spare cord", "Plasters"])
+
+        // The store and iCloud: records and back.
+        let stored = Library(records: lib.records())
+        XCTAssertEqual(stored.trips, lib.trips)
+        XCTAssertEqual(shape(stored), shown)
+        // A backup file, read back as Settings reads it — both kinds.
+        for data in [lib.backupData(exportedAt: "2026-10-22T09:00:00.000Z"),
+                     BackupTests.olderFile(lib, exportedAt: "2026-10-22T09:00:00.000Z")] {
+            let (back, report) = try BackupTests.read(data)
+            XCTAssertTrue(report.isFaithful, report.mismatches.joined(separator: "; "))
+            XCTAssertEqual(shape(back), shown)
+            XCTAssertTrue(Library.kitsKept(back.trips.first { $0.id == t }!))
+        }
+        // The web app's model reads the line as it is, the key riding along unread.
+        let pl = line(lib, t, "Camp pouch")
+        XCTAssertEqual(Item(json: pl.json).extra[KIT_THEN_KEY], pl.extra[KIT_THEN_KEY])
+
+        // Sent, it arrives not reviewed: the kits are the receiver's as they are.
+        let sent = Library.justTheList(lib.trips.first { $0.id == t }!)
+        XCTAssertNil(sent.extra[KITS_KEPT_KEY])
+        XCTAssertTrue(sent.entries.allSatisfy { $0.extra[KIT_THEN_KEY] == nil })
+        // Started again: a new trip follows the kit.
+        let again = lib.startAgain(from: t, name: "Again")!
+        XCTAssertTrue(again.entries.allSatisfy { $0.extra[KIT_THEN_KEY] == nil })
+        XCTAssertEqual(names(lib.kitLines(tripId: again.id)[again.entries.first { $0.name == "Camp pouch" }!.id]!.contents),
+                       ["Lighter", "Spare cord"])
+        XCTAssertEqual(shape(lib), shown, "the trip itself keeps its own")
+    }
 }

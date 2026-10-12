@@ -454,8 +454,15 @@ struct ThingEditor: View {
                     }
                     .keyed(.weight)
                     // Inside — a pouch or a kit and what it holds; or the kit it is in (0.70).
-                    ThingKitPart(thingId: current, draft: $kit, ringed: at)
+                    // On the Mac its rows, buttons, switches and Find a thing are in the keys'
+                    // order too (0.73), and a click on one moves the page's focus there.
+                    #if os(macOS)
+                    ThingKitPart(thingId: current, draft: $kit, ringed: at, typing: $typing, landed: { kitLanded($0) })
                         .keyed(.kitAdd)
+                    #else
+                    ThingKitPart(thingId: current, draft: $kit)
+                        .keyed(.kitAdd)
+                    #endif
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
                     labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand", .brand) }
@@ -1114,6 +1121,8 @@ extension ThingEditor {
         case .section(let t): return "key-section-\(t)"
         case .liquid, .restricted: return "key-plane"
         case .kitTakenOut, .kitAdd, .kitCheck: return "key-kit"
+        case .kitOut(let id), .kitRemove(let id): return "key-kit-row-\(id)"
+        case .kitFind: return "key-kit-find"
         case .jump: return "key-jump"
         default: return "key-\(f)"
         }
@@ -1129,15 +1138,34 @@ extension ThingEditor {
         out += [.storage, .bag]
         if !model.library.pockets(bag: draft.container).isEmpty { out.append(.pocket) }   // 0.69
         out += [.when, .weight]
-        // The kit part (0.70), as it shows: a thing in a kit, or one that may hold things.
+        // The kit part (0.70), as it shows: a thing in a kit, or one that may hold things —
+        // each thing inside (0.73: its Take out / Put back, then its ✕), Add from your things,
+        // the list's Find a thing while it is open, Check before each trip.
         if !kit.none {
             if kit.holder != nil { out.append(.kitTakenOut) } else {
+                for id in kitRows() { out += [.kitOut(id), .kitRemove(id)] }
                 out.append(.kitAdd)
+                if kit.picking { out.append(.kitFind) }
                 if !kit.contents.isEmpty { out.append(.kitCheck) }
             }
         }
         out += [.brand, .colour, .condition, .care, .careNotes, .liquid, .restricted, .expiry]
         return out
+    }
+
+    /// The things inside the kit as its part shows them (ThingKitPart: those still there),
+    /// in his order — the rows the keys walk.
+    fileprivate func kitRows() -> [String] {
+        let there = Set(model.library.items.map(\.id))
+        return kit.contents.filter { there.contains($0) }
+    }
+
+    /// A row's number in the kit part (`thing-kit-row-<n>`), -1 when it is not there.
+    fileprivate func kitRow(_ id: String) -> Int { kitRows().firstIndex(of: id) ?? -1 }
+
+    /// The name of a thing inside the kit.
+    fileprivate func kitThingName(_ id: String) -> String {
+        model.library.items.first { $0.id == id }?.name ?? ""
     }
 
     /// A field's control id — what the line at the foot names as its value, for the tests.
@@ -1155,6 +1183,9 @@ extension ThingEditor {
         case .kitTakenOut: return "thing-kit-taken-out"
         case .kitAdd: return "thing-kit-add"
         case .kitCheck: return "thing-kit-check"
+        case .kitOut(let id): return "thing-kit-row-\(kitRow(id))-out"
+        case .kitRemove(let id): return "thing-kit-row-\(kitRow(id))-remove"
+        case .kitFind: return "thing-kit-search"
         case .when: return "thing-when"
         case .weight: return "thing-weight"
         case .brand: return "thing-brand"
@@ -1184,6 +1215,9 @@ extension ThingEditor {
         case .kitTakenOut: return "Taken out for now"
         case .kitAdd: return "Add from your things"
         case .kitCheck: return "Check before each trip"
+        case .kitOut(let id): return "\(kitThingName(id)) \u{2014} \(kit.out.contains(id) ? "Put back" : "Take out")"
+        case .kitRemove(let id): return "\(kitThingName(id)) \u{2014} out of the kit for good"
+        case .kitFind: return "Find a thing"
         case .when: return "When"
         case .weight: return "Weight"
         case .brand: return "Brand"
@@ -1220,6 +1254,9 @@ extension ThingEditor {
         case .templates: return "← → move · Space turns it on or off · type to jump · Tab next"
         case .liquid, .restricted, .kitTakenOut, .kitCheck: return "Space turns it on or off · Tab next · Return saves"
         case .kitAdd: return "Space opens or closes the list of your things · Tab next · Return saves"
+        case .kitOut: return "Space takes it out or puts it back · Tab next · Return saves"
+        case .kitRemove: return "Space takes it out of the kit for good · Tab next · Return saves"
+        case .kitFind: return "type to find · ↑ ↓ move · Return adds it · Esc closes the list"
         case .storage: return "type to pick, or a new place · Space opens · Tab next · Return saves"
         case .section: return "type to pick, or a new section · Space opens · Tab next · Return saves"
         case .category, .owner, .bag, .pocket, .when, .condition, .care:
@@ -1339,6 +1376,9 @@ extension ThingEditor {
         } else if case .section = at, let k = order.firstIndex(of: .storage) {
             // A Section whose template was just turned off: on from where it stood.
             land(order[dir > 0 ? k : max(k - 1, 0)])
+        } else if at?.isKit == true, let k = order.firstIndex(where: { $0 == .kitAdd || $0 == .kitTakenOut }) {
+            // A kit row gone (✕ clicked) or the list closed by a click: on from Add (0.73).
+            land(order[k])
         } else {
             land(dir > 0 ? order[0] : order[order.count - 1])
         }
@@ -1427,8 +1467,12 @@ extension ThingEditor {
         let keep = at
         shown = list[k]
         load(list[k])
-        // The same field on the next page — a Section of a template it is not on: the pills.
-        if let keep, fieldOrder().contains(keep) { land(keep) } else { land(keep == nil ? nil : .templates) }
+        // The same field on the next page — a Section of a template it is not on: the pills;
+        // a kit's row it does not have: its kit part's first field (0.73).
+        let fields = fieldOrder()
+        if let keep, fields.contains(keep) { land(keep) }
+        else if keep?.isKit == true, let k = fields.first(where: { $0.isKit }) { land(k) }
+        else { land(keep == nil ? nil : .templates) }
     }
 
     fileprivate func openJump() {
@@ -1550,6 +1594,27 @@ extension ThingEditor {
         }
         guard e.window === mine else { return e }
 
+        // Find a thing, in the list Add from your things opened (0.73) — an open list, as a
+        // drop-down's: ↑ ↓ light a thing, Return adds it (the list stays, the search empty,
+        // ready for the next), Esc closes the list only. Typing is the field's; Tab goes on.
+        if at == .kitFind, kit.picking, mods.subtracting(.shift).isEmpty {
+            switch code {
+            case KeyCode.down, KeyCode.up:
+                let shown = min(ThingKitPart.offered(model.library, thingId: current, draft: kit).count, ThingKitPart.shownAtOnce)
+                if shown > 0 { kit.lit = min(max(kit.lit + (code == KeyCode.down ? 1 : -1), 0), shown - 1) }
+                return nil
+            case KeyCode.returnKey, KeyCode.enter:
+                addLitThing()
+                return nil
+            case KeyCode.escape:
+                kit.picking = false; kit.query = ""; kit.lit = 0
+                land(.kitAdd)
+                return nil
+            default:
+                break
+            }
+        }
+
         switch code {
         case KeyCode.tab:
             guard mods.subtracting(.shift).isEmpty else { return e }
@@ -1592,11 +1657,50 @@ extension ThingEditor {
             switch f {
             case .kitTakenOut: kit.takenOut.toggle()
             case .kitCheck: kit.check.toggle()
-            default: kit.picking.toggle()
+            default:
+                kit.picking.toggle(); kit.query = ""; kit.lit = 0
+                // Opened: the cursor goes into Find a thing once it is on the page (0.73),
+                // as Space on a drop-down hands the keys to its list.
+                if kit.picking { DispatchQueue.main.async { land(.kitFind) } }
             }
+            return nil
+        case .kitOut(let id):
+            guard code == KeyCode.space else { return e }
+            if kit.out.contains(id) { kit.out.remove(id) } else { kit.out.insert(id) }
+            return nil
+        case .kitRemove(let id):
+            guard code == KeyCode.space else { return e }
+            guard let n = kitRows().firstIndex(of: id) else { return nil }
+            kit.contents.removeAll { $0 == id }
+            kit.out.remove(id)
+            // The focus stays where it was: on the ✕ of the thing that came up into its
+            // place, else of the one before it, else on Add from your things.
+            let left = kitRows()
+            land(left.isEmpty ? .kitAdd : .kitRemove(left[min(n, left.count - 1)]))
             return nil
         default:
             return e
+        }
+    }
+
+    /// Return in Find a thing: the lit thing (the first, until ↑ ↓ light another) goes in
+    /// at the end; the search empties, ready for the next one. Nothing found: nothing.
+    fileprivate func addLitThing() {
+        let shown = ThingKitPart.offered(model.library, thingId: current, draft: kit).prefix(ThingKitPart.shownAtOnce)
+        guard !shown.isEmpty else { return }
+        let thing = shown[shown.startIndex + min(max(kit.lit, 0), shown.count - 1)]
+        kit.contents.append(thing.id)
+        kit.query = ""
+        kit.lit = 0
+    }
+
+    /// A click on one of the kit part's controls: the focus goes there, without scrolling
+    /// — into Find a thing once the list it opened is on the page.
+    fileprivate func kitLanded(_ f: ThingField) {
+        if f == .kitFind {
+            DispatchQueue.main.async { land(.kitFind, quiet: true) }
+        } else {
+            land(f, quiet: true)
         }
     }
 

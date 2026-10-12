@@ -624,6 +624,14 @@ trips" answers. Then `buildTotalEntries` as before, and each kit's line once per
 in two bags is still one line). A trip made BEFORE a thing went into its kit keeps that thing's line until a
 rebuild (Trip settings → Save) takes it away — unless it is ticked, edited or added by hand, as for every line.
 
+**What was inside, kept at the review (0.73, 12 Oct 2026; spec 07 part 9, "A past trip").** `saveReview`, at a
+trip's FIRST review, has each kit line keep what is inside its kit then (`keepKitsAtReview` → line key `kitThen`:
+id, name, how many, grams each, taken out — his order) and marks the trip `kitsKept: true` (spec 01 §1.12). Such a
+trip shows what was inside then; a line of it without `kitThen` held nothing then. A trip not reviewed follows the
+kit; a trip reviewed before 0.73 (no mark) shows the kit as it is now, and a later review keeps nothing for it.
+`justTheList` (a shared trip) drops both keys; `startAgain` drops `kitThen`; a rebuild keeps a matched line whole,
+its copy with it.
+
 ### Tests
 `TripBuildingTests` (all): empty constraints, season, transport + catering, context only on WET,
 combine + filter, de-dup by name+container, only chosen activities, the loose bin never feeds a trip,
@@ -638,7 +646,12 @@ checked kit's ticking rules, the checks before you go looking inside. UI (0.70, 
 `testAKitIsOneLineOnATripAndWeighsWhatIsInside` (8 lines, "3 inside", no ninth line; Bags 2.4 kg; the arrow opens
 three rows; the plasters' warning; Take out → "1 missing: Lighter", "2 inside"; Put back; Care's heaviest:
 Wash bag then Camp pouch at rows 2 and 3), `testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked` (the
-wash bag open with two ticks and "2 to go"; its own tap does not tick it; the second tick does).
+wash bag open with two ticks and "2 to go"; its own tap does not tick it; the second tick does). A past trip (0.73):
+model `testAReviewedTripKeepsWhatWasInsideItsKitsAndALiveTripFollowsThem`,
+`testATripReviewedBeforeKitsWereKeptShowsThemAsTheyAreNow`,
+`testWhatAPastTripKeptIsStoredSyncedBackedUpAndRestoredButNeverSentOrStartedAgain`; UI
+`testAReviewedTripShowsWhatWasInsideItsKitThen` (the sample's first trip reviewed, then the pouch changed: still
+"3 inside" with the Plasters and no Take out; the second trip, `trip-row-1`, "1 missing: Spare cord").
 
 ---
 
@@ -995,7 +1008,14 @@ smaller tick circles and less space between lines").
   weight plus what is inside it now (`linesWithKitWeights`: each content's weight × its how-many, the taken out
   not counted). **Check before you go** looks inside each kit line (`insideLines`): "Lighter, in the Camp pouch"
   in a cabin bag is not allowed on board; "Plasters, in the Camp pouch" runs out before you are home — each opens
-  that thing.
+  that thing. It always reads the kit as it is NOW (`liveKitOnLine`), like every thing it reads.
+  **A reviewed trip (0.73):** its kit lines show what was inside at the review (`KitOnLine.kept`; spec 07 part 9,
+  "A past trip"): the count, "1 missing" and the fold as then; open, the fold starts with "As it was when the trip
+  was reviewed" (Footnote muted, `trip-line-<n>-kit-then`), each thing's name muted (struck through when it was
+  taken out; `trip-line-<n>-kit-<k>-name` — on a live kit's plain rows too), and NO Take out / Put back, no ticks
+  ("Check before each trip" is not asked: `check` false, `setKitContentTicked` refuses) and no warnings; it opens
+  folded. The kit's own tick is a plain tick. Its weight on the Bags card is the weight then
+  (`linesWithKitWeights(trip:)`). A trip reviewed before 0.73 shows the kits as they are now, as before.
 
 Each row view is keyed by "id|checked|aside|group|placing|qtyNights|pocketing|pocket" (the last two 0.69), so it is rebuilt whenever its
 tick, set-aside, group, place panel or night count changes (bug B1, his Mac 2026-09-26: a row showed no

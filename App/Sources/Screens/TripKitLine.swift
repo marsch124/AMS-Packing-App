@@ -8,6 +8,11 @@ import PackingLibrary
 // packed), and the kit counts as packed only when every one is ticked. Under the line,
 // always: "1 missing: Lighter" while something is taken out, and what is worth saying
 // about what is inside ("Plasters runs out in 10 days").
+//
+// A past trip (0.73): reviewed, its kit lines kept what was inside them then
+// (`KitOnLine.kept`). The fold shows that — muted, taken out struck through, no Take out
+// or Put back (they would change the kit as it is now) and no ticks — under "As it was
+// when the trip was reviewed".
 
 /// The arrow beside a kit's ⊘ that opens what is inside it.
 struct KitFoldButton: View {
@@ -68,6 +73,11 @@ struct KitLineParts: View {
                     .accessibilityIdentifier("trip-line-\(n)-kit-warning-\(k)")
             }
             if open {
+                if kit.kept {
+                    Text("As it was when the trip was reviewed")
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("trip-line-\(n)-kit-then")
+                }
                 ForEach(Array(kit.contents.enumerated()), id: \.element.thing.id) { k, c in
                     content(c, k: k, aside: aside)
                 }
@@ -79,10 +89,10 @@ struct KitLineParts: View {
     }
 
     /// One thing inside: its name, muted — with a small tick when the kit is checked
-    /// before each trip — and Take out / Put back.
+    /// before each trip — and Take out / Put back (not on a past trip's kit: history).
     private func content(_ c: KitContent, k: Int, aside: Bool) -> some View {
         let ticked = kit.ticked.contains(c.thing.id)
-        let ticks = kit.check && !c.takenOut && !aside
+        let ticks = kit.check && !c.takenOut && !aside && !kit.kept
         return HStack(spacing: 6) {
             if ticks {
                 Button { tick(c.thing.id, !ticked) } label: {
@@ -105,15 +115,18 @@ struct KitLineParts: View {
                     .strikethrough(c.takenOut, color: Theme.muted)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, minHeight: Metrics.line - 4, alignment: .leading)
+                    .accessibilityIdentifier("trip-line-\(n)-kit-\(k)-name")
             }
-            Button { takeOut(c.thing.id, !c.takenOut) } label: {
-                Text(c.takenOut ? "Put back" : "Take out").font(.system(.footnote, weight: .semibold))
-                    .foregroundStyle(AppSection.events.color)
-                    .padding(.horizontal, 8).frame(minHeight: Metrics.chip - 4)
-                    .contentShape(Rectangle())
+            if !kit.kept {
+                Button { takeOut(c.thing.id, !c.takenOut) } label: {
+                    Text(c.takenOut ? "Put back" : "Take out").font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(AppSection.events.color)
+                        .padding(.horizontal, 8).frame(minHeight: Metrics.chip - 4)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-line-\(n)-kit-\(k)-out")
             }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("trip-line-\(n)-kit-\(k)-out")
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("trip-line-\(n)-kit-\(k)")

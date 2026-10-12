@@ -47,7 +47,7 @@ extension Library {
     public func weighedBags(tripId: String) -> [WeighedBag] {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return [] }
         let scale = weighed(tripId: tripId)
-        // A kit weighs what is inside it (ThingKits).
-        return bagLoads(linesWithKitWeights(trip.entries), qtyNights(trip), bagLimits()).map { WeighedBag(load: $0, scaleGrams: scale[$0.container]) }
+        // A kit weighs what is inside it — on a reviewed trip, what was inside it then (ThingKits).
+        return bagLoads(linesWithKitWeights(trip: trip), qtyNights(trip), bagLimits()).map { WeighedBag(load: $0, scaleGrams: scale[$0.container]) }
     }
 }

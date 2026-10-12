@@ -554,15 +554,16 @@ struct TripScreen: View {
     private func kitParts(_ kit: KitOnLine, _ line: Item, n: Int, trip: TripEvent) -> some View {
         let open = kitIsOpen(kit, line)
         let id = tripId, entry = line.id
+        // A past trip's kit (0.73) is what was inside it then: nothing to warn about now.
         return KitLineParts(kit: kit, line: line, n: n, open: open,
-                            warnings: model.library.kitWarnings(kitId: kit.kit.id, today: Today.local, before: trip.endDate),
+                            warnings: kit.kept ? [] : model.library.kitWarnings(kitId: kit.kit.id, today: Today.local, before: trip.endDate),
                             tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
                             tick: { thing, on in
                                 model.change { _ = $0.setKitContentTicked(on, tripId: id, entryId: entry, contentId: thing) }
                             },
                             takeOut: { thing, out in model.change { _ = $0.setTakenOut(thingId: thing, out) } })
             // Rebuilt whenever what it shows changes (the lazy list's stale rows, B1).
-            .id("kit|\(line.id)|\(open)|\(line.checked)|\(kit.ticked.sorted())|\(kit.missing.count)|\(kit.contents.count)")
+            .id("kit|\(line.id)|\(open)|\(line.checked)|\(kit.ticked.sorted())|\(kit.missing.count)|\(kit.contents.count)|\(kit.kept)")
     }
 
     /// His places, one tap each; or a new one typed. The thing keeps the place.

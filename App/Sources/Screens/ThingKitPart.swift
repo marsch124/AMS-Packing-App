@@ -24,6 +24,10 @@ struct KitDraft: Equatable {
     /// The list of his things to add from is open — kept here so the Mac's keys (Space on
     /// Add from your things) open it too; never saved.
     var picking = false
+    /// What is typed in the list's Find a thing, and the thing the Mac's ↑ ↓ light in it
+    /// (0.73: Return adds it) — here so the page's keys read them; never saved.
+    var query = ""
+    var lit = 0
     /// As the page opened — Save writes only what changed.
     private var opened: [String] = []
     private var openedOut: Set<String> = []
@@ -64,8 +68,12 @@ struct ThingKitPart: View {
     @Binding var draft: KitDraft
     /// The field the Mac's keys are on (ThingKeys.swift): its control is ringed. nil on the iPhone.
     var ringed: ThingField? = nil
+    /// The page's text field with the window's keys — Find a thing joins it (Mac, 0.73).
+    var typing: FocusState<ThingField?>.Binding? = nil
+    /// A click on one of the part's controls: the page's focus goes there (Mac, 0.73), as
+    /// a click on any other field does. nil on the iPhone.
+    var landed: ((ThingField) -> Void)? = nil
     @EnvironmentObject var model: LibraryModel
-    @State private var query = ""
 
     var body: some View {
         if draft.none {
@@ -92,6 +100,7 @@ struct ThingKitPart: View {
             }
             .tint(AppSection.care.color)
             .focusRing(ringed == .kitTakenOut)
+            .clickLands(landed, .kitTakenOut)
             .accessibilityIdentifier("thing-kit-taken-out")
             // A thing ALSO on a template by itself: a trip packs its kit instead (spec 07, part 9).
             if !also.isEmpty {
@@ -123,15 +132,17 @@ struct ThingKitPart: View {
             }
             ForEach(Array(things.enumerated()), id: \.element.id) { n, thing in
                 row(thing, n: n, today: today)
+                    .keyed(.kitOut(thing.id))
             }
             addButton
-            if draft.picking { picker(byId) }
+            if draft.picking { picker(byId).keyed(.kitFind) }
             if !things.isEmpty {
                 Toggle(isOn: $draft.check) {
                     Text("Check before each trip").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 }
                 .tint(AppSection.care.color)
                 .focusRing(ringed == .kitCheck)
+                .clickLands(landed, .kitCheck)
                 .accessibilityIdentifier("thing-kit-check")
                 Text("With what is inside: \(KitDashboard.kilos(total))")
                     .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
@@ -161,6 +172,7 @@ struct ThingKitPart: View {
                 Spacer(minLength: 6)
                 Button {
                     if out { draft.out.remove(thing.id) } else { draft.out.insert(thing.id) }
+                    landed?(.kitOut(thing.id))
                 } label: {
                     Text(out ? "Put back" : "Take out").font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(AppSection.care.color)
@@ -169,6 +181,7 @@ struct ThingKitPart: View {
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
+                .focusRing(ringed == .kitOut(thing.id), radius: 14)
                 .accessibilityIdentifier("thing-kit-row-\(n)-out")
                 Button {
                     draft.contents.removeAll { $0 == thing.id }
@@ -178,6 +191,7 @@ struct ThingKitPart: View {
                         .frame(width: Metrics.compact, height: Metrics.compact).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
+                .focusRing(ringed == .kitRemove(thing.id), radius: 12, gap: 0)
                 .accessibilityIdentifier("thing-kit-row-\(n)-remove")
                 .accessibilityLabel("Take \(thing.name) out of the kit")
             }
@@ -194,7 +208,11 @@ struct ThingKitPart: View {
     }
 
     private var addButton: some View {
-        Button { draft.picking.toggle(); query = "" } label: {
+        Button {
+            draft.picking.toggle(); draft.query = ""; draft.lit = 0
+            // A click on the Mac: the cursor goes into Find a thing, as Space does (0.73).
+            landed?(draft.picking ? .kitFind : .kitAdd)
+        } label: {
             Text(draft.picking ? "Close the list" : "Add from your things").font(.system(.subheadline, weight: .semibold))
                 .foregroundStyle(AppSection.care.color)
                 .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
@@ -207,32 +225,52 @@ struct ThingKitPart: View {
     }
 
     /// Your things that can go in: not itself, not a bag, not a kit (one level deep), not
-    /// what is in it already — A–Z, found by typing. One in another kit says so: it moves.
-    private func picker(_ byId: [String: Item]) -> some View {
-        let lib = model.library
-        let index = lib.kitIndex()
-        let q = normName(query)
-        let fit = lib.items
+    /// what is in it already — A–Z, found by what is typed in Find a thing. The list and
+    /// the Mac's keys (Return adds the lit one) read it here.
+    static func offered(_ lib: Library, thingId: String, draft: KitDraft, index: KitIndex? = nil) -> [Item] {
+        let index = index ?? lib.kitIndex()
+        let q = normName(draft.query)
+        return lib.items
             .filter { !draft.contents.contains($0.id) && lib.kitRefusal(thingId: $0.id, kitId: thingId, index: index).isEmpty }
             .filter { q.isEmpty || normName($0.name).contains(q) }
             .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
+    }
+
+    /// Your things that can go in (`offered`), the first 8 shown. One in another kit says
+    /// so: it moves.
+    private func picker(_ byId: [String: Item]) -> some View {
+        let lib = model.library
+        let index = lib.kitIndex()
+        let q = normName(draft.query)
+        let fit = ThingKitPart.offered(lib, thingId: thingId, draft: draft, index: index)
         let shown = Array(fit.prefix(ThingKitPart.shownAtOnce))
+        // The Mac's keys light one (↑ ↓) while Find a thing has them; Return adds it.
+        let lit = ringed == .kitFind && !shown.isEmpty ? min(max(draft.lit, 0), shown.count - 1) : nil
         return VStack(alignment: .leading, spacing: 0) {
-            TextField("Find a thing", text: $query)
+            TextField("Find a thing", text: Binding(get: { draft.query }, set: { now in
+                guard now != draft.query else { return }
+                draft.query = now
+                draft.lit = 0                       // a new search lights its first thing
+            }))
                 .textFieldStyle(.plain)
                 // A name to find, not words to correct: the iPhone's inline guess ("Map" →
                 // "Map of ") was taken in as the keyboard went away and found nothing.
                 .autocorrectionDisabled()
                 .font(.system(.body)).foregroundStyle(Theme.ink)
-                .clearButton($query, id: "thing-kit-search")
+                .kitFocused(typing)                 // on the field itself, inside the ✕'s row
+                .clearButton($draft.query, id: "thing-kit-search")
                 .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                // The Mac's ring: the field's own border, 2 pt in the page's orange (as every text field).
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(ringed == .kitFind ? AppSection.care.color : Theme.line,
+                                                                   lineWidth: ringed == .kitFind ? 2 : 1))
                 .padding(.bottom, 4)
             ForEach(Array(shown.enumerated()), id: \.element.id) { n, thing in
                 Button {
                     draft.contents.append(thing.id)
-                    query = ""                      // ready for the next one
+                    draft.query = ""                // ready for the next one
+                    draft.lit = 0
+                    landed?(.kitFind)
                 } label: {
                     HStack(spacing: 8) {
                         Text(thing.name).font(.system(.body)).foregroundStyle(Theme.ink).lineLimit(1)
@@ -244,11 +282,14 @@ struct ThingKitPart: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: Metrics.compact, alignment: .leading)
                     .contentShape(Rectangle())
+                    // Lit by the Mac's keys: the page's orange at 18 % behind it, as a drop-down's row.
+                    .background(lit == n ? AppSection.care.color.opacity(0.18) : Color.clear)
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                 .accessibilityIdentifier("thing-kit-pick-\(n)")
                 .accessibilityLabel(thing.name)
+                .accessibilityValue(lit == n ? "lit" : "")
             }
             if fit.count > shown.count {
                 Text("\(fit.count - shown.count) more \u{2014} type to find them")
@@ -269,4 +310,21 @@ struct ThingKitPart: View {
 
     /// How many things the list shows before it asks him to type.
     static let shownAtOnce = 8
+}
+
+extension View {
+    /// Find a thing tied to the page's field in focus — the Mac's keys only (`macFocused`).
+    @ViewBuilder func kitFocused(_ binding: FocusState<ThingField?>.Binding?) -> some View {
+        if let binding { macFocused(binding, .kitFind) } else { self }
+    }
+
+    /// A click on a switch of the kit part moves the page's focus there (Mac), beside the
+    /// switch's own tap — as Liquid and Not allowed in the cabin do.
+    @ViewBuilder func clickLands(_ landed: ((ThingField) -> Void)?, _ f: ThingField) -> some View {
+        #if os(macOS)
+        if let landed { simultaneousGesture(TapGesture().onEnded { landed(f) }) } else { self }
+        #else
+        self
+        #endif
+    }
 }

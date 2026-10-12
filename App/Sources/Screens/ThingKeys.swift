@@ -28,6 +28,12 @@ enum ThingField: Hashable {
     /// The kit part (0.70): Taken out for now (a thing in a kit); Add from your things and
     /// Check before each trip (a thing that holds things) — Space presses or switches.
     case kitTakenOut, kitAdd, kitCheck
+    /// The kit part's rows (0.73), by the id of the thing inside: its Take out / Put back,
+    /// and its ✕ (out of the kit for good) — Space presses.
+    case kitOut(String), kitRemove(String)
+    /// Find a thing, in the list Add from your things opens (0.73): typing finds, ↑ ↓ light
+    /// a thing, Return adds it, Esc closes the list.
+    case kitFind
     case weight, brand, colour, condition, care, careNotes, liquid, restricted, expiry
     /// The ⌘J box's own field — never in the Tab order.
     case jump
@@ -35,7 +41,15 @@ enum ThingField: Hashable {
     /// Typed into: the window's own text field has the keys.
     var isText: Bool {
         switch self {
-        case .name, .notes, .weight, .brand, .colour, .careNotes, .expiry, .jump: return true
+        case .name, .notes, .weight, .brand, .colour, .careNotes, .expiry, .jump, .kitFind: return true
+        default: return false
+        }
+    }
+
+    /// One of the kit part's fields.
+    var isKit: Bool {
+        switch self {
+        case .kitTakenOut, .kitAdd, .kitCheck, .kitOut, .kitRemove, .kitFind: return true
         default: return false
         }
     }

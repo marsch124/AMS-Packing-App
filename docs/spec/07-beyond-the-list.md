@@ -506,9 +506,10 @@ test drives).
 ## 9. Kits — things that hold things
 
 > Built in 0.70 (`PackingLibrary/ThingKits.swift`, `App/Sources/Screens/ThingKitPart.swift`,
-> `App/Sources/Screens/TripKitLine.swift`). Written from the code; where it differs from the design of 7 Oct, the
+> `App/Sources/Screens/TripKitLine.swift`); 12 Oct 2026 (0.73): the kit part in the Mac's keyboard order, and a
+> reviewed trip keeps what was inside its kits. Written from the code; where it differs from the design of 7 Oct, the
 > difference is under *Open questions*. Details per screen: spec 01 §1.12 (the keys), 03 ("Kits", "A kit's
-> line"), 05 (a thing's page item 11b, Care, the table).
+> line"), 05 (a thing's page item 11b and its Keyboard (Mac), Care, the table).
 
 His words (7 Oct 2026): some things are "already existing as a permanently packed item consisting of items" —
 a pouch of cables and chargers, a pouch of small tools. He said yes to kits on 7 Oct.
@@ -531,7 +532,8 @@ On the KIT, in three `extra` keys — `kitContents` (ids, his order), `kitOut` (
 and, on a trip's kit line, `kitTicked` (the ticked ids while the line is not ticked). So the web app's model sees a
 plain thing (parity 211/211), and a kit is stored, synced through iCloud, backed up and restored with the thing,
 as every `extra` key is. Which kit holds a thing is read from the kits (`kitIndex`): in id order, a thing in the
-first kit that lists it.
+first kit that lists it. Since 0.73 a reviewed trip keeps a copy too (below, "A past trip"): on each kit line
+`kitThen`, and on the trip `kitsKept` — trip and line keys, so they travel in the trip's own records.
 
 ### On a thing's page (spec 05, item 11b)
 
@@ -541,6 +543,15 @@ search, the first 8 that can go in, A–Z; one in another kit says so and moves)
 what is inside: 170 g**. A thing inside a kit shows **In a kit** instead: "Inside the Wash bag", **Taken out for
 now**, and — when it is ALSO on a template on its own — "Also on Common base on its own — a trip packs the Wash
 bag instead." Everything waits for Save; Cancel leaves the kit as it was.
+
+**The Mac's keys (0.73, 12 Oct 2026).** The kit part is in the page's Tab order like every other field (spec 05,
+Keyboard (Mac)): after Weight, each thing inside — its **Take out / Put back**, then its **✕** — then **Add from
+your things**, the list's **Find a thing** while it is open, **Check before each trip**; then Brand. Space presses a
+button or switches a switch; Space on Add from your things opens the list with the cursor in Find a thing, where
+typing finds, ↑ ↓ light a thing (the page's orange at 18 % behind it), **Return adds the lit one** (the list stays,
+the search empties, the page is not saved) and **Esc closes the list** only (the focus back on Add). ✕ by Space
+keeps the focus where it was: the ✕ of the thing that came up into its place, else the one before, else Add. A
+click on any of them moves the page's focus there, as on the other fields.
 
 ### On a trip (spec 03)
 
@@ -556,6 +567,29 @@ bag instead." Everything waits for Save; Cancel leaves the kit as it was.
   kit is one line per trip.
 - **Check before you go** looks inside kits: "Lighter, in the Camp pouch" in a cabin bag is not allowed on board;
   "Plasters, in the Camp pouch" runs out before you are home.
+
+### A past trip — what was inside then (0.73, 12 Oct 2026)
+
+A trip line is a copy, and since 0.73 what is inside a kit line is too. **The moment** is the trip's review
+(`saveReview`) — the moment the rest of a trip is kept for good (what was missed, the vault page asked for, the
+lists' history; `followThing` stops at a reviewed trip). At the FIRST review (`keepKitsAtReview`, only when the trip
+was not reviewed before) each kit line keeps what is inside its kit now — `kitThen`: `[{id, name, qty (how many),
+weight (grams each), out: true (taken out)}]`, his order — and the trip is marked `kitsKept: true`. From then on:
+- the trip shows what was inside THEN (`kitOnLine(kept:)`, `kitLines`): "3 inside", "1 missing: Lighter" as at the
+  review, whatever the kit holds now, even when the kit is renamed, changed or deleted (the line is the kit then);
+- the fold says **"As it was when the trip was reviewed"** (Footnote muted, `trip-line-<n>-kit-then`) and shows
+  each thing's name (`trip-line-<n>-kit-<k>-name`), muted, struck through when it was taken out — no Take out /
+  Put back (they would change the kit as it is now), no ticks (`check` false; `setKitContentTicked` refuses), no
+  warnings (they are about now); the kit's own tick is a plain tick;
+- the Bags card, a bag's trips and the vault page weigh the kit as it was (`linesWithKitWeights(trip:)`);
+- a line of that trip that kept nothing held nothing then: a thing that became a kit later is a plain line there;
+- a second review keeps what the first kept.
+Live trips (not reviewed) keep following the kit. **A trip reviewed before 0.73** has no mark and no copy: it
+shows the kits as they are now, as it always did — and a later review keeps nothing for it. **Check before you go**
+still reads what is inside each kit NOW (as it reads every thing now, `thingNow`). A shared trip arrives not
+reviewed (`justTheList` drops `kitsKept` and every `kitThen`); "Start a new trip from this one" drops `kitThen`
+(the new trip follows the kits). Back up, restore and iCloud carry both keys with the trip's and the line's own
+records, as every `extra` key.
 
 ### Weight and Care
 
@@ -575,7 +609,16 @@ on two templates; a rebuild and a change to a thing never bring a content back (
 kit's ticking; warnings (dates and care, before the trip ends, taken out not said) and Care's row naming the kit;
 the checks before you go looking inside; "also on" a template; stored / synced / backed up (as stored and rebuilt
 from rows) / restored, and plain to the web model; deleting a content or a kit; a shared trip and a trip started
-again carry no ticks inside a kit.
+again carry no ticks inside a kit. Since 0.73 (18): `testAReviewedTripKeepsWhatWasInsideItsKitsAndALiveTripFollowsThem`
+(the review keeps names, how many and taken out; the live trip follows a rename, a removal, an addition and a new
+how-many; the bag weighs 518 g then, 798 g now, and a bag's trips agree; a checked kit asks for no ticks; a thing
+made a kit later held nothing then; a second review keeps the first copy; a deleted kit still says what was in it),
+`testATripReviewedBeforeKitsWereKeptShowsThemAsTheyAreNow`,
+`testWhatAPastTripKeptIsStoredSyncedBackedUpAndRestoredButNeverSentOrStartedAgain`. Each seen red with a planted
+fault: the review keeping nothing (two of the three red, e.g. "("["Lighter", "Paracord", "Map"]") is not equal to
+("["Lighter", "Spare cord", "Plasters"]") - what was inside then, in his order"), and the shared trip and the trip
+started again keeping the copy (3 failures, e.g. "("["Lighter", "Spare cord", "Plasters"]") is not equal to
+("["Lighter", "Spare cord"]")").
 
 UI (`-uiTestingKits`: the sample + a Camp pouch on Hiking with a Lighter, Spare cord and Plasters, and a Wash bag on
 no template, checked before each trip, with the Toothbrush — still on Common base — and Soap):
@@ -585,7 +628,15 @@ kept after Save; the trip says "1 missing: Spare cord"), `testAKitIsOneLineOnATr
 Each was seen red with a planted fault: Save not writing the kit ("Save did not keep the map inside"), the bags not
 weighing the contents ("… '2.1 kg'"), the kit's tick not refused ("the kit was packed before what is inside it was
 ticked"), Save not writing taken out ("taken out on its page, it is not missing on the trip: ''"). The thing page's
-kit part also ran on the Mac (probe).
+kit part also ran on the Mac (probe). Since 0.73 (the sample has a second trip, "Autumn in the hills", two months
+ahead, `trip-row-1`): `testAReviewedTripShowsWhatWasInsideItsKitThen` (the first trip reviewed; then the cord taken
+out and the plasters ✕'d on the pouch's page; the reviewed trip still "3 inside", nothing missing, its fold "As it
+was…" with the Plasters and no Take out; the trip ahead "1 missing: Spare cord", "1 inside") and, Mac only,
+`testTheKitPartIsWalkedByTheKeys` (Weight → Tab → row 0's Take out, ✕, row 1's Take out; Space takes the cord out;
+Tab → row 1's ✕, row 2's Take out, ✕; Space removes the plasters and the focus stays on row 1's ✕; Tab → Add; Space
+opens the list with the cursor in Find a thing; "map" lights the Map, Return adds it, the page stays, the search
+empties; Esc closes the list, focus on Add; Tab → Check before each trip, Space on; Tab → Brand, Shift-Tab back;
+Return saves; reopened, all kept).
 
 ### Open questions
 
@@ -596,8 +647,18 @@ kit part also ran on the Mac (probe).
 - **A trip made before a thing went into its kit** keeps that thing's line until a rebuild (Trip settings → Save).
 - **"Where is my …?"** (part 5) should answer "Camp pouch, in the backpack" for a thing inside a kit:
   `Library.kitHolding(thingId:)` gives the kit; joining it to the pockets' answer is left for the merge with 0.69.
-- **The Mac's keys** (part 1): the kit part's buttons and switches are not in the page's Tab order yet.
-- **Past trips** show what is inside their kits as it is NOW (a trip line is a copy; its contents are not).
+- **Resolved 12 Oct 2026 (0.73)** — ~~**The Mac's keys** (part 1): the kit part's buttons and switches are not in
+  the page's Tab order yet.~~ (Taken out for now, Add from your things and Check before each trip had joined it in
+  the merge of 0.69/0.70.) Each thing inside — Take out / Put back, then ✕ — and the list's Find a thing are in it
+  too; Space presses, and in Find a thing ↑ ↓ light a thing, Return adds it, Esc closes the list (above, "The Mac's
+  keys"; spec 05, Keyboard (Mac)). Pinned by `testTheKitPartIsWalkedByTheKeys` (GitHub's Mac).
+- **Resolved 12 Oct 2026 (0.73)** — ~~**Past trips** show what is inside their kits as it is NOW (a trip line is a
+  copy; its contents are not).~~ The review keeps a copy on each kit line (`kitThen`, the trip marked `kitsKept`):
+  a reviewed trip shows what was inside then; live trips follow the kit; a trip reviewed before 0.73 keeps today's
+  behaviour (above, "A past trip").
+- **A trip over but not reviewed** still follows its kits until it is reviewed (the review is the moment a trip is
+  kept for good; a trip's end date writes nothing). Reviewed weeks later, it keeps the kits as they are at the
+  review. His word welcome if the day the trip ended should count instead.
 - **The table's kit weight** is not typed in; its own weight is on its page. Not covered by a UI test (the model's
   sort and filter are).
 

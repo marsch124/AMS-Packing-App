@@ -320,7 +320,9 @@ enum SampleLibrary {
     /// Wash bag (100 g, on no template, checked before each trip) holding the Toothbrush
     /// (still on Common base on its own) and Soap (90 g). Its trip is rebuilt as a new trip
     /// would be: the Wash bag in the toothbrush's place, the Camp pouch last — eight lines,
-    /// the kits at `trip-line-2` (Wash bag) and `trip-line-7` (Camp pouch).
+    /// the kits at `trip-line-2` (Wash bag) and `trip-line-7` (Camp pouch). A second trip
+    /// from the same lists, "Autumn in the hills" two months ahead (`trip-row-1`, 0.73),
+    /// stays live while a test reviews the first: the past and the live side by side.
     static func kits() -> Library {
         var lib = make()
         let cal = Calendar(identifier: .gregorian)
@@ -344,7 +346,12 @@ enum SampleLibrary {
         _ = lib.setOnTemplate(itemId: pouch, templateId: hiking.id, on: true)
         lib.setKit(kitId: pouch, contents: ["Lighter", "Spare cord", "Plasters"].compactMap { made[$0] })
         lib.setKit(kitId: wash, contents: [brush] + ["Soap"].compactMap { made[$0] }, check: true)
-        if !lib.trips.isEmpty { lib.trips[0].entries = lib.builtLines(lib.trips[0]) }
+        if !lib.trips.isEmpty {
+            lib.trips[0].entries = lib.builtLines(lib.trips[0])
+            var later = newEvent(name: "Autumn in the hills", startDate: day(60), endDate: day(62))
+            later.activities = lib.trips[0].activities
+            lib.createTrip(later)
+        }
         return lib
     }
 

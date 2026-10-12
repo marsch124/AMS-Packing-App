@@ -34,6 +34,7 @@ extension Library {
         copy.entries = old.entries.map { line in
             var fresh = line
             fresh.extra[KIT_TICKED_KEY] = nil    // what was ticked inside a kit (ThingKits)
+            fresh.extra[KIT_THEN_KEY] = nil      // what was inside it at the old trip's review: the new one follows the kit
             fresh.id = PackingEnv.makeId()
             fresh.checked = false
             fresh.skipped = false

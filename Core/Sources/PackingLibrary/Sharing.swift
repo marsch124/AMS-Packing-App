@@ -90,9 +90,11 @@ extension Library {
         // His review and his vault (0.70): what he missed, Apple Health's rows, and the
         // page asked for or written on his Mac are his.
         for key in [MISSED_AT_REVIEW_KEY, TRIP_WORKOUTS_KEY, VAULT_WAITING_KEY, VAULT_WRITTEN_KEY] { t.extra[key] = nil }
+        t.extra[KITS_KEPT_KEY] = nil             // it arrives not reviewed: its kits are theirs now (ThingKits)
         t.entries = t.entries.map { line in
             var l = line
             l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)
+            l.extra[KIT_THEN_KEY] = nil          // what was inside it at his review (ThingKits, 0.73)
             l.skipped = false
             l.edited = false
             for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt", POCKET_KEY, HOME_POCKET_KEY] { l.extra[key] = nil }

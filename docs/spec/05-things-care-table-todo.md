@@ -1093,6 +1093,12 @@ apart; a field 6 pt under its heading):
       contents (a weight typed above counts after Save).
     - Save → `setKit(kitId:contents:takenOut:check:)` when the contents, the taken out or the check changed; a thing
       that was in another kit leaves it; nothing inside = a plain thing (the keys go).
+    - The list's search and the thing lit in it live in the draft (`KitDraft.query`, `.lit`, 0.73) so the Mac's
+      keys read them; `ThingKitPart.offered(_:thingId:draft:)` is the one list both the screen and the keys use.
+      On the Mac (0.73): each row's Take out / Put back and ✕ (2-pt orange ring when the keys are on it), Find a
+      thing (its border 2 pt orange) and the lit row (the page's orange at 18 % behind it, value "lit") — see
+      Keyboard (Mac). A click on Take out, a switch, Add from your things or a row of the list moves the page's
+      focus there (Add and a row of the list: into Find a thing).
 12. **Brand** — band (`thing-heading-brand`); field (`thing-brand`), placeholder "e.g. " and a clothing brand
     (see the code).
 13. **Colour** — band (`thing-heading-colour`); field (`thing-colour`), placeholder "e.g. Black".
@@ -1265,11 +1271,14 @@ switch (a tap gesture beside its own). A text field left for nothing (a click on
 Kind of thing · Whose it is (when anyone is named) · On these templates (when he has any) · the Section of each template
 lit, in the pills' order (one lit by the keys comes in at once; one unlit goes) · Kept at home · Usually packed in ·
 Pocket (0.69, when that bag has pockets; `thing-pocket`, a drop-down like the others) · When · Weight · the kit part
-(0.70; scroll id `key-kit`): Taken out for now (a thing inside a kit) or Add from your things and, when it holds
-something, Check before each trip — Space switches the switch or opens and closes the list of his things
-(`KitDraft.picking`, so a newly loaded thing starts closed), each ringed by `ThingKitPart(ringed:)`. Not reached by
-the keys: a content row's Take out / Put back and ✕, and the list's Find a thing and its rows (the mouse) · Brand · Colour · Condition · Care · What to do (Care's notes) · Liquid · Not allowed in the cabin · Valid
-until. Never: Cancel, Save, the date's buttons, Delete thing. The page opens with the focus in Name, the cursor at the
+(0.70; scroll id `key-kit`): Taken out for now (a thing inside a kit) — or, for any other thing, each thing inside
+in his order (0.73; `kitOut(id)` then `kitRemove(id)`, scroll id `key-kit-row-<id>`): its Take out / Put back, then
+its ✕; Add from your things; while its list is open, Find a thing (0.73, `kitFind`, a text field, scroll id
+`key-kit-find`); and, when it holds something, Check before each trip — each ringed by `ThingKitPart(ringed:)`
+(`KitDraft.picking`, so a newly loaded thing starts closed) · Brand · Colour · Condition · Care · What to do (Care's
+notes) · Liquid · Not allowed in the cabin · Valid until. The list's rows are not Tab stops: ↑ ↓ in Find a thing
+light them. A kit field gone from the order (a row ✕'d by a click, the list closed by a click) → Tab goes on from
+Add from your things; ⌘↓ ⌘↑ to a thing without that row → its kit part's first field. Never: Cancel, Save, the date's buttons, Delete thing. The page opens with the focus in Name, the cursor at the
 END of the name. The field reached by the KEYS is scrolled into sight (`ScrollViewReader`, ids `ThingEditor.scrollKey`); a
 click moves the focus without scrolling (a pill clicked once scrolled the page under the next click — GitHub's Mac).
 
@@ -1286,15 +1295,20 @@ muted — e.g. "Kind of thing   type to pick · Space opens · Tab next · Retur
   a Section: "type to pick, or a new section …"); its list open: "↑ ↓ move · Return chooses · type to jump · Esc closes
   the list" (a Section's: "↑ ↓ move · Tab to its pen, arrows, Remove · Space presses · Return chooses · Esc closes").
 - On these templates: "← → move · Space turns it on or off · type to jump · Tab next"; a switch: "Space turns it on or
-  off · Tab next · Return saves"; the ⌘J box: "type part of a field's name · Return goes there · Esc closes"; no
+  off · Tab next · Return saves"; Add from your things: "Space opens or closes the list of your things · Tab next ·
+  Return saves"; a kit row's Take out / Put back (0.73): "Space takes it out or puts it back · Tab next · Return
+  saves", its ✕: "Space takes it out of the kit for good · Tab next · Return saves"; Find a thing: "type to find ·
+  ↑ ↓ move · Return adds it · Esc closes the list"; the ⌘J box: "type part of a field's name · Return goes there · Esc closes"; no
   field: "Tab goes to the fields · Return saves · ⌘N saves and starts a new thing · ⌘J jumps to a field".
 - For a moment after ⌘↓ ⌘↑ at an end of the list: "Saved. That was the last (first) thing in the list." in place of
   the keys, until the focus moves.
 Ids: the keys' words `thing-keys`; the field's name carries `thing-keys-at-<the field's control id>` (`thing-name`,
 `thing-notes`, `thing-category`, `thing-owner`, `thing-lists`, `thing-section-<n>`, `thing-storage`, `thing-bag`,
-`thing-when`, `thing-weight`, `thing-brand`, `thing-colour`, `thing-condition`, `thing-care`, `thing-care-notes`,
-`thing-liquid`, `thing-restricted`, `thing-expiry`, `thing-jump`; `none`) — what the tests read; an id is never shown
-or spoken.
+`thing-pocket`, `thing-when`, `thing-weight`, `thing-kit-taken-out`, `thing-kit-row-<n>-out`, `thing-kit-row-<n>-remove`,
+`thing-kit-add`, `thing-kit-search`, `thing-kit-check`, `thing-brand`, `thing-colour`, `thing-condition`, `thing-care`,
+`thing-care-notes`, `thing-liquid`, `thing-restricted`, `thing-expiry`, `thing-jump`; `none`) — what the tests read;
+an id is never shown or spoken. The field's NAME for a kit row: "Lighter — Take out" / "— Put back", "Lighter — out
+of the kit for good"; Find a thing: "Find a thing" (so ⌘J finds a row by its thing's name).
 
 **Every key** (the page's window; a ⌘ key from anywhere on it, an open list included — it closes first):
 - **Tab / Shift-Tab** — the next / previous field in the order above. A text field's words are SELECTED on arrival, so
@@ -1356,7 +1370,17 @@ or spoken.
 - **On these templates**: the arrows start on the first template lit (else the first); **← →** move along the pills
   (no wrap); **Space** turns the one lit on or off (its Section joins or leaves the Tab order); **letters** jump to the
   first template whose name starts so (within a second they add up); ↑ ↓ ⌫ do nothing.
-- **Liquid / Not allowed in the cabin**: **Space** turns the switch.
+- **Liquid / Not allowed in the cabin**: **Space** turns the switch. So do **Taken out for now** and **Check before
+  each trip** (the kit part).
+- **The kit part** (0.70; rows and Find a thing 0.73): **Space** on a row's Take out / Put back switches it; on its
+  **✕** takes the thing out of the kit for good (in the draft: Cancel brings it back) and the focus stays where it
+  was — the ✕ of the thing that came up into its place, else of the one before, else Add from your things; on **Add
+  from your things** opens the list — the cursor goes into Find a thing a turn later, once it is on the page — or
+  closes it. **In Find a thing** (an open list, as a drop-down's): letters, Space and ⌫ are the field's (typing finds;
+  a new search lights its first thing); **↓ / ↑** move the lit thing among the 8 shown (no wrap); **Return** (or
+  Enter) adds the lit thing at the end — the list stays open, the search empties, ready for the next; the page is NOT
+  saved; nothing found: nothing; **Esc** closes the list only and the focus goes back to Add from your things; Tab /
+  Shift-Tab go on (the list stays open).
 - Text fields: their own keys (⌘A, ⌘C/⌘V, arrows …); Tab, Return and the ⌘ keys above are the page's.
 
 **The Thing menu** (`ThingCommands`, in the menu bar between View and Window, `.commands` on the main window group):
@@ -1400,7 +1424,13 @@ newest on top; Compass has Electronics and Hiking; ⌘N then Esc makes nothing; 
 Weight — 40 ⌘↓ Towel 300 ⌘↑ Swim cap still 40; past the last it says so; then the table says Nothing missing; Your
 things from the Headlamp: ⌘↓ Hiking boots on Colour, ⌘↑ ⌘↑ Goggles with 90), `testCommandJJumpsToAFieldByName` ("wei"
 → Weight, its 60 replaced by 75; "val" → Valid until; "zzz" stays open and says so; Esc closes, the focus back),
-`testTheThingMenuIsOnOnlyWhileAPageIsOpen`, `testTheSectionToolsAnswerTabAndSpace` (item 6a by keys). Model:
+`testTheThingMenuIsOnOnlyWhileAPageIsOpen`, `testTheSectionToolsAnswerTabAndSpace` (item 6a by keys),
+`testTheKitPartIsWalkedByTheKeys` (0.73, `-uiTestingKits`, the Camp pouch: Weight → Tab → row 0's Take out, its ✕,
+row 1's Take out; Space takes the cord out; on through row 1's ✕ and row 2's Take out to its ✕, Space removes the
+plasters and the focus stays on row 1's ✕; Tab → Add; Space opens the list with the cursor in Find a thing; "map"
+lights the Map, Return adds it, the page stays and the search empties; Esc closes the list, the focus on Add; Tab →
+Check before each trip, Space switches it on; Tab → Brand, Shift-Tab back; Return saves; reopened, all three kept —
+proven on GitHub's Mac). Model:
 `TypedEntryTests` (6: grams with or without a unit, what is no weight, the date written his ways, a date with no year,
 a jump from today, nothing typed and nonsense). The Section tools on both: `testASectionIsRenamedFromAThingsPageAndKeepsItsThings`,
 `testASectionIsMovedFromAThingsPageAndANewTripReadsIt`, `testASectionIsRemovedFromAThingsPageAndItsThingsStay`,
