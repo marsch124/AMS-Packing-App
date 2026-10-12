@@ -218,6 +218,9 @@ public enum Importer {
             }
             carryRowExtras(backup.lists, into: &lib)
             settleOwnNotes(&lib)
+            // A thing's "only on some trips" (0.73) arrived with the row extras, after its
+            // rows: each row is settled to read exactly what the file said.
+            lib.settleRowsOnThingsLimits()
         }
         // Things on no list have no other home (missing from backups until web v178).
         for thing in backup.things where !jsTrim(thing.name).isEmpty {

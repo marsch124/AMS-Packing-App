@@ -326,6 +326,9 @@ extension Library {
                 var m = row.memId.flatMap { memById[$0] } ?? newMembership(itemId: iid, templateId: list.id)
                 m.itemId = kitId
                 m.container = ""; m.phase = ""; m.qty = ""; m.note = ""; m.itemType = ""
+                // The content's "only on some trips" as this template really reads it — its
+                // row's own, or the content thing's where the row follows it (0.73).
+                for k in TripLimit.allCases { k.set(&m, k.list(row)) }
                 var r = resolveMembership(kit, m, templateDefaults(list))
                 r.itemId = kitId
                 r.memId = ""

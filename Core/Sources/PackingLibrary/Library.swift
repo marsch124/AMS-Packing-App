@@ -66,6 +66,9 @@ public struct Library: Equatable, Sendable {
         for m in mine {
             guard let item = byId[m.itemId] else { continue }
             var r = resolveMembership(item, m, defaults)
+            // "Only on some trips": the thing's own answer where the row follows it (0.73,
+            // OnlySomeTrips.swift) — what a trip, the template's page and a backup read.
+            applyThingLimits(&r, m, item)
             r.itemId = item.id
             r.memId = m.id
             rows.append(r)
@@ -140,6 +143,11 @@ public struct Library: Equatable, Sendable {
                 existing = newMembership(id: mid, itemId: cat.id, templateId: list.id)
             }
             var m = membershipFromResolved(cat, list.id, row, order, existing)
+            // …and "Only on some trips" (0.73): the row's resolved answers hold the THING's
+            // where it follows it — stored as they are, every row would be cut off from it.
+            // `existing` may be a place made just now under the row's own id: not stored yet.
+            let stored = existing.flatMap { e in memIndex[e.id] != nil ? e : nil }
+            Library.keepRowLimits(&m, row: row, before: stored, thing: cat)
             // How many and the note are the row's own only where they say something
             // the thing does not. `membershipFromResolved` (the web app's, kept as a
             // copy) stores the row's RESOLVED values — the thing's own note included —
