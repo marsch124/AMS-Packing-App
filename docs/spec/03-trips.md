@@ -1144,7 +1144,7 @@ a section with every line set aside has no `trip-group-0-all`), `testSetPlaceAnd
 middle on the name's first line, after it (at most 16 pt away) and above the count; the pen round (as wide as
 tall, within 0.5); the badge, the pen and Done on ONE centre line (within 1.5 pt); the badge before Done and at
 least 21.5 tall; pictures `trip-header-reviewed`. Seen red on 0.72's header: "the pen is on the count's line",
-"the pen is not a round button: … 36.0 × 34.0", "Reviewed sits −5.0 pt off Done's centre line", "Reviewed is
+"the pen is not a round button" (36 wide, 34 tall), "Reviewed sits -6.0 pt off Done's centre line", "Reviewed is
 bare words, not the Trips row's badge"), `testSendToObsidianIsAtTheFootOfAReviewedTrip` (0.73: Send to Obsidian
 under the trip's first line, then — scrolled to — under the lowest line, under Save as Excel and Share, as tall
 as Save as Excel and on its left edge, with Delete trip under it; picture `trip-foot-obsidian`. Seen red with the
