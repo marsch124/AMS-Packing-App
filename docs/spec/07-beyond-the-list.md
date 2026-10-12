@@ -25,7 +25,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 11. Decision log | — | kept here |
 | 12. Reminders on a template | 0.70 | built (branch work/reminders070) |
 | 13. His lists changed inside their drop-downs | 0.69 | built (branch work/ddedit069) |
-| 14. Only on some trips, set once on the thing | 0.73 | designed — building (branch work/cond073) |
+| 14. Only on some trips, set once on the thing | 0.73 | built (branch work/cond073) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -1103,8 +1103,9 @@ and red over green): the Map's row (Hiking · Garage) has violet; a thing on no 
 ## 14. Only on some trips, set once on the thing
 
 > His words (10 Oct 2026, item 2 of his 0.73 list): "if I have an item on five templates, I need to change this in
-> five places. Doesn't seem optimal." Designed here BEFORE it is built (branch `work/cond073`); the parts marked
-> *(from the code)* are filled in by the branch that builds it. Per screen: spec 04 §7 (a template's row), §11–§13
+> five places. Doesn't seem optimal." Designed here BEFORE it was built (branch `work/cond073`), then brought in line
+> with the code by the same branch: the model `Core/Sources/PackingLibrary/OnlySomeTrips.swift`, the pills
+> `App/Sources/Screens/OnlySomeTrips.swift` (`OnlySomeTripsPills`, used by both pages). Per screen: spec 04 §7 (a template's row), §11–§13
 > (the membership, resolving, saving a template), spec 05 item 7 (a thing's page), spec 01 §1.12 (the keys).
 
 Until 0.73 "Only on some trips" — Season (Summer, Winter), Context (Indoor, Outdoor, Race — on a workout template
@@ -1136,6 +1137,11 @@ only), Transport (Car, Plane, RV), Food (Self-sufficient, Eating out, Mix of bot
    equal the thing's (`saveRow`). On the row's page a kind whose pills come back to exactly the thing's answer shows
    "Same as the thing" again (undoing a tap goes back), and Save stores it as following. So an own answer that
    happens to equal the thing's is not kept as a separate choice: a later change on the thing reaches that row.
+   The same when the THING is saved (`setThingLimits`): every row of it whose own answer is now the thing's goes
+   back to following it — the five rows he once set to Winter one by one follow the thing as soon as its page says
+   Winter, so his next change is made in one place. (A row's own "any" while the thing now has no limit either is
+   the same as the thing too.) Hence, everywhere: "this row has its own answer" = "this row says something other
+   than the thing".
 5. **"Any" on one template while the thing has a limit** (Swim's towel) is the row's own "any": stored as the kind's
    empty list plus the kind named in `onlyAnyHere`.
 6. **Rows stored before 0.73 keep their answers as their own choice** (their lists are not empty). Rows with nothing
@@ -1212,10 +1218,38 @@ thing's answers in the resolved rows that would have copied them onto every row 
 
 ### Tests (from the code)
 
-*(Filled in by the branch: model tests for following per kind, an own answer and own "any", rule 4, saving a
-template without freezing, trip building and the rebuild, kits, store/backup/restore and the older file, parity
-untouched; UI tests by identifier — Winter set once on a thing on two templates leaves it off a Summer trip from
-both and brings it on a Winter one; a row's own answer wins.)*
+Model `OnlySomeTripsTests` (9, `Core/Tests/PackingLibraryTests/OnlySomeTripsTests.swift`; a Towel on the base
+template, Hiking and Swim, a Lamp on the base template and Hiking): `testEveryRowFollowsTheThingPerKindUnlessItSetsItsOwn`
+(Summer + Car once on the thing → every row says "Only on: Summer · Car" and stores nothing; Hiking's own Transport and
+Swim's own any season stay through a change on the thing; `ownLimitWords`; `limitFromWords`),
+`testRowsFromBeforeKeepTheirOwnAndAThingWithNoAnswerChangesNothing`, `testARowSavedFromItsPageFollowsOwnsOrIsAnyHere`
+(`saveRow`: the thing's answer → follows, nothing → `onlyAnyHere`, Winter → own, back; an unknown word on the thing
+kept), `testRowsThatSayWhatTheThingNowSaysFollowIt` (rule 4 on the thing's Save), `testSavingATemplateNeverFreezesTheThingsAnswersOntoItsRows`
+(typed on, taken off, picked onto a new template), `testATripAndItsRebuildPackByWhatEachRowReallySays` (a summer trip
+without the winter-only Lamp, a winter one with it once; `changeTrip` both ways; Hiking's own any wins; a trip ahead
+keeps its line until rebuilt), `testTheThingsContextCountsOnWorkoutTemplatesOnly`, `testAKitInAContentsPlacePacksByTheContentsAnswer`,
+`testTheAnswersAreStoredSyncedBackedUpAndRestoredAndTheWebModelSeesAPlainThing` (records, a backup as written and the
+older kind rebuilt from rows — both faithful, every row reading as before and still following the thing — the
+backup's `lists` carrying effective answers, PackingCore's resolve unchanged). Each seen RED with a planted fault:
+resolve without the thing's answers (34 failures, e.g. "an outdoor swim took the indoor towel"); `saveTemplate`
+storing resolved answers ("Hiking: the Season was frozen onto the row"); no own "any" ("older: template 3, row 2:
+seasons" — the older file refused); the thing's Save not folding rows ("Common base still keeps its own Winter");
+a kit taking no content answers ("the pouch came for a winter-only lamp"); the older file not settled ("older: the
+rows no longer follow the thing"); a row's stored list not counting as its own ("a row's answer from before is its
+own"); the trip builder reading the bare rows ("a summer trip has the winter lamp"). Parity: 211/211.
+
+UI (`-uiTesting`; the sample's Headlamp is on Common base and Hiking; a trip from Hiking packs 7 lines with the base
+template): `testOnlyOnSomeTripsSetOnceOnAThingReachesBothItsTemplates` (the thing's page has `thing-heading-some`,
+Season, Transport and Food and no Context; Winter `thing-seasons-1` set once and saved → both templates' Headlamp rows
+say "Only on: Winter"; a summer trip made from Home counts "0/6"; Trip settings → Winter → Save counts "0/7") and
+`testATemplatesOwnOnlyOnSomeTripsWinsOverTheThings` (Hiking's row shows `row-seasons-1` lit and `row-seasons-from` "Same
+as the thing: Winter", no `row-seasons-same`; Winter tapped off → "Own choice on this template…" and the button; saved,
+the row says no "Only on"; a summer trip counts "0/7"; `row-seasons-same` puts Winter back and the row says "Only on:
+Winter" again). Run on the iPhone simulator in light and dark (pictures `thing-only-some`, `row-only-some-follows`,
+`row-only-some-own`). Seen RED with a planted fault: the thing's page not saving its answers → "Common base's Headlamp
+does not say it is only on winter trips: 'Headlamp, Carry-on / hand luggage'"; a row's own "any" lost on Save →
+"Hiking's own any season still says a limit: 'Headlamp, Only on: Winter, Carry-on / hand luggage'". Not covered on
+screen: Context and Food on the thing's page, `thing-some-own`, unknown words (the model tests hold them).
 
 ### Open questions
 
@@ -1223,6 +1257,7 @@ both and brings it on a Winter one; a row's own answer wins.)*
   already made; Trip settings → Save does. Should it? (Rule 8 keeps today's behaviour for rows.)
 - The template page's "Only on: Winter" does not say whether the answer is the row's own or the thing's. Worth a
   mark?
+- On the Mac the new pills are not in a thing's page's Tab order yet (as the kit part's buttons).
 
 ---
 

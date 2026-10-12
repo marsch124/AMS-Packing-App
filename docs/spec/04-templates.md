@@ -852,8 +852,11 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
      (set on the thing's page, spec 05 item 7) unless this row sets its own** (spec 07 part 14): under each kind's
      pills `row-<kind>-from` says "Same as the thing: Winter" (lit pills drawn "borrowed": outlined, not filled) or
      "Own choice on this template. The thing says: Winter." with **Same as the thing** (`row-<kind>-same`) to go
-     back; a tap on a pill makes the kind this row's own, starting from what was shown. Then "Leave these off and it always comes along. Pick one
-     or more and it comes only on trips that match — on this template." (15 medium muted, pulled 6 pt up), then
+     back; a tap on a pill makes the kind this row's own, starting from what was shown (`OnlySomeTripsPills`,
+     `App/Sources/Screens/OnlySomeTrips.swift`, shared with the thing's page). Then "Each kind follows the thing's own
+     answer until you change it here; then it is this template's own. Nothing lit: it comes on every trip." (Subheadline
+     muted, pulled 6 pt up; until 0.73 "Leave these off and it always comes along. Pick one or more and it comes only on
+     trips that match — on this template."), then
      four pill rows with a smaller heading each (`HeadingTitle`, 20 heavy violet after a 4 × 18 violet capsule),
      several choices each; this block's parts are 14 pt apart:
      - "Season" (`row-seasons-title`): Summer `row-seasons-0`, Winter `row-seasons-1`.
@@ -863,8 +866,16 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
      - "Food" (`row-catering-title`): Self-sufficient, Eating out, Mix of both (`row-catering-0…2`; stored ids
        `self`, `eatout`, `mixed`).
      - After the app's own words, each a stored word the app does not know (a web-app "summer", "Boat") as a pill
-       of its own, as stored, lit — so it can be seen and switched off (`Library.unknownConditions`).
-- Field look: 17 medium ink, min height 44, card fill, 10-radius hairline border. Heading band: a 5 × 26 capsule in
+       of its own, as stored, lit — so it can be seen and switched off (`Library.unknownConditions`; since 0.73 the
+       row's own unknown words and the thing's).
+     - (0.73) Under each kind's pills: `row-<kind>-from` (Footnote, muted) — "Same as the thing: Winter" / "Same as the
+       thing: any season" while the kind is the thing's answer, "Own choice on this template. The thing says: Winter."
+       otherwise (`Library.limitFromWords`); and, only while it is the row's own, **Same as the thing**
+       (`row-<kind>-same`: Footnote semibold violet in a 1.2-pt violet capsule, `Metrics.chip` tall), which puts the
+       thing's answer back. While a kind is the thing's answer its lit pills are drawn BORROWED (`Pills(borrowed:)`):
+       a 18 % violet wash, a 1.6-pt violet outline, the words in ink semibold — instead of white on violet. A kind is
+       "the thing's" exactly when its pills hold the thing's words (in any order), so undoing a tap goes back.
+- Field look: 17 medium ink, min height 44, card fill, 10-radius hairline border. (0.73) Borrowed pills: see block 8. Heading band: a 5 × 26 capsule in
   violet, the title 22 heavy violet, on a 13 % violet strip (radius 10). Pills (Only on some trips): 15 (bold when
   on), min height 36, white on violet when on, ink on `Theme.bg` with a hairline when off; ids are `<id>-<position>`,
   never words — as are a drop-down's rows. (Sizes here are the old points; read them through spec 06 §21.)
@@ -872,7 +883,7 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
 ### Behaviour
 - On appear the state is loaded from the **membership itself** (not the resolved row): bag = `m.container`, when =
   `m.phase`, qty, note, section — and (0.73) seasons, contexts, transports, catering as the row's EFFECTIVE answers
-  (its own list when the kind is its own, else the thing's — spec 07 part 14). A blank membership value selects the
+  (`Library.effectiveLimits(m, thing:)`: its own list when the kind is its own, else the thing's — spec 07 part 14). A blank membership value selects the
   "Same as the thing" / "No section" pill (and leaves How many / Note blank, showing the thing's own in grey). A
   stored When or section that is not among the rows ticks none, and is kept unchanged on Save; a stored bag that is
   not among them has its own ticked row (`row-bag-other`, 0.64) and is kept the same way. A stored
@@ -945,6 +956,8 @@ sections, group), `resolvedTemplates()` (bag names), `sameBagWords`. Writes thro
   does not change), `testOnlyOnSaysWhatATripReadsOnThisTemplate`, `testABlankBagNamesWhereItReallyGoes`.
 - The model classes `TemplateEditingTests`, `ThingEditingTests` and `RowEditingTests` live in
   `PackingLibraryTests/CreateTripTests.swift`.
+- (0.73) `testATemplatesOwnOnlyOnSomeTripsWinsOverTheThings` (the row following the thing's Winter, made its own, and
+  back) and `testOnlyOnSomeTripsSetOnceOnAThingReachesBothItsTemplates`; model `OnlySomeTripsTests` (spec 07 part 14).
 - **Not covered:** Food tags on screen; Transport-only tags on their own; a section from another template on
   screen (the model reads it as none: `ThingSectionTests.testASectionFromElsewhereReadsAsNone`); an unknown
   condition's pill on screen (no sample row has one).
