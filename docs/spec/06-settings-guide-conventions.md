@@ -2038,10 +2038,27 @@ says the same for any other failing command). The stages:
    background export once hung silently on "The Internet connection appears to be offline" — Workout Sync, 14 Sep
    2026). A hang or a dropped connection gets ONE more try after 30 s, then it stops with a plain message. Each must
    log "EXPORT SUCCEEDED".
-10. **Testers** — `ensure-group.sh BUILD notes` waits (every minute, up to 90) until both builds are VALID, adds each
-    to the tester group and sets its What to Test. Then the script checks rather than trusts: both builds of BUILD
-    in the group (else it stops, naming the helper to run again later), each with What to Test — filled in when
-    Apple's record is empty, made (POST) when there is none; fewer than 2 with notes only warns.
+10. **Testers** — done by the script itself in Python, which calls `asc.py` with an argument list (no shell in
+    between); the group id is read from `ensure-group.sh`, which is no longer run. (a) Every 30 s, up to
+    `TESTERS_WAIT_MIN` (90) minutes: the builds numbered BUILD with their version and Apple's beta state
+    (`include=preReleaseVersion,buildBetaDetail`); a line is printed when the state changes ("build 96: iPhone
+    VALID (IN_BETA_TESTING), Mac VALID (…)"). It goes on when the iPhone AND the Mac build are VALID and their
+    `internalBuildState` is past PROCESSING; a build of another version ("build 96 is version 0.74 … not 0.73") or a
+    processing that ended FAILED/INVALID stops it. (b) What to Test FIRST, so the testers' notice carries it: read
+    for each build; written only when Apple's record is empty (PATCH) or missing (POST) and notes were given.
+    (c) The tester group read in full (every page, `links.next`); each build not in it added (`POST
+    /v1/betaGroups/<id>/relationships/builds`, `{"data":[{"type":"builds","id":…}]}`); a refusal is printed with
+    Apple's own code and reason and tried again every 30 s for 15 minutes. (d) Checked, not trusted: the group read
+    back (up to 7 times, 10 s apart) until both builds are in it, else it stops with "… run tools/quick-release.sh
+    --testers-only VERSION BUILD later". Fewer than 2 builds with What to Test only warns. A build already in the
+    group with its notes is only read — nothing is written.
+    **Why (12 Oct 2026):** the stage failed on both of that day's real runs (0.73 build 95, 0.74 build 96: "reached
+    the tester group 0 time(s) of 2") although the same add by hand answered 204 at once. `ensure-group.sh` wrote
+    the add's JSON inside `echo "… adding — $(… "{\"data\":[{\"type\":\"builds\",\"id\":\"$id\"}]}" …)"`;
+    macOS's bash 3.2 brace-expands the `{…,…}` in it, so `asc.py` was called twice with broken bodies
+    (`{"data":["type":"builds"]}` and `{"data":["id":"…"]}`) and Apple answered 400 to both — the fingerprint is the
+    doubled log line "MAC_OS 96: adding — 400 MAC_OS 96: adding — 400". Its notes went in (their body was built in
+    Python). The helper is still broken when run by hand; `--testers-only` replaces it.
 11. **Main** — `git fetch`; when main moved meanwhile it stops ("the builds ARE in TestFlight … merge origin/main and
     push by hand"); otherwise `git push origin HEAD:main`, then it prints the "Tests" run GitHub starts on that
     commit (`gh run list --workflow tests.yml --commit`, up to 3 minutes): the full suite, after the fact.
@@ -2055,14 +2072,26 @@ really happens; the exported `.ipa` (unzipped) and `.pkg` (`pkgutil --expand-ful
 entitlements, and who signed each is printed. Stage 10 only reads the tester group; stage 11 says whether main could
 fast-forward.
 
+**`--testers-only VERSION BUILD ["notes"]`** — stage 10 alone, for builds already uploaded: a Testers stage that
+stopped is run again with it (it replaces running `ensure-group.sh` by hand). BUILD must belong to VERSION; the
+notes, when given, fill an empty What to Test. Nothing else runs — no checkout check, test, archive, commit or
+push; the folder is `<version>-<date-time>-testers`. Proven on 12 Oct 2026 against 0.74 build 96, already in the
+group with its notes — read only, nothing written, 7 s:
+`build 96: iPhone VALID (IN_BETA_TESTING), Mac VALID (IN_BETA_TESTING)` · `iPhone 96: What to Test is there` ·
+`Mac 96: What to Test is there` · `iPhone 96: already in the tester group` · `Mac 96: already in the tester group`
+· `done — 7 s · build 96 — iPhone and Mac — in the tester group, What to Test on 2`. The refused-then-added path
+(a 409 first, then 204), the wait through PROCESSING and the group's second page were run against a stand-in
+for `asc.py`.
+
 **Where things go** — `$TMPDIR/AMSPacking-release/<version>-<date-time>[-dry]/`: the logs, the ship entitlements, the
 archives, the export. All of it outside `~/Documents` (codesign refuses the extended attributes that folder collects).
 
 **The private helpers** — `private/release-tools/` of the MAIN checkout (git-ignored; found from a worktree too, or
 named in `RELEASE_TOOLS`): `asc.py` (App Store Connect with the Admin key; the issuer id is read from a note outside
-the repository), `ensure-group.sh` (the tester group's id is written only there), `revoke-api-certs.sh`. They are
-called, never copied into the repository. They name `asc.py` by a folder of their own and call it unquoted, so the
-script runs them from a temporary folder without spaces that links to `asc.py`.
+the repository), `ensure-group.sh` (the tester group's id is written only there — the script only READS it for
+that id, `G=<36 characters>`), `revoke-api-certs.sh`. They are called, never copied into the repository.
+`revoke-api-certs.sh` names `asc.py` by a folder of its own and calls it unquoted, so the script runs it from a
+temporary folder without spaces that links to `asc.py`.
 
 **The smoke set** (`tools/smoke-tests.txt`) — one test per line, the comment line above it saying what it guards;
 `#` lines are ignored. Chosen on 12 Oct 2026 from the test names and `tools/ui-test-times.json` — the main flows,

@@ -6,6 +6,7 @@
 #
 #   tools/quick-release.sh VERSION "notes" [extra UI tests…]
 #   tools/quick-release.sh --dry-run [VERSION] [extra UI tests…]
+#   tools/quick-release.sh --testers-only VERSION BUILD ["notes"]
 #
 #   VERSION   the version to ship, e.g. 0.73. What's new must already lead with it (and the spec have
 #             moved with it, tools/check-spec.sh). project.yml is set to it and committed — the release
@@ -24,11 +25,13 @@
 #    7 Certificates    "Created via API" development certificates revoked when the cap is near
 #    8 Archive         iPhone and Mac with the TestFlight workflow's settings; entitlements checked
 #    9 Upload          both, in the foreground with progress shown; one more try on a dropped connection
-#   10 Testers         both builds VALID, in the tester group, with What to Test
+#   10 Testers         both builds VALID, with What to Test, in the tester group — added, retried, checked
 #   11 Main            the release commit pushed to main — GitHub's full suite starts; its run id is printed
 #
 # --dry-run: everything but the upload. The export writes to a folder instead (so signing and the
 # entitlements of what WOULD go up are proven), and nothing is committed, revoked, released or pushed.
+# --testers-only: stage 10 alone, for builds already uploaded (a Testers stage that stopped, run again).
+# A build already in the group with its What to Test is only read; "notes" fill an empty What to Test.
 #
 # Needs: Xcode signed in with his Apple ID (Settings ▸ Accounts — automatic signing, cloud-managed
 # distribution certificate), xcodegen, node, gh, and the private helpers that are never committed:
@@ -41,6 +44,7 @@
 #   CERT_NEAR          revoke when this many "Created via API" development certificates exist (default 7)
 #   SIM_WAIT_MIN       wait this long for another test run to leave the simulator (default 30)
 #   EXPORT_IDLE_MIN    an upload silent this long counts as hung (default 10)
+#   TESTERS_WAIT_MIN   wait this long for Apple to process the builds (default 90)
 #   COMMIT_TRAILER     the last line of the release commit's message
 set -euo pipefail
 
@@ -48,17 +52,25 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 # --- the arguments --------------------------------------------------------------------------------
-DRY=0
-if [ "${1:-}" = "--dry-run" ]; then DRY=1; shift; fi
+DRY=0 TESTERS_ONLY=0
+if [ "${1:-}" = "--dry-run" ]; then DRY=1; shift
+elif [ "${1:-}" = "--testers-only" ]; then TESTERS_ONLY=1; shift; fi
 CURRENT=$(sed -n 's/^ *MARKETING_VERSION: *"\([^"]*\)".*/\1/p' project.yml | head -1)
-VERSION="" NOTES=""
-if [ $DRY = 1 ]; then
+VERSION="" NOTES="" BUILD=""
+if [ $TESTERS_ONLY = 1 ]; then
+  if [ $# -lt 2 ] || [ $# -gt 3 ] || ! [[ "$1" =~ ^[0-9]+(\.[0-9]+)+$ ]] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
+    echo "Usage: tools/quick-release.sh --testers-only VERSION BUILD [\"notes\"]   e.g. --testers-only 0.74 96"
+    exit 2
+  fi
+  VERSION=$1 BUILD=$2 NOTES=${3:-}
+  shift $#
+elif [ $DRY = 1 ]; then
   if [[ "${1:-}" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then VERSION=$1; shift; fi
   VERSION=${VERSION:-$CURRENT}
   NOTES="(dry run — nothing is sent)"
 else
   if [ $# -lt 2 ] || ! [[ "$1" =~ ^[0-9]+(\.[0-9]+)+$ ]] || [ -z "${2// /}" ]; then
-    sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'
     echo
     echo "Usage: tools/quick-release.sh VERSION \"notes\" [extra UI tests…]   (or --dry-run)"
     exit 2
@@ -152,6 +164,7 @@ asc_json() {   # asc_json PATH — the answer's JSON; stops on anything but a 2x
 }
 # The helpers name asc.py by a folder of their own (S=…) that may be gone, and call it unquoted, so a
 # path with spaces breaks them. They run from a temporary folder without spaces that links to asc.py.
+# Only revoke-api-certs.sh is run this way now; ensure-group.sh is only READ, for the group id (stage 10).
 HELPERS=""
 run_helper() {   # run_helper NAME args…
   local name=$1; shift
@@ -162,6 +175,203 @@ run_helper() {   # run_helper NAME args…
   sed "s|^S=.*|S=$HELPERS|" "$RT/$name" > "$HELPERS/$name"
   bash "$HELPERS/$name" "$@"
 }
+find_app_id() {   # the app's id in App Store Connect, from its bundle id
+  asc_json "/v1/apps?filter%5BbundleId%5D=$BUNDLE_ID&fields%5Bapps%5D=bundleId" \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; print(d[0]["id"] if d else "")'
+}
+
+# ==== stage 10, Testers — also run on its own: --testers-only VERSION BUILD ["notes"] ======================
+# Until 0.75 this ran ensure-group.sh, whose add line put the JSON body inside "…$(…)…": macOS's bash 3.2
+# brace-expands the {…,…} in it, so asc.py was called TWICE with broken bodies ({"data":["type":"builds"]}
+# and {"data":["id":"…"]}) and Apple answered 400 every time (the doubled "adding — 400 … adding — 400" line
+# in the 0.73 and 0.74 logs). Now Python calls asc.py with an argument list (no shell between), writes What to
+# Test first (so the testers' notice carries it), adds each missing build, retries a refusal every 30 s for
+# 15 minutes (printing Apple's own reason), and reads the group back until both builds are in it.
+testers_stage() {
+  stage "Testers"
+  local group st result
+  group=$(sed -n 's/.*G=\([0-9a-f-]\{36\}\).*/\1/p' "$RT/ensure-group.sh" | head -1)
+  [ -n "$group" ] || fail "no tester group id in $RT/ensure-group.sh"
+  if [ $DRY = 1 ]; then
+    asc_json "/v1/betaGroups/$group?fields%5BbetaGroups%5D=isInternalGroup" >/dev/null || fail "the tester group cannot be read"
+    done_stage "the tester group is there; a real run waits for both builds and adds them, with the notes"
+    return
+  fi
+  if [ -z "${APP_ID:-}" ]; then
+    APP_ID=$(find_app_id) || fail "App Store Connect cannot be asked (private/release-tools/asc.py)"
+    [ -n "$APP_ID" ] || fail "App Store Connect has no app $BUNDLE_ID"
+  fi
+  printf '%s\n' "$NOTES" > "$WORK/notes.txt"
+  rm -f "$WORK/testers-result.txt"
+  say "Apple processes the builds first — a few minutes, at most ${TESTERS_WAIT_MIN:-90} are waited for"
+  st=0
+  python3 - "$RT/asc.py" "$APP_ID" "$VERSION" "$BUILD" "$group" "$WORK/notes.txt" "${TESTERS_WAIT_MIN:-90}" \
+    "$WORK/testers-result.txt" <<'PY' || st=$?
+import json, subprocess, sys, time
+asc, app, version, build, group, notes_path, wait_min, result_path = sys.argv[1:]
+API = "https://api.appstoreconnect.apple.com"
+NAME = {"IOS": "iPhone", "MAC_OS": "Mac"}
+text = open(notes_path).read().strip()[:4000]
+
+def call(method, path, body=None):
+    args = ["python3", asc, method, path] + ([json.dumps(body)] if body is not None else [])
+    out = subprocess.run(args, capture_output=True, text=True, stdin=subprocess.DEVNULL).stdout
+    first, _, rest = out.partition("\n")
+    try:
+        code = int(first.strip())
+    except ValueError:
+        code = 0
+    try:
+        data = json.loads(rest) if rest.strip() else {}
+    except ValueError:
+        data = {}
+    return code, data
+
+def apple_says(code, data):
+    why = [": ".join(filter(None, (e.get("code"), e.get("detail") or e.get("title")))) for e in data.get("errors", [])]
+    return str(code) + (": " + "; ".join(why) if why else "")
+
+def say(line):
+    print("   " + line, flush=True)
+
+def stop(why):
+    open(result_path, "w").write("stop " + why + "\n")
+    sys.exit(1)
+
+def again_later():
+    return f"run tools/quick-release.sh --testers-only {version} {build} later"
+
+# 1. Both builds there, VALID, and Apple's beta processing past PROCESSING.
+deadline, shown = time.time() + float(wait_min) * 60, None
+while True:
+    code, d = call("GET", f"/v1/builds?filter%5Bapp%5D={app}&filter%5Bversion%5D={build}"
+                          "&include=preReleaseVersion,buildBetaDetail&limit=10")
+    builds = []
+    if code == 200:
+        inc = {(i["type"], i["id"]): i["attributes"] for i in d.get("included", [])}
+        for b in d.get("data", []):
+            rel = b.get("relationships", {})
+            pv = inc.get(("preReleaseVersions", ((rel.get("preReleaseVersion") or {}).get("data") or {}).get("id")), {})
+            bd = inc.get(("buildBetaDetails", ((rel.get("buildBetaDetail") or {}).get("data") or {}).get("id")), {})
+            builds.append({"id": b["id"], "platform": pv.get("platform", "?"), "version": pv.get("version"),
+                           "state": b["attributes"].get("processingState"), "beta": bd.get("internalBuildState")})
+        builds.sort(key=lambda b: b["platform"])
+        for b in builds:
+            if b["version"] and b["version"] != version:
+                stop(f"build {build} is version {b['version']} in App Store Connect, not {version}")
+            if b["state"] in ("FAILED", "INVALID"):
+                stop(f"Apple's processing of the {NAME.get(b['platform'], b['platform'])} build {build} ended "
+                     f"{b['state']} — App Store Connect says why")
+        now = ", ".join(f"{NAME.get(b['platform'], b['platform'])} {b['state']}" + (f" ({b['beta']})" if b["beta"] else "")
+                        for b in builds) or "not there yet"
+    else:
+        now = f"App Store Connect answered {apple_says(code, d)}"
+    if now != shown:
+        say(f"build {build}: {now}")
+        shown = now
+    ready = {b["platform"] for b in builds if b["state"] == "VALID" and b["beta"] != "PROCESSING"}
+    if {"IOS", "MAC_OS"} <= ready:
+        break
+    if time.time() > deadline:
+        stop(f"after {wait_min} minutes Apple has not finished build {build} ({now}) — {again_later()}")
+    time.sleep(30)
+builds = [b for b in builds if b["platform"] in NAME]
+
+# 2. What to Test — read; written only when Apple's record is empty or missing and notes were given.
+noted = 0
+for b in builds:
+    who = f"{NAME[b['platform']]} {build}"
+    code, d = call("GET", f"/v1/builds/{b['id']}/betaBuildLocalizations")
+    locs = d.get("data", []) if code == 200 else []
+    if any((l["attributes"].get("whatsNew") or "").strip() for l in locs):
+        say(f"{who}: What to Test is there")
+        noted += 1
+        continue
+    if not text:
+        say(f"{who}: no What to Test, and no notes given to write")
+        continue
+    if locs:
+        code, d = call("PATCH", f"/v1/betaBuildLocalizations/{locs[0]['id']}", {"data": {
+            "type": "betaBuildLocalizations", "id": locs[0]["id"], "attributes": {"whatsNew": text}}})
+    else:
+        code, d = call("POST", "/v1/betaBuildLocalizations", {"data": {
+            "type": "betaBuildLocalizations", "attributes": {"locale": "en-US", "whatsNew": text},
+            "relationships": {"build": {"data": {"type": "builds", "id": b["id"]}}}}})
+    if code in (200, 201):
+        say(f"{who}: What to Test written")
+        noted += 1
+    else:
+        say(f"{who}: What to Test NOT written — App Store Connect answered {apple_says(code, d)}")
+
+# 3. The tester group: every page of it read, each missing build added; a refusal retried.
+def members():
+    ids, path = set(), f"/v1/betaGroups/{group}/builds?limit=200&fields%5Bbuilds%5D=version"
+    while path:
+        code, d = call("GET", path)
+        if code != 200:
+            return None, apple_says(code, d)
+        ids |= {b["id"] for b in d.get("data", [])}
+        nxt = (d.get("links") or {}).get("next") or ""
+        path = nxt[len(API):] if nxt.startswith(API) else None
+    return ids, ""
+
+inside, err = members()
+if inside is None:
+    stop(f"the tester group cannot be read ({err}) — {again_later()}")
+for b in builds:
+    who = f"{NAME[b['platform']]} {build}"
+    if b["id"] in inside:
+        say(f"{who}: already in the tester group")
+        continue
+    give_up = time.time() + 15 * 60
+    while True:
+        code, d = call("POST", f"/v1/betaGroups/{group}/relationships/builds",
+                       {"data": [{"type": "builds", "id": b["id"]}]})
+        if code in (200, 201, 204):
+            say(f"{who}: added to the tester group")
+            break
+        if time.time() > give_up:
+            stop(f"App Store Connect refused for 15 minutes to add the {who} build to the tester group "
+                 f"({apple_says(code, d)}) — {again_later()}")
+        say(f"{who}: App Store Connect refused the add ({apple_says(code, d)}) — again in 30 s")
+        time.sleep(30)
+
+# 4. Checked, not trusted: read the group back until both are in it.
+for attempt in range(7):
+    inside, err = members()
+    missing = [NAME[b["platform"]] for b in builds if inside is None or b["id"] not in inside]
+    if not missing:
+        break
+    time.sleep(10)
+else:
+    stop(f"build {build} is not in the tester group for: {', '.join(missing)}"
+         f"{' (' + err + ')' if err else ''} — {again_later()}")
+open(result_path, "w").write(f"ok {len(builds)} {len(builds)} {noted}\n")
+PY
+  result=$(cat "$WORK/testers-result.txt" 2>/dev/null || true)
+  case "$result" in
+    ok\ *) read -r _ FOUND INGROUP NOTED <<< "$result" ;;
+    stop\ *) fail "${result#stop }" ;;
+    *) fail "the tester-group step ended without an answer (exit $st) — run tools/quick-release.sh --testers-only $VERSION $BUILD later" ;;
+  esac
+  [ "$INGROUP" -ge 2 ] || fail "build $BUILD is in the tester group $INGROUP time(s) of 2 — run tools/quick-release.sh --testers-only $VERSION $BUILD later"
+  [ "$NOTED" -ge 2 ] || say "warning: only $NOTED of 2 builds carry the What to Test notes"
+  done_stage "build $BUILD — iPhone and Mac — in the tester group, What to Test on $NOTED"
+}
+
+if [ $TESTERS_ONLY = 1 ]; then
+  echo "AMS Packing $VERSION ($BUILD) — the Testers stage only: builds already uploaded"
+  for f in asc.py ensure-group.sh; do
+    [ -f "$RT/$f" ] || fail "the private helper $f is not in $RT (set RELEASE_TOOLS)"
+  done
+  WORK="$TMP/AMSPacking-release/$VERSION-$(date +%Y%m%d-%H%M%S)-testers"
+  mkdir -p "$WORK"
+  testers_stage
+  summary
+  echo
+  echo "AMS Packing $VERSION ($BUILD): iPhone and Mac are in the tester group."
+  exit 0
+fi
 
 echo "AMS Packing $VERSION — the fast lane$([ $DRY = 1 ] && echo ', DRY RUN: nothing is uploaded, committed or pushed')"
 echo "Checkout: $ROOT"
@@ -290,9 +500,7 @@ done_stage
 
 # ==== 6 Build number ======================================================================================
 stage "Build number"
-APP_ID=$(asc_json "/v1/apps?filter%5BbundleId%5D=$BUNDLE_ID&fields%5Bapps%5D=bundleId" \
-  | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; print(d[0]["id"] if d else "")') \
-  || fail "App Store Connect cannot be asked (private/release-tools/asc.py)"
+APP_ID=$(find_app_id) || fail "App Store Connect cannot be asked (private/release-tools/asc.py)"
 [ -n "$APP_ID" ] || fail "App Store Connect has no app $BUNDLE_ID"
 HIGHEST=$(asc_json "/v1/builds?filter%5Bapp%5D=$APP_ID&sort=-uploadedDate&limit=200&fields%5Bbuilds%5D=version" \
   | python3 -c 'import json,sys; v=[int(b["attributes"]["version"]) for b in json.load(sys.stdin)["data"] if b["attributes"]["version"].isdigit()]; print(max(v) if v else 0)') \
@@ -457,52 +665,7 @@ fi
 done_stage
 
 # ==== 10 Testers ==========================================================================================
-stage "Testers"
-GROUP=$(sed -n 's/.*G=\([0-9a-f-]\{36\}\).*/\1/p' "$RT/ensure-group.sh" | head -1)
-[ -n "$GROUP" ] || fail "no tester group id in $RT/ensure-group.sh"
-if [ $DRY = 1 ]; then
-  asc_json "/v1/betaGroups/$GROUP?fields%5BbetaGroups%5D=isInternalGroup" >/dev/null || fail "the tester group cannot be read"
-  done_stage "the tester group is there; a real run waits for both builds and adds them, with the notes"
-else
-  printf '%s\n' "$NOTES" > "$WORK/notes.txt"
-  say "Apple processes the builds first — usually 5 to 30 minutes"
-  run_helper ensure-group.sh "$BUILD" "$WORK/notes.txt" | sed 's/^/   /'
-  # Checked, not trusted: both builds in the group, each with What to Test (made when Apple has none).
-  CHECK=$(python3 - "$RT/asc.py" "$APP_ID" "$BUILD" "$GROUP" "$WORK/notes.txt" <<'PY'
-import json, subprocess, sys
-asc, app, build, group, notes = sys.argv[1:]
-text = open(notes).read().strip()[:4000]
-def call(*args):
-    out = subprocess.run(["python3", asc, *args], capture_output=True, text=True).stdout
-    code, _, body = out.partition("\n")
-    return int(code or 0), json.loads(body or "{}")
-_, found = call("GET", f"/v1/builds?filter%5Bapp%5D={app}&filter%5Bversion%5D={build}&limit=10")
-mine = [b["id"] for b in found.get("data", [])]
-_, inside = call("GET", f"/v1/betaGroups/{group}/builds?limit=200&fields%5Bbuilds%5D=version")
-in_group = {b["id"] for b in inside.get("data", [])}
-noted = 0
-for bid in mine:
-    _, locs = call("GET", f"/v1/builds/{bid}/betaBuildLocalizations")
-    locs = locs.get("data", [])
-    have = [l for l in locs if (l["attributes"].get("whatsNew") or "").strip()]
-    if not have and text and locs:      # there, but empty: fill it in
-        code, _ = call("PATCH", f"/v1/betaBuildLocalizations/{locs[0]['id']}", json.dumps({"data": {
-            "type": "betaBuildLocalizations", "id": locs[0]["id"], "attributes": {"whatsNew": text}}}))
-        have = [1] if code == 200 else []
-    elif not have and text:             # none at all: make it
-        code, _ = call("POST", "/v1/betaBuildLocalizations", json.dumps({"data": {
-            "type": "betaBuildLocalizations", "attributes": {"locale": "en-US", "whatsNew": text},
-            "relationships": {"build": {"data": {"type": "builds", "id": bid}}}}}))
-        have = [1] if code in (200, 201) else []
-    noted += bool(have)
-print(len(mine), len([b for b in mine if b in in_group]), noted)
-PY
-) || fail "could not check the tester group — the builds are uploaded; run private/release-tools/ensure-group.sh $BUILD again later"
-  read -r FOUND INGROUP NOTED <<< "$CHECK"
-  [ "${INGROUP:-0}" -ge 2 ] || fail "build $BUILD reached the tester group ${INGROUP:-0} time(s) of 2 (App Store Connect has ${FOUND:-0}) — run private/release-tools/ensure-group.sh $BUILD again later"
-  [ "${NOTED:-0}" -ge 2 ] || say "warning: only ${NOTED:-0} of 2 builds carry the What to Test notes"
-  done_stage "build $BUILD — iPhone and Mac — in the tester group, What to Test on $NOTED"
-fi
+testers_stage   # defined above, beside --testers-only
 
 # ==== 11 Main =============================================================================================
 stage "Main"
