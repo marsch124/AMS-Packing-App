@@ -95,6 +95,7 @@ extension Library {
             var l = line
             l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)
             l.extra[KIT_THEN_KEY] = nil          // what was inside it at his review (ThingKits, 0.73)
+            for key in Library.chargeKeys { l.extra[key] = nil }   // charged for his trip (Batteries, 0.75)
             l.skipped = false
             l.edited = false
             for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt", POCKET_KEY, HOME_POCKET_KEY] { l.extra[key] = nil }

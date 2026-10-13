@@ -35,6 +35,7 @@ extension Library {
             var fresh = line
             fresh.extra[KIT_TICKED_KEY] = nil    // what was ticked inside a kit (ThingKits)
             fresh.extra[KIT_THEN_KEY] = nil      // what was inside it at the old trip's review: the new one follows the kit
+            for key in Library.chargeKeys { fresh.extra[key] = nil }   // charged for the old trip (Batteries, 0.75)
             fresh.id = PackingEnv.makeId()
             fresh.checked = false
             fresh.skipped = false
