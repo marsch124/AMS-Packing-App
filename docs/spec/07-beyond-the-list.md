@@ -1554,7 +1554,9 @@ Headlamp's battery was not kept: 'Has a battery 2'"; the filter not applied → 
 things'"; a charge tap that also ticks the line → "charging the power bank packed something: '1/8'". The Mac:
 `testTheThingPageTabsThroughEveryFieldInOrder` walks Has a battery between Not allowed in the cabin and Valid until,
 Shift-Tab from Valid until lands on it and Space switches it on; `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen`
-reads the Battery band between On a plane and Valid until.
+reads the Battery band between On a plane and Valid until. On GitHub's Mac (a probe running just these four): with Has a
+battery left out of the Tab order, red — "Tab did not go on to thing-battery"; without the fault, all four green, and the
+two battery tests green again (pictures of the Mac look, day).
 
 ### Open questions
 
