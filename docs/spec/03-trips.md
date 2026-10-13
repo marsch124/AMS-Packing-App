@@ -1754,7 +1754,8 @@ UI `testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing`, `testWeatherAddAllTakes
 `weather-notyet` says "No forecast yet — it comes about 15 days before the trip (from <today + 15>)." exactly, no
 `weather-line`, no `weather-trouble`, the field stays; the map then has "1 place · 1 trip", Testville, SE; picture
 `weather-not-yet`; seen RED on the iPhone with `comesFrom` planted to answer nil — the 0.74 behaviour — "the card
-does not say when the forecast comes: '' — its weather line says 'Rain and cold, 2–8°C'"),
+does not say when the forecast comes: '' — its weather line says 'Rain and cold, 2–8°C'"; the four weather tests green
+on the iPhone simulator, light and dark, and on GitHub's Mac, 13 Oct 2026),
 `testEveryAddButtonIsReadyAndSaysWhatIsMissing` (`weather-look`). Model `TripWeatherTests` (6: kept and read back, missing gear, staleness incl. a
 different place, survives a backup, `testRetiredGearIsNeverOfferedAndTheBasesOwnGearIs`,
 `testTwoTripsWithOneIdAreReadAsTheFirst`), `TripBulkTests.testAddAllTakesEveryWeatherSuggestionOnce`,

@@ -1485,8 +1485,9 @@ Check before each trip, Space switches it on; Tab → Brand, Shift-Tab back; Ret
 proven on GitHub's Mac), `testOnlyOnSomeTripsPillsAreReachedByTabAndSwitchedBySpace` (0.75, the Map — on Hiking only,
 so no Context: Hiking's Section → Tab → Season, the foot "← → move · Space turns it on or off · type to jump · Tab
 next"; → Space switches Winter on and leaves Summer off; Tab → Transport, Food, Kept at home; Shift-Tab back to Food;
-saved and reopened, Winter kept and Summer off — proven on GitHub's Mac (a probe running only it and the Tab-order
-test), and seen RED there with the rows planted out of `fieldOrder()` (the 0.74 order): "Tab did not go on from the
+saved and reopened, Winter kept and Summer off — proven on GitHub's Mac (13 Oct 2026: a probe running only the 0.75
+tests, this one, the Tab-order test, the template pills and the four weather tests, 7 of 7 green; then the same job
+planted the rows out of `fieldOrder()` — the 0.74 order — and both keys tests went RED: "Tab did not go on from the
 Section to Season", and in the Tab-order test "Tab did not go on to thing-seasons"). Model:
 `TypedEntryTests` (6: grams with or without a unit, what is no weight, the date written his ways, a date with no year,
 a jump from today, nothing typed and nonsense). The Section tools on both: `testASectionIsRenamedFromAThingsPageAndKeepsItsThings`,
