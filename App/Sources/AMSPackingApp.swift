@@ -8,6 +8,10 @@ struct AMSPackingApp: App {
         WindowGroup(id: AMSPackingApp.mainWindowId) {
             RootView()
                 .environmentObject(model)
+                #if DEBUG
+                // A sample sheet for his choice of Packing day icons (13 Oct 2026), never shipped.
+                .overlay { if StationIconSheet.wanted { StationIconSheet() } }
+                #endif
                 #if os(macOS)
                 .frame(minWidth: 480, idealWidth: 760, minHeight: 600, idealHeight: 900)
                 .onAppear { AMSPackingApp.useTheRunnersWindowSize() }
