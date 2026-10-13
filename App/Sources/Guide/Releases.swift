@@ -18,6 +18,14 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.75", date: "13 Oct 2026", title: "Charge before you go",
+                new: ["Has a battery: a switch on a thing's page. From the day before a trip until its last day, a To charge card lists every thing on the trip with a battery \u{2014} things inside kits too \u{2014} each with its own charge tick, apart from packing it.",
+                      "Your things: a Has a battery filter."],
+                changed: ["I leave at is one framed block on Create new trip and in Trip settings, so you see what belongs to the door check.",
+                          "On its first day a trip with a leave time stays at Pack until that time, then turns to On site by itself.",
+                          "Check before you go: each reminder shows the icon of the template it comes from.",
+                          "A trip more than about two weeks away says when its forecast comes, instead of showing this week's weather.",
+                          "On the Mac, Tab reaches a thing's Season, Transport and Food, and its Has a battery switch."]),
         Release(version: "0.74", date: "12 Oct 2026", title: "Pack by template",
                 new: ["Sorting \u{2192} Template: the trip's lines under the templates they come from, so you can pack Bike, Run or Golf on its own. A thing on two templates shows under both; one tick ticks it everywhere.",
                       "Each line shows the small violet icon of its template just before the bag. Hover on the Mac for the names.",

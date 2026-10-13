@@ -646,11 +646,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (74 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (75 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.75 | 13 Oct 2026 | Charge before you go | N2 C5 | Has a battery (`battery` key) + To charge card with its own ticks (`charged`, `kitCharged`; Batteries.swift, ToCharge.swift; chapter 07 part 15) and a Your things filter; I leave at framed (LeaveTimes, DoorMark); On site from the leave time on day one (Library.hasSetOff, clockTurns); reminders show their template icons (TripChecks); weather past the reach says when it comes (ForecastAsk.comesFrom, dropWeather); Mac Tab through Only-on-some-trips pills and the battery switch |
 | 0.74 | 12 Oct 2026 | Pack by template | N3 C2 | Sorting → Template (TripByTemplate, Library.lineTemplates); template icons on each line (TemplateMarks, `trip-line-<n>-from`); 40 new icons, 90 in six groups (TemplateIconCatalog, lounger for beach); Bags card folded by default; Sorting directly above the list |
 | 0.73 | 12 Oct 2026 | Set it once | N4 C5 F1 | Only on some trips on the thing (OnlySomeTrips, chapter 07 part 14); Where is my … names the kit (Pockets); a place's code starts Pack by voice on its trip already open (PlaceOpening.voiceStart); reviewed trips keep their kits (kitThen); a full trip from Always packed alone (templateMissing); reviewed → Done (tripWhen); trip header pen/badge, Send to Obsidian at the foot; first owner / pocket / reminder When inside their lists; Mac Tab through a kit; weather reach 15 days + truthful refusals (ForecastAsk) |
 | 0.72 | 8 Oct 2026 | Drag only on the iPhone | C2 | ReorderArrows.shown false on the iPhone; grips on pockets, reminders, grab-list editing, Home's grab-list order and the table's Columns; ↑↓ Mac only |
