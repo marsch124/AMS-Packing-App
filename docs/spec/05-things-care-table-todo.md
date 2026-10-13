@@ -1161,7 +1161,7 @@ apart; a field 6 pt under its heading):
    (`ToChargeCard.battery`, 18 pt, orange) and "Has a battery — charge before a trip" (Callout semibold ink). Reads
    and writes the thing's `battery` extra key (true, or absent — never false); NOT the web app's `charging` flag (the
    table's Charges column, which a charging cable carries too). A thing with a battery is on a trip's **To charge**
-   card from the day before the trip (spec 03).
+   (the last part of Before you go since 0.77) from the day before the trip (spec 03).
 16. **Valid until** — band (`thing-heading-valid`):
    - No date: the pill "Add a date" (`thing-expiry-add`; 15 bold orange, orange 1.4 outline, min height 36) →
      sets the date to TODAY.

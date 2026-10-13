@@ -346,11 +346,11 @@ extension Library {
     }
 
     /// Why a kind of thing keeps its name and its place in the list — nil for any other.
-    /// The app reads two by their words: Documents & money (Check before you go) and
+    /// The app reads two by their words: Documents & money (Before you go) and
     /// Reminders (a template's reminders).
     public static func fixedCategory(_ name: String) -> String? {
         switch normName(name) {
-        case normName(DOCUMENTS_CATEGORY): return "\(DOCUMENTS_CATEGORY) is read by Check before you go, so it keeps its name."
+        case normName(DOCUMENTS_CATEGORY): return "\(DOCUMENTS_CATEGORY) is read by Before you go, so it keeps its name."
         case normName(REMINDERS_CATEGORY): return "\(REMINDERS_CATEGORY) holds the reminders of your templates, so it keeps its name."
         default: return nil
         }

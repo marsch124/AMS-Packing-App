@@ -604,7 +604,7 @@ click on any of them moves the page's focus there, as on the other fields.
 - **Trip building never adds a content as a line.** Templates hold the kit. A thing inside a kit that is ALSO on a
   template on its own: on a template with its kit, it is left out; on one without, the KIT comes in its place. Each
   kit is one line per trip.
-- **Check before you go** looks inside kits: "Lighter, in the Camp pouch" in a cabin bag is not allowed on board;
+- **Before you go**'s flags look inside kits: "Lighter, in the Camp pouch" in a cabin bag is not allowed on board;
   "Plasters, in the Camp pouch" runs out before you are home; on a plane trip, "Power bank, in the Camp pouch" in a
   CHECKED bag must go in the cabin (0.76, part 15).
 
@@ -625,7 +625,7 @@ weight (grams each), out: true (taken out)}]`, his order — and the trip is mar
 - a line of that trip that kept nothing held nothing then: a thing that became a kit later is a plain line there;
 - a second review keeps what the first kept.
 Live trips (not reviewed) keep following the kit. **A trip reviewed before 0.73** has no mark and no copy: it
-shows the kits as they are now, as it always did — and a later review keeps nothing for it. **Check before you go**
+shows the kits as they are now, as it always did — and a later review keeps nothing for it. **Before you go**
 still reads what is inside each kit NOW (as it reads every thing now, `thingNow`). A shared trip arrives not
 reviewed (`justTheList` drops `kitsKept` and every `kitThen`); "Start a new trip from this one" drops `kitThen`
 (the new trip follows the kits). Back up, restore and iCloud carry both keys with the trip's and the line's own
@@ -1018,15 +1018,17 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
 - **On a trip**, a reminder is a line like the others, at its When, ticked the same way (and set aside with ⊘). In
   place of the bag it says **To do**, and it has no count. Sorted by Into, the reminders stand under a heading
   "To do", never under a bag. The bag weights, the cabin check and the review leave them out (as before).
-- **Check before you go** (top of the trip) lists the reminders that are due — their step's day (the trip's start
-  less the step's lead days) is today or past — and not ticked: a tick circle, the name, "To do · <step>"
-  (`trip-check-todo-<n>`). A press ticks the line, and it leaves the card. With only reminders, the card is in the
-  trip's green, not a warning's colour; its count includes them.
+- **Before you go** (top of the trip; until 0.77 **Check before you go**) lists the reminders that are due — their
+  step's day (the trip's start less the step's lead days) is today or past — and not ticked, in its part **To do**
+  (`trip-beforego-part-todo`, under the flags, above To charge; spec 03, "Before you go"): a tick circle, the name,
+  the step under it (`trip-check-todo-<n>`; "To do · <step>" until 0.77, when the part got the heading "To do"). A
+  press ticks the line, and it leaves the card. The card's count includes them. (Until 0.77 a card holding only
+  reminders was the trip's green; since then green means All set, and reminders due are orange like anything left.)
   **0.75** (his yes of 13 Oct 2026: he "could not tell which template each comes from"): at the right of each, the
   icons of the templates it comes from — the trip lines' own `TemplateMarks` (spec 03, "A line" → "Where it comes
   from"), small and violet, up to three else "+N", a template without an icon as its name's first word; VoiceOver
   and the Mac's tooltip "From <names>"; id `trip-check-todo-<n>-from`; beside the button, not in it (spec 03,
-  Check before you go). The reminder's line in the trip's list has shown them since 0.74, before "To do".
+  Before you go). The reminder's line in the trip's list has shown them since 0.74, before "To do".
 - **Home's countdown** says the step as before, now with things and reminders apart — "≥1 week ahead: 7 to pack,
   1 to do, now" (a Preparations step says all of it "to do") — and, when reminders are due, a green line
   "To do: Check the forecast · …" (accessibility value "<n> to do"). The packing notifications (Remind me to pack)
@@ -1059,7 +1061,7 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
   "All packed" waits for them. "To pack" counts (countdown, steps) do not.
 - **To do (the Actions tab) is NOT used.** Chosen 7 Oct 2026: the To do ↔ Apple Reminders link exists only for To
   buy, and a copy in To do would be a second tick to keep in step with the trip's line. The trip line is the one
-  tick; Check before you go, Home and the packing notifications bring it to him when it is due.
+  tick; Before you go (its To do), Home and the packing notifications bring it to him when it is due.
 
 ### Model (PackingLibrary/TemplateReminders.swift, Countdown.swift)
 
@@ -1159,7 +1161,7 @@ review) and the table's menus. (A reminder's When was left out until 0.73 — be
 `Library.categories()` — the app's twelve (`CATEGORIES`) until he changes one, then his own, kept in `meta["categories"]`
 (a record of its own, so it syncs; in a backup as `prefs.categories`; the web app has no such list and keeps its
 own words, showing a renamed kind as an unknown one). `setCategories` stores nothing while the list is the app's.
-**Documents & money** and **Reminders** keep their names and have no tools (`fixedCategory`): Check before you go and
+**Documents & money** and **Reminders** keep their names and have no tools (`fixedCategory`): Before you go and
 a template's reminders read them by their words. PackingCore is untouched (parity unchanged).
 
 ### The Mac
@@ -1509,19 +1511,27 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
 > charge card on a trip) the same day. Written here BEFORE it was built (branch `work/battery075`), then brought in
 > line with the code by the same branch: the model `Core/Sources/PackingLibrary/Batteries.swift`, the card
 > `App/Sources/Screens/ToCharge.swift` (`ToChargeCard`, and the drawn battery mark `ToChargeCard.battery`), the
-> switch and the Your things filter in `App/Sources/Screens/ThingsScreen.swift`. Per screen: spec 03 ("To charge"),
-> spec 05 (a thing's page item 15a, Your things, Keyboard (Mac)), spec 01 §1.12 (the keys).
+> switch and the Your things filter in `App/Sources/Screens/ThingsScreen.swift`. Per screen: spec 03 ("Before you
+> go" — To charge is its last part since 0.77), spec 05 (a thing's page item 15a, Your things, Keyboard (Mac)), spec 01
+> §1.12 (the keys).
+>
+> **0.77** (his yes of 13 Oct 2026, a picture approved): the To charge card and Check before you go became ONE card,
+> **Before you go**, with To charge as its last part — `ToChargePart` in `ToCharge.swift` (the battery mark is still
+> `ToChargeCard.battery`), the card `BeforeYouGoCard` in `TripChecks.swift`, the model
+> `Core/Sources/PackingLibrary/BeforeYouGo.swift`. The rules of this part did not change; where it stands and how it
+> looks did (rule 6, "On the screens").
 
 ### What he gets
 
 - **A thing's page**: under On a plane, a band **Battery** with ONE switch, the small drawn battery mark beside its
   words: **"Has a battery — charge before a trip"**. Held until Save like everything on the page.
-- **A trip**: a **To charge** card from the DAY BEFORE the trip starts until its last day — every thing on the trip
+- **A trip**: **To charge** — a card of its own in 0.75–0.76, since 0.77 the last part of Before you go — from the DAY
+  BEFORE the trip starts until its last day — every thing on the trip
   that has a battery, the ones inside a kit on the trip too ("In the Camp pouch"), each with a CHARGE tick of its
   own. Ticking charged does not pack it; packing it does not mark it charged.
 - **Your things**: a filter **Has a battery** beside On no template — the things to charge, at a glance.
-- **Check before you go** (0.76, his yes of 13 Oct 2026): on a PLANE trip, a thing with a battery in a CHECKED bag
-  is a red line — "Battery: carry it in the cabin · in Checked luggage" — because airlines want lithium batteries and
+- **Check before you go** (0.76, his yes of 13 Oct 2026; Before you go's flags since 0.77): on a PLANE trip, a thing
+  with a battery in a CHECKED bag is a red line — "Battery: carry it in the cabin · in Checked luggage" — because airlines want lithium batteries and
   power banks in the cabin. Rule 8 below.
 
 ### The rules (decided 13 Oct 2026, by the build)
@@ -1549,9 +1559,12 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
    trip with no start date shows it whenever it has things to charge (there is no day to wait for). Never on a
    reviewed trip (`Library.isReviewed`). Never when nothing on the trip has a battery. Not when the trip was opened
    from a place's code (the page shows only that place's lines, as for the other cards).
-6. **Where on the trip.** In the scroll area, right UNDER Check before you go and above the weather: what would stop
-   him at the airport (red) stays first; To charge, the one card with its own deadline (the night before), comes
-   straight after it; the weather and the bags follow.
+6. **Where on the trip.** In the scroll area, above the weather: what would stop him at the airport (red) stays
+   first; To charge, with its own deadline (the night before), comes straight after it; the weather and the bags
+   follow. 0.75–0.76: a card of its own right UNDER Check before you go. Since 0.77 (his yes of 13 Oct 2026): the LAST
+   part of the one Before you go card — after the flags and To do — whose count adds the things not charged yet; with
+   everything charged and nothing else left, the card says "All set", green, and folds to its one line (spec 03,
+   "Before you go").
 7. **What travels.** The thing's `battery` key goes wherever the thing goes: the store and iCloud (the thing's
    record), a backup (as stored, and the older kind rebuilt from rows, `carryRowExtras`), a restore. The charge ticks
    are the trip's: they ride in the line records, a backup and a restore; a rebuild (Trip settings → Save) and a
@@ -1585,11 +1598,13 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
   keeps only things with a battery; with the search and On no template, all must hold. ⌘↓ ⌘↑ on the Mac go through
   the things as so filtered. When the count and the pills do not fit on one line (an iPhone), the pills go on a line
   of their own under the count.
-- **The To charge card** (spec 03, "To charge"; id `trip-charge`): the Check before you go card's frame (padding 14,
-  corner 12, `Theme.card`, a 1.2 pt border in the tint). Header: the drawn battery mark (22 pt, in the tint), "To
-  charge" (Subheadline semibold ink) and a count capsule "1 of 3" — charged of all (Footnote semibold white; id
-  `trip-charge-count`, label "1 of 3 charged"). The tint is the orange (`AppSection.care.color`) while something is
-  left to charge, the trip's green once all are charged. Then one row per thing (`trip-charge-<n>`, a button, min
+- **To charge, the last part of Before you go** (0.77; spec 03, "Before you go"; id `trip-beforego-part-charge`): the
+  heading line — the drawn battery mark (16 pt), "To charge" (Footnote semibold muted), "·" and "1 of 3" — charged of
+  all (Footnote semibold; id `trip-charge-count`, label "1 of 3 charged"); the mark and the count orange
+  (`AppSection.care.color`) while something is left to charge, the trip's green once all are charged. The card's own
+  count capsule (`trip-beforego-count`) adds the things not charged to the flags and reminders due. (0.75–0.76: a card
+  of its own, id `trip-charge`, in Check before you go's frame, with the battery mark at 22 pt, "To charge" in
+  Subheadline and "1 of 3" in a capsule of the tint, the border in the tint.) Then one row per thing (`trip-charge-<n>`, a button, min
   height `Metrics.tap`): a tick circle (22 pt; orange and filled when charged), the name (Callout semibold ink) and,
   for a thing inside a kit, "In the Camp pouch" under it (Subheadline muted). Charged: the name struck through and
   muted. A tap ticks or unticks it. Label "<name>" or "<name>, in the <kit>"; value "charged" / "not charged";
@@ -1599,6 +1614,7 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
   (`ToChargeCard.battery`, 22 pt) in red (`AppSection.actions.color`), the name ("Power bank" or "Power bank, in the
   Camp pouch", Callout semibold ink), the reason in red "Battery: carry it in the cabin · in <bag>", the chevron; a
   tap opens the thing itself (inside a kit: that thing, not the kit). It makes the card's count capsule and border red.
+  Since 0.77 it is in Before you go's first part, the flags (`trip-beforego-part-flags`).
 
 ### Where it is kept (the web model sees nothing new)
 
@@ -1637,8 +1653,11 @@ the Camp pouch and the Toothbrush — in the Wash bag — with a battery; the He
 bank, in the Camp pouch"; Your things' `things-battery` says 2 and keeps "2 things", on; off, all again; the Headlamp's
 `thing-battery` switched on and saved → the filter says 3; the trip "0 of 3" with the Headlamp) and
 `testToChargeIsTickedApartFromPacking` (the power bank charged → "1 of 2", selected, the trip's count unchanged; the
-pouch's line not ticked; the pouch packed → the count moves, still "1 of 2", the toothbrush not charged; "2 of 2"; the
-power bank unticked → "1 of 2", the pouch still packed; the trip two months ahead has no card). Run on the iPhone
+pouch's line not ticked; the pouch packed → the count moves, still "1 of 2", the toothbrush not charged; the last one
+charged → since 0.77 Before you go says "All set" and folds (`trip-beforego-part-charge` goes, `trip-beforego` stays;
+picture `trip-beforego-allset`), `trip-beforego-fold` opens it, "2 of 2"; the power bank unticked → "1 of 2", the card's
+count "1", the pouch still packed; the trip two months ahead has no To charge). Since 0.77 they find the part by
+`trip-beforego-part-charge` (until then the card `trip-charge`). Run on the iPhone
 simulator in light and dark (pictures `battery-thing-battery-switch`, `battery-things-battery-filter`,
 `battery-trip-to-charge`, `-one`, `-all`). Each seen RED with a planted fault: Save not writing the key → "the
 Headlamp's battery was not kept: 'Has a battery 2'"; the filter not applied → "Has a battery does not keep the two: '17
@@ -1663,10 +1682,16 @@ taken"). UI `testABatteryInACheckedBagIsToldToGoInTheCabin` (`-uiTestingBattery 
 .battery(byPlane:)`: the first trip by plane, the Camp pouch in the Checked luggage; `trip-check-cabin-0` "Power bank,
 in the Camp pouch … Battery: carry it in the cabin · in Checked luggage" and nothing else — the Toothbrush in the Wash
 bag is in the carry-on, the pouch's Lighter in the hold; a tap opens the power bank, its `thing-battery` on; switched
-off and saved, `trip-checks` goes). Seen RED with the card leaving battery lines out: "the plane trip does not check
+off and saved, the flags go — `trip-checks` until 0.77; since then `trip-beforego-part-flags`, while the card stays
+for To charge). Seen RED with the card leaving battery lines out: "the plane trip does not check
 the battery in the hold". Pictures `battery-trip-check-hold`, iPhone day and night. On GitHub's Mac (a probe running
 just this test, `testANewKitStartsCheckedBeforeEachTrip`, `testTheKitPartIsWalkedByTheKeys` and
 `testATripChecksTheCabinAndTheDatesBeforeYouGo`): all four green.
+
+**Before you go, one card (0.77).** Model `BeforeYouGoTests`, UI `testBeforeYouGoIsOneCardWithItsPartsInOrder`
+(`-uiTestingBattery -batteryByPlane -batteryToDo`: the battery-by-plane sample with Hiking's "Check the forecast" a
+week ahead, so all three parts show, 4 left) — what they pin and the red they were seen with: spec 03, "Before you go",
+Tests.
 
 ### Open questions
 
@@ -1699,6 +1724,7 @@ just this test, `testANewKitStartsCheckedBeforeEachTrip`, `testTheKitPartIsWalke
 | 13 Oct 2026 | "Has a battery" is a switch on the THING (its own key, not the web app's Charging flag, which a charging cable carries too); a trip lists those things on a To charge card from the day before it starts through its last day, kit contents included, with a charge tick of its own apart from packing; Your things filters by it | "Add a tick box for each item: Contains battery. And maybe implement a view where I can check all items that need charging." Part 15. |
 | 13 Oct 2026 | On a plane trip, a thing with a battery in a CHECKED bag (any bag not a cabin bag, by the cabin's own rule; kit contents too) is a red line in Check before you go, after "not allowed" and before the liquids; a thing in no bag yet is not judged | His yes (0.76): airlines want lithium batteries and power banks in the cabin. Part 15, rule 8. |
 | 13 Oct 2026 | A NEW kit starts with Check before each trip ON, unless he switched it off on that thing before (his off is remembered); kits made before 0.76 are not changed | He could not tick what was inside a kit while packing — the switch was off (0.76). Part 9, "A new kit starts checked". |
+| 13 Oct 2026 | Check before you go and To charge become ONE card at the top of a trip, **Before you go**: the flags, then To do (the reminders due), then To charge, each part only when it has something and by its own rules; one count of everything left (flags + reminders due + things not charged), red if a flag will stop him, else orange, green "All set"; all set, the card folds to its one line and its chevron opens it (the fold decided by the build: a trip all charged keeps no list of struck-through rows at its top) | His yes to the picture (0.77). Spec 03 "Before you go"; part 15 rule 6. |
 
 ## Open questions
 

@@ -44,7 +44,7 @@ struct TripScreen: View {
     @State private var newPlace = ""
     /// What Save in Set place was missing, said under it (never a grey button).
     @State private var placeNeeds = ""
-    /// The thing opened from Check before you go.
+    /// The thing opened from Before you go.
     @State private var checking: CheckedThing?
     /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
     @State private var onSite = false
@@ -236,12 +236,10 @@ struct TripScreen: View {
                 // has typed into it (found by the test, 2026-09-23).
                 VStack(alignment: .leading, spacing: 4) {
                 if placeFilter == nil {
-                // Check before you go (his ideas 4 and 5): first, and only when something needs him.
-                TripChecksCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
-                    .padding(.top, 10).padding(.horizontal, 16)
-                // To charge (0.75, spec 07 part 15): from the day before the trip through its last
-                // day, the things with a battery — under what would stop him at the airport.
-                ToChargeCard(tripId: trip.id).environmentObject(model)
+                // Before you go (0.77, his yes of 13 Oct 2026): first, and only when something
+                // needs him — ONE card for what would stop him at the airport (his ideas 4 and 5),
+                // the reminders due and To charge (spec 07 part 15), which were two cards.
+                BeforeYouGoCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
                 WeatherCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
