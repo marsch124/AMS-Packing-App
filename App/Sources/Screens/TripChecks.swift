@@ -46,7 +46,8 @@ struct BeforeYouGoCard: View {
                     }
                 }
             }
-            .padding(14)
+            // Folded, one line as slim as the Bags card's: the chevron's square is tap room enough.
+            .padding(.horizontal, 14).padding(.vertical, folded ? 6 : 14)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.2))
             .accessibilityElement(children: .contain)

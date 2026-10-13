@@ -1721,7 +1721,8 @@ used: `cabin` = `cabinCheck(tripId:)`, `dates` = `dateCheck(tripId:todayISO:)`, 
 - `tone` = red if `red`, else orange while `left` > 0, else green. `countWords` = "<left>", or "All set".
 
 ### What is on screen
-Card (padding 14, corner 12, `Theme.card`, 1.2 pt border in the card's tone), id **`trip-beforego`** (a container).
+Card (padding 14 — folded, 6 above and below, so its one line is about as slim as the Bags card's; corner 12,
+`Theme.card`, 1.2 pt border in the card's tone), id **`trip-beforego`** (a container).
 The tone's colours: red `AppSection.actions.color`, orange `AppSection.care.color`, green `AppSection.events.color`.
 
 **The header** (one line, 8 apart): "Before you go" (Subheadline semibold ink) and ONE count capsule — `countWords`
