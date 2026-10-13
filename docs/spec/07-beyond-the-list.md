@@ -1892,7 +1892,10 @@ dark (pictures `break-trip-door`, `break-sheet`, `break-chosen`, `break-trip-wai
 and their red line, the door check and its tap, On site from the time he leaves, every sorting's ticks, Template
 sorting, the trip's header lines, reminders due) green too. By hand on the simulator (`-breakRealCalendar`): Add to
 Calendar brings up the system's New Event window filled in — "Back to packing Weekend in the hills", 19:00–19:30, an
-alert at the time of the event, the note "0 of 7 packed · 7 things left" — and no permission question.
+alert at the time of the event, the note "0 of 7 packed · 7 things left" — and no permission question. On GitHub's
+Mac (a probe running these five with `testTheTripsPenSitsBesideItsNameAndReviewedBesideDone` and
+`testSettingsTurnsOnPackingReminders`): all seven green — the sheet says "your iPhone will remind you", the Settings
+card has no Messages switch (pictures of the Mac look, day; the runner's night setting did not reach the app).
 
 ### Open questions
 
