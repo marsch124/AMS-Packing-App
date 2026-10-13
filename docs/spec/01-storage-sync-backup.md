@@ -138,7 +138,7 @@ Six kinds in ONE table, one row per entry: `conditions`, `presets`, `people`, `o
 
 ### 1.10 `PhotoRecord` (PackingCore/Backup.swift)
 
-`{id, data, createdAt}`, `data` a `data:image/jpeg;base64,…` URL. In memory and in a backup the picture is that URL; in the store it is split into bytes + mime (§3). Who points at a photo: an item's `photos`, a trip line's `photos`, and a trip's `extra.bagPhotos` (up to `BAG_PHOTOS_MAX` = 3 per bag). `photoInUse(id)` checks all three.
+`{id, data, createdAt}`, `data` a `data:image/jpeg;base64,…` URL. In memory and in a backup the picture is that URL; in the store it is split into bytes + mime (§3). Who points at a photo: an item's `photos`, a trip line's `photos`, a trip's `extra.bagPhotos` (up to `BAG_PHOTOS_MAX` = 3 per bag) and, since 0.79, a trip's `extra.dayBagsPhoto` (the Packing day's photo of all the bags). `photoInUse(id)` and `photoIdsInUse()` check all four.
 
 ### 1.11 `meta` keys (every one used anywhere)
 
@@ -183,6 +183,11 @@ The native app adds its own fields as `extra` keys so the web app's model stays 
 | trip line (0.75) | `charged` (`CHARGED_KEY`) | true / absent | its thing is charged for this trip (To charge); apart from `checked`. Dropped by "start a new trip from this one" and in a shared trip; kept by a rebuild and `followThing` |
 | trip line (a kit's, 0.75) | `kitCharged` (`KIT_CHARGED_KEY`) | `[item id]` / absent | the things inside the kit charged for this trip; only ids inside it now are written; dropped as `charged` |
 | trip (0.77) | `breakUntil` (`BREAK_UNTIL_KEY`) | "yyyy-MM-dd HH:mm" (this device's clock) / absent | Take a break: when he goes back to packing; the iPhone says "Back to packing" then (spec 07 part 16). One per trip; removed by Just pause and when everything is packed. Not copied by "start a new trip from this one"; dropped in a shared trip |
+| trip (0.79) | `dayBagsOut` (`DAY_BAGS_OUT_KEY`) | `[bag name]` / absent | Packing day, Bags out: the bags ticked out (spec 07 part 17); compared by `normName`; follows a bag's rename as the scale reading does; dropped in a shared trip, not copied by "start a new trip from this one" |
+| trip (0.79) | `dayNameTags` (`DAY_NAME_TAGS_KEY`), `dayAirTags` (`DAY_AIRTAGS_KEY`) | `[bag name]` / absent | Packing day, Tags: name tag on / AirTag in it, per bag; as `dayBagsOut` |
+| trip (0.79) | `dayBagsPhoto` (`DAY_GROUP_PHOTO_KEY`) | photo id / absent | Packing day, Photos: the ONE photo of all the bags together; counted by `photoInUse`, removed with the trip; dropped in a shared trip |
+| trip (0.79) | `dayWeighOffered` (`DAY_WEIGH_OFFERED_KEY`) | true / absent | the Packing day opened Weigh by itself once (when everything was packed); never again on this trip |
+| item (a bag, 0.79) | `airTag` (`AIRTAG_KEY`) | true / absent | Has an AirTag (the bag's page, the Packing day's Tags); never written false |
 | trip head record only | `entryOrder` | `[entry id]` | the order of the lines (store-only, never in memory — §3) |
 
 **Kits are kept on the kit only (0.70).** Chapter 07 planned an `insideKitId` on each content too; it is not stored — one record holds a kit's whole state, so two sides can never disagree. Which kit holds a thing is READ (`Library.kitIndex()`): kits in id order, a thing in the first kit that lists it; never itself, a bag, a to-do, or a thing that lists contents of its own. Two devices putting one thing in two kits at once leave it listed twice: it is inside the kit whose id sorts first, and the other drops it at its next save. The web app's model sees a plain thing with keys it does not know (they ride through `coerceItem`); the parity check stays 211/211. Through the store, iCloud, a backup (as stored, or rebuilt from the rows) and a restore the keys come back exactly — `ThingKitsTests.testAKitIsStoredSyncedBackedUpAndRestoredWithTheThing`.

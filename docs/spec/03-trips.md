@@ -1069,6 +1069,15 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
 
 **Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
 
+**Packing day row** (0.79, his yes of 13 Oct 2026; spec 07 part 17) — only while the trip is at Pack (the strip's own
+reading) and not opened from a place's code: right under the strip, fixed above the scroll area, ONE slim row
+(container `day-row`) — the day's mark and "Packing day" (`day-title`), then six station chips, **Bags out · Pack ·
+Weigh · Tags · Photos · Ready** (`day-station-<key>`: `bags`, `pack`, `weigh`, `tags`, `photos`, `ready`; value =
+"done", "no bags yet" or the station's words; the next one to do selected). Done = green with white words; the next
+one lit; Pack carries "12/40". A tap on Pack scrolls to the list (the Sorting row); any other opens the Packing day
+sheet on that station. Too wide for the iPhone it scrolls sideways, keeping the next station in view. When the trip
+turns all packed while open here, Weigh opens by itself once per trip, 1.5 s later (part 17, rule 9).
+
 **What the last settings save did** (only after one; 15 bold green, id `trip-rebuilt`):
 `TripScreen.saying`: (0 added, 0 removed) "Saved. The list is the same."; (a, 0) "Saved: a new on the
 list."; (0, g) "Saved: g no longer on the list."; (a, g) "Saved: a new, g no longer on the list."; after
@@ -2122,6 +2131,12 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   the first the last). Opening at an index outside the photos clamps it. Mac minimum 520 × 600.
 - Thumbnails show only photos whose record is on this device and decodes; "full" (no add pills) counts
   the STORED ids, so a photo still syncing in takes its place.
+- **All your bags** (0.79, spec 07 part 17): when the trip has a photo of all its bags together (taken in the Packing
+  day's Photos), the opened card's first row is its thumbnail (44 pt, corner 6, id `bags-group-thumb`, label "Photo of
+  all your bags") and "All your bags" (Subheadline semibold ink); a tap shows it large (`BigPhoto`). At every step —
+  for the airline desk when a bag is lost, after he has left. Taken and removed only in the Packing day.
+- The bag rows are ONE view since 0.79 (`BagWeightRow`), shared with the Packing day's Weigh station: the same
+  words, bar and colours in both places.
 
 ### Behaviour
 - Bags shown: `Library.weighedBags(tripId:)` = `bagLoads(lines, qtyNights, bagLimits())` with each bag's
