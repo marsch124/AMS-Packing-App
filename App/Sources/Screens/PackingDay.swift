@@ -106,9 +106,9 @@ struct StationChips: View {
 }
 
 /// The trip screen's row: the day's mark and "Packing day", then the chips — the next station
-/// to do highlighted. ONE line: as it is where it fits (the Mac); else (the iPhone) the whole
+/// to do highlighted. ONE line where it fits (a wide Mac window); else, on the iPhone, the whole
 /// line scrolls sideways, from one edge of the screen to the other, and keeps the next station
-/// (and the one after it) in view.
+/// (and the one after it) in view; on a narrow Mac window the chips wrap onto a second line.
 struct PackingDayRow: View {
     let day: PackingDay
     /// The screen's margin: the sideways scroll reaches past it to the edges.
@@ -120,6 +120,15 @@ struct PackingDayRow: View {
         ViewThatFits(in: .horizontal) {
             line.fixedSize()
                 .frame(maxWidth: .infinity, alignment: .leading)
+            #if os(macOS)
+            // A narrow Mac window: the chips wrap onto a second line — a mouse wheel does not
+            // scroll sideways (GitHub's Mac, 0.79: the trip's 520-point window cut Ready off).
+            HStack(alignment: .top, spacing: 8) {
+                title
+                StationChips(day: day, highlight: day.current, idPrefix: "day-station", wraps: true, tap: tap)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            #else
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
                     line.padding(.horizontal, margin).padding(.vertical, 1)
@@ -130,6 +139,7 @@ struct PackingDayRow: View {
                 .onAppear { proxy.scrollTo(PackingDayRow.inView(day.current)) }
                 .onChange(of: day.current) { _, now in withAnimation { proxy.scrollTo(PackingDayRow.inView(now)) } }
             }
+            #endif
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("day-row")
@@ -144,17 +154,22 @@ struct PackingDayRow: View {
 
     private var line: some View {
         HStack(spacing: 8) {
-            HStack(spacing: 5) {
-                StationMark(mark: PackingDayStation.dayMark, size: 17)
-                Text("Packing day").font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
-            }
-            .foregroundStyle(Library.LoopStep.pack.words(scheme))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Packing day")
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityIdentifier("day-title")
+            title
             StationChips(day: day, highlight: day.current, idPrefix: "day-station", tap: tap)
         }
+    }
+
+    private var title: some View {
+        HStack(spacing: 5) {
+            StationMark(mark: PackingDayStation.dayMark, size: 17)
+            Text("Packing day").font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
+        }
+        .foregroundStyle(Library.LoopStep.pack.words(scheme))
+        .frame(minHeight: Metrics.chip)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Packing day")
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityIdentifier("day-title")
     }
 }
 
@@ -175,8 +190,18 @@ struct PackingDaySheet: View {
     @State private var weighNeeds = ""
     @FocusState private var typing: Bool
 
-    init(tripId: String, start: PackingDayStation, toList: @escaping () -> Void) {
+    /// Opened by itself, on Weigh, when the last thing was ticked: the trip keeps that it was
+    /// offered once it is really on screen — never again on this trip.
+    let byItself: Bool
+
+    /// Told when the sheet is really on screen.
+    let appeared: () -> Void
+
+    init(tripId: String, start: PackingDayStation, byItself: Bool = false, appeared: @escaping () -> Void = {},
+         toList: @escaping () -> Void) {
         self.tripId = tripId
+        self.byItself = byItself
+        self.appeared = appeared
         self.toList = toList
         _shown = State(initialValue: start == .pack ? .bagsOut : start)
     }
@@ -245,7 +270,14 @@ struct PackingDaySheet: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
-        .onAppear { openFirstUnweighed(day) }
+        .onAppear {
+            openFirstUnweighed(day)
+            appeared()
+            if byItself {
+                let id = tripId
+                model.change { _ = $0.setWeighOffered(tripId: id) }
+            }
+        }
         .onChange(of: shown) { _, _ in openFirstUnweighed(model.library.packingDay(tripId: tripId)) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("day-sheet")

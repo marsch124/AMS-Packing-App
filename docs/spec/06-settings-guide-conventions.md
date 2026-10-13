@@ -776,6 +776,43 @@ no entry shows no marker anywhere (and fails the test).
 4. Twelve topic cards (eleven until 0.71) (padding 14, card, radius 12, line border, container id `guide-topic-<n>`): a header row —
    the topic's section mark (`SectionMark`, 24 pt, line 1.9, in the section's colour) and the title (19 heavy ink)
    — then each line as a 6-pt dot in the section colour + text (16 ink, wraps).
+5. (0.79) **The Packing day** (`PackingDayGuideCard`, `Screens/PackingDay.swift`; container id `guide-packingday`) —
+   right after topic 1, *Packing a trip* (drawn inside the topics' `ForEach`, after the topic of that title; it has no
+   `guide-topic-<n>` id, so the topics keep their numbers). His ask of 13 Oct 2026: "remember to write about the
+   Packing-Day-Stations in the How-this-works". Card padding 14, radius 12, `Theme.card`, a 1.2-pt ring of the Pack
+   green at 70 % (the topics' is the hairline). Top to bottom, 12 apart:
+   - the day's mark (`StationMark`, 24 pt, a sun rising out of an open case, the Pack step's readable green) and
+     "Packing day" (Body semibold ink), one element `guide-day-title`;
+   - "On a trip you are packing, a row sits right under the loop: Packing day, then six stations in the order you go
+     through them. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides
+     sideways." (Callout ink);
+   - the six stations, in the row's order, each a row: the station's mark (20 pt, white) in a 34-pt green disc — the
+     look of a station that is done; its own element `guide-day-<key>-mark`, label = what it shows ("Two bags on the
+     floor" …) — then "<n> · <name>" (Body semibold, readable green) + " — <what the mark shows>" (Footnote muted), and
+     under it what the station does and what turns it green (Callout ink); the words (`PackingDayGuideCard.says`)
+     one element `guide-day-<key>` (`bags`, `pack`, `weigh`, `tags`, `photos`, `ready`):
+     1. **Bags out** — "Lay every bag out where you pack, and tick it as it comes out. The bags are the ones your list
+        packs into — “Not in a bag” is not one. Green when every bag is out."
+     2. **Pack** — "The trip's own list. Its station shows how far you are — 12/40 — and a tap takes you straight to
+        the list. Green when everything is packed; a thing set aside ⊘ counts as done."
+     3. **Weigh** — "The luggage scale, one bag after another: hang it on the scale, type what it says, Save — the next
+        bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself
+        — once per trip. Green when every bag is weighed."
+     4. **Tags** — "A Name tag tick for every bag, and an AirTag tick for each bag that has one. Has an AirTag is the
+        bag's own switch — under the bag here, or on its page in Care → Bags; switch it on once and every trip asks for
+        it. Green when every tick is on."
+     5. **Photos** — "One photo of all your bags side by side, and each bag's own photo (the same ones as in Bags) —
+        for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them
+        stays in Bags after you leave. Green when every photo is there."
+     6. **Ready** — "Every station, done or what is left — tap one to open it — and Ready to go once all are green. I
+        leave at is right there: 15 minutes before, the iPhone names what is still unticked."
+   - three dotted lines (as a topic's, Pack green): getting around ("tap a station in the row to open it — Pack goes
+     straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the
+     stations are at the top too. Done closes it."); a trip with no bags yet ("those four stations are faded with a
+     dashed edge and say “no bags yet”; opened, they say how to give things a bag … Ready then waits only for the
+     packing."); afterwards ("Once the trip sets off, the row is gone — the weights and photos stay in Bags. A trip you
+     share, or start again from this one, begins its Packing day afresh.").
+   Spec 07 part 17 holds every rule behind these words.
 
 **The topics and their lines** (summarised; the code holds the exact sentences):
 
@@ -878,7 +915,11 @@ no entry shows no marker anywhere (and fails the test).
     (0.62). (3 lines.)
 
 **Tests.** `testWhatsNewStartsWithThisVersion` (topics 0 and 1 exist), `testTheLoopShowsWhereATripStands` (loop
-card, first-trip card, Words). **Not covered:** the number of topics, their order, their text.
+card, first-trip card, Words), (0.79) `testHowItWorksExplainsThePackingDayStations` (the Packing day part is there;
+its six stations in order, "1 · " … "6 · ", each wearing its own mark — the label of `guide-day-<key>-mark` is his
+pick's — the first five saying what turns them green, Weigh that it opens by itself, Tags the bag's Has an AirTag;
+pictures `day-howitworks-1`/`-2`, day and night; seen red with the card left out: "How it works has no Packing day
+part"). **Not covered:** the number of topics, their order, their text.
 
 ---
 
@@ -977,15 +1018,16 @@ Shipped in 0.41.
 | 16 | Set aside ⊘ | Trips | Not this time: the thing stays on the list but is not packed, and leaves the count. ↻ brings it back. |
 | 17 | The loop | Trips | Plan (Home) › Pack (Trips) › On site (the trip, while away) › Review (the trip, afterwards) › Refine (Templates) — and round again. |
 | 18 | Loop strip | Trips | The five steps under a trip's name, each with a mark of its own: a map with a route for Plan, a suitcase with a tick for Pack, a pin on a map for On site, a magnifier over a list for Review, a sprout for Refine. The filled one is where this trip stands, with its mark (on a wide screen every step has its mark). (Until 0.77: "with the mark of the tab where that step is done".) |
-| 19 | Review | Trips | Looking back at ONE trip: what you did not use, and what you missed. |
-| 20 | Refine | Templates | Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab. |
-| 21 | Keep · Drop | Templates | In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays. |
-| 22 | To do | To do | The tab for getting ready: things to sort out before you go, and — on its other side — To buy, with worn-out or run-down things suggested. |
-| 23 | Your choices | Settings | Your own lists in Settings: storage places, owners, packers, conditions and the When steps. |
-| 24 | Care | Care | Looking after your things: services that fall due, weights, bags. The Care tab. |
+| 19 | Packing day | Trips | The stations of a trip’s Pack step, in a row under its loop strip: Bags out, Pack, Weigh, Tags, Photos, Ready. Each turns green when it is done; Ready to go when all are. (0.79, spec 07 part 17) |
+| 20 | Review | Trips | Looking back at ONE trip: what you did not use, and what you missed. |
+| 21 | Refine | Templates | Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab. |
+| 22 | Keep · Drop | Templates | In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays. |
+| 23 | To do | To do | The tab for getting ready: things to sort out before you go, and — on its other side — To buy, with worn-out or run-down things suggested. |
+| 24 | Your choices | Settings | Your own lists in Settings: storage places, owners, packers, conditions and the When steps. |
+| 25 | Care | Care | Looking after your things: services that fall due, weights, bags. The Care tab. |
 
 **Tests.** `testTheLoopShowsWhereATripStands` requires `guide-words` and a `word-<n>` reading exactly "Kit"
-(searched among 0…29). **Not covered:** the other 24 terms.
+(searched among 0…29). **Not covered:** the other 25 terms.
 
 ---
 
@@ -2325,7 +2367,7 @@ one more added at a time"; every test is seen to fail before it is committed (RE
 | `inWindow` / `onScreen` | frame-based: the middle inside the window (and inside its list for `onScreen`, which also asks `isHittable`). |
 | `frontList` / `biggestList` | the last scroll view; the larger of the first and the last (a strip of pills is also a scroll view). |
 | `scrollUntil(id, near:, tries: 8)` | until a button/other with the id EXISTS (far rows are not in the tree yet): scrolls the list holding `near` (else the biggest list); Mac ±220 (first half one sign, second half the other), iPhone swipe up; prints a TAP-REPORT with the tree when it gives up. |
-| `scrollWithin(screen, until:, tries: 10)` | scrolls the first scroll view INSIDE a named sheet, never the screen behind it. |
+| `scrollWithin(screen, until:, tries: 10)` | scrolls the TALLEST scroll view INSIDE a named sheet (`tallestList(in:)`), never the screen behind it. Until 0.79 the first one: a trip's Packing day row (a sideways strip of station chips on the iPhone) comes before its list, and swiping the strip up moved nothing — five red tests in one local run. |
 | `listHolding(e)` | the list that CONTAINS the element, by descendancy — front list, first list, then every list front to back (with the keyboard up the front "list" is the text field). |
 | `bringIntoView(e)` | up to 10 scrolls of the element's own list (±200 on the Mac) until `onScreen`; flips direction when the element did not move up; does nothing when no list holds it. |
 | `tab(app, name)` | hides the keyboard, then taps `tab-<name>` up to 3 times until `screen-<name>` appears (4 s each) — a tap can be swallowed on a slow machine. |
@@ -2369,7 +2411,9 @@ too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndThe
 (spec 03), `testATemplatesRowsSitTight` (spec 04), `testToDoAndToBuyLinesSitTight` (spec 05),
 `testAGrabListAndItsTilesAreSmall` (spec 02) — whose limits are the test file's `tightLine` (30 / 22), `tightTile`
 (36 / 26) and `doorPitch` (52 / 46), measured top to top by the helpers `rowFrames` and `pitch` (the rows on screen,
-by `shownRow`) and `airAbove` (a heading to the bottom of the row above it).
+by `shownRow`) and `airAbove` (a heading to the bottom of the row above it). 0.79:
+`testHowItWorksExplainsThePackingDayStations` (§7, the Packing day's part; the Packing day's own tests are in spec 07
+part 17).
 
 Model: `SettingsListsTests` (14 since 0.62), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
 `ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (4 since 0.62), `BackupTests` (library, 5),

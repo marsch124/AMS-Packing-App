@@ -1915,8 +1915,8 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
 > lost luggage; ready. A guided **Packing day** inside the trip's Pack step: a row of STATIONS — **Bags out → Pack →
 > Weigh → Tags → Photos → Ready**. Each turns green when it is done; a tap opens it; the next open one is offered.
 > The marks are his picks from the station sheet of 13 Oct 2026 (Packing day B, Bags out A, Pack C, Weigh A, Tags A,
-> Photos C, Ready A). Built on branch `work/day079` (0.79) and written BEFORE it was built — the code wins where they
-> differ, and the difference is listed under *Open questions*. The model:
+> Photos C, Ready A). Built on branch `work/day079` (0.79); written BEFORE it was built, then brought in line with the
+> code the same day (the code wins where they differ). The model:
 > `Core/Sources/PackingLibrary/PackingDay.swift`; the row, the sheet and its stations:
 > `App/Sources/Screens/PackingDay.swift`. Per screen: spec 03 (the trip screen's station row, the Bags card's photo
 > of all the bags), spec 05 (a bag's page: Has an AirTag), spec 01 §1.12 (the keys).
@@ -1927,8 +1927,9 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
   case) and "Packing day", then six chips — each its own drawn mark and a short name: **Bags out · Pack · Weigh ·
   Tags · Photos · Ready**. A station that is done is filled green with white words; the next one to do (the first not
   done, in that order) is lit in a light green with a stronger ring; the rest wait in a green line on the card. Pack's
-  chip carries the count, "12/40". Too wide for the iPhone, the row scrolls sideways and keeps the next station in
-  view; on the Mac it fits.
+  chip carries the count, "12/40". Too wide for the iPhone, the whole row scrolls sideways, from one edge of the
+  screen to the other, and keeps the next station (and the one after it) in view; where it fits (the Mac) it stands
+  still.
 - A tap on **Pack** goes to the list (it IS the trip's list). A tap on any other station opens the **Packing day**
   sheet on it: the same row at the top, the station under it, and at the foot one full-colour button that offers the
   next open station — "Next: Weigh".
@@ -1987,11 +1988,16 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
    row); in the sheet, the Pack chip and "Next: Pack" close the sheet first. Nothing else about the list changes.
 9. **Weigh opens by itself — once.** When the trip turns all packed while it is open on this device's screen (a tick,
    a section's tick, Tick everything, Pack by voice, or the other device's ticks arriving), and the trip is at Pack,
-   has bags, Weigh is not done and the trip has never offered it (`dayWeighOffered`, `DAY_WEIGH_OFFERED_KEY`, true
-   once), the sheet opens on Weigh **1.5 s** after the moment (the green sweep takes 1 s) — if the trip is still all
-   packed then, and no other sheet of the trip screen is up. The trip keeps that it was offered (synced: the other
-   device does not offer it again); unticking and ticking again does not bring it back. A trip opened when it is
-   already all packed does not open it.
+   has bags, Weigh is not done and the trip has never shown it (`dayWeighOffered`, `DAY_WEIGH_OFFERED_KEY`, true
+   once; `Library.weighOpensItself`), the sheet opens on Weigh **1.5 s** after the moment (the green sweep takes
+   1 s) — if all that still holds then, the trip is not opened on a place's code, and none of the trip screen's own
+   sheets (the review, a thing opened from Before you go, On site) is up (`TripScreen.weighByItself`). The trip keeps
+   that it was offered only once the sheet has REALLY come up (`PackingDaySheet(byItself:)` writes the key in its
+   `onAppear`) — synced, so the other device does not offer it again; unticking and ticking again does not bring it
+   back. A sheet already up that the trip screen does not own — Pack by voice's panel, whose walk can tick the last
+   thing — keeps another from coming: the request lets go 1.5 s later unshown and unmarked, and is made again when
+   the panel goes (`VoiceSortingRow`'s `closed`, 0.79) or the next time the trip turns all packed. A trip opened when
+   it is already all packed does not open it.
 10. **Weigh, one bag after another.** The station lists the bags as the Bags card does (name, weight against its max,
     the bar and its colour — one row, `BagWeightRow`, shared with the card). The first bag without a reading is open,
     its field "kg on the scale" ready; Save keeps the reading and opens the next bag without one. A bag already
@@ -2028,47 +2034,71 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
 
 ### On the screens
 
-- **The trip screen** (spec 03): under the loop strip (16 sideways, 2 under the strip's own 10, 8 above the cards),
-  the row `PackingDayRow` (container id `day-row`): the day's mark (17 pt, the Pack step's readable green) and
-  "Packing day" (Footnote semibold, the same green; id `day-title`), then the chips, 6 apart: each a button
-  `day-station-<key>` (`bags`, `pack`, `weigh`, `tags`, `photos`, `ready`), label its name, value its state —
-  "done", "no bags yet", or its words (rule 4); the next one selected. A chip: its mark (15 on the iPhone, 13 on the
-  Mac) and its name (Footnote semibold), Pack with " 12/40" (monospaced digits), padding 9 sideways, `Metrics.chip`
-  tall, a capsule: done = green fill, white; next = green at 14 % with a 2-pt green ring, green words; open = the card
-  with a 1.2-pt ring of green at 70 %, green words; cannot = the card, a dashed 1-pt hairline, muted words.
-  `ViewThatFits`: the row as it is when it fits (the Mac), else inside a sideways scroll (no indicator) that scrolls
-  the next station into view.
-- **The sheet** (`PackingDaySheet`, id `day-sheet`; on the Mac at least 460 × 600): header — the day's mark (22) and
-  "Packing day" (Title 3 bold green), the trip's name under it (Subheadline semibold muted), **Done** (filled green,
-  Escape, id `day-done`). The row again (chips `day-sheet-station-<key>`; the station shown is the highlighted one).
-  Then the station (container `day-view-<key>`), and at the foot **Next: <station>** (a full-width filled green
-  button, `Metrics.tap` tall, id `day-next`) — not on Ready.
+- **The trip screen** (spec 03): under the loop strip (16 sideways, 2 tighter than the strip's own 10 under it, 8
+  above the scroll area), fixed — it does not scroll with the list — the row `PackingDayRow` (container id
+  `day-row`): the day's mark (17 pt, the Pack step's readable green) and "Packing day" (Footnote semibold, the same
+  green; one element `day-title`, a heading), 8 apart, then the chips, 6 apart: each a button `day-station-<key>`
+  (`bags`, `pack`, `weigh`, `tags`, `photos`, `ready`), label its name, value its state — "done", "no bags yet", or
+  its words (rule 4); the next one selected. A chip (`StationChip`): its mark (15 on the iPhone, 13 on the Mac) and
+  its name (Footnote semibold), Pack with "12/40" (monospaced digits) 5 after it, padding 9 sideways, `Metrics.chip`
+  tall, a capsule: done = green fill, white; next = green at 14 % with a 2-pt green ring, green words; done AND the
+  one highlighted (Ready once everything is green) = the green fill with a white ring 2.5 inside its edge; open = the
+  card with a 1.2-pt ring of green at 70 %, green words; cannot = the card, a dashed 1-pt hairline, muted words.
+  `ViewThatFits`: the line as it is when it fits (the Mac), else the whole line — title included — in a sideways
+  scroll (no indicator) reaching 16 past the margins to the screen's edges, which scrolls only as far as needed to
+  show the next station and the one after it (`PackingDayRow.inView`): at the start nothing moves and the title stays
+  in view.
+- **The sheet** (`PackingDaySheet`, id `day-sheet`, from the row's `.sheet(item:)`; on the Mac at least 460 × 600):
+  header (padding 16) — the day's mark (22) and "Packing day" (Title 3 bold, readable green; one element
+  `day-heading`), the trip's name under it (Subheadline semibold muted), **Done** (filled green, Escape, id `day-done`).
+  The chips again, WRAPPING (`FlowRow`, two lines on the iPhone; ids `day-sheet-station-<key>`; the station shown is
+  the highlighted one, a tap shows another, Pack closes the sheet and the trip scrolls to its list 0.45 s later). Then,
+  in a scroll, the station (container `day-view-<key>`, 10 apart) and at its foot **Next: <station>** (Body semibold
+  white on a full-width green rounded rectangle, radius 12, `Metrics.tap` tall, 8 above; id `day-next`, value = the
+  station's key) — none on Ready. Opened on Pack (never: Pack scrolls) it would show Bags out.
   - **Bags out** (`day-view-bags`): "Lay every bag out where you pack, and tick it as it comes out." (Footnote
     muted). Per bag a row button `day-bag-<n>`: a tick circle (green), the bag's name (Body), "6 things" (Footnote
     muted, monospaced); value "out" / "not out", selected when out. All out: "All bags are out." (green, id
     `day-bags-said`).
   - **Weigh** (`day-view-weigh`): "One bag after another: hang it on the luggage scale and type what it says."; per
-    bag `day-weigh-<n>` (the shared row, value = the bar in words as on the Bags card: "not weighed", "fine, 25% of
-    its max"…); the open bag's field `day-weigh-<n>-scale`, **Save** `day-weigh-<n>-save` (filled green capsule),
-    **Clear** `day-weigh-<n>-clear` (muted words, only with a reading), `day-weigh-needs` under it. All weighed: "Every
-    bag is weighed." (`day-weigh-said`).
-  - **Tags** (`day-view-tags`): "A name tag on every bag, and the AirTag in each bag that has one." Per bag a small
-    card: the bag's name (Subheadline semibold), the tick rows **Name tag** (`day-tag-<n>-name`) and — when the bag
-    has an AirTag — **AirTag in it** (`day-tag-<n>-air`) (a tick circle and the words, `Metrics.line` tall, value
-    "on"/"off", selected when on), and the switch **Has an AirTag** (`day-tag-<n>-has`, green, Footnote). All on:
-    "Every tag is on." (`day-tags-said`).
-  - **Photos** (`day-view-photos`): with two bags or more first **All your bags** — "One photo of all of them side by
-    side: for the airline desk if one goes missing." — and its photo (`day-group-thumb`, 80 pt, a tap shows it large;
-    **Remove** `day-group-remove`) or the way to take one (`day-group-photo`: "Photo of all the bags" under the tests;
-    "Take a photo" / "Choose a photo" otherwise, as a bag's own). Then per bag its name and the bag's own photos
-    (`BagPhotoRow` with the ids `day-photo-<n>-photo`, `-photo-thumb-<k>`, `-photo-remove-<k>`, `-photo-full`). All
-    there: "Every photo is taken." (`day-photos-said`).
-  - **Ready** (`day-view-ready`): the five stations, each a row button `day-ready-<key>` (its mark, its name, its
-    state — a drawn tick and "done" in green, or its words in the ink; value = the same words); "Ready to go"
-    (`day-ready-go`) when all are green, else "Not yet — 2 stations left." (Subheadline semibold muted,
-    `day-ready-left`); then the I leave at block (`day-leave-frame`, `day-leave-out-add` …).
-- **The Bags card** (spec 03), opened: when the trip has a photo of all its bags, its first row: the thumbnail (44 pt,
-  id `bags-group-thumb`) and "All your bags" (Subheadline semibold); a tap shows it large (`BigPhoto`).
+    bag a card (padding 12, radius 12, `Theme.card`, a hairline — red when the bag is over) holding the button
+    `day-weigh-<n>` (the shared `BagWeightRow`, value = the bar in words as on the Bags card: "not weighed", "fine, 80%
+    of its max"…; a tap opens or closes the bag's field) and, for the open bag, the field "kg on the scale"
+    `day-weigh-<n>-scale` (decimal pad, Return saves), **Save** `day-weigh-<n>-save` (filled green capsule),
+    **Clear** `day-weigh-<n>-clear` (Subheadline semibold muted, only with a reading), `day-weigh-needs` under them
+    (it goes as soon as anything is typed). Opening the station (or switching to it) opens the first bag without a
+    reading, its field empty. All weighed: "Every bag is weighed." (`day-weigh-said`).
+  - **Tags** (`day-view-tags`): "A name tag on every bag, and the AirTag in each bag that has one." Per bag a card
+    (as Weigh's): the bag's name (Subheadline semibold), the tick rows **Name tag** (`day-tag-<n>-name`) and — when the
+    bag has an AirTag — **AirTag in it** (`day-tag-<n>-air`) (a `TickCircle` and the words in Body, `Metrics.line`
+    tall, value "on"/"off", selected when on), and the switch **Has an AirTag** (`day-tag-<n>-has`, green, its words
+    Footnote semibold muted, a mini switch on the iPhone, a small check box on the Mac). All on: "Every tag is on."
+    (`day-tags-said`).
+  - **Photos** (`day-view-photos`): with two bags or more first a card **All your bags** (Subheadline semibold) — "One
+    photo of all of them side by side: for the airline desk if one goes missing." — and its photo (`GroupPhotoRow`:
+    `day-group-thumb`, 80 pt, corner 8, a tap shows it large captioned "All your bags"; **Remove** `day-group-remove`
+    under it) or the way to take one (`PhotoTakers`, shared with a bag's own photos since 0.79: `day-group-photo` —
+    "Photo of all the bags" under the tests; on the iPhone "Take a photo" when it has a camera and "Choose a photo"
+    `day-group-photo-pick`; on the Mac Choose only). With one bag instead the line "A photo of the bag packed — to
+    repack from, and for the airline desk if it goes missing." Then per bag a card: its name and the bag's own photos
+    (`BagPhotoRow` with the ids `day-photo-<n>-photo`, `-photo-pick`, `-photo-thumb-<k>`, `-photo-remove-<k>`,
+    `-photo-full` — the row takes an id prefix since 0.79; on the Bags card it stays `bag-<n>`). All there: "Every
+    photo is taken." (`day-photos-said`).
+  - **Ready** (`day-view-ready`): the five stations, each a row button `day-ready-<key>` (`Metrics.row` tall, a
+    hairline under it: its mark at 18 — green when done, ink when open, muted when it cannot be done — its name in Body,
+    and at the right a drawn tick and "done" in green, or its words in Subheadline monospaced ink ("no bags yet"
+    muted); label its name, value its state); a tap opens that station (Pack: the list). "Ready to go" (Title 2 bold
+    green, `day-ready-go`) when all are green, else "Not yet — 2 stations left." (Subheadline semibold muted,
+    `day-ready-left`); then, 4 below, the I leave at block (`LeaveTimes`, ids from `day-leave`: `day-leave-frame`,
+    `day-leave-out-add`, `day-leave-out-time`, `day-leave-out-check` …), whose times are written to the trip at once
+    (`setLeaveTime`) — the same keys Trip settings shows and saves.
+- **The Bags card** (spec 03), opened: when the trip has a photo of all its bags, its first row after the colour key:
+  the thumbnail (44 pt, corner 6) and "All your bags" (Subheadline semibold ink), one button `bags-group-thumb`; a tap
+  shows it large (`BigPhoto`, captioned "All your bags"). Its bag rows are the shared `BagWeightRow`.
+- **How it works** (spec 06 §7): a part of its own, `PackingDayGuideCard` (`guide-packingday`), right after *Packing a
+  trip* — what the day is and where it sits, each station in order with its mark and what the mark shows, what it does
+  and what turns it green, how to get from one to the next, a trip without bags, afterwards (his ask of 13 Oct 2026:
+  "remember to write about the Packing-Day-Stations in the How-this-works"). **Words** (spec 06 §10): "Packing day".
 - **A bag's page** (spec 05): under "Goes in the cabin", the switch **Has an AirTag** (`bag-detail-airtag`, orange) —
   "On a Packing day, Tags asks you to check it is in the bag."
 

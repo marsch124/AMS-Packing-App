@@ -385,8 +385,9 @@ final class AMSPackingUITests: XCTestCase {
             guard let sheet = find(app, screen) else { return false }
             // The list INSIDE the sheet: swiping the sheet's middle can land on the
             // keyboard's edge; the list scrolls — and, scrolling, puts the keyboard away.
-            let inner = sheet.descendants(matching: .scrollView).firstMatch
-            let target = inner.exists ? inner : sheet
+            // The TALLEST one: a strip of pills is a scroll view too, and on a trip the Packing
+            // day's stations (0.79) come before its list — swiping them up moves nothing.
+            let target = tallestList(in: sheet) ?? sheet
             #if os(macOS)
             target.scroll(byDeltaX: 0, deltaY: attempt < tries / 2 ? -220 : 220)
             #else
@@ -397,6 +398,21 @@ final class AMSPackingUITests: XCTestCase {
         let found = app.buttons[id].exists
         if !found { print("TAP-REPORT scrollWithin \(screen) never found \(id)\n" + String(app.debugDescription.prefix(15000))) }
         return found
+    }
+
+    /// The tallest scroll view inside a screen — its own list, not a sideways strip of pills.
+    /// One `count` and `element(boundBy:)` per list, as `frontList` does.
+    private func tallestList(in screen: XCUIElement) -> XCUIElement? {
+        let lists = screen.descendants(matching: .scrollView)
+        var best: XCUIElement? = nil
+        var height: CGFloat = 0
+        for n in 0..<lists.count {
+            let list = lists.element(boundBy: n)
+            guard list.exists else { continue }
+            let h = list.frame.height
+            if h > height { height = h; best = list }
+        }
+        return best
     }
 
     /// The list the control is IN — asked by descendancy, not by frames.
@@ -4377,6 +4393,27 @@ final class AMSPackingUITests: XCTestCase {
                       "Replace made a template more or fewer: '\(words(app.staticTexts["templates-summary"]))', was '\(before)'")
     }
 
+    /// Bring a control into its list's view with short, slow drags — never a fling — then, if
+    /// that was not enough, the usual way (`bringIntoView`).
+    private func nudgeIntoView(_ app: XCUIApplication, _ e: XCUIElement) {
+        for _ in 0..<8 {
+            guard e.exists else { return }
+            if onScreen(app, e) { return }
+            guard let list = listHolding(app, e), list.exists, list.isHittable else { break }
+            let box = list.frame, mid = e.frame.midY
+            // Up when it is below the list's visible part, down when above; at most half the list.
+            let by = mid > box.midY ? -min(box.height * 0.5, mid - box.midY + 40) : min(box.height * 0.5, box.midY - mid + 40)
+            #if os(macOS)
+            list.scroll(byDeltaX: 0, deltaY: by)
+            #else
+            let from = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: by < 0 ? 0.75 : 0.25))
+            from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: by)), withVelocity: .slow, thenHoldForDuration: 0.15)
+            #endif
+            _ = waitUntil(timeout: 2) { e.exists && self.settled(e) }
+        }
+        bringIntoView(app, e)
+    }
+
     /// A Toggle is a switch on the iPhone and a check box on the Mac.
     private func switchNamed(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         _ = waitUntil(timeout: 5) { app.switches[id].exists || app.checkBoxes[id].exists }
@@ -4395,7 +4432,11 @@ final class AMSPackingUITests: XCTestCase {
         let e = switchNamed(app, id)
         XCTAssertTrue(e.exists, "no \(id) switch")
         for _ in 0..<3 where isSwitchOn(app, id) != on {
-            bringIntoView(app, e)
+            // 🪤 Gently: a switch just below the list's edge is one short drag away, and a swipe
+            // flings it a whole screen past (0.79: the trip's Packing day row left less room, the
+            // cabin switch needed scrolling, the swipes ping-ponged and a tap opened the loop strip).
+            nudgeIntoView(app, e)
+            _ = waitUntil(timeout: 3) { e.exists && self.settled(e) }
             #if os(macOS)
             e.tap()
             #else
@@ -12160,7 +12201,7 @@ final class AMSPackingUITests: XCTestCase {
     /// Save with nothing typed says what is missing; a reading opens the next bag; the Bags card
     /// shows the same reading.
     func testWeighOpensByItselfOnceAndWeighsOneBagAfterAnother() {
-        let app = launch("-uiTestingPackingDay")
+        let app = launch("-uiTestingPackingDay", ["-dayWeighItself"])
         openPackingDayTrip(app)
         tapVisible(app, app.buttons["trip-tickall"])
         XCTAssertTrue(appears(app, "day-view-weigh", timeout: 8), "Weigh did not open by itself when everything was packed")
@@ -12281,7 +12322,7 @@ final class AMSPackingUITests: XCTestCase {
     /// a tap on a station opens it, "I leave at" saved on the trip from here (Trip settings has
     /// it) — and with the last thing ticked, the day is Ready to go (Weigh, all weighed, stays shut).
     func testReadySaysWhatIsLeftAndPairsWithTheDoorCheck() {
-        let app = launch("-uiTestingPackingDay", ["-packingDayAlmost"])
+        let app = launch("-uiTestingPackingDay", ["-packingDayAlmost", "-dayWeighItself"])
         openPackingDayTrip(app)
         XCTAssertTrue(waitUntil { app.buttons["day-station-pack"].isSelected }, "Pack is not the one left")
         XCTAssertEqual(value(app.buttons["day-station-pack"]), "6 of 7 packed")

@@ -3092,9 +3092,17 @@ bought on site, "zip broken" on the rain jacket, the map not used, a power bank 
 yesterday, no page asked for; `SampleLibrary.reviewed`), `-uiTestingReviewedUndated` (0.73: the same with
 the trip's dates taken away — a reviewed trip goes to Done whatever its dates; `SampleLibrary.reviewedUndated`),
 `-uiTestingVault <name>` / `-uiTestingVaultChosen`
-(0.70, Mac: a throwaway vault folder — spec 07 part 8), `-openNextTrip`. Under the
+(0.70, Mac: a throwaway vault folder — spec 07 part 8), `-uiTestingPackingDay` (0.79: the sample plus a Day pack, one
+of his bags with an AirTag, holding the Hiking boots and the Rain jacket — a trip with two bags; with
+`-packingDayAlmost` every Packing day station done but the Map unticked; `SampleLibrary.packingDay`, spec 07 part
+17), `-openNextTrip`. Under the
 tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) and, since 0.76, More choices' open or closed
 (`ams.create.more`) are cleared at launch.
+
+**The Packing day (0.79, spec 07 part 17):** UI `testThePackingDayLeadsFromBagsOutToTheList`,
+`testWeighOpensByItselfOnceAndWeighsOneBagAfterAnother`, `testTagsAskForTheAirTagOnlyInABagThatHasOne`,
+`testPhotosAskForAllTheBagsTogetherAndEachBag`, `testReadySaysWhatIsLeftAndPairsWithTheDoorCheck`; model
+`PackingDayTests` (10).
 
 **Model (PackingLibraryTests):** TravellingByTests (0.76), PocketsTests, DoorCheckTests (0.69), VoiceWalkTests (0.71), WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
 LoopTests, OnSiteTests, OnTheTripTests, RefineTests, TripAgainTests, TripBulkTests, TripCardsTests,

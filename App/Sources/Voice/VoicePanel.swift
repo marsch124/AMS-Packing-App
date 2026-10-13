@@ -12,6 +12,9 @@ struct VoiceSortingRow<Sorting: View>: View {
     /// Start the walk at this place (a place opened by its printed code, spec 07 part 3).
     var startAt: String? = nil
     @ViewBuilder var sorting: () -> Sorting
+    /// Told when the panel has gone — the trip may then open what waited for it (the Packing
+    /// day's Weigh, 0.79: one sheet cannot come up while another is up).
+    var closed: () -> Void = {}
     @EnvironmentObject var model: LibraryModel
     @StateObject private var walker = VoiceWalker()
     @State private var open = false
@@ -42,7 +45,7 @@ struct VoiceSortingRow<Sorting: View>: View {
             guard autoStart, !open else { return }
             begin(at: r.place)
         }
-        .sheet(isPresented: $open, onDismiss: { walker.close() }) {
+        .sheet(isPresented: $open, onDismiss: { walker.close(); closed() }) {
             VoicePanel(walker: walker, tripId: tripId) { open = false }
                 .environmentObject(model)
         }

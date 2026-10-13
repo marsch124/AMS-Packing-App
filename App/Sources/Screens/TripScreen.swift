@@ -65,7 +65,15 @@ struct TripScreen: View {
     @State private var clock = Today.now
     @Environment(\.scenePhase) private var scenePhase
     /// The Packing day sheet, open on a station (0.79, spec 07 part 17).
-    @State private var daySheet: PackingDayStation?
+    @State private var daySheet: DayOpen?
+    /// The sheet says so when it has really come up (Weigh by itself waits for that).
+    @State private var dayAppeared = false
+    /// What the Packing day sheet opens on — and whether it opened by itself (the last thing ticked).
+    struct DayOpen: Identifiable {
+        let station: PackingDayStation
+        var byItself = false
+        var id: String { station.rawValue + (byItself ? "-itself" : "") }
+    }
     /// Bumped to send the trip to the top of its list (the Packing day's Pack).
     @State private var toList = 0
     struct CheckedThing: Identifiable { let id: String }
@@ -231,11 +239,11 @@ struct TripScreen: View {
             // right under the strip, while the trip is being packed — not on a place's view.
             if step == .pack, placeFilter == nil, let day = model.library.packingDay(tripId: tripId) {
                 PackingDayRow(day: day) { station in
-                    if station == .pack { toList += 1 } else { daySheet = station }
+                    if station == .pack { toList += 1 } else { daySheet = DayOpen(station: station) }
                 }
                 .padding(.horizontal, 16).padding(.top, -2).padding(.bottom, 8)
-                .sheet(item: $daySheet) { station in
-                    PackingDaySheet(tripId: tripId, start: station) {
+                .sheet(item: $daySheet) { open in
+                    PackingDaySheet(tripId: tripId, start: open.station, byItself: open.byItself, appeared: { dayAppeared = true }) {
                         // After the sheet has gone: the list is on this screen.
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { toList += 1 }
                     }
@@ -277,7 +285,8 @@ struct TripScreen: View {
                 // and on the iPhone, Pack by voice at its end (0.71, a test: spec 07 part 10).
                 Group {
                     #if os(iOS)
-                    VoiceSortingRow(tripId: tripId) { sorting }
+                    // The panel gone, Weigh may open now if the walk packed the last thing (0.79).
+                    VoiceSortingRow(tripId: tripId) { sorting } closed: { weighByItself() }
                     #else
                     sorting
                     #endif
@@ -591,14 +600,25 @@ struct TripScreen: View {
 
     /// The last thing ticked: Weigh opens by itself — once per trip — a moment after the tick has
     /// settled (the green sweep takes 1 s), if the trip is still all packed then, still at Pack with
-    /// bags to weigh, no other sheet of this screen is up, and the trip never offered it before.
+    /// bags to weigh, no other sheet of this screen is up, and the trip never showed it before. The
+    /// trip keeps that it was offered only when the sheet has really come up (`PackingDaySheet`'s
+    /// `byItself`): a sheet already up elsewhere — Pack by voice's panel, Take a break — keeps a
+    /// second one from coming; then it is asked for again once that is gone (the panel's `closed`),
+    /// or the next time the trip turns all packed.
     private func weighByItself() {
+        // Under the UI tests only when the launch asks for it: many tests press Tick everything on
+        // the sample's trip at Pack, and the sheet would cover their next step (GitHub's Mac, 0.79).
+        if AMSPackingApp.testing && !ProcessInfo.processInfo.arguments.contains("-dayWeighItself") { return }
         let id = tripId
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             guard placeFilter == nil, daySheet == nil, checking == nil, !reviewing, !onSite,
                   model.library.weighOpensItself(tripId: id, today: Today.iso(clock), time: Today.time(of: clock)) else { return }
-            model.change { _ = $0.setWeighOffered(tripId: id) }
-            daySheet = .weigh
+            dayAppeared = false
+            daySheet = DayOpen(station: .weigh, byItself: true)
+            // Not up a moment later (another sheet was): let go, so a tap or the next try can open it.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                if !dayAppeared, daySheet?.byItself == true { daySheet = nil }
+            }
         }
     }
 
