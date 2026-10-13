@@ -14,8 +14,9 @@ extension Library.LoopStep {
     /// The tint made readable as words on this screen (his "bad text colour", 2026-09-26).
     func words(_ scheme: ColorScheme) -> Color { Color(hexString: readableHex(hex, dark: scheme == .dark)) }
 
-    /// The tab where this step is done — its mark rides on the strip (his F.7:
-    /// "symbols that show where create, pack, review and refine are made").
+    /// The tab where this step is done — the picture's "on Home" line wears its mark (his
+    /// F.7: "symbols that show where create, pack, review and refine are made"). The strip
+    /// wore it too until 0.77; since then each step has its own mark (`StepMark`).
     var tab: AppSection {
         switch self {
         case .plan: return .home
@@ -52,6 +53,25 @@ extension Library.LoopStep {
         case .refine: return "When two or more reviews agree, Refine offers to take a thing off a template — or keep it for good. Your templates get better, and the next trip starts from them."
         }
     }
+}
+
+/// A step's own mark (0.77, his pick of 13 Oct 2026 — `Library.LoopStep.mark`): a map with a
+/// route to an X, the suitcase with a tick, a pin on a folded map, a magnifier over a list, a
+/// sprout. One 1.9 stroke on the 24-point grid, drawn by `IconMark`, in the colour around it.
+/// Drawn in the strip and in the picture — never the tab's mark again.
+struct StepMark: View {
+    let step: Library.LoopStep
+    var size: Double
+
+    var body: some View { IconMark(path: step.mark.path, size: size, weight: 1.9) }
+}
+
+/// Where the mark sits in a picture box's title — the box is ONE accessibility element
+/// (`children: .ignore`), so the mark is laid over that spot from outside it and stays an
+/// element of its own (`loop-step-<n>-mark`, label = what it shows), which the tests read.
+private struct MarkSpot: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = value ?? nextValue() }
 }
 
 /// The picture: Plan → Pack, down through On site to Review, back to Refine, and up
@@ -96,8 +116,13 @@ struct LoopPicture: View {
     private func box(_ step: Library.LoopStep) -> some View {
         let on = here == step
         return VStack(spacing: 4) {
-            Text("\(step.rawValue + 1) · \(step.name)")
-                .font(.system(.body, weight: .semibold)).foregroundStyle(step.words(scheme))
+            // The step's own mark before its name (0.77), drawn over this spot (`MarkSpot`).
+            HStack(spacing: 5) {
+                Color.clear.frame(width: 17, height: 17)
+                    .anchorPreference(key: MarkSpot.self, value: .bounds) { $0 }
+                Text("\(step.rawValue + 1) · \(step.name)")
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(step.words(scheme))
+            }
             Text(step.short)
                 .font(.system(.footnote)).foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
@@ -123,6 +148,19 @@ struct LoopPicture: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(step.name): \(step.short), on \(step.tabName)" + (on ? ". You are here" : ""))
         .accessibilityIdentifier("loop-step-\(step.rawValue)")
+        .overlayPreferenceValue(MarkSpot.self) { spot in
+            GeometryReader { g in
+                if let spot {
+                    let r = g[spot]
+                    StepMark(step: step, size: 17)
+                        .foregroundStyle(step.words(scheme))
+                        .position(x: r.midX, y: r.midY)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(step.mark.label)
+                        .accessibilityIdentifier("loop-step-\(step.rawValue)-mark")
+                }
+            }
+        }
     }
 
     private func key(_ step: Library.LoopStep, _ label: String) -> some View {
@@ -183,7 +221,7 @@ struct LoopWords: View {
 }
 
 /// The slim line on a trip, its review and Refine: the five steps, the one this
-/// is at filled in. A tap opens the whole picture.
+/// is at filled in, with the step's own mark (0.77). A tap opens the whole picture.
 ///
 /// Five names and their marks do not fit an iPhone's width (On site joined, 3 Oct
 /// 2026), so the strip slims down until it fits: every mark where there is room (the
@@ -231,7 +269,7 @@ struct LoopDoor: View {
                 let on = step == here
                 HStack(spacing: 4) {
                     // Slimmed down, the step it is at keeps its mark.
-                    if fit.marks || on { SectionMark(section: step.tab, size: 13, weight: 1.9) }
+                    if fit.marks || on { StepMark(step: step, size: 13) }
                     Text(step.name)
                         .font(.system(fit.size < 14 ? .caption : .footnote, weight: .semibold))
                         .lineLimit(1).fixedSize()

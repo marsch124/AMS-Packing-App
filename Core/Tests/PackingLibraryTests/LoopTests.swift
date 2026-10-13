@@ -140,4 +140,26 @@ final class LoopTests: XCTestCase {
         XCTAssertEqual(Library.LoopStep.allCases.map(\.rawValue), [0, 1, 2, 3, 4])
         XCTAssertEqual(Library.LoopStep.allCases.map(\.aboutOneTrip), [false, true, true, true, false])
     }
+
+    /// Each step wears its own drawn mark — his pick of 13 Oct 2026 from the sample sheet:
+    /// Plan A (a map with a route to an X), Pack A (the suitcase with a tick), On site C (a
+    /// pin on a folded map), Review B (a magnifier over a list), Refine C (a sprout). Five
+    /// different drawings the app can draw, each with words for VoiceOver.
+    func testEachStepHasTheMarkHePicked() {
+        let marks = Library.LoopStep.allCases.map(\.mark)
+        XCTAssertEqual(marks.map(\.key), ["routeMap", "packedCase", "pinOnMap", "listLens", "sprout"])
+        XCTAssertEqual(marks.map(\.label), ["A map with a route to an X", "A suitcase with a tick", "A pin on a folded map",
+                                           "A magnifier over a list", "A sprout"])
+        XCTAssertEqual(Set(marks.map(\.path)).count, 5, "two steps share a drawing")
+        for (step, mark) in zip(Library.LoopStep.allCases, marks) {
+            XCTAssertNil(TemplateIconTests.drawingFault(mark.path), "\(step.name): \(TemplateIconTests.drawingFault(mark.path) ?? "")")
+        }
+        // The drawings themselves, as he saw them on the sheet (a stroke changed is a new look).
+        XCTAssertTrue(Library.LoopStep.plan.mark.path.hasSuffix("M14.3 8.6l3 3 M17.3 8.6l-3 3"), "Plan's route does not end in an X")
+        XCTAssertTrue(Library.LoopStep.pack.mark.path.hasSuffix("M8.8 13.9l2.2 2.2 4.2-4.4"), "Pack's suitcase has no tick")
+        XCTAssertFalse(Library.LoopStep.pack.mark.path.contains("M9.5 11v5.5"), "Pack's suitcase has Home's straps")
+        XCTAssertTrue(Library.LoopStep.onSite.mark.path.hasPrefix("M3 17.5 8 16l8 2 5-1.5"), "On site's pin stands on no map")
+        XCTAssertTrue(Library.LoopStep.review.mark.path.hasSuffix("M18.4 16.9l2.6 2.6"), "Review's magnifier has no handle")
+        XCTAssertTrue(Library.LoopStep.refine.mark.path.hasSuffix("M7.5 20.5h9"), "Refine's sprout has no ground")
+    }
 }

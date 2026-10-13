@@ -343,6 +343,13 @@ In the picker's order, under its six headings (`TemplateIconGroup`, 0.74); ✱ =
 `IconMark` is also used by `TripChecks.swift` — and (0.74) by every trip line, which shows the icon of each template
 it comes from, small and violet, before its bag (`TemplateMarks`; spec 03, "A line" → "Where it comes from"); a
 template showing its letter is its name's first word there.
+**The loop's five step marks (0.77) are drawn in the same hand but are NOT template icons:** not in the picker, not in
+`TemplateIconCatalog`, never stored on a template. They live with the loop (`Library.LoopStep.mark` in
+`PackingLibrary/Loop.swift`, drawn by `StepMark` through `IconMark`): Plan — a map with a route to an X (`routeMap`, the
+Map icon's outline with a dotted route); Pack — a suitcase with a tick (`packedCase`, Home's suitcase without its
+straps); On site — a pin on a folded map (`pinOnMap`); Review — a magnifier over a list (`listLens`); Refine — a sprout
+(`sprout`). His pick of 13 Oct 2026; paths and tests in spec 03, The loop. Their model test reuses this chapter's
+drawing rules (`TemplateIconTests.drawingFault`).
 
 ### `CoverDoor` (on the template page)
 A plain button showing `Cover(size: 40)`; id `template-cover`; accessibility label "Icon of <name>";

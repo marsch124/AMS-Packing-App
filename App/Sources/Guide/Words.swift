@@ -30,7 +30,7 @@ enum Words {
         Entry(term: "On site", meaning: "At the place the trip takes you, while the trip is under way \u{2014} and the step of the loop after Pack. The trip's On site page holds what you bought, what you left, maintenance notes, and Pack to go home.", section: .events),
         Entry(term: "Set aside ⊘", meaning: "Not this time: the thing stays on the list but is not packed, and leaves the count. ↻ brings it back.", section: .events),
         Entry(term: "The loop", meaning: "Plan (Home) › Pack (Trips) › On site (the trip, while away) › Review (the trip, afterwards) › Refine (Templates) — and round again.", section: .events),
-        Entry(term: "Loop strip", meaning: "The five steps under a trip's name. The filled one is where this trip stands, with the mark of the tab where that step is done (on a wide screen every step has its mark).", section: .events),
+        Entry(term: "Loop strip", meaning: "The five steps under a trip's name, each with a mark of its own: a map with a route for Plan, a suitcase with a tick for Pack, a pin on a map for On site, a magnifier over a list for Review, a sprout for Refine. The filled one is where this trip stands, with its mark (on a wide screen every step has its mark).", section: .events),
         Entry(term: "Review", meaning: "Looking back at ONE trip: what you did not use, and what you missed.", section: .events),
         Entry(term: "Refine", meaning: "Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab.", section: .templates),
         Entry(term: "Keep · Drop", meaning: "In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays.", section: .templates),

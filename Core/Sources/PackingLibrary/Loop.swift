@@ -85,3 +85,42 @@ extension Library {
         return turns
     }
 }
+
+// Each step's own mark (0.77). Until then the strip wore the mark of the TAB where a step is
+// done (his F.7, 0.41) — a suitcase, calendars, a list: stock-looking, three steps alike. His
+// ask (13 Oct 2026): "not stock but cool", drawn in the app's own hand. Of three candidates per
+// step on a sample sheet, lit and unlit, day and night, he picked: Plan A, Pack A, On site C,
+// Review B, Refine C. The drawings as they were on that sheet — one 1.9 stroke on the 24-point
+// grid, round caps and joins, no fill; only the path commands the app draws (M L H V C S Q A Z).
+// As data here, like the template icons, so the model's tests hold each step to his pick.
+
+/// A loop step's mark: `key` names the drawing, `label` says what it shows (VoiceOver and the
+/// tests read it), `path` is the SVG path data on a 24-point box.
+public struct LoopStepMark: Equatable, Sendable {
+    public let key: String
+    public let label: String
+    public let path: String
+}
+
+extension Library.LoopStep {
+    /// The step's own mark — his pick of 13 Oct 2026.
+    public var mark: LoopStepMark {
+        switch self {
+        case .plan:      // A — a sketch map (the Map template icon's outline), a dotted route to an X
+            return LoopStepMark(key: "routeMap", label: "A map with a route to an X",
+                                path: "M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z M6.6 15.6h.01 M9.4 14.1h.01 M12.3 13h.01 M14.3 8.6l3 3 M17.3 8.6l-3 3")
+        case .pack:      // A — the suitcase (Home's own mark, without its straps) with a tick
+            return LoopStepMark(key: "packedCase", label: "A suitcase with a tick",
+                                path: "M6.2 7.5h11.6a2.2 2.2 0 0 1 2.2 2.2v8.1a2.2 2.2 0 0 1-2.2 2.2H6.2A2.2 2.2 0 0 1 4 17.8V9.7a2.2 2.2 0 0 1 2.2-2.2Z M9 7.5V5.6A1.6 1.6 0 0 1 10.6 4h2.8A1.6 1.6 0 0 1 15 5.6V7.5 M8.8 13.9l2.2 2.2 4.2-4.4")
+        case .onSite:    // C — a pin (the trip map's pin) standing on a folded map
+            return LoopStepMark(key: "pinOnMap", label: "A pin on a folded map",
+                                path: "M3 17.5 8 16l8 2 5-1.5v3.5l-5 1.5-8-2-5 1.5Z M12 15s-4.6-4.2-4.6-7.8a4.6 4.6 0 0 1 9.2 0c0 3.6-4.6 7.8-4.6 7.8Z M12 5.9a1.3 1.3 0 1 0 0 2.6a1.3 1.3 0 1 0 0-2.6")
+        case .review:    // B — a magnifier over a list
+            return LoopStepMark(key: "listLens", label: "A magnifier over a list",
+                                path: "M3.5 6h11 M3.5 10.5h6.5 M3.5 15h4.5 M11.5 14a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M18.4 16.9l2.6 2.6")
+        case .refine:    // C — a sprout: the templates grow better, trip after trip
+            return LoopStepMark(key: "sprout", label: "A sprout",
+                                path: "M12 20.5V11.2 M12 11.2c0-3.6 2.6-6 7-6 0 3.6-2.6 6-7 6Z M12 14.5c0-2.9-2.1-4.8-5.6-4.8 0 2.9 2.1 4.8 5.6 4.8Z M7.5 20.5h9")
+        }
+    }
+}

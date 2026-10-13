@@ -1252,6 +1252,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(find(app, "loop-step-2")?.label.hasPrefix("On site") == true, "the third step is not On site")
         XCTAssertTrue(find(app, "loop-step-2")?.label.contains("on Trips") == true, "On site does not say Trips")
         XCTAssertTrue(find(app, "loop-step-4")?.label.contains("on Templates") == true, "Refine does not say Templates")
+        stepsWearTheirOwnMarks(app, "the guide's picture")
         // The Words chapter (F.7, I.2) — Kit among them.
         XCTAssertNotNil(find(app, "guide-words"), "How it works has no Words")
         XCTAssertTrue((0..<30).contains { self.words(app.staticTexts["word-\($0)"]) == "Kit" }, "Words does not say what Kit means")
@@ -1276,6 +1277,7 @@ final class AMSPackingUITests: XCTestCase {
         let step = at == "Pack" ? 1 : 3
         XCTAssertTrue(waitUntil { self.isHere(app, step) }, "the picture does not say You are here on \(at)")
         XCTAssertFalse((0..<5).filter { $0 != step }.contains { self.isHere(app, $0) }, "You are here on more than one step")
+        stepsWearTheirOwnMarks(app, "the picture the strip opens")
         shot(app, "loop-picture")
         tap(app, id: "loop-done")
         XCTAssertTrue(disappears(app, "loop-screen", timeout: 5))
@@ -1284,6 +1286,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "review-detail", timeout: 5))
         XCTAssertTrue(waitUntil { (app.buttons["review-loop"].value as? String) == "Review" },
                       "the review is not at Review: '\(app.buttons["review-loop"].value as? String ?? "")'")
+        shot(app, "loop-review")
         tap(app, id: "review-save")
         XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
         XCTAssertTrue(waitUntil { (strip.value as? String) == "Refine" },
@@ -1296,8 +1299,21 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "refine-screen", timeout: 5))
         XCTAssertTrue(waitUntil { (app.buttons["refine-loop"].value as? String) == "Refine" },
                       "Refine is not at Refine: '\(app.buttons["refine-loop"].value as? String ?? "")'")
+        shot(app, "loop-refine")
         tap(app, id: "refine-done")
         XCTAssertTrue(disappears(app, "refine-screen", timeout: 5))
+    }
+
+    /// Each step wears its OWN mark (0.77, his pick of 13 Oct 2026 from the sample sheet) —
+    /// read from the mark beside each step's name in the picture, an element of its own
+    /// whose label says what it shows. The tab marks the strip wore before are no element.
+    private func stepsWearTheirOwnMarks(_ app: XCUIApplication, _ place: String) {
+        let marks = ["A map with a route to an X", "A suitcase with a tick", "A pin on a folded map",
+                     "A magnifier over a list", "A sprout"]
+        for (n, want) in marks.enumerated() {
+            XCTAssertEqual(find(app, "loop-step-\(n)-mark")?.label ?? "no mark of its own", want,
+                           "\(place): step \(n + 1) does not wear the mark he picked")
+        }
     }
 
     /// Whether the loop picture marks step `n` as "You are here" — read from the box's

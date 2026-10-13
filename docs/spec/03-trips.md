@@ -2079,7 +2079,11 @@ and photos), `BagsTests.testALimitSetHereIsTheLimitATripUses`, `TripChecksTests.
 performing, packing, and later on reviewing, and then refining and so on." On site joined after Pack
 (field test 3 Oct 2026, 0.57: "add a phase (in the graphics as well)… immediately after Pack"). Tab
 marks on the strip (his F.7, 0.41). The round arrow after Refine removed (it read as a reload button,
-0.40).
+0.40). **Each step's own mark (0.77).** The tab marks on the strip (a suitcase, calendars, a list — three steps
+alike) looked stock; his ask (13 Oct 2026): "not stock but cool", in the app's own hand. On a sample sheet (three
+hand-drawn candidates per step in the real pill, lit and unlit, day and night, branch `work/phaseicons`, never
+shipped) he picked **Plan A, Pack A, On site C, Review B, Refine C** — the drawings below, unchanged. The tab's
+mark stays only on the picture's "on <Tab>" line.
 
 ### The five steps and when a trip stands at each — `Library.loopStep(tripId:today:time:)`
 Checked in this order:
@@ -2148,11 +2152,29 @@ first day.
 | review | 3 | Review | one trip | Trips | "After it: unused, missed" | "After the trip: tap what you did not use, add what you missed. This looks back at one trip." |
 | refine | 4 | Refine | lists | Templates | "Keep or drop, from reviews" | "When two or more reviews agree, Refine offers to take a thing off a template — or keep it for good. Your templates get better, and the next trip starts from them." |
 
+### Each step's own mark — `Library.LoopStep.mark` (`PackingLibrary/Loop.swift`, 0.77)
+A `LoopStepMark` (`key`, `label`, `path`): SVG path data on the 24-point grid, drawn by `StepMark(step, size)`
+(`Screens/Loop.swift`) through `IconMark` — ONE stroke 1.9 × size/24, round caps and joins, no fill, in the colour
+around it (white on the lit pill, the readable tint elsewhere). Never an SF Symbol or emoji, never the tab's mark.
+As data in the model, like the template icons, so the model's tests hold each step to his pick.
+
+| Step | key | label (VoiceOver, tests) | The drawing | path |
+|---|---|---|---|---|
+| Plan | `routeMap` | "A map with a route to an X" | a sketch map (the Map template icon's outline), three dots of a route, an X | `M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z M6.6 15.6h.01 M9.4 14.1h.01 M12.3 13h.01 M14.3 8.6l3 3 M17.3 8.6l-3 3` |
+| Pack | `packedCase` | "A suitcase with a tick" | Home's suitcase without its two straps, a tick on it | `M6.2 7.5h11.6a2.2 2.2 0 0 1 2.2 2.2v8.1a2.2 2.2 0 0 1-2.2 2.2H6.2A2.2 2.2 0 0 1 4 17.8V9.7a2.2 2.2 0 0 1 2.2-2.2Z M9 7.5V5.6A1.6 1.6 0 0 1 10.6 4h2.8A1.6 1.6 0 0 1 15 5.6V7.5 M8.8 13.9l2.2 2.2 4.2-4.4` |
+| On site | `pinOnMap` | "A pin on a folded map" | the trip map's pin standing on a folded map | `M3 17.5 8 16l8 2 5-1.5v3.5l-5 1.5-8-2-5 1.5Z M12 15s-4.6-4.2-4.6-7.8a4.6 4.6 0 0 1 9.2 0c0 3.6-4.6 7.8-4.6 7.8Z M12 5.9a1.3 1.3 0 1 0 0 2.6a1.3 1.3 0 1 0 0-2.6` |
+| Review | `listLens` | "A magnifier over a list" | three lines getting shorter, a magnifier over the short ones | `M3.5 6h11 M3.5 10.5h6.5 M3.5 15h4.5 M11.5 14a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M18.4 16.9l2.6 2.6` |
+| Refine | `sprout` | "A sprout" | a stem, two leaves, a line of ground — the templates grow better, trip after trip | `M12 20.5V11.2 M12 11.2c0-3.6 2.6-6 7-6 0 3.6-2.6 6-7 6Z M12 14.5c0-2.9-2.1-4.8-5.6-4.8 0 2.9 2.1 4.8 5.6 4.8Z M7.5 20.5h9` |
+
+Where a step's mark is shown: the strip (13 pt) and the picture (17 pt, before "n · Name") — the trip, its review,
+Refine, the loop screen and How it works. Home shows no step of the loop (its countdown's "step" is a packing step,
+spec 02). The unchosen candidates and the sample sheet are not in the app.
+
 ### The strip (`LoopDoor`)
 A button (ids: `trip-loop` on a trip, `review-loop` on the review — always Review — and `refine-loop`
 on Refine — always Refine; label "The loop", value = the step's name) showing the five names with
 small drawn chevrons between them. The current step: white heavy words on a capsule in its tint, with
-the tab's mark; the others: semibold words in the readable tint on a `Theme.card` capsule with a 70 %
+the step's own mark (`StepMark`, 13 pt; until 0.77 the tab's mark); the others: semibold words in the readable tint on a `Theme.card` capsule with a 70 %
 tint outline (min height 28). It slims down until it fits (`ViewThatFits`): every mark, 14 pt, padding
 8, chevron room 14; then only the current step's mark, 14 pt, padding 7, 10; then 13 pt, padding 5, 8.
 A tap opens **LoopScreen** (sheet: "The loop" 22 heavy, Done filled green id `loop-done`, the picture
@@ -2161,16 +2183,25 @@ and the words; id `loop-screen`; Mac minimum 520 × 640).
 ### The picture (`LoopPicture`, also on How it works as `guide-loop`)
 Two boxes per row: Plan → Pack on top; down the right side Pack ↓ On site ↓ Review; Refine ← Review at
 the bottom; one long arrow up the left from Refine to Plan; a key "About your templates" / "About one
-trip". Each box (id `loop-step-<n>`): "n · Name" (18 heavy, readable tint), the short words (14 medium
+trip". Each box (id `loop-step-<n>`): the step's own mark (0.77, `StepMark`, 17 pt, readable tint, 5 pt before
+the name) and "n · Name" (18 heavy, readable tint), the short words (14 medium
 ink), the tab mark + "on <Tab>" (13 bold, tab colour), and "You are here" (13 heavy white on the tint)
 on the trip's step; fill 24 %/12 % tint, border 3/1.2 pt. Accessibility label "Name: short, on Tab"
-plus ". You are here" (the Mac drops a non-control's value). `LoopWords`: each name (16 heavy, 72 pt
+plus ". You are here" (the Mac drops a non-control's value). The box is ONE element (`children: .ignore`), so its
+mark is drawn from outside it: the title row holds a clear 17-pt spot (`anchorPreference`, key `MarkSpot`) and the
+box, after its accessibility modifiers, lays the mark over that spot (`overlayPreferenceValue`) — an element of its
+own, id `loop-step-<n>-mark`, label = the mark's `label` ("A sprout"). The strip is one button: its marks are no
+elements. `LoopWords`: each name (16 heavy, 72 pt
 column) with its explanation (16), then "Review looks back at one trip. Refine uses several reviews to
 make your templates better." (16 bold).
 
 ### Tests
-Model `LoopTests` (5: every case above incl. a one-day trip, empty trips, undated; bought on site
-begins a trip, dated or not; names/order/aboutOneTrip; and 0.75's
+Model `LoopTests` (6: every case above incl. a one-day trip, empty trips, undated; bought on site
+begins a trip, dated or not; names/order/aboutOneTrip; 0.77's `testEachStepHasTheMarkHePicked` — the five keys
+and labels in order, five different paths, each drawable (`TemplateIconTests.drawingFault`: only M L H V C S Q A Z,
+inside the box), and each drawing's tell-tale stroke (Plan's X, Pack's tick and no straps, On site's map, Review's
+handle, Refine's ground); red with Plan's unchosen candidate B planted: "XCTAssertTrue failed - Plan's route does
+not end in an X"; and 0.75's
 `testOnItsFirstDayATripIsOnSiteOnlyFromTheTimeHeLeaves` — 07:30/07:59 Pack and 08:00 On site with "I leave at
 08:00", the door alike, the day before and the second day, just after midnight with 00:10, no time = from the
 day, the day alone or an unreadable time = the end of it, bought on site at 07:30 = On site, undated never;
@@ -2181,7 +2212,11 @@ leaving at 08:00"; with the minute itself excluded: "("pack") is not equal to ("
 is not On site"; with the turn at 00:00 whatever the time: "… - the time he leaves is not the turn".
 UI `testTheLoopShowsWhereATripStands` (five
 steps, labels with tabs, no "You are here" in the guide, trip at Pack or Review, the picture marks it,
-review at Review, after saving the review the trip is at Refine, Refine at Refine),
+review at Review, after saving the review the trip is at Refine, Refine at Refine; since 0.77 each step's
+`loop-step-<n>-mark` says its mark's label, in the guide's picture and in the one the strip opens — red with the
+tab marks planted back (main's `Loop.swift`): "XCTAssertEqual failed: ("no mark of its own") is not equal to ("A map
+with a route to an X") - the guide's picture: step 1 does not wear the mark he picked"; shots `loop-review` and
+`loop-refine` show those strips),
 `testATripUnderWayStandsAtOnSite` (strip fits the screen width), `testATripIsOnSiteOnlyFromTheTimeHeLeaves`
 (0.75, `-uiTestingLeaving -clockAt 07:59:30`: the trip leaving today at 08:00 is at Pack with no `trip-onsite`
 — checked only when the trip opened within 25 s of launch, so a slow runner cannot make it lie — and, left

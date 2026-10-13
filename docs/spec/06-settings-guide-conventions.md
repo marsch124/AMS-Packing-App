@@ -796,7 +796,8 @@ no entry shows no marker anywhere (and fails the test).
    dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕, Tick everything;
    notes and Open on the way home; the packed-bag photos at the top, Next steps through them. (10 lines.)
 4. **After a trip** (Trips mark): Review (tap unused, type missed, pick its template, Add, Save); the loop strip
-   under a trip's name (Plan · Pack · On site · Review · Refine) with the tab mark; nothing is removed — "Didn't
+   under a trip's name (Plan · Pack · On site · Review · Refine) with the step's own mark — a map, a suitcase with
+   a tick, a pin on a map, a magnifier, a sprout (0.77; the tab's mark until then); nothing is removed — "Didn't
    use" adds to history, missed things go onto a template. (4 lines.)
 5. **Trips** (Trips mark): Now, Coming up and Done — Now always there; Planned / Packing / Ready; reviewed trips fold
    away; Your year; All your trips with the map; the pin opens Where you have been (pins with counts, line oldest
@@ -885,20 +886,24 @@ picture; the words.
 
 - **The picture** (`LoopPicture(here: nil)`, container id `loop-picture`): five boxes in a ring of two columns —
   top row *1 · Plan* → *2 · Pack*; down the right side *3 · On site*; bottom row *5 · Refine* ← *4 · Review*; one
-  long arrow up the left from Refine back to Plan. Drawn arrows (`LoopArrow`), gaps 30 pt. Each box: "<n> · <name>"
+  long arrow up the left from Refine back to Plan. Drawn arrows (`LoopArrow`), gaps 30 pt. Each box: the step's own
+  mark (0.77, `StepMark`, 17 pt, readable tint; spec 03, The loop) and "<n> · <name>"
   (18 heavy, the tint made readable — `readableHex`), a short line (14 medium ink): Plan "Make templates, create a
   trip", Pack "Tick things as they go in", On site "Bought, left, notes, and packing for home", Review "After it:
   unused, missed", Refine "Keep or drop, from reviews"; the tab mark (15 pt) and "on Home" / "on Trips" / "on
   Templates" (13 bold, tab colour). Background tint 12 % (24 % when "here"), border 1.2 (3 when "here"). Tint:
   Pack, On site, Review = Trips green; Plan, Refine = Templates violet. A key under it: "About your templates",
   "About one trip" (14 medium muted). Each box is one accessibility element (`children: .ignore`) with label
-  "<name>: <short>, on <tab>" (+ ". You are here" when marked), id `loop-step-<0…4>`. In the guide nothing is "here".
+  "<name>: <short>, on <tab>" (+ ". You are here" when marked), id `loop-step-<0…4>`; its mark is an element of its
+  own laid over the title from outside the box, id `loop-step-<n>-mark`, label = what it shows ("A map with a route to
+  an X", "A suitcase with a tick", "A pin on a folded map", "A magnifier over a list", "A sprout"). In the guide nothing
+  is "here".
 - **The words** (`LoopWords`): five rows — the step name (16 heavy, readable tint, 72 wide) and its sentence (16 ink)
   — then in bold: "Review looks back at one trip. Refine uses several reviews to make your templates better."
 
 **Tests.** `testTheLoopShowsWhereATripStands`: `guide-loop` exists, exactly five `loop-step-*`, step 0 label contains
-"on Home", step 2 starts "On site" and contains "on Trips", step 4 contains "on Templates", no step says "You are
-here" in the guide. (The same test then checks the trip's strip and the full loop screen — owned by the loop chapter.)
+"on Home", step 2 starts "On site" and contains "on Trips", step 4 contains "on Templates", each step's mark says
+the mark he picked (0.77), no step says "You are here" in the guide. (The same test then checks the trip's strip and the full loop screen — owned by the loop chapter.)
 
 **Trap.** "You are here" is put in the LABEL: the Mac does not pass on the value of a box that is not a control.
 
@@ -934,7 +939,7 @@ Shipped in 0.41.
 | 15 | On site | Trips | At the place the trip takes you, while the trip is under way — and the step of the loop after Pack. The trip's On site page holds what you bought, what you left, maintenance notes, and Pack to go home. |
 | 16 | Set aside ⊘ | Trips | Not this time: the thing stays on the list but is not packed, and leaves the count. ↻ brings it back. |
 | 17 | The loop | Trips | Plan (Home) › Pack (Trips) › On site (the trip, while away) › Review (the trip, afterwards) › Refine (Templates) — and round again. |
-| 18 | Loop strip | Trips | The five steps under a trip's name. The filled one is where this trip stands, with the mark of the tab where that step is done (on a wide screen every step has its mark). |
+| 18 | Loop strip | Trips | The five steps under a trip's name, each with a mark of its own: a map with a route for Plan, a suitcase with a tick for Pack, a pin on a map for On site, a magnifier over a list for Review, a sprout for Refine. The filled one is where this trip stands, with its mark (on a wide screen every step has its mark). (Until 0.77: "with the mark of the tab where that step is done".) |
 | 19 | Review | Trips | Looking back at ONE trip: what you did not use, and what you missed. |
 | 20 | Refine | Templates | Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab. |
 | 21 | Keep · Drop | Templates | In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays. |
@@ -1272,7 +1277,8 @@ settings — since 0.73 in a ring, `RoundIconLabel`), `ShareMark` (a box with an
 `M12 3L18.5 8.5L15.5 20.5H8.5L5.5 8.5ZM5.5 8.5L12 12L18.5 8.5M12 12V20.5`, line 1.8, Send to Obsidian — never the
 vault app's logo), `ClearMark` (a muted disc with `M8.5 8.5L15.5 15.5M15.5 8.5L8.5 15.5`
 cut out in card colour, line 2.2), the six section marks, 50 template icons (`TemplateIcons`, one stroke, round
-ends, 24-point box, only the commands SVGPath draws). Strokes are round-capped and round-joined, usually 1.8–2.4.
+ends, 24-point box, only the commands SVGPath draws), the five loop-step marks (0.77, `StepMark` drawing
+`Library.LoopStep.mark` through `IconMark`, line 1.9 — spec 03, The loop). Strokes are round-capped and round-joined, usually 1.8–2.4.
 Marks are `.accessibilityHidden(true)` where words already say it (Pen, Share, Clear, a template cover).
 
 **`SectionMark(section, size = 24, weight = 1.9)`** scales the mark by size/24 and strokes it with
