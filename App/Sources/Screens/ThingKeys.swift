@@ -35,6 +35,8 @@ enum ThingField: Hashable {
     /// a thing, Return adds it, Esc closes the list.
     case kitFind
     case weight, brand, colour, condition, care, careNotes, liquid, restricted, expiry
+    /// Has a battery (0.75, spec 07 part 15): after Not allowed in the cabin — Space switches it.
+    case battery
     /// The ⌘J box's own field — never in the Tab order.
     case jump
 

@@ -380,6 +380,32 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library for batteries and To charge (`-uiTestingBattery`, 0.75 — spec 07 part
+    /// 15): the kits sample (`kits()`) with its first trip starting TOMORROW, so its To charge card
+    /// shows; a Power bank (180 g, with a battery) in the Camp pouch; the Toothbrush — in the Wash
+    /// bag — with a battery. The Headlamp has none until a test switches it on. The card then
+    /// reads "Toothbrush, in the Wash bag" (`trip-charge-0`) and "Power bank, in the Camp pouch"
+    /// (`trip-charge-1`), "0 of 2"; the second trip, two months ahead (`trip-row-1`), has none.
+    static func battery() -> Library {
+        var lib = kits()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if let bank = lib.addThing(name: "Power bank"), let pouch = lib.items.first(where: { $0.name == "Camp pouch" })?.id {
+            _ = lib.updateThing(id: bank.id) { $0.weight = 180 }
+            _ = lib.addToKit(kitId: pouch, thingId: bank.id)
+            _ = lib.setThingBattery(id: bank.id, true)
+        }
+        if let brush = lib.items.first(where: { $0.name == "Toothbrush" })?.id { _ = lib.setThingBattery(id: brush, true) }
+        if !lib.trips.isEmpty {
+            lib.trips[0].startDate = day(1)
+            lib.trips[0].endDate = day(3)
+        }
+        return lib
+    }
+
     /// The sample library for Apple Health in the review (`-uiTestingHealth`, 0.70): the
     /// workouts of `workouts()` plus a Race belt (Race only) on Run, a Bike template with a
     /// Bike helmet, the Towel on the common base too, and the Running cap Robin's (Kim is on

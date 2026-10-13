@@ -233,6 +233,10 @@ struct TripScreen: View {
                 // Check before you go (his ideas 4 and 5): first, and only when something needs him.
                 TripChecksCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
+                // To charge (0.75, spec 07 part 15): from the day before the trip through its last
+                // day, the things with a battery — under what would stop him at the airport.
+                ToChargeCard(tripId: trip.id).environmentObject(model)
+                    .padding(.top, 10).padding(.horizontal, 16)
                 WeatherCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, 10).padding(.horizontal, 16)
                 BagsCard(tripId: trip.id).environmentObject(model)

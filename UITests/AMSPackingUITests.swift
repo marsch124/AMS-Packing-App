@@ -8625,7 +8625,7 @@ final class AMSPackingUITests: XCTestCase {
         let order = ["thing-heading-name", "thing-heading-notes", "thing-category-title", "thing-owner-title",
                      "thing-lists-title", "thing-heading-kept", "thing-bag-title", "thing-when-title",
                      "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-condition-title",
-                     "thing-care-title", "thing-heading-plane", "thing-heading-valid"]
+                     "thing-care-title", "thing-heading-plane", "thing-heading-battery", "thing-heading-valid"]
         let tops = order.map { id -> CGFloat in
             let e = app.descendants(matching: .any).matching(identifier: id).firstMatch
             XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id)")
@@ -9235,7 +9235,7 @@ final class AMSPackingUITests: XCTestCase {
         let order = ["thing-notes", "thing-category", "thing-owner", "thing-lists", "thing-section-1",
                      "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-kit-add", "thing-brand", "thing-colour",
                      "thing-condition", "thing-care", "thing-care-notes", "thing-liquid", "thing-restricted",
-                     "thing-expiry", "thing-name"]
+                     "thing-battery", "thing-expiry", "thing-name"]
         for id in order {
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(focused(app, id), "Tab did not go on to \(id)")
@@ -9244,7 +9244,10 @@ final class AMSPackingUITests: XCTestCase {
         app.typeKey(.tab, modifierFlags: .shift)
         XCTAssertTrue(focused(app, "thing-expiry"), "Shift-Tab from Name did not go round to Valid until")
         app.typeKey(.tab, modifierFlags: .shift)
-        XCTAssertTrue(focused(app, "thing-restricted"), "Shift-Tab did not go back")
+        XCTAssertTrue(focused(app, "thing-battery"), "Shift-Tab did not go back")
+        // Has a battery (0.75): Space switches it, as Liquid's.
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-battery") }, "Space did not switch Has a battery on")
         // Typing lands where the line says.
         tabTo(app, "thing-notes")
         app.typeText("Dry bag")
@@ -10478,6 +10481,107 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-2-kit-missing"]) == "1 missing: Toothbrush" },
                       "taken out on its page, it is not missing on the trip: '\(words(app.staticTexts["trip-line-2-kit-missing"]))'")
         XCTAssertTrue(words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go"), "it still asks for the toothbrush")
+    }
+
+    // MARK: - Batteries and To charge (0.75, spec 07 part 15)
+
+    /// The things on To charge, top to bottom, by their words.
+    private func chargeRows(_ app: XCUIApplication) -> [String] {
+        (0..<8).map { app.buttons["trip-charge-\($0)"] }.filter(\.exists).map { words($0) }
+    }
+
+    /// A thing's page has "Has a battery"; switched on and saved, Your things finds the thing
+    /// under Has a battery and the trip — starting tomorrow, so its To charge card shows —
+    /// lists it with the things inside its kits (`-uiTestingBattery`: the Toothbrush in the
+    /// Wash bag, the Power bank in the Camp pouch).
+    func testABatterySwitchOnAThingPutsItOnTheTripsToCharge() {
+        let app = launch("-uiTestingBattery")
+        openKitTrip(app)
+        XCTAssertTrue(appears(app, "trip-charge", timeout: 5), "no To charge the day before the trip")
+        let count = app.staticTexts["trip-charge-count"]
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 2") }, "To charge does not count two things: '\(words(count))'")
+        XCTAssertTrue(words(app.buttons["trip-charge-0"]).contains("Toothbrush, in the Wash bag"), "'\(chargeRows(app))'")
+        XCTAssertTrue(words(app.buttons["trip-charge-1"]).contains("Power bank, in the Camp pouch"), "'\(chargeRows(app))'")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // Your things: Has a battery keeps only those two.
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        let filter = app.buttons["things-battery"]
+        XCTAssertTrue(filter.waitForExistence(timeout: 5), "no Has a battery filter")
+        XCTAssertTrue(words(filter).contains("2"), "'\(words(filter))'")
+        let shown = app.staticTexts["things-count"]
+        let all = words(shown)
+        tap(app, id: "things-battery")
+        XCTAssertTrue(waitUntil { self.words(shown) == "2 things" }, "Has a battery does not keep the two: '\(words(shown))'")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["things-battery"]) }, "the filter does not say it is on")
+        shot(app, "things-battery-filter")
+        tap(app, id: "things-battery")
+        XCTAssertTrue(waitUntil { self.words(shown) == all }, "off, the filter still hides things: '\(words(shown))'")
+
+        // The Headlamp's page: Has a battery, switched on and saved.
+        type("Headlamp", into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertFalse(isSwitchOn(app, "thing-battery"), "the Headlamp starts with a battery")
+        setSwitch(app, "thing-battery", on: true)
+        shot(app, "thing-battery-switch")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.buttons["things-battery"]).contains("3") },
+                      "the Headlamp's battery was not kept: '\(words(app.buttons["things-battery"]))'")
+        tap(app, id: "things-done")
+
+        // …and the trip lists it.
+        openKitTrip(app)
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 3") }, "the Headlamp is not on To charge: '\(words(count))'")
+        XCTAssertTrue(chargeRows(app).contains { $0.hasPrefix("Headlamp") }, "'\(chargeRows(app))'")
+        shot(app, "trip-to-charge")
+    }
+
+    /// A charge tick is not a packing tick: charging the power bank leaves the trip's count and
+    /// the pouch's line as they were, packing the pouch charges nothing, and the last one
+    /// charged turns the card green ("2 of 2"). A trip two months ahead shows no card.
+    func testToChargeIsTickedApartFromPacking() {
+        let app = launch("-uiTestingBattery")
+        openKitTrip(app)
+        XCTAssertTrue(appears(app, "trip-charge", timeout: 5), "no To charge the day before the trip")
+        let count = app.staticTexts["trip-charge-count"]
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { !self.words(progress).isEmpty })
+        let before = words(progress)
+        tap(app, id: "trip-charge-1")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 2") }, "the power bank was not charged: '\(words(count))'")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-charge-1"]) }, "the power bank does not say it is charged")
+        XCTAssertEqual(words(progress), before, "charging the power bank packed something: '\(words(progress))'")
+        shot(app, "trip-to-charge-one")
+
+        // Packing the pouch charges nothing.
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7"), "no Camp pouch line")
+        XCTAssertFalse(app.buttons["trip-line-7"].isSelected, "charging the power bank packed the pouch")
+        tap(app, id: "trip-line-7")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-7"].isSelected }, "the pouch was not packed")
+        XCTAssertNotEqual(words(progress), before, "packing the pouch did not count")
+        let packed = words(progress)
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 2") }, "packing the pouch changed what is charged: '\(words(count))'")
+        XCTAssertFalse(isOn(app.buttons["trip-charge-0"]), "packing charged the toothbrush")
+
+        // The last one charged: all charged.
+        tap(app, id: "trip-charge-0")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("2 of 2") }, "'\(words(count))'")
+        shot(app, "trip-to-charge-all")
+        tap(app, id: "trip-charge-1")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 2") }, "unticked, the power bank is still charged: '\(words(count))'")
+        XCTAssertEqual(words(progress), packed, "unticking its charge unpacked the pouch")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // Two months ahead: not yet.
+        openKitTrip(app, row: 1)
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertFalse(appears(app, "trip-charge", timeout: 3), "To charge shows two months before the trip")
     }
 
     /// A past trip keeps what was inside its kits (0.73): reviewed, the Camp pouch's line
