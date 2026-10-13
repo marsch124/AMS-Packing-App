@@ -38,6 +38,7 @@
 		4F3FD7E1E457A44E56AB6E19 /* Headings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCA03D292255B391659C37C /* Headings.swift */; };
 		5547A0181FA977E7AFEB037F /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */; };
 		55A2BB9EF7E8AA1F601802AC /* TripChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9F694B5D78B16B402CD363 /* TripChecks.swift */; };
+		564BA979BBAD5355ED3E0512 /* PhaseIconSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30E53D43502B21F3CC23788B /* PhaseIconSheet.swift */; };
 		5856BAC0D9BF67F1B2E6780E /* AppleHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28540B3BBCD50AB31F2DF8D /* AppleHealth.swift */; };
 		5BB780225F4AD5294A389DF4 /* GrabMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA098293FBB7AB47DA81148E /* GrabMenu.swift */; };
 		622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */; };
@@ -135,6 +136,7 @@
 		2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherCard.swift; sourceTree = "<group>"; };
 		2C5987DFEB47FC294A078D4D /* NewList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewList.swift; sourceTree = "<group>"; };
 		2F6B09947C62AF9C62758EFD /* Releases.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Releases.swift; sourceTree = "<group>"; };
+		30E53D43502B21F3CC23788B /* PhaseIconSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseIconSheet.swift; sourceTree = "<group>"; };
 		34879BF77676913C07B69267 /* RestoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestoreSheet.swift; sourceTree = "<group>"; };
 		35352F3BD8D2A7EE166961C9 /* Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Today.swift; sourceTree = "<group>"; };
 		38F244475495E5E17D2F7126 /* WayHomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WayHomeScreen.swift; sourceTree = "<group>"; };
@@ -370,6 +372,7 @@
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
 				263958326455E83D01F2A70A /* OnlySomeTrips.swift */,
 				44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */,
+				30E53D43502B21F3CC23788B /* PhaseIconSheet.swift */,
 				01F66AF282FB2C3C22DC9F76 /* PickThings.swift */,
 				EDA67771DAAE27E418C53DDE /* PlaceScreen.swift */,
 				DF6A7521CAF9F486A9847AB2 /* Pockets.swift */,
@@ -554,6 +557,7 @@
 				CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */,
 				E942A15DD0530D3181AEBD4C /* OnSiteScreen.swift in Sources */,
 				2DB98040F30155CDE2E5F575 /* OnlySomeTrips.swift in Sources */,
+				564BA979BBAD5355ED3E0512 /* PhaseIconSheet.swift in Sources */,
 				E2B76A8A26AB8A0D50EEA5C3 /* PickThings.swift in Sources */,
 				2E4E6528354833C443D3DDC4 /* PlaceScreen.swift in Sources */,
 				18BBB6F1544022B6A9540909 /* Pockets.swift in Sources */,
