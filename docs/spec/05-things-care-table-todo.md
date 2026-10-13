@@ -835,7 +835,10 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
    SHOWN (after the search and the filter); right, only when at least one thing is on no template: the toggle
    pill "On no template `H`" (`things-nolist`; 15 bold; orange words on the card when off, white on orange
    when on; orange 60 % border; min height 36; selected trait when on). `H` counts ALL things on no template,
-   whatever the search.
+   whatever the search. Beside it (0.75, spec 07 part 15), while at least one thing has a battery or the filter is
+   on: the pill "Has a battery `B`" with the drawn battery mark (`things-battery`; the same look, the mark in the
+   words' colour), `B` counting ALL things with a battery, whatever the search. When the count and the pills do not
+   fit on one line (`ViewThatFits`), the pills go on a line of their own under the count, at the left.
 4. The list (`KeyboardAwayScroll` + `LazyVStack`, 16 pt sides, 24 pt bottom), with an invisible anchor at the
    top (`things-top`):
    - When something was added on this visit and is still shown: the heading "JUST ADDED"
@@ -868,7 +871,8 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
   line; the first line that holds the words is the hit (`NoteHit {template?, line}`; a line longer than 80
   characters whose words start more than 24 in is cut to start a word before them with "…"). One pass over the
   templates' rows for all things, not one per thing. Not the place, the templates' names or the care notes. The "On
-  no template" toggle keeps only things with no template; both combine.
+  no template" toggle keeps only things with no template; "Has a battery" (0.75) only things whose `battery` key is
+  true (`Library.hasBattery`); all combine (each must hold), in the list and in `shownIds()` (what ⌘↓ ⌘↑ go through).
 - Tap a row → the thing's page (`ThingEditor`) as a sheet over this one.
 - New (or Return in the field): a blank or all-space name → "Type a name first." under the row (cleared as soon
   as the field changes). Otherwise `addThing(name:)`. Refused because a thing of that name exists (by `normName`):
@@ -1147,6 +1151,12 @@ apart; a field 6 pt under its heading):
    cabin" (`thing-restricted`), Callout semibold — their words only since 0.64 (his word, 6 Oct 2026: "Delete the
    explanations for liquid and not allowed in the cabin"; they said "In the cabin: 100 ml at most, in the clear bag."
    and "A knife, tools, gas — it goes in the hold.").
+15a. **Battery** (0.75, spec 07 part 15 — his ask of 13 Oct 2026, "Add a tick box for each item: Contains battery")
+   — band "Battery" (`thing-heading-battery`); one switch (orange tint), `thing-battery`: the drawn battery mark
+   (`ToChargeCard.battery`, 18 pt, orange) and "Has a battery — charge before a trip" (Callout semibold ink). Reads
+   and writes the thing's `battery` extra key (true, or absent — never false); NOT the web app's `charging` flag (the
+   table's Charges column, which a charging cable carries too). A thing with a battery is on a trip's **To charge**
+   card from the day before the trip (spec 03).
 16. **Valid until** — band (`thing-heading-valid`):
    - No date: the pill "Add a date" (`thing-expiry-add`; 15 bold orange, orange 1.4 outline, min height 36) →
      sets the date to TODAY.
@@ -1168,7 +1178,8 @@ apart; a field 6 pt under its heading):
     already have a thing called that."
 18. "A change here reaches every template it is on. Past trips keep what they were packed with." (14 muted).
 (The order is his, 6 Oct 2026, release 0.64: Kind of thing after Notes, Whose it is under it, On these templates
-moved up, When with Usually packed in, Condition under Colour, On a plane and Valid until at the foot.
+moved up, When with Usually packed in, Condition under Colour, On a plane and Valid until at the foot — Battery
+between them since 0.75.
 UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's place.)
 19. **Delete** — absent for a bag (a bag is deleted on its own page). Otherwise the small "Delete thing"
     (`thing-delete`); pressed, it becomes a card (card colour, red 1 pt border, radius 12): "Delete
@@ -1248,7 +1259,7 @@ templates Subheadline, `Metrics.chip` tall.
   makes the thing instead (`addThing`; blank → "A thing needs a name.", one he has → "You already have a thing called
   that.", nothing made). (2) One `model.change`: first each template's section edits (`applySectionEdits`, item 6a),
   then `updateThing` setting storage (trimmed), category, container, phase, ownedBy, condition, weight, manufacturer
-  (trimmed), color (trimmed), note (trimmed), liquid, restricted, expiry, and — only when how often or the notes
+  (trimmed), color (trimmed), note (trimmed), liquid, restricted, the `battery` key (0.75), expiry, and — only when how often or the notes
   differ from the record — the care record (`normalizeMaintenance` of the old record with the new interval and
   trimmed notes: its log, last service and link kept; nothing said = no record); then for every template of
   `templatesForThings()` `setOnTemplate(on: chosen)` (a new membership goes to the bottom; an unticked template
@@ -1311,7 +1322,8 @@ in his order (0.73; `kitOut(id)` then `kitRemove(id)`, scroll id `key-kit-row-<i
 its ✕; Add from your things; while its list is open, Find a thing (0.73, `kitFind`, a text field, scroll id
 `key-kit-find`); and, when it holds something, Check before each trip — each ringed by `ThingKitPart(ringed:)`
 (`KitDraft.picking`, so a newly loaded thing starts closed) · Brand · Colour · Condition · Care · What to do (Care's
-notes) · Liquid · Not allowed in the cabin · Valid until. The list's rows are not Tab stops: ↑ ↓ in Find a thing
+notes) · Liquid · Not allowed in the cabin · Has a battery (0.75, `thing-battery`, scroll id `key-battery`) · Valid
+until. The list's rows are not Tab stops: ↑ ↓ in Find a thing
 light them. A kit field gone from the order (a row ✕'d by a click, the list closed by a click) → Tab goes on from
 Add from your things; ⌘↓ ⌘↑ to a thing without that row → its kit part's first field. Never: Cancel, Save, the date's buttons, Delete thing. The page opens with the focus in Name, the cursor at the
 END of the name. The field reached by the KEYS is scrolled into sight (`ScrollViewReader`, ids `ThingEditor.scrollKey`); a
@@ -1341,7 +1353,7 @@ Ids: the keys' words `thing-keys`; the field's name carries `thing-keys-at-<the 
 `thing-notes`, `thing-category`, `thing-owner`, `thing-lists`, `thing-section-<n>`, `thing-storage`, `thing-bag`,
 `thing-pocket`, `thing-when`, `thing-weight`, `thing-kit-taken-out`, `thing-kit-row-<n>-out`, `thing-kit-row-<n>-remove`,
 `thing-kit-add`, `thing-kit-search`, `thing-kit-check`, `thing-brand`, `thing-colour`, `thing-condition`, `thing-care`,
-`thing-care-notes`, `thing-liquid`, `thing-restricted`, `thing-expiry`, `thing-jump`; `none`) — what the tests read;
+`thing-care-notes`, `thing-liquid`, `thing-restricted`, `thing-battery`, `thing-expiry`, `thing-jump`; `none`) — what the tests read;
 an id is never shown or spoken. The field's NAME for a kit row: "Lighter — Take out" / "— Put back", "Lighter — out
 of the kit for good"; Find a thing: "Find a thing" (so ⌘J finds a row by its thing's name).
 
@@ -1405,8 +1417,9 @@ of the kit for good"; Find a thing: "Find a thing" (so ⌘J finds a row by its t
 - **On these templates**: the arrows start on the first template lit (else the first); **← →** move along the pills
   (no wrap); **Space** turns the one lit on or off (its Section joins or leaves the Tab order); **letters** jump to the
   first template whose name starts so (within a second they add up); ↑ ↓ ⌫ do nothing.
-- **Liquid / Not allowed in the cabin**: **Space** turns the switch. So do **Taken out for now** and **Check before
-  each trip** (the kit part).
+- **Liquid / Not allowed in the cabin / Has a battery** (0.75): **Space** turns the switch (the foot line: "Space turns it
+  on or off · Tab next · Return saves"; ⌘J finds Has a battery by that name). So do **Taken out for now** and **Check
+  before each trip** (the kit part).
 - **The kit part** (0.70; rows and Find a thing 0.73): **Space** on a row's Take out / Put back switches it; on its
   **✕** takes the thing out of the kit for good (in the draft: Cancel brings it back) and the focus stays where it
   was — the ✕ of the thing that came up into its place, else of the one before, else Add from your things; on **Add

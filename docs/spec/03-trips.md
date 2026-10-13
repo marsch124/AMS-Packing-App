@@ -960,6 +960,8 @@ left, the choice beside it) are kept.
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
 1. **Check before you go** card (only when something needs him) — own section below.
+1a. **To charge** card (0.75; only from the day before the trip starts through its last day, when something on the
+   trip has a battery — spec 07 part 15) — own section below. Top padding 10, as the cards around it.
 2. **Weather card** (always) — own section below.
 3. **Bags card** (only when some bag has lines; FOLDED to one line by default since 0.74) — own section below.
 4. **On site door** (only once On site has begun) — see "On site".
@@ -1513,7 +1515,7 @@ ended up, after a week of corrections."
 season, contexts, `activityContexts` (each workout's Context, 0.67), weatherOn, catering, laundry, destination and `extra.laundryNights`; NOT the dates,
 weather, map point, status or review. Every line copied with a new id, `checked = false`,
 `skipped = false`, `used = nil`, and its marks `packedAt`, `boughtThere`, `packedHome`, `usedUp`,
-`homeNote` removed (0.62: a copied bought-on-site mark made the new trip stand at On site at once);
+`homeNote` (and since 0.75 the charge ticks `charged` and `kitCharged`, spec 07 part 15) removed (0.62: a copied bought-on-site mark made the new trip stand at On site at once);
 `custom` and `_edited` stay — what the line IS comes along, what happened on the old trip does not.
 The new trip is appended (not via `createTrip`: no `generatedAt`, nights 0). Trip settings
 closes WITHOUT saving any other edits made in the sheet, and the trip screen switches to the new trip
@@ -1611,6 +1613,40 @@ trip, a Quick trip by plane, dates + six months, `ymd(plusMonths:)` incl. 31 Aug
 years). UI `testATripChecksTheCabinAndTheDatesBeforeYouGo` (order knife, sun cream; dates sun cream,
 passport; Liquid off removes one; clearing the passport's date removes it; Car removes cabin checks),
 `testABagSaysWhetherItGoesInTheCabin`, `testABagOnTheTripSaysWhetherItGoesInTheCabin`.
+
+## To charge (`ToCharge.swift` screen + `PackingLibrary/Batteries.swift`) — 0.75
+
+**Purpose and origin.** His ask of 13 Oct 2026: "Add a tick box for each item: Contains battery. And maybe implement a
+view where I can check all items that need charging." The whole design, its rules and keys: spec 07 part 15. This
+section is the card on the trip.
+
+**How it is reached and left.** The second card in the trip's scroll area, right under Check before you go and above
+the weather (item 1a above). There only while `Library.chargeCard(tripId:today:)` has rows: the trip is not reviewed;
+today is from the day before its start through its end (the end = the start when blank; no start date = always);
+something on it has a battery. Not when the trip was opened from a place's code.
+
+### What is on screen
+Card (padding 14, corner 12, `Theme.card`, 1.2 pt border in the tint), id `trip-charge`: the drawn battery mark
+(`ToChargeCard.battery`, 22 pt, in the tint), "To charge" (Subheadline semibold ink) and the count capsule "<charged>
+of <all>" (Footnote semibold white on the tint; id `trip-charge-count`; label "<charged> of <all> charged"). The tint:
+orange (`AppSection.care.color`) while anything is left to charge, green (`AppSection.events.color`) once all are
+charged. Then one button per thing, in the trip's order (`trip-charge-<n>`, min height `Metrics.tap`): a
+`TickCircle` (22 pt; orange, filled with a white tick when charged; a `Theme.line` ring otherwise), the name
+(Callout semibold; ink, or muted and struck through when charged) and, for a thing inside a kit, "In the <kit>"
+under it (Subheadline muted). Accessibility: label "<name>" or "<name>, in the <kit>"; value "charged" / "not
+charged"; selected trait when charged.
+
+### Behaviour
+- A tap: `Library.setCharged(_:tripId:lineId:contentId:)` — the line's `charged`, or the content's id in the kit
+  line's `kitCharged` — one line record. Nothing else changes: the line is not ticked, the trip's count stays.
+- Rows (`Library.toCharge(tripId:)`): lines not set aside and not reminders whose thing as it is now has a battery;
+  for a kit line, the kit as it is now — its own row first when it has a battery, then each thing inside it (not
+  taken out) that has one; each thing once. A thing switched on or off on its page shows or goes at once.
+- Kept by a rebuild and by `followThing`; dropped by Start a new trip from this one and in a shared trip (above).
+
+### Tests
+Model `BatteriesTests`; UI `testABatterySwitchOnAThingPutsItOnTheTripsToCharge`, `testToChargeIsTickedApartFromPacking`
+(spec 07 part 15, "Tests").
 
 ---
 
@@ -2333,7 +2369,8 @@ a shared link."
 - What travels is **just the list** (`Library.justTheList`, 0.62): the trip's luggage-scale readings
   (`weighed`) and bag photo ids (`bagPhotos` — the photos never travel) are left out, and so is every
   line's "not this time" (`skipped`), "changed on the trip" (`_edited`), way-home tick, used up,
-  maintenance note, bought on site and packing time. The sender's own trip keeps them all.
+  maintenance note, bought on site and packing time — and (0.75) its charge ticks (`charged`, a kit line's
+  `kitCharged`; spec 07 part 15). The sender's own trip keeps them all.
 - Link = `SHARE_WEB_BASE` (the web app's address) + `#/t/` + the bundle squeezed by `packShare`; nil when
   the fragment exceeds **30 000** UTF-16 units (`TRIP_LINK_MAX`).
 - Bundle (`buildTripBundle`): `{app: "ams-packing-list", kind: "trip", version: 1, exportedAt, event}`,
