@@ -105,17 +105,26 @@ struct RemindersCard: View {
             // Green when on, like every switch he knows: the Settings slate read as "off".
             .tint(AppSection.events.color)
             .accessibilityIdentifier("settings-reminders")
-            if refused || blocked {
-                Text("This device does not allow the app to remind you. Allow it in the device's Settings, under Notifications.")
-                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("settings-reminders-refused")
-            } else if on {
+            if on && !(refused || blocked) {
                 Text(next.map { "Next: \(CountdownCard.shortDay($0.date)) \u{00B7} \($0.tripName) \u{2014} \($0.says)" }
                      ?? "Nothing to remind you of yet: no trip with dates ahead.")
                     .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("settings-reminders-next")
+            }
+            #if os(iOS)
+            // Messages when a trip moves on (0.77, spec 07 part 16): the iPhone's own switch, in
+            // this card — the device's messages in one place. Not on the Mac, where none come.
+            Rectangle().fill(Theme.line).frame(height: 1).padding(.vertical, 4)
+                .accessibilityHidden(true)
+            MovesOnSwitch().environmentObject(model)
+            #endif
+            // Under both switches: it holds for every message from the app.
+            if refused || blocked {
+                Text("This device does not allow the app to remind you. Allow it in the device's Settings, under Notifications.")
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("settings-reminders-refused")
             }
         }
         // Settings' cards are compact (14 points inside until 0.67).

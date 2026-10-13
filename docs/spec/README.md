@@ -82,7 +82,8 @@ check against the web app, the UI-test harness and the test inventory.
 the keyboard on a thing's page (Mac), sections edited from a thing's page, places with stickers, search in notes,
 bag pockets and "Where is my …?", the door check, Apple Health filling in the review, a trip page in his Obsidian
 vault, kits (things that hold things) and hands-free packing — written BEFORE they were built, at his request —
-and the decision log of what he turned down.
+then batteries and To charge, and Take a break with the messages when a trip moves on (0.77) — and the decision log
+of what he turned down.
 
 Some subjects are seen from two sides: the backup and Restore (storage in 01, the Settings screen in 06),
 Save as Excel and sharing (the file and the codes in 01, the trip screen in 03), Your choices (04 and 06),

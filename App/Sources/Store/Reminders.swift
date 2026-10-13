@@ -120,6 +120,12 @@ final class PackingReminders: NSObject, UNUserNotificationCenterDelegate {
                                             didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
         guard let id = info["tripId"] as? String else { return }
+        // A trip message (0.77): Back to packing and Have a good trip open the trip; Welcome
+        // home, its review.
+        if let kind = (info["trip"] as? String).flatMap(TripMessage.Kind.init(rawValue:)) {
+            await MainActor.run { TripMessages.shared.open?(id, kind) }
+            return
+        }
         // A door check (0.69) opens its trip on just what is left; a packing reminder, the trip.
         if let door = (info["door"] as? String).flatMap(DoorCheck.Kind.init(rawValue:)) {
             await MainActor.run { DoorChecks.shared.open?(id, door) }

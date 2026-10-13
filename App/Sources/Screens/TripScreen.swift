@@ -77,19 +77,6 @@ struct TripScreen: View {
                                                        ("category", "Category"), ("section", "Section"),
                                                        ("template", "Template")]
 
-    /// The lines as a sorting reads them: sorted by Into, a reminder goes in no bag —
-    /// it stands under "To do" (spec 07, part 12). Every other sorting reads them as
-    /// they are.
-    static func grouped(_ view: String, _ lines: [Item]) -> [Item] {
-        guard view == "container" else { return lines }
-        return lines.map { line in
-            guard Library.isReminder(line) else { return line }
-            var l = line
-            l.container = "To do"
-            return l
-        }
-    }
-
     /// The middle of a text's FIRST line: its height less the distance between its first
     /// and last baselines is one line's height. A one-line name is centred as before.
     static func firstLineCentre(_ d: ViewDimensions) -> CGFloat {
@@ -122,10 +109,11 @@ struct TripScreen: View {
     /// field, on the same line (his marks, 2026-09-25). Its rows keep the pills' ids,
     /// `trip-view-0…4`; the field is `trip-view`, the word `trip-view-label`.
     /// The groups the lines stand in under the chosen sorting: Template is the library's
-    /// (it reads the templates); every other sorting is the web app's `groupBy`.
+    /// (it reads the templates); every other sorting is the web app's `groupBy` — sorted by
+    /// Into, a reminder goes in no bag, it stands under "To do" (spec 07, part 12). One rule
+    /// in the library (`linesGrouped`), which Take a break's overview reads too (0.77).
     private func groups(_ lines: [Item]) -> [EntryGroup] {
-        view == "template" ? model.library.linesByTemplate(tripId: tripId, lines: lines)
-                           : groupBy(view, TripScreen.grouped(view, lines))
+        model.library.linesGrouped(tripId: tripId, sorting: view, lines: lines)
     }
 
     /// A heading's colour: under When the colour of its first line's "When"; under
@@ -212,11 +200,19 @@ struct TripScreen: View {
                         .keyboardShortcut(.cancelAction)
                         .accessibilityIdentifier("trip-done")
                 }
-                Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
-                    .font(.system(.callout, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
-                    .accessibilityIdentifier("trip-progress")
-                    .accessibilityValue(allPacked ? "all packed" : "")
+                HStack(alignment: .center, spacing: 8) {
+                    Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
+                        .font(.system(.callout, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
+                        .accessibilityIdentifier("trip-progress")
+                        .accessibilityValue(allPacked ? "all packed" : "")
+                    Spacer(minLength: 8)
+                    // Take a break (0.77, his yes of 13 Oct 2026; spec 07 part 16): at the calm
+                    // end of the count's line, while the trip is at Pack with something left.
+                    if !allPacked, model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock)) == .pack {
+                        TakeABreakButton(tripId: tripId).environmentObject(model)
+                    }
+                }
             }
             .padding(16)
             // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
@@ -271,6 +267,9 @@ struct TripScreen: View {
                 #if DEBUG
                 if AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-showDoorChecks") {
                     DoorCheckList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
+                }
+                if AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-showTripMessages") {
+                    TripMessageList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
                 }
                 #endif
                 if onlyUnticked { untickedBar }
@@ -528,6 +527,11 @@ struct TripScreen: View {
             }
         }
         .onChange(of: allPacked) { _, packed in
+            // Everything packed: a break waiting for this trip goes with it (0.77, spec 07 part 16).
+            if packed, !Library.breakUntil(trip).isEmpty {
+                let id = tripId
+                model.change { _ = $0.setBreak(until: nil, tripId: id) }
+            }
             guard packed, !reduceMotion else { return }
             withAnimation(.easeOut(duration: 0.45)) { sweeping = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
@@ -565,7 +569,11 @@ struct TripScreen: View {
     private func takeFocus() {
         guard let focus = model.tripFocus, focus.tripId == tripId else { return }
         model.tripFocus = nil
-        if focus.home {
+        if focus.review {
+            // A tapped "Welcome home — review …" (0.77): its review, unless it is reviewed already.
+            guard let trip = model.library.trips.first(where: { $0.id == tripId }), !Library.isReviewed(trip) else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { reviewing = true }
+        } else if focus.home {
             homeFromDoor = true
             // After this window has finished arriving: one cannot come up while another still is.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { onSite = true }

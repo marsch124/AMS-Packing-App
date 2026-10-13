@@ -53,11 +53,21 @@ struct RootView: View {
                 model.tripFocus = LibraryModel.TripFocus(tripId: id, home: kind == .home)
                 model.tripToOpen = id
             }
-            if AMSPackingApp.testing { RootView.playTappedDoorCheck(model) }
+            // A tapped trip message (0.77, spec 07 part 16): its trip — "Welcome home", its review.
+            TripMessages.shared.open = { id, kind in
+                section = .home
+                if kind == .home { model.tripFocus = LibraryModel.TripFocus(tripId: id, home: false, review: true) }
+                model.tripToOpen = id
+            }
+            if AMSPackingApp.testing {
+                RootView.playTappedDoorCheck(model)
+                RootView.playTappedTripMessage(model)
+            }
         }
         .onReceive(model.$library.debounce(for: .seconds(2), scheduler: RunLoop.main)) { library in
             Task { await PackingReminders.shared.reschedule(library) }
             Task { await DoorChecks.shared.reschedule(library) }
+            Task { await TripMessages.shared.reschedule(library) }
             // The grab lists Shortcuts offers by name follow his.
             PackingShortcuts.updateAppShortcutParameters()
         }
@@ -69,6 +79,7 @@ struct RootView: View {
             // change of the library.
             if phase == .active { Task { await PackingReminders.shared.reschedule(model.library) } }
             if phase == .active { Task { await DoorChecks.shared.reschedule(model.library) } }
+            if phase == .active { Task { await TripMessages.shared.reschedule(model.library) } }
             if phase == .background { wasAway = true }
             if phase == .active, wasAway {
                 wasAway = false
@@ -98,6 +109,16 @@ struct RootView: View {
         let home = args[n + 1] == "home"
         guard let trip = model.library.trips.first(where: { !Library.leaveTime($0, home: home).isEmpty }) else { return }
         DoorChecks.shared.open?(trip.id, home ? .home : .out)
+    }
+
+    /// UI tests only (`-tapTripMessage break|onsite|review`): a trip message tapped as the app
+    /// opens — for the first trip with lines.
+    private static func playTappedTripMessage(_ model: LibraryModel) {
+        let args = ProcessInfo.processInfo.arguments
+        guard let n = args.firstIndex(of: "-tapTripMessage"), n + 1 < args.count,
+              let kind = TripMessage.Kind(rawValue: args[n + 1]),
+              let trip = model.library.trips.first(where: { !$0.entries.isEmpty }) else { return }
+        TripMessages.shared.open?(trip.id, kind)
     }
 
     /// UI tests only: what reaches the app from outside while it is in the

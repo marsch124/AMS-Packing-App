@@ -3009,6 +3009,207 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "leave-after")
     }
 
+    // MARK: - Take a break, and messages when a trip moves on (0.77, spec 07 part 16)
+
+    /// A named element that is no button — a pill of the break's overview: an Other on the
+    /// iPhone, a Group or a text on the Mac.
+    private func element(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        for query in [app.otherElements, app.groups, app.staticTexts] where query[id].exists { return query[id] }
+        return app.otherElements[id]
+    }
+
+    /// "2026-11-12": a day counted from today, as the sample's trip is.
+    private func sampleDay(_ n: Int) -> String {
+        let cal = Calendar(identifier: .gregorian)
+        let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+        return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+    }
+
+    /// Take a break (his yes, 13 Oct 2026): on a trip at Pack the count's line has "Take a
+    /// break", and its sheet says how far he has come — the trip's own count, and each group of
+    /// his Sorting done or how many are left.
+    func testTakeABreakSaysHowFarHeHasCome() {
+        let app = launch("-uiTesting", ["-clockAt", "14:00:00"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        choose(app, "trip-view", 5)                                // Template
+        tap(app, id: "trip-line-0")                                // the Passport
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "1/7" }, "'\(words(app.staticTexts["trip-progress"]))'")
+        let door = app.buttons["trip-break"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "a trip at Pack has no Take a break")
+        XCTAssertEqual(door.value as? String, "Take a break")
+        shot(app, "break-trip-door")
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5), "Take a break did not open")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["break-packed"]) == "1 of 7 packed" },
+                      "the overview says '\(words(app.staticTexts["break-packed"]))'")
+        // His Sorting's groups: the base template with the Passport ticked, and Hiking.
+        let groups = [words(element(app, "break-group-0")), words(element(app, "break-group-1"))]
+        XCTAssertEqual(Set(groups), ["Common base 3 left", "Hiking 4 left"], "the groups say \(groups)")
+        XCTAssertFalse(element(app, "break-group-2").exists, "a third group")
+        XCTAssertFalse(app.staticTexts["break-charge"].exists, "To charge on a trip a month ahead")
+        // The choices, from 14:00: in an hour, this evening, tomorrow at 18:00, or just pause.
+        XCTAssertTrue((app.buttons["break-hour"].value as? String ?? "").hasPrefix("15:0"), "In an hour says '\(app.buttons["break-hour"].value as? String ?? "")'")
+        XCTAssertEqual(app.buttons["break-evening"].value as? String, "19:00")
+        XCTAssertTrue(app.buttons["break-tomorrow"].exists)
+        XCTAssertTrue(app.buttons["break-pause"].exists)
+        XCTAssertFalse(app.buttons["break-calendar"].exists, "Add to Calendar with no break chosen")
+        shot(app, "break-sheet")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        // Everything ticked: no break to take.
+        tapVisible(app, app.buttons["trip-tickall"])
+        XCTAssertTrue(waitUntil { !app.buttons["trip-break"].exists }, "Take a break with everything packed")
+    }
+
+    /// "Continue when?" keeps ONE break on the trip: its message waits ("Back to packing …:
+    /// 6 things left", seen through the debug list `-showTripMessages`), the trip's button says
+    /// when he comes back, a new choice replaces it, Add to Calendar hands it over, Just pause
+    /// takes it away — and ticking the last thing takes it away too.
+    func testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked() {
+        let app = launch("-uiTesting", ["-showTripMessages", "-clockAt", "14:00:00"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "1/7" })
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5))
+        tap(app, id: "break-evening")
+        let said = app.staticTexts["break-said"]
+        XCTAssertTrue(waitUntil { self.words(said).hasPrefix("Back to packing at 19:00") }, "the sheet says '\(words(said))'")
+        XCTAssertTrue(waitUntil { app.buttons["break-evening"].isSelected }, "This evening is not shown as chosen")
+        tap(app, id: "break-calendar")
+        let calendar = app.staticTexts["break-calendar-said"]
+        XCTAssertTrue(waitUntil { self.words(calendar).contains("Back to packing Weekend in the hills \u{00B7} \(self.sampleDay(0)) 19:00\u{2013}19:30 \u{00B7} 1 of 7 packed \u{00B7} 6 things left") },
+                      "Add to Calendar would hand over '\(words(calendar))'")
+        shot(app, "break-chosen")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        let door = app.buttons["trip-break"]
+        XCTAssertTrue(waitUntil { (door.value as? String) == "Back at 19:00" }, "the trip's button says '\(door.value as? String ?? "")'")
+        let message = app.staticTexts["trip-message-break"]
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).contains("\(self.sampleDay(0)) 19:00 \u{00B7} Back to packing Weekend in the hills 6 things left") },
+                      "the break's message: '\(words(message))'")
+        shot(app, "break-trip-waiting")
+        // A new choice replaces it: tomorrow at 18:00.
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["break-evening"].isSelected }, "the break waiting is not shown as chosen")
+        tap(app, id: "break-tomorrow")
+        XCTAssertTrue(waitUntil { self.words(said).hasPrefix("Back to packing tomorrow 18:00") }, "the sheet says '\(words(said))'")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { (door.value as? String) == "Back tomorrow 18:00" }, "'\(door.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).contains("\(self.sampleDay(1)) 18:00") }, "not replaced: '\(words(message))'")
+        // Just pause: no reminder at all.
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5))
+        tap(app, id: "break-pause")
+        XCTAssertTrue(waitUntil { self.words(said).hasPrefix("Paused") }, "the sheet says '\(words(said))'")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { (door.value as? String) == "Take a break" }, "'\(door.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil(timeout: 8) { !message.exists }, "Just pause left a message: '\(words(message))'")
+        // A break again, then everything ticked: it goes — and stays gone when a line is unticked.
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5))
+        tap(app, id: "break-evening")
+        XCTAssertTrue(waitUntil { self.words(said).hasPrefix("Back to packing at 19:00") })
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 8) { message.exists })
+        tapVisible(app, app.buttons["trip-tickall"])
+        XCTAssertTrue(waitUntil(timeout: 8) { !message.exists }, "a break waiting with everything packed")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { (door.value as? String) == "Take a break" }, "the break came back with a line unticked: '\(door.value as? String ?? "")'")
+    }
+
+    /// A break is refused when he leaves before it (the trip leaving today at 08:00, the app's
+    /// clock at 07:00): In an hour says why, and nothing is kept. Once the trip has set off —
+    /// On site — there is no Take a break.
+    func testABreakIsOnlyWhileTheTripIsBeingPacked() {
+        let app = launch("-uiTestingLeaving", ["-clockAt", "07:00:00"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5))
+        tap(app, id: "break-hour")
+        let needs = app.staticTexts["break-needs"]
+        XCTAssertTrue(waitUntil { self.words(needs) == "You leave before then \u{2014} pick an earlier time." }, "'\(words(needs))'")
+        XCTAssertFalse(app.staticTexts["break-said"].exists, "a break after he leaves was kept")
+        XCTAssertFalse(app.buttons["break-hour"].isSelected)
+        shot(app, "break-refused")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        XCTAssertEqual(app.buttons["trip-break"].value as? String, "Take a break")
+        app.terminate()
+        let later = launch("-uiTestingLeaving", ["-clockAt", "08:30:00"])
+        tab(later, "events")
+        tap(later, id: "trip-row-0")
+        XCTAssertTrue(appears(later, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (later.buttons["trip-loop"].value as? String) == "On site" })
+        XCTAssertFalse(later.buttons["trip-break"].exists, "Take a break on a trip that has set off")
+    }
+
+    /// Messages when a trip moves on: "Have a good trip" when it sets off (08:00 on its first
+    /// day, or the time he leaves) and "Welcome home — review …" the morning after its last
+    /// day, seen through the debug list. On the iPhone, Settings' switch turns them off; the
+    /// Mac has no such switch (none come there).
+    func testATripSaysWhenItMovesOn() {
+        let app = launch("-uiTesting", ["-showTripMessages"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let onsite = app.staticTexts["trip-message-onsite"], review = app.staticTexts["trip-message-review"]
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(onsite).contains("\(self.sampleDay(30)) 08:00 \u{00B7} Have a good trip \u{2014} Weekend in the hills") },
+                      "the set-off message: '\(words(onsite))'")
+        XCTAssertTrue(words(review).contains("\(sampleDay(33)) 10:00 \u{00B7} Welcome home \u{2014} review Weekend in the hills in two minutes?"),
+                      "the review message: '\(words(review))'")
+        // A time he leaves moves the set-off message to it.
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "tripset-leave-out-add")
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(onsite).contains("\(self.sampleDay(30)) 07:30 \u{00B7} Have a good trip") },
+                      "the set-off message did not follow the time he leaves: '\(words(onsite))'")
+        shot(app, "moves-on-messages")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tab(app, "settings")
+        #if os(macOS)
+        XCTAssertFalse(app.switches["settings-moves-on"].exists || app.checkBoxes["settings-moves-on"].exists,
+                       "a switch for messages the Mac never shows")
+        #else
+        XCTAssertTrue(switchNamed(app, "settings-moves-on").exists, "no Messages when a trip moves on")
+        XCTAssertTrue(isSwitchOn(app, "settings-moves-on"), "the messages are off before he said")
+        bringIntoView(app, switchNamed(app, "settings-moves-on"))
+        shot(app, "moves-on-settings")
+        setSwitch(app, "settings-moves-on", on: false)
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["trip-message-none"].waitForExistence(timeout: 8),
+                      "switched off, still: '\(words(onsite))' '\(words(review))'")
+        #endif
+    }
+
+    /// A tapped "Welcome home — review …" opens the trip on its review; a tapped "Back to
+    /// packing" opens the trip itself.
+    func testATappedTripMessageOpensItsTrip() {
+        let app = launch("-uiTesting", ["-tapTripMessage", "review"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the tapped message did not open its trip")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 8), "Welcome home did not open the review")
+        shot(app, "moves-on-tapped-review")
+        app.terminate()
+        let back = launch("-uiTesting", ["-tapTripMessage", "break"])
+        XCTAssertTrue(appears(back, "trip-detail", timeout: 10), "Back to packing did not open its trip")
+        XCTAssertFalse(appears(back, "review-detail", timeout: 2), "Back to packing opened the review")
+    }
+
     /// On site holds all four (his choice, 3 Oct 2026): Bought on site, Left on site,
     /// Maintenance notes, Pack to go home. Its door on a trip under way says what it holds;
     /// a thing bought is added there, one that went is left on site and Undo brings it

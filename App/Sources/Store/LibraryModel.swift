@@ -34,7 +34,9 @@ final class LibraryModel: ObservableObject {
     /// lines, or (`home`) at Pack to go home on just what is not in a bag yet. The trip
     /// takes it as it opens, and clears it.
     @Published var tripFocus: TripFocus?
-    struct TripFocus: Equatable { let tripId: String; let home: Bool }
+    /// `review`: a tapped "Welcome home — review …" (0.77, spec 07 part 16) — the trip opens
+    /// on its review.
+    struct TripFocus: Equatable { let tripId: String; let home: Bool; var review = false }
     /// A grab list asked to open from a Shortcut (the Action button). Home opens it.
     @Published var grabToOpen: String?
     /// The Action button's "Choose a grab list": Home shows the menu of grab lists.
@@ -319,7 +321,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", "ams.care.view", "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, SettingsScreen.savedKey] {
+            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", "ams.care.view", "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
         }
