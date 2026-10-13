@@ -670,11 +670,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (77 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (78 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.78 | 13 Oct 2026 | Calmer words | N1 C4 | group headings not upper-cased (groupHeading, Templates tab, activityChoices "Other Templates"); weekendbag icon + short/weekend suggestions; Food label Mix; Season pills draw sun / snow (Pills(icons:)); Library.quickNote names the Always Packed templates |
 | 0.77 | 13 Oct 2026 | Take a break | N2 C2 | Take a break sheet + Continue when? reminder; messages when a trip moves on (Have a good trip / Welcome home), Settings switch; Before you go = one card (flags, To do, To charge); the five step marks he picked (LoopStep.mark) |
 | 0.76 | 13 Oct 2026 | Simpler new trips | N1 C4 | battery in a checked bag on plane trips (cabinCheck, inABag); Travelling by Plane / RV only, neither = Car stored; Season from the dates (Nov–Mar Winter) until picked; More choices fold (Season, Food, Laundry); new kits start kitCheck on unless switched off |
 | 0.75 | 13 Oct 2026 | Charge before you go | N2 C5 | Has a battery (`battery` key) + To charge card with its own ticks (`charged`, `kitCharged`; Batteries.swift, ToCharge.swift; chapter 07 part 15) and a Your things filter; I leave at framed (LeaveTimes, DoorMark); On site from the leave time on day one (Library.hasSetOff, clockTurns); reminders show their template icons (TripChecks); weather past the reach says when it comes (ForecastAsk.comesFrom, dropWeather); Mac Tab through Only-on-some-trips pills and the battery switch |

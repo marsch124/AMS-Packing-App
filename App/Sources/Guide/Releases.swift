@@ -18,6 +18,12 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.78", date: "13 Oct 2026", title: "Calmer words",
+                new: ["A new template icon, Weekend bag \u{2014} a soft holdall, suggested for short or weekend templates."],
+                changed: ["Template groups are no longer in capitals: Always Packed, By Transport, GA \u{00B7} Goal Activity, WET \u{00B7} Workout, Exercise & Training, OE \u{00B7} Other Events, Other Templates.",
+                          "Food: Self-sufficient, Eating out and Mix fit on one line.",
+                          "Season has its own drawings, like Travelling by: a sun for Summer, a snowflake for Winter.",
+                          "Quick says plainly what it leaves out \u{2014} your Always Packed templates by name, and the Plane or RV template \u{2014} and that Plane still turns on the airport checks."]),
         Release(version: "0.77", date: "13 Oct 2026", title: "Take a break",
                 new: ["Take a break, on a trip you are packing: see how far you have come \u{2014} packed, each group done or left, what is left to charge and to do \u{2014} and choose when to go on: in an hour, this evening or tomorrow. The iPhone reminds you then.",
                       "Messages when a trip moves on: \u{201C}Have a good trip\u{201D} at the time you leave, and \u{201C}Welcome home\u{201D} the day after, to review it in two minutes. Turn them off in Settings."],
