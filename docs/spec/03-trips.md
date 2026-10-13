@@ -1883,7 +1883,11 @@ bank in the hold, Hiking's "Check the forecast" due, the toothbrush and the powe
 the reminder ticked → To do goes, "3"; both charged → "1", still open, no chevron; the power bank's battery switched
 off from its flag → no flags, "All set", folded (no To charge part), the card still there; `trip-beforego-fold` opens
 it, "1 of 1"; the toothbrush's charge taken back → "1", no chevron. Pictures `beforego-trip`, `beforego-allset`,
-`beforego-allset-open`, iPhone day and night. Seen RED twice: To charge drawn above To do → "the parts are not flags,
+`beforego-allset-open`, iPhone day and night; on GitHub's Mac (a probe running just this test,
+`testToChargeIsTickedApartFromPacking`, `testATripChecksTheCabinAndTheDatesBeforeYouGo`,
+`testABatteryInACheckedBagIsToldToGoInTheCabin`, `testATripsRemindersShowWhenTheyAreDue`,
+`testABatterySwitchOnAThingPutsItOnTheTripsToCharge` and `testABagSaysWhetherItGoesInTheCabin`): all seven green, with
+the pictures of the Mac look (day). Seen RED twice: To charge drawn above To do → "the parts are not flags,
 To do, To charge, top to bottom: [251.99999999999997, 441.0, 327.5]"; the card never folding → "all set, the card did not fold".
 `testATripChecksTheCabinAndTheDatesBeforeYouGo` (order knife, sun cream; dates sun cream, passport; the count "4";
 Liquid off removes one; clearing the passport's date removes it; Car removes cabin checks),
