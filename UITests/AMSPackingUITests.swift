@@ -3523,7 +3523,7 @@ final class AMSPackingUITests: XCTestCase {
     /// The weather card's "Add all" (the web app's): everything the forecast asks for
     /// reaches the trip in one press, and then it asks for nothing.
     func testWeatherAddAllTakesEverything() {
-        let app = launch()
+        let app = launch("-uiTestingSoon")                        // a forecast exists (0.75)
         tab(app, "events")
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -3549,7 +3549,7 @@ final class AMSPackingUITests: XCTestCase {
     /// place; a trip gets its place from its weather; then one pin, one card, and
     /// the summary counts them.
     func testTheMapShowsWhereTheTripsWent() {
-        let app = launch()
+        let app = launch("-uiTestingSoon")                        // a forecast exists (0.75)
         tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
         tap(app, id: "events-map")
@@ -5696,7 +5696,7 @@ final class AMSPackingUITests: XCTestCase {
     /// tests the forecast is invented: a fixed wet, cold few days, so the words on
     /// screen can be checked exactly. The real one is Open-Meteo, as on the web.)
     func testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing() {
-        let app = launch()
+        let app = launch("-uiTestingSoon")                        // 10 days ahead: a forecast exists (0.75)
         tab(app, "events")
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -5728,6 +5728,40 @@ final class AMSPackingUITests: XCTestCase {
                       "the gear did not reach the trip (still \(before))")
         XCTAssertFalse(words(app.buttons["weather-gear-0"]) == asked,
                        "it is still being asked for although it is on the trip")
+    }
+
+    /// A trip past the forecast's reach (0.75; the sample's trip is a month ahead): Weather
+    /// keeps the place — the map gets its pin — but asks for no forecast, and the card says
+    /// when the trip's own comes: 15 days before it starts. Until 0.75 the service's own days
+    /// came back — this week's weather — and the card showed them as the trip's.
+    func testATripPastTheForecastsReachSaysWhenItsForecastComes() {
+        let app = launch()
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.textFields["weather-place"].waitForExistence(timeout: 5), "nowhere to say where the trip is")
+        let line = app.staticTexts["weather-notyet"]
+        XCTAssertFalse(line.exists, "a trip with no place yet already speaks of its forecast")
+        type("Testville", into: app.textFields["weather-place"])
+        app.textFields["weather-place"].typeText("\n")        // Return looks it up, and puts the keyboard away
+        let c = Calendar(identifier: .gregorian).dateComponents([.year, .month, .day],
+                                                                from: Calendar(identifier: .gregorian).date(byAdding: .day, value: 15, to: Date())!)
+        let mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        let said = "No forecast yet \u{2014} it comes about 15 days before the trip (from \(c.day!) \(mo[c.month! - 1]) \(c.year!))."
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(line) == said },
+                      "the card does not say when the forecast comes: '\(words(line))' — its weather line says '\(words(app.staticTexts["weather-line"]))'")
+        XCTAssertFalse(app.staticTexts["weather-line"].exists,
+                       "a trip a month ahead shows a forecast — this week's: '\(words(app.staticTexts["weather-line"]))'")
+        XCTAssertFalse(app.staticTexts["weather-trouble"].exists, "no forecast yet is not trouble: '\(words(app.staticTexts["weather-trouble"]))'")
+        XCTAssertTrue(app.textFields["weather-place"].exists, "the place field went")
+        shot(app, "weather-not-yet")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tap(app, id: "events-map")
+        XCTAssertTrue(appears(app, "map-screen", timeout: 5), "the map did not open")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["map-summary"]) == "1 place · 1 trip" },
+                      "the place was not kept: '\(words(app.staticTexts["map-summary"]))'")
+        XCTAssertEqual(words(app.staticTexts["map-place-0-name"]), "Testville, SE")
     }
 
     /// The library says when it looks wrong. Both real accidents took this shape —
@@ -9232,8 +9266,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(focused(app, "thing-name"), "the page does not open in Name")
         app.typeText(" case")
         XCTAssertEqual(says(app, "thing-name"), "Map case", "the cursor was not at the end of the name")
+        // Only on some trips' rows of pills (Season, Transport, Food; no Context off a workout
+        // template) since 0.75, where they sit: after the Sections, before Kept at home.
         let order = ["thing-notes", "thing-category", "thing-owner", "thing-lists", "thing-section-1",
-                     "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-kit-add", "thing-brand", "thing-colour",
+                     "thing-seasons", "thing-transports", "thing-catering", "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-kit-add", "thing-brand", "thing-colour",
                      "thing-condition", "thing-care", "thing-care-notes", "thing-liquid", "thing-restricted",
                      "thing-expiry", "thing-name"]
         for id in order {
@@ -9387,6 +9423,45 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-lists-0"]) && self.isOn(app.buttons["thing-lists-2"]) },
                       "the templates turned on by the keys were not kept")
         XCTAssertTrue(isSwitchOn(app, "thing-liquid") && isSwitchOn(app, "thing-restricted"), "the switches were not kept")
+        #endif
+    }
+
+    /// Only on some trips from the keys (0.75; the pills came in 0.73 and Tab went past them):
+    /// its rows are in the Tab order where they sit — after the Sections, before Kept at home —
+    /// and answer exactly as On these templates: → moves along Season, Space switches Winter
+    /// on; Tab goes on to Transport, Food and Kept at home, Shift-Tab comes back. Saved, the
+    /// Winter switched by the keys is kept.
+    func testOnlyOnSomeTripsPillsAreReachedByTabAndSwitchedBySpace() throws {
+        #if os(iOS)
+        throw XCTSkip("The keys of a thing's page are the Mac's")
+        #else
+        let app = launch()
+        openThing(app, "Map")                                     // on Hiking only: no Context
+        let summer = app.buttons["thing-seasons-0"], winter = app.buttons["thing-seasons-1"]
+        XCTAssertTrue(winter.waitForExistence(timeout: 5), "the thing's page has no Season pills")
+        XCTAssertFalse(isOn(summer) || isOn(winter), "the Map already has a season")
+        tabTo(app, "thing-section-1")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-seasons"), "Tab did not go on from the Section to Season")
+        XCTAssertEqual(words(app.staticTexts["thing-keys"]), "← → move · Space turns it on or off · type to jump · Tab next",
+                       "the foot does not name the pills' keys")
+        app.typeKey(.rightArrow, modifierFlags: [])               // from Summer to Winter
+        app.typeKey(.space, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isOn(winter) }, "→ Space did not switch Winter on")
+        XCTAssertFalse(isOn(summer), "Space switched Summer too")
+        shot(app, "keys-only-some")
+        for id in ["thing-transports", "thing-catering", "thing-storage"] {
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(focused(app, id), "Tab did not go on to \(id)")
+        }
+        app.typeKey(.tab, modifierFlags: .shift)
+        XCTAssertTrue(focused(app, "thing-catering"), "Shift-Tab from Kept at home did not come back to Food")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["thing-seasons-1"]) }, "the Winter switched by the keys was not kept")
+        XCTAssertFalse(isOn(app.buttons["thing-seasons-0"]), "Summer was kept on")
         #endif
     }
 

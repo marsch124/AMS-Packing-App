@@ -1428,7 +1428,10 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
   already made; Trip settings → Save does. Should it? (Rule 8 keeps today's behaviour for rows.)
 - The template page's "Only on: Winter" does not say whether the answer is the row's own or the thing's. Worth a
   mark?
-- On the Mac the new pills are not in a thing's page's Tab order yet (as the kit part's buttons).
+- ~~On the Mac the new pills are not in a thing's page's Tab order yet (as the kit part's buttons).~~ Answered in
+  0.75: each row — Season, Context (where shown), Transport, Food — is a Tab stop after the Sections, answering ← →,
+  Space and letters as On these templates (spec 05, Keyboard (Mac));
+  `testOnlyOnSomeTripsPillsAreReachedByTabAndSwitchedBySpace`, proven on GitHub's Mac.
 
 ---
 

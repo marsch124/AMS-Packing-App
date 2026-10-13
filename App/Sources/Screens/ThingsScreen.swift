@@ -281,6 +281,8 @@ struct ThingEditor: View {
     @FocusState private var typing: ThingField?
     /// The template pill the arrows are on in On these templates.
     @State private var pillAt: Int?
+    /// The pill the arrows are on in each row of Only on some trips (0.75), by kind.
+    @State private var limitAt: [TripLimit: Int] = [:]
     /// The drop-down whose list is open (its field's id), for the line at the foot.
     @State private var listOpen: String?
     /// Valid until as typed on the Mac ("30/6 27", "+6m"), read when the field is left or
@@ -565,6 +567,7 @@ struct ThingEditor: View {
         choiceLists = [:]
         kit = KitDraft(model.library, thingId: id)     // what it holds, or its kit (0.70)
         limits = model.library.items.first { $0.id == id }.map(Library.thingLimits) ?? TripLimits()
+        limitAt = [:]
         problem = ""
         weightProblem = ""
         askingToDelete = false
@@ -576,11 +579,8 @@ struct ThingEditor: View {
     /// the Sections above it: what every template it is on follows unless that template's row
     /// says otherwise — and which of them do (spec 07 part 14).
     @ViewBuilder private func onlySomeTrips(_ templates: [PackList]) -> some View {
-        let stored = model.library.items.first { $0.id == current }.map(Library.thingLimits) ?? TripLimits()
-        // Context counts on a workout template only: offered while the thing is on one, or
-        // says one already (so it can be seen and switched off).
-        let workout = templates.contains { onLists.contains($0.id) && contextApplies($0) }
-            || !stored.contexts.isEmpty || !limits.contexts.isEmpty
+        let stored = storedLimits
+        let workout = showsContext(templates)
         let own = current.isEmpty ? "" : model.library.ownLimitWords(thingId: current, against: limits, on: onLists)
         VStack(alignment: .leading, spacing: 14) {
             HeadingBand(title: "Only on some trips", tint: AppSection.templates.color, id: "thing-heading-some")
@@ -589,7 +589,14 @@ struct ThingEditor: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, -6)
                 .accessibilityIdentifier("thing-some-hint")
+            #if os(macOS)
+            // In the keys' order (0.75): each kind a field, its pill ringed; a click lands there.
+            OnlySomeTripsPills(id: "thing", picks: $limits, stored: stored, showContext: workout,
+                               cursor: { k in at == .limit(k) ? limitAt[k] : nil },
+                               clicked: { k, n in limitAt[k] = n; land(.limit(k), quiet: true) })
+            #else
             OnlySomeTripsPills(id: "thing", picks: $limits, stored: stored, showContext: workout)
+            #endif
             if workout {
                 Text("Context counts on workout templates only.")
                     .font(.system(.footnote)).foregroundStyle(Theme.muted)
@@ -602,6 +609,18 @@ struct ThingEditor: View {
                     .accessibilityIdentifier("thing-some-own")
             }
         }
+    }
+
+    /// What the thing has stored as its own "Only on some trips" (none while it is being made).
+    private var storedLimits: TripLimits {
+        model.library.items.first { $0.id == current }.map(Library.thingLimits) ?? TripLimits()
+    }
+
+    /// Context counts on a workout template only: offered while the thing is on one, or says
+    /// one already (so it can be seen and switched off).
+    private func showsContext(_ templates: [PackList]) -> Bool {
+        templates.contains { onLists.contains($0.id) && contextApplies($0) }
+            || !storedLimits.contexts.isEmpty || !limits.contexts.isEmpty
     }
 
     private func toggleTemplate(_ id: String) {
@@ -1150,6 +1169,7 @@ extension ThingEditor {
         switch f {
         case .section(let t): return "key-section-\(t)"
         case .liquid, .restricted: return "key-plane"
+        case .limit(let k): return "key-some-\(k.rawValue)"
         case .kitTakenOut, .kitAdd, .kitCheck: return "key-kit"
         case .kitOut(let id), .kitRemove(let id): return "key-kit-row-\(id)"
         case .kitFind: return "key-kit-find"
@@ -1165,6 +1185,8 @@ extension ThingEditor {
         let templates = self.templates
         if !templates.isEmpty { out.append(.templates) }
         for t in templates where onLists.contains(t.id) { out.append(.section(t.id)) }
+        // Only on some trips (0.75): each row of pills, as it shows under the Sections.
+        out += OnlySomeTripsPills.kinds(showContext: showsContext(templates)).map { ThingField.limit($0) }
         out += [.storage, .bag]
         if model.library.takesPockets(bag: draft.container) { out.append(.pocket) }       // 0.69; 0.73
         out += [.when, .weight]
@@ -1207,6 +1229,7 @@ extension ThingEditor {
         case .owner: return "thing-owner"
         case .templates: return "thing-lists"
         case .section(let t): return "thing-section-\(templates.firstIndex { $0.id == t } ?? -1)"
+        case .limit(let k): return "thing-\(k.rawValue)"
         case .storage: return "thing-storage"
         case .bag: return "thing-bag"
         case .pocket: return "thing-pocket"
@@ -1239,6 +1262,7 @@ extension ThingEditor {
         case .owner: return "Whose it is"
         case .templates: return "On these templates"
         case .section(let t): return "Section on \(templates.first { $0.id == t }?.name ?? "")"
+        case .limit(let k): return k.title
         case .storage: return "Kept at home"
         case .bag: return "Usually packed in"
         case .pocket: return "Pocket"
@@ -1281,7 +1305,7 @@ extension ThingEditor {
         case .weight: return "grams, or kilos as 1,2 kg · Tab next · Return saves"
         case .expiry: return "a date, 2027-06-30 or 30/6 27, or +6m, +1y · Return saves"
         case .jump: return "type part of a field's name · Return goes there · Esc closes"
-        case .templates: return "← → move · Space turns it on or off · type to jump · Tab next"
+        case .templates, .limit: return "← → move · Space turns it on or off · type to jump · Tab next"
         case .liquid, .restricted, .kitTakenOut, .kitCheck: return "Space turns it on or off · Tab next · Return saves"
         case .kitAdd: return "Space opens or closes the list of your things · Tab next · Return saves"
         case .kitOut: return "Space takes it out or puts it back · Tab next · Return saves"
@@ -1369,6 +1393,9 @@ extension ThingEditor {
         if f == .templates, pillAt == nil {
             pillAt = templates.firstIndex { onLists.contains($0.id) } ?? 0
         }
+        if case .limit(let k) = f, limitAt[k] == nil {
+            limitAt[k] = limitOptions(k).firstIndex { limits[k].contains($0.id) } ?? 0
+        }
         if let f, f.isText {
             typing = f
             let atEnd = !whole || f == .notes || f == .careNotes
@@ -1405,6 +1432,9 @@ extension ThingEditor {
             land(order[(n + dir + order.count) % order.count])
         } else if case .section = at, let k = order.firstIndex(of: .storage) {
             // A Section whose template was just turned off: on from where it stood.
+            land(order[dir > 0 ? k : max(k - 1, 0)])
+        } else if case .limit = at, let k = order.firstIndex(of: .limit(.transports)) {
+            // Context gone (its workout template turned off): on from where it stood (0.75).
             land(order[dir > 0 ? k : max(k - 1, 0)])
         } else if at?.isKit == true, let k = order.firstIndex(where: { $0 == .kitAdd || $0 == .kitTakenOut }) {
             // A kit row gone (✕ clicked) or the list closed by a click: on from Add (0.73).
@@ -1463,6 +1493,7 @@ extension ThingEditor {
         choiceLists = [:]
         kit = KitDraft()
         limits = TripLimits()
+        limitAt = [:]
         problem = ""
         weightProblem = ""
         askingToDelete = false
@@ -1503,6 +1534,7 @@ extension ThingEditor {
         let fields = fieldOrder()
         if let keep, fields.contains(keep) { land(keep) }
         else if keep?.isKit == true, let k = fields.first(where: { $0.isKit }) { land(k) }
+        else if case .limit = keep { land(.limit(.seasons)) }          // Context: on no workout there
         else { land(keep == nil ? nil : .templates) }
     }
 
@@ -1679,6 +1711,8 @@ extension ThingEditor {
         switch f {
         case .templates:
             return pillKey(e)
+        case .limit(let k):
+            return limitKey(e, k)
         case .liquid, .restricted:
             guard code == KeyCode.space else { return e }
             if f == .liquid { draft.liquid.toggle() } else { draft.restricted.toggle() }
@@ -1753,6 +1787,34 @@ extension ThingEditor {
             keyHome.aheadAt = now
             let typed = keyHome.ahead.lowercased()
             if let hit = list.firstIndex(where: { $0.name.lowercased().hasPrefix(typed) }) { pillAt = hit }
+        }
+        return nil
+    }
+
+    /// The pills of one kind of Only on some trips, as the page shows them.
+    fileprivate func limitOptions(_ k: TripLimit) -> [(id: String, label: String)] {
+        OnlySomeTripsPills.options(k, stored: storedLimits, thing: nil)
+    }
+
+    /// A row of Only on some trips (0.75) — exactly as On these templates: ← → move along the
+    /// pills (no wrap), Space switches the one lit (kept by Save, as a click is), letters jump
+    /// to the first pill whose words start so; ↑ ↓ ⌫ do nothing.
+    private func limitKey(_ e: NSEvent, _ k: TripLimit) -> NSEvent? {
+        let list = limitOptions(k)
+        guard !list.isEmpty else { return e }
+        let n = min(max(limitAt[k] ?? 0, 0), list.count - 1)
+        switch e.keyCode {
+        case KeyCode.left: limitAt[k] = max(n - 1, 0)
+        case KeyCode.right: limitAt[k] = min(n + 1, list.count - 1)
+        case KeyCode.space: OnlySomeTripsPills.toggle(&limits, k, list[n].id)
+        case KeyCode.up, KeyCode.down, KeyCode.delete: break
+        default:
+            guard let words = e.typedWords else { return e }
+            let now = Date()
+            keyHome.ahead = now.timeIntervalSince(keyHome.aheadAt) <= 1 ? keyHome.ahead + words : words
+            keyHome.aheadAt = now
+            let typed = keyHome.ahead.lowercased()
+            if let hit = list.firstIndex(where: { $0.label.lowercased().hasPrefix(typed) }) { limitAt[k] = hit }
         }
         return nil
     }

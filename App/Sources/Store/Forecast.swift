@@ -44,9 +44,15 @@ struct OpenMeteo: Forecaster {
             .init(name: "timezone", value: "auto"),
             .init(name: "daily", value: "weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max"),
         ]
+        // A trip past the reach is never asked for the service's own days — this week's
+        // weather shown as the trip's (0.75; `lookUpWeather` does not ask, this is the
+        // second lock).
+        if ForecastAsk.comesFrom(startDate: startDate, today: today, utcToday: todayYMD()) != nil {
+            throw ForecastTrouble.nothingYet
+        }
         // The trip's own dates when they are within reach (cut at the service's last
-        // day, `ForecastAsk`); otherwise whatever the service gives by default, as the
-        // web app does.
+        // day, `ForecastAsk`); otherwise (under way, or no dates) whatever the service
+        // gives by default — today on — as the web app does.
         if let days = ForecastAsk.days(startDate: startDate, nights: nights, today: today, utcToday: todayYMD()) {
             items.append(.init(name: "start_date", value: days.start))
             items.append(.init(name: "end_date", value: days.end))

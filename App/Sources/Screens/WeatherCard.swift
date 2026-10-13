@@ -5,7 +5,8 @@ import PackingLibrary
 /// The weather on a trip: one line of what it will be like, and under it the gear
 /// that weather calls for which is not on the trip yet — each with one press to
 /// take it along. It looks the forecast up by itself when the trip is near enough
-/// for one to exist; otherwise it waits to be asked.
+/// for one to exist; otherwise it waits to be asked — and for a trip past the forecast's
+/// reach it is never asked, the card says when it comes (0.75).
 struct WeatherCard: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
@@ -20,6 +21,13 @@ struct WeatherCard: View {
 
     private var trip: TripEvent? { model.library.trip(tripId) }
     private var busy: Bool { model.lookingUpWeather.contains(tripId) }
+    /// The day the forecast first exists, for a trip that has its place and starts past the
+    /// service's reach (`ForecastAsk.comesFrom`); nil otherwise — an undated trip included,
+    /// which is asked for the service's own days (today's weather on).
+    private var notYet: String? {
+        guard let trip, !jsTrim(trip.destination).isEmpty else { return nil }
+        return ForecastAsk.comesFrom(startDate: trip.startDate, today: Today.local, utcToday: todayYMD())
+    }
 
     var body: some View {
         let sky = model.library.weather(tripId: tripId)
@@ -103,6 +111,15 @@ struct WeatherCard: View {
                     .accessibilityIdentifier("weather-look")
                 }
                 .needsLine($needs, typed: place, id: "weather-look-needs")
+                // A trip with its place that starts past the forecast's reach (0.75): no
+                // forecast is asked for — the service would answer with this week's — so the
+                // card says when the trip's own comes.
+                if let from = notYet {
+                    Text(WeatherCard.notYet(from: from))
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("weather-notyet")
+                }
             }
             if let trouble = model.weatherTrouble[tripId], !trouble.isEmpty {
                 Text(trouble).font(.system(.footnote, weight: .semibold))
@@ -142,6 +159,12 @@ struct WeatherCard: View {
         guard !name.isEmpty else { needs = "Type a place first."; return }
         typing = false
         Task { await model.lookUpWeather(tripId: tripId, place: name) }
+    }
+
+    /// "No forecast yet — it comes about 15 days before the trip (from 29 Oct 2026)." — the
+    /// date in the app's own words (`TripChecksCard.day`).
+    static func notYet(from ymd: String) -> String {
+        "No forecast yet \u{2014} it comes about \(ForecastAsk.reachDays) days before the trip (from \(TripChecksCard.day(ymd)))."
     }
 
     /// "Rain and cold, 2–8°C" — what it will be like, in his words, not a code.

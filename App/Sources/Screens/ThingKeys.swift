@@ -1,4 +1,5 @@
 import SwiftUI
+import PackingLibrary
 #if os(macOS)
 import AppKit
 #endif
@@ -23,6 +24,11 @@ import AppKit
 /// A field of a thing's page, in his reading order.
 enum ThingField: Hashable {
     case name, notes, category, owner, templates, section(String), storage, bag, when
+    /// A row of "Only on some trips" pills (0.75): Season, Context (a workout template only),
+    /// Transport, Food — each a field of its own, answering the keys as On these templates
+    /// does: ← → move along the pills, Space switches the one lit, letters jump. Until 0.75
+    /// (the pills came in 0.73) Tab went past them.
+    case limit(TripLimit)
     /// Pocket (0.69) — only when its bag has pockets.
     case pocket
     /// The kit part (0.70): Taken out for now (a thing in a kit); Add from your things and

@@ -70,6 +70,35 @@ final class ForecastAskTests: XCTestCase {
         XCTAssertNil(ask("", nights: 2))
     }
 
+    // MARK: - A trip past the reach (0.75)
+
+    /// Until 0.75 a trip a month ahead was asked for the service's own days — this week —
+    /// and the card showed this week's weather as the trip's. Now it is not asked: the
+    /// forecast comes 15 days before the trip, and the card says from when.
+    func testATripPastTheReachIsNotAskedAndSaysWhenItsForecastComes() {
+        func from(_ start: String, today: String? = nil, utc: String? = nil) -> String? {
+            ForecastAsk.comesFrom(startDate: start, today: today ?? self.today, utcToday: utc ?? self.today)
+        }
+        XCTAssertEqual(from("2026-11-11"), "2026-10-27", "a trip a month ahead: its forecast comes 15 days before it")
+        XCTAssertEqual(from("2026-10-28"), "2026-10-13", "a day past the reach: tomorrow")
+        XCTAssertNil(from("2026-10-27"), "a trip starting on the last forecast day is asked for now")
+        XCTAssertNil(from(today), "a trip starting today is asked for now")
+        XCTAssertNil(from("2026-10-10"), "a trip under way is asked for now (the service's days, from today)")
+        XCTAssertNil(from("2026-09-01"), "a trip long over says nothing about a forecast to come")
+        XCTAssertNil(from(""), "an undated trip is asked for the service's own days: today's weather on")
+        XCTAssertNil(from("soon"), "no date, no answer")
+        // After midnight in Sweden the service still counts from the UTC date: 28 Oct is
+        // still past its last day (27 Oct), so it is not asked for.
+        XCTAssertEqual(from("2026-10-28", today: "2026-10-13", utc: "2026-10-12"), "2026-10-13")
+        // The two questions never disagree: a trip is either asked for (its days, or the
+        // service's) or waits for its forecast — never both, never neither.
+        for start in ["2026-10-10", today, "2026-10-26", "2026-10-27", "2026-10-28", "2026-11-11", ""] {
+            let waits = from(start) != nil
+            XCTAssertEqual(waits, start > "2026-10-27", "\(start): waits = \(waits)")
+            if waits { XCTAssertNil(ask(start, nights: 3), "\(start) waits for its forecast and is asked for days too") }
+        }
+    }
+
     // MARK: - What the service's answer means
 
     /// The service's own words on 12 Oct 2026, asked for one day too many.

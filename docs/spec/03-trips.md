@@ -1619,7 +1619,8 @@ passport; Liquid off removes one; clearing the passport's date removes it; Car r
 **Purpose and origin.** "The weather on a trip: one line of what it will be like, and under it the
 gear that weather calls for which is not on the trip yet — each with one press to take it along"
 (0.4). Add all (0.36). A place without a forecast still reaches the map (his G.6, 0.40). Open-Meteo,
-"the same two calls the web app makes".
+"the same two calls the web app makes". A trip past the forecast's reach is not asked at all and the card says when
+its forecast comes (0.75).
 
 ### What is on screen (card, padding 12, corner 12, id `weather-card`)
 **Without a forecast:** a field "Where is this trip?" (16 medium; prefilled with the trip's
@@ -1629,6 +1630,13 @@ while busy), id `weather-look`, never disabled; after a press with a blank field
 A look (Weather or Return) first puts the keyboard away (`@FocusState typing = false`): the field leaves the
 card when the forecast arrives, and leaving with the keyboard still up froze the iPhone on "Looking…" (iOS 26.5;
 `testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing` timed out — found at the 0.68–0.71 merge, already in 0.67).
+**No forecast yet** (0.75; under the field, Footnote semibold muted, wraps, id `weather-notyet`): "No forecast yet — it
+comes about 15 days before the trip (from 29 Oct 2026)." (`WeatherCard.notYet(from:)`; "15" is
+`ForecastAsk.reachDays`; the date = the trip's start − 15 days, `ForecastAsk.comesFrom`, in the app's date words
+`TripChecksCard.day`, "3 Oct 2026"). Shown while the card holds no forecast, the trip has a place (`destination` not
+blank — kept by a Weather press or typed in Trip settings) and it starts past the service's last day (below). Read
+from the trip each time the card is drawn — memory holds nothing — so it goes by itself once the dates move into
+reach, or 15 days before the trip. A trip with no place yet shows nothing (nothing was asked).
 
 **With a forecast:**
 - The line (17 bold ink, id `weather-line`): the conditions in his words — rain "Rain", snow "Snow",
@@ -1656,8 +1664,12 @@ again later." (0.73)
 - **Looking up** (`LibraryModel.lookUpWeather`): name = trimmed typed place (or the trip's); blank or
   already busy for this trip → nothing. Clears trouble; (1) geocode → keeps the place AT ONCE: trip
   `destination` = the typed name, `geo` = the service's spot and label (map pin) — even if no forecast
-  follows; (2) forecast for the trip's start and nights → `setWeather` (destination = place, weather =
-  snapshot, geo with the snapshot's place). Any error → the trouble line.
+  follows; (1b, 0.75) a trip that starts PAST the service's last day (`ForecastAsk.comesFrom` not nil) stops here:
+  no forecast is asked for, and a forecast the trip still holds is let go (`Library.dropWeather`: `weather` = nil,
+  `updatedAt` stamped, place and pin kept; nothing written when it holds none) — one held there can only be of
+  other days; the card then says when the forecast comes (above). (2) forecast for the trip's start and nights →
+  `setWeather` (destination = place, weather = snapshot, geo with the snapshot's place). Any error → the trouble
+  line. Weather, Return and Look again all look up this way.
 - **Open-Meteo** (`OpenMeteo`): geocoding `…/v1/search?name=<n>&count=1&language=en&format=json`; label
   "<name>, <country_code>". Forecast `…/v1/forecast?latitude&longitude&timezone=auto&daily=weathercode,
   temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max`. The days asked
@@ -1666,8 +1678,15 @@ again later." (0.73)
   phone's date (`Today.local`) and the UTC date (`todayYMD()`), because the service's "today" is the UTC date wherever
   the place is (same last day at UTC−10, 0 and +14, checked 12 Oct 2026) and in Sweden the phone's date is a
   day ahead of it from midnight to 01:00 (02:00 in summer). When the trip starts between the phone's today
-  and that last day, `start_date` = start and `end_date` = start + nights, cut at the last day; otherwise
-  (started already, or past the last day) no dates — the service's default days, as the web app does.
+  and that last day, `start_date` = start and `end_date` = start + nights, cut at the last day. A trip that
+  started already, or has NO dates, is asked with no dates — the service's default days, today on, as the web app
+  does: for an undated trip today's weather where it goes is the best there is (decided 13 Oct 2026, 0.75). A trip
+  that starts PAST the last day is never asked (0.75, `ForecastAsk.comesFrom`: start − 15 days when the start is
+  after the last day, else nil — an undated, a running or a past trip included): `lookUpWeather` stops after the
+  place, and `OpenMeteo.forecast` refuses such a trip itself as a second lock (`ForecastTrouble.nothingYet`, never
+  sent to the service). Until 0.75 it was asked with no dates, the service answered with THIS week, and the card
+  showed this week's weather as the trip's (his report, 13 Oct 2026). A trip already over still gets the default
+  days if he presses Weather (open question below).
 - **What an answer means** (`ForecastAsk.trouble`, pure, model-tested): no answer at all (the request
   throws) → offline, "check the connection" — the ONLY case. An answer with HTTP ≥ 400 is never offline: its
   `{"error": true, "reason": …}` saying "out of allowed range" for `start_date`/`end_date` → "No forecast for
@@ -1681,7 +1700,8 @@ again later." (0.73)
   and every HTTP ≥ 400 was read as offline. Both fixed. The web app (`js/weather.js`, `MAX_AHEAD_DAYS = 16`,
   "Could not fetch the forecast — check your connection.") still has the same day too many and the same
   words — the native app deliberately differs there.
-- **Automatic look-up** (`forecastWorthFetching`): the trip has a place AND a start date AND a forecast can
+- **Automatic look-up** (`forecastWorthFetching`, unchanged in 0.75 — it never looked a trip past the reach
+  up): the trip has a place AND a start date AND a forecast can
   exist for it (`ForecastAsk.inReach`: it started at most `nights` days before the phone's today, i.e. it is not
   over, and starts no later than the service's last day above — whole civil days) AND the held forecast
   is stale (`forecastIsStale`: none or no days; or the forecast's place name does NOT begin with the
@@ -1723,21 +1743,41 @@ trip with that id, as everywhere else (0.62; it took the last).
 ### iPhone vs Mac
 Identical. Under the UI tests the forecast is invented (`InventedForecast`): any place → "Testville,
 SE" with rain (code 61), 2–8 °C, 90 %, wind 24 for days 0…max(1, nights); a name containing "late" →
-"Lateville, SE" with no forecast; "nowhere" → not found.
+"Lateville, SE" with no forecast; "nowhere" → not found. The sample's trip is a month ahead — past the reach, so
+since 0.75 its card says when the forecast comes and asks for none; the tests that need a forecast launch with
+`-uiTestingSoon` (`SampleLibrary.soon()`: the same trip 10 days ahead, two nights).
 
 ### Tests
 UI `testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing`, `testWeatherAddAllTakesEverything`,
-`testTheMapShowsWhereTheTripsWent` (no-forecast place still on the map), `testEveryAddButtonIsReadyAndSaysWhatIsMissing`
-(`weather-look`). Model `TripWeatherTests` (6: kept and read back, missing gear, staleness incl. a
+`testTheMapShowsWhereTheTripsWent` (no-forecast place still on the map) — these three on `-uiTestingSoon` since 0.75 —,
+`testATripPastTheForecastsReachSaysWhenItsForecastComes` (0.75: the sample's trip a month ahead, Testville + Return →
+`weather-notyet` says "No forecast yet — it comes about 15 days before the trip (from <today + 15>)." exactly, no
+`weather-line`, no `weather-trouble`, the field stays; the map then has "1 place · 1 trip", Testville, SE; picture
+`weather-not-yet`; seen RED on the iPhone with `comesFrom` planted to answer nil — the 0.74 behaviour — "the card
+does not say when the forecast comes: '' — its weather line says 'Rain and cold, 2–8°C'"),
+`testEveryAddButtonIsReadyAndSaysWhatIsMissing` (`weather-look`). Model `TripWeatherTests` (6: kept and read back, missing gear, staleness incl. a
 different place, survives a backup, `testRetiredGearIsNeverOfferedAndTheBasesOwnGearIs`,
 `testTwoTripsWithOneIdAreReadAsTheFirst`), `TripBulkTests.testAddAllTakesEveryWeatherSuggestionOnce`,
-`testHisOwnWeatherGearKeepsItsSource`, `WeatherTests` (all 19), `ForecastAskTests` (8, 0.73: the reach is 15;
+`testHisOwnWeatherGearKeepsItsSource`, `TripWeatherTests.testAForecastLetGoLeavesThePlaceAndThePin` (0.75,
+`dropWeather`: the forecast goes, place and pin stay, `updatedAt` stamped, no gear asked for, nothing written with none
+held; seen RED with the forecast kept and with `updatedAt` left), `WeatherTests` (all 19), `ForecastAskTests` (9; 0.75
+`testATripPastTheReachIsNotAskedAndSaysWhenItsForecastComes`: a month ahead → start − 15, a day past the reach →
+tomorrow, the last day itself / today / under way / long over / undated / not a date → nil, after midnight counted
+from the UTC date, and `comesFrom` and `days` never both answer; seen RED with `comesFrom` planted to answer the start
+and to answer nil. 0.73's eight: the reach is 15;
 a trip starting on the last day / a day past it; a trip running past it is cut; after midnight the reach counts
 from the UTC date, west of UTC from the phone's; a trip under way is in reach until its last day; the service
 refusing the days → "No forecast for those dates yet."; any other HTTP "no" → the service-trouble words, never
 "check the connection"; all four trouble words).
-**Not covered:** the staleness half of the automatic look-up as the card appears; "Look again"; the network
-call itself (`OpenMeteo.read` — no real network in tests; its two rules are `ForecastAsk`'s, tested).
+**Not covered:** the staleness half of the automatic look-up as the card appears; "Look again" (on a trip past the
+reach it lets a held forecast go — `dropWeather` is model-tested, the press is not); the network
+call itself (`OpenMeteo.read` — no real network in tests; its rules are `ForecastAsk`'s, tested); `OpenMeteo`'s own
+refusal of a trip past the reach (the second lock: `lookUpWeather` never gets there).
+
+**Open question (0.75).** A trip already OVER (and not under way) still gets the service's default days — this
+week's weather — if Weather is pressed (the automatic look-up never asks for it). The service also answers for past
+days (`start_date` up to about three months back — its refusal on 12 Oct 2026 named "from 2026-07-11"), so the trip's
+own past weather could be asked for instead; or such a trip could say nothing. Not decided.
 
 ---
 
