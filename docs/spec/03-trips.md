@@ -1525,7 +1525,9 @@ still waiting for what is inside — no bar).
   green capsule outline, min height `Metrics.chip`; id `trip-undo`, its value the words).
 - **The words** (`TickUndo`): a heading's tick "Ticked N in <heading>" / "Unticked N in <heading>" — N the lines it
   CHANGED; Clear every tick "Cleared N ticks" ("Cleared 1 tick").
-- **6 seconds**, then it goes by itself (`.task(id:)`: a new press is a new id with its own 6 seconds).
+- **6 seconds**, then it goes by itself (`.task(id:)`: a new press is a new id with its own 6 seconds). Under the UI
+  tests `-undoSeconds N` sets the time (`TickUndoBar.seconds`): on GitHub's Mac a test took longer than 6 seconds to
+  reach the button (0.79's probe) — the flow tests use 600, one test 8 and watches it go.
 - **One at a time:** a new press — another heading, the same heading again, Clear every tick — replaces it; the
   older one can no longer be undone.
 - **Undo** writes back what the press changed (`Library.undo`, one `model.change`) and the bar goes.
@@ -1573,10 +1575,11 @@ ticked → no `tripset-clearall`; two ticked → its value "2", below Start a ne
 the ticks closes Trip settings, 0/7, "Cleared 2 ticks", Undo → 2/7 with the same two; a changed name → the red
 line), `testAHeadingsTickIsTakenBackByUndo` (sorted From where: the Passport by hand, the heading ticks the Phone
 charger, "Ticked 1 in Chest of drawers", the bar above the add field, Undo → 1/7 with the Passport still ticked; the
-Garage then the Hall closet, Undo takes back the Hall closet only; "Unticked 2 in Garage", gone by itself, the ticks
-unchanged). Both seen red first with planted faults (no bar after a heading's tick; the row with nothing ticked; a
-bar that never goes; no Undo after Clear; the Passport counted as changed; Tick everything back on the foot; a newer
-press not replacing the older; no unsaved-line). Until 0.79: `testEverythingIsTickedAndClearedAtOnce`. The tests that
+Garage then the Hall closet, Undo takes back the Hall closet only; "Unticked 2 in Garage", Undo ticks it again),
+`testTheUndoGoesByItself` (`-undoSeconds 8`: the Bathroom cabinet's tick, the bar comes and goes by itself, 1/7 kept).
+The first two run with `-undoSeconds 600`. All seen red first with planted faults (no bar after a heading's tick; the row with
+nothing ticked; a bar that never goes; no Undo after Clear; the Passport counted as changed; Tick everything back on
+the foot; a newer press not replacing the older; no unsaved-line; Undo ignoring an untick). Until 0.79: `testEverythingIsTickedAndClearedAtOnce`. The tests that
 needed everything ticked (Pack by voice with nothing left, the way home's photos, the door check, both Take a break
 tests) tick every line by hand (`tickEveryLine`). Model `TripBulkTests`:
 `testEverythingIsTickedAndClearedButWhatIsSetAside`, `testAHeadingsTickIsUndoneLineForLine`,

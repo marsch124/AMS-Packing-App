@@ -37,6 +37,16 @@ struct TickUndoBar: View {
     /// Its 6 seconds are up.
     let gone: () -> Void
 
+    /// How long it is offered: 6 seconds. Under the UI tests `-undoSeconds N` sets it — GitHub's Mac
+    /// takes longer than 6 seconds to reach the button (0.79's probe), and a test racing a timer
+    /// fails for nothing; one test gives it a few seconds and watches it go.
+    static let seconds: Double = {
+        let args = ProcessInfo.processInfo.arguments
+        guard AMSPackingApp.testing, let n = args.firstIndex(of: "-undoSeconds"), n + 1 < args.count,
+              let s = Double(args[n + 1]), s > 0 else { return 6 }
+        return s
+    }()
+
     var body: some View {
         HStack(spacing: 10) {
             Text(undo.said)
@@ -61,7 +71,7 @@ struct TickUndoBar: View {
         .padding(.horizontal, 16).padding(.top, 8)
         // A new press is a new id: its own 6 seconds from the start.
         .task(id: undo.id) {
-            try? await Task.sleep(for: .seconds(6))
+            try? await Task.sleep(for: .seconds(TickUndoBar.seconds))
             if !Task.isCancelled { gone() }
         }
     }

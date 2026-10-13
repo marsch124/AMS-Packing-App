@@ -4121,7 +4121,9 @@ final class AMSPackingUITests: XCTestCase {
     /// clears them, closes Trip settings, and the trip offers Undo, which brings back exactly those
     /// ticks. With other answers changed and not saved, the question says they are not saved.
     func testEveryTickIsClearedFromTripSettingsAndCanBeUndone() {
-        let app = launch()
+        // The Undo stays until used (`-undoSeconds`): GitHub's Mac takes longer than its 6 seconds to
+        // reach it. That it goes by itself: `testTheUndoGoesByItself`.
+        let app = launch("-uiTesting", ["-undoSeconds", "600"])
         openSampleTrip(app)
         let progress = app.staticTexts["trip-progress"]
         XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
@@ -4191,9 +4193,11 @@ final class AMSPackingUITests: XCTestCase {
     /// His decision (13 Oct 2026): the round tick by a heading ticks — or unticks — a whole group in
     /// one press, so it says what it did and offers Undo for 6 seconds, between the list and the add
     /// bar. Undo puts back exactly the ticks the group had (the Passport, ticked by hand before,
-    /// stays ticked); one Undo at a time — a new press replaces it; and it goes by itself.
+    /// stays ticked); one Undo at a time — a new press replaces it; an untick is undone too.
     func testAHeadingsTickIsTakenBackByUndo() {
-        let app = launch()
+        // The Undo stays until used (`-undoSeconds`): on GitHub's Mac the test took longer than its
+        // 6 seconds to reach it (0.79's probe). That it goes by itself: `testTheUndoGoesByItself`.
+        let app = launch("-uiTesting", ["-undoSeconds", "600"])
         openSampleTrip(app)
         let progress = app.staticTexts["trip-progress"]
         XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
@@ -4234,11 +4238,27 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-undo")
         XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "Undo did not take back the Hall closet alone: '\(words(progress))'")
 
-        // Unticking a whole group is offered back too — and the offer goes by itself.
+        // Unticking a whole group is offered back too.
         tap(app, id: "trip-group-2-all")
         XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the heading did not untick its group: '\(words(progress))'")
         XCTAssertTrue(undoSays("Unticked 2 in Garage"), "the Undo bar says '\(heard)'")
-        XCTAssertTrue(waitUntil(timeout: 12) { !undo.exists }, "Undo did not go by itself")
+        tap(app, id: "trip-undo")
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "Undo did not tick the Garage again: '\(words(progress))'")
+    }
+
+    /// The Undo after a heading's tick is offered for a few seconds only (6 in the app; 8 here, so a
+    /// slow machine still sees it come), then goes by itself — and going changes no tick.
+    func testTheUndoGoesByItself() {
+        let app = launch("-uiTesting", ["-undoSeconds", "8"])
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
+        XCTAssertEqual(choose(app, "trip-view", 2), "From where")
+        tap(app, id: "trip-group-0-all")                           // the Bathroom cabinet: the Toothbrush
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "'\(words(progress))'")
+        let undo = app.buttons["trip-undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 5), "no Undo after a heading's tick")
+        XCTAssertTrue(waitUntil(timeout: 25) { !undo.exists }, "Undo did not go by itself")
         XCTAssertEqual(words(progress), "1/7", "going by itself, Undo changed the ticks")
     }
 
