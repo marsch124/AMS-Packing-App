@@ -15,6 +15,7 @@
 		0AAB4973E2199237D249F978 /* ToCharge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B8389C70A03647A3E98F6DB /* ToCharge.swift */; };
 		0C6CADF139B1A87388BE3DD4 /* BagsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB48F2667254D2AD3862586 /* BagsScreen.swift */; };
 		0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35352F3BD8D2A7EE166961C9 /* Today.swift */; };
+		0FC3745712735DDB91945D72 /* TripMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94244273DBD58428C6B6C4F1 /* TripMessages.swift */; };
 		18BBB6F1544022B6A9540909 /* Pockets.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6A7521CAF9F486A9847AB2 /* Pockets.swift */; };
 		192F5DC225468F6FC0E7E870 /* ThingKitPart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A807991F4D3D37B8ECD7F29C /* ThingKitPart.swift */; };
 		1A3A1067D5D9FB7754573E80 /* VoicePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50CD73DFBC2243DAE7B30588 /* VoicePanel.swift */; };
@@ -71,6 +72,7 @@
 		B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A74DCE749078F203A8E87BF /* SettingsScreen.swift */; };
 		B7EFE44328F09E5EB47E6485 /* ScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */; };
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
+		BA0412EFC474F7660997C615 /* TakeABreak.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186841C4B47BDD39836B3D9D /* TakeABreak.swift */; };
 		BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5604CA6875D255BD93251 /* CareScreen.swift */; };
 		C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0A839566CDE77B068F47C5 /* BulkChange.swift */; };
 		C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A986BF2DF0FA5E39E42559C /* Words.swift */; };
@@ -123,6 +125,7 @@
 		112E88E5E56E46CAA3F002CE /* KitDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitDashboard.swift; sourceTree = "<group>"; };
 		1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1750ABC86D97A97B07370949 /* DropDown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropDown.swift; sourceTree = "<group>"; };
+		186841C4B47BDD39836B3D9D /* TakeABreak.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TakeABreak.swift; sourceTree = "<group>"; };
 		18C6CB980A090E605DD6CC2D /* VoiceWalker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceWalker.swift; sourceTree = "<group>"; };
 		1E01A9E0DEC947610C0F642D /* GrabScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabScreen.swift; sourceTree = "<group>"; };
 		1E0A839566CDE77B068F47C5 /* BulkChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BulkChange.swift; sourceTree = "<group>"; };
@@ -169,6 +172,7 @@
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
 		9303A9912D1C193EBFA773D8 /* VoiceStarts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStarts.swift; sourceTree = "<group>"; };
+		94244273DBD58428C6B6C4F1 /* TripMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripMessages.swift; sourceTree = "<group>"; };
 		95CE795CC801DFFE3FD39642 /* BagCabin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagCabin.swift; sourceTree = "<group>"; };
 		9713345B304E68E88C1CFCB0 /* SmallCoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallCoreSheet.swift; sourceTree = "<group>"; };
 		9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsScreen.swift; sourceTree = "<group>"; };
@@ -275,6 +279,7 @@
 				029AD64D1791D9D681EA7DDF /* ShopReminders.swift */,
 				76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */,
 				35352F3BD8D2A7EE166961C9 /* Today.swift */,
+				94244273DBD58428C6B6C4F1 /* TripMessages.swift */,
 				F99A5CDDEE7077CDDBCB185D /* Vault.swift */,
 				84A8F1D2ED5D5358B98D4BE9 /* WhereIsIntent.swift */,
 			);
@@ -387,6 +392,7 @@
 				DBCE6F6679B4724E0039268E /* SyncCard.swift */,
 				5844FD1A40A106FF0878B093 /* TableColumns.swift */,
 				4F6491A9AB1E25EAC20F46EB /* TableFilterSort.swift */,
+				186841C4B47BDD39836B3D9D /* TakeABreak.swift */,
 				26111B23DAEE70145F81696C /* TemplateReminders.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
 				D9E2F7EBD889FD3F4345F9E8 /* ThingDetailLine.swift */,
@@ -581,6 +587,7 @@
 				FBC13904D9EB455D6F6AEDE9 /* SyncCard.swift in Sources */,
 				A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */,
 				ADB8FA04EBE1134791655CCD /* TableFilterSort.swift in Sources */,
+				BA0412EFC474F7660997C615 /* TakeABreak.swift in Sources */,
 				A2EF7B9D15A856E17FB773D8 /* TemplateIcons.swift in Sources */,
 				EC8EF7A9BC050820AED9344A /* TemplateReminders.swift in Sources */,
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
@@ -595,6 +602,7 @@
 				0F41CCC6A6FA838132BAE3F9 /* Today.swift in Sources */,
 				55A2BB9EF7E8AA1F601802AC /* TripChecks.swift in Sources */,
 				9EE318CF900961BD87E38068 /* TripKitLine.swift in Sources */,
+				0FC3745712735DDB91945D72 /* TripMessages.swift in Sources */,
 				B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */,
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
 				3F92FF6665ADB7BD4437005C /* Vault.swift in Sources */,

@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.77", date: "13 Oct 2026", title: "Take a break",
+                new: ["Take a break, on a trip you are packing: see how far you have come \u{2014} packed, each group done or left, what is left to charge and to do \u{2014} and choose when to go on: in an hour, this evening or tomorrow. The iPhone reminds you then.",
+                      "Messages when a trip moves on: \u{201C}Have a good trip\u{201D} at the time you leave, and \u{201C}Welcome home\u{201D} the day after, to review it in two minutes. Turn them off in Settings."],
+                changed: ["Check before you go and To charge are one card at the top of a trip, Before you go: what to check, what to do and what to charge, with one count for all that is left.",
+                          "The trip's steps have their own drawings: a map for Plan, a suitcase with a tick for Pack, a pin on a map for On site, a magnifier for Review and a sprout for Refine."]),
         Release(version: "0.76", date: "13 Oct 2026", title: "Simpler new trips",
                 new: ["On a plane trip, Check before you go flags a thing with a battery in a checked bag \u{2014} things inside kits too: carry it in the cabin."],
                 changed: ["Travelling by: just Plane and RV, both off for an ordinary trip. Plane adds the airport checks, RV adds your RV template.",

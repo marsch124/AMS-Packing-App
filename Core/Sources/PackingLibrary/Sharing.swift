@@ -91,6 +91,7 @@ extension Library {
         // page asked for or written on his Mac are his.
         for key in [MISSED_AT_REVIEW_KEY, TRIP_WORKOUTS_KEY, VAULT_WAITING_KEY, VAULT_WRITTEN_KEY] { t.extra[key] = nil }
         t.extra[KITS_KEPT_KEY] = nil             // it arrives not reviewed: its kits are theirs now (ThingKits)
+        t.extra[BREAK_UNTIL_KEY] = nil           // his break: their phone must not call them back to packing (TakeABreak, 0.77)
         t.entries = t.entries.map { line in
             var l = line
             l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)

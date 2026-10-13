@@ -87,6 +87,11 @@ trip *Weekend in the hills* (Hiking + base, always 30–32 days from the day the
 Neither leave time is copied by Start again (a new trip has no dates); both travel in a shared trip (the
 people he shares a trip with leave with him). See "The door check".
 
+`breakUntil` (`BREAK_UNTIL_KEY`, 0.77) — "yyyy-MM-dd HH:mm", Take a break's moment to go back to packing (spec 07
+part 16): written by the break sheet, removed by Just pause and when everything is packed; NOT copied by Start
+again and dropped in a shared trip (`justTheList` — the people he shares with must not be called back to HIS
+packing).
+
 | `missedAtReview` | `MISSED_AT_REVIEW_KEY` | `[{ "name", "template" }]` — the missed things as the review saved them; `template` = the template's shown name, "" = on no template (0.70) | `saveReview` |
 | `vaultWaiting` | `VAULT_WAITING_KEY` | ISO moment a page in his Obsidian vault was asked for (0.70) | `saveReview`; the iPhone's Send to Obsidian (`askForVaultPage`); taken away by `vaultPageWritten` |
 | `vaultWritten` | `VAULT_WRITTEN_KEY` | `{ "file", "at" }` — the page the Mac wrote last (0.70) | the Mac (`vaultPageWritten`) |
@@ -1028,6 +1033,10 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
 - Under the line, 2 pt away, at the left: the progress "done/total" or "done/total · N set aside" (Callout
   semibold mono; green when all packed, else muted; id `trip-progress`; accessibility value "all packed" when
   all packed, else "").
+- At the right end of that count line (0.77, his yes of 13 Oct 2026): **Take a break** — a small outlined green
+  pill, the drawn cup and "Take a break" (or, with a break waiting, "Back at 19:00"), id `trip-break` — only while
+  the trip is at Pack (the loop strip's own reading) with something left. It opens the break sheet: how far he has
+  come, and "Continue when?". Everything about it: spec 07 part 16.
 
 **Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
 
@@ -1212,6 +1221,11 @@ tick, set-aside, group, place panel or night count changes (bug B1, his Mac 2026
 tick while the trip had it; and a moved lazy row kept "Set place").
 
 ### Sorting and grouping (`groupBy`, `Grouping.swift`)
+
+The groups come from ONE rule in the library, `Library.linesGrouped(tripId:sorting:lines:)` (0.77; until then
+`TripScreen.grouped` + the call in `TripScreen.groups`): Template = `linesByTemplate`, every other sorting the
+web app's `groupBy`, Into with a reminder under "To do". Take a break's overview (spec 07 part 16) reads the same
+groups, so its pills and the trip's headings never disagree.
 
 The chosen sorting is remembered on the device in AppStorage **`ams.view`** (default "when"), the same
 for every trip — kept so (the spec pass, 5 Oct 2026): it is a way of looking, not part of a trip, and

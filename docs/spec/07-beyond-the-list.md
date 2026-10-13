@@ -27,6 +27,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 13. His lists changed inside their drop-downs | 0.69 | built (branch work/ddedit069) |
 | 14. Only on some trips, set once on the thing | 0.73 | built (branch work/cond073) |
 | 15. Batteries and To charge | 0.75 | built (branch work/battery075) |
+| 16. Take a break and messages when a trip moves on | 0.77 | built (branch work/break077) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -1702,6 +1703,207 @@ Tests.
 - Some airlines limit power banks by watt-hours, or want them out of the cabin bag at the gate; the app knows no
   capacity and says only where it goes. His word welcome.
 
+## 16. Take a break and messages when a trip moves on
+
+> His words (13 Oct 2026), from his own packing walk-through: "then I get tired and just want to relax… if it is the
+> day after I would like a reminder or a calendar event so that I feel calm. In this state I would like an overview
+> of how far I have come"; and "I would like a message from the app when the Phase changes". He said yes to both the
+> same day. Built on branch `work/break077` (0.77) and written from the code: the model
+> `Core/Sources/PackingLibrary/TakeABreak.swift`; the button, the sheet, the calendar hand-over and the Settings switch
+> `App/Sources/Screens/TakeABreak.swift`; the notifications `App/Sources/Store/TripMessages.swift`. Per screen: spec 03
+> (the trip header's count line), spec 06 §3 and §3c (Settings and the notifications), spec 01 §1.12 (the key).
+
+### What he gets
+
+- **Take a break**, on a trip being packed: a small outlined pill at the end of the trip header's count line
+  ("1/7 … ☕ Take a break") opens a sheet. On it: **how far he has come** — "41 of 63 packed", a bar, each group of
+  his Sorting as a pill, done (a drawn tick) or "3 left", and, when the trip has them, "To charge: 2 left" and "To
+  do: 1 left" — then **Continue when?** — In an hour · This evening (19:00) · Tomorrow (18:00, or the time beside it)
+  · Just pause. A time keeps ONE break on the trip: at that moment the iPhone says "Back to packing <trip>" / "22
+  things left", and a tap opens the trip. The pill then says when he comes back: "Back at 19:00". **Add to
+  Calendar** puts the break in his calendar too, if he wants. Ticking the last thing takes the break away.
+- **Messages when a trip moves on** (the iPhone): "Have a good trip — <trip>" when the trip sets off (Pack → On
+  site), and "Welcome home — review <trip> in two minutes?" the morning after its last day (On site → Review); a tap
+  on that one opens the trip on its review. A switch in Settings, on until he turns it off.
+
+### The rules (decided 13 Oct 2026, by the build)
+
+1. **Only at Pack.** The pill shows while the trip's step is Pack (`loopStep` on the trip screen's clock — the same
+   reading as the loop strip, so it goes the moment the trip sets off, 0.75) AND something is left (`allPacked` is
+   false). Never at Plan (no lines), On site, Review or Refine. A trip opened from a place's code has the same header,
+   so the pill is there too.
+2. **The overview is the trip's own counts.** "N of M packed" is the header's `progress(trip.entries)` — every line
+   not set aside, its reminders too (spec 07 part 12: "All packed" waits for them) — so the sheet and the "1/7" above
+   it never disagree. The groups are the trip's groups in HIS Sorting on this device (`@AppStorage("ams.view")`,
+   the trip's own key) through the ONE rule the trip screen uses (`Library.linesGrouped`, moved from
+   `TripScreen.grouped` for this: Template = `linesByTemplate`, others the web app's `groupBy`, Into puts a reminder
+   under "To do"); each group counts its lines not set aside, as its heading's "2/5" does; a group whose every line is
+   set aside is not shown. A line on two templates counts under both (it is under both on the trip). To charge is
+   exactly the To charge card's (`chargeCard(tripId:today:)` — from the day before the trip through its last day;
+   no card, no line): "To charge: N left" (orange) / "all charged" (green). To do counts the trip's reminders not set
+   aside: "To do: N left" / "all done"; no reminders, no line.
+3. **The choices**, read from the moment the sheet opened (the app's clock, `Today.now` — the tests' `-clockAt`
+   too): **In an hour** = now + 60 minutes (over midnight to the next day), its time shown; **This evening** = today
+   19:00, offered only while that is at least 30 minutes ahead (`BREAK_EVENING_LEAD_MINUTES`; nearer, In an hour says
+   it); **Tomorrow** = tomorrow at the time beside it, 18:00 to start (a compact time picker; a new time is taken at
+   once while Tomorrow is the choice); **Just pause** = no reminder (it takes away a break waiting).
+4. **Refused, with why** (`breakRefusal`, said in red under the choices, id `break-needs`; nothing is kept): the
+   moment has passed — "That time has passed — pick a later one."; the trip has set off by then (`hasSetOff` at that
+   minute, the minute he leaves included; with no time he leaves, from the start of the first day) — "You leave
+   before then — pick an earlier time."; everything is packed — "Everything is packed." (the pill is hidden then, so
+   only the model sees it). Every choice button stays in full colour (his rule: never grey).
+5. **One break per trip.** Kept on the TRIP, extra key `breakUntil` = "2026-10-13 19:00" (`BREAK_UNTIL_KEY`, this
+   device's clock, as "I leave at" is) — so it is synced: a break taken on the Mac is the iPhone's to remind him of.
+   Backed up and restored with the trip. A new choice replaces it; Just pause removes the key (`setBreak(until:
+   nil)`). The web app's model sees an unknown key and keeps it (parity untouched, 211/211).
+6. **It goes when everything is packed.** The trip screen, seeing the trip become all packed (`allPacked` turning
+   true — a tick, a section's tick, Tick everything, Pack by voice, the other device), removes the key. Unticking a
+   line afterwards does NOT bring it back. And whatever the key says, no message is planned for a trip with nothing
+   left (rule 9), so a trip packed on the other device while this one was closed stays quiet too.
+7. **The pill's words** (`TakeABreakButton.words`): "Take a break"; with a break still ahead "Back at 19:00" (today),
+   "Back tomorrow 18:00", "Back 15 Oct 18:00". A break whose moment has passed reads "Take a break" again.
+8. **What the sheet says after a choice** (id `break-said`, green): "Back to packing at 19:00 — the iPhone will
+   remind you." ("tomorrow 18:00", "15 Oct 18:00"); on the Mac "— your iPhone will remind you."; after Just pause:
+   "Paused — no reminder. The list waits for you." On the iPhone, a time asks the app's one notification question
+   (`PackingReminders.askToShow`); refused, it says in red "This device does not allow the app to remind you. Allow
+   it in the device's Settings, under Notifications — or put the break in your calendar." (id `break-refused`).
+   Opening the sheet with a break waiting shows its line, and This evening or Tomorrow (at its time) as chosen.
+9. **The break's message** (`Library.tripMessages`): at `breakUntil`, while that is still ahead of now, the trip is
+   at Pack now, not reviewed, not set off by then and has something left: title "Back to packing <trip name>" (else
+   "your trip"), body "22 things left" / "1 thing left" (the overview's `left`). Id `break-<trip id>`. Recomputed at
+   every change of the library, so the count is the one at the last change, as the door check's names are.
+10. **Messages when a trip moves on** (with the device's switch on), for every trip not reviewed, with a start date
+    and lines:
+    - **Pack → On site**: "Have a good trip — <trip>" / "The trip is On site now: what you buy, use up or want to fix
+      goes there.", on the first day at the time he leaves (`leaveAt`), else at **08:00** (`SET_OFF_MESSAGE_AT` —
+      never at midnight, when the loop itself turns), while the trip is at Pack now (not yet set off, nothing bought on
+      site). Id `moves-onsite-<trip id>`. Fifteen minutes after the door check, never the same minute.
+    - **On site → Review**: "Welcome home — review <trip> in two minutes?" / "What did you use, what did you miss? The
+      next list learns from it.", the day after the last day (the end date, else the start) at **10:00**
+      (`REVIEW_MESSAGE_AT`). Id `moves-review-<trip id>`.
+    - **Review → Refine: nothing.** He saves the review in the app; the app is in front of him.
+    - A moment already past has none; a reviewed or deleted trip has none; new dates or a new time he leaves move them
+      at the next change. Only the six soonest wait (`MOVES_ON_LIMIT`; an iPhone keeps 64 waiting notifications per
+      app, and the packing reminders may take 48); every break waits.
+11. **Where they come: the iPhone only.** He packs and travels with his iPhone; the Mac at home saying the same would
+    be the same news twice (his word on the packing reminders, 2 Oct 2026; the door check is the same). The Mac shows
+    Take a break whole — the overview, the choices, the break kept — and says it is the iPhone that reminds him; it
+    has no "Messages when a trip moves on" switch and schedules nothing.
+12. **The permission** is the app's one notification permission (shared with Remind me to pack and the door check;
+    the system asks only once). Asked when he picks a break time, when he switches the messages on, or — with the
+    switch on and the iPhone never asked — the first time a trip at Pack is opened (`TripMessages.askOnce`, from the
+    pill's `.task`). Refused, nothing comes; Settings' red line (§06 3) says so.
+13. **Add to Calendar** (shown while a break is waiting; a wide outlined button with a drawn calendar, id
+    `break-calendar`). An entry "Back to packing <trip>", at the break, **30 minutes** (`BREAK_CALENDAR_MINUTES`), an
+    alert at the start, its note "1 of 9 packed · 8 things left" (`Library.breakEvent`). **No calendar permission and
+    no new entitlement:** on the **iPhone** the system's own New Event window, filled in (`EKEventEditViewController`;
+    since iOS 17 it runs outside the app, and an app that only hands it an event needs no access — the app's iOS 18
+    floor covers it); he taps Add or Cancel. On the **Mac** (no such window there) a calendar file, `Back to
+    packing.ics` in the app's temporary folder (`Library.breakCalendarFile`: RFC 5545, floating local times, CRLF,
+    text escaped, UID `break-<trip id>-<start>@ams-packing`, `DTSTAMP` = now in UTC, a `VALARM` at the start), handed
+    to the app that opens calendar files (Calendar, unless he chose another) — which asks which calendar first. The
+    Mac's existing `personal-information.calendars` entitlement (for To buy → Reminders) is NOT used: EventKit would
+    need its own usage words and a permission question — more intrusive for one entry he confirms anyway. Nothing is
+    added until he says so, on either device; the entry is not kept in step with the break afterwards (a new break
+    is a new entry if he adds it).
+
+### On the screens
+
+- **The trip header** (spec 03): the count line is an `HStack`: "done/total" at the left, a `Spacer`, and at its end
+  the pill `TakeABreakButton` (id `trip-break`): the drawn cup (`CupMark`, 16 pt) and "Take a break" (Footnote
+  semibold), green, padding 10 sideways, min height `Metrics.chip` (28 / 22), a capsule of green at 10 % with a 1.2-pt
+  green ring. Label "Take a break", value its words (rule 7) — the Mac folds a button's texts into the button.
+- **The sheet** (`TakeABreakSheet`, id `break-sheet`; on the Mac at least 460 × 560): header "Take a break" (Title 3
+  bold green) with the trip's name under it (Subheadline semibold muted), **Done** (filled green, Escape, id
+  `break-done`). Then the overview card (id `break-overview`; padding 14, corner 12, `Theme.card`, 1.2-pt green
+  border): "How far you have come" (Subheadline semibold muted), "41 of 63 packed" (Title 2 bold mono green, id
+  `break-packed`), an 8-pt bar (green on green at 15 %), the group pills (`FlowRow`, 6 apart; each `break-group-<n>`, one
+  element whose label is its words "Bike ✓" / "Golf 3 left": a done group green on green at 14 % with a green ring and
+  a drawn tick, one with something left ink on `Theme.bg` with a hairline and "3 left" muted), then "To charge: …"
+  (id `break-charge`) and "To do: …" (id `break-todo`), Callout semibold. Then "Continue when?" (Headline, id
+  `break-when`) and the four choices, full-width rows 6 apart (`Metrics.tap` high, corner 10, a 1.2-pt green ring on
+  green at 6 %; the chosen one filled green with white words, selected trait): ids `break-hour` (value "15:20"),
+  `break-evening` (value "19:00"), `break-tomorrow` beside its time picker `break-tomorrow-time`, `break-pause` (value
+  "no reminder"). Then `break-needs`, `break-said`, `break-refused` and Add to Calendar (`break-calendar`).
+- **Settings** (spec 06 §3): inside the Remind me to pack card on the iPhone, under its own lines and a hairline, a
+  second switch **"Messages when a trip moves on"** (id `settings-moves-on`, green) with "On this iPhone: "Have a
+  good trip" when a trip sets off — at the time you leave, else at 8 — and the morning after its last day, at 10, a
+  word to review it." The card's red "does not allow" line now sits under both switches (it holds for every message).
+
+### Where it is kept
+
+| Holder | Key | Value | Meaning |
+|---|---|---|---|
+| trip | `breakUntil` (`BREAK_UNTIL_KEY`) | "yyyy-MM-dd HH:mm" / absent | the break waiting: back to packing then. Synced, backed up, restored |
+| device (`UserDefaults`) | `ams.movesOn` (`TripMessages.onKey`) | Bool, absent = on | Messages when a trip moves on, this device's own; cleared at launch under the UI tests |
+
+The notifications live in the system's list, ids `break-<trip>`, `moves-onsite-<trip>`, `moves-review-<trip>`;
+`userInfo` `tripId` + `trip` = `break` / `onsite` / `review`. `TripMessages.reschedule` removes every pending id
+starting `break-` or `moves-` and adds the plan — run from `RootView` whenever the library settles (debounced 2 s),
+when the app comes to the front, after a choice in the sheet and after the Settings switch. A tapped one goes through
+the shared delegate (`PackingReminders`) to `TripMessages.open`: Home, then the trip (`model.tripToOpen`); for
+`review` also `model.tripFocus.review`, and the trip opens its Review 0.7 s after it arrives (unless it is reviewed by
+then).
+
+### Tests (from the code)
+
+Model `TakeABreakTests` (10, `Core/Tests/PackingLibraryTests/TakeABreakTests.swift`; a base template with a Passport, a
+Charger and a Toothbrush, Bike with a Helmet, a Pump and the reminder "Book the bike rack", Golf with Clubs, Balls and
+Tees; the trip "Sun week", 14–20 Oct 2026): `testTheOverviewSaysHowFarHeHasComeInTheTripsOwnSorting` ("4 of 8 packed",
+"Common base 2 left · Bike 1 left · Golf 1 left" → "Bike ✓" once the reminder is ticked; Into: the bag and "To do";
+When: the headings' counts; To do), `testToChargeIsCountedAsTheTripsCardShowsIt` (none two days before, "2 left", "1
+left", "all charged"), `testTheChoicesAreAnHourThisEveningOrTomorrow` (over midnight, the 30-minute edge, tomorrow at a
+picked time, pause), `testABreakIsKeptOnTheTripReplacedAndTakenAway` (replaced; records and a backup keep it; pause
+leaves no key), `testABreakPastItsTimeOrAfterHeLeavesIsRefused`, `testTheBreakSaysWhatIsLeftAndGoesWhenEverythingIsPacked`,
+`testATripSaysWhenItSetsOffAndWhenToReviewIt` (08:00 / the time he leaves / new dates / set off / bought on site /
+switch off / reviewed / deleted), `testATripWithoutDatesOrLinesSaysNothing`,
+`testOnlyTheSixSoonestMovesOnMessagesWaitButEveryBreakDoes`, `testTheBreakGoesInTheCalendarAsAFile` (the whole .ics,
+escaping, over midnight). Each seen RED with a planted fault: no set-off rule for a break ("("nil") is not equal to
+("Optional("You leave before then — pick an earlier time.")")"); the set-off message at midnight ("("2026-10-14 00:00")
+is not equal to ("2026-10-14 08:00")"); the overview counting things only ("("4 of 7 packed") is not equal to ("4 of 8
+packed")"); no limit ("("12") is not equal to ("6")"); a comma not escaped in the .ics; a break with nothing left still
+coming ("XCTAssertTrue failed - a break with nothing left"). Parity: 211/211.
+
+UI (`-showTripMessages` shows on the trip, under Sorting, what the device would schedule — no test can see a
+notification — `trip-message-break` / `-onsite` / `-review`, `trip-message-none`; `-tapTripMessage break|onsite|review`
+plays a tapped one for the first trip with lines; under the tests Add to Calendar shows what it would hand over,
+`break-calendar-said`, instead of the system's window or Calendar):
+`testTakeABreakSaysHowFarHeHasCome` (`-clockAt 14:00:00`; sorted by Template, the Passport ticked: `trip-break` "Take a
+break"; the sheet "1 of 7 packed", the pills "Common base 3 left" and "Hiking 4 left" and no third, no To charge a month
+ahead; In an hour "15:0…", This evening "19:00", Tomorrow, Just pause, no Add to Calendar yet; everything ticked → no
+pill), `testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked` (This evening → "Back to packing at 19:00…", chosen;
+Add to Calendar would hand over "Back to packing Weekend in the hills · <today> 19:00–19:30 · 1 of 7 packed · 6
+things left"; the pill "Back at 19:00"; `trip-message-break` "<today> 19:00 · Back to packing Weekend in the hills 6
+things left"; reopened, This evening still chosen; Tomorrow replaces it — "Back tomorrow 18:00", the message
+tomorrow 18:00; Just pause → "Paused…", "Take a break", no message; a break again, Tick everything → no message, and
+a line unticked → still "Take a break"), `testABreakIsOnlyWhileTheTripIsBeingPacked` (`-uiTestingLeaving -clockAt
+07:00:00`: In an hour → "You leave before then — pick an earlier time.", nothing kept; at 08:30 the trip is On site
+and has no pill), `testATripSaysWhenItMovesOn` (the sample trip: "<day 30> 08:00 · Have a good trip — Weekend in the
+hills" and "<day 33> 10:00 · Welcome home — review Weekend in the hills in two minutes?"; I leave at 07:30 → the
+set-off message at 07:30; iPhone: Settings' `settings-moves-on` on, switched off → `trip-message-none`; Mac: no such
+switch), `testATappedTripMessageOpensItsTrip` (`review` → the trip and `review-detail`; `break` → the trip, no review).
+All five seen RED on the iPhone simulator, each by its own planted fault (one build): the pill at any step — "Take a
+break on a trip that has set off"; the overview always by When — "("["≥1 week ahead 6 left", ""]") is not equal to
+("["Hiking 4 left", "Common base 3 left"]")"; the break not taken away when everything is packed — "the break came back
+with a line unticked: 'Back at 19:00'"; the switch ignored — "switched off, still: 'moves-onsite-… 07:30 · Have a good
+trip — …'"; the review focus ignored — "Welcome home did not open the review". Green again without them, light and
+dark (pictures `break-trip-door`, `break-sheet`, `break-chosen`, `break-trip-waiting`, `break-refused`,
+`moves-on-messages`, `moves-on-settings`, `moves-on-tapped-review`), with 16 neighbouring tests (Settings' reminders
+and their red line, the door check and its tap, On site from the time he leaves, every sorting's ticks, Template
+sorting, the trip's header lines, reminders due) green too. By hand on the simulator (`-breakRealCalendar`): Add to
+Calendar brings up the system's New Event window filled in — "Back to packing Weekend in the hills", 19:00–19:30, an
+alert at the time of the event, the note "0 of 7 packed · 7 things left" — and no permission question.
+
+### Open questions
+
+- The break is on the trip, so a break taken on one device shows on the other; two devices choosing at the same
+  moment: the later write wins (one key). Fine for one person; worth a word if two people pack one trip.
+- A calendar entry added is not changed or removed when the break changes or everything is packed — the app has no
+  calendar access to do it (by design: no permission asked). His word welcome if he wants it kept in step (that
+  needs the calendar permission).
+- The Mac never shows the messages. If he wants a Mac-only day (packing at the Mac with the iPhone elsewhere), a
+  per-device switch for the Mac would be the way.
+
 ---
 
 ## 11. Decision log
@@ -1725,6 +1927,8 @@ Tests.
 | 13 Oct 2026 | On a plane trip, a thing with a battery in a CHECKED bag (any bag not a cabin bag, by the cabin's own rule; kit contents too) is a red line in Check before you go, after "not allowed" and before the liquids; a thing in no bag yet is not judged | His yes (0.76): airlines want lithium batteries and power banks in the cabin. Part 15, rule 8. |
 | 13 Oct 2026 | A NEW kit starts with Check before each trip ON, unless he switched it off on that thing before (his off is remembered); kits made before 0.76 are not changed | He could not tick what was inside a kit while packing — the switch was off (0.76). Part 9, "A new kit starts checked". |
 | 13 Oct 2026 | Check before you go and To charge become ONE card at the top of a trip, **Before you go**: the flags, then To do (the reminders due), then To charge, each part only when it has something and by its own rules; one count of everything left (flags + reminders due + things not charged), red if a flag will stop him, else orange, green "All set"; all set, the card folds to its one line and its chevron opens it (the fold decided by the build: a trip all charged keeps no list of struck-through rows at its top) | His yes to the picture (0.77). Spec 03 "Before you go"; part 15 rule 6. |
+| 13 Oct 2026 | Take a break on a trip at Pack: an overview of how far he has come (the trip's own counts, his Sorting's groups, To charge, To do) and "Continue when?" — In an hour, This evening (19:00), Tomorrow (18:00 or his time), Just pause; ONE break per trip, kept on the trip (synced), gone when everything is packed; refused past its time or after he leaves; Add to Calendar with no permission (the system's New Event window on the iPhone, a calendar file on the Mac) | "Then I get tired and just want to relax… a reminder or a calendar event so that I feel calm… an overview of how far I have come." Part 16. |
+| 13 Oct 2026 | Messages when a trip moves on, on the iPhone: "Have a good trip" at the time he leaves (else 08:00 on the first day), "Welcome home — review it" at 10:00 the day after the last; nothing for Review → Refine (he is in the app); a Settings switch, on until he turns it off; the Mac shows none | "I would like a message from the app when the Phase changes." Part 16. |
 
 ## Open questions
 
