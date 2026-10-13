@@ -699,7 +699,9 @@ checked before each trip (0.76)"); and his off forgotten when the kit is emptied
 jacket's page offers no switch while it holds nothing; the Map added from Add from your things → `thing-kit-check`
 on before Save; kept after Save; the trip a month ahead shows `trip-line-5-kit-0-tick` under the jacket and "1 to
 go"; pictures `kit-new-checked`, `kit-new-trip-ticks`, day and night on the iPhone). Seen RED with the page's
-`KitDraft.add` not switching it on: "the new kit does not start with Check before each trip on".
+`KitDraft.add` not switching it on: "the new kit does not start with Check before each trip on". Green on GitHub's
+Mac too (the probe of part 15), with `testTheKitPartIsWalkedByTheKeys` — Space on the switch now goes through
+`KitDraft.setCheck`.
 
 ### Open questions
 
@@ -1662,7 +1664,9 @@ taken"). UI `testABatteryInACheckedBagIsToldToGoInTheCabin` (`-uiTestingBattery 
 in the Camp pouch … Battery: carry it in the cabin · in Checked luggage" and nothing else — the Toothbrush in the Wash
 bag is in the carry-on, the pouch's Lighter in the hold; a tap opens the power bank, its `thing-battery` on; switched
 off and saved, `trip-checks` goes). Seen RED with the card leaving battery lines out: "the plane trip does not check
-the battery in the hold". Pictures `battery-trip-check-hold`, iPhone day and night.
+the battery in the hold". Pictures `battery-trip-check-hold`, iPhone day and night. On GitHub's Mac (a probe running
+just this test, `testANewKitStartsCheckedBeforeEachTrip`, `testTheKitPartIsWalkedByTheKeys` and
+`testATripChecksTheCabinAndTheDatesBeforeYouGo`): all four green.
 
 ### Open questions
 
