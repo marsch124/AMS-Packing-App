@@ -1517,11 +1517,44 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
 | trip line | `charged` (`CHARGED_KEY`) | true / absent | its thing is charged for this trip |
 | trip line (a kit's) | `kitCharged` (`KIT_CHARGED_KEY`) | `[item id]` / absent | the things inside the kit charged for this trip; only ids inside it now are written |
 
-### Tests
+### Tests (from the code)
 
-Model `BatteriesTests`; UI `testABatterySwitchOnAThingPutsItOnTheTripsToCharge`,
-`testToChargeIsTickedApartFromPacking` (`-uiTestingBattery`); the Mac's Tab order in
-`testTheThingPageTabsThroughEveryFieldInOrder`. (Filled in from the code below.)
+Model `BatteriesTests` (5, `Core/Tests/PackingLibraryTests/BatteriesTests.swift`; a Toothbrush, a Passport and a Phone
+charger — the web app's Charging flag, no battery — on the base template; a Camp pouch, a Headlamp and a Map on Hiking;
+the pouch holds a Power bank, a GPS watch taken out and a Lighter; the Wash bag, on no template, the Toothbrush and
+Soap; with a battery: Headlamp, Power bank, GPS watch, Toothbrush):
+`testAThingSaysItHasABatteryAndThatIsNotTheWebAppsChargingFlag` (the key true, never written false; the charger's web
+flag puts nothing on To charge; `batteryThings` A–Z), `testToChargeListsEveryBatteryThingOnTheTripTheOnesInsideItsKitsToo`
+("Toothbrush in Wash bag", "Power bank in Camp pouch", "Headlamp" — the watch taken out is not there; a thing switched on
+after the trip was made shows; put back, the watch comes; a kit with a battery of its own first; set aside, a reminder
+from a rebuild and a line typed on the trip never), `testTheChargeTickIsApartFromPacking` (charging packs nothing;
+packing, Tick everything and Clear charge nothing; "2 of 3"; unticked, the keys go; only what is inside the kit now can be
+marked), `testToChargeShowsFromTheDayBeforeTheTripThroughItsLastDay` (two days before no, the day before yes, the last
+day yes, the day after no; a one-day trip; no dates; reviewed; nothing with a battery),
+`testBatteriesAndChargeTicksAreStoredSyncedBackedUpRestoredAndKeptByARebuildButNeverSentOrStartedAgain` (records, a
+backup as written and the older kind rebuilt from rows — both faithful —, `Item(json:)` and `coerceItem`, Trip settings'
+rebuild and `followThing` keep the ticks, `justTheList` and `startAgain` drop them, the trip itself keeps its own). Each
+seen RED with a planted fault: the kit contents left out ("("1 of 1") is not equal to ("2 of 3")"); a charge tick that
+packs ("XCTAssertFalse failed - charging it packed it"); the card from the start day ("XCTAssertTrue failed - the day
+before"); a shared trip and Start again keeping the ticks ("("[… "Power bank in Camp pouch ✓", "Headlamp ✓"]") is not
+equal to ("[… "Power bank in Camp pouch", "Headlamp"]")"); the web app's Charging flag read as a battery ("("["GPS watch",
+"Headlamp", "Phone charger", …]") is not equal to …"). Parity: 211/211.
+
+UI (`-uiTestingBattery`, `SampleLibrary.battery()`: the kits sample with its first trip starting TOMORROW, a Power bank in
+the Camp pouch and the Toothbrush — in the Wash bag — with a battery; the Headlamp without one):
+`testABatterySwitchOnAThingPutsItOnTheTripsToCharge` (the trip's card "0 of 2", "Toothbrush, in the Wash bag" and "Power
+bank, in the Camp pouch"; Your things' `things-battery` says 2 and keeps "2 things", on; off, all again; the Headlamp's
+`thing-battery` switched on and saved → the filter says 3; the trip "0 of 3" with the Headlamp) and
+`testToChargeIsTickedApartFromPacking` (the power bank charged → "1 of 2", selected, the trip's count unchanged; the
+pouch's line not ticked; the pouch packed → the count moves, still "1 of 2", the toothbrush not charged; "2 of 2"; the
+power bank unticked → "1 of 2", the pouch still packed; the trip two months ahead has no card). Run on the iPhone
+simulator in light and dark (pictures `battery-thing-battery-switch`, `battery-things-battery-filter`,
+`battery-trip-to-charge`, `-one`, `-all`). Each seen RED with a planted fault: Save not writing the key → "the
+Headlamp's battery was not kept: 'Has a battery 2'"; the filter not applied → "Has a battery does not keep the two: '17
+things'"; a charge tap that also ticks the line → "charging the power bank packed something: '1/8'". The Mac:
+`testTheThingPageTabsThroughEveryFieldInOrder` walks Has a battery between Not allowed in the cabin and Valid until,
+Shift-Tab from Valid until lands on it and Space switches it on; `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen`
+reads the Battery band between On a plane and Valid until.
 
 ### Open questions
 

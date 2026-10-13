@@ -352,6 +352,7 @@ notification is heard on the main queue and the model reloads the whole store th
 | `-uiTestingOldPhoto` | MemoryStore | the sample plus photo `left-behind`, created 2026-01-01, shown nowhere — and (0.62) photo `no-date`, with no `createdAt`, shown nowhere |
 | `-uiTestingOldConditions` | MemoryStore | `SampleLibrary.oldConditions()` (0.62): the sample with the Goggles' condition stored as the LABEL "Needs replacing" — repaired on load |
 | `-uiTestingTwoLibraries` | MemoryStore | `SampleLibrary.doubled()`: every template a second time under new ids (what two libraries meeting on one account look like) |
+| `-uiTestingBattery` | MemoryStore | `SampleLibrary.battery()` (0.75, spec 07 part 15): `SampleLibrary.kits()` with its first trip starting tomorrow (so To charge shows), a Power bank (180 g, with a battery) in the Camp pouch and the Toothbrush (in the Wash bag) with a battery; checked before `-uiTestingKits` |
 | `-uiTesting` | MemoryStore | `SampleLibrary.make()` |
 | none, Info.plist `PackingUsesICloud` = "YES" | CloudStore(cloud: true) | iCloud (TestFlight and release builds) |
 | none, otherwise | CloudStore(cloud: false) | SwiftData on this device only (a plain debug build) |
