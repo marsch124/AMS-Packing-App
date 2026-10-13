@@ -98,6 +98,7 @@ final class SmallCoreTests: XCTestCase {
         let pouch = lib.items.first { $0.name == "Cable pouch" }!
         XCTAssertEqual(lib.kitContents(kitId: pouch.id).map(\.thing.name), ["Cable 2", "Laptop"])
         XCTAssertEqual(pouch.container, "", "a new kit got a bag")
+        XCTAssertTrue(Library.kitCheck(pouch), "a new kit from a pasted list is not checked before each trip (0.76)")
         XCTAssertEqual(names(lib.resolvedTemplate(id: core.id)!.items), ["Cable pouch", "Socks", "Umbrella"],
                        "the kit itself is not on the core, or its things are")
         // Under the heading of what is inside it (Tech).

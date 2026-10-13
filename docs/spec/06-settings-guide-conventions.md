@@ -767,7 +767,7 @@ no entry shows no marker anywhere (and fails the test).
    (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other templates (0.62). (8) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
    ×4 · laundry with a washtub. (9) This Device: how many trips, things and templates.
 1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Check before you go
-   (cabin red/orange, expiry six months ahead for passports/IDs); the pen opens Trip settings (every field it holds, Pack weather gear anyway included;
+   (cabin red/orange; a battery in a checked bag red, 0.76; expiry six months ahead for passports/IDs); the pen opens Trip settings (every field it holds, Pack weather gear anyway included;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one; Tick everything / Clear every tick (asks first); Save as
    Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill

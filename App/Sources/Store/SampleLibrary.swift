@@ -396,7 +396,8 @@ enum SampleLibrary {
         if let lighter = made["Lighter"] { _ = lib.updateThing(id: lighter) { $0.restricted = true } }
         if let plasters = made["Plasters"] { _ = lib.updateThing(id: plasters) { $0.expiry = day(10) } }
         _ = lib.setOnTemplate(itemId: pouch, templateId: hiking.id, on: true)
-        lib.setKit(kitId: pouch, contents: ["Lighter", "Spare cord", "Plasters"].compactMap { made[$0] })
+        // The pouch is NOT checked before each trip: switched off, as he may (a new kit starts on, 0.76).
+        lib.setKit(kitId: pouch, contents: ["Lighter", "Spare cord", "Plasters"].compactMap { made[$0] }, check: false)
         lib.setKit(kitId: wash, contents: [brush] + ["Soap"].compactMap { made[$0] }, check: true)
         if underWay, let pack = lib.addBag(name: "Day pack") {
             for p in ["Main", "Front pocket"] { _ = lib.addPocket(bagId: pack.id, name: p) }
@@ -422,7 +423,12 @@ enum SampleLibrary {
     /// bag — with a battery. The Headlamp has none until a test switches it on. The card then
     /// reads "Toothbrush, in the Wash bag" (`trip-charge-0`) and "Power bank, in the Camp pouch"
     /// (`trip-charge-1`), "0 of 2"; the second trip, two months ahead (`trip-row-1`), has none.
-    static func battery() -> Library {
+    ///
+    /// `byPlane` (`-uiTestingBattery -batteryByPlane`, 0.76 — a battery in the hold): the first
+    /// trip goes by plane and the Camp pouch in the Checked luggage, so Check before you go has
+    /// one line, "Power bank, in the Camp pouch" (`trip-check-cabin-0`) — the Toothbrush is in
+    /// the Wash bag in the carry-on, and the Lighter, not allowed on board, is in the hold.
+    static func battery(byPlane: Bool = false) -> Library {
         var lib = kits()
         let cal = Calendar(identifier: .gregorian)
         func day(_ n: Int) -> String {
@@ -438,6 +444,11 @@ enum SampleLibrary {
         if !lib.trips.isEmpty {
             lib.trips[0].startDate = day(1)
             lib.trips[0].endDate = day(3)
+        }
+        if byPlane, !lib.trips.isEmpty, let pouch = lib.items.first(where: { $0.name == "Camp pouch" })?.id {
+            _ = lib.updateThing(id: pouch) { $0.container = "Checked luggage" }
+            lib.trips[0].transport = "Plane"
+            lib.trips[0].entries = lib.builtLines(lib.trips[0])
         }
         return lib
     }

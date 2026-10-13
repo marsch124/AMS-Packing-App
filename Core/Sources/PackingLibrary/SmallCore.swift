@@ -338,9 +338,9 @@ extension Library {
             }
             guard let kid = kitId else { continue }
             let now = kitContents(kitId: kid)
+            // A new kit starts checked before each trip (0.76); one he has keeps its own word.
             setKit(kitId: kid, contents: now.map(\.thing.id) + inside.filter { id in !now.contains { $0.thing.id == id } },
-                   takenOut: Set(now.filter(\.takenOut).map(\.thing.id)),
-                   check: items.first { $0.id == kid }.map(Library.kitCheck) ?? false)
+                   takenOut: Set(now.filter(\.takenOut).map(\.thing.id)))
             if let row = k.rowId { ticked.insert(row); continue }
             // Under the heading of the first thing inside it that the big template holds.
             let section = bigRows.first { r in inside.contains(r.itemId ?? "") }?.section ?? ""

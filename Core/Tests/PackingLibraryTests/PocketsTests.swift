@@ -234,7 +234,8 @@ final class PocketsTests: XCTestCase {
         _ = lib.setOnTemplate(itemId: pouch.id, templateId: base, on: true)
         let lighter = lib.addThing(name: "Lighter")!
         _ = lib.updateThing(id: lighter.id) { $0.container = "" }   // no bag of its own
-        XCTAssertTrue(lib.setKit(kitId: pouch.id, contents: [lighter.id]))
+        // Not checked before each trip (switched off: a new kit starts on, 0.76) — one tick packs it.
+        XCTAssertTrue(lib.setKit(kitId: pouch.id, contents: [lighter.id], check: false))
         var trip = newEvent(name: "Away", startDate: "2026-10-01", endDate: "2026-10-05")
         trip.entries = lib.builtLines(trip)
         lib.trips = [trip]

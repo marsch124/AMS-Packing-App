@@ -522,7 +522,8 @@ test drives).
 
 > Built in 0.70 (`PackingLibrary/ThingKits.swift`, `App/Sources/Screens/ThingKitPart.swift`,
 > `App/Sources/Screens/TripKitLine.swift`); 12 Oct 2026 (0.73): the kit part in the Mac's keyboard order, and a
-> reviewed trip keeps what was inside its kits. Written from the code; where it differs from the design of 7 Oct, the
+> reviewed trip keeps what was inside its kits; 13 Oct 2026 (0.76): a NEW kit starts with Check before each trip on
+> (below, "A new kit starts checked"). Written from the code; where it differs from the design of 7 Oct, the
 > difference is under *Open questions*. Details per screen: spec 01 §1.12 (the keys), 03 ("Kits", "A kit's
 > line"), 05 (a thing's page item 11b and its Keyboard (Mac), Care, the table).
 
@@ -539,11 +540,34 @@ a pouch of cables and chargers, a pouch of small tools. He said yes to kits on 7
   until it is put back. Taken out on the thing's page, on the kit's page, or from the kit's fold on a trip — it is
   the thing's, so every trip and both pages follow.
 - **Check before each trip** (on the kit's page): the contents show as small ticks under the kit's line, and the
-  kit counts as packed only when all inside it are ticked.
+  kit counts as packed only when all inside it are ticked. A NEW kit starts with it ON (0.76, below).
+
+### A new kit starts checked (0.76, 13 Oct 2026)
+
+His ask: he was surprised that he could not tick what was inside a kit while packing — the switch was off. So:
+- **The moment a thing becomes a kit** — it held nothing, and its first thing goes in: on its page (Add from your
+  things, the Mac's Return in Find a thing), by "Make a small core" / Paste a list (a line with lines indented under
+  it), or any other way (`addToKit`, `setKit`) — `kitCheck` is written **true**. One rule in one place,
+  `Library.writeKit`: `check` nil (no word from him) and the thing listed no contents before → on.
+- **Unless he switched it off on that thing before.** His "off" is kept as `kitCheck: false` — written whenever he
+  switches it off (the page's switch, Space on the Mac, `setKitCheck(false)`, `setKit(check: false)`) — and it stays
+  on the thing even when it is emptied (the other kit keys go), so a kit made of it again starts OFF. Switched on
+  again by him, it is on.
+- **Kits made before 0.76 are left exactly as they are** (his data): their switch is off with no word stored
+  (absent), and adding to them, taking out, putting back or taking a thing out for good changes nothing. Only an
+  old kit emptied completely and filled again counts as a new kit (it then starts on). Nothing is migrated.
+- **On the page** (`KitDraft`): a thing that held nothing when the page opened shows the switch ON as its first
+  thing goes in (`KitDraft.add`) — before Save, so he sees what Save will keep — unless it carries his off, or he
+  pressed the switch on this page already. His press goes through `KitDraft.setCheck` (the switch's binding, Space
+  on the Mac); Save passes the switch as his word when he pressed it or it changed (a new kit's ON), else nil (the kit
+  keeps its own). He can switch it off before or after Save, as before.
+- On the trip nothing new: a checked kit shows its things with small ticks, open until packed, "Tick what is inside
+  first: N to go." (below, "On a trip").
 
 ### Where it is kept
 
-On the KIT, in three `extra` keys — `kitContents` (ids, his order), `kitOut` (ids taken out), `kitCheck` (true) —
+On the KIT, in three `extra` keys — `kitContents` (ids, his order), `kitOut` (ids taken out), `kitCheck` (true; since
+0.76 also false = he switched it off himself, kept when the thing is emptied; absent = never said) —
 and, on a trip's kit line, `kitTicked` (the ticked ids while the line is not ticked). So the web app's model sees a
 plain thing (parity 211/211), and a kit is stored, synced through iCloud, backed up and restored with the thing,
 as every `extra` key is. Which kit holds a thing is read from the kits (`kitIndex`): in id order, a thing in the
@@ -581,7 +605,8 @@ click on any of them moves the page's focus there, as on the other fields.
   template on its own: on a template with its kit, it is left out; on one without, the KIT comes in its place. Each
   kit is one line per trip.
 - **Check before you go** looks inside kits: "Lighter, in the Camp pouch" in a cabin bag is not allowed on board;
-  "Plasters, in the Camp pouch" runs out before you are home.
+  "Plasters, in the Camp pouch" runs out before you are home; on a plane trip, "Power bank, in the Camp pouch" in a
+  CHECKED bag must go in the cabin (0.76, part 15).
 
 ### A past trip — what was inside then (0.73, 12 Oct 2026)
 
@@ -658,6 +683,24 @@ with `testTheThingPageTabsThroughEveryFieldInOrder` and the kits tests. 0.73 als
 usually in a Day pack's Front pocket — pockets Main, Front pocket) for
 `testWhereIsAThingInsideAKitNamesTheKitAndWhereTheKitIs` (spec 03).
 
+**A new kit starts checked (0.76).** Model `ThingKitsTests.testANewKitStartsCheckedBeforeEachTripUnlessHeSwitchedItOff`
+(the Map made a kit by `addToKit` → `kitCheck` true, its trip line `check` true and its own tick refused; more in, one
+taken out → still on; switched off → false, kept when emptied, filled again → still off, and kept by the stored
+records; switched on by him → on; a thing made a kit with `check: false` (his word on the page) → off; a kit with no
+word (made before 0.76) given a thing, one taken out, removed → no key, its trip line unchecked) and
+`SmallCoreTests.testANestedLineMakesAKit` (the pasted "Cable pouch" is checked). `testAKitHoldsThingsInHisOrderAndAThingIsInOneKitOnly`
+now asserts that an emptied kit keeps his off and that one that was on leaves no key. The fixtures whose kits are NOT
+checked say so (`check: false`: the Camp pouch of `ThingKitsTests` and of the `-uiTestingKits` sample, both kits of
+`BatteriesTests`, the pouch of `PocketsTests`' trip). Seen RED with a planted fault: `writeKit` not starting a new
+kit on ("("nil") is not equal to ("Optional(PackingCore.JSONValue.bool(true))") - a new kit does not start checked
+before each trip", "the new kit packed before what is inside was ticked", "a new kit from a pasted list is not
+checked before each trip (0.76)"); and his off forgotten when the kit is emptied ("emptied, his off was forgotten",
+"he switched it off, and it came back on"). UI `testANewKitStartsCheckedBeforeEachTrip` (plain sample: the Rain
+jacket's page offers no switch while it holds nothing; the Map added from Add from your things → `thing-kit-check`
+on before Save; kept after Save; the trip a month ahead shows `trip-line-5-kit-0-tick` under the jacket and "1 to
+go"; pictures `kit-new-checked`, `kit-new-trip-ticks`, day and night on the iPhone). Seen RED with the page's
+`KitDraft.add` not switching it on: "the new kit does not start with Check before each trip on".
+
 ### Open questions
 
 - **No `insideKitId` on a content** (the design had it): ONE record holds a kit's whole state, so the two sides
@@ -685,6 +728,8 @@ usually in a Day pack's Front pocket — pockets Main, Front pocket) for
   review. His word welcome if the day the trip ended should count instead.
 - **The table's kit weight** is not typed in; its own weight is on its page. Not covered by a UI test (the model's
   sort and filter are).
+- **A kit made before 0.76 that he had switched off** cannot be told from one never switched (both stored as
+  absent): emptied completely and filled again, it starts ON. Left so on purpose — his kits are not migrated.
 
 ---
 
@@ -1473,6 +1518,9 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
   that has a battery, the ones inside a kit on the trip too ("In the Camp pouch"), each with a CHARGE tick of its
   own. Ticking charged does not pack it; packing it does not mark it charged.
 - **Your things**: a filter **Has a battery** beside On no template — the things to charge, at a glance.
+- **Check before you go** (0.76, his yes of 13 Oct 2026): on a PLANE trip, a thing with a battery in a CHECKED bag
+  is a red line — "Battery: carry it in the cabin · in Checked luggage" — because airlines want lithium batteries and
+  power banks in the cabin. Rule 8 below.
 
 ### The rules (decided 13 Oct 2026, by the build)
 
@@ -1507,6 +1555,20 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
    are the trip's: they ride in the line records, a backup and a restore; a rebuild (Trip settings → Save) and a
    change to a thing reaching a trip ahead (`followThing`) keep them; **"Start a new trip from this one" and a shared
    trip drop them** (`startAgain`, `justTheList`), as they drop every packing mark.
+8. **A battery in the hold** (0.76, his yes of 13 Oct 2026; `Library.cabinCheck`, spec 03 "Check before you go"). Only
+   when the trip's transport is "Plane". A line is judged when it is not set aside, not a reminder, and IN A BAG
+   (`Library.inABag`: its bag is not blank and not "Other" — a thing in no bag yet has nothing to judge, so it says
+   nothing). A bag is CHECKED when it is not a cabin bag by the very rule the cabin's side uses (`isCabin(container:)`:
+   the bag's own Goes in the cabin, else its name — "carry-on", "carry on", "carryon", "hand luggage", "cabin"). In a
+   checked bag, the line's thing as it is NOW (`thingNow`, `BATTERY_KEY`) with a battery is flagged (`CabinFlag.Why
+   .battery`); so is each thing inside the line's kit as it is now (`insideLines`, which since 0.76 carries the
+   thing's own `battery`, never the kit line's), not taken out: "Power bank, in the Camp pouch", the kit's bag after
+   "in". A thing with a battery in a cabin bag says nothing; a thing not allowed on board or a liquid in a checked bag
+   says nothing (the hold takes them). Order on the card: **not allowed, then the batteries, then the liquids** —
+   red before orange, and a battery is as hard a stop as a knife (decided by the build). Not de-duplicated, as the
+   cabin's side is not: a thing on two lines is said twice (only a trip made before the thing went into its kit can
+   hold that). Put right by moving the thing (or its kit) to a cabin bag, by saying the bag goes in the cabin (its
+   page, or the trip's Bags card), or — if it has none — by switching Has a battery off; the line goes at once.
 
 ### On the screens
 
@@ -1530,6 +1592,11 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
   for a thing inside a kit, "In the Camp pouch" under it (Subheadline muted). Charged: the name struck through and
   muted. A tap ticks or unticks it. Label "<name>" or "<name>, in the <kit>"; value "charged" / "not charged";
   selected trait when charged.
+- **Check before you go** (spec 03, 0.76): a battery in the hold is one of the card's cabin lines,
+  `trip-check-cabin-<n>` (after the not-allowed lines, before the liquids): the drawn battery mark
+  (`ToChargeCard.battery`, 22 pt) in red (`AppSection.actions.color`), the name ("Power bank" or "Power bank, in the
+  Camp pouch", Callout semibold ink), the reason in red "Battery: carry it in the cabin · in <bag>", the chevron; a
+  tap opens the thing itself (inside a kit: that thing, not the kit). It makes the card's count capsule and border red.
 
 ### Where it is kept (the web model sees nothing new)
 
@@ -1580,11 +1647,31 @@ reads the Battery band between On a plane and Valid until. On GitHub's Mac (a pr
 battery left out of the Tab order, red — "Tab did not go on to thing-battery"; without the fault, all four green, and the
 two battery tests green again (pictures of the Mac look, day).
 
+**A battery in the hold (0.76).** Model `TripChecksTests.testABatteryInACheckedBagIsToldToGoInTheCabin` (on the plane
+trip: a Power bank in the Suitcase, a Phone in the Cabin bag, a Torch moved to no bag, a Camera set aside, a reminder
+with a battery in the Suitcase, and a Tech pouch in the Suitcase holding a Spare battery, a Cable and a Lighter →
+"Pocket knife", "Power bank", "Spare battery, in the Tech pouch", "Sun cream" — not allowed, battery, battery, liquid;
+both batteries "in Suitcase"; the flags open the power bank and the spare battery, not the pouch; "Other" is no bag
+either; the power bank's battery off → only the spare battery; the Suitcase said to go in the cabin → no battery, and
+the pouch's Lighter and the shampoo now stopped in the cabin; by car nothing). Seen RED with a planted fault: no "in a
+bag" rule ("("["Pocket knife", "Power bank", "Torch", …]") is not equal to …", "a thing in no bag was judged"); the
+kit's contents not carrying the battery ("("["Pocket knife", "Power bank", "Sun cream"]") is not equal to …"); the
+hold and the cabin swapped (seven failures across the four cabin tests, e.g. "his word that it goes in the hold is not
+taken"). UI `testABatteryInACheckedBagIsToldToGoInTheCabin` (`-uiTestingBattery -batteryByPlane`, `SampleLibrary
+.battery(byPlane:)`: the first trip by plane, the Camp pouch in the Checked luggage; `trip-check-cabin-0` "Power bank,
+in the Camp pouch … Battery: carry it in the cabin · in Checked luggage" and nothing else — the Toothbrush in the Wash
+bag is in the carry-on, the pouch's Lighter in the hold; a tap opens the power bank, its `thing-battery` on; switched
+off and saved, `trip-checks` goes). Seen RED with the card leaving battery lines out: "the plane trip does not check
+the battery in the hold". Pictures `battery-trip-check-hold`, iPhone day and night.
+
 ### Open questions
 
 - The table has no column for "Has a battery" (its **Charges** column is the web app's `charging`). Worth one?
-- Should a battery thing in a cabin bag on a plane trip say anything in Check before you go (spare batteries and
-  power banks must travel in the cabin)? Not asked for; not built.
+- ~~Should a battery thing in a cabin bag on a plane trip say anything in Check before you go (spare batteries and
+  power banks must travel in the cabin)? Not asked for; not built.~~ Answered 13 Oct 2026 (0.76, his yes): a thing
+  with a battery in a CHECKED bag is a red line in Check before you go (rule 8); one in a cabin bag says nothing.
+- Some airlines limit power banks by watt-hours, or want them out of the cabin bag at the gate; the app knows no
+  capacity and says only where it goes. His word welcome.
 
 ---
 
@@ -1606,6 +1693,8 @@ two battery tests green again (pictures of the Mac look, day).
 | 10 Oct 2026 | "Only on some trips" is set once on the THING; each template's row follows it per kind (Season, Context, Transport, Food) unless the row sets its own, and goes back with one tap | "If I have an item on five templates, I need to change this in five places. Doesn't seem optimal." Part 14. |
 | 12 Oct 2026 | A reminder's When list is changed AT ONCE, not held until a Save: the template's page has none, and the Reminders block makes everything at once (the When pick, a drag, a removal), as Your choices does | The open question of part 13 left it to the build ("if that page saves at once, the least surprising equivalent"); part 13, "The last three lists". |
 | 13 Oct 2026 | "Has a battery" is a switch on the THING (its own key, not the web app's Charging flag, which a charging cable carries too); a trip lists those things on a To charge card from the day before it starts through its last day, kit contents included, with a charge tick of its own apart from packing; Your things filters by it | "Add a tick box for each item: Contains battery. And maybe implement a view where I can check all items that need charging." Part 15. |
+| 13 Oct 2026 | On a plane trip, a thing with a battery in a CHECKED bag (any bag not a cabin bag, by the cabin's own rule; kit contents too) is a red line in Check before you go, after "not allowed" and before the liquids; a thing in no bag yet is not judged | His yes (0.76): airlines want lithium batteries and power banks in the cabin. Part 15, rule 8. |
+| 13 Oct 2026 | A NEW kit starts with Check before each trip ON, unless he switched it off on that thing before (his off is remembered); kits made before 0.76 are not changed | He could not tick what was inside a kit while packing — the switch was off (0.76). Part 9, "A new kit starts checked". |
 
 ## Open questions
 

@@ -603,7 +603,7 @@ extension Library {
         for n in items.indices where Library.listedContents(items[n]).contains(id) {
             let k = items[n]
             Library.writeKit(&items[n], contents: Library.listedContents(k).filter { $0 != id },
-                             out: Set(Library.kitIds(k.extra[KIT_OUT_KEY])), check: Library.kitCheck(k))
+                             out: Set(Library.kitIds(k.extra[KIT_OUT_KEY])))
         }
         items.removeAll { $0.id == id }
         return true

@@ -16,7 +16,10 @@ struct KitDraft: Equatable {
     /// before each trip.
     var contents: [String] = []
     var out: Set<String> = []
-    var check = false
+    /// Check before each trip, as the switch shows it. A thing that holds nothing when the
+    /// page opens shows it ON as its first thing goes in (0.76, `add`) — unless he switched
+    /// it off on this thing before. His own press goes through `setCheck`.
+    private(set) var check = false
     /// The kit this thing is inside (it then holds nothing itself), and whether it is
     /// taken out of it for now.
     var holder: String?
@@ -33,6 +36,10 @@ struct KitDraft: Equatable {
     private var openedOut: Set<String> = []
     private var openedCheck = false
     private var openedTakenOut = false
+    /// He switched Check before each trip off on this thing before (0.76, `kitCheckOffByHim`).
+    private var offBefore = false
+    /// He pressed the switch on this page: what it shows is his word.
+    private var checkSaid = false
 
     init() {}
 
@@ -46,15 +53,33 @@ struct KitDraft: Equatable {
         contents = inside.map(\.thing.id)
         out = Set(inside.filter(\.takenOut).map(\.thing.id))
         check = Library.kitCheck(thing)
+        offBefore = Library.kitCheckOffByHim(thing)
         takenOut = holder != nil && lib.isTakenOut(thingId: thingId)
         opened = contents; openedOut = out; openedCheck = check; openedTakenOut = takenOut
     }
 
-    /// Write what changed — called inside the page's own Save.
+    /// One of his things goes in, at the end. The first thing into a thing that held
+    /// nothing makes it a kit: Check before each trip shows ON (0.76) — unless he switched
+    /// it off on this thing before, or on this page.
+    mutating func add(_ id: String) {
+        guard !contents.contains(id) else { return }
+        if contents.isEmpty, opened.isEmpty, !offBefore, !checkSaid { check = true }
+        contents.append(id)
+    }
+
+    /// His press on Check before each trip (the switch, or Space on the Mac).
+    mutating func setCheck(_ on: Bool) {
+        check = on
+        checkSaid = true
+    }
+
+    /// Write what changed — called inside the page's own Save. The switch is his word once
+    /// he pressed it or it changed (a new kit's ON); otherwise the kit keeps its own.
     func save(_ lib: inout Library, thingId: String) {
         guard !none else { return }
         if contents != opened || out != openedOut || check != openedCheck {
-            lib.setKit(kitId: thingId, contents: contents, takenOut: out, check: check)
+            lib.setKit(kitId: thingId, contents: contents, takenOut: out,
+                       check: checkSaid || check != openedCheck ? check : nil)
         }
         if holder != nil, takenOut != openedTakenOut {
             lib.setTakenOut(thingId: thingId, takenOut)
@@ -137,7 +162,7 @@ struct ThingKitPart: View {
             addButton
             if draft.picking { picker(byId).keyed(.kitFind) }
             if !things.isEmpty {
-                Toggle(isOn: $draft.check) {
+                Toggle(isOn: Binding(get: { draft.check }, set: { draft.setCheck($0) })) {
                     Text("Check before each trip").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 }
                 .tint(AppSection.care.color)
@@ -267,7 +292,7 @@ struct ThingKitPart: View {
                 .padding(.bottom, 4)
             ForEach(Array(shown.enumerated()), id: \.element.id) { n, thing in
                 Button {
-                    draft.contents.append(thing.id)
+                    draft.add(thing.id)
                     draft.query = ""                // ready for the next one
                     draft.lit = 0
                     landed?(.kitFind)

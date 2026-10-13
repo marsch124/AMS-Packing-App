@@ -10606,6 +10606,58 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "kit-check-packed")
     }
 
+    /// A new kit starts with Check before each trip ON (0.76, his ask: he could not tick what
+    /// was inside a kit while packing — the switch was off). In the plain sample the Rain
+    /// jacket holds nothing; the Map put in it from Add from your things, the switch shows on
+    /// at once and Save keeps it; the trip a month ahead (its Rain jacket at `trip-line-5`)
+    /// shows the Map inside with its small tick, and the jacket waits for it ("1 to go").
+    func testANewKitStartsCheckedBeforeEachTrip() {
+        let app = launch()
+        openKitThing(app, search: "Rain jacket")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"), "no Add from your things")
+        XCTAssertFalse(app.switches["thing-kit-check"].exists || app.checkBoxes["thing-kit-check"].exists,
+                       "a thing that holds nothing offers Check before each trip")
+        tap(app, id: "thing-kit-add")
+        let find = app.textFields["thing-kit-search"]
+        XCTAssertTrue(find.waitForExistence(timeout: 5), "no search in the list")
+        type("Map", into: find)
+        #if os(iOS)
+        if app.keyboards.count > 0 {
+            find.typeText("\n")
+            _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
+        }
+        #endif
+        hideKeyboard(app)
+        for _ in 0..<3 where !app.staticTexts["thing-kit-row-0"].exists {
+            if app.buttons["thing-kit-pick-0"].waitForExistence(timeout: 3) { tap(app, id: "thing-kit-pick-0") }
+            _ = waitUntil(timeout: 3) { app.staticTexts["thing-kit-row-0"].exists }
+        }
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-kit-row-0"]) == "Map" }, "the map did not go in")
+        tap(app, id: "thing-kit-add")                            // Close the list: the switch comes up under the map
+        XCTAssertTrue(switchNamed(app, "thing-kit-check").exists, "the new kit has no Check before each trip")
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-kit-check") }, "the new kit does not start with Check before each trip on")
+        shot(app, "kit-new-checked")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+
+        // Kept: reopened, still on.
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"))
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-kit-check") }, "Save did not keep Check before each trip on")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+
+        // The trip: the map inside the jacket, with its small tick; the jacket waits for it.
+        openKitTrip(app)
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-5-kit-0-tick"), "the new kit's map has no small tick on the trip")
+        XCTAssertTrue(words(app.buttons["trip-line-5"]).contains("Rain jacket"), "'\(words(app.buttons["trip-line-5"]))'")
+        XCTAssertTrue(words(app.staticTexts["trip-line-5-kit-togo"]).contains("1 to go"),
+                      "the jacket does not wait for the map: '\(words(app.staticTexts["trip-line-5-kit-togo"]))'")
+        shot(app, "kit-new-trip-ticks")
+    }
+
     /// A thing inside a kit says so on its page — and that it is also on a template on
     /// its own; taken out there, the trip's kit says it is missing and no longer asks for it.
     func testAThingInsideAKitSaysSoAndIsTakenOutFromItsPage() {
@@ -10727,6 +10779,35 @@ final class AMSPackingUITests: XCTestCase {
         openKitTrip(app, row: 1)
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         XCTAssertFalse(appears(app, "trip-charge", timeout: 3), "To charge shows two months before the trip")
+    }
+
+    /// A battery in the hold (0.76, his yes of 13 Oct 2026): on a plane trip, Check before you
+    /// go says a thing with a battery in a CHECKED bag must travel in the cabin — red, with the
+    /// battery mark. (`-uiTestingBattery -batteryByPlane`: the Power bank is in the Camp pouch,
+    /// which goes in the Checked luggage; the Toothbrush is in the Wash bag in the carry-on,
+    /// and the pouch's Lighter, not allowed on board, is in the hold — neither is said.) A tap
+    /// opens the power bank itself; its battery switched off, the warning goes.
+    func testABatteryInACheckedBagIsToldToGoInTheCabin() {
+        let app = launch("-uiTestingBattery", ["-batteryByPlane"])
+        openKitTrip(app)
+        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "the plane trip does not check the battery in the hold")
+        let check = app.buttons["trip-check-cabin-0"]
+        XCTAssertTrue(waitUntil { self.words(check).contains("Power bank, in the Camp pouch") },
+                      "the power bank in the pouch in the hold is not said: '\(words(check))'")
+        XCTAssertTrue(words(check).contains("Battery: carry it in the cabin \u{00B7} in Checked luggage"),
+                      "it does not say why and where: '\(words(check))'")
+        XCTAssertFalse(app.buttons["trip-check-cabin-1"].exists,
+                       "something else is said: '\(words(app.buttons["trip-check-cabin-1"]))'")
+        shot(app, "battery-trip-check-hold")
+
+        // Opened from the check: the power bank's page (its battery on); switched off, it is no matter.
+        tap(app, id: "trip-check-cabin-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the check did not open the thing")
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-battery") }, "the check did not open the power bank")
+        setSwitch(app, "thing-battery", on: false)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(disappears(app, "trip-checks", timeout: 5), "without its battery the power bank is still checked")
     }
 
     /// A past trip keeps what was inside its kits (0.73): reviewed, the Camp pouch's line

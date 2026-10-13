@@ -1584,7 +1584,8 @@ Model `ThingFollowsTests` (5 tests, with `testStillAheadGoesByTheDayWhereHeIs` a
 **Purpose and origin.** His pre-trip ideas 4 and 5 (2 Oct 2026, 0.48): on a plane trip, what in a
 CABIN bag the airport stops (not allowed on board; liquids); and what runs out before he is home — a
 document (passport, ID card) within six months of coming home. "Colour is the message: red will stop
-him; orange wants a look."
+him; orange wants a look." Since 0.76 (his yes of 13 Oct 2026, spec 07 part 15 rule 8): on a plane trip, a
+thing with a BATTERY in a CHECKED bag too — airlines want lithium batteries and power banks in the cabin.
 
 **How it is reached and left.** First card in the trip's scroll area, only when something needs him.
 A line opens the thing's editor as a sheet (`ThingEditor`, Care spec); the card disappears as soon as
@@ -1596,7 +1597,8 @@ heavy) and a count capsule (13 heavy white on red if any line is red, else orang
 `trip-checks-count`. Then one button per flag (min height 44): a drawn icon 22 pt in the line's tint
 (the plane icon for cabin lines; the passport icon for documents; a drawn hourglass for other dates),
 the line's name (16 bold ink), the reason (15 medium, tint), and a chevron when there is a thing to
-open. Ids: cabin lines `trip-check-cabin-<n>` first, then date lines `trip-check-date-<n>`, then the
+open. A battery in the hold (0.76) has the drawn battery mark of To charge (`ToChargeCard.battery`) instead of the
+plane, in red. Ids: cabin lines `trip-check-cabin-<n>` first (not allowed, then batteries, then liquids), then date lines `trip-check-date-<n>`, then the
 reminders due, `trip-check-todo-<n>` (0.70, spec 07 part 12: a tick circle 22 pt in the trip's green, the name,
 "To do · <step>"; a press ticks the line; label "<name>, to do. Tick it").
 
@@ -1612,6 +1614,8 @@ nothing. A reminder whose template is gone (or that was typed on the trip) shows
 
 Reasons (`TripChecksCard.says`), dates as "3 Mar 2027" (fixed English months):
 - not allowed (red): "Not allowed in the cabin · in <bag>"
+- a battery in a checked bag (red, 0.76): "Battery: carry it in the cabin · in <bag>" — for a thing inside a kit the
+  name says the kit ("Power bank, in the Camp pouch") and <bag> is the kit's bag
 - liquid (orange): "Liquid: 100 ml at most, in the clear bag · in <bag>"
 - out of date already (red): "Out of date since <day>"
 - runs out before home (red): "Runs out <day>, before you are home"
@@ -1619,10 +1623,14 @@ Reasons (`TripChecksCard.says`), dates as "3 Mar 2027" (fixed English months):
 
 ### Behaviour
 - **Cabin** (`cabinCheck`): only when `transport == "Plane"` (Quick trips too — Quick drops the
-  transport kit, not the transport). Lines: not reminders, not set aside, in a cabin bag. Judged by the
-  THING as it is now (`thingNow`: the catalogue item with the line's `sourceItemId`, else the line):
-  restricted → not allowed; else liquid → liquid. All "not allowed" first, then liquids, each in list
-  order.
+  transport kit, not the transport). Lines: not reminders, not set aside, IN A BAG (`Library.inABag`: the
+  bag is not blank and not "Other"; a line in no bag yet is never judged). Judged by the THING as it is
+  now (`thingNow`: the catalogue item with the line's `sourceItemId`, else the line), and by each thing
+  inside a kit line as it is now (`insideLines`, not taken out, in the kit's bag). In a cabin bag:
+  restricted → not allowed; else liquid → liquid. In any other bag — a CHECKED bag (0.76) — only a
+  battery (`BATTERY_KEY`, spec 07 part 15) → battery; the hold takes knives and liquids. All "not
+  allowed" first, then the batteries, then the liquids, each in list order. Any "not allowed" or battery
+  line makes the card red.
 - **Cabin bag** (`isCabin(container:)`): if one of his bags has that name (normName), the bag's own
   `extra.cabin` when set, else its name; a bag he never made: its name. By name = normName contains
   "carry-on", "carry on", "carryon", "hand luggage" or "cabin".
@@ -1636,11 +1644,13 @@ Reasons (`TripChecksCard.says`), dates as "3 Mar 2027" (fixed English months):
   does nothing).
 
 ### Tests
-Model `TripChecksTests` (7: cabin bags only, the thing as it is now, a bag's own word, a bag name on the
+Model `TripChecksTests` (8: cabin bags only, the thing as it is now, a bag's own word, a bag name on the
 trip, a Quick trip by plane, dates + six months, `ymd(plusMonths:)` incl. 31 Aug → 28 Feb and leap
-years). UI `testATripChecksTheCabinAndTheDatesBeforeYouGo` (order knife, sun cream; dates sun cream,
+years; since 0.76 a battery in a checked bag). UI `testATripChecksTheCabinAndTheDatesBeforeYouGo` (order knife, sun cream; dates sun cream,
 passport; Liquid off removes one; clearing the passport's date removes it; Car removes cabin checks),
-`testABagSaysWhetherItGoesInTheCabin`, `testABagOnTheTripSaysWhetherItGoesInTheCabin`. The reminders due and their
+`testABagSaysWhetherItGoesInTheCabin`, `testABagOnTheTripSaysWhetherItGoesInTheCabin`. A battery in the hold (0.76):
+model `TripChecksTests.testABatteryInACheckedBagIsToldToGoInTheCabin`, UI `testABatteryInACheckedBagIsToldToGoInTheCabin`
+(`-uiTestingBattery -batteryByPlane`) — what they pin and the red they were seen with: spec 07 part 15, Tests. The reminders due and their
 template icons: spec 07, part 12, Tests (`testATripsRemindersShowWhenTheyAreDue`,
 `TemplateRemindersTests.testADueRemindersLineKnowsTheTemplatesItComesFrom`).
 

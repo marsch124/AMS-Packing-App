@@ -1125,11 +1125,14 @@ apart; a field 6 pt under its heading):
       (`thing-kit-more`) or "Nothing else can go in it." / "Nothing by that name can go in it."
       (`thing-kit-nothing`). A tap adds it to the end and empties the search. Offered: every thing but itself, his
       bags, to-dos, kits (a kit never goes inside a kit) and what is in it already (`kitRefusal`). Holding
-      something: a switch "Check before each trip" (`thing-kit-check`) and "With what is inside: 170 g"
+      something: a switch "Check before each trip" (`thing-kit-check`; on a thing that held nothing when the page
+      opened it shows ON as the first thing goes in — 0.76, unless he switched it off on this thing before; his press
+      goes through `KitDraft.setCheck`) and "With what is inside: 170 g"
       (Subheadline semibold mono, `thing-kit-weight`, value = the grams) — the stored own weight plus the page's
       contents (a weight typed above counts after Save).
-    - Save → `setKit(kitId:contents:takenOut:check:)` when the contents, the taken out or the check changed; a thing
-      that was in another kit leaves it; nothing inside = a plain thing (the keys go).
+    - Save → `setKit(kitId:contents:takenOut:check:)` when the contents, the taken out or the check changed — `check`
+      is the switch when he pressed it or it changed (a new kit's ON), else nil (the kit keeps its own word); a thing
+      that was in another kit leaves it; nothing inside = a plain thing (the keys go, but his "off", 0.76).
     - The list's search and the thing lit in it live in the draft (`KitDraft.query`, `.lit`, 0.73) so the Mac's
       keys read them; `ThingKitPart.offered(_:thingId:draft:)` is the one list both the screen and the keys use.
       On the Mac (0.73): each row's Take out / Put back and ✕ (2-pt orange ring when the keys are on it), Find a

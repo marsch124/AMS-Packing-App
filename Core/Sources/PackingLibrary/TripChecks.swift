@@ -5,7 +5,8 @@ import PackingCore
 // first real trip):
 //  • On a plane trip, what is packed in a CABIN bag that the airport stops: a thing
 //    not allowed on board (its "Restricted"), and liquids (100 ml at most, in the
-//    clear bag).
+//    clear bag). And (0.76, his yes of 13 Oct 2026) a thing with a BATTERY in a CHECKED
+//    bag: airlines want lithium batteries and power banks in the cabin.
 //  • What runs out before he is home (a thing's "Valid until"), and a document — a
 //    passport, an ID card — that runs out within six months of coming home, since
 //    many countries want that much left on it.
@@ -23,7 +24,8 @@ public let DOCUMENT_MONTHS_LEFT = 6
 public let DOCUMENTS_CATEGORY = "Documents & money"
 
 public struct CabinFlag: Equatable, Sendable {
-    public enum Why: String, Sendable { case notAllowed, liquid }
+    /// In a cabin bag: not allowed on board, a liquid. In a checked bag: a battery (0.76).
+    public enum Why: String, Sendable { case notAllowed, battery, liquid }
     /// The trip's line.
     public var line: Item
     /// The thing to open to put it right (nil: a thing typed on this trip only).
@@ -99,23 +101,44 @@ extension Library {
         return src
     }
 
-    /// On a plane trip: what in a cabin bag will be stopped — not allowed on board
-    /// first, then the liquids. A line set aside is not packed, so not asked about.
+    /// Is a trip line in a bag at all? "Not in a bag" ("" or "Other") is no bag: on the
+    /// cabin's side or the hold's, there is nothing to judge yet.
+    static func inABag(_ line: Item) -> Bool {
+        let bag = jsTrim(line.container)
+        return !bag.isEmpty && bag != "Other"
+    }
+
+    /// On a plane trip: what the airport will stop. In a CABIN bag, a thing not allowed on
+    /// board and the liquids; in a CHECKED bag — any bag that is not a cabin bag, by the
+    /// same rule (`isCabin`) — a thing with a battery (0.76, `BATTERY_KEY`), which must
+    /// travel in the cabin. Not allowed first, then the batteries, then the liquids, each
+    /// in the trip's order. A line set aside is not packed, so not asked about; a reminder
+    /// is never; a line in no bag yet is not judged. What is inside a kit goes where the
+    /// kit goes ("Power bank, in the Camp pouch").
     public func cabinCheck(tripId: String) -> [CabinFlag] {
         guard let trip = trips.first(where: { $0.id == tripId }), trip.transport == "Plane" else { return [] }
-        var notAllowed: [CabinFlag] = [], liquids: [CabinFlag] = []
+        var notAllowed: [CabinFlag] = [], batteries: [CabinFlag] = [], liquids: [CabinFlag] = []
         let kits = kitIndex()
-        for line in trip.entries where line.itemType != "reminder" && !isSetAside(line) && isCabin(container: line.container) {
+        for line in trip.entries where line.itemType != "reminder" && !isSetAside(line) && Library.inABag(line) {
             let thing = thingNow(line)
+            // What is inside a kit goes where the kit goes (ThingKits).
+            let inside = insideLines(line, index: kits)
+            guard isCabin(container: line.container) else {
+                // The hold: only a battery is stopped there.
+                if Library.hasBattery(thing) { batteries.append(CabinFlag(line: line, thingId: thingToOpen(line), why: .battery)) }
+                for c in inside where Library.hasBattery(c) {
+                    batteries.append(CabinFlag(line: c, thingId: c.sourceItemId, why: .battery))
+                }
+                continue
+            }
             if thing.restricted { notAllowed.append(CabinFlag(line: line, thingId: thingToOpen(line), why: .notAllowed)) }
             else if thing.liquid { liquids.append(CabinFlag(line: line, thingId: thingToOpen(line), why: .liquid)) }
-            // What is inside a kit goes where the kit goes (ThingKits).
-            for inside in insideLines(line, index: kits) {
-                if inside.restricted { notAllowed.append(CabinFlag(line: inside, thingId: inside.sourceItemId, why: .notAllowed)) }
-                else if inside.liquid { liquids.append(CabinFlag(line: inside, thingId: inside.sourceItemId, why: .liquid)) }
+            for c in inside {
+                if c.restricted { notAllowed.append(CabinFlag(line: c, thingId: c.sourceItemId, why: .notAllowed)) }
+                else if c.liquid { liquids.append(CabinFlag(line: c, thingId: c.sourceItemId, why: .liquid)) }
             }
         }
-        return notAllowed + liquids
+        return notAllowed + batteries + liquids
     }
 
     /// What runs out before he is home, and a document within six months of it —

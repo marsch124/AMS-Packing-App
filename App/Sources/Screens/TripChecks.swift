@@ -4,11 +4,13 @@ import PackingLibrary
 
 /// "Check before you go" at the top of a trip — his ideas 4 and 5 (2 Oct 2026). Only
 /// there when something needs him: on a plane trip, what in a cabin bag the airport
-/// stops; and what runs out before he is home (a passport six months ahead). A tap
-/// opens the thing to put it right — its bag, its flags, its date.
+/// stops, and a thing with a battery in a checked bag (0.76); and what runs out before
+/// he is home (a passport six months ahead). A tap opens the thing to put it right —
+/// its bag, its flags, its date.
 ///
-/// Colour is the message: red will stop him (not allowed on board, out of date
-/// before he is home); orange wants a look (a liquid, a document short of six months).
+/// Colour is the message: red will stop him (not allowed on board, a battery in the
+/// hold, out of date before he is home); orange wants a look (a liquid, a document short
+/// of six months).
 struct TripChecksCard: View {
     let tripId: String
     /// Open the thing (the trip holds the sheet: this card goes when the last line is put right).
@@ -26,7 +28,7 @@ struct TripChecksCard: View {
         // Where each comes from (0.75, his yes of 13 Oct 2026): the templates' icons, as on
         // the trip's lines — the same answer (`lineTemplates`), asked only when one is due.
         let from = due.isEmpty ? [:] : model.library.lineTemplates(tripId: tripId)
-        let red = cabin.contains { $0.why == .notAllowed } || dates.contains { $0.alreadyOut || $0.beforeHome }
+        let red = cabin.contains { $0.why != .liquid } || dates.contains { $0.alreadyOut || $0.beforeHome }
         // Only reminders to see to: the trip's own colour, not a warning's.
         let tint = red ? AppSection.actions.color : (cabin.isEmpty && dates.isEmpty ? AppSection.events.color : AppSection.care.color)
         if !cabin.isEmpty || !dates.isEmpty || !due.isEmpty {
@@ -41,8 +43,10 @@ struct TripChecksCard: View {
                     Spacer()
                 }
                 ForEach(Array(cabin.enumerated()), id: \.offset) { n, f in
-                    line(f.line.name, TripChecksCard.says(f), red: f.why == .notAllowed,
-                         mark: TemplateIcons.icon("plane")?.path ?? "", thing: f.thingId)
+                    // A battery in the hold: the drawn battery mark of To charge (0.76).
+                    line(f.line.name, TripChecksCard.says(f), red: f.why != .liquid,
+                         mark: f.why == .battery ? ToChargeCard.battery : (TemplateIcons.icon("plane")?.path ?? ""),
+                         thing: f.thingId)
                         .accessibilityIdentifier("trip-check-cabin-\(n)")
                 }
                 ForEach(Array(dates.enumerated()), id: \.offset) { n, f in
@@ -120,6 +124,7 @@ struct TripChecksCard: View {
         let bag = f.line.container
         switch f.why {
         case .notAllowed: return "Not allowed in the cabin \u{00B7} in \(bag)"
+        case .battery: return "Battery: carry it in the cabin \u{00B7} in \(bag)"
         case .liquid: return "Liquid: 100 ml at most, in the clear bag \u{00B7} in \(bag)"
         }
     }

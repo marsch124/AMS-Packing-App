@@ -1788,7 +1788,7 @@ extension ThingEditor {
             guard code == KeyCode.space else { return e }
             switch f {
             case .kitTakenOut: kit.takenOut.toggle()
-            case .kitCheck: kit.check.toggle()
+            case .kitCheck: kit.setCheck(!kit.check)
             default:
                 kit.picking.toggle(); kit.query = ""; kit.lit = 0
                 // Opened: the cursor goes into Find a thing once it is on the page (0.73),
@@ -1821,7 +1821,7 @@ extension ThingEditor {
         let shown = ThingKitPart.offered(model.library, thingId: current, draft: kit).prefix(ThingKitPart.shownAtOnce)
         guard !shown.isEmpty else { return }
         let thing = shown[shown.startIndex + min(max(kit.lit, 0), shown.count - 1)]
-        kit.contents.append(thing.id)
+        kit.add(thing.id)
         kit.query = ""
         kit.lit = 0
     }

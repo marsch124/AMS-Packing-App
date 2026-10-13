@@ -19,7 +19,15 @@ import PackingCore
 // and restored with the thing, as every extra key is:
 //   kitContents  [ids]  what is inside, in his order
 //   kitOut       [ids]  of those, what is taken out for now
-//   kitCheck     true   check the contents before each trip (absent = no)
+//   kitCheck     true   check the contents before each trip
+//                false  he switched it off himself (0.76) — kept even when the thing
+//                       holds nothing any more, so it never comes back on by itself
+//                absent = no, and never said (every kit made before 0.76)
+// A NEW kit starts with it on (0.76, his ask of 13 Oct 2026: he could not tick what was
+// inside a kit while packing — the switch was off): the moment a thing that holds nothing
+// gets its first thing, on its page, by Paste a list in Make a small core, or any other
+// way, `kitCheck` is written true — unless he switched it off on that thing before. Kits
+// made before 0.76 are left exactly as they are (his data).
 // and on a trip's kit LINE:
 //   kitTicked    [ids]  the contents ticked on this trip, while the line is not
 //   kitThen      [{id, name, qty, weight, out?}]  what was inside it when the trip was
@@ -123,6 +131,10 @@ extension Library {
 
     /// "Check before each trip", on a kit.
     public static func kitCheck(_ kit: Item) -> Bool { kit.extra[KIT_CHECK_KEY]?.boolValue == true }
+
+    /// Did he switch "Check before each trip" off himself on this thing (0.76)? Then a new
+    /// kit made of it starts with it off.
+    public static func kitCheckOffByHim(_ kit: Item) -> Bool { kit.extra[KIT_CHECK_KEY]?.boolValue == false }
 
     /// Who holds what. A thing lists contents → it may be a kit. A listed id counts when
     /// it is a thing that exists, is not the kit itself, not a bag, not a to-do, and does
@@ -251,9 +263,11 @@ extension Library {
     /// What a kit's page saves: what is inside, in his order, which of them are taken
     /// out, and "Check before each trip". A thing that cannot go in (`kitRefusal`) is left
     /// out; one that was in another kit leaves it. Nothing inside = a plain thing again.
-    /// Returns whether anything was written.
+    /// `check`: his word — on, or off (remembered: `kitCheckOffByHim`); nil = as the kit has
+    /// it, and ON for a thing that becomes a kit now unless he switched it off on it before
+    /// (0.76, `writeKit`). Returns whether anything was written.
     @discardableResult
-    public mutating func setKit(kitId: String, contents ids: [String], takenOut: Set<String> = [], check: Bool = false) -> Bool {
+    public mutating func setKit(kitId: String, contents ids: [String], takenOut: Set<String> = [], check: Bool? = nil) -> Bool {
         guard let k = items.firstIndex(where: { $0.id == kitId }) else { return false }
         let idx = kitIndex()
         var seen = Set<String>()
@@ -264,8 +278,7 @@ extension Library {
             let had = Library.listedContents(items[n])
             let left = had.filter { !keep.contains($0) }
             guard left != had else { continue }
-            Library.writeKit(&items[n], contents: left,
-                             out: Set(Library.kitIds(items[n].extra[KIT_OUT_KEY])), check: Library.kitCheck(items[n]))
+            Library.writeKit(&items[n], contents: left, out: Set(Library.kitIds(items[n].extra[KIT_OUT_KEY])))
             changed = true
         }
         let before = items[k].extra
@@ -280,8 +293,7 @@ extension Library {
               kitRefusal(thingId: thingId, kitId: kitId).isEmpty else { return false }
         let now = kitContents(kitId: kitId).map(\.thing.id)
         guard !now.contains(thingId) else { return false }
-        return setKit(kitId: kitId, contents: now + [thingId],
-                      takenOut: Set(Library.kitIds(kit.extra[KIT_OUT_KEY])), check: Library.kitCheck(kit))
+        return setKit(kitId: kitId, contents: now + [thingId], takenOut: Set(Library.kitIds(kit.extra[KIT_OUT_KEY])))
     }
 
     /// Take a thing out of its kit for good (it becomes a thing of its own again).
@@ -289,8 +301,7 @@ extension Library {
     public mutating func removeFromKit(thingId: String) -> Bool {
         guard let kit = kitHolding(thingId: thingId) else { return false }
         let now = kitContents(kitId: kit.id).map(\.thing.id).filter { $0 != thingId }
-        return setKit(kitId: kit.id, contents: now, takenOut: Set(Library.kitIds(kit.extra[KIT_OUT_KEY])),
-                      check: Library.kitCheck(kit))
+        return setKit(kitId: kit.id, contents: now, takenOut: Set(Library.kitIds(kit.extra[KIT_OUT_KEY])))
     }
 
     /// Taken out of its kit for now, or put back. False for a thing in no kit.
@@ -300,11 +311,11 @@ extension Library {
         var gone = Set(Library.kitIds(kit.extra[KIT_OUT_KEY]))
         if out { gone.insert(thingId) } else { gone.remove(thingId) }
         let before = items[k].extra
-        Library.writeKit(&items[k], contents: Library.listedContents(kit), out: gone, check: Library.kitCheck(kit))
+        Library.writeKit(&items[k], contents: Library.listedContents(kit), out: gone)
         return items[k].extra != before
     }
 
-    /// "Check before each trip", on or off.
+    /// "Check before each trip", on or off — his word (off is remembered, `kitCheckOffByHim`).
     @discardableResult
     public mutating func setKitCheck(kitId: String, _ on: Bool) -> Bool {
         guard let k = items.firstIndex(where: { $0.id == kitId }) else { return false }
@@ -315,18 +326,25 @@ extension Library {
         return items[k].extra != before
     }
 
-    /// The three keys, written only when they say something: no contents → none of them.
-    static func writeKit(_ kit: inout Item, contents: [String], out: Set<String>, check: Bool) {
+    /// The three keys, written only when they say something: no contents → none of them,
+    /// but his "off" (0.76). `check` is his word (true, or false = switched off by him); nil
+    /// keeps what the kit has — and a thing that holds nothing yet and gets its first thing
+    /// now becomes a kit with Check before each trip ON, unless he switched it off on it
+    /// before (0.76).
+    static func writeKit(_ kit: inout Item, contents: [String], out: Set<String>, check: Bool? = nil) {
+        let offByHim = check == false || (check == nil && kitCheckOffByHim(kit))
         if contents.isEmpty {
             kit.extra[KIT_CONTENTS_KEY] = nil
             kit.extra[KIT_OUT_KEY] = nil
-            kit.extra[KIT_CHECK_KEY] = nil
+            kit.extra[KIT_CHECK_KEY] = offByHim ? JSONValue.bool(false) : JSONValue?.none
             return
         }
+        let becomesAKit = listedContents(kit).isEmpty
         kit.extra[KIT_CONTENTS_KEY] = JSONValue(contents)
         let gone = contents.filter { out.contains($0) }
         kit.extra[KIT_OUT_KEY] = gone.isEmpty ? JSONValue?.none : JSONValue(gone)
-        kit.extra[KIT_CHECK_KEY] = check ? JSONValue.bool(true) : JSONValue?.none
+        let on = check ?? (kitCheck(kit) || (becomesAKit && !offByHim))
+        kit.extra[KIT_CHECK_KEY] = on ? JSONValue.bool(true) : (offByHim ? JSONValue.bool(false) : JSONValue?.none)
     }
 
     // MARK: - Building a trip
@@ -516,7 +534,7 @@ extension Library {
 
     /// What is inside a kit line, as lines of their own for Check before you go — never
     /// shown on the trip: "Lighter, in the Camp pouch", in the kit's bag, carrying the
-    /// thing's flags, date and kind as they are now (the knife in a pouch in the cabin bag
+    /// thing's flags (Has a battery too, 0.76), date and kind as they are now (the knife in a pouch in the cabin bag
     /// is stopped at the airport all the same). Things taken out are not in it. Always the
     /// kit as it is now, like every thing these checks read (`thingNow`).
     func insideLines(_ line: Item, index: KitIndex) -> [Item] {
@@ -531,6 +549,8 @@ extension Library {
             l.expiry = c.thing.expiry
             l.category = c.thing.category
             l.retired = c.thing.retired
+            // Has a battery (0.76): the thing's own word, never the kit line's.
+            l.extra[BATTERY_KEY] = Library.hasBattery(c.thing) ? JSONValue.bool(true) : JSONValue?.none
             return l
         }
     }

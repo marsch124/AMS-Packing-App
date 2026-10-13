@@ -273,7 +273,9 @@ extension LibraryModel {
     ///                           is my …?, 0.73)
     ///  -uiTestingBattery      → memory, the kits sample with its trip starting tomorrow, a
     ///                           Power bank in the Camp pouch and the Toothbrush with a battery
-    ///                           (To charge, 0.75)
+    ///                           (To charge, 0.75); + -batteryByPlane: the trip by plane,
+    ///                           the Camp pouch in the Checked luggage (a battery in the
+    ///                           hold, 0.76)
     ///  -uiTestingBigBase      → memory, the sample + a big always-packed "Long trips" and a
     ///                           Camp pouch kit (a small core, 0.71)
     ///  -uiTestingOldPhoto     → memory, the sample + a photo nothing shows, from January
@@ -336,7 +338,8 @@ extension LibraryModel {
             return LibraryModel(store: MemoryStore(SampleLibrary.bigBase().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingBattery") {
-            return LibraryModel(store: MemoryStore(SampleLibrary.battery().records()), usesICloud: false, sky: sky)
+            let byPlane = args.contains("-batteryByPlane")
+            return LibraryModel(store: MemoryStore(SampleLibrary.battery(byPlane: byPlane).records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingKits") {
             let underWay = args.contains("-kitsUnderWay")

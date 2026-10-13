@@ -86,6 +86,56 @@ final class TripChecksTests: XCTestCase {
         XCTAssertFalse(lib.isCabin(container: "Checked luggage"))
     }
 
+    /// His yes of 13 Oct 2026 (0.76): on a plane trip a thing with a battery in a CHECKED bag
+    /// is stopped — airlines want lithium batteries and power banks in the cabin. A checked
+    /// bag is any bag that is not a cabin bag (`isCabin`); what is inside a kit goes where the
+    /// kit goes; a line in no bag yet, set aside, or a reminder is not judged.
+    func testABatteryInACheckedBagIsToldToGoInTheCabin() {
+        var (lib, trip) = library()
+        let base = lib.templates.first { $0.role == "base" }!.id
+        thing(&lib, "Power bank", bag: "Suitcase", on: base) { Library.setBattery(&$0, true) }
+        thing(&lib, "Phone", bag: "Cabin bag", on: base) { Library.setBattery(&$0, true) }
+        thing(&lib, "Torch", bag: "Suitcase", on: base) { Library.setBattery(&$0, true) }
+        thing(&lib, "Camera", bag: "Suitcase", on: base) { Library.setBattery(&$0, true) }
+        thing(&lib, "Tech pouch", bag: "Suitcase", on: base)
+        for name in ["Spare battery", "Cable", "Lighter"] { _ = lib.addThing(name: name) }
+        set(&lib, "Spare battery") { Library.setBattery(&$0, true) }
+        set(&lib, "Lighter") { $0.restricted = true }
+        let ids = Dictionary(lib.items.map { ($0.name, $0.id) }, uniquingKeysWith: { a, _ in a })
+        func id(_ name: String) -> String { ids[name]! }
+        XCTAssertTrue(lib.setKit(kitId: id("Tech pouch"), contents: [id("Spare battery"), id("Cable"), id("Lighter")]))
+        _ = lib.changeTrip(id: trip) { $0.name = "Two months" }          // rebuild: the new things come along
+        func line(_ name: String) -> Int { lib.trips[0].entries.firstIndex { $0.name == name }! }
+        lib.trips[0].entries[line("Torch")].container = ""               // in no bag yet
+        lib.trips[0].entries[line("Camera")].skipped = true              // not this time
+        var todo = newItem(name: "Charge the power bank"); todo.itemType = "reminder"; todo.container = "Suitcase"
+        Library.setBattery(&todo, true)
+        lib.trips[0].entries.append(todo)
+
+        let flags = lib.cabinCheck(tripId: trip)
+        XCTAssertEqual(flags.map(\.line.name), ["Pocket knife", "Power bank", "Spare battery, in the Tech pouch", "Sun cream"],
+                       "not allowed, then the batteries in the hold, then the liquids; the phone in the cabin, the torch in no bag, the camera set aside, the reminder and the lighter in the hold are no matter")
+        XCTAssertEqual(flags.map(\.why), [.notAllowed, .battery, .battery, .liquid])
+        XCTAssertEqual(flags.filter { $0.why == .battery }.map(\.line.container), ["Suitcase", "Suitcase"], "the bag it is in")
+        XCTAssertEqual(flags[1].thingId, id("Power bank"), "the check must open the power bank")
+        XCTAssertEqual(flags[2].thingId, id("Spare battery"), "the check must open the thing inside the kit, not the kit")
+
+        // "Not in a bag" is no bag either.
+        lib.trips[0].entries[line("Torch")].container = "Other"
+        XCTAssertFalse(lib.cabinCheck(tripId: trip).map(\.line.name).contains("Torch"), "a thing in no bag was judged")
+        // The thing as it is now: the power bank's battery switched off, it is no matter.
+        set(&lib, "Power bank") { Library.setBattery(&$0, false) }
+        XCTAssertEqual(lib.cabinCheck(tripId: trip).filter { $0.why == .battery }.map(\.line.name), ["Spare battery, in the Tech pouch"])
+        // The suitcase said to go in the cabin: no battery is in the hold any more — and the
+        // shampoo in it is now a liquid in the cabin.
+        XCTAssertTrue(lib.setBagCabin(id: lib.bags().first { $0.name == "Suitcase" }!.id, true))
+        XCTAssertEqual(lib.cabinCheck(tripId: trip).map(\.why), [.notAllowed, .notAllowed, .liquid, .liquid],
+                       "in the cabin, the lighter in the pouch is stopped and the batteries are not")
+        // By car, nothing.
+        lib.trips[0].transport = "Car"
+        XCTAssertTrue(lib.cabinCheck(tripId: trip).isEmpty, "a car trip is checked for batteries")
+    }
+
     /// Field test 7.3/6.1 (3 Oct 2026): the bag they packed into was a name on the lines,
     /// not one of their bags — the trip itself must be able to say it goes in the cabin.
     func testABagNameOnTheTripCanBeSaidToGoInTheCabin() {

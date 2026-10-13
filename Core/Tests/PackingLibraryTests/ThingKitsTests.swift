@@ -13,7 +13,8 @@ final class ThingKitsTests: XCTestCase {
     /// map; a carry-on bag. The Camp pouch (60 g) holds a lighter (30 g, not allowed in
     /// the cabin), spare cord (80 g, two of them) and plasters (20 g); the Wash bag (100 g),
     /// on no template, holds the toothbrush (also on the base template on its own) and
-    /// soap (90 g) — and is checked before each trip.
+    /// soap (90 g) — and is checked before each trip. The pouch is not: he switched it off
+    /// (a new kit starts checked, 0.76).
     static func library() -> Library {
         var lib = Library()
         var base = newList(name: "Common base", role: "base")
@@ -32,7 +33,7 @@ final class ThingKitsTests: XCTestCase {
         }
         lib.items[lib.items.firstIndex { $0.name == "Spare cord" }!].qty = "2"
         lib.items[lib.items.firstIndex { $0.name == "Lighter" }!].restricted = true
-        XCTAssertTrue(lib.setKit(kitId: id(lib, "Camp pouch"), contents: ids(lib, "Lighter", "Spare cord", "Plasters")))
+        XCTAssertTrue(lib.setKit(kitId: id(lib, "Camp pouch"), contents: ids(lib, "Lighter", "Spare cord", "Plasters"), check: false))
         XCTAssertTrue(lib.setKit(kitId: id(lib, "Wash bag"), contents: ids(lib, "Toothbrush", "Soap"), check: true))
         return lib
     }
@@ -70,11 +71,15 @@ final class ThingKitsTests: XCTestCase {
         // Out for good: a thing of its own again.
         XCTAssertTrue(lib.removeFromKit(thingId: cord))
         XCTAssertNil(lib.kitHolding(thingId: cord))
-        // Everything out: a plain thing again, and no key left on it.
+        // Everything out: a plain thing again, and no key left on it — but his "off" for
+        // Check before each trip (0.76: should it hold things again, it starts off).
         XCTAssertTrue(lib.setKit(kitId: pouch, contents: []))
         XCTAssertFalse(lib.isKit(pouch))
         let plain = lib.items.first { $0.id == pouch }!
-        XCTAssertNil(plain.extra[KIT_CONTENTS_KEY]); XCTAssertNil(plain.extra[KIT_OUT_KEY]); XCTAssertNil(plain.extra[KIT_CHECK_KEY])
+        XCTAssertNil(plain.extra[KIT_CONTENTS_KEY]); XCTAssertNil(plain.extra[KIT_OUT_KEY])
+        XCTAssertEqual(plain.extra[KIT_CHECK_KEY], .bool(false), "his off was forgotten")
+        XCTAssertTrue(lib.setKit(kitId: wash, contents: []))
+        XCTAssertTrue(lib.items.first { $0.id == wash }!.extra.isEmpty, "a kit checked before each trip left a key behind")
     }
 
     func testAKitNeverGoesInsideAKitAndABagIsNeitherAKitNorInsideOne() {
@@ -265,6 +270,63 @@ final class ThingKitsTests: XCTestCase {
         _ = lib.setChecked(false, tripId: t.id, entryId: line.id)
         _ = lib.setAside(true, tripId: t.id, entryId: line.id)
         XCTAssertFalse(lib.setKitContentTicked(true, tripId: t.id, entryId: line.id, contentId: soap))
+    }
+
+    /// His ask for 0.76: he could not tick what was inside a kit while packing — the switch
+    /// was off. A thing that becomes a kit (its first thing in, however it gets there) starts
+    /// with Check before each trip ON, unless he switched it off on that thing before; his
+    /// "off" is remembered, even while the thing holds nothing; kits made before are left as
+    /// they are.
+    func testANewKitStartsCheckedBeforeEachTripUnlessHeSwitchedItOff() {
+        var lib = ThingKitsTests.library()
+        let map = id(lib, "Map"), passport = id(lib, "Passport"), soap = id(lib, "Soap")
+        func check(_ id: String) -> JSONValue? { lib.items.first { $0.id == id }!.extra[KIT_CHECK_KEY] }
+
+        // The first thing into the Map (a map case, say): a new kit, checked.
+        XCTAssertTrue(lib.addToKit(kitId: map, thingId: passport))
+        XCTAssertEqual(check(map), .bool(true), "a new kit does not start checked before each trip")
+        var t = trip(&lib)
+        let line = t.entries.first { $0.name == "Map" }!
+        XCTAssertEqual(lib.kitOnLine(line)?.check, true, "the trip does not ask for what is inside the new kit")
+        XCTAssertFalse(lib.setChecked(true, tripId: t.id, entryId: line.id), "the new kit packed before what is inside was ticked")
+        // More things in, one taken out: it stays as it is.
+        XCTAssertTrue(lib.addToKit(kitId: map, thingId: soap))
+        XCTAssertTrue(lib.setTakenOut(thingId: soap, true))
+        XCTAssertEqual(check(map), .bool(true))
+
+        // He switches it off: remembered, even when the kit is emptied — and filled again, it stays off.
+        XCTAssertTrue(lib.setKitCheck(kitId: map, false))
+        XCTAssertEqual(check(map), .bool(false), "his off is not his word")
+        XCTAssertTrue(lib.removeFromKit(thingId: soap))
+        XCTAssertTrue(lib.removeFromKit(thingId: passport))
+        XCTAssertFalse(lib.isKit(map))
+        XCTAssertEqual(check(map), .bool(false), "emptied, his off was forgotten")
+        XCTAssertTrue(lib.addToKit(kitId: map, thingId: passport))
+        XCTAssertFalse(Library.kitCheck(lib.items.first { $0.id == map }!), "he switched it off, and it came back on")
+        let back = Library(records: lib.records())
+        XCTAssertEqual(back.items.first { $0.id == map }!.extra[KIT_CHECK_KEY], .bool(false), "the stored records lost his off")
+        // Switched on again by him, it is on.
+        XCTAssertTrue(lib.setKitCheck(kitId: map, true))
+        XCTAssertEqual(check(map), .bool(true))
+
+        // His word on the kit's page wins, both ways: a thing made a kit with the switch off.
+        let cord = id(lib, "Spare cord")
+        _ = lib.removeFromKit(thingId: cord)
+        let toothpaste = lib.addThing(name: "Toothpaste")!
+        XCTAssertTrue(lib.setKit(kitId: toothpaste.id, contents: [cord], check: false))
+        XCTAssertEqual(check(toothpaste.id), .bool(false))
+
+        // A kit made before 0.76 (no word either way) is left as it is — however it changes.
+        let pouch = id(lib, "Camp pouch")
+        let n = lib.items.firstIndex { $0.id == pouch }!
+        lib.items[n].extra[KIT_CHECK_KEY] = nil
+        let shampoo = lib.addThing(name: "Shampoo")!
+        XCTAssertTrue(lib.addToKit(kitId: pouch, thingId: shampoo.id))
+        XCTAssertTrue(lib.setTakenOut(thingId: shampoo.id, true))
+        XCTAssertTrue(lib.removeFromKit(thingId: shampoo.id))
+        XCTAssertNil(check(pouch), "a kit he already had was changed")
+        t = lib.trips.first { $0.id == t.id }!
+        XCTAssertEqual(lib.kitOnLine(t.entries.first { $0.name == "Camp pouch" }!)?.check, false)
     }
 
     // MARK: - Care and the checks before you go

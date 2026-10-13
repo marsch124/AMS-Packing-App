@@ -26,9 +26,10 @@ final class BatteriesTests: XCTestCase {
         for name in ["Headlamp", "Power bank", "GPS watch", "Toothbrush"] {
             XCTAssertTrue(lib.setThingBattery(id: id(lib, name), true))
         }
+        // Neither kit is checked before each trip (switched off: a new kit starts on, 0.76).
         XCTAssertTrue(lib.setKit(kitId: id(lib, "Camp pouch"), contents: ids(lib, "Power bank", "GPS watch", "Lighter"),
-                                 takenOut: Set(ids(lib, "GPS watch"))))
-        XCTAssertTrue(lib.setKit(kitId: id(lib, "Wash bag"), contents: ids(lib, "Toothbrush", "Soap")))
+                                 takenOut: Set(ids(lib, "GPS watch")), check: false))
+        XCTAssertTrue(lib.setKit(kitId: id(lib, "Wash bag"), contents: ids(lib, "Toothbrush", "Soap"), check: false))
         return lib
     }
 
