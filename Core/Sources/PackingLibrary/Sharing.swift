@@ -92,6 +92,7 @@ extension Library {
         for key in [MISSED_AT_REVIEW_KEY, TRIP_WORKOUTS_KEY, VAULT_WAITING_KEY, VAULT_WRITTEN_KEY] { t.extra[key] = nil }
         t.extra[KITS_KEPT_KEY] = nil             // it arrives not reviewed: its kits are theirs now (ThingKits)
         t.extra[BREAK_UNTIL_KEY] = nil           // his break: their phone must not call them back to packing (TakeABreak, 0.77)
+        for key in DAY_TRIP_KEYS { t.extra[key] = nil }   // his Packing day: bags out, tags, the photo's id, Weigh offered (0.79)
         t.entries = t.entries.map { line in
             var l = line
             l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)

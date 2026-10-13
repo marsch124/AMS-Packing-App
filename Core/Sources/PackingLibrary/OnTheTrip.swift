@@ -77,13 +77,14 @@ extension Library {
         return true
     }
 
-    /// Is a photo still shown anywhere — on a thing, on a trip's line, or on a bag
-    /// (either way a bag's photos are stored)?
+    /// Is a photo still shown anywhere — on a thing, on a trip's line, on a bag (either way a
+    /// bag's photos are stored), or as a trip's photo of all its bags (the Packing day, 0.79)?
     func photoInUse(_ id: String) -> Bool {
         if items.contains(where: { photoRefs($0).contains(id) }) { return true }
         return trips.contains { t in
             t.entries.contains { photoRefs($0).contains(id) }
                 || (t.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values.contains { Library.bagPhotoIds($0).contains(id) }
+                || Library.groupPhotoId(t) == id          // the Packing day's photo of all the bags (0.79)
         }
     }
 
@@ -97,6 +98,8 @@ extension Library {
         for t in trips {
             for line in t.entries { used.formUnion(photoRefs(line)) }
             for bag in (t.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values { used.formUnion(Library.bagPhotoIds(bag)) }
+            let group = Library.groupPhotoId(t)      // the Packing day's photo of all the bags (0.79)
+            if !group.isEmpty { used.insert(group) }
         }
         return used
     }

@@ -13,7 +13,8 @@ extension Library {
     public mutating func deleteTrip(id: String) -> Bool {
         guard let trip = trips.first(where: { $0.id == id }) else { return false }
         let mine = Set(trip.entries.flatMap { photoRefs($0) }
-                       + (trip.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values.flatMap { Library.bagPhotoIds($0) })
+                       + (trip.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values.flatMap { Library.bagPhotoIds($0) }
+                       + [Library.groupPhotoId(trip)].filter { !$0.isEmpty })     // all its bags together (0.79)
         trips.removeAll { $0.id == id }
         let gone = Set(mine.filter { !photoInUse($0) })
         photos.removeAll { gone.contains($0.id) }

@@ -174,6 +174,16 @@ extension Library {
             }
             trips[t].extra[WEIGHED_KEY] = scale.isEmpty ? nil : .object(scale)
         }
+        // The Packing day's ticks for the bag — laid out, name tag on, AirTag in (0.79, spec 07
+        // part 17) — go the way the scale reading goes: along to a plain new name; where two bags
+        // become one, or to "no bag", they are dropped (the bag kept was not laid out or tagged by them).
+        for key in DAY_BAG_KEYS {
+            let names = Library.dayNames(trips[t], key)
+            guard names.contains(where: { normName($0) == o }) else { continue }
+            var kept = names.filter { normName($0) != o }
+            if !new.isEmpty, !joinsAnother, !kept.contains(where: { normName($0) == normName(new) }) { kept.append(new) }
+            trips[t].extra[key] = kept.isEmpty ? nil : .array(kept.map(JSONValue.string))
+        }
         var dropped: [String] = []
         if var shots = trips[t].extra[BAG_PHOTOS_KEY]?.objectValue, !movable(shots.keys).isEmpty {
             var ids = Library.bagPhotoIds(shots[target])
