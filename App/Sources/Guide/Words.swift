@@ -9,14 +9,14 @@ enum Words {
 
     static let all: [Entry] = [
         Entry(term: "Trip", meaning: "One journey: its dates, place and templates, and the list you pack from. The Trips tab.", section: .events),
-        Entry(term: "Template", meaning: "A building block: the things for one activity or need — Hiking, Swim, Car. A trip is made from templates. The Templates tab.", section: .templates),
+        Entry(term: "Template", meaning: "A building block: the things for one activity or need — Hiking, Swim, RV. A trip is made from templates. The Templates tab.", section: .templates),
         // "Activity area", not "shelf" — their word from the field test (Oct 2026):
         // "We understand that word much better."
         Entry(term: "Activity area", meaning: "The group a template lives in, with its code: GA · Goal activity, WET · Workout, exercise & training, and so on.", section: .templates),
         Entry(term: "List", meaning: "The one list you pack from for a trip, made from its templates. (A grab list is a list too.)", section: .events),
         Entry(term: "Grab list", meaning: "A short list for a quick outing — Swim, Bike, Run — ticked as each thing is in your hand. Up to eight are on Home; the rest wait in Grab Lists.", section: .home),
         Entry(term: "Common base", meaning: "The template that comes along on every trip: passport, phone charger and the like.", section: .templates),
-        Entry(term: "Transport kit", meaning: "What a way of travelling adds to a trip: the Car, Plane or RV things.", section: .templates),
+        Entry(term: "Transport kit", meaning: "What Travelling by adds to a trip: your Plane or RV template. Both off is an ordinary trip.", section: .templates),
         Entry(term: "Quick", meaning: "A trip with only the templates you tick — no common base, no transport kit.", section: .home),
         Entry(term: "Context", meaning: "Indoor, Outdoor or Race: how a workout is done, picked for each workout on its own. It adds what that setting needs.", section: .home),
         Entry(term: "Thing", meaning: "One thing you own, in Your things on Care. It can be on many templates; a change to it reaches all of them.", section: .care),

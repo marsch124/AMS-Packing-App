@@ -646,11 +646,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (75 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (76 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.76 | 13 Oct 2026 | Simpler new trips | N1 C4 | battery in a checked bag on plane trips (cabinCheck, inABag); Travelling by Plane / RV only, neither = Car stored; Season from the dates (Nov–Mar Winter) until picked; More choices fold (Season, Food, Laundry); new kits start kitCheck on unless switched off |
 | 0.75 | 13 Oct 2026 | Charge before you go | N2 C5 | Has a battery (`battery` key) + To charge card with its own ticks (`charged`, `kitCharged`; Batteries.swift, ToCharge.swift; chapter 07 part 15) and a Your things filter; I leave at framed (LeaveTimes, DoorMark); On site from the leave time on day one (Library.hasSetOff, clockTurns); reminders show their template icons (TripChecks); weather past the reach says when it comes (ForecastAsk.comesFrom, dropWeather); Mac Tab through Only-on-some-trips pills and the battery switch |
 | 0.74 | 12 Oct 2026 | Pack by template | N3 C2 | Sorting → Template (TripByTemplate, Library.lineTemplates); template icons on each line (TemplateMarks, `trip-line-<n>-from`); 40 new icons, 90 in six groups (TemplateIconCatalog, lounger for beach); Bags card folded by default; Sorting directly above the list |
 | 0.73 | 12 Oct 2026 | Set it once | N4 C5 F1 | Only on some trips on the thing (OnlySomeTrips, chapter 07 part 14); Where is my … names the kit (Pockets); a place's code starts Pack by voice on its trip already open (PlaceOpening.voiceStart); reviewed trips keep their kits (kitThen); a full trip from Always packed alone (templateMissing); reviewed → Done (tripWhen); trip header pen/badge, Send to Obsidian at the foot; first owner / pocket / reminder When inside their lists; Mac Tab through a kit; weather reach 15 days + truthful refusals (ForecastAsk) |
@@ -758,16 +759,20 @@ no entry shows no marker anywhere (and fails the test).
    (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on
    Home — when full, you pick which one steps back; Make refuses a name already in use (0.62). (3) The countdown to the next trip under the grab lists; tap
    opens the trip. (4) Create new trip: name, then Full trip or Quick (Quick = only the ticked templates, no common
-   base or transport kit, said in the line under it); the dates in the calendar that is always open (first day,
+   base or plane or RV template, said in the line under it — 0.76); the dates in the calendar that is always open (first day,
    last day, set at once; the line under it says range and nights; Clear dates leaves none; no day tapped = no
    dates; Trip settings has the field with OK and Cancel) (0.67). (5) Create trip is always ready; what is missing is said under it.
    (6) So is every Add, New, Make, Weather: empty press adds nothing and a short red line says what is missing,
-   gone as soon as you type. (7) Pick templates, Transport, Season, Food; workout colours (Swim blue, Bike yellow,
+   gone as soon as you type. (7) (0.76) Travelling by: Plane or RV with their drawings, both off for an ordinary
+   trip, one at a time, the lit one tapped off again; the line under them says what each adds (the airport checks,
+   the RV template by its name). (8) (0.76) More choices folds Season, Food and Laundry away with one line of what is
+   picked, a tap opens it; Season follows the dates (November to March Winter, otherwise Summer) until picked by
+   hand; the device remembers open or closed. (9) Pick templates, Travelling by and More choices; workout colours (Swim blue, Bike yellow,
    Run green, Strength orange, Breath work lavender, Mobility pink); each picked workout its own Context line
-   (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other templates (0.62). (8) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
-   ×4 · laundry with a washtub. (9) This Device: how many trips, things and templates.
+   (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other templates (0.62). (10) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
+   ×4 · laundry with a washtub. (11) This Device: how many trips, things and templates.
 1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Check before you go
-   (cabin red/orange; a battery in a checked bag red, 0.76; expiry six months ahead for passports/IDs); the pen opens Trip settings (every field it holds, Pack weather gear anyway included;
+   (cabin red/orange; a battery in a checked bag red, 0.76; expiry six months ahead for passports/IDs); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one; Tick everything / Clear every tick (asks first); Save as
    Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
@@ -912,12 +917,12 @@ Shipped in 0.41.
 | # | Term | Colour (tab) | Meaning (as written) |
 |---|---|---|---|
 | 0 | Trip | Trips | One journey: its dates, place and templates, and the list you pack from. The Trips tab. |
-| 1 | Template | Templates | A building block: the things for one activity or need — Hiking, Swim, Car. A trip is made from templates. The Templates tab. |
+| 1 | Template | Templates | A building block: the things for one activity or need — Hiking, Swim, RV. A trip is made from templates. The Templates tab. (Until 0.76 "…Hiking, Swim, Car.") |
 | 2 | Activity area | Templates | The group a template lives in, with its code: GA · Goal activity, WET · Workout, exercise & training, and so on. ("Activity area", not "shelf": "We understand that word much better.") |
 | 3 | List | Trips | The one list you pack from for a trip, made from its templates. (A grab list is a list too.) |
 | 4 | Grab list | Home | A short list for a quick outing — Swim, Bike, Run — ticked as each thing is in your hand. Up to eight are on Home; the rest wait in Grab Lists. |
 | 5 | Common base | Templates | The template that comes along on every trip: passport, phone charger and the like. |
-| 6 | Transport kit | Templates | What a way of travelling adds to a trip: the Car, Plane or RV things. |
+| 6 | Transport kit | Templates | What Travelling by adds to a trip: your Plane or RV template. Both off is an ordinary trip. (Until 0.76 "What a way of travelling adds to a trip: the Car, Plane or RV things.") |
 | 7 | Quick | Home | A trip with only the templates you tick — no common base, no transport kit. |
 | 8 | Context | Home | Indoor, Outdoor or Race: how a workout is done, picked for each workout on its own. It adds what that setting needs. |
 | 9 | Thing | Care | One thing you own, in Your things on Care. It can be on many templates; a change to it reaches all of them. |
@@ -1799,6 +1804,7 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-uiTestingPlaces <when>` | memory, `SampleLibrary.places(when)` | 0.69; checked before `-uiTestingNotes`, `-uiTestingPockets` and `-uiTesting` |
 | `-uiTestingNotes` | memory, `SampleLibrary.notes()` | 0.69 |
 | `-uiTestingPockets` | memory, `SampleLibrary.pockets()` | 0.69 |
+| `-uiTestingTravel` | memory, `SampleLibrary.travel()` | 0.76: the sample plus an RV transport template "Camper kit" (Travelling by) |
 | `-uiTesting` | memory, `SampleLibrary.make()` | checked last |
 | (none) | SwiftData; iCloud when the Info.plist key `PackingUsesICloud` is "YES" | a failure to open → `.failed("The library could not be opened: …")` |
 | `-openGrab <label or title>`, `-openGrabMenu`, `-openNextTrip` | (testing only) play a Shortcut | |
@@ -1815,7 +1821,8 @@ Under testing, `usesICloud` is false, the forecast is `InventedForecast`, the re
 reminders never touch the system, grab-list state is not persisted (`GrabStore(persistent: false)`), and these
 `UserDefaults` keys are removed so every test starts from the same screen: `ams.table.columns`, `ams.table.sort`,
 `ams.table.down`, `ams.table.then`, `ams.table.filters`, `ams.care.view`, `ams.view`, `ams.trip.folded`,
-`ams.template.grouping`, `ams.pick.grouping`, `ams.pick.folded`, `ams.reminders`.
+`ams.template.grouping`, `ams.pick.grouping`, `ams.pick.folded`, `ams.reminders`, and (0.76) `ams.create.more` — Create
+new trip's More choices, open or closed.
 
 **Tests.** `testStartsOnHomeAndNamesItsVersion` (Home, a digit in `app-version`), `testEveryTabOpensItsScreen` (each
 tab opens its screen and Home is gone; the To-do tab's words start "To do"), `testAnEmptyDeviceShowsTheTwoDoors`.
@@ -1887,6 +1894,9 @@ every one of his things does.
 - **`notes()`** (`-uiTestingNotes`, 0.69): `make()` + the Passport's note "Renew before May" / "Keep it in the blue
   pouch with the tickets" (two lines) and the Hiking template's own note for the Map, "The waterproof one, folded in
   the lid" — neither name says the words the test searches for.
+- **`travel()`** (`-uiTestingTravel`, 0.76): `make()` + a transport template **"Camper kit"** (role `transport`,
+  transport `RV`; an invented name) holding Levelling blocks and Wheel chocks — under Templates → By transport. No
+  Plane or Car template; the sample trip stays an ordinary one ("Car"). An RV trip from Hiking is 9 lines.
 - **`fileToRestore()`**: a DIFFERENT library as backup bytes (exportedAt 2026-09-22T09:00:00.000Z): one template "Day
   out" (`role: "base"`) with Water bottle and Sun hat — 2 things where the device holds 10, "so a restore that only
   ADDS would be caught". Read by *Restore from a file…* under the tests.

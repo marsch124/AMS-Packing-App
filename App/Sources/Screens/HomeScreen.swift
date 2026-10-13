@@ -23,8 +23,16 @@ struct HomeScreen: View {
     @State private var pickingEnd = false
     @State private var start = Date()
     @State private var end = Date().addingTimeInterval(2 * 86400)
-    @State private var transport = "Car"
+    /// Travelling by (0.76): "Plane", "RV" — or "Car", an ordinary trip, with both off.
+    @State private var transport = Library.ordinaryTransport
     @State private var season = "Summer"
+    /// Season follows the dates (0.76, `Library.seasonFor`) until he taps a Season pill on this
+    /// form; from then his choice sticks. Create starts the form over.
+    @State private var seasonByHand = false
+    /// More choices (0.76): Season, Food and Laundry folded away — closed to begin with,
+    /// open or closed remembered on this device.
+    @AppStorage(HomeScreen.moreKey) private var moreOpen = false
+    static let moreKey = "ams.create.more"
     @State private var catering = "mixed"
     @State private var activities: Set<String> = []
     /// Indoor / Outdoor / Race PER WORKOUT (0.67): template id → its contexts.
@@ -150,11 +158,23 @@ struct HomeScreen: View {
                             }
                         }
                     }
-                    Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: [transport], id: "trip-transport") { transport = $0 }
-                    Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season") { season = $0 }
-                    Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
-                          selected: [catering], id: "trip-catering") { catering = $0 }
-                    LaundrySwitch(on: $laundry, nights: $laundryNights, id: "trip-laundry")
+                    // His decision (13 Oct 2026, the Car template deleted — "the car is just go
+                    // and drive"): Plane or RV, both off for an ordinary trip (stored "Car").
+                    TravellingBy(transport: $transport, note: model.library.travelNote(quick: quick), id: "trip-transport")
+                    // His ask (13 Oct 2026): the dates, the templates, Travelling by and "I leave
+                    // at" stay in sight; Season, Food and Laundry fold away, said in one line.
+                    MoreChoices(open: $moreOpen,
+                                summary: HomeScreen.moreSummary(season: season, catering: catering,
+                                                                laundry: laundry, nights: laundryNights),
+                                id: "trip-more") {
+                        Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season") {
+                            season = $0
+                            seasonByHand = true
+                        }
+                        Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
+                              selected: [catering], id: "trip-catering") { catering = $0 }
+                        LaundrySwitch(on: $laundry, nights: $laundryNights, id: "trip-laundry")
+                    }
 
                     // The app's main button is ALWAYS in full colour — his words (2026-09-26):
                     // "The create button is something that is central to the whole app,
@@ -186,6 +206,10 @@ struct HomeScreen: View {
                 .onChange(of: [quick ? "quick" : "trip", transport, season, catering]) { _, _ in
                     if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
                 }
+                // Season from the trip's first day (0.76): set at the first tap, at a new first
+                // day and at Clear dates — until he picks a season himself.
+                .onChange(of: hasDates) { _, _ in seasonFromDates() }
+                .onChange(of: start) { _, _ in seasonFromDates() }
 
                 // His marks on the Mac: the heading struck out and written down the
                 // SIDE instead, and Trips and Templates swapped over.
@@ -325,7 +349,23 @@ struct HomeScreen: View {
         model.change { stored = $0.createTrip(made) }
         name = ""; activities = []; workoutContexts = [:]; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
         leaveOut = ""; leaveHome = ""
+        // The form starts over: the next trip's dates choose its season again (0.76).
+        seasonByHand = false
+        seasonFromDates()
         opened = stored?.id
+    }
+
+    /// Season as the dates say (`Library.seasonFor`: Winter from November to March, Summer
+    /// otherwise and with no dates) — unless he has picked one himself on this form.
+    private func seasonFromDates() {
+        guard !seasonByHand else { return }
+        season = Library.seasonFor(firstDay: hasDates ? HomeScreen.ymd(start) : "")
+    }
+
+    /// What More choices holds, in one line while it is closed: "Summer · Mix of both · No laundry".
+    static func moreSummary(season: String, catering: String, laundry: Bool, nights: Int) -> String {
+        let food = shortFood(catering, CATERING.first { $0.id == catering }?.label ?? catering)
+        return [season, food, laundry ? "Laundry, \(nights) nights" : "No laundry"].joined(separator: " \u{00B7} ")
     }
 
     /// The trip Create makes from what the screen holds now — also what `needs` asks
@@ -356,6 +396,99 @@ struct HomeScreen: View {
     }
 
     private struct Opened: Identifiable { let id: String }
+}
+
+/// Travelling by (0.76) — his decision of 13 Oct 2026, after he deleted his Car transport
+/// template ("the car is just go and drive"; mostly by car, every weekend by RV, a plane a
+/// couple of times a year). Two pills, Plane and RV, each with its drawing from the template
+/// icons, both off to begin with; at most one on, and the lit one tapped goes off again. The
+/// stored word is unchanged: neither = "Car" (`Library.travelling`). Under them, a quiet line
+/// that names his own transport templates, read from the library (`Library.travelNote`).
+/// Ids: `<id>-title`, `<id>-1` (Plane) and `<id>-2` (RV) — their places in `TRANSPORTS`, the
+/// ids they had as Transport pills — and `<id>-note`.
+struct TravellingBy: View {
+    @Binding var transport: String
+    let note: String
+    let id: String
+    var tint: Color = AppSection.home.color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HeadingTitle(title: "Travelling by", tint: tint, id: "\(id)-title")
+            HStack(spacing: 6) {
+                ForEach(Library.travelPills, id: \.self) { word in pill(word) }
+            }
+            Text(note)
+                .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("\(id)-note")
+        }
+    }
+
+    private func pill(_ word: String) -> some View {
+        let on = Library.travelLit(transport, word)
+        let icon = TemplateIcons.icon(word == "RV" ? "rv" : "plane")?.path ?? ""
+        return Button { transport = Library.travelling(transport, tapped: word) } label: {
+            HStack(spacing: 5) {
+                IconMark(path: icon, size: Metrics.glyph, weight: 1.8)
+                    .accessibilityHidden(true)
+                Text(word).font(.system(.subheadline, weight: on ? .semibold : .regular))
+            }
+            .foregroundStyle(on ? Color.white : Theme.ink)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+            .background(Capsule().fill(on ? tint : Theme.bg))
+            .overlay(Capsule().stroke(on ? tint : Theme.line, lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("\(id)-\(TRANSPORTS.firstIndex(of: word) ?? 0)")
+        .accessibilityValue(on ? "On" : "Off")
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+}
+
+/// More choices (0.76, his ask of 13 Oct 2026): what is asked less often — Season, Food and
+/// Laundry on Create new trip — folded under one row, with a quiet line of what is picked
+/// while it is closed. The row is a button of its own (`<id>`, value "Open"/"Closed"), the line
+/// a text beside it (`<id>-summary`, a tap opens too): the Mac folds a button's words into it.
+struct MoreChoices<Content: View>: View {
+    @Binding var open: Bool
+    let summary: String
+    let id: String
+    var tint: Color = AppSection.home.color
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 0) {
+                Button { open.toggle() } label: {
+                    HStack(spacing: 6) {
+                        SVGPath.path("M9 6l6 6-6 6")
+                            .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                            .onGrid(Metrics.glyph)
+                            .rotationEffect(.degrees(open ? 90 : 0))
+                            .foregroundStyle(Theme.ink)
+                            .accessibilityHidden(true)
+                        Text("More choices").font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint)
+                    }
+                    .frame(minHeight: 28).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier(id)
+                .accessibilityValue(open ? "Open" : "Closed")
+                if !open {
+                    Text(summary)
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, Metrics.glyph + 6)
+                        .contentShape(Rectangle())
+                        .onTapGesture { open = true }
+                        .accessibilityIdentifier("\(id)-summary")
+                }
+            }
+            if open { content() }
+        }
+    }
 }
 
 /// A row of pills: one chosen (transport) or several (activities). Each pill's
@@ -489,8 +622,8 @@ struct TripKindChoice: View {
             .frame(maxWidth: 360)
             // Field test 5.1/6.1 (3 Oct 2026): words that made Transport look switched
             // off left the trip on "Car" and the plane's cabin check never ran — so the
-            // line says Transport still counts.
-            Text("Quick packs only the templates you tick \u{2014} no common base, no transport kit. Transport still counts.")
+            // line says it still counts (0.76: Plane and RV, under Travelling by).
+            Text("Quick packs only the templates you tick \u{2014} no common base, no plane or RV template. Plane and RV still count.")
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("\(id)-note")

@@ -18,6 +18,12 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.76", date: "13 Oct 2026", title: "Simpler new trips",
+                new: ["On a plane trip, Check before you go flags a thing with a battery in a checked bag \u{2014} things inside kits too: carry it in the cabin."],
+                changed: ["Travelling by: just Plane and RV, both off for an ordinary trip. Plane adds the airport checks, RV adds your RV template.",
+                          "New trip: Season follows the dates \u{2014} November to March is Winter \u{2014} until you pick one yourself.",
+                          "New trip: Season, Food and Laundry fold under More choices, with what is picked shown on its line.",
+                          "A new kit starts with Check before each trip on, so what is inside can be ticked while you pack. Kits you already have stay as they are."]),
         Release(version: "0.75", date: "13 Oct 2026", title: "Charge before you go",
                 new: ["Has a battery: a switch on a thing's page. From the day before a trip until its last day, a To charge card lists every thing on the trip with a battery \u{2014} things inside kits too \u{2014} each with its own charge tick, apart from packing it.",
                       "Your things: a Has a battery filter."],

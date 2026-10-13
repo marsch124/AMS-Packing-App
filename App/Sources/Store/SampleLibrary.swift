@@ -362,6 +362,18 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with an RV transport template (`-uiTestingTravel`, 0.76 — Travelling
+    /// by): "Camper kit" (an invented name) holding Levelling blocks and Wheel chocks, under
+    /// Templates → By transport. No Plane or Car template. The sample trip stays an ordinary
+    /// one ("Car"), so it opens in Trip settings with Plane and RV both off.
+    static func travel() -> Library {
+        var lib = make()
+        var camper = newList(name: "Camper kit", role: "transport", transport: "RV")
+        camper.items = [newItem(name: "Levelling blocks"), newItem(name: "Wheel chocks")]
+        lib.saveTemplate(camper)
+        return lib
+    }
+
     /// The sample library with two kits (`-uiTestingKits`, 0.70): a Camp pouch (60 g, on
     /// Hiking, kept in the Garage) holding a Lighter (30 g, not allowed in the cabin), Spare
     /// cord (80 g) and Plasters (20 g, valid for 10 more days — before the trip ends); and a

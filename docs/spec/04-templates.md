@@ -945,7 +945,9 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
      - "Season" (`row-seasons-title`): Summer `row-seasons-0`, Winter `row-seasons-1`.
      - "Context" (`row-contexts-title`) — **only on a WET template** (`contextApplies(list)`: group == "WET"):
        Indoor, Outdoor, Race (`row-contexts-0…2`).
-     - "Transport" (`row-transports-title`): Car, Plane, RV (`row-transports-0…2`).
+     - "Transport" (`row-transports-title`): Car, Plane, RV (`row-transports-0…2`). Unchanged in 0.76, when the trip
+       screens' Transport became Travelling by (Plane / RV, both off = an ordinary trip, stored "Car"): a rule of Car
+       means the trips with Plane and RV both off — spec 03, open question 34. How it works says so.
      - "Food" (`row-catering-title`): Self-sufficient, Eating out, Mix of both (`row-catering-0…2`; stored ids
        `self`, `eatout`, `mixed`).
      - After the app's own words, each a stored word the app does not know (a web-app "summer", "Boat") as a pill

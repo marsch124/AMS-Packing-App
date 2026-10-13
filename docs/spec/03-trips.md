@@ -9,7 +9,8 @@ set of self-contained *lines* (`Item` values in `trip.entries`) copied from thos
 trip is made. This file covers the whole life of a trip:
 
 - **Plan** — *Create new trip* on the Home tab (name, Full trip | Quick, Dates, templates, Context per
-  workout, Transport, Season, Food, Laundry) and how the list is built from the templates.
+  workout, Travelling by — Plane or RV, both off for an ordinary trip — and, folded under *More choices*,
+  Season, Food, Laundry) and how the list is built from the templates.
 - **Pack** — the Trips tab (`EventsScreen`), the trip screen (`TripScreen`): ticking, "not this
   time", sorting When / Into / From where / Category / Section (Section and the Sorting drop-down since
   0.64), folding, Set place, adding a thing,
@@ -56,8 +57,8 @@ trip *Weekend in the hills* (Hiking + base, always 30–32 days from the day the
 | `name` | String, "" | shown name ("Untitled event" is drawn when empty) |
 | `mode` | "trip" (default) \| "quick" | quick = only ticked templates, no base, no transport kit. `coerceEvent` turns anything not "quick" into "trip" |
 | `activities` | [String] | template ids ticked for this trip, in the order offered |
-| `transport` | "Car" (default) \| "Plane" \| "RV" (`TRANSPORTS`) | |
-| `season` | "Summer" (default) \| "Winter" (`SEASONS`) | |
+| `transport` | "Car" (default) \| "Plane" \| "RV" (`TRANSPORTS`) | Since 0.76 the screens offer only Plane and RV (*Travelling by*); "Car" is stored when neither is on — an ordinary trip. The stored words are unchanged, so old trips, backups, sync, the web app and every "Only on some trips → Transport" rule read as before |
+| `season` | "Summer" (default) \| "Winter" (`SEASONS`) | Since 0.76 Create new trip sets it from the first day (`Library.seasonFor(firstDay:)`) until he picks one himself |
 | `contexts` | [String] ⊆ "Indoor","Outdoor","Race" (`CONTEXTS`) | the trip-wide Context: narrows a WET template that has NO entry in `activityContexts` (every trip made before 0.67, and the web app's). Since 0.67 the screens write here every context picked for ANY workout (`WorkoutContexts.union`) — what a device still on 0.66, or the web app, reads |
 | `activityContexts` | [String: [String]], [:] — **native only (0.67)** | Context PER WORKOUT, template id → its contexts (his ask, 6 Oct 2026: "it could be outdoors Run and indoors Swim"). A WET template with an entry is narrowed by ITS entry (an empty entry narrows nothing); without one, by `contexts` (`contextsFor`). JSON key `activityContexts` (`ACTIVITY_CONTEXTS_KEY`), an object of lists; written ONLY when not empty, so a trip without it reads and writes exactly as before (the parity checker stays 211/211). Read by `coerceActivityContexts`: anything but an object = no entries; an empty id is dropped; a value that is not a list = an empty list. Carried by the sync records (the trip head is its JSON), backups, a shared link or file, and Start again |
 | `weatherOn` | [String] ⊆ rain/cold/hot/wind/snow | conditions "forced on": weather-tagged gear is packed regardless of forecast. Filtered to `WEATHER_CONDITION_IDS` by `coerceEvent`. Set in Trip settings, "Pack weather gear anyway" (0.62) |
@@ -165,7 +166,11 @@ Laundry (0.35) with a nights choice (0.47); headings dominant (field test 3 Oct 
 picker to be present all the time, and then take away the Dates checkbox."); Quick as Full trip | Quick
 under the name ("I would like the Quick check box to be placed somewhere else - more thought
 through."); Context per workout ("the same context menu is needed for all WET activities. Example: it
-could be outdoors Run and indoors Swim.").
+could be outdoors Run and indoors Swim."). **0.76** (his decisions of 13 Oct 2026, after he deleted his Car
+transport template — "the car is just go and drive"; he travels mostly by car, every weekend by RV, by plane
+a couple of times a year): Transport's three pills Car / Plane / RV became **Travelling by** with two, Plane
+and RV, both off for an ordinary trip; Season follows the trip's first day until he picks one (he lives in
+Sweden: winter is November to March); Season, Food and Laundry fold away under **More choices**.
 
 **How it is reached and left.** Home tab, under the grab lists and the countdown card. It is not a
 sheet; *Create trip* makes the trip and opens it at once as a sheet (`opened = made.id`).
@@ -183,8 +188,9 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    blue capsule when picked, regular ink on nothing when not; min height `Metrics.chip` (28 / Mac 22);
    the picked one carries `.isSelected`. Full trip is picked to begin with. Under it, always (whichever
    is picked), one quiet line (Footnote, muted, id `trip-kind-note`): "Quick packs only the templates
-   you tick — no common base, no transport kit. Transport still counts." (The last sentence: field
-   test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off.) Until 0.67: a "Quick" switch at the
+   you tick — no common base, no plane or RV template. Plane and RV still count." (The last sentence: field
+   test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off; until 0.76 the line said "…no transport
+   kit. Transport still counts.", and the word Transport is no longer on the screen.) Until 0.67: a "Quick" switch at the
    end of the Dates line (id `trip-quick`) and, only while it was on, a green framed note
    (`QuickNote`, id `trip-quick-note`, his test C.7) — both gone.
 3. **Dates: the month grid itself, always OPEN** (`DateRangePicker(inline: true, grid: "trip-range")`,
@@ -226,16 +232,64 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    among the template pills** (`trip-activity-<n>`), so Swim's line in the sample is
    `trip-context-1-*`. Each line's picks are its own. Until 0.67 one set of pills
    (`trip-context-0…2`, `ContextPills`) narrowed every workout.
-7. **Transport** pills Car, Plane, RV (`trip-transport-0…2`), single choice, blue; heading id
-   `trip-transport-title`.
-8. **Season** pills Summer, Winter (`trip-season-0…1`); heading id `trip-season-title`.
-9. **Food** pills (`trip-catering-0…2`) with his short words: "Self-sufficient" (self),
-   "Eating out" (eatout), "Mix of both" (mixed) (`HomeScreen.shortFood`; the model keeps the web app's
-   longer labels). Heading id `trip-catering-title`.
-10. **Laundry switch** — see "Laundry" below; id prefix `trip-laundry`.
-11. **"Create trip"** button: 18 bold white on BLUE, full width, min height 52, corner 12, id
+7. **Travelling by** (`TravellingBy`, 0.76 — until then **Transport** with three pills Car, Plane, RV,
+   `trip-transport-0…2`). Heading "Travelling by" (`HeadingTitle`, Subheadline semibold blue), id
+   `trip-transport-title` (kept). Then ONE row of two pills:
+   - **Plane** (id `trip-transport-1`) and **RV** (id `trip-transport-2`) — the numbers are their places
+     in `TRANSPORTS` (Car, Plane, RV), so both keep the ids they had before 0.76; `trip-transport-0` (Car) is
+     gone. Each pill: a small drawing from the template icons (`TemplateIconCatalog` "plane" and "rv" — the
+     Camper), `Metrics.glyph` square (iPhone 20, Mac 16), stroke 1.8, then the word; Subheadline, semibold
+     when lit; lit = filled blue, icon and word white; off = `Theme.bg` fill, ink, 1 pt `Theme.line` stroke;
+     capsule, padding 12 sideways, min height `Metrics.chip`; the lit one carries `.isSelected` (and the
+     value "On", else "Off"); the drawing is hidden from VoiceOver.
+   - **Both OFF to begin with.** At most one is on: tapping an off pill lights it (the other goes off);
+     tapping the LIT pill turns it off — back to neither (`Library.travelling(_:tapped:)`).
+   - **Storage unchanged** — `trip.transport`: neither on = **"Car"** (exactly what an ordinary trip stored
+     before 0.76), Plane = "Plane", RV = "RV". So the transport templates (`listsForEvent`: role "transport"
+     whose `transport` is the trip's), "Only on some trips → Transport" rules (a rule of Car = trips with
+     neither on), the cabin check (Plane only), old trips, backups, sync and the web app (parity) all read it
+     as before. A pill is lit only for its own word (`Library.travelLit`): "Car", "" or a word the app does
+     not know light neither.
+   - Under them, one quiet line (Footnote, muted, wraps; id `trip-transport-note`) —
+     `Library.travelNote(quick:)`: **"Leave both off for an ordinary trip. Plane adds the airport checks ·
+     RV adds <name>."**, where <name> is read from the library at the moment the line is drawn (a renamed,
+     added or deleted template shows at once) — every template with role "transport" and that transport, in
+     template order, an unnamed one "Untitled template", joined "A", "A and B", "A, B and C"
+     (`Library.transportTemplateNames`). The airport checks are Check before you go's cabin check (below,
+     `transport == "Plane"` only). The parts:
+     - A **Plane** transport template: "Plane adds <name> and the airport checks"; none: "Plane adds the
+       airport checks".
+     - **No RV transport template: the RV part is left out** ("… Plane adds the airport checks.") —
+       decided 13 Oct 2026: "RV adds your RV template" would promise a template that is not there (an RV
+       trip still packs the things whose rule says RV, as every rule does).
+     - A **Car** transport template (he deleted his; an old backup or the web app can still hold one):
+       "Leave both off for an ordinary trip — it adds <name>." — it does come on every ordinary Full trip,
+       so the line says so rather than hide it.
+     - **Quick** picked: no template names at all — Quick packs no transport template (the line under Full
+       trip | Quick says so) — so the line is "Leave both off for an ordinary trip. Plane adds the airport
+       checks." (the cabin check runs on a Quick plane trip too).
+8. **More choices** (`MoreChoices`, 0.76 — his ask of 13 Oct 2026: Dates, the templates, Travelling by and
+   "I leave at" stay in sight; the rest folds). One row after Travelling by: a button (id `trip-more`, min
+   height 28) holding a chevron (pointing right when closed, down when open; ink, `Metrics.glyph`) and
+   "More choices" (Subheadline semibold blue); its value is "Open" or "Closed". While CLOSED, under it, a
+   muted summary of what is picked (Footnote, id `trip-more-summary`, set in under the words; a tap on it
+   opens the fold too): **"<Season> · <Food> · <Laundry>"** — the season's word, the food's short words,
+   then "No laundry" or "Laundry, <n> nights" (`HomeScreen.moreSummary`), e.g. "Summer · Mix of both · No
+   laundry", "Winter · Eating out · Laundry, 4 nights". While OPEN the summary is not shown — the pills
+   below say the same — and Season, Food and Laundry follow, with their ids unchanged:
+   - **Season** pills Summer, Winter (`trip-season-0…1`); heading id `trip-season-title`. Set from the
+     dates until he taps one (Behaviour, "Season from the dates").
+   - **Food** pills (`trip-catering-0…2`) with his short words: "Self-sufficient" (self),
+     "Eating out" (eatout), "Mix of both" (mixed) (`HomeScreen.shortFood`; the model keeps the web app's
+     longer labels). Heading id `trip-catering-title`.
+   - **Laundry switch** — see "Laundry" below; id prefix `trip-laundry`.
+
+   **Closed to begin with**; open or closed is remembered on this device (`@AppStorage("ams.create.more")`,
+   for every trip made there; cleared when the UI tests launch the app). The answers inside count whether
+   it is open or not — a closed fold still makes a winter trip winter.
+9. **"Create trip"** button (under More choices, open or closed): 18 bold white on BLUE, full width, min height 52, corner 12, id
     `trip-create`. Never disabled, never grey.
-12. **Still-needed line** (only after a press with something missing), 15 bold red, centred — every line of
+10. **Still-needed line** (only after a press with something missing), 15 bold red, centred — every line of
     it when it wraps (`multilineTextAlignment(.center)`, 0.73: two sentences often take two lines), id
     `trip-create-needs`.
 
@@ -256,8 +310,16 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   last day — the same day again for a day trip." while only the first day is tapped (0.67: Create never
   makes a day trip by accident; the grid tells Home through `onWaiting`); else "". The line appears only
   after a press of Create; from then on it follows every change of the name, the template pills, the
-  grid, Full trip | Quick, Transport, Season and Food (0.73: those decide whether Always packed alone has
+  grid, Full trip | Quick, Travelling by, Season and Food (0.73: those decide whether Always packed alone has
   something to pack), and disappears when nothing is missing.
+- **Season from the dates** (0.76, his ask of 13 Oct 2026 — he lives in Sweden). Until he taps a Season
+  pill himself on this form, Season FOLLOWS the dates: the trip's first day in November, December, January,
+  February or March → **Winter**; any other month → **Summer**; no dates (none tapped yet, or Clear dates) →
+  **Summer**, today's default. `Library.seasonFor(firstDay:)` takes the first day as "YYYY-MM-DD" (`ymd`, the
+  device's own date) and reads its month; "" or anything it cannot read → "Summer". It follows at once: the
+  first day tapped (before the last), a new first day, Clear dates. A tap on EITHER Season pill — the lit
+  one too — makes his choice stick for this form (`seasonByHand`): new dates no longer change it. It works
+  the same whether More choices is open or closed (closed, the summary shows the season the dates chose).
 - **The template rule** (`Library.templateMissing(_ draft:)`, 0.73 — his must-fix: Create refused a short
   trip of his small always-packed core alone with "Pick at least one template."). A ticked template is
   always enough (nil). With NONE ticked, the draft is built as `createTrip` builds it (`coerceEvent`,
@@ -284,11 +346,13 @@ id `device-heading`) and three count tiles — Trips, Things, Templates (ids `co
   end) ?? 0`, `entries = buildTotalEntries(trip, resolvedTemplates())`, `generatedAt = createdAt =
   updatedAt = now`, appended to `trips`.
 - After creating: name, templates, each workout's contexts, the dates (back to "No dates"), Quick (back
-  to Full trip), Laundry and laundry nights are reset;
-  **Transport, Season, Food and the two dates are NOT reset** (they stay as last chosen until the
+  to Full trip), Laundry and laundry nights are reset — and (0.76) Season starts over too: his own pick no
+  longer sticks and, with the dates gone, Season follows them back to Summer;
+  **Travelling by, Food and the two dates are NOT reset** (they stay as last chosen until the
   view is rebuilt). The new trip opens as a sheet. Kept so on purpose (the spec pass, 5 Oct 2026):
-  the next trip is usually the same car and the same season, and the pills show the answers before
-  Create is pressed.
+  the next trip is usually travelled the same way, and the pills show the answers before
+  Create is pressed. (Until 0.76 Season was kept too; since the dates choose it, the next trip's dates do.)
+  More choices stays as it was, open or closed.
 - There is **no Place field** on Create new trip, on purpose (same decision): the trip opens at once
   and its weather card asks "Where is this trip?" first thing; Trip settings has Place too.
 - Date strings: `HomeScreen.ymd` formats in the device's time zone, Gregorian, en_US_POSIX — the
@@ -331,6 +395,35 @@ Same view. On the Mac the screen column is at most 720 pt wide (`RootView`). The
 a sheet window.
 
 ### Tests
+**0.76:** `testTravellingByIsPlaneOrRVOrNeither` (`-uiTestingTravel`: "Travelling by", Plane `trip-transport-1` and
+RV `trip-transport-2`, no `trip-transport-0`, both off; the line "Leave both off for an ordinary trip. Plane adds the
+airport checks · RV adds Camper kit.", Quick → no name, Full trip → the name again; RV then Plane → only Plane, the lit
+Plane tapped → both off; an RV Hiking trip is 0/9 (the Camper kit's two); Trip settings shows RV and names it, RV
+tapped off and saved → 0/7, reopened both off; the sample's "Car" trip opens with both off — red with a tap on the lit
+pill planted to keep it lit: "trip-transport-1 did not go off"; with the line planted as "…RV adds your RV template.":
+"the line does not name the RV template"; with a Car trip loaded as RV in Trip settings: "the trip saved without Plane
+or RV shows one lit"), `testMoreChoicesFoldSeasonFoodAndLaundry` (closed to begin with — no Season, Food or Laundry;
+templates, Travelling by and the dates outside it; "Summer · Mix of both · No laundry"; opened, the line goes; Eating
+out + Laundry, closed → "Summer · Eating out · Laundry, 4 nights"; a tap on the line opens it; a trip made with it
+closed keeps Eating out and the laundry; Trip settings has no `tripset-more` — red with the fold open to begin with:
+"More choices is open to begin with"; with the line planted on "mixed": "the line does not follow the choices: 'Summer ·
+Mix of both · Laundry, 4 nights'"), `testSeasonFollowsTheFirstDayUntilHePicksOne` (the 15th of the nearest winter and
+summer months, whatever day the tests run: no dates Summer; a winter first day alone → Winter; a summer one → Summer; a
+winter day trip → Winter; Clear dates → Summer; Summer by hand, then a new winter range → still Summer; the trip keeps
+Summer, and new dates in Trip settings leave it; the next trip starts over, a winter first day → Winter — red with the
+dates never read: "a first day in winter did not make the trip Winter"; with his pick not sticking: "new dates
+overwrote the season he picked"; with Trip settings following its new dates: "new dates in Trip settings changed the
+trip's season"; with the hand pick not cleared by Create: "his pick for the last trip still sticks on the next"). Model:
+`TravellingByTests` — a tap lights one, the lit one goes back to "Car", only a pill's own word lights it; neither on is
+still a Car trip and brings no RV template, RV brings it; the line names one, two and a Car template, none in Quick,
+leaves the RV part out without an RV template, never names a non-transport template; Winter for 11–3, Summer otherwise
+and for "" or junk — red with March planted out ("2027-03-31 is not Winter"), with a tap always lighting ("tapping the
+lit RV did not turn it off"), and with "your RV template" planted ("no RV template: the RV part is not left out").
+Updated for 0.76: `testABagOnTheTripSaysWhetherItGoesInTheCabin` reads "Plane and RV still count" (red with the old
+line planted: "Quick does not say that Plane and RV still count: '…Transport still counts.'"),
+`testContextSitsUnderTheWorkouts` measures against Plane (`trip-transport-1`), and the tests that use Season, Food or
+Laundry on Create new trip open More choices first (`openMoreChoices`: `testLaundryCountsPerNightThingsFourNightsAtMost`,
+`testTheEditorsLeadWithTheirHeadings`, `summerTripFromHiking` in the Only on some trips tests).
 UI: `testHomeBuildsATrip` (Create never greyed; early press says "Give the trip a name." — the sample's
 Common base is always packed, so no template is missing; the line goes once the name is typed; the trip opens
 with lines; it is listed as `trip-row-1`), `testAlwaysPackedAloneMakesATrip` (0.73: Trip settings saves the
@@ -374,7 +467,7 @@ with the old rule planted, `templateMissing` returning "Pick at least one templa
 trip, no key when empty, junk read as nothing; a shared file and link carry it) and
 `WorkoutContextsLibraryTests` (made, changed in Trip settings with 1 added / 1 removed, kept by the sync
 records and a backup, copied by Start again).
-**Not covered:** that Transport/Season/Food survive a create; that a workout's picks are dropped when it
+**Not covered:** that Travelling by and Food survive a create; that a workout's picks are dropped when it
 is ticked off before Create; the trip-wide `contexts` written as the union; the red name border.
 
 ### Traps and history
@@ -1383,7 +1476,9 @@ Clear asks, Keep them keeps, Clear the ticks → 0/7, Clear disappears). Model
 (2026-09-27)" (0.32). A pen, not a gear (tests C.3, D.1; 0.40). The place added for his test G.6 ("the
 place is not shown in the edit view", 0.40). Save in a bar at the bottom, always in sight (0.34; "the
 cloud test lost it" 2026-09-27). 0.67: the same three changes as Create new trip — Full trip | Quick under
-the name, the date picker always there (Clear dates instead of a Dates switch), Context per workout.
+the name, the date picker always there (Clear dates instead of a Dates switch), Context per workout. 0.76:
+Travelling by (Plane / RV) instead of Transport, as on Create new trip; Season does NOT follow the dates here,
+and nothing folds (below).
 
 **How it is reached and left.** The pen beside the trip's name (`trip-settings`, a round button since 0.73;
 beside the count until then) opens it as a sheet
@@ -1418,12 +1513,18 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
 - The template pill groups (ids `tripset-activity-<n>`, same numbering as Create new trip, "OTHER
   TEMPLATES" last; heading id `tripset-activity-title`), Context per workout (`WorkoutContexts`, 0.67:
   `tripset-context-title`, a line per ticked workout `tripset-context-<n>-name` with its pills
-  `tripset-context-<n>-0…2`, n = its `tripset-activity-<n>`), Transport,
+  `tripset-context-<n>-0…2`, n = its `tripset-activity-<n>`), **Travelling by** (0.76, `TravellingBy` as on
+  Create new trip, blue like the sheet's other pills: heading `tripset-transport-title`, Plane `tripset-transport-1`, RV
+  `tripset-transport-2`, the line `tripset-transport-note` — `Library.travelNote(quick:)` for the sheet's
+  own Full trip | Quick; until 0.76 Transport, Car / Plane / RV `tripset-transport-0…2`),
   Season, **Pack weather gear anyway** (0.62: pills Rain, Cold, Heat, Wind, Snow — `WEATHER_CONDITIONS`,
   ids `tripset-weather-0…4`, heading `tripset-weather-title`, blue, several at once — the trip's
   `weatherOn`: his gear tagged for a picked condition comes onto the list whatever the forecast; the
-  web app's "pack anyway"), Food (`tripset-transport-*`, `tripset-season-*`, `tripset-catering-*`,
-  headings `…-title`), Laundry (`tripset-laundry`, `-says`, `-nights-*`).
+  web app's "pack anyway"), Food (`tripset-season-*`, `tripset-catering-*`,
+  headings `…-title`), Laundry (`tripset-laundry`, `-says`, `-nights-*`). **No More choices fold here**
+  (decided 13 Oct 2026): Trip settings is where an existing trip's answers are changed, so they all stay in
+  sight — and "Pack weather gear anyway" sits between Season and Food, so the same fold would not hold the
+  same three.
 - "Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things
   no longer asked for go." (14 muted), a divider, and **Start a new trip from this one** (next section).
 - Bottom bar (top hairline, `Theme.bg`): the still-needed line (15 bold red, centred also when it wraps —
@@ -1437,13 +1538,17 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   `activityContexts`, else the trip-wide `contexts` (0.67: what its things are narrowed by now — so a trip
   made before 0.67 shows its one Context on every workout, and a Save without a change rebuilds the same
   list), the trip's own `activityContexts` kept aside for the templates not shown, transport/season/food (empty →
-  "Car"/"Summer"/"mixed"), weather anyway = `trip.weatherOn`; the trip's template ids this screen does
+  "Car"/"Summer"/"mixed"; 0.76: a trip by "Car" — every ordinary trip, old ones included — opens with Plane
+  and RV both off, and keeps "Car" on Save unless a pill is tapped), weather anyway = `trip.weatherOn`; the trip's template ids this screen does
   not offer (a template deleted since, or the sender's templates on a trip someone sent) are noted
   (`unshown`). An undated trip's field says "Add dates"; its grid opens on this month.
 - **Still needed** (same words and the same template rule as Create new trip, `needs(flat)`: the trip as
   Save would store it — `edited(&trip, flat)` — asked `Library.templateMissing`; 0.73: none ticked is fine
   when Always packed or the transport kit puts a line on it) is computed on Save; after that it follows the
-  template pills, Full trip | Quick, Transport, Season, Food and Pack weather gear anyway (not the name field).
+  template pills, Full trip | Quick, Travelling by, Season, Food and Pack weather gear anyway (not the name field).
+- **Season does not follow the dates here** (0.76, decided 13 Oct 2026): a trip's season was picked, or set
+  from its first day, when it was made; moving its dates in Trip settings leaves Season as it is — a changed
+  range must not quietly swap the winter gear. Season changes only when he taps it.
 - **Save**: nothing missing → `Library.changeTrip(id:)` with: name, place (trimmed; **a NEW place
   — compared trimmed — sets `destination` and clears `weather` and `geo`**, so the weather line looks
   the new place up), mode, `activities` = the ticked ids that are offered templates, in the order
@@ -1488,7 +1593,10 @@ is the same.", still 1/7), `testWeatherGearCanBePackedAnyway` (Rain picked, save
 `testATripsSettingsAreChangedAfterItIsMade` (starts from the trip; rename to "Hills and lake",
 place kept, adding Swim → "1/10" with the tick kept and "Saved: 3 new"; blank name refused under Save
 with "name" in the message; Cancel changes nothing), `testLaundryCountsPerNightThingsFourNightsAtMost`,
-`testATripChecksTheCabinAndTheDatesBeforeYouGo` (Car via Trip settings removes cabin checks); 0.67:
+`testATripChecksTheCabinAndTheDatesBeforeYouGo` (Car via Trip settings removes cabin checks — since 0.76 the lit
+Plane `tripset-transport-1` tapped off, `unselect`); 0.76: `testTravellingByIsPlaneOrRVOrNeither` (RV shown, tapped off
+and saved → the camper things go; a "Car" trip opens with both off), `testSeasonFollowsTheFirstDayUntilHePicksOne`
+(new dates here leave the season), `testMoreChoicesFoldSeasonFoodAndLaundry` (no fold here); 0.67:
 `testFullTripOrQuickIsChosenUnderTheName` (Quick shown; Full trip saved brings the common base, 0/4 → 0/7),
 `testDatesAreAlwaysThereAndCanBeCleared` (no `tripset-dates` switch; dates given and saved; Clear dates and
 saved → "No dates"), `testEachWorkoutHasItsOwnContext` (each workout's picks shown; Swim changed alone);
@@ -2777,7 +2885,8 @@ from your things" (his tests H.9, H.3, 0.42). Templates spec. Tests `TemplatePic
 
 ## Test index for this area
 
-**UI (UITests/AMSPackingUITests.swift):** (0.75) testILeaveAtIsOneFramedBlock, testATripIsOnSiteOnlyFromTheTimeHeLeaves;
+**UI (UITests/AMSPackingUITests.swift):** (0.76) testTravellingByIsPlaneOrRVOrNeither,
+testMoreChoicesFoldSeasonFoodAndLaundry, testSeasonFollowsTheFirstDayUntilHePicksOne; (0.75) testILeaveAtIsOneFramedBlock, testATripIsOnSiteOnlyFromTheTimeHeLeaves;
 (0.69) testTickingALineOffersItsBagsPockets, testPackToGoHomeKeepsItsPockets,
 testSearchShowsWhereAThingIsOnTheTripUnderWay, testTheDoorCheckNamesWhatIsStillUnticked,
 testATappedDoorCheckOpensTheTripOnWhatIsLeft, testCreateNewTripTakesTheTimeHeLeaves,
@@ -2820,7 +2929,9 @@ out, pocket knife + sun cream in the carry-on, sun cream expiring day 25, passpo
 `-uiTestingOnSite` (the sample trip began yesterday), `-uiTestingOldPhoto`, `-uiTestingSections` (Hiking in
 two sections, its trip packed from Hiking as it now reads — 0.64 — so Section has headings),
 `-uiTestingWorkouts` (0.67: the sample plus a WET template Run — Trail shoes Outdoor, Treadmill towel Indoor,
-Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), with `-uiTesting`
+Running cap — and a Wetsuit Outdoor on Swim; `SampleLibrary.workouts`), `-uiTestingTravel` (0.76: the sample plus an
+RV transport template "Camper kit" — Levelling blocks, Wheel chocks — and no Plane or Car one; `SampleLibrary.travel`),
+with `-uiTesting`
 0.71's `-uiTestingVoice "<words, by commas>"` / `-uiTestingVoiceRefused` / `-uiTestingVoiceStartAt <place>` (and 0.73's `-uiTestingOpenOnReturn <link>`, a place's link handed to the running app as it comes back to the front) (Pack by voice's fake speech; under any
 `-uiTesting…` launch the fake is used, so no test opens a microphone), `-uiTestingReviewed` (0.70: the
 sample's trip six to three days ago, everything ticked, the carry-on weighed 2.4 kg and photographed, a sun hat
@@ -2829,9 +2940,10 @@ yesterday, no page asked for; `SampleLibrary.reviewed`), `-uiTestingReviewedUnda
 the trip's dates taken away — a reviewed trip goes to Done whatever its dates; `SampleLibrary.reviewedUndated`),
 `-uiTestingVault <name>` / `-uiTestingVaultChosen`
 (0.70, Mac: a throwaway vault folder — spec 07 part 8), `-openNextTrip`. Under the
-tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) are cleared at launch.
+tests the stored sorting and folds (`ams.view`, `ams.trip.folded`) and, since 0.76, More choices' open or closed
+(`ams.create.more`) are cleared at launch.
 
-**Model (PackingLibraryTests):** PocketsTests, DoorCheckTests (0.69), VoiceWalkTests (0.71), WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
+**Model (PackingLibraryTests):** TravellingByTests (0.76), PocketsTests, DoorCheckTests (0.69), VoiceWalkTests (0.71), WorkoutContextsLibraryTests (0.67), CreateTripTests, CustomLineTests, ReviewTests, LaundryNightsTests,
 LoopTests, OnSiteTests, OnTheTripTests, RefineTests, TripAgainTests, TripBulkTests, TripCardsTests,
 TripChecksTests, TripEditsTests, SetPlaceTests, ChangeTripTests, TripWeatherTests, WayHomeTests, VaultPageTests (0.70),
 WeighingTests, TravelYearTests, PhotoTidyTests, CountdownTests, ThingFollowsTests, RowTagsTests,
@@ -2906,7 +3018,8 @@ pins · [idea] a gap worth deciding on.
     it does not show.
 26. [idea] **Create new trip keeps Transport, Season and Food; no Place field.** Resolved in 0.62
     (decided, nothing changes): the next trip is usually the same car and season and the pills show it;
-    the weather card asks for the place as soon as the trip opens.
+    the weather card asks for the place as soon as the trip opens. (0.76: Travelling by and Food are still
+    kept; Season starts over, because the next trip's dates set it.)
 27. [idea] **Fold keys never removed; one sorting per device.** Resolved in 0.62: a trip's folds go with
     it, and a fold made sweeps out those of trips no longer here; the sorting stays one per device (a way
     of looking, not part of a trip).
@@ -2930,3 +3043,19 @@ pins · [idea] a gap worth deciding on.
     trip sets off"), the trip screen turns by itself when the time passes, and every other place that asks
     "is it today / under way" was decided one by one (the table there). Something bought on site is still On
     site at any time.
+34. [idea] **Car on the rule pages, once the trip screens no longer say Car** (0.76, decided 13 Oct 2026,
+    minimal). A thing's page and a template's row keep "Only on some trips → Transport" with Car, Plane and RV
+    exactly as before (ids `thing-transports-0…2`, `row-transports-0…2`): they set RULES, not a trip, and a rule
+    of Car still means what it always meant — the trips stored as "Car", which since 0.76 are exactly the trips
+    with Plane and RV both off. For him an ordinary trip IS a car trip ("the car is just go and drive"), so the
+    word stays true; relabelling it ("Ordinary (no plane, no RV)") would also change the words he reads back
+    ("Same as the thing: Car"), the Mac's type-to-jump letter and the web app's word. How it works says it
+    instead: "Transport Car there means an ordinary trip — Plane and RV both off."
+35. [idea] **The RV part of Travelling by's line when he has no RV template** (0.76, decided 13 Oct 2026): left
+    out, not "RV adds your RV template" — that would promise a template that is not there. The same for Plane
+    ("Plane adds the airport checks" alone). The names are read from the library each time the line is drawn,
+    never written into the app (his RV template's name is his).
+36. [idea] **Season from the dates, and More choices, in Trip settings** (0.76, decided 13 Oct 2026): neither.
+    A made trip's season changes only when he taps it (moving the dates must not swap the winter gear), and
+    Trip settings keeps every answer in sight — it is where they are changed, and Pack weather gear anyway
+    sits between Season and Food.

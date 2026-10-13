@@ -587,6 +587,28 @@ final class AMSPackingUITests: XCTestCase {
         report(app, button, "did not take the tap")
     }
 
+    /// The other way: a lit pill tapped OFF — Travelling by's lit Plane or RV (0.76), whose
+    /// tap on the lit one goes back to neither.
+    private func unselect(_ app: XCUIApplication, _ button: XCUIElement) {
+        for _ in 0..<3 {
+            tapVisible(app, button)
+            if waitUntil(timeout: 2, { button.exists && !button.isSelected }) { return }
+        }
+        report(app, button, "did not go off")
+    }
+
+    /// Create new trip's More choices (0.76) folds Season, Food and Laundry away, closed to
+    /// begin with: open it, unless it is open already, and wait for Season.
+    private func openMoreChoices(_ app: XCUIApplication) {
+        let more = app.buttons["trip-more"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5), "no More choices on Create new trip")
+        for _ in 0..<3 where !app.buttons["trip-season-0"].exists {
+            if (more.value as? String) != "Open" { tapVisible(app, more) }
+            _ = app.buttons["trip-season-0"].waitForExistence(timeout: 3)
+        }
+        XCTAssertTrue(app.buttons["trip-season-0"].exists, "More choices did not open")
+    }
+
     private func report(_ app: XCUIApplication, _ e: XCUIElement, _ what: String) {
         var lines = ["TAP-REPORT \(e.identifier.isEmpty ? "\(e)" : e.identifier) \(what)"]
         lines.append("  element: exists=\(e.exists)" + (e.exists ? " hittable=\(e.isHittable) enabled=\(e.isEnabled) selected=\(e.isSelected) frame=\(e.frame) label='\(e.label)'" : ""))
@@ -2111,6 +2133,7 @@ final class AMSPackingUITests: XCTestCase {
         hideKeyboard(app)
         select(app, app.buttons["trip-kind-quick"])
         select(app, app.buttons["trip-activity-1"])          // Swim: goggles, cap, a towel per night
+        openMoreChoices(app)                                 // Laundry is folded away (0.76)
         setSwitch(app, "trip-laundry", on: true)
         // The nights to pack for before a wash (his idea, 2 Oct 2026): 4 unless he picks.
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-laundry-nights-1"]) }, "4 nights is not the starting choice")
@@ -2219,10 +2242,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(waitUntil { !app.buttons["trip-check-date-1"].exists }, "the passport without a date is still checked")
 
-        // By car the cabin is nobody's business — but the sun cream still runs out.
+        // By car the cabin is nobody's business — but the sun cream still runs out. (0.76:
+        // the lit Plane tapped off — neither Plane nor RV is an ordinary trip, stored "Car".)
         tap(app, id: "trip-settings")
         XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
-        select(app, app.buttons["tripset-transport-0"])
+        unselect(app, app.buttons["tripset-transport-1"])
         tap(app, id: "tripset-save")
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
         XCTAssertTrue(waitUntil { !app.buttons["trip-check-cabin-0"].exists }, "a car trip is checked for the cabin")
@@ -3126,11 +3150,12 @@ final class AMSPackingUITests: XCTestCase {
 
     /// Field test 7.3/6.1 (3 Oct 2026): the trip's own bag says whether it goes in the cabin,
     /// and the cabin check follows at once. (-uiTestingChecks: a plane trip, a knife and
-    /// sun cream in the carry-on.) And Quick says that Transport still counts.
+    /// sun cream in the carry-on.) And Quick says that Plane and RV still count (0.76; until then
+    /// "Transport still counts", a word no longer on the screen).
     func testABagOnTheTripSaysWhetherItGoesInTheCabin() {
         let app = launch("-uiTestingChecks")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-kind-note"]).contains("Transport still counts") },
-                      "Quick does not say that Transport still counts: '\(words(app.staticTexts["trip-kind-note"]))'")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-kind-note"]).contains("Plane and RV still count") },
+                      "Quick does not say that Plane and RV still count: '\(words(app.staticTexts["trip-kind-note"]))'")
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -3366,7 +3391,7 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// Context sits UNDER the workouts it describes — set in, after WET and before
-    /// Transport (his ask, 2026-09-28) — on Create new trip.
+    /// Transport (his ask, 2026-09-28; Travelling by since 0.76) — on Create new trip.
     func testContextSitsUnderTheWorkouts() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
@@ -3383,10 +3408,215 @@ final class AMSPackingUITests: XCTestCase {
         // Set in = its PILLS start further in than Transport's. (Measured on the pills since
         // the field test of 3 Oct 2026: a heading over a block now starts with the band's
         // mark, so the headings' words no longer start at the edge.)
-        let inner = app.buttons["trip-context-1-0"], outer = app.buttons["trip-transport-0"]   // Swim's Indoor
+        let inner = app.buttons["trip-context-1-0"], outer = app.buttons["trip-transport-1"]   // Swim's Indoor; Plane
         XCTAssertTrue(inner.exists && outer.exists, "no Context or Transport pills")
         XCTAssertGreaterThan(inner.frame.minX, outer.frame.minX + 24,
                              "Context is not set in: \(inner.frame.minX) vs \(outer.frame.minX)")
+    }
+
+    /// Travelling by (0.76, his decision of 13 Oct 2026 after he deleted his Car template — "the
+    /// car is just go and drive"): Plane and RV, each with its drawing, both off for an ordinary
+    /// trip, at most one on, the lit one tapped off again; the line under them names his RV
+    /// template as the library holds it, and Quick names none. (-uiTestingTravel: the sample plus
+    /// an RV transport template "Camper kit" — Levelling blocks, Wheel chocks.) An RV trip brings
+    /// it (0/9); Trip settings shows RV, tapped off the trip is an ordinary one again and the
+    /// camper things go (0/7); the sample's own trip, stored "Car", opens with both off.
+    func testTravellingByIsPlaneOrRVOrNeither() {
+        let app = launch("-uiTestingTravel")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let plane = app.buttons["trip-transport-1"], rv = app.buttons["trip-transport-2"]
+        XCTAssertTrue(plane.waitForExistence(timeout: 5) && rv.exists, "no Plane and RV pills")
+        XCTAssertFalse(app.buttons["trip-transport-0"].exists, "Car is still a pill")
+        XCTAssertEqual(words(app.staticTexts["trip-transport-title"]), "Travelling by")
+        XCTAssertFalse(isOn(plane) || isOn(rv), "a pill is on to begin with")
+        let note = app.staticTexts["trip-transport-note"]
+        let full = "Leave both off for an ordinary trip. Plane adds the airport checks \u{00B7} RV adds Camper kit."
+        XCTAssertTrue(waitUntil { self.words(note) == full }, "the line does not name the RV template: '\(words(note))'")
+        // Quick packs no transport template: the line names none.
+        select(app, app.buttons["trip-kind-quick"])
+        XCTAssertTrue(waitUntil { self.words(note) == "Leave both off for an ordinary trip. Plane adds the airport checks." },
+                      "Quick still names the RV template: '\(words(note))'")
+        select(app, app.buttons["trip-kind-full"])
+        XCTAssertTrue(waitUntil { self.words(note) == full }, "Full trip does not name it again: '\(words(note))'")
+
+        type("RV weekend", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        select(app, app.buttons["trip-activity-0"])               // Hiking
+        select(app, rv)
+        select(app, plane)
+        XCTAssertFalse(isOn(rv), "Plane and RV are on together")
+        unselect(app, plane)
+        XCTAssertFalse(isOn(plane) || isOn(rv), "tapping the lit Plane did not leave both off")
+        select(app, rv)
+        shot(app, "travelling-by")
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip was not made")
+        let progress = app.staticTexts["trip-progress"]
+        // 7 (the Common base and Hiking, their Headlamp once) + the Camper kit's 2.
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/9" }, "the RV trip did not bring the Camper kit: '\(words(progress))'")
+
+        // Trip settings: RV lit; tapped off, an ordinary trip again — the camper things go.
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        let setPlane = app.buttons["tripset-transport-1"], setRV = app.buttons["tripset-transport-2"]
+        XCTAssertTrue(waitUntil { self.isOn(setRV) }, "Trip settings does not show RV")
+        XCTAssertFalse(isOn(setPlane), "Trip settings shows Plane too")
+        XCTAssertTrue(words(app.staticTexts["tripset-transport-note"]).hasSuffix("RV adds Camper kit."),
+                      "Trip settings' line does not name the RV template: '\(words(app.staticTexts["tripset-transport-note"]))'")
+        unselect(app, setRV)
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the ordinary trip kept the camper things: '\(words(progress))'")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(setRV.waitForExistence(timeout: 5))
+        XCTAssertFalse(isOn(setPlane) || isOn(setRV), "the trip saved without Plane or RV shows one lit")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // The sample's own trip, made as an ordinary one ("Car"): both off.
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(setRV.waitForExistence(timeout: 5))
+        XCTAssertFalse(isOn(setPlane) || isOn(setRV), "a Car trip opens with Plane or RV lit")
+        bringIntoView(app, app.buttons["tripset-season-0"])             // the line under the pills in sight too
+        shot(app, "tripset-travelling-by")
+    }
+
+    /// More choices (0.76, his ask of 13 Oct 2026): Season, Food and Laundry fold away under one
+    /// row, closed to begin with, its line saying what is picked; the dates, the templates and
+    /// Travelling by stay in sight. Opened, the answers are there; closed again, the line follows
+    /// them, and a tap on the line opens it too. What is folded away still counts: the trip made
+    /// with the fold closed keeps Eating out and the laundry.
+    func testMoreChoicesFoldSeasonFoodAndLaundry() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let more = app.buttons["trip-more"], summary = app.staticTexts["trip-more-summary"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5), "no More choices on Create new trip")
+        XCTAssertFalse(app.buttons["trip-season-0"].exists, "More choices is open to begin with")
+        XCTAssertFalse(app.buttons["trip-catering-0"].exists || app.switches["trip-laundry"].exists
+                       || app.checkBoxes["trip-laundry"].exists, "Food or Laundry is not folded away")
+        XCTAssertTrue(app.buttons["trip-activity-0"].exists && app.buttons["trip-transport-1"].exists
+                      && app.staticTexts["trip-range-summary"].exists, "the templates, Travelling by or the dates went into the fold")
+        XCTAssertTrue(waitUntil { self.words(summary) == "Summer \u{00B7} Mix of both \u{00B7} No laundry" },
+                      "the line does not say what is picked: '\(words(summary))'")
+        bringIntoView(app, more)
+        shot(app, "more-choices-closed")
+
+        openMoreChoices(app)
+        XCTAssertTrue(waitUntil { !summary.exists }, "the line stays while the choices show")
+        select(app, app.buttons["trip-catering-1"])               // Eating out
+        setSwitch(app, "trip-laundry", on: true)
+        bringIntoView(app, app.buttons["trip-catering-1"])
+        shot(app, "more-choices-open")
+        tapVisible(app, more)
+        XCTAssertTrue(waitUntil { !app.buttons["trip-season-0"].exists }, "More choices did not close")
+        XCTAssertTrue(waitUntil { self.words(summary) == "Summer \u{00B7} Eating out \u{00B7} Laundry, 4 nights" },
+                      "the line does not follow the choices: '\(words(summary))'")
+        // The line opens it too.
+        summary.tap()
+        XCTAssertTrue(app.buttons["trip-season-0"].waitForExistence(timeout: 5), "a tap on the line did not open More choices")
+        tapVisible(app, more)
+        XCTAssertTrue(waitUntil { !app.buttons["trip-season-0"].exists }, "More choices did not close again")
+
+        // Made with the fold closed: Eating out and the laundry still count.
+        type("Food out", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        select(app, app.buttons["trip-activity-0"])
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip was not made")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-catering-1"]) }, "the folded Food was not kept")
+        XCTAssertTrue(waitUntil { self.isSwitchOn(app, "tripset-laundry") }, "the folded Laundry was not kept")
+        XCTAssertFalse(app.buttons["tripset-more"].exists, "Trip settings folds its choices too")
+    }
+
+    /// The 15th of the month nearest today (forward first) that is one of `months` — a day the
+    /// season test can page to whatever day the tests run.
+    private func nearestDay(inMonths months: Set<Int>) -> Date {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        for k in 0..<12 {
+            for step in [k, -k] {
+                let d = cal.date(byAdding: .month, value: step, to: today)!
+                if months.contains(cal.component(.month, from: d)) {
+                    var c = cal.dateComponents([.year, .month], from: d)
+                    c.day = 15
+                    return cal.date(from: c)!
+                }
+            }
+        }
+        return today
+    }
+
+    /// Season from the dates (0.76; he lives in Sweden): until he picks one, the trip's first
+    /// day says it — November to March Winter, otherwise Summer, no dates Summer — at once, from
+    /// the first tap. Once he taps a Season pill, his choice stays whatever the dates; the trip
+    /// keeps it, and new dates in Trip settings do not change it. The next trip starts over.
+    func testSeasonFollowsTheFirstDayUntilHePicksOne() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openMoreChoices(app)
+        let summer = app.buttons["trip-season-0"], winter = app.buttons["trip-season-1"]
+        XCTAssertTrue(isOn(summer), "no dates is not Summer")
+        let cal = Calendar.current
+        let w = nearestDay(inMonths: [11, 12, 1, 2, 3]), s = nearestDay(inMonths: [4, 5, 6, 7, 8, 9, 10])
+        pickDay(app, w, grid: "trip-range")                                  // the first day alone
+        XCTAssertTrue(waitUntil { self.isOn(winter) }, "a first day in winter did not make the trip Winter")
+        pickDay(app, cal.date(byAdding: .day, value: 2, to: w)!, grid: "trip-range")
+        pickDay(app, s, grid: "trip-range")
+        XCTAssertTrue(waitUntil { self.isOn(summer) }, "a first day in summer did not make it Summer again")
+        pickDay(app, s, grid: "trip-range")                                  // a day trip
+        pickDay(app, w, grid: "trip-range")
+        pickDay(app, w, grid: "trip-range")
+        XCTAssertTrue(waitUntil { self.isOn(winter) }, "a winter day trip is not Winter")
+        tap(app, id: "trip-range-clear")
+        XCTAssertTrue(waitUntil { self.isOn(summer) }, "no dates again is not Summer again")
+
+        // His own pick sticks: Summer by hand, then a winter range.
+        pickDay(app, w, grid: "trip-range")
+        pickDay(app, w, grid: "trip-range")
+        XCTAssertTrue(waitUntil { self.isOn(winter) })
+        select(app, summer)
+        pickDay(app, cal.date(byAdding: .day, value: 1, to: w)!, grid: "trip-range")   // a new range, in winter
+        pickDay(app, cal.date(byAdding: .day, value: 3, to: w)!, grid: "trip-range")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-range-summary"]).contains("2 nights") }, "the new range was not set")
+        XCTAssertTrue(isOn(summer), "new dates overwrote the season he picked")
+        bringIntoView(app, summer)
+        shot(app, "season-by-hand")
+
+        // The trip keeps it; new dates in Trip settings do not change it.
+        type("Winter, summer gear", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        select(app, app.buttons["trip-activity-0"])
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip was not made")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-season-0"]) }, "the trip did not keep the season he picked")
+        tap(app, id: "tripset-dates-field")
+        XCTAssertTrue(app.staticTexts["range-title-0"].waitForExistence(timeout: 5), "the grid did not open in Trip settings")
+        pickDay(app, cal.date(byAdding: .day, value: 5, to: w)!)
+        pickDay(app, cal.date(byAdding: .day, value: 6, to: w)!)
+        tap(app, id: "range-ok")
+        XCTAssertTrue(isOn(app.buttons["tripset-season-0"]) && !isOn(app.buttons["tripset-season-1"]),
+                      "new dates in Trip settings changed the trip's season")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+
+        // The next trip starts over: its winter first day makes it Winter.
+        openMoreChoices(app)
+        XCTAssertTrue(waitUntil { self.isOn(summer) }, "the form did not start over at Summer")
+        pickDay(app, w, grid: "trip-range")
+        XCTAssertTrue(waitUntil { self.isOn(winter) }, "his pick for the last trip still sticks on the next")
     }
 
     /// Context PER WORKOUT (0.67) — his words: "the same context menu is needed for all
@@ -3883,7 +4113,8 @@ final class AMSPackingUITests: XCTestCase {
         let id = String(format: "\(grid)-day-%04d-%02d-%02d", c.year!, c.month!, c.day!)
         let months = ["January", "February", "March", "April", "May", "June", "July",
                       "August", "September", "October", "November", "December"]
-        for _ in 0..<3 where !app.buttons[id].exists {
+        // Up to a year away (0.76: the season test pages to the nearest winter or summer month).
+        for _ in 0..<12 where !app.buttons[id].exists {
             let shown = words(app.staticTexts["\(grid)-title-0"]).split(separator: " ")
             let m = (months.firstIndex(of: String(shown.first ?? "")) ?? 0) + 1
             let y = Int(shown.last ?? "") ?? 0
@@ -5504,6 +5735,7 @@ final class AMSPackingUITests: XCTestCase {
         type("Summer hills", into: app.textFields["trip-name"])
         hideKeyboard(app)
         select(app, app.buttons["trip-activity-0"])               // Hiking
+        openMoreChoices(app)                                      // Season is folded away (0.76)
         XCTAssertTrue(isOn(app.buttons["trip-season-0"]), "Summer is not the season")
         tapVisible(app, app.buttons["trip-create"])
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip was not made")
@@ -7650,6 +7882,7 @@ final class AMSPackingUITests: XCTestCase {
         for id in ["home-grab-heading", "home-create-heading"] {
             XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "Home lost its heading \(id)")
         }
+        openMoreChoices(app)                                      // Season and Food fold away (0.76)
         for id in ["trip-activity-title", "trip-transport-title", "trip-season-title", "trip-catering-title"] {
             XCTAssertTrue(app.staticTexts.matching(identifier: id).firstMatch.waitForExistence(timeout: 5),
                           "Create new trip lost its heading \(id)")
@@ -7671,7 +7904,7 @@ final class AMSPackingUITests: XCTestCase {
                           "Trip settings lost its heading \(id)")
         }
         shot(app, "looks-tripset")
-        bringIntoView(app, app.buttons["tripset-transport-0"])
+        bringIntoView(app, app.buttons["tripset-transport-1"])
         shot(app, "looks-tripset-transport")
         tap(app, id: "tripset-cancel")
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
