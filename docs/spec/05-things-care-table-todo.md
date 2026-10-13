@@ -1417,9 +1417,8 @@ of the kit for good"; Find a thing: "Find a thing" (so ⌘J finds a row by its t
 - **On these templates**: the arrows start on the first template lit (else the first); **← →** move along the pills
   (no wrap); **Space** turns the one lit on or off (its Section joins or leaves the Tab order); **letters** jump to the
   first template whose name starts so (within a second they add up); ↑ ↓ ⌫ do nothing.
-- **Liquid / Not allowed in the cabin / Has a battery** (0.75): **Space** turns the switch (the foot line: "Space turns it
-  on or off · Tab next · Return saves"; ⌘J finds Has a battery by that name). So do **Taken out for now** and **Check
-  before each trip** (the kit part).
+- **Liquid / Not allowed in the cabin**: **Space** turns the switch. So do **Taken out for now** and **Check before
+  each trip** (the kit part).
 - **The kit part** (0.70; rows and Find a thing 0.73): **Space** on a row's Take out / Put back switches it; on its
   **✕** takes the thing out of the kit for good (in the draft: Cancel brings it back) and the focus stays where it
   was — the ✕ of the thing that came up into its place, else of the one before, else Add from your things; on **Add
@@ -1429,6 +1428,8 @@ of the kit for good"; Find a thing: "Find a thing" (so ⌘J finds a row by its t
   Enter) adds the lit thing at the end — the list stays open, the search empties, ready for the next; the page is NOT
   saved; nothing found: nothing; **Esc** closes the list only and the focus goes back to Add from your things; Tab /
   Shift-Tab go on (the list stays open).
+- **Has a battery** (0.75, spec 07 part 15): **Space** turns the switch, as Liquid's (the foot line: "Space turns it on
+  or off · Tab next · Return saves"; ⌘J finds it by that name).
 - Text fields: their own keys (⌘A, ⌘C/⌘V, arrows …); Tab, Return and the ⌘ keys above are the page's.
 
 **The Thing menu** (`ThingCommands`, in the menu bar between View and Window, `.commands` on the main window group):

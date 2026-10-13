@@ -1209,10 +1209,10 @@ extension ThingEditor {
         switch f {
         case .section(let t): return "key-section-\(t)"
         case .liquid, .restricted: return "key-plane"
-        case .battery: return "key-battery"
         case .kitTakenOut, .kitAdd, .kitCheck: return "key-kit"
         case .kitOut(let id), .kitRemove(let id): return "key-kit-row-\(id)"
         case .kitFind: return "key-kit-find"
+        case .battery: return "key-battery"
         case .jump: return "key-jump"
         default: return "key-\(f)"
         }
@@ -1344,11 +1344,12 @@ extension ThingEditor {
         case .expiry: return "a date, 2027-06-30 or 30/6 27, or +6m, +1y · Return saves"
         case .jump: return "type part of a field's name · Return goes there · Esc closes"
         case .templates: return "← → move · Space turns it on or off · type to jump · Tab next"
-        case .liquid, .restricted, .battery, .kitTakenOut, .kitCheck: return "Space turns it on or off · Tab next · Return saves"
+        case .liquid, .restricted, .kitTakenOut, .kitCheck: return "Space turns it on or off · Tab next · Return saves"
         case .kitAdd: return "Space opens or closes the list of your things · Tab next · Return saves"
         case .kitOut: return "Space takes it out or puts it back · Tab next · Return saves"
         case .kitRemove: return "Space takes it out of the kit for good · Tab next · Return saves"
         case .kitFind: return "type to find · ↑ ↓ move · Return adds it · Esc closes the list"
+        case .battery: return "Space turns it on or off · Tab next · Return saves"
         case .storage: return "type to pick, or a new place · Space opens · Tab next · Return saves"
         case .section: return "type to pick, or a new section · Space opens · Tab next · Return saves"
         case .category, .owner, .bag, .pocket, .when, .condition, .care:
