@@ -247,6 +247,35 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library for the Packing day (`-uiTestingPackingDay`, 0.79 — spec 07 part 17): a
+    /// Day pack, one of his bags WITH an AirTag, that the Hiking boots and the Rain jacket go in;
+    /// the rest stays in the carry-on (only a name on the lines, no AirTag). So the trip, a month
+    /// ahead and at Pack, has two bags: the carry-on (5 lines, `day-bag-0`) and the Day pack (2,
+    /// `day-bag-1`). `almost` (`-packingDayAlmost`): every station done but the last line — the
+    /// Map unticked — so ticking it makes the day Ready (and Weigh, all weighed, stays shut).
+    static func packingDay(almost: Bool = false) -> Library {
+        var lib = make()
+        guard let pack = lib.addBag(name: "Day pack") else { return lib }
+        _ = lib.setBagAirTag(id: pack.id, true)
+        for n in lib.items.indices where ["Hiking boots", "Rain jacket"].contains(lib.items[n].name) {
+            lib.items[n].container = "Day pack"
+        }
+        guard !lib.trips.isEmpty else { return lib }
+        lib.trips[0].entries = buildTotalEntries(lib.trips[0], lib.resolvedTemplates())
+        guard almost else { return lib }
+        let id = lib.trips[0].id
+        for line in lib.trips[0].entries where line.name != "Map" { _ = lib.setChecked(true, tripId: id, entryId: line.id) }
+        for (bag, grams) in [("Carry-on / hand luggage", 6400.0), ("Day pack", 2100.0)] {
+            _ = lib.setBagOut(true, tripId: id, bag: bag)
+            _ = lib.setWeighed(tripId: id, bag: bag, grams: grams)
+            _ = lib.setNameTag(true, tripId: id, bag: bag)
+            if let jpeg = JPEG.sample() { _ = lib.addBagPhoto(tripId: id, bag: bag, jpeg: jpeg) }
+        }
+        _ = lib.setAirTagIn(true, tripId: id, bag: "Day pack")
+        if let jpeg = JPEG.sample() { _ = lib.setGroupPhoto(tripId: id, jpeg: jpeg) }
+        return lib
+    }
+
     /// The sample library with its trip been and reviewed (`-uiTestingReviewed`), for the
     /// trip's page in his Obsidian vault (0.70): it ran from six days ago to three days
     /// ago, everything went, the carry-on was weighed (2.4 kg) and photographed, a sun hat

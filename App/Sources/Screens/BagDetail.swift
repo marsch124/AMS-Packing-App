@@ -40,6 +40,7 @@ struct BagDetail: View {
                     VStack(alignment: .leading, spacing: 12) {
                         numbers(bag)
                         cabinSwitch(bag)
+                        airTagSwitch(bag)
                         // Its pockets (0.69): named once, offered when a thing is ticked.
                         BagPockets(bagId: bag.id).environmentObject(model)
                         thingsInIt(facts)
@@ -167,6 +168,23 @@ struct BagDetail: View {
         }
         .tint(AppSection.care.color)
         .accessibilityIdentifier("bag-detail-cabin")
+    }
+
+    // MARK: Has an AirTag — the Packing day's Tags asks for it (0.79, spec 07 part 17)
+
+    private func airTagSwitch(_ bag: Item) -> some View {
+        let thing = model.library.items.first { $0.id == bag.id } ?? bag
+        return Toggle(isOn: Binding(get: { Library.hasAirTag(thing) },
+                                    set: { on in model.change { _ = $0.setBagAirTag(id: bag.id, on) } })) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Has an AirTag").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("On a Packing day, Tags asks you to check it is in the bag.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .tint(AppSection.care.color)
+        .accessibilityIdentifier("bag-detail-airtag")
     }
 
     // MARK: What goes in it

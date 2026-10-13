@@ -55,9 +55,9 @@ struct BagPhotoRow: View {
     let tripId: String
     let bag: String
     let n: Int
+    /// Its ids start so: "bag-<n>" on the Bags card, "day-photo-<n>" in the Packing day (0.79).
+    var prefix: String? = nil
     @EnvironmentObject var model: LibraryModel
-    @State private var picked: PhotosPickerItem?
-    @State private var camera = false
     @State private var large: Shown?
 
     var body: some View {
@@ -66,6 +66,7 @@ struct BagPhotoRow: View {
         }
         // As stored: a photo still on its way from the other device takes its place too.
         let full = model.library.bagPhotoIds(tripId: tripId, bag: bag).count >= BAG_PHOTOS_MAX
+        let p = prefix ?? "bag-\(n)"
         VStack(alignment: .leading, spacing: 10) {
             if !shots.isEmpty {
                 HStack(alignment: .top, spacing: 12) {
@@ -76,7 +77,7 @@ struct BagPhotoRow: View {
                                     .frame(width: 80, height: 80).clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("bag-\(n)-photo-thumb-\(k)")
+                            .accessibilityIdentifier("\(p)-photo-thumb-\(k)")
                             .accessibilityLabel("Photo \(k + 1) of the packed bag")
                             Button("Remove") {
                                 let t = tripId, b = bag, id = shot.id
@@ -85,7 +86,7 @@ struct BagPhotoRow: View {
                             .buttonStyle(.plain).focusEffectDisabled()
                             .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                             .frame(minWidth: 80, minHeight: 34).contentShape(Rectangle())
-                            .accessibilityIdentifier("bag-\(n)-photo-remove-\(k)")
+                            .accessibilityIdentifier("\(p)-photo-remove-\(k)")
                         }
                     }
                 }
@@ -96,24 +97,53 @@ struct BagPhotoRow: View {
                 Text("Three photos \u{2014} remove one to add another")
                     .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("bag-\(n)-photo-full")
+                    .accessibilityIdentifier("\(p)-photo-full")
             } else {
-                HStack(spacing: 10) {
-                    if AMSPackingApp.testing {
-                        pill(shots.isEmpty ? "Photo of the packed bag" : "Another photo", id: "bag-\(n)-photo") { keep(JPEG.sample()) }
-                    } else {
-                        #if os(iOS)
-                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                            pill(shots.isEmpty ? "Take a photo" : "Take another", id: "bag-\(n)-photo") { camera = true }
-                        }
-                        #endif
-                        PhotosPicker(selection: $picked, matching: .images) {
-                            pillLabel(shots.isEmpty ? "Choose a photo" : "Choose another")
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("bag-\(n)-photo-pick")
-                    }
+                PhotoTakers(id: "\(p)-photo", testTitle: shots.isEmpty ? "Photo of the packed bag" : "Another photo",
+                            take: shots.isEmpty ? "Take a photo" : "Take another",
+                            choose: shots.isEmpty ? "Choose a photo" : "Choose another") { keep($0) }
+            }
+        }
+    }
+
+    private struct Shot { let id: String; let image: CGImage }
+    private struct Shown: Identifiable { let start: Int; var id: Int { start } }
+
+    private func keep(_ jpeg: Data?) {
+        guard let jpeg else { return }
+        let t = tripId, b = bag
+        model.change { _ = $0.addBagPhoto(tripId: t, bag: b, jpeg: jpeg) }
+    }
+
+}
+
+/// The ways to take a photo (0.79: one place for a bag's own photos and the Packing day's photo
+/// of all the bags): on the iPhone "Take a photo" when it has a camera (`id`) and "Choose a
+/// photo" (`<id>-pick`, the photo library); on the Mac only Choose; under the UI tests ONE pill,
+/// `testTitle` (`id`), that keeps a drawn picture — no test can work a camera or a library.
+/// `keep` gets the JPEG the app keeps (at most 1600 on the long side), or nil.
+struct PhotoTakers: View {
+    let id: String
+    let testTitle: String
+    var take = "Take a photo"
+    var choose = "Choose a photo"
+    let keep: (Data?) -> Void
+    @State private var picked: PhotosPickerItem?
+    @State private var camera = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if AMSPackingApp.testing {
+                pill(testTitle, id: id) { keep(JPEG.sample()) }
+            } else {
+                #if os(iOS)
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    pill(take, id: id) { camera = true }
                 }
+                #endif
+                PhotosPicker(selection: $picked, matching: .images) { pillLabel(choose) }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("\(id)-pick")
             }
         }
         .onChange(of: picked) { _, item in
@@ -132,15 +162,6 @@ struct BagPhotoRow: View {
             .ignoresSafeArea()
         }
         #endif
-    }
-
-    private struct Shot { let id: String; let image: CGImage }
-    private struct Shown: Identifiable { let start: Int; var id: Int { start } }
-
-    private func keep(_ jpeg: Data?) {
-        guard let jpeg else { return }
-        let t = tripId, b = bag
-        model.change { _ = $0.addBagPhoto(tripId: t, bag: b, jpeg: jpeg) }
     }
 
     private func pill(_ title: String, id: String, action: @escaping () -> Void) -> some View {

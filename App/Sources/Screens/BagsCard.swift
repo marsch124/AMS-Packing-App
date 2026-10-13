@@ -90,9 +90,12 @@ struct BagsCard: View {
                 .onTapGesture { unfolded.toggle() }
                 if unfolded {
                     if showKey { key }
+                    // The Packing day's photo of all the bags (0.79, spec 07 part 17) — here at every
+                    // step, for the airline desk when a bag is lost after he has left.
+                    GroupPhotoLine(tripId: tripId).environmentObject(model)
                     ForEach(Array(bags.enumerated()), id: \.offset) { n, bag in
                         VStack(alignment: .leading, spacing: 8) {
-                            Button { open(bag) } label: { row(bag) }
+                            Button { open(bag) } label: { BagWeightRow(bag: bag) }
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("bag-\(n)")
                                 // What the bar shows, in words: the colour cannot be read
@@ -141,44 +144,6 @@ struct BagsCard: View {
             Text(meaning).font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    private func row(_ bag: WeighedBag) -> some View {
-        let tint = BagsCard.tint(bag)
-        let limit = bag.load.limitKg
-        let part = limit > 0 ? min(1, bag.grams / 1000 / limit) : 0
-        let name = bag.load.container == "Other" ? "Not in a bag" : bag.load.container
-        let weight = bag.scaleGrams != nil ? "\(BagsCard.kilos(bag.grams)) weighed" : BagsCard.kilos(bag.grams)
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
-                Spacer(minLength: 8)
-                // Every bag says its maximum — or that it has none (his ask, 2026-09-26).
-                // A bag with nothing weighed says what to do instead of "0 g".
-                Text(bag.grams == 0 ? "Tap to weigh"
-                     : limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
-                     : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
-                    .font(.system(.footnote, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(bag.over ? AppSection.actions.color : Theme.muted)
-            }
-            // Only a bag that HAS a limit gets a bar — a bar with no end says nothing —
-            // and something weighed to show on it.
-            if limit > 0 && bag.grams > 0 {
-                GeometryReader { space in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Theme.line)
-                        Capsule().fill(tint).frame(width: max(16, part * space.size.width))
-                    }
-                }
-                .frame(height: 16)
-                .padding(.vertical, 2)
-            }
-            if bag.scaleGrams != nil {
-                Text("The things in it add up to \(BagsCard.kilos(bag.load.grams))")
-                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
-            }
-        }
-        .contentShape(Rectangle())
     }
 
     /// Type what the scale says, in kg; Save keeps it, Clear takes it away.
@@ -262,5 +227,51 @@ struct BagsCard: View {
 
     static func number(_ kg: Double) -> String {
         kg == kg.rounded() ? String(Int(kg)) : String(format: "%.1f", kg)
+    }
+}
+
+/// One bag's row: its name, its weight against its max ("6.4 kg weighed / 8 kg", "Tap to weigh",
+/// "· no max"), the one bar in its colour when it has a max, and what its things add up to once
+/// weighed. ONE view (0.79) for the trip's Bags card and the Packing day's Weigh station, so the
+/// two can never say a bag differently.
+struct BagWeightRow: View {
+    let bag: WeighedBag
+
+    var body: some View {
+        let tint = BagsCard.tint(bag)
+        let limit = bag.load.limitKg
+        let part = limit > 0 ? min(1, bag.grams / 1000 / limit) : 0
+        let name = bag.load.container == "Other" ? "Not in a bag" : bag.load.container
+        let weight = bag.scaleGrams != nil ? "\(BagsCard.kilos(bag.grams)) weighed" : BagsCard.kilos(bag.grams)
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                Spacer(minLength: 8)
+                // Every bag says its maximum — or that it has none (his ask, 2026-09-26).
+                // A bag with nothing weighed says what to do instead of "0 g".
+                Text(bag.grams == 0 ? "Tap to weigh"
+                     : limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
+                     : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
+                    .font(.system(.footnote, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(bag.over ? AppSection.actions.color : Theme.muted)
+            }
+            // Only a bag that HAS a limit gets a bar — a bar with no end says nothing —
+            // and something weighed to show on it.
+            if limit > 0 && bag.grams > 0 {
+                GeometryReader { space in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.line)
+                        Capsule().fill(tint).frame(width: max(16, part * space.size.width))
+                    }
+                }
+                .frame(height: 16)
+                .padding(.vertical, 2)
+            }
+            if bag.scaleGrams != nil {
+                Text("The things in it add up to \(BagsCard.kilos(bag.load.grams))")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+            }
+        }
+        .contentShape(Rectangle())
     }
 }

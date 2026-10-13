@@ -70,6 +70,7 @@
 		B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878AF15AECFDDAD02F227DDD /* TripScreen.swift */; };
 		B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */; };
 		B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A74DCE749078F203A8E87BF /* SettingsScreen.swift */; };
+		B133762EEFC21767CCE779B5 /* PackingDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C73A28812C7D0D542A832F /* PackingDay.swift */; };
 		B7EFE44328F09E5EB47E6485 /* ScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */; };
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
 		BA0412EFC474F7660997C615 /* TakeABreak.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186841C4B47BDD39836B3D9D /* TakeABreak.swift */; };
@@ -171,6 +172,7 @@
 		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
+		90C73A28812C7D0D542A832F /* PackingDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackingDay.swift; sourceTree = "<group>"; };
 		9303A9912D1C193EBFA773D8 /* VoiceStarts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStarts.swift; sourceTree = "<group>"; };
 		94244273DBD58428C6B6C4F1 /* TripMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripMessages.swift; sourceTree = "<group>"; };
 		95CE795CC801DFFE3FD39642 /* BagCabin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagCabin.swift; sourceTree = "<group>"; };
@@ -375,6 +377,7 @@
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
 				263958326455E83D01F2A70A /* OnlySomeTrips.swift */,
 				44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */,
+				90C73A28812C7D0D542A832F /* PackingDay.swift */,
 				01F66AF282FB2C3C22DC9F76 /* PickThings.swift */,
 				EDA67771DAAE27E418C53DDE /* PlaceScreen.swift */,
 				DF6A7521CAF9F486A9847AB2 /* Pockets.swift */,
@@ -560,6 +563,7 @@
 				CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */,
 				E942A15DD0530D3181AEBD4C /* OnSiteScreen.swift in Sources */,
 				2DB98040F30155CDE2E5F575 /* OnlySomeTrips.swift in Sources */,
+				B133762EEFC21767CCE779B5 /* PackingDay.swift in Sources */,
 				E2B76A8A26AB8A0D50EEA5C3 /* PickThings.swift in Sources */,
 				2E4E6528354833C443D3DDC4 /* PlaceScreen.swift in Sources */,
 				18BBB6F1544022B6A9540909 /* Pockets.swift in Sources */,

@@ -12079,4 +12079,250 @@ final class AMSPackingUITests: XCTestCase {
                       "the reminder's line does not name its template: '\(fromWords(app, 7))'")
         shot(app, "reminders-trip-line")
     }
+
+
+    // MARK: - The Packing day (0.79, his yes of 13 Oct 2026; spec 07 part 17)
+
+    /// The sample trip with two bags (`-uiTestingPackingDay`): the carry-on (5 lines, no AirTag)
+    /// and the Day pack (2 lines, one of his bags, with an AirTag) — its Packing day row there.
+    private func openPackingDayTrip(_ app: XCUIApplication) {
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(appears(app, "day-row", timeout: 5), "no Packing day on a trip being packed")
+    }
+
+    /// Tap a station on the trip's row. On the iPhone the row scrolls sideways: swipe it until
+    /// the chip is whole in the window (judged by frames — asking a chip off to the side whether
+    /// it is hittable is a hard failure). On the Mac it fits.
+    private func station(_ app: XCUIApplication, _ key: String) {
+        let chip = app.buttons["day-station-\(key)"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 5), "no \(key) station on the trip")
+        #if os(iOS)
+        let window = app.windows.firstMatch.frame
+        let strip = app.scrollViews.containing(.button, identifier: "day-station-ready").firstMatch
+        for _ in 0..<6 where strip.exists && (chip.frame.maxX > window.maxX - 2 || chip.frame.minX < window.minX + 2) {
+            chip.frame.maxX > window.maxX - 2 ? strip.swipeLeft() : strip.swipeRight()
+            _ = waitUntil(timeout: 1) { self.settled(chip) }
+        }
+        #endif
+        _ = waitUntil(timeout: 3) { self.settled(chip) }
+        chip.tap()
+        XCTAssertTrue(appears(app, "day-sheet", timeout: 5), "the \(key) station did not open")
+    }
+
+    private func value(_ e: XCUIElement) -> String { e.exists ? (e.value as? String ?? "") : "" }
+
+    /// The row of stations on a trip being packed: Bags out first and highlighted, Pack with its
+    /// count; Bags out opened ticks each bag out, says so, turns green and offers Pack — which
+    /// goes to the list, with Pack the next station. A trip that has set off has no row.
+    func testThePackingDayLeadsFromBagsOutToTheList() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        let bags = app.buttons["day-station-bags"]
+        XCTAssertTrue(waitUntil { self.value(bags) == "0 of 2 out" }, "Bags out says '\(value(bags))'")
+        XCTAssertTrue(bags.isSelected, "Bags out is not the next station")
+        XCTAssertEqual(value(app.buttons["day-station-pack"]), "0 of 7 packed")
+        XCTAssertTrue(app.buttons["day-station-ready"].exists, "the row has no Ready")
+        shot(app, "day-row")
+        station(app, "bags")
+        XCTAssertTrue(appears(app, "day-view-bags", timeout: 5), "the sheet is not on Bags out")
+        XCTAssertTrue(words(app.buttons["day-bag-0"]).contains("Carry-on"), "'\(words(app.buttons["day-bag-0"]))'")
+        XCTAssertTrue(words(app.buttons["day-bag-1"]).contains("Day pack"), "'\(words(app.buttons["day-bag-1"]))'")
+        XCTAssertFalse(app.buttons["day-bag-2"].exists, "a third bag — Not in a bag is no bag")
+        tap(app, id: "day-bag-0")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-bag-0"]) == "out" }, "the carry-on is not out")
+        XCTAssertFalse(element(app, "day-bags-said").exists, "all out with one bag still in")
+        tap(app, id: "day-bag-1")
+        XCTAssertTrue(waitUntil { self.element(app, "day-bags-said").exists }, "both out, and it does not say so")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-sheet-station-bags"]) == "done" },
+                      "Bags out is not green: '\(value(app.buttons["day-sheet-station-bags"]))'")
+        XCTAssertEqual(value(app.buttons["day-next"]), "pack", "the next station offered is not Pack")
+        shot(app, "day-bags")
+        tap(app, id: "day-next")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5), "Next: Pack did not go to the list")
+        XCTAssertTrue(waitUntil { self.value(bags) == "done" }, "the trip's Bags out is not green: '\(value(bags))'")
+        XCTAssertTrue(waitUntil { app.buttons["day-station-pack"].isSelected }, "Pack is not the next station")
+        XCTAssertTrue(app.buttons["trip-line-0"].waitForExistence(timeout: 5), "the list is not there")
+        shot(app, "day-row-pack")
+        app.terminate()
+        // A trip that has set off (On site): no Packing day.
+        let away = launch("-uiTestingOnSite")
+        tab(away, "events")
+        tap(away, id: "trip-row-0")
+        XCTAssertTrue(appears(away, "trip-detail", timeout: 5))
+        XCTAssertTrue(away.buttons["trip-line-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(find(away, "day-row") != nil, "a Packing day on a trip that has set off")
+    }
+
+    /// The last thing ticked opens Weigh by itself — once: closed unweighed, a line unticked and
+    /// ticked again does not bring it back. Weigh is the luggage scale, one bag after another:
+    /// Save with nothing typed says what is missing; a reading opens the next bag; the Bags card
+    /// shows the same reading.
+    func testWeighOpensByItselfOnceAndWeighsOneBagAfterAnother() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        tapVisible(app, app.buttons["trip-tickall"])
+        XCTAssertTrue(appears(app, "day-view-weigh", timeout: 8), "Weigh did not open by itself when everything was packed")
+        shot(app, "day-weigh-itself")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        // Once: unticked and ticked again, it stays shut.
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "6/7" }, "'\(words(app.staticTexts["trip-progress"]))'")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "7/7" }, "'\(words(app.staticTexts["trip-progress"]))'")
+        sleep(4)
+        XCTAssertFalse(find(app, "day-sheet") != nil, "Weigh opened by itself a second time")
+        // Opened from its station: the first bag is on the scale.
+        station(app, "weigh")
+        let first = app.textFields["day-weigh-0-scale"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "the first bag is not on the scale")
+        tap(app, id: "day-weigh-0-save")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["day-weigh-needs"]) == "Type what the scale says, in kg." },
+                      "Save with nothing typed says '\(words(app.staticTexts["day-weigh-needs"]))'")
+        type("6.4", into: first)
+        tap(app, id: "day-weigh-0-save")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-weigh-0"]) == "fine, 80% of its max" },
+                      "6.4 kg in an 8 kg carry-on: '\(value(app.buttons["day-weigh-0"]))'")
+        let next = app.textFields["day-weigh-1-scale"]
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "the next bag did not come onto the scale")
+        type("2.1", into: next)
+        tap(app, id: "day-weigh-1-save")
+        XCTAssertTrue(waitUntil { self.element(app, "day-weigh-said").exists }, "every bag weighed, and it does not say so")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-sheet-station-weigh"]) == "done" })
+        hideKeyboard(app)
+        shot(app, "day-weigh")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        // The same reading on the Bags card.
+        openBags(app)
+        XCTAssertTrue(waitUntil { self.words(app.buttons["bag-0"]).contains("6.4 kg weighed") },
+                      "the Bags card does not have the reading: '\(words(app.buttons["bag-0"]))'")
+    }
+
+    /// Tags: a name tag per bag; the AirTag asked only for the bag that has one — the Day pack —
+    /// until "Has an AirTag" is switched on for the carry-on, which then becomes one of his bags
+    /// with the switch on its own page.
+    func testTagsAskForTheAirTagOnlyInABagThatHasOne() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        station(app, "tags")
+        XCTAssertTrue(appears(app, "day-view-tags", timeout: 5), "the sheet is not on Tags")
+        XCTAssertTrue(app.buttons["day-tag-0-name"].exists, "no name tag for the carry-on")
+        XCTAssertFalse(app.buttons["day-tag-0-air"].exists, "the carry-on has no AirTag, yet it is asked for")
+        XCTAssertTrue(app.buttons["day-tag-1-air"].exists, "the Day pack's AirTag is not asked for")
+        let chip = app.buttons["day-sheet-station-tags"]
+        XCTAssertTrue(waitUntil { self.value(chip) == "0 of 3 ticked" }, "'\(value(chip))'")
+        for id in ["day-tag-0-name", "day-tag-1-name", "day-tag-1-air"] {
+            tap(app, id: id)
+            XCTAssertTrue(waitUntil { self.value(app.buttons[id]) == "on" }, "\(id) did not tick")
+        }
+        XCTAssertTrue(waitUntil { self.element(app, "day-tags-said").exists }, "every tag on, and it does not say so")
+        XCTAssertTrue(waitUntil { self.value(chip) == "done" }, "'\(value(chip))'")
+        shot(app, "day-tags")
+        setSwitch(app, "day-tag-0-has", on: true)
+        XCTAssertTrue(app.buttons["day-tag-0-air"].waitForExistence(timeout: 5), "switched on, the carry-on's AirTag is not asked for")
+        XCTAssertTrue(waitUntil { self.value(chip) == "3 of 4 ticked" }, "'\(value(chip))'")
+        XCTAssertFalse(element(app, "day-tags-said").exists, "all on with the carry-on's AirTag not ticked")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        // The bag's own page: the Day pack has an AirTag, and the carry-on — one of his bags now — too.
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        for n in 0..<2 {
+            tap(app, id: "bag-\(n)-name")
+            XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+            XCTAssertTrue(waitUntil { self.isSwitchOn(app, "bag-detail-airtag") }, "bag \(n)'s page says it has no AirTag")
+            if n == 0 { shot(app, "day-bag-airtag") }
+            tap(app, id: "bag-done")
+            XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        }
+    }
+
+    /// Photos: one of all the bags together (two bags) and each bag's own; Remove takes the one of
+    /// all of them away again. The Bags card shows it afterwards, and the bags' own photos are the
+    /// card's.
+    func testPhotosAskForAllTheBagsTogetherAndEachBag() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        station(app, "photos")
+        XCTAssertTrue(appears(app, "day-view-photos", timeout: 5), "the sheet is not on Photos")
+        let chip = app.buttons["day-sheet-station-photos"]
+        XCTAssertTrue(waitUntil { self.value(chip) == "0 of 3 photos" }, "'\(value(chip))'")
+        tap(app, id: "day-group-photo")
+        XCTAssertTrue(app.buttons["day-group-thumb"].waitForExistence(timeout: 5), "the photo of all the bags was not kept")
+        for n in 0..<2 {
+            tap(app, id: "day-photo-\(n)-photo")
+            XCTAssertTrue(app.buttons["day-photo-\(n)-photo-thumb-0"].waitForExistence(timeout: 5), "bag \(n)'s photo was not kept")
+        }
+        XCTAssertTrue(waitUntil { self.element(app, "day-photos-said").exists }, "every photo there, and it does not say so")
+        XCTAssertTrue(waitUntil { self.value(chip) == "done" }, "'\(value(chip))'")
+        shot(app, "day-photos")
+        tap(app, id: "day-group-remove")
+        XCTAssertTrue(waitUntil { !app.buttons["day-group-thumb"].exists }, "Remove kept the photo of all the bags")
+        XCTAssertTrue(waitUntil { self.value(chip) == "2 of 3 photos" }, "'\(value(chip))'")
+        tap(app, id: "day-group-photo")
+        XCTAssertTrue(app.buttons["day-group-thumb"].waitForExistence(timeout: 5))
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-station-photos"]) == "done" })
+        openBags(app)
+        XCTAssertTrue(app.buttons["bags-group-thumb"].waitForExistence(timeout: 5), "the Bags card does not show the photo of all the bags")
+        tap(app, id: "bag-0")
+        XCTAssertTrue(app.buttons["bag-0-photo-thumb-0"].waitForExistence(timeout: 5), "the carry-on's photo is not the Bags card's")
+        shot(app, "day-bags-card")
+    }
+
+    /// Ready (`-packingDayAlmost`: every station done but the Map): what is left and its words,
+    /// a tap on a station opens it, "I leave at" saved on the trip from here (Trip settings has
+    /// it) — and with the last thing ticked, the day is Ready to go (Weigh, all weighed, stays shut).
+    func testReadySaysWhatIsLeftAndPairsWithTheDoorCheck() {
+        let app = launch("-uiTestingPackingDay", ["-packingDayAlmost"])
+        openPackingDayTrip(app)
+        XCTAssertTrue(waitUntil { app.buttons["day-station-pack"].isSelected }, "Pack is not the one left")
+        XCTAssertEqual(value(app.buttons["day-station-pack"]), "6 of 7 packed")
+        for key in ["bags", "weigh", "tags", "photos"] {
+            XCTAssertEqual(value(app.buttons["day-station-\(key)"]), "done", "\(key) is not green")
+        }
+        station(app, "ready")
+        XCTAssertTrue(appears(app, "day-view-ready", timeout: 5), "the sheet is not on Ready")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["day-ready-left"]) == "Not yet \u{2014} 1 station left." },
+                      "'\(words(app.staticTexts["day-ready-left"]))'")
+        XCTAssertEqual(value(app.buttons["day-ready-pack"]), "6 of 7 packed")
+        XCTAssertEqual(value(app.buttons["day-ready-weigh"]), "done")
+        XCTAssertFalse(app.buttons["day-next"].exists, "Ready offers a next station — its rows open them")
+        // A station opens from here.
+        tap(app, id: "day-ready-tags")
+        XCTAssertTrue(appears(app, "day-view-tags", timeout: 5), "Tags did not open from Ready")
+        tap(app, id: "day-sheet-station-ready")
+        XCTAssertTrue(appears(app, "day-view-ready", timeout: 5))
+        // The door check, right here: the time he leaves, kept on the trip.
+        tap(app, id: "day-leave-out-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["day-leave-out-check"]) == "Check 07:15" },
+                      "'\(words(app.staticTexts["day-leave-out-check"]))'")
+        shot(app, "day-ready-left")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["tripset-leave-out-check"]) == "Check 07:15" },
+                      "Trip settings does not have the time set on Ready: '\(words(app.staticTexts["tripset-leave-out-check"]))'")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        // The last thing: Ready to go — and Weigh, every bag weighed, does not open.
+        tapVisible(app, app.buttons["trip-tickall"])
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-station-ready"]) == "done" },
+                      "Ready is not green: '\(value(app.buttons["day-station-ready"]))'")
+        XCTAssertTrue(app.buttons["day-station-ready"].isSelected)
+        sleep(3)
+        XCTAssertFalse(find(app, "day-sheet") != nil, "Weigh opened with every bag weighed")
+        station(app, "ready")
+        XCTAssertTrue(app.staticTexts["day-ready-go"].waitForExistence(timeout: 5), "all green, and no Ready to go")
+        XCTAssertFalse(app.buttons["day-next"].exists, "Ready offers a next station")
+        shot(app, "day-ready")
+    }
 }

@@ -64,6 +64,10 @@ struct TripScreen: View {
     /// the front. So a trip left open at 07:59, leaving at 08:00, is On site at 08:00.
     @State private var clock = Today.now
     @Environment(\.scenePhase) private var scenePhase
+    /// The Packing day sheet, open on a station (0.79, spec 07 part 17).
+    @State private var daySheet: PackingDayStation?
+    /// Bumped to send the trip to the top of its list (the Packing day's Pack).
+    @State private var toList = 0
     struct CheckedThing: Identifiable { let id: String }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
@@ -155,6 +159,10 @@ struct TripScreen: View {
         // Where each line comes from (0.74): its templates' icons, before its bag — not when
         // sorted by Template, whose headings say it.
         let from = view == "template" ? [:] : model.library.lineTemplates(tripId: tripId)
+        // Where the trip stands in the loop, on the screen's clock — the strip, Take a break and the
+        // Packing day read the same answer.
+        let step = model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock))
+        ScrollViewReader { proxy in
         VStack(spacing: 0) {
             // ONE centre line (0.73, his ask of 12 Oct 2026): the name, its pen right
             // beside it, and at the right the state and Done — "Reviewed" sat in grey
@@ -209,16 +217,31 @@ struct TripScreen: View {
                     Spacer(minLength: 8)
                     // Take a break (0.77, his yes of 13 Oct 2026; spec 07 part 16): at the calm
                     // end of the count's line, while the trip is at Pack with something left.
-                    if !allPacked, model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock)) == .pack {
+                    if !allPacked, step == .pack {
                         TakeABreakButton(tripId: tripId).environmentObject(model)
                     }
                 }
             }
             .padding(16)
             // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
-            LoopDoor(here: model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock)))
+            LoopDoor(here: step)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
+            // The Packing day (0.79, his yes of 13 Oct 2026; spec 07 part 17): the Pack step's stations,
+            // right under the strip, while the trip is being packed — not on a place's view.
+            if step == .pack, placeFilter == nil, let day = model.library.packingDay(tripId: tripId) {
+                PackingDayRow(day: day) { station in
+                    if station == .pack { toList += 1 } else { daySheet = station }
+                }
+                .padding(.horizontal, 16).padding(.top, -2).padding(.bottom, 8)
+                .sheet(item: $daySheet) { station in
+                    PackingDaySheet(tripId: tripId, start: station) {
+                        // After the sheet has gone: the list is on this screen.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { toList += 1 }
+                    }
+                    .environmentObject(model)
+                }
+            }
             if !rebuiltNote.isEmpty {
                 Text(rebuiltNote)
                     .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
@@ -261,6 +284,7 @@ struct TripScreen: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, 10)
+                .id(TripScreen.listTop)
                 if let place = placeFilter { placeChip(place) }
                 #if DEBUG
                 if AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-showDoorChecks") {
@@ -458,6 +482,10 @@ struct TripScreen: View {
                 .padding(.bottom, 24)
             }
             .sheet(item: $checking) { c in ThingEditor(itemId: c.id).environmentObject(model) }
+            // The Packing day's Pack: to the top of the list — the Sorting row above its first heading.
+            .onChange(of: toList) { _, _ in
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { proxy.scrollTo(TripScreen.listTop, anchor: .top) }
+            }
             // "Also the tripod" — a thing for THIS trip only, typed on the spot. Not while
             // one place's lines are shown: a line typed here has no place, and would vanish.
             if placeFilter == nil {
@@ -499,6 +527,7 @@ struct TripScreen: View {
             .background(allPacked ? Color.clear : Theme.bg)
             }
         }
+        }
         .onAppear { if placeFilter != nil { view = "stored" } }
         .background {
             // Everything packed: the screen itself says so. The green is painted ON
@@ -530,6 +559,8 @@ struct TripScreen: View {
                 let id = tripId
                 model.change { _ = $0.setBreak(until: nil, tripId: id) }
             }
+            // …and the Packing day opens Weigh by itself, once (0.79, spec 07 part 17 rule 9).
+            if packed { weighByItself() }
             guard packed, !reduceMotion else { return }
             withAnimation(.easeOut(duration: 0.45)) { sweeping = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
@@ -553,6 +584,22 @@ struct TripScreen: View {
             clock = Today.now
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { clock = Today.now } }
+    }
+
+    /// Where the Packing day's Pack sends the list (the Sorting row, above the first heading).
+    static let listTop = "trip-list-top"
+
+    /// The last thing ticked: Weigh opens by itself — once per trip — a moment after the tick has
+    /// settled (the green sweep takes 1 s), if the trip is still all packed then, still at Pack with
+    /// bags to weigh, no other sheet of this screen is up, and the trip never offered it before.
+    private func weighByItself() {
+        let id = tripId
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            guard placeFilter == nil, daySheet == nil, checking == nil, !reviewing, !onSite,
+                  model.library.weighOpensItself(tripId: id, today: Today.iso(clock), time: Today.time(of: clock)) else { return }
+            model.change { _ = $0.setWeighOffered(tripId: id) }
+            daySheet = .weigh
+        }
     }
 
     /// The next moment, after the screen's clock, at which the trip turns by the clock alone;
