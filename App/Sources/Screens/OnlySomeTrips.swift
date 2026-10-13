@@ -24,34 +24,52 @@ struct OnlySomeTripsPills: View {
     /// The thing's own answers, on a template's row; nil on the thing's page.
     var thing: TripLimits? = nil
     var tint: Color = AppSection.templates.color
+    /// The thing's page on the Mac (0.75): the pill each kind's arrows are on — ringed, as On
+    /// these templates rings its own (nil = none) — and a click, which puts the page's focus
+    /// on that kind and the arrows on that pill. Each kind is a field of the page's Tab order
+    /// (`ThingField.limit`), scrolled to by its key. Unused on a template's row.
+    var cursor: (TripLimit) -> Int? = { _ in nil }
+    var clicked: ((TripLimit, Int) -> Void)? = nil
 
-    private var kinds: [TripLimit] { TripLimit.allCases.filter { $0 != .contexts || showContext } }
+    private var kinds: [TripLimit] { OnlySomeTripsPills.kinds(showContext: showContext) }
 
     var body: some View {
         ForEach(kinds, id: \.self) { k in
+            let options = OnlySomeTripsPills.options(k, stored: stored, thing: thing)
             VStack(alignment: .leading, spacing: 6) {
-                Pills(title: k.title, options: options(k), selected: Set(picks[k]), id: "\(id)-\(k.rawValue)",
-                      tint: tint, borrowed: follows(k)) { toggle(k, $0) }
+                Pills(title: k.title, options: options, selected: Set(picks[k]), id: "\(id)-\(k.rawValue)",
+                      tint: tint, cursor: cursor(k), borrowed: follows(k)) { word in
+                    OnlySomeTripsPills.toggle(&picks, k, word)
+                    if let clicked, let n = options.firstIndex(where: { $0.id == word }) { clicked(k, n) }
+                }
                 if let thing { from(k, thing: thing[k]) }
             }
+            .keyed(.limit(k))
         }
     }
 
-    /// The app's words (food in its short words), then any stored word it does not know.
-    private func options(_ k: TripLimit) -> [(id: String, label: String)] {
+    /// The kinds shown, in their order: Context only where it counts (a workout template).
+    static func kinds(showContext: Bool) -> [TripLimit] {
+        TripLimit.allCases.filter { $0 != .contexts || showContext }
+    }
+
+    /// The app's words (food in its short words), then any stored word it does not know —
+    /// the pills of one kind, in their order (the Mac's arrows walk the same list).
+    static func options(_ k: TripLimit, stored: TripLimits, thing: TripLimits?) -> [(id: String, label: String)] {
         let known = k.vocabulary.map { (id: $0, label: TripLimit.label($0)) }
         let odd = Library.unknownConditions(stored[k] + (thing?[k] ?? []), k.vocabulary).map { (id: $0, label: $0) }
         return known + odd
+    }
+
+    /// A pill pressed — or Space on the one the Mac's arrows are on: on if it was off, off if on.
+    static func toggle(_ picks: inout TripLimits, _ k: TripLimit, _ word: String) {
+        if picks[k].contains(word) { picks[k].removeAll { $0 == word } } else { picks[k].append(word) }
     }
 
     /// On a template's row: is this kind the thing's answer right now?
     private func follows(_ k: TripLimit) -> Bool {
         guard let thing else { return false }
         return Library.sameLimit(picks[k], thing[k])
-    }
-
-    private func toggle(_ k: TripLimit, _ word: String) {
-        if picks[k].contains(word) { picks[k].removeAll { $0 == word } } else { picks[k].append(word) }
     }
 
     /// Where the answer comes from, and the way back to the thing's.

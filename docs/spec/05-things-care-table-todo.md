@@ -1054,7 +1054,8 @@ apart; a field 6 pt under its heading):
     writes it (`Library.setThingLimits(id:_:follow: false)`, before `updateThing`, which brings trips still ahead
     along) into the thing's `extra` keys `onlySeasons`, `onlyContexts`, `onlyTransports`, `onlyCatering` — and every
     row of the thing whose own answer now equals the thing's goes back to following it (spec 07 part 14, rule 4).
-    ⌘N (Mac) starts the new thing with none. Not in the Mac's Tab order yet.
+    ⌘N (Mac) starts the new thing with none. On the Mac each row of pills is a stop of the page's Tab order since
+    0.75 (Keyboard (Mac) below; until then Tab went past them).
 8. **Kept at home** — band (`thing-heading-kept`); since 0.64 CHOSEN, never typed (his word, 6 Oct 2026: "Can we
    turn Kept at home into a drop-down … so that we have a list to choose from? If we write it this way, it's a
    possibility that the naming convention skews"). The first drop-down, which the others copy — rebuilt on
@@ -1304,7 +1305,11 @@ switch (a tap gesture beside its own). A text field left for nothing (a click on
 
 **The order Tab walks** (`fieldOrder()`; Shift-Tab back; round from the last to the first and back): Name · Notes ·
 Kind of thing · Whose it is (always since 0.73; until then when anyone was named) · On these templates (when he has any) · the Section of each template
-lit, in the pills' order (one lit by the keys comes in at once; one unlit goes) · Kept at home · Usually packed in ·
+lit, in the pills' order (one lit by the keys comes in at once; one unlit goes) · **Only on some trips** (0.75; item 7,
+where the rows sit — until 0.75 Tab went past them): Season · Context (only while the page shows it: the thing on a
+workout template, or a Context already said — a Context row gone while in focus: Tab goes on to Transport, Shift-Tab
+back to Season) · Transport · Food (`ThingField.limit(TripLimit)`, the kinds as `OnlySomeTripsPills.kinds`; scroll ids
+`key-some-<kind>`) · Kept at home · Usually packed in ·
 Pocket (0.69, when that bag is one of his — since 0.73 one with no pockets too; `thing-pocket`, a drop-down like the others) · When · Weight · the kit part
 (0.70; scroll id `key-kit`): Taken out for now (a thing inside a kit) — or, for any other thing, each thing inside
 in his order (0.73; `kitOut(id)` then `kitRemove(id)`, scroll id `key-kit-row-<id>`): its Take out / Put back, then
@@ -1320,7 +1325,8 @@ click moves the focus without scrolling (a pill clicked once scrolled the page u
 **What the focus looks like.** A 2-point ring in the page's orange: a text field's and a drop-down's own border
 becomes 2 pt orange (1 pt `line` otherwise — the iPhone draws exactly what it did); a switch gets a rounded ring just
 outside it (`focusRing`, nothing moves); On these templates rings the PILL the arrows are on, in the templates' violet,
-2 pt just outside the pill (the concept's look; `Pills(cursor:)`). **The line at the page's foot** (under the scroll,
+2 pt just outside the pill (the concept's look; `Pills(cursor:)`) — and so does each row of Only on some trips (0.75;
+`OnlySomeTripsPills(cursor:)`, its own pill per kind, `limitAt`). **The line at the page's foot** (under the scroll,
 Footnote, 7 pt above and below, a hairline over it, `Theme.bg`): the field's name in orange semibold, then its keys in
 muted — e.g. "Kind of thing   type to pick · Space opens · Tab next · Return saves". The keys of each kind:
 - Name, Brand, Colour: "type · Tab next · Return saves"; Notes and What to do: "Return starts a new line · Tab next · ⌘S
@@ -1329,7 +1335,8 @@ muted — e.g. "Kind of thing   type to pick · Space opens · Tab next · Retur
 - A drop-down: "type to pick · Space opens · Tab next · Return saves" (Kept at home: "type to pick, or a new place …";
   a Section: "type to pick, or a new section …"); its list open: "↑ ↓ move · Return chooses · type to jump · Esc closes
   the list" (a Section's: "↑ ↓ move · Tab to its pen, arrows, Remove · Space presses · Return chooses · Esc closes").
-- On these templates: "← → move · Space turns it on or off · type to jump · Tab next"; a switch: "Space turns it on or
+- On these templates, and each row of Only on some trips (0.75): "← → move · Space turns it on or off · type to jump ·
+  Tab next" (the field's name: Season, Context, Transport, Food); a switch: "Space turns it on or
   off · Tab next · Return saves"; Add from your things: "Space opens or closes the list of your things · Tab next ·
   Return saves"; a kit row's Take out / Put back (0.73): "Space takes it out or puts it back · Tab next · Return
   saves", its ✕: "Space takes it out of the kit for good · Tab next · Return saves"; Find a thing: "type to find ·
@@ -1338,7 +1345,8 @@ muted — e.g. "Kind of thing   type to pick · Space opens · Tab next · Retur
 - For a moment after ⌘↓ ⌘↑ at an end of the list: "Saved. That was the last (first) thing in the list." in place of
   the keys, until the focus moves.
 Ids: the keys' words `thing-keys`; the field's name carries `thing-keys-at-<the field's control id>` (`thing-name`,
-`thing-notes`, `thing-category`, `thing-owner`, `thing-lists`, `thing-section-<n>`, `thing-storage`, `thing-bag`,
+`thing-notes`, `thing-category`, `thing-owner`, `thing-lists`, `thing-section-<n>`, `thing-seasons`, `thing-contexts`,
+`thing-transports`, `thing-catering` (0.75), `thing-storage`, `thing-bag`,
 `thing-pocket`, `thing-when`, `thing-weight`, `thing-kit-taken-out`, `thing-kit-row-<n>-out`, `thing-kit-row-<n>-remove`,
 `thing-kit-add`, `thing-kit-search`, `thing-kit-check`, `thing-brand`, `thing-colour`, `thing-condition`, `thing-care`,
 `thing-care-notes`, `thing-liquid`, `thing-restricted`, `thing-expiry`, `thing-jump`; `none`) — what the tests read;
@@ -1364,7 +1372,8 @@ of the kit for good"; Find a thing: "Find a thing" (so ⌘J finds a row by its t
   a new page makes nothing. ⌘N again saves it and starts the next — things come in groups ("five dive things kept in
   the garage, so you only type the names").
 - **⌘↓ / ⌘↑** — saves, then the next / previous thing of the list the page came from, the focus on the SAME field
-  ("all weights is one field after another"; a Section of a template the next thing is not on → On these templates).
+  ("all weights is one field after another"; a Section of a template the next thing is not on → On these templates;
+  Context where the next thing shows none → Season, 0.75).
   The list is taken as it stood BEFORE the save, so a thing that leaves it by being filled in (the table filtered to
   No weight) still leads to the one after it; a thing made here (not in that list yet) is looked up in the list after
   the save; things deleted meanwhile are skipped. At an end it stays (saved) and the foot says so. From a page opened
@@ -1405,6 +1414,13 @@ of the kit for good"; Find a thing: "Find a thing" (so ⌘J finds a row by its t
 - **On these templates**: the arrows start on the first template lit (else the first); **← →** move along the pills
   (no wrap); **Space** turns the one lit on or off (its Section joins or leaves the Tab order); **letters** jump to the
   first template whose name starts so (within a second they add up); ↑ ↓ ⌫ do nothing.
+- **A row of Only on some trips** (0.75) — exactly as On these templates: the arrows start on the first pill lit
+  (else the first; each kind keeps its own — `limitAt`, cleared when the page loads another thing or ⌘N starts one);
+  **← →** move along the row's pills (`OnlySomeTripsPills.options`: the app's words, then any stored word it does not
+  know; no wrap); **Space** switches the one lit on or off (`OnlySomeTripsPills.toggle`, the same as a click — held
+  until Save, which keeps it as a click's is kept); **letters** jump to the first pill whose words start so (within a
+  second they add up: "w" → Winter, "pl" → Plane, "e" → Eating out); ↑ ↓ ⌫ do nothing; Return saves. A click on a
+  pill puts the focus on its row and the arrows on it, without scrolling.
 - **Liquid / Not allowed in the cabin**: **Space** turns the switch. So do **Taken out for now** and **Check before
   each trip** (the kit part).
 - **The kit part** (0.70; rows and Find a thing 0.73): **Space** on a row's Take out / Put back switches it; on its
@@ -1442,7 +1458,8 @@ years has → nil); the day must exist in its month; anything else nil.
 
 **Tests.** UI, Mac only (each skipped on the iPhone — "The keys of a thing's page are the Mac's"), every one seen red
 with a fault planted first (0.68): `testTheThingPageTabsThroughEveryFieldInOrder` (the Map: opens in Name with the
-cursor at the end — " case" makes "Map case"; Tab through all 18 stops in the order above and round to Name; Shift-Tab
+cursor at the end — " case" makes "Map case"; Tab through all 21 stops in the order above — Season, Transport and Food
+after its Section since 0.75 — and round to Name; Shift-Tab
 round to Valid until and back; typing lands in Notes and Brand; Esc still cancels), `testADropDownPicksAsHeTypesAndOpensWithSpace`
 ("e" → Electronics with the list closed; "rink" → Food & drink, inside a word; "food" → Food & drink; Space opens; ↓ ↓ Return → Pharmacy / meds, the page
 still open; ↓ opens, Esc closes the list only and keeps the choice; Tab → Whose it is, "r" → Robin; saved and kept),
@@ -1465,7 +1482,13 @@ row 1's Take out; Space takes the cord out; on through row 1's ✕ and row 2's T
 plasters and the focus stays on row 1's ✕; Tab → Add; Space opens the list with the cursor in Find a thing; "map"
 lights the Map, Return adds it, the page stays and the search empties; Esc closes the list, the focus on Add; Tab →
 Check before each trip, Space switches it on; Tab → Brand, Shift-Tab back; Return saves; reopened, all three kept —
-proven on GitHub's Mac). Model:
+proven on GitHub's Mac), `testOnlyOnSomeTripsPillsAreReachedByTabAndSwitchedBySpace` (0.75, the Map — on Hiking only,
+so no Context: Hiking's Section → Tab → Season, the foot "← → move · Space turns it on or off · type to jump · Tab
+next"; → Space switches Winter on and leaves Summer off; Tab → Transport, Food, Kept at home; Shift-Tab back to Food;
+saved and reopened, Winter kept and Summer off — proven on GitHub's Mac (13 Oct 2026: a probe running only the 0.75
+tests, this one, the Tab-order test, the template pills and the four weather tests, 7 of 7 green; then the same job
+planted the rows out of `fieldOrder()` — the 0.74 order — and both keys tests went RED: "Tab did not go on from the
+Section to Season", and in the Tab-order test "Tab did not go on to thing-seasons"). Model:
 `TypedEntryTests` (6: grams with or without a unit, what is no weight, the date written his ways, a date with no year,
 a jump from today, nothing typed and nonsense). The Section tools on both: `testASectionIsRenamedFromAThingsPageAndKeepsItsThings`,
 `testASectionIsMovedFromAThingsPageAndANewTripReadsIt`, `testASectionIsRemovedFromAThingsPageAndItsThingsStay`,

@@ -139,6 +139,13 @@ final class LibraryModel: ObservableObject {
             // even when no forecast exists for the dates (his test G.6, 2026-09-28: a
             // trip already over, with no forecast, never reached the map).
             keepPlace(tripId: tripId, name: name, spot: spot)
+            // A trip that starts past the forecast's reach (0.75) is NOT asked: the service
+            // would answer with its own days — this week — shown as the trip's. The card says
+            // when its forecast comes (`WeatherCard.notYet`); one held can only be of other days.
+            if ForecastAsk.comesFrom(startDate: trip.startDate, today: Today.local, utcToday: todayYMD()) != nil {
+                if library.trip(tripId)?.weather != nil { change { _ = $0.dropWeather(tripId: tripId) } }
+                return
+            }
             let days = try await sky.forecast(at: spot, from: trip.startDate, nights: trip.nights, today: Today.local)
             change { _ = $0.setWeather(tripId: tripId, place: name, lat: spot.lat, lon: spot.lon, snapshot: days) }
         } catch {
@@ -274,6 +281,8 @@ extension LibraryModel {
     ///                           trip moved (0.69): "soon" = it starts in 2 days (being
     ///                           packed); "home" = it began 3 days ago, ends today, all
     ///                           ticked; anything else = a month ahead, as the sample
+    ///  -uiTestingSoon         → memory, the sample with its trip 10 days ahead, inside the
+    ///                           forecast's reach (the weather card, 0.75)
     ///  -uiTestingNotes        → memory, the sample + notes to search (0.69)
     ///  -uiTestingPockets      → memory, the sample under way + a Backpack with three pockets,
     ///                           the charger usually in its front pocket, and the times
@@ -341,6 +350,9 @@ extension LibraryModel {
         if let n = args.firstIndex(of: "-uiTestingPlaces") {
             let when = n + 1 < args.count ? args[n + 1] : ""
             return LibraryModel(store: MemoryStore(SampleLibrary.places(when).records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingSoon") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.soon().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingNotes") {
             return LibraryModel(store: MemoryStore(SampleLibrary.notes().records()), usesICloud: false, sky: sky)

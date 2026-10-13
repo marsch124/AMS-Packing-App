@@ -55,9 +55,23 @@ public enum ForecastAsk {
         return addDays(from, reachDays)
     }
 
+    /// A trip that starts past the service's last day has no forecast yet: the day one
+    /// first exists, `reachDays` before the trip starts (start − 15). nil when a forecast
+    /// can be asked for now — the trip starts within reach, is under way or over, or has
+    /// no date (an undated trip is asked for the service's own days: today's weather on).
+    ///
+    /// 0.75: such a trip was asked for the service's DEFAULT days — this week — and the card
+    /// showed this week's weather as if it were the trip's. It is no longer asked at all.
+    public static func comesFrom(startDate: String, today: String, utcToday: String) -> String? {
+        guard !startDate.isEmpty, let left = daysBetween(startDate, lastDay(today: today, utcToday: utcToday)),
+              left < 0 else { return nil }
+        return addDays(startDate, -reachDays)
+    }
+
     /// The trip's own days to ask for: from its start to its last day (start + nights),
     /// cut at the reach. nil when the trip does not start between today and the reach —
-    /// then the service's default days are asked for, as the web app does.
+    /// then the service's default days are asked for, as the web app does (but never for
+    /// a trip past the reach: `comesFrom`, 0.75).
     public static func days(startDate: String, nights: Int, today: String, utcToday: String) -> ForecastDays? {
         guard !startDate.isEmpty, let ahead = daysBetween(today, startDate), ahead >= 0 else { return nil }
         let reach = lastDay(today: today, utcToday: utcToday)

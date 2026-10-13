@@ -56,6 +56,18 @@ extension Library {
         return true
     }
 
+    /// Let go of the forecast held on a trip; its place and its map point stay. For a trip
+    /// that starts past the service's reach (0.75, `ForecastAsk.comesFrom`): a forecast held
+    /// there can only be of other days — until 0.75 a look-up kept THIS week's weather on a
+    /// trip a month ahead. false (and nothing written) when the trip holds none.
+    @discardableResult
+    public mutating func dropWeather(tripId: String) -> Bool {
+        guard let n = trips.firstIndex(where: { $0.id == tripId }), trips[n].weather != nil else { return false }
+        trips[n].weather = nil
+        trips[n].updatedAt = nowISO()
+        return true
+    }
+
     /// Take one of the suggestions along: it becomes a line on this trip, carrying
     /// the bag and the "when" the suggestion asks for — and, as the web app's
     /// `entryFromWeatherSpec` does, the item it came from (so the review credits

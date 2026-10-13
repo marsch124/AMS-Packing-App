@@ -172,6 +172,24 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with its trip inside the forecast's reach (`-uiTestingSoon`, 0.75): it
+    /// starts in 10 days and lasts two nights — not yet the packing week — so Weather asks for
+    /// the trip's own days. (The sample's own trip is a month ahead, past the reach: its weather
+    /// card says when the forecast comes, and asks for none.)
+    static func soon() -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if !lib.trips.isEmpty {
+            lib.trips[0].startDate = day(10)
+            lib.trips[0].endDate = day(12)
+        }
+        return lib
+    }
+
     /// The sample library with notes to search (`-uiTestingNotes`, 0.69): the Passport's
     /// own note, and a note the Hiking template keeps for the Map — neither name says
     /// the words searched for.

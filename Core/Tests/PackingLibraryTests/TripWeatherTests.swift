@@ -137,4 +137,24 @@ final class TripWeatherTests: XCTestCase {
         XCTAssertEqual(lib.trip(id)?.name, "Two nights out", "the weather card reads a different trip than the screen")
         XCTAssertNotNil(lib.weather(tripId: id), "the forecast set on the first is not read back")
     }
+
+    /// A forecast let go (0.75: a trip past the forecast's reach can hold only other days'
+    /// weather — until then, this week's): the forecast goes, the place and the map point
+    /// stay, and the trip is marked changed so the other device follows. A trip holding
+    /// none is not written at all.
+    func testAForecastLetGoLeavesThePlaceAndThePin() {
+        var (lib, id) = library()
+        XCTAssertFalse(lib.dropWeather(tripId: id), "a trip with no forecast was written")
+        _ = lib.setWeather(tripId: id, place: "Testville", lat: 10.5, lon: 20.5, snapshot: wet(from: "2026-10-03", nights: 2))
+        let before = lib.trip(id)?.updatedAt ?? ""
+        PackingEnv.now = { Date().addingTimeInterval(60) }
+        XCTAssertTrue(lib.dropWeather(tripId: id))
+        XCTAssertNil(lib.weather(tripId: id), "the forecast is still on the trip")
+        XCTAssertNil(lib.trip(id)?.weather)
+        XCTAssertEqual(lib.trip(id)?.destination, "Testville", "the place went with the forecast")
+        XCTAssertEqual(lib.trip(id)?.geo, GeoFix(lat: 10.5, lon: 20.5, place: "Testville, SE"), "the map point went with the forecast")
+        XCTAssertNotEqual(lib.trip(id)?.updatedAt, before, "the trip is not marked changed: the other device keeps the old weather")
+        XCTAssertTrue(lib.weatherMissing(tripId: id).isEmpty, "gear is still asked for by a forecast that is gone")
+        XCTAssertFalse(lib.dropWeather(tripId: "no such trip"))
+    }
 }
