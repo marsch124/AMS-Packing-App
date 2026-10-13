@@ -10911,14 +10911,25 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "trip-by-template-ticked")
     }
 
+    /// The names a `TemplateMarks` says, found by its id: its value (the template names
+    /// joined by ", ") — an Other on the iPhone, a Group, an image or a text on the Mac;
+    /// its label less "From " when the value does not come through. "" = not shown.
+    private func marksWords(_ app: XCUIApplication, _ id: String) -> String {
+        for query in [app.otherElements, app.groups, app.images, app.staticTexts] where query[id].exists {
+            let e = query[id]
+            if let value = e.value as? String, !value.isEmpty { return value }
+            return e.label.hasPrefix("From ") ? String(e.label.dropFirst(5)) : e.label
+        }
+        return ""
+    }
+
     /// Where a trip's line says it comes from (`trip-line-<n>-from`): its value on the
     /// iPhone; on the Mac the line's button folds it into its own words ("… From Common
     /// base, Hiking …"), so it is read there. "" = nothing shown.
     private func fromWords(_ app: XCUIApplication, _ n: Int) -> String {
         let id = "trip-line-\(n)-from"
-        for query in [app.otherElements, app.images, app.staticTexts] where query[id].exists {
-            return (query[id].value as? String) ?? ""
-        }
+        let own = marksWords(app, id)
+        if !own.isEmpty { return own }
         #if os(macOS)
         // Sorted by Template a line stands under two headings: two buttons of one name
         // (a plain query for it is a hard failure on the Mac — GitHub's probe, 12 Oct 2026).
@@ -11095,7 +11106,11 @@ final class AMSPackingUITests: XCTestCase {
     /// Home's countdown and in Check before you go — a press there ticks it.
     /// (`-uiTestingReminders`: Hiking's "Check the forecast" a week ahead, "Leave a
     /// route note" the day before; the trip in three days.)
+    /// Each reminder names the template it comes from (0.75, his yes of 13 Oct 2026): Hiking's
+    /// icon beside the reminder on the card (`trip-check-todo-<n>-from`) and on its line in
+    /// the trip's list (`trip-line-7-from`), as on every line since 0.74.
     func testATripsRemindersShowWhenTheyAreDue() {
+        continueAfterFailure = true
         let app = launch("-uiTestingReminders")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         let card = app.buttons["home-countdown"]
@@ -11108,8 +11123,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "Check before you go does not show the reminder due")
         XCTAssertTrue(app.buttons["trip-check-todo-0"].exists)
         XCTAssertFalse(app.buttons["trip-check-todo-1"].exists, "a reminder not yet due is shown")
+        XCTAssertTrue(waitUntil { self.marksWords(app, "trip-check-todo-0-from") == "Hiking" },
+                      "the reminder due does not name its template: '\(marksWords(app, "trip-check-todo-0-from"))'")
         shot(app, "reminders-trip")
         tap(app, id: "trip-check-todo-0")
         XCTAssertTrue(disappears(app, "trip-checks", timeout: 5), "ticking it did not take it off the card")
+        // On the trip's own list: the same line, ticked, with the same icon.
+        XCTAssertTrue(scrollUntil(app, "trip-line-7", near: "trip-line-0"), "the reminder is not on the trip's list")
+        XCTAssertTrue(words(app.buttons["trip-line-7"]).contains("Check the forecast"), "line 7 is not the reminder: '\(words(app.buttons["trip-line-7"]))'")
+        XCTAssertTrue(waitUntil { self.fromWords(app, 7).hasPrefix("Hiking") },
+                      "the reminder's line does not name its template: '\(fromWords(app, 7))'")
+        shot(app, "reminders-trip-line")
     }
 }

@@ -23,6 +23,9 @@ struct TripChecksCard: View {
         let dates = model.library.dateCheck(tripId: tripId, todayISO: Today.local)
         // His reminders whose step has come and that are not ticked yet (0.70, spec 07 part 12).
         let due = model.library.dueReminders(tripId: tripId, today: Today.local)
+        // Where each comes from (0.75, his yes of 13 Oct 2026): the templates' icons, as on
+        // the trip's lines — the same answer (`lineTemplates`), asked only when one is due.
+        let from = due.isEmpty ? [:] : model.library.lineTemplates(tripId: tripId)
         let red = cabin.contains { $0.why == .notAllowed } || dates.contains { $0.alreadyOut || $0.beforeHome }
         // Only reminders to see to: the trip's own colour, not a warning's.
         let tint = red ? AppSection.actions.color : (cabin.isEmpty && dates.isEmpty ? AppSection.events.color : AppSection.care.color)
@@ -49,8 +52,7 @@ struct TripChecksCard: View {
                         .accessibilityIdentifier("trip-check-date-\(n)")
                 }
                 ForEach(Array(due.enumerated()), id: \.element.id) { n, line in
-                    reminder(line)
-                        .accessibilityIdentifier("trip-check-todo-\(n)")
+                    reminder(line, n: n, from: from[line.id] ?? [])
                 }
             }
             .padding(14)
@@ -82,26 +84,36 @@ struct TripChecksCard: View {
         .buttonStyle(.plain).focusEffectDisabled()
     }
 
-    /// A reminder due: its tick, its name, and the step it belongs to. A press ticks it
-    /// — on the trip's list too, it is the same line — and it leaves the card.
-    private func reminder(_ line: Item) -> some View {
+    /// A reminder due: its tick, its name, and the step it belongs to — and at its right
+    /// the icons of the templates it comes from (0.75, his yes of 13 Oct 2026: "could not
+    /// tell which template each comes from"), drawn as on the trip's lines (`TemplateMarks`).
+    /// A press ticks it — on the trip's list too, it is the same line — and it leaves the card.
+    /// The icons sit BESIDE the button, not in it: the button's own label ("…, to do. Tick
+    /// it") would swallow their "From …" for VoiceOver and on the Mac.
+    private func reminder(_ line: Item, n: Int, from: [PackList]) -> some View {
         let tint = AppSection.events.color
-        return Button {
-            model.change { _ = $0.setChecked(true, tripId: tripId, entryId: line.id) }
-        } label: {
-            HStack(spacing: 10) {
-                TickCircle(on: false, tint: tint).frame(width: 22, height: 22)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(line.name).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                    Text("To do \u{00B7} \(phaseOrFallback(line.phase).label)").font(.system(.subheadline)).foregroundStyle(tint)
-                        .fixedSize(horizontal: false, vertical: true)
+        return HStack(spacing: 8) {
+            Button {
+                model.change { _ = $0.setChecked(true, tripId: tripId, entryId: line.id) }
+            } label: {
+                HStack(spacing: 10) {
+                    TickCircle(on: false, tint: tint).frame(width: 22, height: 22)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(line.name).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
+                        Text("To do \u{00B7} \(phaseOrFallback(line.phase).label)").font(.system(.subheadline)).foregroundStyle(tint)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 6)
                 }
-                Spacer(minLength: 6)
+                .frame(minHeight: Metrics.tap).contentShape(Rectangle())
             }
-            .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityLabel("\(line.name), to do. Tick it")
+            .accessibilityIdentifier("trip-check-todo-\(n)")
+            if !from.isEmpty {
+                TemplateMarks(from: from, id: "trip-check-todo-\(n)-from")
+            }
         }
-        .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityLabel("\(line.name), to do. Tick it")
     }
 
     static func says(_ f: CabinFlag) -> String {

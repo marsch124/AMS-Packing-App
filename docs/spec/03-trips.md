@@ -1052,6 +1052,9 @@ smaller tick circles and less space between lines").
     the Mac the line's button folds the element into its own words (label "… From Common base, Hiking …"), so a
     test reads it there.
   - The line keeps its height (`Metrics.line`, 30 / 22): the icons are no taller than the bag's words.
+  - A reminder's line (spec 07, part 12) shows them too, before "To do" — and so does each reminder due on
+    **Check before you go** (0.75, his yes of 13 Oct 2026; that section): the same `TemplateMarks` from the same
+    `lineTemplates`, a reminder on two templates showing both.
 - **⊘ / ↻** (`AsideMark`, drawn on the 24-pt grid, stroked 1.8, muted, shown at `Metrics.glyph` — 20 / 16 —
   with `onGrid`), in a **`Metrics.lineButton` × `Metrics.line`** target — 40 × 30 on the iPhone, 30 × 22 on
   the Mac (24 pt in 40 × 40 until 0.67): as tall as the line, no taller, generous across; id
@@ -1578,7 +1581,19 @@ heavy) and a count capsule (13 heavy white on red if any line is red, else orang
 `trip-checks-count`. Then one button per flag (min height 44): a drawn icon 22 pt in the line's tint
 (the plane icon for cabin lines; the passport icon for documents; a drawn hourglass for other dates),
 the line's name (16 bold ink), the reason (15 medium, tint), and a chevron when there is a thing to
-open. Ids: cabin lines `trip-check-cabin-<n>` first, then date lines `trip-check-date-<n>`.
+open. Ids: cabin lines `trip-check-cabin-<n>` first, then date lines `trip-check-date-<n>`, then the
+reminders due, `trip-check-todo-<n>` (0.70, spec 07 part 12: a tick circle 22 pt in the trip's green, the name,
+"To do · <step>"; a press ticks the line; label "<name>, to do. Tick it").
+
+**Where a reminder comes from** (0.75, his yes of 13 Oct 2026 — on this card he "could not tell which template
+each comes from"): at the right of each reminder due, the icons of the templates it comes from, exactly as on the
+trip's lines ("A line" → "Where it comes from"): `TemplateMarks`, read from `Library.lineTemplates(tripId:)` (asked
+only when a reminder is due) — small, in the Templates violet (15 pt on the iPhone, 12 on the Mac), the trip's
+template order, up to three else the first two and "+N", a template without an icon as its name's first word; one
+element for VoiceOver, label "From <names>", value the names, a tooltip on the Mac; id
+**`trip-check-todo-<n>-from`**. The icons sit BESIDE the reminder's button (an `HStack`, 8 apart), not inside
+it: the button's own label would swallow their "From …" for VoiceOver and on the Mac. A press on the icons does
+nothing. A reminder whose template is gone (or that was typed on the trip) shows none.
 
 Reasons (`TripChecksCard.says`), dates as "3 Mar 2027" (fixed English months):
 - not allowed (red): "Not allowed in the cabin · in <bag>"
@@ -1610,7 +1625,9 @@ Model `TripChecksTests` (7: cabin bags only, the thing as it is now, a bag's own
 trip, a Quick trip by plane, dates + six months, `ymd(plusMonths:)` incl. 31 Aug → 28 Feb and leap
 years). UI `testATripChecksTheCabinAndTheDatesBeforeYouGo` (order knife, sun cream; dates sun cream,
 passport; Liquid off removes one; clearing the passport's date removes it; Car removes cabin checks),
-`testABagSaysWhetherItGoesInTheCabin`, `testABagOnTheTripSaysWhetherItGoesInTheCabin`.
+`testABagSaysWhetherItGoesInTheCabin`, `testABagOnTheTripSaysWhetherItGoesInTheCabin`. The reminders due and their
+template icons: spec 07, part 12, Tests (`testATripsRemindersShowWhenTheyAreDue`,
+`TemplateRemindersTests.testADueRemindersLineKnowsTheTemplatesItComesFrom`).
 
 ---
 

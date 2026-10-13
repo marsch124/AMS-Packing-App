@@ -138,6 +138,44 @@ final class TemplateRemindersTests: XCTestCase {
         XCTAssertEqual(lib.dueReminders(tripId: undated.id, today: "2026-10-04"), [], "no date, nothing due")
     }
 
+    /// Where a reminder comes from (0.75, his yes of 13 Oct 2026: on Check before you go he
+    /// "could not tell which template each comes from"): its line is mapped to its
+    /// templates by the SAME answer as a thing's (`lineTemplates`) — the template it was
+    /// made from, and every other trip template that has the same reminder, in the trip's
+    /// order — so the card, the trip's list and Sorted by Template agree.
+    func testADueRemindersLineKnowsTheTemplatesItComesFrom() {
+        var (lib, base, rowing) = library()
+        lib.saveTemplate(newList(name: "Running", group: "GA"))
+        let running = lib.templates.first { $0.name == "Running" }!.id
+        _ = lib.setTemplateIcon(id: running, key: "run")
+        lib.addReminder(templateId: base, name: "Book a taxi", when: "week")
+        lib.addReminder(templateId: running, name: "Charge the watch", when: "week")
+        lib.addReminder(templateId: rowing, name: "Charge the watch", when: "week")   // the same reminder, two templates
+        lib.addReminder(templateId: running, name: "Check the course", when: "daybefore")
+        var draft = newEvent(name: "Away", startDate: "2026-10-05", endDate: "2026-10-07")
+        draft.activities = [running, rowing]                                           // Running ticked first
+        let trip = lib.createTrip(draft)
+        XCTAssertEqual(trip.entries.filter { $0.name == "Charge the watch" }.count, 1, "one reminder, one line")
+        let from = lib.lineTemplates(tripId: trip.id)
+        let due = lib.dueReminders(tripId: trip.id, today: "2026-10-04")
+        XCTAssertEqual(due.map(\.name), ["Book a taxi", "Charge the watch", "Check the course"])
+        func of(_ name: String) -> [String]? { due.first { $0.name == name }.flatMap { from[$0.id] }?.map(\.name) }
+        XCTAssertEqual(of("Book a taxi"), ["Base"], "a reminder of the base template")
+        XCTAssertEqual(of("Charge the watch"), ["Running", "Rowing"], "a reminder on two templates does not name both, in the trip's order")
+        XCTAssertEqual(of("Check the course"), ["Running"])
+        let course = due.first { $0.name == "Check the course" }!
+        XCTAssertEqual(from[course.id].map { $0.map(Library.icon(of:)) }, [Optional("run")], "the icon is not read from the template")
+        // Sorted by Template, the reminders stand under the same templates.
+        let groups = lib.linesByTemplate(tripId: trip.id, lines: due)
+        XCTAssertEqual(groups.map(\.label), ["Base", "Running", "Rowing"])
+        XCTAssertEqual(groups.last?.entries.map(\.name), ["Charge the watch"])
+        // Taken off a template later, the trip keeps its line — and names only the template that still has it.
+        let mem = lib.reminders(templateId: rowing).first { $0.name == "Charge the watch" }!.memId!
+        XCTAssertTrue(lib.removeReminder(templateId: rowing, memId: mem))
+        let watch = due.first { $0.name == "Charge the watch" }!
+        XCTAssertEqual(lib.lineTemplates(tripId: trip.id)[watch.id]?.map(\.name), ["Running"])
+    }
+
     func testAStepSaysThingsAndRemindersApart() {
         let s = Library.PackingStep(phaseId: "week", label: "Week", task: false, date: "2026-10-01", left: 3, todo: 2)
         XCTAssertEqual(s.says, "Week: 3 to pack, 2 to do")

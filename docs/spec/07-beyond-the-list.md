@@ -974,10 +974,16 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
   less the step's lead days) is today or past — and not ticked: a tick circle, the name, "To do · <step>"
   (`trip-check-todo-<n>`). A press ticks the line, and it leaves the card. With only reminders, the card is in the
   trip's green, not a warning's colour; its count includes them.
+  **0.75** (his yes of 13 Oct 2026: he "could not tell which template each comes from"): at the right of each, the
+  icons of the templates it comes from — the trip lines' own `TemplateMarks` (spec 03, "A line" → "Where it comes
+  from"), small and violet, up to three else "+N", a template without an icon as its name's first word; VoiceOver
+  and the Mac's tooltip "From <names>"; id `trip-check-todo-<n>-from`; beside the button, not in it (spec 03,
+  Check before you go). The reminder's line in the trip's list has shown them since 0.74, before "To do".
 - **Home's countdown** says the step as before, now with things and reminders apart — "≥1 week ahead: 7 to pack,
   1 to do, now" (a Preparations step says all of it "to do") — and, when reminders are due, a green line
   "To do: Check the forecast · …" (accessibility value "<n> to do"). The packing notifications (Remind me to pack)
-  read the same words.
+  read the same words. That green line is ONE run of words, not reminder lines, so it carries no template icons
+  (0.75: checked and left so — the card opens the trip, where each reminder shows its template).
 
 ### Rules and edge cases
 
@@ -1017,17 +1023,30 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
 `PackingStep.todo` (reminders left on the step; `left` is things only) and its `says`; `NextTrip.left` (things only)
 and `NextTrip.due` (names); `dueReminders(tripId:today:)` — every step of the timeline (the After step too: its day is
 the start plus one), unticked, not set aside, in timeline then trip order; none for a trip without a start date.
+Where a reminder comes from is a thing's answer, unchanged (0.75, `Library.lineTemplates(tripId:)`, spec 03 "Sorting
+and grouping" → Template): a reminder is a catalogue item on its templates by memberships, its line carries
+`sourceListId` and `sourceItemId`, so it maps to the template it was made from and to every other trip template
+that has the same reminder; taken off a template later, the line names only the templates that still have it.
 The UI-test library `-uiTestingReminders` (`SampleLibrary.reminders()`): Hiking with "Check the forecast" (≥1 week
 ahead) and "Leave a route note" (Day before), its trip three days ahead.
 
 ### Tests
 
-Model `TemplateRemindersTests` (9): the web app's own kind of item; refused names; a new reminder's When; rename per
+Model `TemplateRemindersTests` (10): the web app's own kind of item; refused names; a new reminder's When; rename per
 template; order, When and remove; not among his things nor arranged; on a trip ticked but never packed, weighed or
-reviewed; due reminders; a step's words. Planted fault: `ownThings()` returning every item → red "Your things lists
-things only". UI (iPhone, light and dark): `testATemplateKeepsItsReminders` (planted: Add not adding → "the reminder
-was not added"), `testATripsRemindersShowWhenTheyAreDue` (planted: `dueReminders` empty → "the countdown does not
-name the reminder due"). Not covered by a UI test: Into's "To do" heading, Remove's "Keep it", the Mac (built, not
+reviewed; due reminders; a step's words; `testADueRemindersLineKnowsTheTemplatesItComesFrom` (0.75: Base's "Book a
+taxi" → Base; "Charge the watch" on Running and Rowing → one line, "Running, Rowing" in the trip's order; "Check the
+course" → Running with its icon "run"; Sorted by Template under Base, Running, Rowing; taken off Rowing → Running
+only). Planted faults: `ownThings()` returning every item → red "Your things lists things only"; `lineTemplates`
+skipping reminder lines → red "a reminder of the base template", "a reminder on two templates does not name both,
+in the trip's order". UI (iPhone, light and dark): `testATemplateKeepsItsReminders` (planted: Add not adding → "the
+reminder was not added"), `testATripsRemindersShowWhenTheyAreDue` (planted: `dueReminders` empty → "the countdown
+does not name the reminder due"; 0.75, soft failures: `trip-check-todo-0-from` says "Hiking", and after the tick
+`trip-line-7` — "Check the forecast" — names Hiking too; pictures `reminders-home`, `reminders-trip`,
+`reminders-trip-line`; planted: the card given no templates and the reminder line's icons taken out → red "the
+reminder due does not name its template: ''" and "the reminder's line does not name its template: ''"). The test
+reads a `TemplateMarks` by its id with `marksWords` (value, else label less "From "; an Other, Group, image or
+text), and a trip line's on the Mac from the line's own words as before (`fromWords`). Not covered by a UI test: Into's "To do" heading, Remove's "Keep it", the Mac (built, not
 run). The When drop-down on a reminder: `testAReminderWhenIsChangedInsideItsList` (0.73, part 13).
 
 ## 13. His lists changed inside their drop-downs
