@@ -598,7 +598,7 @@ click on any of them moves the page's focus there, as on the other fields.
 - **ONE line**: "Camp pouch · 3 inside", with a fold arrow beside its ⊘ showing what is inside, muted, each with
   Take out / Put back. Ticking the kit packs it.
 - With **Check before each trip**: open until packed, small ticks, "Tick what is inside first: 2 to go."; the
-  kit's own tick is refused until all inside are ticked (a section's tick-all and Tick everything too); the last
+  kit's own tick is refused until all inside are ticked (a section's tick-all too; Tick everything until 0.79); the last
   tick packs it; unticking one unpacks it.
 - **"1 missing: Lighter"** under the line while something is taken out.
 - What is worth saying about what is inside, for this trip, under the line ("Plasters runs out in 10 days").
@@ -939,7 +939,7 @@ What's new.
     packed.", "Nothing heard · 5 tapped"; Done; the trip "1/6 · 1 set aside". Pictures `voice-trip-button`,
     `voice-panel`, `voice-over`.
   - `testPackByVoiceSaysWhyItCannotStart` — refused: `voice-start-needs` names the microphone and no panel
-    opens; after Tick everything: "Everything on this trip is packed or set aside." and no panel.
+    opens; after every line is ticked (Tick everything until 0.79): "Everything on this trip is packed or set aside." and no panel.
   - `testPackByVoiceGoesOnceMoreOverWhatWasLeft` — heard later + six packed: "…6 of 7 packed. 1 left for later —
     once more?", the card says the question, Stop still there; Once more → "Once more. Bathroom cabinet.
     Toothbrush."; Packed → "That was everything. 7 of 7 packed.", "Packed 7 · set aside 0 · later 0", the trip 7/7.
@@ -1554,7 +1554,7 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
    own small record, so the iPhone and the Mac can tick two things at the same moment and both survive:
    `charged: true` on a line (its own thing charged); `kitCharged: [ids]` on a kit's line (the things inside it
    charged). Unticking removes the mark (an empty list is never stored). Ticking charged never ticks the line, and
-   ticking the line (packing it, Tick everything, a section's tick, the kit's checked ticks) never marks charged.
+   ticking the line (packing it, a section's tick, Tick everything until 0.79, the kit's checked ticks) never marks charged.
 5. **When the card shows** (`Library.chargeWindow(trip, today:)`): from the day BEFORE the start date through the
    END date (the end = the start when it is blank) — through the last day because he may charge again on site. A
    trip with no start date shows it whenever it has things to charge (there is no day to wait for). Never on a
@@ -1636,7 +1636,7 @@ flag puts nothing on To charge; `batteryThings` A–Z), `testToChargeListsEveryB
 ("Toothbrush in Wash bag", "Power bank in Camp pouch", "Headlamp" — the watch taken out is not there; a thing switched on
 after the trip was made shows; put back, the watch comes; a kit with a battery of its own first; set aside, a reminder
 from a rebuild and a line typed on the trip never), `testTheChargeTickIsApartFromPacking` (charging packs nothing;
-packing, Tick everything and Clear charge nothing; "2 of 3"; unticked, the keys go; only what is inside the kit now can be
+packing, a section's tick and Clear every tick (Tick everything until 0.79) charge nothing; "2 of 3"; unticked, the keys go; only what is inside the kit now can be
 marked), `testToChargeShowsFromTheDayBeforeTheTripThroughItsLastDay` (two days before no, the day before yes, the last
 day yes, the day after no; a one-day trip; no dates; reviewed; nothing with a battery),
 `testBatteriesAndChargeTicksAreStoredSyncedBackedUpRestoredAndKeptByARebuildButNeverSentOrStartedAgain` (records, a
@@ -1757,7 +1757,7 @@ Tests.
    Backed up and restored with the trip. A new choice replaces it; Just pause removes the key (`setBreak(until:
    nil)`). The web app's model sees an unknown key and keeps it (parity untouched, 211/211).
 6. **It goes when everything is packed.** The trip screen, seeing the trip become all packed (`allPacked` turning
-   true — a tick, a section's tick, Tick everything, Pack by voice, the other device), removes the key. Unticking a
+   true — a tick, a section's tick, Pack by voice, the other device; Tick everything until 0.79), removes the key. Unticking a
    line afterwards does NOT bring it back. And whatever the key says, no message is planned for a trip with nothing
    left (rule 9), so a trip packed on the other device while this one was closed stays quiet too.
 7. **The pill's words** (`TakeABreakButton.words`): "Take a break"; with a break still ahead "Back at 19:00" (today),
@@ -1875,7 +1875,7 @@ pill), `testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked` (This evening →
 Add to Calendar would hand over "Back to packing Weekend in the hills · <today> 19:00–19:30 · 1 of 7 packed · 6
 things left"; the pill "Back at 19:00"; `trip-message-break` "<today> 19:00 · Back to packing Weekend in the hills 6
 things left"; reopened, This evening still chosen; Tomorrow replaces it — "Back tomorrow 18:00", the message
-tomorrow 18:00; Just pause → "Paused…", "Take a break", no message; a break again, Tick everything → no message, and
+tomorrow 18:00; Just pause → "Paused…", "Take a break", no message; a break again, every line ticked (Tick everything until 0.79) → no message, and
 a line unticked → still "Take a break"), `testABreakIsOnlyWhileTheTripIsBeingPacked` (`-uiTestingLeaving -clockAt
 07:00:00`: In an hour → "You leave before then — pick an earlier time.", nothing kept; at 08:30 the trip is On site
 and has no pill), `testATripSaysWhenItMovesOn` (the sample trip: "<day 30> 08:00 · Have a good trip — Weekend in the
@@ -1937,6 +1937,7 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
 | 13 Oct 2026 | Food's third answer reads "Mix" (stored `mixed` unchanged), so the three fit on one line (0.78) | "Self-sufficient, Eating out & Mix — keep short so that it all fits on one line." |
 | 13 Oct 2026 | The Season pills carry the sun and the snowflake, as Travelling by carries its drawings — on Create new trip, Trip settings and Only on some trips; the More choices line stays words (0.78) | "same idea as Travelling by" |
 | 13 Oct 2026 | The Quick line names his always-packed templates and says the airport checks plainly: "Quick packs only what you tick — not <names>, no Plane or RV template. Plane still turns on the airport checks." (0.78) | He did not understand "Plane and RV still count", and "Always" alone is cryptic — he thinks of his short-trip template by its name |
+| 13 Oct 2026 | "Tick everything" leaves the trip screen (no button, no shortcut — the Mac had none; the model keeps `setAllChecked`); "Clear every tick" moves into Trip settings as a quiet row, last, only while something is ticked, still asking first — and Clear the ticks closes Trip settings without its other unsaved changes, as Start it does, which the question then says; a heading's round tick (a whole group ticked or unticked) and Clear every tick are offered back as **Undo** for 6 seconds, between the list and the add bar, one at a time, putting back exactly the ticks that press changed (a line changed since stays as he left it). Undo for Clear decided by the build: cheap, and the same bar (0.79) | "Two very risky buttons — in a stressful situation half way packed, pressed by mistake: catastrophe." Spec 03 "The heading's tick, its Undo, and Clear every tick". |
 
 ## Open questions
 

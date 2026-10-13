@@ -359,7 +359,7 @@
   "iphone": 18.9,
   "mac": 14.9
  },
- "testEverythingIsTickedAndClearedAtOnce": {
+ "testEveryTickIsClearedFromTripSettingsAndCanBeUndone": {
   "iphone": 32.2,
   "mac": 21.4
  },

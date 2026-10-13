@@ -52,7 +52,8 @@ list. Also the countdown card to the next trip, the This Device tiles, the three
 
 **[03 — Trips](03-trips.md).** The whole life of a trip. Create new trip (name, Full trip | Quick, dates,
 templates, context per workout, transport, season, food, laundry) and how its list is built from the templates; the Trips tab; the
-trip screen (ticking, "not this time", sorting and folding, adding a thing, Tick everything); Trip settings
+trip screen (ticking, "not this time", sorting and folding, adding a thing, a heading's tick and its Undo); Trip settings
+(Clear every tick since 0.79)
 and Start a new trip from this one; Before you go (the checks, the reminders due and To charge on one card, 0.77), the weather card and the Bags card (luggage scale,
 cabin, bag photos); On site, Pack to go home, the review and Refine, and the loop that joins them; Save as
 Excel, sharing and deleting a trip.

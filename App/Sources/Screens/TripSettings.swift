@@ -12,6 +12,8 @@ struct TripSettingsScreen: View {
     var rebuilt: (Library.TripRebuilt) -> Void = { _ in }
     /// A new trip was started from this one (the web app's "same list, fresh ticks").
     var startedAgain: (TripEvent) -> Void = { _ in }
+    /// Every tick was cleared (0.79): what changed, for the trip's Undo.
+    var cleared: (TicksChanged) -> Void = { _ in }
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var loaded = false
@@ -139,6 +141,15 @@ struct TripSettingsScreen: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Rectangle().fill(Theme.line).frame(height: 1).padding(.vertical, 8)
                     startAgain
+                    // Clear every tick (0.79, his decision of 13 Oct 2026): moved here from the foot
+                    // of the trip, where it could be pressed by mistake half way through packing — a
+                    // quiet row, last, only while something is ticked. It asks first; done, Trip
+                    // settings closes and the trip offers Undo.
+                    ClearTicksRow(tripId: tripId, unsaved: loaded && snapshot() != opened) { change in
+                        cleared(change)
+                        dismiss()
+                    }
+                    .environmentObject(model)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -348,6 +359,7 @@ struct TripSettingsDoor: View {
     let tripId: String
     var rebuilt: (Library.TripRebuilt) -> Void
     var startedAgain: (TripEvent) -> Void = { _ in }
+    var cleared: (TicksChanged) -> Void = { _ in }
     @EnvironmentObject var model: LibraryModel
     @State private var open = false
 
@@ -361,7 +373,8 @@ struct TripSettingsDoor: View {
         .accessibilityIdentifier("trip-settings")
         .accessibilityLabel("Trip settings")
         .sheet(isPresented: $open) {
-            TripSettingsScreen(tripId: tripId, rebuilt: rebuilt, startedAgain: startedAgain).environmentObject(model)
+            TripSettingsScreen(tripId: tripId, rebuilt: rebuilt, startedAgain: startedAgain, cleared: cleared)
+                .environmentObject(model)
         }
     }
 }

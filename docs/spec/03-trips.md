@@ -14,7 +14,8 @@ trip is made. This file covers the whole life of a trip:
 - **Pack** — the Trips tab (`EventsScreen`), the trip screen (`TripScreen`): ticking, "not this
   time", sorting When / Into / From where / Category / Section (Section and the Sorting drop-down since
   0.64), folding, Set place, adding a thing,
-  Tick everything / Clear every tick, Before you go (until 0.77 Check before you go and To charge), the weather card, the Bags card (luggage
+  a heading's tick and its Undo (0.79; Tick everything is gone and Clear every tick is in Trip settings since
+  0.79), Before you go (until 0.77 Check before you go and To charge), the weather card, the Bags card (luggage
   scale, cabin, photos), Trip settings, Start a new trip from this one, Save as Excel, Share, Delete —
   and, on the iPhone, Pack by voice (0.71, a test; spec 07 part 10).
 - **On site** — the On site page (bought, left, maintenance notes) and Pack to go home.
@@ -1020,7 +1021,8 @@ line — and that tick is ONE small record." Origins: 0.2 (tap to tick, ⊘ not 
 When/Where/Category), "Sorting" left of its buttons (0.19), Where → **Into** and the new **From where**
 (his words 2026-09-25, 0.20), folding (his ask 2026-09-26 "the list is extremely long", 0.23), Set place
 (0.25), Delete trip (0.24), Trip settings (0.32, a pen since 0.40), Tick everything / Clear every tick
-(0.36), Excel (0.35) and Share (0.38) side by side (his test D.22), Bought on site (0.52/0.56), On site
+(0.36 — Tick everything removed and Clear every tick moved into Trip settings in 0.79, his decision of 13 Oct
+2026), Excel (0.35) and Share (0.38) side by side (his test D.22), Bought on site (0.52/0.56), On site
 door (0.57), Sorting as ONE drop-down with a fifth sorting, **Section** (0.64 — his ask of 6 Oct 2026: he
 likes sections because "it gives a visual structure to the packing", and asked for drop-downs everywhere).
 
@@ -1126,16 +1128,24 @@ left, the choice beside it) are kept.
      every line of the section is set aside there is nothing to tick: the button is not drawn (an empty target
      of the same size keeps the heading still) — 0.62; until
      then it sat there switched off and faded, against his rule. A press sets EVERY packable line of the section to "ticked" — or, when
-     all were ticked, to "unticked" — in one `model.change`, one `setChecked` per line.
+     all were ticked, to "unticked" — in one `model.change`, one `setChecked` per line
+     (`Library.setChecked(_:tripId:entryIds:)` since 0.79), and the trip then offers **Undo** for what it
+     changed (the Undo bar, below; "The heading's tick, its Undo, and Clear every tick").
    - When not folded, its lines (see "A line" below).
-6. **Tick everything / Clear every tick** (`TickAllRow`) — own section.
-7. **Save as Excel** and **Share** side by side, equal width (ids `trip-excel`, `trip-share`) — own
-   sections.
+6. *(Until 0.79: **Tick everything / Clear every tick** (`TickAllRow`, ids `trip-tickall`, `trip-clearall`), 18 pt
+   under the list. Removed — his decision of 13 Oct 2026; see "The heading's tick, its Undo, and Clear every
+   tick". Nothing stands between the list and Save as Excel now.)*
+7. **Save as Excel** and **Share** side by side, equal width (ids `trip-excel`, `trip-share`), 12 pt under the
+   list — own sections.
 8. **Send to Obsidian** (`VaultCard`, only on a REVIEWED trip — `Library.isReviewed`; padding 16 sideways, 12 on
    top) — the whole width, in Save as Excel's style; see "The trip's page in his vault". At the top of the
    scroll area, as a card, from 0.70 until 0.73 (his ask, 12 Oct 2026: to the very bottom, like Save as Excel).
 9. **Delete trip** — small red button at the right, own section; still LAST (his rule for removing anything),
    so the only thing after Send to Obsidian.
+
+**Undo bar** (0.79, `TickUndoBar`): for 6 seconds after a heading's round tick or Clear every tick (in Trip
+settings), BETWEEN the scroll area and the add bar — a row of the screen, never over a line: the list is shorter
+while it shows. See "The heading's tick, its Undo, and Clear every tick".
 
 **Add bar** (fixed under the scroll area, padding h16 v10; `Theme.bg` behind it, transparent when all
 packed so the green reaches it):
@@ -1229,7 +1239,8 @@ smaller tick circles and less space between lines").
   state, so a lazy row never shows old ticks.
   **Ticking a kit:** without the check, as any line. With it, `Library.setChecked(true)` is REFUSED while
   something inside is not ticked (`kitAllowsTick`) — the tap does nothing, and "2 to go" is already under it;
-  this holds for a section's tick-all and Tick everything too. `setKitContentTicked`: the last one ticked ticks
+  this holds for a section's tick-all too (and held for Tick everything until 0.79) — a refused kit is no change,
+  so its Undo leaves it alone. `setKitContentTicked`: the last one ticked ticks
   the line (and forgets the list); unticking one unticks the line, the rest stay ticked. Unticking the line
   itself starts its ticks over. Taken out = not asked for; with nothing left inside, the kit ticks as any line.
   A set-aside kit's things do not tick. **Weight:** the Bags card and a bag's trips add each kit line as its own
@@ -1370,7 +1381,7 @@ same happens nowhere else (a trip opened any other way shows every line).
   place's lines.
 - Nothing else is on the page while it shows one place, so its lines are what he sees first (his plan: "the trip
   opens showing only what to take from the garage"): no Before you go, weather, Bags card or On site door
-  above; no Tick everything, Excel, Share or Delete trip below; no "Add a thing" bar (a line typed there has no
+  above; no Excel, Share or Delete trip below (no Tick everything either, until 0.79); no "Add a thing" bar (a line typed there has no
   place and would vanish). When nothing on the trip is kept there: "Nothing on this trip is kept here. Tap the
   place above to see every line." (Subheadline muted; id `trip-place-none`).
 - The header, the loop strip and the progress ("done/total" of the WHOLE trip) stay.
@@ -1485,32 +1496,92 @@ a place opened by its printed code starts the walk there by itself (switch `voic
 
 ---
 
-## Tick everything / Clear every tick (`TickAll.swift`, `TripBulk.swift`)
+## The heading's tick, its Undo, and Clear every tick (`TickAll.swift`, `TripBulk.swift`)
 
-**Purpose and origin.** The web app's "Mark everything packed" / "Clear every tick" (gap list
-2026-09-27, 0.36). "Ticking all needs no asking — it is what he is there to do; clearing asks first,
-as the web app does, because it throws away the packing so far."
+**Purpose and origin.** 0.36 brought the web app's "Mark everything packed" / "Clear every tick" (gap list
+2026-09-27) to the foot of the trip as two big buttons, **Tick everything** and **Clear every tick**. **0.79 — his
+decision of 13 Oct 2026:** they were "two very risky buttons — in a stressful situation half way packed, pressed by
+mistake: catastrophe". So:
+1. **Tick everything is gone** from the trip — no button, no shortcut (the Mac never had one). `Library.setAllChecked`
+   stays in the model (its tests and the Batteries tests use it). Pack to go home keeps its own Tick everything
+   (`wayhome-tickall`, a different screen; not part of this decision).
+2. **Clear every tick is in Trip settings**, a quiet row last on the sheet, only while something is ticked; it still
+   asks first.
+3. **Undo** after a heading's round tick — which ticks (or unticks) a whole group in one press — and after Clear every
+   tick: for 6 seconds the trip offers to put back exactly the ticks that press changed.
 
-### What is on screen (only when the trip has packable lines)
-- **Tick everything** (only while something is unticked): green filled, a drawn tick 22 pt + "Tick
-  everything" (16 bold), under it "N still unticked" (13 semibold, 85 % opacity), white, min height 52,
-  corner 12; id `trip-tickall`, value "N".
-- **Clear every tick** (only while something is ticked): 16 bold ink, 1.4 pt `Theme.line` outline, min
-  height 52; id `trip-clearall`. The two share the line equally.
-- Asking: a card with a red border: "Clear all N tick(s)?" (16 heavy), "The list stays as it is. Only
-  the ticks go." (14 medium muted), **Keep them** (16 bold ink, id `trip-clearall-no`) and **Clear the
-  ticks** (red capsule, white 16 heavy, id `trip-clearall-yes`).
+### The heading's round tick
+As described under "The list" (id `trip-group-<g>-all`): a press ticks every packable line of the group, or — when
+all are ticked — unticks them. Since 0.79 it is `Library.setChecked(on, tripId:, entryIds: <the group's lines not set
+aside>)`, which returns a `TicksChanged`, and the trip shows the Undo bar for it (nothing changed — e.g. only a kit
+still waiting for what is inside — no bar).
 
-### Behaviour
-`Library.setAllChecked(checked, tripId:)`: every line NOT set aside whose tick differs is set, one
-`setChecked` (one record) per line; returns how many changed. Set-aside lines are untouched both ways
-(setting a line aside takes its tick, so none is ticked underneath since 0.62; one from older data
-counts nowhere — see Counting).
+### The Undo bar (`TickUndoBar`, held by the trip screen as `@State undo: TickUndo?`)
+- **Where:** a row of the trip screen BETWEEN the scroll area and the add bar (padding 16 sideways, 8 on top; with a
+  place's lines shown, where there is no add bar, 10 under it too) — never over a line: the list is shorter while it
+  shows. The same place as the to-do list's Undo (`LineUndoBar`, between its list and its add field).
+- **Look:** a card (`Theme.card`, corner 12, 1 pt `Theme.line` border, padding 14 × 8): the words (Subheadline
+  semibold ink, up to two lines, id `trip-undo-said`) and at the right **Undo** (Subheadline semibold green, 1.4 pt
+  green capsule outline, min height `Metrics.chip`; id `trip-undo`, its value the words).
+- **The words** (`TickUndo`): a heading's tick "Ticked N in <heading>" / "Unticked N in <heading>" — N the lines it
+  CHANGED; Clear every tick "Cleared N ticks" ("Cleared 1 tick").
+- **6 seconds**, then it goes by itself (`.task(id:)`: a new press is a new id with its own 6 seconds).
+- **One at a time:** a new press — another heading, the same heading again, Clear every tick — replaces it; the
+  older one can no longer be undone.
+- **Undo** writes back what the press changed (`Library.undo`, one `model.change`) and the bar goes.
+- Not shown for another trip: Start a new trip from this one changes the trip on the screen, and an Undo held for
+  the old one is not offered there.
+
+### Clear every tick in Trip settings (`ClearTicksRow`)
+- **Where:** the last thing in Trip settings' scroll area, under Start a new trip from this one (14 pt above it); only
+  while something is ticked (`progress().done > 0`, set-aside lines not counted).
+- **Closed:** a quiet row — at the left "N of M ticked" (Footnote mono-digit muted, id `tripset-clearall-count`), at
+  the right a small red **Clear every tick** (Footnote semibold red, a 1 pt red capsule outline at 60 %, min height 30
+  — `SmallDeleteButton`'s look; id `tripset-clearall`, value "N"). Never a big button.
+- **Asking** (a card with a red border, as before): "Clear all N tick(s)?" (Callout semibold ink), "The list stays as
+  it is. Only the ticks go." (Footnote muted); when other answers on Trip settings are changed and not saved, also
+  "Your other changes here are not saved." (Footnote semibold red, id `tripset-clearall-unsaved`); **Keep them**
+  (Callout semibold ink, id `tripset-clearall-no`) closes the question; **Clear the ticks** (red capsule, white
+  Callout semibold, id `tripset-clearall-yes`).
+- **Clear the ticks** clears at once (`Library.setEveryTick(false, tripId:)`), hands what it changed to the trip
+  (`TripSettingsDoor.cleared`) and closes Trip settings — WITHOUT saving any other change on the sheet, as Start it
+  does (hence the red line). The trip then shows "Cleared N ticks" with Undo. (Decided by the build: the Undo is the
+  trip's, the same bar as a heading's — it is cheap, and a Cancel left on the sheet after the ticks were already
+  cleared would read as if it could take the clear back.)
+
+### Behaviour (model, `TripBulk.swift`)
+- `setChecked(_ checked:, tripId:, entryIds:) -> TicksChanged`: one `setChecked` (one small write) per line, in order;
+  a line already so is skipped, a line set aside is never ticked, a kit checked before each trip refuses a tick while
+  something inside is unticked (`kitAllowsTick`) — none of these is in the result. `TicksChanged` = the trip, what
+  the lines were set to, and per CHANGED line its id and its pocket key before (`POCKET_KEY`: a tick brings the
+  usual pocket, `prechoosePocket`).
+- `setEveryTick(_:tripId:)`: the same over every line not set aside whose tick differs (what Clear every tick
+  does). `setAllChecked(_:tripId:) -> Int` is its count — unchanged for its callers, except that a refused kit is no
+  longer counted.
+- `undo(_ change:) -> Int`: each changed line still standing as the press left it goes back — its tick and its pocket
+  WRITTEN back, not ticked again: a kit checked before each trip that Clear unpacked has lost what was ticked inside
+  it (unticking a kit starts it over), so `setChecked(true)` would refuse it; written back it is packed again, and a
+  packed kit counts all inside as ticked (it keeps no list). A line changed again since (by hand, on the other
+  device) is left as he left it; one set aside since is not ticked underneath; one gone (a rebuild) is skipped.
+  Returns how many went back. Each line is its own record, as a tick by hand is.
+- Set-aside lines are untouched both ways (setting a line aside takes its tick, so none is ticked underneath since
+  0.62; one from older data counts nowhere — see Counting).
 
 ### Tests
-UI `testEverythingIsTickedAndClearedAtOnce` (value "6" after one tick, 7/7, Tick everything disappears,
-Clear asks, Keep them keeps, Clear the ticks → 0/7, Clear disappears). Model
-`TripBulkTests.testEverythingIsTickedAndClearedButWhatIsSetAside`.
+UI `testEveryTickIsClearedFromTripSettingsAndCanBeUndone` (the foot has no `trip-tickall` / `trip-clearall`; nothing
+ticked → no `tripset-clearall`; two ticked → its value "2", below Start a new trip; it asks, Keep them keeps; Clear
+the ticks closes Trip settings, 0/7, "Cleared 2 ticks", Undo → 2/7 with the same two; a changed name → the red
+line), `testAHeadingsTickIsTakenBackByUndo` (sorted From where: the Passport by hand, the heading ticks the Phone
+charger, "Ticked 1 in Chest of drawers", the bar above the add field, Undo → 1/7 with the Passport still ticked; the
+Garage then the Hall closet, Undo takes back the Hall closet only; "Unticked 2 in Garage", gone by itself, the ticks
+unchanged). Both seen red first with planted faults (no bar after a heading's tick; the row with nothing ticked; a
+bar that never goes; no Undo after Clear; the Passport counted as changed; Tick everything back on the foot; a newer
+press not replacing the older; no unsaved-line). Until 0.79: `testEverythingIsTickedAndClearedAtOnce`. The tests that
+needed everything ticked (Pack by voice with nothing left, the way home's photos, the door check, both Take a break
+tests) tick every line by hand (`tickEveryLine`). Model `TripBulkTests`:
+`testEverythingIsTickedAndClearedButWhatIsSetAside`, `testAHeadingsTickIsUndoneLineForLine`,
+`testClearingEveryTickIsUndoneButNotWhatHeChangedSince`, `testUndoingAClearPacksAKitAgainWithWhatWasInside`,
+`testUndoTakesAwayThePocketTheTickChose`.
 
 ---
 
@@ -1528,7 +1599,7 @@ and nothing folds (below).
 beside the count until then) opens it as a sheet
 (`TripSettingsDoor` owns the sheet because the trip screen already has one for the review). Left with
 **Cancel** (no change; **Escape** too, ⌘. on an iPhone keyboard — 0.62), **Save changes** (when nothing
-is missing), **Start it** (Start again), or a swipe down on the iPhone (= Cancel) — but only while
+is missing), **Start it** (Start again), **Clear the ticks** (0.79, Clear every tick — below), or a swipe down on the iPhone (= Cancel) — but only while
 nothing has been changed: once anything differs from what the sheet opened with, the swipe no longer
 closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be pressed. Screen id
 `tripset-screen`; Mac minimum 540 × 600.
@@ -1571,6 +1642,8 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   same three.
 - "Save rebuilds the list: what you ticked, added yourself or were sent stays; new things arrive; things
   no longer asked for go." (14 muted), a divider, and **Start a new trip from this one** (next section).
+- Last, only while something is ticked (0.79): **Clear every tick** — "N of M ticked" and a small red button,
+  asking first (`ClearTicksRow`, ids `tripset-clearall*`; "The heading's tick, its Undo, and Clear every tick").
 - Bottom bar (top hairline, `Theme.bg`): the still-needed line (15 bold red, centred also when it wraps —
   0.73, id `tripset-needs`) and
   **Save changes** (18 bold white on green, min height 52, id `tripset-save`), never disabled.
@@ -1668,7 +1741,7 @@ template this screen does not show being kept on Save.
 ticks" (0.33): "A preset only remembers the answers on Create; this copies the LIST as it finally
 ended up, after a week of corrections."
 
-### What is on screen (at the bottom of Trip settings)
+### What is on screen (at the bottom of Trip settings — only Clear every tick comes after it, since 0.79)
 - Closed: an outlined green button (1.4 pt, corner 12, min height 56): "Start a new trip from this one"
   (17 bold green) / "Same list, nothing ticked" (14 muted); id `tripset-again`.
 - Open: a card with a green border: "Name the new trip" (16 heavy); a field prefilled with
@@ -2979,7 +3052,8 @@ for the first trip with that time.
 ### Tests
 UI `testTheDoorCheckNamesWhatIsStillUnticked` (-uiTesting -showDoorChecks: none without a time; Trip settings →
 Add a time → "Check 07:15" → Save → `door-check-out` with 07:15, "Leaving for Weekend in the hills?" and "Still
-unticked: Passport, Phone charger, Toothbrush, Headlamp, Hiking boots and 2 more"; Tick everything → none — red
+unticked: Passport, Phone charger, Toothbrush, Headlamp, Hiking boots and 2 more"; every line ticked (by Tick
+everything until 0.79) → none — red
 with ticked lines counted: "a door check with everything ticked"), `testATappedDoorCheckOpensTheTripOnWhatIsLeft`
 (out: the ticked Passport hidden, Show all brings it back; home: Pack to go home on what is left — red with the
 focus not applied: "the trip did not open on just what is left"), `testCreateNewTripTakesTheTimeHeLeaves` (above),
