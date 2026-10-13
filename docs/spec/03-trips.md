@@ -576,16 +576,25 @@ web app's "Filtering" and "Total List generation".
 3. **Trip**: every `role == "base"` template, then every `role == "transport"` template whose
    `transport` equals the trip's transport, then the ticked templates.
 3a. **I leave at** (0.69, the door check; `LeaveTimes(id: "trip-leave")` in `Screens/Pockets.swift`) — only
-   while the trip has dates (a time on a day needs the day). A heading "I leave at" (Subheadline semibold blue,
-   id `trip-leave-title`), then a `Grid` of two rows so the times line up: **First day** and **Last day**
+   while the trip has dates (a time on a day needs the day). **One framed block** (0.75, his yes of 13 Oct 2026:
+   so he sees which lines belong to that function): a rounded frame (corner 12, as the app's cards and wide
+   buttons; padding 12) with a 1.5-pt border in the screen's tint (blue here, green in Trip settings) over a very
+   light fill of it (6 %), id `trip-leave-frame` (an accessibility container: everything below is inside it and
+   keeps its own id). Its header row: a small hand-drawn **door** (`DoorMark`, a door in its frame on a floor
+   line with a knob — the app's own stroked drawing on the 24-grid, 1.8 pt, never a stock symbol; `Metrics.glyph`
+   square, in the tint, hidden from VoiceOver), the heading "I leave at" (Subheadline semibold blue,
+   id `trip-leave-title`) and, pushed to the right, **"the door check"** (Footnote muted, id `trip-leave-what`) —
+   what the block is for. Then a `Grid` of two rows so the times line up: **First day** and **Last day**
    (Subheadline ink). A row with no time: **Add a time** (Footnote semibold blue capsule outline,
    `Metrics.chip` tall, id `trip-leave-out-add` / `trip-leave-home-add`) — it sets 07:30 (first day) or 10:00
    (last day) and, on the iPhone, asks the system's notification question once (`PackingReminders.askToShow`).
    A row with a time: the compact system time picker (id `…-time`), **"Check 07:15"** (Footnote mono muted —
    the time minus 15 minutes; id `…-check`) and a small quiet ✕ (drawn, muted, `Metrics.glyph` in a
-   `Metrics.compact` square, id `…-remove`, label "Remove the time") that takes the time away. Under the rows
-   (Footnote muted, id `trip-leave-note`): "Optional. 15 minutes before, the iPhone names what is still unticked
-   — on the last day, what is not in a bag yet." (Mac: "…your iPhone names…"). On the iPhone, with a time set
+   `Metrics.compact` square, id `…-remove`, label "Remove the time") that takes the time away. Under the rows a
+   hairline (1 pt, `Theme.line`), then (Footnote muted, id `trip-leave-note`): "Optional. 15 minutes before, the
+   iPhone names what is still unticked — on the last day, what is not in a bag yet. Before this time the trip is
+   still at Pack." (Mac: "…your iPhone names…"; the last sentence since 0.75 — the first day's time is when the
+   trip turns to On site, "When a trip sets off" under The loop). On the iPhone, with a time set
    and the device not allowing the app to notify him: **"This device does not allow the app to remind you. Allow
    it in the device's Settings, under Notifications."** (Subheadline semibold red, id `trip-leave-refused`) —
    looked up whenever a time changes (`PackingReminders.permission`). Created with the trip; reset after Create.
@@ -1393,10 +1402,14 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   its grid CLOSED: field id `tripset-dates-field` (value "No dates" for an undated trip), grid ids `range-*`.
   **Clear dates** (`range-clear`) in the grid is how a trip's dates are taken away now — the switch was the
   only way before, so it is kept as a small action rather than lost.
-- **I leave at** (0.69), only while the trip has dates: as on Create new trip ("I leave at"), GREEN, ids
-  `tripset-leave-*` (`tripset-leave-out-add`, `tripset-leave-out-check`, `tripset-leave-refused`…). Loaded from
+- **I leave at** (0.69), only while the trip has dates: as on Create new trip ("I leave at") — the same framed
+  block since 0.75, door, "the door check", hairline and note — GREEN (border, light fill, door, heading), ids
+  `tripset-leave-*` (`tripset-leave-frame`, `tripset-leave-what`, `tripset-leave-out-add`,
+  `tripset-leave-out-check`, `tripset-leave-note`, `tripset-leave-refused`…). Loaded from
   `extra.leaveAt` / `extra.leaveHomeAt`; part of the sheet's snapshot (a changed time stops the swipe from
-  closing it); Save writes them with `Library.setLeaveTime` inside `changeTrip` ("" takes one away).
+  closing it); Save writes them with `Library.setLeaveTime` inside `changeTrip` ("" takes one away). A trip open
+  behind the sheet takes a new first-day time at once: its step and On site door follow it (The loop, "Turning
+  while the trip is open").
 - The template pill groups (ids `tripset-activity-<n>`, same numbering as Create new trip, "OTHER
   TEMPLATES" last; heading id `tripset-activity-title`), Context per workout (`WorkoutContexts`, 0.67:
   `tripset-context-title`, a line per ticked workout `tripset-context-<n>-name` with its pills
@@ -1856,16 +1869,64 @@ performing, packing, and later on reviewing, and then refining and so on." On si
 marks on the strip (his F.7, 0.41). The round arrow after Refine removed (it read as a reload button,
 0.40).
 
-### The five steps and when a trip stands at each — `Library.loopStep(tripId:today:)`
+### The five steps and when a trip stands at each — `Library.loopStep(tripId:today:time:)`
 Checked in this order:
 1. no such trip → **Plan**;
 2. `status == "done"` or `reviewedAt` set → **Refine**;
 3. its end (end date, else start) is before today → **Review**;
 4. no lines → **Plan**;
-5. a valid start date ≤ today → **On site**; any trip with something bought on site → **On site**,
-   whatever its dates say (0.62: a dated trip still ahead stayed at Pack while its On site door showed;
-   the door and the loop now go by one rule);
-6. otherwise → **Pack** (ticked or not, until it begins).
+5. the trip has **set off** (`Library.hasSetOff`, below — on its first day only from the time he leaves, 0.75)
+   → **On site**; any trip with something bought on site → **On site**, whatever its dates or the time say
+   (0.62: a dated trip still ahead stayed at Pack while its On site door showed; the door and the loop now go
+   by one rule);
+6. otherwise → **Pack** (ticked or not, until it sets off).
+
+### When a trip sets off — the time he leaves (0.75, `Library.hasSetOff(trip, today:time:)`)
+
+His report (13 Oct 2026): at 07:30 on the first day, with "I leave at 08:00", the trip already stood at On
+site — until 0.75 the loop went by the date alone. Now "now" is a day AND a time of day (this device's local
+clock), and a trip has set off:
+- **before its first day**: no; **on a later day**: yes (also after the trip — the On site door stays);
+- **on its first day**: from the time he leaves on the first day (`extra.leaveAt`, "HH:mm", read with
+  `Library.leaveTime`), the minute itself included — at 08:00 with "08:00" it has set off; with no time set,
+  from the start of the day (as before 0.75);
+- **without a valid start date**: never by the clock (something bought on site still says he is there).
+
+The model takes now as `today` ("YYYY-MM-DD") and `time` ("HH:mm"). `time` defaults to `END_OF_DAY` ("23:59"),
+so a caller that gives only the day sees what the loop always said (on the first day: set off); a time that is
+not one (`Library.cleanTime` refuses it) counts as the end of the day too. `loopStep` and `onSiteBegun` both
+take `time` with that default; the trip screen passes its clock's.
+
+**Which places go by the time, and which by the date** (decided one by one, 0.75):
+
+| Place | Goes by | Why |
+|---|---|---|
+| The loop strip on a trip (`LoopDoor`, `loopStep`) and the picture it opens | the time | it says "On site" |
+| The On site door on the trip (`onSiteBegun`) | the time | it is On site; the door and the loop keep one rule (0.62) |
+| The Trips tab's piles (`tripWhen`): **Now** | the date | the trip IS today: on its first day it is in Now all day, before and after he leaves — "Now" is not "On site" |
+| A trip row's when-line ("Today", "in 3 days") | the date | it counts days |
+| Home's countdown (`nextTrip`) and "Open my next trip" | the date | it counts to the day: on the first day it says Today all day — the quickest way into the trip on the day he travels |
+| Packing reminders (`reminderPlan`) and reminders due (`dueReminders`) | the date | a step falls due on a day |
+| A place's code (`placeVisit`) | the date | a trip starting today is still being packed; a code is scanned at home |
+| Where is my …? (`tripUnderWay`: Search's where card, Siri) | the date | on the morning he leaves, the trip's lines say where he has just packed a thing — what he asks then |
+| The door check (`doorChecks`) | the time, already | the way-out check comes 15 minutes before the time he leaves, while the trip is still at Pack; unchanged |
+| The weather card ("in reach until its last day") | the date | a forecast is by day |
+| Pack by voice | neither | it walks the list, whatever the day |
+
+**Turning while the trip is open.** The trip screen reads the step and the door from a clock it keeps
+(`TripScreen.clock`, read when the trip opens). It wakes itself at the next moment the step turns by the clock
+alone — `Library.clockTurns(trip)`: the moment it sets off ("<first day> <time he leaves>", else "<first day>
+00:00") and the day after its last at 00:00 (→ Review); for a reviewed or undated trip none — the first one
+still ahead of the clock: ONE sleeping task (`.task(id:)` on that moment, `Task.sleep` on the continuous clock,
+so a device that slept past it wakes it at once), then the clock is read again and the next moment taken. The
+clock is also read again whenever the app comes back to the front (`scenePhase` → active). A new time saved in
+Trip settings moves the wake to the new moment; a moment already passed wakes it at once. So a trip left open
+at 07:59 stands at On site, with its On site door, at 08:00. Nothing else on the screen changes with it.
+
+**For the UI tests** (`-clockAt HH:mm:ss`, only under a `-uiTesting…` mode): the app's clock (`Today.now`) is
+today at that time when the app opened and runs on from there; `Today.local`, `Today.time` and the trip screen's
+clock read it. `-uiTestingLeaving`: the sample trip starts today, ends in two days, "I leave at" 08:00 on the
+first day.
 
 | Step | rawValue | Name | About | Tab mark | Short words | Explained |
 |---|---|---|---|---|---|---|
@@ -1896,11 +1957,25 @@ column) with its explanation (16), then "Review looks back at one trip. Refine u
 make your templates better." (16 bold).
 
 ### Tests
-Model `LoopTests` (3: every case above incl. a one-day trip, empty trips, undated; bought on site
-begins a trip, dated or not; names/order/aboutOneTrip). UI `testTheLoopShowsWhereATripStands` (five
+Model `LoopTests` (5: every case above incl. a one-day trip, empty trips, undated; bought on site
+begins a trip, dated or not; names/order/aboutOneTrip; and 0.75's
+`testOnItsFirstDayATripIsOnSiteOnlyFromTheTimeHeLeaves` — 07:30/07:59 Pack and 08:00 On site with "I leave at
+08:00", the door alike, the day before and the second day, just after midnight with 00:10, no time = from the
+day, the day alone or an unreadable time = the end of it, bought on site at 07:30 = On site, undated never;
+`testATripTurnsByTheClockAtTheMomentsItSays` — the set-off and Review moments with and without a time, a
+one-day trip, none undated or reviewed, and the step really turning at each). Red with the date alone
+planted in `hasSetOff`: "XCTAssertEqual failed: ("onSite") is not equal to ("pack") - 07:30 on the first day,
+leaving at 08:00"; with the minute itself excluded: "("pack") is not equal to ("onSite") - the minute he leaves
+is not On site"; with the turn at 00:00 whatever the time: "… - the time he leaves is not the turn".
+UI `testTheLoopShowsWhereATripStands` (five
 steps, labels with tabs, no "You are here" in the guide, trip at Pack or Review, the picture marks it,
 review at Review, after saving the review the trip is at Refine, Refine at Refine),
-`testATripUnderWayStandsAtOnSite` (strip fits the screen width).
+`testATripUnderWayStandsAtOnSite` (strip fits the screen width), `testATripIsOnSiteOnlyFromTheTimeHeLeaves`
+(0.75, `-uiTestingLeaving -clockAt 07:59:30`: the trip leaving today at 08:00 is at Pack with no `trip-onsite`
+— checked only when the trip opened within 25 s of launch, so a slow runner cannot make it lie — and, left
+open, at On site with its door once 08:00 has passed, within 60 s; about 40 s. Red with the step read by the
+day alone: "XCTAssertEqual failed: ("On site") is not equal to ("Pack") - at 07:59, leaving at 08:00, the trip
+is at 'On site'"; with the wake taken out: "08:00 passed and the open trip is at 'Pack'").
 
 ---
 
@@ -1913,10 +1988,12 @@ Pack to go home. Nothing new is stored on the trip; a maintenance note ALSO land
 for Care.
 
 **How it is reached and left.** The **On site door** on the trip screen (after the Bags card): shown
-when `onSiteBegun` — the trip has a valid start date and today ≥ start (it then stays for good, also
-after the trip), OR any line is bought on site, whatever the dates say: buying on site says he is there.
-The loop's On site step goes by the same rule since 0.62 (a dated trip still ahead with something bought
-on site showed this door while the loop said Pack). The door: "On site" (17 heavy) over the summary (14
+when `onSiteBegun(tripId:today:time:)` — the trip has set off (`hasSetOff`, "When a trip sets off" above: a
+valid start date, today after it, or on the first day from the time he leaves — since 0.75; until then from the
+day alone) and it then stays for good, also after the trip — OR any line is bought on site, whatever the dates
+or the time say: buying on site says he is there. The loop's On site step goes by the same rule since 0.62 (a
+dated trip still ahead with something bought on site showed this door while the loop said Pack), and both read
+the trip screen's one clock, so they turn together while the trip is open. The door: "On site" (17 heavy) over the summary (14
 medium mono muted, one line, scales to 0.85) and a chevron; card with a 1.2 pt green border, min height
 58; id `trip-onsite`, accessibility value = the summary. It opens the page as a sheet; **Done** (filled
 green, id `onsite-done`) closes it. Screen id `onsite-screen`; Mac minimum 520 × 640.
@@ -2511,7 +2588,10 @@ what is still unticked … A tap opens the trip on just those lines. On the last
 the place."
 
 **Where it is set.** "I leave at" on Create new trip and in Trip settings (above), stored as `leaveAt` /
-`leaveHomeAt` ("HH:mm"; `Library.cleanTime` takes "7:30", "0730"; anything else is refused).
+`leaveHomeAt` ("HH:mm"; `Library.cleanTime` takes "7:30", "0730"; anything else is refused). Since 0.75 the
+first day's time does one more thing: it is when the trip sets off — before it the trip is still at Pack, from it
+On site, with its On site door (The loop, "When a trip sets off"). So the way-out check, 15 minutes before, always
+comes while the trip is at Pack. The checks themselves are unchanged (they already went by the time).
 
 **What is said, and when** — `Library.doorChecks(now: "yyyy-MM-dd HH:mm")` (this device's clock), for every trip
 not reviewed:
@@ -2553,7 +2633,15 @@ with ticked lines counted: "a door check with everything ticked"), `testATappedD
 (out: the ticked Passport hidden, Show all brings it back; home: Pack to go home on what is left — red with the
 focus not applied: "the trip did not open on just what is left"), `testCreateNewTripTakesTheTimeHeLeaves` (above),
 `testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt` (-pretendRemindersBlocked: no line before a time, the red line
-after Add a time — red with the line switched off: "nothing says the device does not allow the check"). Model
+after Add a time — red with the line switched off: "nothing says the device does not allow the check").
+`testILeaveAtIsOneFramedBlock` (0.75: on Create new trip, before and after Add a time, and in Trip settings —
+`<id>-frame` is there and the heading, "the door check", the first day's Add a time or check, the last day's
+Add a time and the note all lie inside its rectangle; "the door check" says so; the note ends "Before this time
+the trip is still at Pack." Red with the frame's id taken away: "no frame round I leave at (trip-leave-frame)";
+with the frame round the header and times only: "trip-leave-note at (30.0, 898.3, 337.3, 51.7) is outside the
+frame (29.25, 766.6, 343.5, 115.5)". A first plant, the note moved by `.offset(y: 300)`, left it green: an
+offset only draws the note elsewhere, its accessibility frame stays in the block — the plant was in the wrong
+place, the test was right). Model
 `DoorCheckTests` (6: times kept, synced and backed up; 15 minutes before, set-aside and ticked lines left out,
 nothing to say = none; five names then "and 3 more"; midnight; the way home; no time no check; reviewed or
 deleted = none). **Not covered:** the real scheduling and a real tap (the system's), the Mac's "your iPhone" line.
@@ -2584,7 +2672,8 @@ from your things" (his tests H.9, H.3, 0.42). Templates spec. Tests `TemplatePic
 
 ## Test index for this area
 
-**UI (UITests/AMSPackingUITests.swift):** (0.69) testTickingALineOffersItsBagsPockets, testPackToGoHomeKeepsItsPockets,
+**UI (UITests/AMSPackingUITests.swift):** (0.75) testILeaveAtIsOneFramedBlock, testATripIsOnSiteOnlyFromTheTimeHeLeaves;
+(0.69) testTickingALineOffersItsBagsPockets, testPackToGoHomeKeepsItsPockets,
 testSearchShowsWhereAThingIsOnTheTripUnderWay, testTheDoorCheckNamesWhatIsStillUnticked,
 testATappedDoorCheckOpensTheTripOnWhatIsLeft, testCreateNewTripTakesTheTimeHeLeaves,
 testTheDoorCheckSaysWhenTheDeviceDoesNotAllowIt; testATickCountsAndStays, testHomeBuildsATrip,
@@ -2730,3 +2819,9 @@ pins · [idea] a gap worth deciding on.
     list.
 32. [bug] **The review's "No template" cannot be chosen.** Resolved in 0.62: nothing picked and No template
     are two different values now; its pill lights and the thing goes on no template.
+33. [bug] **On site before he has left.** His report (13 Oct 2026): at 07:30 on the first day, with "I leave at
+    08:00", the trip already said On site — the loop and the On site door went by the date alone. Resolved in
+    0.75: on the first day a trip with a time to leave is On site from that time (`hasSetOff`; The loop, "When a
+    trip sets off"), the trip screen turns by itself when the time passes, and every other place that asks
+    "is it today / under way" was decided one by one (the table there). Something bought on site is still On
+    site at any time.

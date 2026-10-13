@@ -142,6 +142,24 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with its trip leaving today (`-uiTestingLeaving`, 0.75): it starts
+    /// today and ends in two days, and "I leave at" says 08:00 on the first day — so with the
+    /// tests' clock (`-clockAt`) before 08:00 it is still at Pack, and from 08:00 On site.
+    static func leaving() -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Today.now)!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if !lib.trips.isEmpty {
+            lib.trips[0].startDate = day(0)
+            lib.trips[0].endDate = day(2)
+            _ = Library.setLeaveTime(&lib.trips[0], "08:00", home: false)
+        }
+        return lib
+    }
+
     /// The sample library for a place's code (`-uiTestingPlaces <when>`, 0.69): the
     /// Garage's code is G4R (as if its label were printed), and its trip is moved:
     /// "soon" = it starts in 2 days, inside the packing week, so a code opens it on that
