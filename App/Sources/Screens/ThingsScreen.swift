@@ -11,6 +11,8 @@ struct ThingsScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var noListOnly = false
+    /// Only the things with a battery (0.75, spec 07 part 15): the things to charge, at a glance.
+    @State private var batteryOnly = false
     @State private var newName = ""
     /// What New was missing, said under the field (never a grey button).
     @State private var newNeeds = ""
@@ -26,10 +28,11 @@ struct ThingsScreen: View {
     var body: some View {
         let all = model.library.thingRows()
         let homeless = all.filter { $0.templates.isEmpty }.count
+        let batteries = all.filter { Library.hasBattery($0.item) }.count
         let q = normName(query)
         // Its notes count too (0.69): its own Notes and the notes its templates keep for it.
         let hits = model.library.noteHits(query)
-        let shown = all.filter { (!noListOnly || $0.templates.isEmpty)
+        let shown = all.filter { (!noListOnly || $0.templates.isEmpty) && (!batteryOnly || Library.hasBattery($0.item))
             && (q.isEmpty || normName($0.item.name).contains(q) || hits[$0.item.id] != nil) }
         // The note line shows only under a thing found by its notes, not by its name.
         let note: ((item: Item, templates: [String])) -> NoteHit? = { row in
@@ -57,24 +60,19 @@ struct ThingsScreen: View {
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 .padding(.horizontal, 16)
-            HStack(spacing: 10) {
-                Text(shown.count == 1 ? "1 thing" : "\(shown.count) things")
-                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
-                    .accessibilityIdentifier("things-count")
-                Spacer()
-                if homeless > 0 {
-                    Button { noListOnly.toggle() } label: {
-                        Text("On no template \(homeless)").font(.system(.subheadline, weight: .semibold))
-                            .foregroundStyle(noListOnly ? Color.white : AppSection.care.color)
-                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                            .background(Capsule().fill(noListOnly ? AppSection.care.color : Theme.card))
-                            .overlay(Capsule().stroke(AppSection.care.color.opacity(0.6), lineWidth: 1))
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("things-nolist")
-                    .accessibilityAddTraits(noListOnly ? .isSelected : [])
+            // The count and the filters on one line — or, where they do not fit (an iPhone with
+            // both filters), the filters on a line of their own under the count (0.75).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    thingsCount(shown.count)
+                    Spacer()
+                    filters(homeless: homeless, batteries: batteries)
                 }
+                VStack(alignment: .leading, spacing: 8) {
+                    thingsCount(shown.count)
+                    HStack(spacing: 10) { filters(homeless: homeless, batteries: batteries) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, 16).padding(.top, 10)
             ScrollViewReader { proxy in
@@ -143,13 +141,53 @@ struct ThingsScreen: View {
 
     private static let top = "things-top"
 
+    private func thingsCount(_ n: Int) -> some View {
+        Text(n == 1 ? "1 thing" : "\(n) things")
+            .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+            .accessibilityIdentifier("things-count")
+    }
+
+    /// On no template, and Has a battery (0.75) — each there while it has something to show,
+    /// or while it is on (so it can be turned off).
+    @ViewBuilder private func filters(homeless: Int, batteries: Int) -> some View {
+        if homeless > 0 {
+            Button { noListOnly.toggle() } label: {
+                filterPill("On no template \(homeless)", on: noListOnly)
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("things-nolist")
+            .accessibilityAddTraits(noListOnly ? .isSelected : [])
+        }
+        if batteries > 0 || batteryOnly {
+            Button { batteryOnly.toggle() } label: {
+                filterPill("Has a battery \(batteries)", on: batteryOnly, mark: ToChargeCard.battery)
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("things-battery")
+            .accessibilityAddTraits(batteryOnly ? .isSelected : [])
+        }
+    }
+
+    private func filterPill(_ words: String, on: Bool, mark: String? = nil) -> some View {
+        HStack(spacing: 5) {
+            if let mark { IconMark(path: mark, size: 16).accessibilityHidden(true) }
+            Text(words).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+        }
+        .foregroundStyle(on ? Color.white : AppSection.care.color)
+        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+        .background(Capsule().fill(on ? AppSection.care.color : Theme.card))
+        .overlay(Capsule().stroke(AppSection.care.color.opacity(0.6), lineWidth: 1))
+        .contentShape(Capsule())
+        .fixedSize()
+    }
+
     /// The things as listed now, top to bottom: Just added, then the rest A–Z, under the
     /// search and the On no template chip — what a thing's page goes through (Mac keys).
     private func shownIds() -> [String] {
         let q = normName(query)
         let hits = model.library.noteHits(query)    // found by its notes too (0.69), as listed
         let shown = model.library.thingRows()
-            .filter { (!noListOnly || $0.templates.isEmpty)
+            .filter { (!noListOnly || $0.templates.isEmpty) && (!batteryOnly || Library.hasBattery($0.item))
                 && (q.isEmpty || normName($0.item.name).contains(q) || hits[$0.item.id] != nil) }
             .map(\.item.id)
         let fresh = justAdded.filter { shown.contains($0) }
@@ -494,6 +532,26 @@ struct ThingEditor: View {
                             .accessibilityIdentifier("thing-restricted")
                     }
                     .keyed(.liquid)
+                    // Has a battery (0.75, spec 07 part 15 — his ask of 13 Oct 2026: "Add a tick box for
+                    // each item: Contains battery"): a trip lists it on To charge from the day before.
+                    // Its own key, not the web app's Charging flag (which a charging cable carries too).
+                    VStack(alignment: .leading, spacing: 8) {
+                        HeadingBand(title: "Battery", id: "thing-heading-battery")
+                        Toggle(isOn: Binding(get: { Library.hasBattery(draft) }, set: { Library.setBattery(&draft, $0) })) {
+                            HStack(spacing: 8) {
+                                IconMark(path: ToChargeCard.battery, size: 18).foregroundStyle(AppSection.care.color)
+                                    .accessibilityHidden(true)
+                                flagWords("Has a battery \u{2014} charge before a trip")
+                            }
+                        }
+                            .tint(AppSection.care.color)
+                            #if os(macOS)
+                            .focusRing(at == .battery)
+                            .simultaneousGesture(TapGesture().onEnded { land(.battery, quiet: true) })
+                            #endif
+                            .accessibilityIdentifier("thing-battery")
+                    }
+                    .keyed(.battery)
                     labelled("Valid until") { validUntil }
                         .keyed(.expiry)
                     if !problem.isEmpty {
@@ -1075,6 +1133,7 @@ struct ThingEditor: View {
                 thing.note = jsTrim(page.note)
                 thing.liquid = page.liquid
                 thing.restricted = page.restricted
+                thing.extra[BATTERY_KEY] = page.extra[BATTERY_KEY]       // has a battery (0.75)
                 thing.expiry = page.expiry
                 // The care record changes only when what is said here changed: its log
                 // and last service stay as they were.
@@ -1173,6 +1232,7 @@ extension ThingEditor {
         case .kitTakenOut, .kitAdd, .kitCheck: return "key-kit"
         case .kitOut(let id), .kitRemove(let id): return "key-kit-row-\(id)"
         case .kitFind: return "key-kit-find"
+        case .battery: return "key-battery"
         case .jump: return "key-jump"
         default: return "key-\(f)"
         }
@@ -1201,7 +1261,7 @@ extension ThingEditor {
                 if !kit.contents.isEmpty { out.append(.kitCheck) }
             }
         }
-        out += [.brand, .colour, .condition, .care, .careNotes, .liquid, .restricted, .expiry]
+        out += [.brand, .colour, .condition, .care, .careNotes, .liquid, .restricted, .battery, .expiry]
         return out
     }
 
@@ -1248,6 +1308,7 @@ extension ThingEditor {
         case .careNotes: return "thing-care-notes"
         case .liquid: return "thing-liquid"
         case .restricted: return "thing-restricted"
+        case .battery: return "thing-battery"
         case .expiry: return "thing-expiry"
         case .jump: return "thing-jump"
         }
@@ -1281,6 +1342,7 @@ extension ThingEditor {
         case .careNotes: return "What to do"
         case .liquid: return "Liquid"
         case .restricted: return "Not allowed in the cabin"
+        case .battery: return "Has a battery"
         case .expiry: return "Valid until"
         case .jump: return "Jump to field"
         }
@@ -1311,6 +1373,7 @@ extension ThingEditor {
         case .kitOut: return "Space takes it out or puts it back · Tab next · Return saves"
         case .kitRemove: return "Space takes it out of the kit for good · Tab next · Return saves"
         case .kitFind: return "type to find · ↑ ↓ move · Return adds it · Esc closes the list"
+        case .battery: return "Space turns it on or off · Tab next · Return saves"
         case .storage: return "type to pick, or a new place · Space opens · Tab next · Return saves"
         case .section: return "type to pick, or a new section · Space opens · Tab next · Return saves"
         case .category, .owner, .bag, .pocket, .when, .condition, .care:
@@ -1716,6 +1779,10 @@ extension ThingEditor {
         case .liquid, .restricted:
             guard code == KeyCode.space else { return e }
             if f == .liquid { draft.liquid.toggle() } else { draft.restricted.toggle() }
+            return nil
+        case .battery:
+            guard code == KeyCode.space else { return e }
+            Library.setBattery(&draft, !Library.hasBattery(draft))
             return nil
         case .kitTakenOut, .kitAdd, .kitCheck:
             guard code == KeyCode.space else { return e }

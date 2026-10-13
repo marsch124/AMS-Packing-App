@@ -26,6 +26,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 12. Reminders on a template | 0.70 | built (branch work/reminders070) |
 | 13. His lists changed inside their drop-downs | 0.69 | built (branch work/ddedit069) |
 | 14. Only on some trips, set once on the thing | 0.73 | built (branch work/cond073) |
+| 15. Batteries and To charge | 0.75 | built (branch work/battery075) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -1454,6 +1455,139 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
 
 ---
 
+## 15. Batteries and To charge
+
+> His words (13 Oct 2026): "Add a tick box for each item: Contains battery. And maybe implement a view where I can
+> check all items that need charging." He said yes to the design (a picture: the switch on a thing's page, the To
+> charge card on a trip) the same day. Written here BEFORE it was built (branch `work/battery075`), then brought in
+> line with the code by the same branch: the model `Core/Sources/PackingLibrary/Batteries.swift`, the card
+> `App/Sources/Screens/ToCharge.swift` (`ToChargeCard`, and the drawn battery mark `ToChargeCard.battery`), the
+> switch and the Your things filter in `App/Sources/Screens/ThingsScreen.swift`. Per screen: spec 03 ("To charge"),
+> spec 05 (a thing's page item 15a, Your things, Keyboard (Mac)), spec 01 §1.12 (the keys).
+
+### What he gets
+
+- **A thing's page**: under On a plane, a band **Battery** with ONE switch, the small drawn battery mark beside its
+  words: **"Has a battery — charge before a trip"**. Held until Save like everything on the page.
+- **A trip**: a **To charge** card from the DAY BEFORE the trip starts until its last day — every thing on the trip
+  that has a battery, the ones inside a kit on the trip too ("In the Camp pouch"), each with a CHARGE tick of its
+  own. Ticking charged does not pack it; packing it does not mark it charged.
+- **Your things**: a filter **Has a battery** beside On no template — the things to charge, at a glance.
+
+### The rules (decided 13 Oct 2026, by the build)
+
+1. **The thing says it, once.** "Has a battery" belongs to the THING, as Liquid does: every template and trip reads
+   it from the thing as it is now (`thingNow`, the same rule as Check before you go). A switch turned on today shows
+   on a trip made last week; a line typed on the trip only (no thing behind it) never has a battery.
+2. **NOT the web app's "Charging" flag.** The web model has `charging` (with a connector, `chargeType`) — "needs
+   charging OR a charging cable": a USB-C cable carries it, and a cable has no battery to charge. It is the table's
+   **Charges** column and stays exactly as it was. "Has a battery" is a key of its own (`battery`), so a cable never
+   lands on To charge, and the parity check is untouched (211/211). The two are independent: neither sets the other.
+3. **Which things are on the card** (`Library.toCharge(tripId:)`), in the trip's line order: each line that is not
+   set aside ("not this time" — it is not going) and not a reminder, whose thing has a battery; and for a KIT line
+   (part 9, the kit as it is NOW, `liveKitOnLine`), each thing inside it — in the kit's order, right after the kit's
+   own row when the kit itself has a battery — that has a battery and is not taken out (taken out, it is not in the
+   kit, so it is not on this trip). A thing is listed once: the first place it is met wins (a trip made before a thing
+   went into its kit may still hold its own line).
+4. **The CHARGE tick is the trip's, not the thing's** — charged for this trip. Kept on the trip LINE, each line its
+   own small record, so the iPhone and the Mac can tick two things at the same moment and both survive:
+   `charged: true` on a line (its own thing charged); `kitCharged: [ids]` on a kit's line (the things inside it
+   charged). Unticking removes the mark (an empty list is never stored). Ticking charged never ticks the line, and
+   ticking the line (packing it, Tick everything, a section's tick, the kit's checked ticks) never marks charged.
+5. **When the card shows** (`Library.chargeWindow(trip, today:)`): from the day BEFORE the start date through the
+   END date (the end = the start when it is blank) — through the last day because he may charge again on site. A
+   trip with no start date shows it whenever it has things to charge (there is no day to wait for). Never on a
+   reviewed trip (`Library.isReviewed`). Never when nothing on the trip has a battery. Not when the trip was opened
+   from a place's code (the page shows only that place's lines, as for the other cards).
+6. **Where on the trip.** In the scroll area, right UNDER Check before you go and above the weather: what would stop
+   him at the airport (red) stays first; To charge, the one card with its own deadline (the night before), comes
+   straight after it; the weather and the bags follow.
+7. **What travels.** The thing's `battery` key goes wherever the thing goes: the store and iCloud (the thing's
+   record), a backup (as stored, and the older kind rebuilt from rows, `carryRowExtras`), a restore. The charge ticks
+   are the trip's: they ride in the line records, a backup and a restore; a rebuild (Trip settings → Save) and a
+   change to a thing reaching a trip ahead (`followThing`) keep them; **"Start a new trip from this one" and a shared
+   trip drop them** (`startAgain`, `justTheList`), as they drop every packing mark.
+
+### On the screens
+
+- **A thing's page** (spec 05 item 15a): band "Battery" (`thing-heading-battery`), the switch
+  (`thing-battery`, orange tint like Liquid): the drawn battery mark (18 pt, orange) and "Has a battery — charge
+  before a trip" (Callout semibold ink). On the Mac it is in the Tab order after Not allowed in the cabin, before
+  Valid until; Space switches it; the foot line says "Has a battery   Space turns it on or off · Tab next · Return
+  saves"; ⌘J finds it as "Has a battery".
+- **Your things** (spec 05): beside "On no template N", a pill **"Has a battery N"** with the drawn mark
+  (`things-battery`; the same look: orange words on the card, white on orange when on, selected trait) — there while
+  any thing has a battery, or while the filter is on. N counts every such thing, whatever the search. On, the list
+  keeps only things with a battery; with the search and On no template, all must hold. ⌘↓ ⌘↑ on the Mac go through
+  the things as so filtered. When the count and the pills do not fit on one line (an iPhone), the pills go on a line
+  of their own under the count.
+- **The To charge card** (spec 03, "To charge"; id `trip-charge`): the Check before you go card's frame (padding 14,
+  corner 12, `Theme.card`, a 1.2 pt border in the tint). Header: the drawn battery mark (22 pt, in the tint), "To
+  charge" (Subheadline semibold ink) and a count capsule "1 of 3" — charged of all (Footnote semibold white; id
+  `trip-charge-count`, label "1 of 3 charged"). The tint is the orange (`AppSection.care.color`) while something is
+  left to charge, the trip's green once all are charged. Then one row per thing (`trip-charge-<n>`, a button, min
+  height `Metrics.tap`): a tick circle (22 pt; orange and filled when charged), the name (Callout semibold ink) and,
+  for a thing inside a kit, "In the Camp pouch" under it (Subheadline muted). Charged: the name struck through and
+  muted. A tap ticks or unticks it. Label "<name>" or "<name>, in the <kit>"; value "charged" / "not charged";
+  selected trait when charged.
+
+### Where it is kept (the web model sees nothing new)
+
+| Holder | Key | Value | Meaning |
+|---|---|---|---|
+| item | `battery` (`BATTERY_KEY`) | true / absent | has a battery: charge before a trip. Never written false |
+| trip line | `charged` (`CHARGED_KEY`) | true / absent | its thing is charged for this trip |
+| trip line (a kit's) | `kitCharged` (`KIT_CHARGED_KEY`) | `[item id]` / absent | the things inside the kit charged for this trip; only ids inside it now are written |
+
+### Tests (from the code)
+
+Model `BatteriesTests` (5, `Core/Tests/PackingLibraryTests/BatteriesTests.swift`; a Toothbrush, a Passport and a Phone
+charger — the web app's Charging flag, no battery — on the base template; a Camp pouch, a Headlamp and a Map on Hiking;
+the pouch holds a Power bank, a GPS watch taken out and a Lighter; the Wash bag, on no template, the Toothbrush and
+Soap; with a battery: Headlamp, Power bank, GPS watch, Toothbrush):
+`testAThingSaysItHasABatteryAndThatIsNotTheWebAppsChargingFlag` (the key true, never written false; the charger's web
+flag puts nothing on To charge; `batteryThings` A–Z), `testToChargeListsEveryBatteryThingOnTheTripTheOnesInsideItsKitsToo`
+("Toothbrush in Wash bag", "Power bank in Camp pouch", "Headlamp" — the watch taken out is not there; a thing switched on
+after the trip was made shows; put back, the watch comes; a kit with a battery of its own first; set aside, a reminder
+from a rebuild and a line typed on the trip never), `testTheChargeTickIsApartFromPacking` (charging packs nothing;
+packing, Tick everything and Clear charge nothing; "2 of 3"; unticked, the keys go; only what is inside the kit now can be
+marked), `testToChargeShowsFromTheDayBeforeTheTripThroughItsLastDay` (two days before no, the day before yes, the last
+day yes, the day after no; a one-day trip; no dates; reviewed; nothing with a battery),
+`testBatteriesAndChargeTicksAreStoredSyncedBackedUpRestoredAndKeptByARebuildButNeverSentOrStartedAgain` (records, a
+backup as written and the older kind rebuilt from rows — both faithful —, `Item(json:)` and `coerceItem`, Trip settings'
+rebuild and `followThing` keep the ticks, `justTheList` and `startAgain` drop them, the trip itself keeps its own). Each
+seen RED with a planted fault: the kit contents left out ("("1 of 1") is not equal to ("2 of 3")"); a charge tick that
+packs ("XCTAssertFalse failed - charging it packed it"); the card from the start day ("XCTAssertTrue failed - the day
+before"); a shared trip and Start again keeping the ticks ("("[… "Power bank in Camp pouch ✓", "Headlamp ✓"]") is not
+equal to ("[… "Power bank in Camp pouch", "Headlamp"]")"); the web app's Charging flag read as a battery ("("["GPS watch",
+"Headlamp", "Phone charger", …]") is not equal to …"). Parity: 211/211.
+
+UI (`-uiTestingBattery`, `SampleLibrary.battery()`: the kits sample with its first trip starting TOMORROW, a Power bank in
+the Camp pouch and the Toothbrush — in the Wash bag — with a battery; the Headlamp without one):
+`testABatterySwitchOnAThingPutsItOnTheTripsToCharge` (the trip's card "0 of 2", "Toothbrush, in the Wash bag" and "Power
+bank, in the Camp pouch"; Your things' `things-battery` says 2 and keeps "2 things", on; off, all again; the Headlamp's
+`thing-battery` switched on and saved → the filter says 3; the trip "0 of 3" with the Headlamp) and
+`testToChargeIsTickedApartFromPacking` (the power bank charged → "1 of 2", selected, the trip's count unchanged; the
+pouch's line not ticked; the pouch packed → the count moves, still "1 of 2", the toothbrush not charged; "2 of 2"; the
+power bank unticked → "1 of 2", the pouch still packed; the trip two months ahead has no card). Run on the iPhone
+simulator in light and dark (pictures `battery-thing-battery-switch`, `battery-things-battery-filter`,
+`battery-trip-to-charge`, `-one`, `-all`). Each seen RED with a planted fault: Save not writing the key → "the
+Headlamp's battery was not kept: 'Has a battery 2'"; the filter not applied → "Has a battery does not keep the two: '17
+things'"; a charge tap that also ticks the line → "charging the power bank packed something: '1/8'". The Mac:
+`testTheThingPageTabsThroughEveryFieldInOrder` walks Has a battery between Not allowed in the cabin and Valid until,
+Shift-Tab from Valid until lands on it and Space switches it on; `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen`
+reads the Battery band between On a plane and Valid until. On GitHub's Mac (a probe running just these four): with Has a
+battery left out of the Tab order, red — "Tab did not go on to thing-battery"; without the fault, all four green, and the
+two battery tests green again (pictures of the Mac look, day).
+
+### Open questions
+
+- The table has no column for "Has a battery" (its **Charges** column is the web app's `charging`). Worth one?
+- Should a battery thing in a cabin bag on a plane trip say anything in Check before you go (spare batteries and
+  power banks must travel in the cabin)? Not asked for; not built.
+
+---
+
 ## 11. Decision log
 
 | Date | Decision | His words / reason |
@@ -1471,6 +1605,7 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
 | 8 Oct 2026 | Always packed becomes a small core he makes; the big always-packed template becomes one he ticks for longer trips. A template moves into and out of Always packed on its page (several or none allowed; By transport unchanged). "Make a small core from this…" does the move in one step — with a pasted list (kits from indented lines; a thing in one kit only, a second one on request) and a copy kept first | "Always packed will be a small core, and [the big one] becomes a big kit that I tick." / "I would like you to move stuff around for me, so that the complete solution is served to me." Spec 04 (Activity area, §14, §14b), spec 03. |
 | 10 Oct 2026 | "Only on some trips" is set once on the THING; each template's row follows it per kind (Season, Context, Transport, Food) unless the row sets its own, and goes back with one tap | "If I have an item on five templates, I need to change this in five places. Doesn't seem optimal." Part 14. |
 | 12 Oct 2026 | A reminder's When list is changed AT ONCE, not held until a Save: the template's page has none, and the Reminders block makes everything at once (the When pick, a drag, a removal), as Your choices does | The open question of part 13 left it to the build ("if that page saves at once, the least surprising equivalent"); part 13, "The last three lists". |
+| 13 Oct 2026 | "Has a battery" is a switch on the THING (its own key, not the web app's Charging flag, which a charging cable carries too); a trip lists those things on a To charge card from the day before it starts through its last day, kit contents included, with a charge tick of its own apart from packing; Your things filters by it | "Add a tick box for each item: Contains battery. And maybe implement a view where I can check all items that need charging." Part 15. |
 
 ## Open questions
 
