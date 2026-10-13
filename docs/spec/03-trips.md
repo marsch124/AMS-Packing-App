@@ -287,9 +287,9 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    **Closed to begin with**; open or closed is remembered on this device (`@AppStorage("ams.create.more")`,
    for every trip made there; cleared when the UI tests launch the app). The answers inside count whether
    it is open or not — a closed fold still makes a winter trip winter.
-11. **"Create trip"** button: 18 bold white on BLUE, full width, min height 52, corner 12, id
+9. **"Create trip"** button (under More choices, open or closed): 18 bold white on BLUE, full width, min height 52, corner 12, id
     `trip-create`. Never disabled, never grey.
-12. **Still-needed line** (only after a press with something missing), 15 bold red, centred — every line of
+10. **Still-needed line** (only after a press with something missing), 15 bold red, centred — every line of
     it when it wraps (`multilineTextAlignment(.center)`, 0.73: two sentences often take two lines), id
     `trip-create-needs`.
 
