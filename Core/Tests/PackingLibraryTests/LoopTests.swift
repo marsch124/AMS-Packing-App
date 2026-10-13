@@ -66,6 +66,74 @@ final class LoopTests: XCTestCase {
         XCTAssertEqual(lib.loopStep(tripId: undated.id, today: "2026-09-27"), .refine)
     }
 
+    /// His report (13 Oct 2026): at 07:30 on the first day, with "I leave at 08:00", the trip
+    /// already said On site. On the first day the time he leaves decides — the loop and the On
+    /// site door alike; with no time, the day does, as before; something bought on site is On
+    /// site at any time. Given only the day, the end of it: what every caller saw before 0.75.
+    func testOnItsFirstDayATripIsOnSiteOnlyFromTheTimeHeLeaves() {
+        var lib = Library()
+        var leaving = trip("2026-10-14", "2026-10-16")
+        XCTAssertTrue(Library.setLeaveTime(&leaving, "08:00", home: false))
+        var early = trip("2026-10-14", "")
+        XCTAssertTrue(Library.setLeaveTime(&early, "00:10", home: false))
+        let noTime = trip("2026-10-14", "2026-10-16")
+        lib.trips = [leaving, early, noTime]
+        func step(_ t: TripEvent, _ day: String, _ time: String) -> Library.LoopStep {
+            lib.loopStep(tripId: t.id, today: day, time: time)
+        }
+        func door(_ t: TripEvent, _ day: String, _ time: String) -> Bool {
+            lib.onSiteBegun(tripId: t.id, today: day, time: time)
+        }
+
+        XCTAssertEqual(step(leaving, "2026-10-14", "07:30"), .pack, "07:30 on the first day, leaving at 08:00")
+        XCTAssertFalse(door(leaving, "2026-10-14", "07:30"), "the On site door at 07:30, leaving at 08:00")
+        XCTAssertEqual(step(leaving, "2026-10-14", "7:59"), .pack, "a minute before he leaves")
+        XCTAssertEqual(step(leaving, "2026-10-14", "08:00"), .onSite, "the minute he leaves is not On site")
+        XCTAssertTrue(door(leaving, "2026-10-14", "08:00"), "no On site door the minute he leaves")
+        XCTAssertEqual(step(leaving, "2026-10-14", "23:10"), .onSite)
+        XCTAssertEqual(step(leaving, "2026-10-13", "09:00"), .pack, "the day before, after the time")
+        XCTAssertFalse(door(leaving, "2026-10-13", "09:00"))
+        XCTAssertEqual(step(leaving, "2026-10-15", "06:00"), .onSite, "the second day goes by the day")
+        XCTAssertTrue(door(leaving, "2026-10-20", "06:00"), "after the trip the door went")
+        XCTAssertEqual(step(leaving, "2026-10-17", "06:00"), .review)
+        XCTAssertEqual(step(early, "2026-10-14", "00:05"), .pack, "just after midnight, leaving at 00:10")
+        XCTAssertEqual(step(early, "2026-10-14", "00:10"), .onSite)
+        // No time to leave: from the start of the day, as before.
+        XCTAssertEqual(step(noTime, "2026-10-14", "00:00"), .onSite, "no time set and still Pack on the first day")
+        XCTAssertTrue(door(noTime, "2026-10-14", "00:00"))
+        // Only the day, or a time that is not one: the end of the day.
+        XCTAssertEqual(lib.loopStep(tripId: leaving.id, today: "2026-10-14"), .onSite, "the day alone no longer says what it did")
+        XCTAssertTrue(lib.onSiteBegun(tripId: leaving.id, today: "2026-10-14"))
+        XCTAssertEqual(step(leaving, "2026-10-14", "soon"), .onSite, "an unreadable time")
+        // Bought on site says he is there, whatever the time.
+        _ = lib.addBoughtOnSite(tripId: leaving.id, name: "Sun hat")
+        XCTAssertEqual(step(leaving, "2026-10-14", "07:30"), .onSite, "bought on site and still Pack before the time")
+        XCTAssertTrue(door(leaving, "2026-10-14", "07:30"), "bought on site and no door before the time")
+        XCTAssertFalse(Library.hasSetOff(trip("", ""), today: "2026-10-14", time: "12:00"), "an undated trip set off")
+    }
+
+    /// The moments a trip turns by the clock alone — the trip screen wakes at the next one,
+    /// so a trip left open at 07:59 is On site at 08:00. Each really is a turn: the minute
+    /// before it the step is another.
+    func testATripTurnsByTheClockAtTheMomentsItSays() {
+        var lib = Library()
+        var leaving = trip("2026-10-30", "2026-11-01")
+        XCTAssertEqual(Library.clockTurns(leaving), ["2026-10-30 00:00", "2026-11-02 00:00"], "no time: the day sets it off")
+        _ = Library.setLeaveTime(&leaving, "08:00", home: false)
+        XCTAssertEqual(Library.clockTurns(leaving), ["2026-10-30 08:00", "2026-11-02 00:00"], "the time he leaves is not the turn")
+        XCTAssertEqual(Library.clockTurns(trip("2026-10-30", "")), ["2026-10-30 00:00", "2026-10-31 00:00"], "a one-day trip")
+        XCTAssertEqual(Library.clockTurns(trip("", "")), [], "an undated trip turns by the clock")
+        var reviewed = leaving
+        reviewed.reviewedAt = "2026-11-03T08:00:00.000Z"
+        XCTAssertEqual(Library.clockTurns(reviewed), [], "a reviewed trip turns by the clock")
+        lib.trips = [leaving]
+        func step(_ at: String) -> Library.LoopStep {
+            lib.loopStep(tripId: leaving.id, today: String(at.prefix(10)), time: String(at.suffix(5)))
+        }
+        XCTAssertEqual([step("2026-10-30 07:59"), step("2026-10-30 08:00")], [.pack, .onSite])
+        XCTAssertEqual([step("2026-11-01 23:59"), step("2026-11-02 00:00")], [.onSite, .review])
+    }
+
     /// The colours say it: Pack, On site and Review are one trip, Plan and Refine the lists.
     func testTheLoopIsInOrderAndSaysWhatEachStepIsAbout() {
         XCTAssertEqual(Library.LoopStep.allCases.map(\.name), ["Plan", "Pack", "On site", "Review", "Refine"])

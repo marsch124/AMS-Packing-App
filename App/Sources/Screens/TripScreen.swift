@@ -58,6 +58,12 @@ struct TripScreen: View {
     @State private var onlyUnticked = false
     /// A tapped door check for the way home: On site opens, and in it Pack to go home.
     @State private var homeFromDoor = false
+    /// The clock the loop's step and the On site door are read by (0.75): read when the trip
+    /// opens, again at the next moment the trip turns by the clock alone (`Library.clockTurns`:
+    /// it sets off at the time he leaves, or goes to Review) and whenever the app comes back to
+    /// the front. So a trip left open at 07:59, leaving at 08:00, is On site at 08:00.
+    @State private var clock = Today.now
+    @Environment(\.scenePhase) private var scenePhase
     struct CheckedThing: Identifiable { let id: String }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
@@ -214,7 +220,7 @@ struct TripScreen: View {
             }
             .padding(16)
             // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
-            LoopDoor(here: model.library.loopStep(tripId: tripId, today: Today.local))
+            LoopDoor(here: model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock)))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
             if !rebuiltNote.isEmpty {
@@ -239,7 +245,7 @@ struct TripScreen: View {
                     .padding(.top, 6).padding(.horizontal, 16)
                 // On site (their field test, 3 Oct 2026; Pack to go home, his idea 13, is in
                 // it now): once the trip has begun, or something was bought on site.
-                if model.library.onSiteBegun(tripId: trip.id, today: Today.local) {
+                if model.library.onSiteBegun(tripId: trip.id, today: Today.iso(clock), time: Today.time(of: clock)) {
                     onSiteDoor(trip)
                         .padding(.top, 6).padding(.horizontal, 16)
                 }
@@ -530,6 +536,24 @@ struct TripScreen: View {
         #endif
         .onAppear(perform: takeFocus)
         .onChange(of: model.tripFocus) { _, _ in takeFocus() }
+        // The step turns by itself while he looks (0.75): ONE sleep, to the next moment the
+        // trip turns by the clock — a new time saved in Trip settings moves it, and one
+        // already passed wakes it at once. Half a second over, so the minute has turned.
+        .task(id: nextTurn(trip)) {
+            guard let at = Today.moment(nextTurn(trip)) else { return }
+            let wait = at.timeIntervalSince(Today.now) + 0.5
+            if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+            guard !Task.isCancelled else { return }
+            clock = Today.now
+        }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { clock = Today.now } }
+    }
+
+    /// The next moment, after the screen's clock, at which the trip turns by the clock alone;
+    /// "" = none (reviewed, undated, or both moments past).
+    private func nextTurn(_ trip: TripEvent) -> String {
+        let now = Today.stamp(clock)
+        return Library.clockTurns(trip).first { $0 > now } ?? ""
     }
 
     /// A tapped door check opened this trip (0.69): on just its unticked lines — or, for

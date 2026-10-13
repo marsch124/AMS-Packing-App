@@ -208,8 +208,13 @@ struct BagPockets: View {
 
 /// The door check's times: when he leaves on the first day, and on the last day for home
 /// — both optional, in a grid so the times line up ("First day", "Last day"). Each is
-/// "Add a time" until set; then the time, when the check comes, and a small quiet ✕
-/// ("Remove" in words wrapped on Create new trip's narrower card). Ids, from `id`: the heading `<id>-title`; per time (`out`, `home`)
+/// "Add a time" until set; then the time, when the check comes, and a small quiet ✕.
+/// ONE framed block (0.75, his yes of 13 Oct 2026: "so he sees which lines belong to that
+/// function"): a rounded frame in the screen's tint over a very light fill of it, a header
+/// with a drawn door, "I leave at" and what it is for ("the door check"), the times, a
+/// hairline, and the note — which says too that the first day's time is when the trip
+/// leaves Pack for On site (`Library.hasSetOff`). Ids, from `id`: the frame `<id>-frame`,
+/// the heading `<id>-title`, "the door check" `<id>-what`; per time (`out`, `home`)
 /// `<id>-<kind>-add`, `<id>-<kind>-time` (the picker), `<id>-<kind>-check` ("Check
 /// 07:15") and `<id>-<kind>-remove`; the line under them `<id>-note`, and — when the
 /// device does not let the app remind him — `<id>-refused`.
@@ -221,20 +226,30 @@ struct LeaveTimes: View {
     @State private var refused = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HeadingTitle(title: "I leave at", tint: tint, id: "\(id)-title")
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                DoorMark().frame(width: Metrics.glyph, height: Metrics.glyph).foregroundStyle(tint)
+                HeadingTitle(title: "I leave at", tint: tint, id: "\(id)-title")
+                Spacer(minLength: 8)
+                Text("the door check")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .lineLimit(1).fixedSize()
+                    .accessibilityIdentifier("\(id)-what")
+            }
             // A grid, so the two times line up under each other.
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
                 row("First day", $out, kind: "out", start: "07:30")
                 row("Last day", $home, kind: "home", start: "10:00")
             }
+            Rectangle().fill(Theme.line).frame(height: 1)
+                .accessibilityHidden(true)
             #if os(macOS)
-            Text("Optional. 15 minutes before, your iPhone names what is still unticked \u{2014} on the last day, what is not in a bag yet.")
+            Text("Optional. 15 minutes before, your iPhone names what is still unticked \u{2014} on the last day, what is not in a bag yet. Before this time the trip is still at Pack.")
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("\(id)-note")
             #else
-            Text("Optional. 15 minutes before, the iPhone names what is still unticked \u{2014} on the last day, what is not in a bag yet.")
+            Text("Optional. 15 minutes before, the iPhone names what is still unticked \u{2014} on the last day, what is not in a bag yet. Before this time the trip is still at Pack.")
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("\(id)-note")
@@ -246,6 +261,13 @@ struct LeaveTimes: View {
             }
             #endif
         }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(tint.opacity(0.06)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.5))
+        // A container of its own: the frame has its id, and every line in it keeps its own.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("\(id)-frame")
         .task(id: out + "|" + home) { await lookUp() }
     }
 
@@ -323,6 +345,17 @@ struct LeaveTimes: View {
 // MARK: - The door checks, for the tests
 
 #if DEBUG
+/// A door, drawn — the head of "I leave at", the door check (0.75): a door standing on the
+/// floor, its top corners rounded, its handle on the right. The app's own stroke on the
+/// 24-point grid (`GridShape`), never a stock symbol.
+struct DoorMark: View {
+    var body: some View {
+        GridShape(d: "M4 20.5h16M6.5 20.5V4.8A1.3 1.3 0 0 1 7.8 3.5h8.4A1.3 1.3 0 0 1 17.5 4.8V20.5M14 12.5h1.5")
+            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+            .accessibilityHidden(true)
+    }
+}
+
 /// UI tests only (`-showDoorChecks`): what the device would have in its list for this
 /// trip — a test cannot see a notification. One line per check, `door-check-out` /
 /// `door-check-home`, saying its id, day and time, title and words; `door-check-none`

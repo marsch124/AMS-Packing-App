@@ -265,6 +265,8 @@ extension LibraryModel {
     ///  -uiTestingChecks       → memory, the sample + a carry-on bag, a knife, sun cream
     ///                           and a passport running out, and a plane trip (the checks)
     ///  -uiTestingOnSite       → memory, the sample with its trip under way (On site)
+    ///  -uiTestingLeaving      → memory, the sample with its trip leaving today at 08:00
+    ///                           ("I leave at"; with -clockAt, when it sets off, 0.75)
     ///  -uiTestingKits         → memory, the sample + a Camp pouch and a Wash bag with things
     ///                           inside them (kits, 0.70); + -kitsUnderWay: its trip under
     ///                           way, the pouch usually in a Day pack's Front pocket (Where
@@ -306,6 +308,8 @@ extension LibraryModel {
     static func forThisLaunch() -> LibraryModel {
         let args = ProcessInfo.processInfo.arguments
         if AMSPackingApp.testing {
+            // The tests' clock (`-clockAt`) starts now, as the app opens.
+            _ = Today.now
             RescueCopies.clearForTesting()
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
@@ -321,6 +325,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingOnSite") {
             return LibraryModel(store: MemoryStore(SampleLibrary.underWay().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingLeaving") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.leaving().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingBigBase") {
             return LibraryModel(store: MemoryStore(SampleLibrary.bigBase().records()), usesICloud: false, sky: sky)

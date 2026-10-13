@@ -1792,6 +1792,7 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-uiTestingEmpty` | memory, nothing | first-run screen |
 | `-uiTestingChecks` | memory, `SampleLibrary.checks()` | |
 | `-uiTestingOnSite` | memory, `SampleLibrary.underWay()` | |
+| `-uiTestingLeaving` | memory, `SampleLibrary.leaving()` | 0.75: the sample trip starts today, "I leave at" 08:00 |
 | `-uiTestingOldPhoto` | memory, `SampleLibrary.oldPhoto()` | |
 | `-uiTestingTwoLibraries` | memory, `SampleLibrary.doubled()` | |
 | `-uiTestingPlaces <when>` | memory, `SampleLibrary.places(when)` | 0.69; checked before `-uiTestingNotes`, `-uiTestingPockets` and `-uiTesting` |
@@ -1805,6 +1806,7 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings — also "I leave at"'s red line (0.69) | 0.62 |
 | `-showDoorChecks` | (DEBUG, testing only) the trip lists the door checks that would be scheduled (`door-check-out/home/none`) | 0.69 |
 | `-tapDoorCheck out\|home` | (testing only) a door check tapped at launch, for the first trip with that time | 0.69 |
+| `-clockAt HH:mm:ss` | (testing only) the app's clock (`Today.now`) is today at that time when the app opened, and runs on — when a trip sets off (spec 03, The loop) | 0.75 |
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |
 

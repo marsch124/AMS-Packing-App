@@ -2866,6 +2866,48 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "door-refused")
     }
 
+    /// "I leave at" is ONE framed block (his yes, 13 Oct 2026: so he sees which lines belong
+    /// to that function) — on Create new trip and in Trip settings, a frame holding the
+    /// heading, "the door check", both times and the note, which now says the trip is at
+    /// Pack until the first day's time.
+    func testILeaveAtIsOneFramedBlock() {
+        let app = launch("-uiTesting")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        pickDates(app, from: 3, to: 5)
+        leaveFrameHoldsItsLines(app, "trip-leave", timed: false)
+        tap(app, id: "trip-leave-out-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-leave-out-check"]) == "Check 07:15" })
+        leaveFrameHoldsItsLines(app, "trip-leave", timed: true)
+        bringIntoView(app, app.staticTexts["trip-leave-note"])
+        shot(app, "leave-frame-newtrip")
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        leaveFrameHoldsItsLines(app, "tripset-leave", timed: false)
+        bringIntoView(app, app.staticTexts["tripset-leave-note"])
+        shot(app, "leave-frame-tripset")
+    }
+
+    /// The "I leave at" frame `<id>-frame` is there and every line of the block is inside it.
+    private func leaveFrameHoldsItsLines(_ app: XCUIApplication, _ id: String, timed: Bool) {
+        XCTAssertTrue(appears(app, "\(id)-frame", timeout: 5), "no frame round I leave at (\(id)-frame)")
+        guard let frame = find(app, "\(id)-frame") else { return }
+        let box = frame.frame.insetBy(dx: -1, dy: -1)
+        let parts = [app.staticTexts["\(id)-title"], app.staticTexts["\(id)-what"],
+                     timed ? app.staticTexts["\(id)-out-check"] : app.buttons["\(id)-out-add"],
+                     app.buttons["\(id)-home-add"], app.staticTexts["\(id)-note"]]
+        for part in parts {
+            XCTAssertTrue(part.waitForExistence(timeout: 5), "a line of I leave at is missing: \(part)")
+            guard part.exists else { continue }
+            XCTAssertTrue(box.contains(part.frame), "\(part.identifier) at \(part.frame) is outside the frame \(frame.frame)")
+        }
+        XCTAssertEqual(words(app.staticTexts["\(id)-what"]), "the door check")
+        let note = words(app.staticTexts["\(id)-note"])
+        XCTAssertTrue(note.hasSuffix("Before this time the trip is still at Pack."), "the note says '\(note)'")
+    }
+
     /// Pack to go home lives on the trip's On site page (their field test, 3 Oct 2026):
     /// the trip's On site door, then the page's Pack to go home. With On site already
     /// open (back from the way home), straight to its button.
@@ -2913,6 +2955,34 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "loop-picture-onsite")
         tap(app, id: "loop-done")
         XCTAssertTrue(disappears(app, "loop-screen", timeout: 5))
+    }
+
+    /// On site only from the time he leaves (his report, 13 Oct 2026: at 07:30 on the first
+    /// day, with "I leave at 08:00", the trip already said On site). The app's clock starts at
+    /// 07:59:30 (`-clockAt`) and runs: the trip leaving today at 08:00 stands at Pack with no
+    /// On site door — and, left open, turns to On site with its door once 08:00 has passed.
+    /// (On a runner so slow that the trip opens after 08:00, only the turn is checked.)
+    func testATripIsOnSiteOnlyFromTheTimeHeLeaves() {
+        let launched = Date()
+        let app = launch("-uiTestingLeaving", ["-clockAt", "07:59:30"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let strip = app.buttons["trip-loop"]
+        XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
+        let before = strip.value as? String ?? ""
+        let doorBefore = app.buttons["trip-onsite"].exists
+        if Date().timeIntervalSince(launched) < 25 {
+            XCTAssertEqual(before, "Pack", "at 07:59, leaving at 08:00, the trip is at '\(before)'")
+            XCTAssertFalse(doorBefore, "an On site door at 07:59, leaving at 08:00")
+            shot(app, "leave-before")
+        } else {
+            print("The trip opened after 07:59:55 on the app's clock: only the turn is checked.")
+        }
+        XCTAssertTrue(waitUntil(timeout: 60) { (strip.value as? String) == "On site" },
+                      "08:00 passed and the open trip is at '\(strip.value as? String ?? "")'")
+        XCTAssertTrue(app.buttons["trip-onsite"].waitForExistence(timeout: 5), "08:00 passed and the open trip has no On site door")
+        shot(app, "leave-after")
     }
 
     /// On site holds all four (his choice, 3 Oct 2026): Bought on site, Left on site,
