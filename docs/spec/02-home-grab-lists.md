@@ -436,7 +436,7 @@ is on screen."
 **Template icons are not used here.** The 90 template icons (`TemplateIcons.swift`, `PackingLibrary/TemplateIconCatalog.swift`,
 `PackingLibrary/TemplateIcon.swift`) belong to templates only. The grab tiles, the grab screen header,
 the Grab Lists rows and the menu all use `GrabDoodle`. Template icons appear on Your templates and in
-Check before you go, which are other files.
+Before you go (a trip's reminders due), which are other files.
 
 ---
 

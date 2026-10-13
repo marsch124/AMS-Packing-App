@@ -771,8 +771,11 @@ no entry shows no marker anywhere (and fails the test).
    Run green, Strength orange, Breath work lavender, Mobility pink); each picked workout its own Context line
    (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other templates (0.62). (10) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
    ×4 · laundry with a washtub. (11) This Device: how many trips, things and templates.
-1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Check before you go
-   (cabin red/orange; a battery in a checked bag red, 0.76; expiry six months ahead for passports/IDs); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
+1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Before you go
+   (0.77: one card, one count of what is left, red / orange / green All set — folded to one line, its arrow opens it;
+   its parts: the checks — cabin red/orange, a battery in a checked bag red (0.76), expiry six months ahead for
+   passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks; To charge from the day before
+   the trip, with "1 of 2", a charge tick apart from packing); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one; Tick everything / Clear every tick (asks first); Save as
    Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
@@ -863,7 +866,7 @@ The steps (title — summary of its text):
    Only on some trips.
 4. **Create the trip** — Home → Create new trip: name, Dates, templates, Transport, Season, Food, Laundry and its
    nights; then the pen: type the Place — the map pin and the weather follow.
-5. **Pack** — Sorting: When, From where, Into; ⊘ is not this time; watch the bag bars and Check before you go;
+5. **Pack** — Sorting: When, From where, Into; ⊘ is not this time; watch the bag bars and Before you go;
    Settings → Remind me to pack.
 6. **Go, use, review** — the On site page while away; grab lists for outings; back home: Review; Refine learns from it.
 

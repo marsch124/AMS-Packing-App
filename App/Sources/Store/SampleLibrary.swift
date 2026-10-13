@@ -437,10 +437,14 @@ enum SampleLibrary {
     /// (`trip-charge-1`), "0 of 2"; the second trip, two months ahead (`trip-row-1`), has none.
     ///
     /// `byPlane` (`-uiTestingBattery -batteryByPlane`, 0.76 — a battery in the hold): the first
-    /// trip goes by plane and the Camp pouch in the Checked luggage, so Check before you go has
+    /// trip goes by plane and the Camp pouch in the Checked luggage, so Before you go's flags have
     /// one line, "Power bank, in the Camp pouch" (`trip-check-cabin-0`) — the Toothbrush is in
     /// the Wash bag in the carry-on, and the Lighter, not allowed on board, is in the hold.
-    static func battery(byPlane: Bool = false) -> Library {
+    ///
+    /// `toDo` (`-batteryToDo`, 0.77 — Before you go, one card): Hiking has a reminder "Check the
+    /// forecast" a week ahead, so with `byPlane` the trip's Before you go holds all three parts —
+    /// the power bank in the hold, the reminder due, and To charge "0 of 2": 4 left.
+    static func battery(byPlane: Bool = false, toDo: Bool = false) -> Library {
         var lib = kits()
         let cal = Calendar(identifier: .gregorian)
         func day(_ n: Int) -> String {
@@ -460,6 +464,10 @@ enum SampleLibrary {
         if byPlane, !lib.trips.isEmpty, let pouch = lib.items.first(where: { $0.name == "Camp pouch" })?.id {
             _ = lib.updateThing(id: pouch) { $0.container = "Checked luggage" }
             lib.trips[0].transport = "Plane"
+            lib.trips[0].entries = lib.builtLines(lib.trips[0])
+        }
+        if toDo, !lib.trips.isEmpty, let hiking = lib.templates.first(where: { $0.name == "Hiking" }) {
+            lib.addReminder(templateId: hiking.id, name: "Check the forecast", when: "week")
             lib.trips[0].entries = lib.builtLines(lib.trips[0])
         }
         return lib

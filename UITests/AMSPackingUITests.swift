@@ -2215,13 +2215,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-events"))
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "the plane trip has nothing to check")
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 5), "the plane trip has nothing to check")
         func says(_ id: String) -> String { words(app.buttons[id]) }
         XCTAssertTrue(waitUntil { says("trip-check-cabin-0").contains("Pocket knife") },
                       "not allowed on board is not first: '\(says("trip-check-cabin-0"))'")
         XCTAssertTrue(says("trip-check-cabin-1").contains("Sun cream"), "the liquid is not asked about: '\(says("trip-check-cabin-1"))'")
         XCTAssertTrue(says("trip-check-date-0").contains("Sun cream"), "what runs out first is not first: '\(says("trip-check-date-0"))'")
         XCTAssertTrue(says("trip-check-date-1").contains("Passport"), "the passport's six months are not checked: '\(says("trip-check-date-1"))'")
+        // Before you go counts them: four flags, nothing else three weeks ahead (0.77).
+        let left = app.staticTexts["trip-beforego-count"]
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("4") }, "Before you go does not count the four flags: '\(words(left))'")
         shot(app, "trip-checks")
 
         // The sun cream goes in a small bottle after all: open it from the check, Liquid off.
@@ -2271,7 +2274,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "the dates are no longer checked")
+        XCTAssertTrue(appears(app, "trip-beforego-part-flags", timeout: 5), "the dates are no longer checked")
         XCTAssertFalse(app.buttons["trip-check-cabin-0"].exists, "a bag out of the cabin is still checked")
     }
 
@@ -10927,7 +10930,7 @@ final class AMSPackingUITests: XCTestCase {
     func testABatterySwitchOnAThingPutsItOnTheTripsToCharge() {
         let app = launch("-uiTestingBattery")
         openKitTrip(app)
-        XCTAssertTrue(appears(app, "trip-charge", timeout: 5), "no To charge the day before the trip")
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "no To charge the day before the trip")
         let count = app.staticTexts["trip-charge-count"]
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 2") }, "To charge does not count two things: '\(words(count))'")
         XCTAssertTrue(words(app.buttons["trip-charge-0"]).contains("Toothbrush, in the Wash bag"), "'\(chargeRows(app))'")
@@ -10977,7 +10980,7 @@ final class AMSPackingUITests: XCTestCase {
     func testToChargeIsTickedApartFromPacking() {
         let app = launch("-uiTestingBattery")
         openKitTrip(app)
-        XCTAssertTrue(appears(app, "trip-charge", timeout: 5), "no To charge the day before the trip")
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "no To charge the day before the trip")
         let count = app.staticTexts["trip-charge-count"]
         let progress = app.staticTexts["trip-progress"]
         XCTAssertTrue(waitUntil { !self.words(progress).isEmpty })
@@ -10998,12 +11001,21 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 2") }, "packing the pouch changed what is charged: '\(words(count))'")
         XCTAssertFalse(isOn(app.buttons["trip-charge-0"]), "packing charged the toothbrush")
 
-        // The last one charged: all charged.
+        // The last one charged: all charged — nothing else is left, so Before you go says All
+        // set and folds to its one line (0.77); a press on its chevron shows the ticks again.
         tap(app, id: "trip-charge-0")
+        let left = app.staticTexts["trip-beforego-count"]
+        XCTAssertTrue(waitUntil { self.words(left) == "All set" }, "all charged, Before you go is not all set: '\(words(left))'")
+        XCTAssertTrue(disappears(app, "trip-beforego-part-charge", timeout: 5), "all set, the card did not fold")
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 2), "all set, the card went")
+        shot(app, "trip-beforego-allset")
+        tap(app, id: "trip-beforego-fold")
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "the chevron does not open the card")
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("2 of 2") }, "'\(words(count))'")
         shot(app, "trip-to-charge-all")
         tap(app, id: "trip-charge-1")
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 2") }, "unticked, the power bank is still charged: '\(words(count))'")
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("1") }, "unticked, Before you go does not count it: '\(words(left))'")
         XCTAssertEqual(words(progress), packed, "unticking its charge unpacked the pouch")
         tap(app, id: "trip-done")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
@@ -11011,7 +11023,7 @@ final class AMSPackingUITests: XCTestCase {
         // Two months ahead: not yet.
         openKitTrip(app, row: 1)
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        XCTAssertFalse(appears(app, "trip-charge", timeout: 3), "To charge shows two months before the trip")
+        XCTAssertFalse(appears(app, "trip-beforego-part-charge", timeout: 3), "To charge shows two months before the trip")
     }
 
     /// A battery in the hold (0.76, his yes of 13 Oct 2026): on a plane trip, Check before you
@@ -11023,7 +11035,7 @@ final class AMSPackingUITests: XCTestCase {
     func testABatteryInACheckedBagIsToldToGoInTheCabin() {
         let app = launch("-uiTestingBattery", ["-batteryByPlane"])
         openKitTrip(app)
-        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "the plane trip does not check the battery in the hold")
+        XCTAssertTrue(appears(app, "trip-beforego-part-flags", timeout: 5), "the plane trip does not check the battery in the hold")
         let check = app.buttons["trip-check-cabin-0"]
         XCTAssertTrue(waitUntil { self.words(check).contains("Power bank, in the Camp pouch") },
                       "the power bank in the pouch in the hold is not said: '\(words(check))'")
@@ -11040,7 +11052,67 @@ final class AMSPackingUITests: XCTestCase {
         setSwitch(app, "thing-battery", on: false)
         tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
-        XCTAssertTrue(disappears(app, "trip-checks", timeout: 5), "without its battery the power bank is still checked")
+        XCTAssertTrue(disappears(app, "trip-beforego-part-flags", timeout: 5), "without its battery the power bank is still checked")
+    }
+
+    /// Before you go (0.77, his yes of 13 Oct 2026): ONE card where Check before you go and To
+    /// charge stood — the flags, then To do, then To charge, each part only while it has
+    /// something, and one count for everything left. (`-uiTestingBattery -batteryByPlane
+    /// -batteryToDo`: the power bank in the hold, Hiking's "Check the forecast" due, the
+    /// toothbrush and the power bank to charge — 4 left.) With only charged things left the
+    /// card says All set and folds to its one line; its chevron opens it again.
+    func testBeforeYouGoIsOneCardWithItsPartsInOrder() {
+        let app = launch("-uiTestingBattery", ["-batteryByPlane", "-batteryToDo"])
+        openKitTrip(app)
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 5), "no Before you go on the trip")
+        let parts = ["trip-beforego-part-flags", "trip-beforego-part-todo", "trip-beforego-part-charge"]
+        for id in parts { XCTAssertTrue(appears(app, id, timeout: 5), "Before you go has no \(id)") }
+        let tops = parts.map { find(app, $0)?.frame.minY ?? -1 }
+        XCTAssertTrue(tops[0] < tops[1] && tops[1] < tops[2], "the parts are not flags, To do, To charge, top to bottom: \(tops)")
+        XCTAssertNil(find(app, "trip-checks"), "Check before you go is still a card of its own")
+        XCTAssertNil(find(app, "trip-charge"), "To charge is still a card of its own")
+        let left = app.staticTexts["trip-beforego-count"]
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("4") }, "one flag, one to do and two to charge are not 4 left: '\(words(left))'")
+        XCTAssertTrue(words(app.buttons["trip-check-cabin-0"]).contains("Power bank"), "'\(words(app.buttons["trip-check-cabin-0"]))'")
+        XCTAssertTrue(words(app.buttons["trip-check-todo-0"]).contains("Check the forecast"), "'\(words(app.buttons["trip-check-todo-0"]))'")
+        XCTAssertFalse(app.buttons["trip-beforego-fold"].exists, "with things left, the card can be folded")
+        shot(app, "beforego-trip")
+
+        // The reminder ticked: To do goes, 3 left.
+        tap(app, id: "trip-check-todo-0")
+        XCTAssertTrue(disappears(app, "trip-beforego-part-todo", timeout: 5), "ticked, To do is still on the card")
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("3") }, "the reminder done is still counted: '\(words(left))'")
+
+        // Both charged: only the flag is left, and the card stays open.
+        let count = app.staticTexts["trip-charge-count"]
+        tap(app, id: "trip-charge-0")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 2") }, "'\(words(count))'")
+        tap(app, id: "trip-charge-1")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("2 of 2") }, "'\(words(count))'")
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("1") }, "charged things are still counted: '\(words(left))'")
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 2), "with a flag left, the card folded")
+        XCTAssertFalse(app.buttons["trip-beforego-fold"].exists, "with a flag left, the card can be folded")
+
+        // The power bank's battery off: no flag, and it leaves To charge — All set, folded.
+        tap(app, id: "trip-check-cabin-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the flag did not open the power bank")
+        setSwitch(app, "thing-battery", on: false)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(disappears(app, "trip-beforego-part-flags", timeout: 5), "without its battery the power bank is still flagged")
+        XCTAssertTrue(waitUntil { self.words(left) == "All set" }, "nothing left, but not All set: '\(words(left))'")
+        XCTAssertTrue(disappears(app, "trip-beforego-part-charge", timeout: 5), "all set, the card did not fold")
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 2), "all set, the card went")
+        shot(app, "beforego-allset")
+
+        // Opened by its chevron; a charge taken back counts again and the chevron goes.
+        tap(app, id: "trip-beforego-fold")
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "the chevron does not open the card")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 1") }, "'\(words(count))'")
+        shot(app, "beforego-allset-open")
+        tap(app, id: "trip-charge-0")
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("1") }, "the charge taken back is not counted: '\(words(left))'")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-beforego-fold"].exists }, "with something left, the card can still be folded")
     }
 
     /// A past trip keeps what was inside its kits (0.73): reviewed, the Camp pouch's line
@@ -11666,7 +11738,7 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// On a trip a reminder is a line to tick, and when its step has come it shows on
-    /// Home's countdown and in Check before you go — a press there ticks it.
+    /// Home's countdown and in Before you go's To do — a press there ticks it.
     /// (`-uiTestingReminders`: Hiking's "Check the forecast" a week ahead, "Leave a
     /// route note" the day before; the trip in three days.)
     /// Each reminder names the template it comes from (0.75, his yes of 13 Oct 2026): Hiking's
@@ -11683,14 +11755,14 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "reminders-home")
         tap(app, id: "home-countdown")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        XCTAssertTrue(appears(app, "trip-checks", timeout: 5), "Check before you go does not show the reminder due")
+        XCTAssertTrue(appears(app, "trip-beforego-part-todo", timeout: 5), "Before you go does not show the reminder due")
         XCTAssertTrue(app.buttons["trip-check-todo-0"].exists)
         XCTAssertFalse(app.buttons["trip-check-todo-1"].exists, "a reminder not yet due is shown")
         XCTAssertTrue(waitUntil { self.marksWords(app, "trip-check-todo-0-from") == "Hiking" },
                       "the reminder due does not name its template: '\(marksWords(app, "trip-check-todo-0-from"))'")
         shot(app, "reminders-trip")
         tap(app, id: "trip-check-todo-0")
-        XCTAssertTrue(disappears(app, "trip-checks", timeout: 5), "ticking it did not take it off the card")
+        XCTAssertTrue(disappears(app, "trip-beforego", timeout: 5), "ticking it did not take it off the card")
         // On the trip's own list: the same line, ticked, with the same icon.
         XCTAssertTrue(scrollUntil(app, "trip-line-7", near: "trip-line-0"), "the reminder is not on the trip's list")
         XCTAssertTrue(words(app.buttons["trip-line-7"]).contains("Check the forecast"), "line 7 is not the reminder: '\(words(app.buttons["trip-line-7"]))'")
