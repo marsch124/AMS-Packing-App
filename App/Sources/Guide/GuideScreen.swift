@@ -169,16 +169,6 @@ struct HowItWorksScreen: View {
             "Type a thing at the bottom to add it to this trip only. Bought it on site? Press Bought on site: it goes on ticked, marked so.",
             "At the very end of the list, Delete trip asks first, then removes the trip. Your things and templates stay.",
             "A trip someone sent you arrives Quick: tick one of your templates to add to it, or pick Full trip to bring your always-packed things. Sharing a trip sends just the list \u{2014} your marks, notes and scale readings stay with you."]),
-        // Spec 07 part 17 (0.79) — his own packing walk-through, 13 Oct 2026.
-        Topic(section: .events, title: "Packing day", lines: [
-            "While a trip is being packed, a row under the loop: Packing day, then six stations \u{2014} Bags out, Pack, Weigh, Tags, Photos, Ready. A station that is done turns green; the next one to do is lit. On the iPhone the row slides sideways.",
-            "Tap Pack to go to the list (it shows how far you are, 12/40). Tap any other station to open it; at the bottom, Next offers the next one still to do.",
-            "Bags out: the trip\u{2019}s bags \u{2014} every bag something on the list goes in, not \u{201C}Not in a bag\u{201D} \u{2014} each with a tick as you lay it out.",
-            "Weigh: the luggage scale, one bag after another. Type what the scale says and Save; the next bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself \u{2014} once per trip.",
-            "Tags: a Name tag tick per bag, and an AirTag tick for each bag that has one. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags.",
-            "Photos: one photo of all your bags together \u{2014} for the airline desk if one goes missing \u{2014} and each bag\u{2019}s own photo (the same as in Bags). With one bag, its own photo is enough. The photo of all of them stays in Bags after you leave.",
-            "Ready: every station, done or what is left \u{2014} tap one to open it \u{2014} and Ready to go once all are green. I leave at is right there: 15 minutes before, the iPhone names what is still unticked.",
-            "A trip with no bags yet has nothing to lay out, weigh, tag or photograph: those stations say so, and Ready waits only for the packing. Once the trip sets off, the row is gone. A trip you share, or start again from this one, starts its Packing day afresh."]),
         // Spec 07 part 10 (0.71) — a test version, iPhone only.
         Topic(section: .events, title: "Pack by voice (iPhone, a test)", lines: [
             "Pack by voice, at the end of a trip's Sorting row, walks you through what is still to pack, place by place as From where sorts them. It says the place, then the thing \u{2014} \u{201C}Garage. Goggles.\u{201D} \u{2014} and listens for one of five words.",
@@ -305,6 +295,9 @@ struct HowItWorksScreen: View {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("guide-topic-\(n)")
+                        // The Packing day's own part, right after packing a trip (0.79, his ask of 13 Oct
+                        // 2026: "write about the Packing-Day-Stations in the How-this-works").
+                        if t.title == "Packing a trip" { PackingDayGuideCard() }
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)

@@ -621,3 +621,91 @@ struct GroupPhotoLine: View {
         }
     }
 }
+
+// MARK: - How it works
+
+/// The Packing day's part of How it works (0.79) — his ask of 13 Oct 2026: "remember to write
+/// about the Packing-Day-Stations in the How-this-works". What it is and where it sits; each
+/// station in order, with its own mark, what the mark shows, what it does and what turns it green;
+/// how to get from one to the next; a trip without bags. Container `guide-packingday`; each
+/// station one element `guide-day-<key>` (its name, what its mark shows, its words), its mark
+/// an element of its own, `guide-day-<key>-mark` (label = what it shows), as the loop's marks are.
+struct PackingDayGuideCard: View {
+    @Environment(\.colorScheme) private var scheme
+
+    /// What each station does and when it turns green — the card's words, one per station.
+    static func says(_ s: PackingDayStation) -> String {
+        switch s {
+        case .bagsOut:
+            return "Lay every bag out where you pack, and tick it as it comes out. The bags are the ones your list packs into \u{2014} \u{201C}Not in a bag\u{201D} is not one. Green when every bag is out."
+        case .pack:
+            return "The trip\u{2019}s own list. Its station shows how far you are \u{2014} 12/40 \u{2014} and a tap takes you straight to the list. Green when everything is packed; a thing set aside \u{2298} counts as done."
+        case .weigh:
+            return "The luggage scale, one bag after another: hang it on the scale, type what it says, Save \u{2014} the next bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself \u{2014} once per trip. Green when every bag is weighed."
+        case .tags:
+            return "A Name tag tick for every bag, and an AirTag tick for each bag that has one. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags; switch it on once and every trip asks for it. Green when every tick is on."
+        case .photos:
+            return "One photo of all your bags side by side, and each bag\u{2019}s own photo (the same ones as in Bags) \u{2014} for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them stays in Bags after you leave. Green when every photo is there."
+        case .ready:
+            return "Every station, done or what is left \u{2014} tap one to open it \u{2014} and Ready to go once all are green. I leave at is right there: 15 minutes before, the iPhone names what is still unticked."
+        }
+    }
+
+    var body: some View {
+        let tint = Library.LoopStep.pack.tint
+        let words = Library.LoopStep.pack.words(scheme)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                StationMark(mark: PackingDayStation.dayMark, size: 24).foregroundStyle(words)
+                Text("Packing day").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("guide-day-title")
+            Text("On a trip you are packing, a row sits right under the loop: Packing day, then six stations in the order you go through them. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways.")
+                .font(.system(.callout)).foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(Array(PackingDayStation.allCases.enumerated()), id: \.element) { n, s in
+                HStack(alignment: .top, spacing: 10) {
+                    // The station as it looks when done — its mark in white on the green.
+                    StationMark(mark: s.mark, size: 20)
+                        .foregroundStyle(.white)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(tint))
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(s.mark.label)
+                        .accessibilityIdentifier("guide-day-\(s.rawValue)-mark")
+                    VStack(alignment: .leading, spacing: 2) {
+                        // "2 · Pack — a list going into an open case": the name, and what its mark shows.
+                        (Text("\(n + 1) \u{00B7} \(s.name)").font(.system(.body, weight: .semibold)).foregroundStyle(words)
+                         + Text(" \u{2014} \(s.mark.label.prefix(1).lowercased() + s.mark.label.dropFirst())").font(.system(.footnote)).foregroundStyle(Theme.muted))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(PackingDayGuideCard.says(s)).font(.system(.callout)).foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("guide-day-\(s.rawValue)")
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                line("Getting around: tap a station in the row to open it \u{2014} Pack goes straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the stations are at the top too. Done closes it.")
+                line("A trip with no bags yet has nothing to lay out, weigh, tag or photograph: those four stations are faded with a dashed edge and say \u{201C}no bags yet\u{201D}; opened, they say how to give things a bag (Usually packed in, on a thing\u{2019}s page). Ready then waits only for the packing.")
+                line("Once the trip sets off, the row is gone \u{2014} the weights and photos stay in Bags. A trip you share, or start again from this one, begins its Packing day afresh.")
+            }
+            .padding(.top, 2)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint.opacity(0.7), lineWidth: 1.2))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("guide-packingday")
+    }
+
+    private func line(_ words: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Circle().fill(AppSection.events.color).frame(width: 6, height: 6).offset(y: -2)
+            Text(words).font(.system(.callout)).foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}

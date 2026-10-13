@@ -12325,4 +12325,58 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["day-next"].exists, "Ready offers a next station")
         shot(app, "day-ready")
     }
+
+    /// How it works has a part of its own for the Packing day (his ask, 13 Oct 2026: "write about
+    /// the Packing-Day-Stations in the How-this-works"), right after Packing a trip: each station in
+    /// order, wearing its own mark (what it shows in its label), with what turns it green.
+    func testHowItWorksExplainsThePackingDayStations() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-howitworks")
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
+        XCTAssertTrue(waitUntil { self.guidePart(app, "guide-day-title").exists }, "How it works has no Packing day part")
+        let title = guidePart(app, "guide-day-title")
+        toTopThird(app, title)
+        shot(app, "day-howitworks-1")
+        let marks = ["bags": "Two bags on the floor", "pack": "A list going into an open case",
+                     "weigh": "A luggage scale, a bag hanging from it", "tags": "A luggage tag and an AirTag",
+                     "photos": "A photo print with a bag", "ready": "A bag by the door"]
+        for (n, key) in ["bags", "pack", "weigh", "tags", "photos", "ready"].enumerated() {
+            let part = guidePart(app, "guide-day-\(key)")
+            XCTAssertTrue(part.exists, "How it works says nothing about the \(key) station")
+            XCTAssertTrue(words(part).hasPrefix("\(n + 1) \u{00B7} "), "station \(n + 1) is out of order: '\(words(part))'")
+            XCTAssertTrue(words(part).contains("Green when") || key == "ready", "\(key) does not say what turns it green: '\(words(part))'")
+            let mark = guidePart(app, "guide-day-\(key)-mark")
+            XCTAssertEqual(mark.exists ? mark.label : "no mark", marks[key], "the \(key) station does not wear its own mark")
+        }
+        XCTAssertTrue(words(guidePart(app, "guide-day-weigh")).contains("opens by itself"), "Weigh does not say it opens by itself")
+        XCTAssertTrue(words(guidePart(app, "guide-day-tags")).contains("Has an AirTag"), "Tags does not name the bag's switch")
+        toTopThird(app, guidePart(app, "guide-day-tags"))
+        shot(app, "day-howitworks-2")
+    }
+
+    /// Drag the list holding `e` until `e` stands in the top third of the window — for a picture
+    /// of a long page that starts where it should (a list's "hittable" is no proof it is shown).
+    private func toTopThird(_ app: XCUIApplication, _ e: XCUIElement) {
+        guard e.exists, let list = listHolding(app, e), list.exists else { return }
+        let window = app.windows.firstMatch.frame
+        for _ in 0..<30 {
+            let y = e.frame.minY
+            if y > window.minY + 120 && y < window.minY + window.height / 3 { return }
+            let from = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+            let by: CGFloat = y > window.minY + window.height / 3 ? -min(400, y - window.height / 4) : 300
+            #if os(macOS)
+            list.scroll(byDeltaX: 0, deltaY: by)
+            #else
+            from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: by)), withVelocity: .slow, thenHoldForDuration: 0.1)
+            #endif
+            usleep(400_000)
+        }
+    }
+
+    /// A part of a guide card: a text, a container or a drawn mark — whatever the machine calls it.
+    private func guidePart(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        for query in [app.otherElements, app.staticTexts, app.groups, app.images] where query[id].exists { return query[id] }
+        return app.otherElements[id]
+    }
 }
