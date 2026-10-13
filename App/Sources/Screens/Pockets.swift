@@ -342,9 +342,6 @@ struct LeaveTimes: View {
     }
 }
 
-// MARK: - The door checks, for the tests
-
-#if DEBUG
 /// A door, drawn — the head of "I leave at", the door check (0.75): a door standing on the
 /// floor, its top corners rounded, its handle on the right. The app's own stroke on the
 /// 24-point grid (`GridShape`), never a stock symbol.
@@ -356,6 +353,9 @@ struct DoorMark: View {
     }
 }
 
+// MARK: - The door checks, for the tests
+
+#if DEBUG
 /// UI tests only (`-showDoorChecks`): what the device would have in its list for this
 /// trip — a test cannot see a notification. One line per check, `door-check-out` /
 /// `door-check-home`, saying its id, day and time, title and words; `door-check-none`
