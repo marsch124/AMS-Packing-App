@@ -118,7 +118,10 @@ struct TripSettingsScreen: View {
                             }
                         }
                     }
-                    Pills(title: "Transport", options: TRANSPORTS.map { ($0, $0) }, selected: [transport], id: "tripset-transport") { transport = $0 }
+                    // Travelling by (0.76), as on Create new trip: a trip by "Car" — every ordinary
+                    // trip, old ones too — shows both off and keeps its word unless a pill is tapped.
+                    // Season does NOT follow the dates here: a made trip's season changes only by hand.
+                    TravellingBy(transport: $transport, note: model.library.travelNote(quick: quick), id: "tripset-transport")
                     Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "tripset-season") { season = $0 }
                     // Rain gear on a dry forecast, or long before any forecast exists: his
                     // own gear tagged for these comes onto the list, whatever the weather.

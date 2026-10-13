@@ -1050,7 +1050,8 @@ apart; a field 6 pt under its heading):
     "Only on some trips" (`thing-heading-some`, Templates violet), the line `thing-some-hint`, pill rows Season
     (`thing-seasons-<n>`), Context (`thing-contexts-<n>`, only while the thing is on a workout template or already has
     a Context, then "Context counts on workout templates only." under the pills, `thing-contexts-note`), Transport
-    (`thing-transports-<n>`), Food (`thing-catering-<n>`) — headings `thing-<kind>-title`, the pills as a row's
+    (`thing-transports-<n>`: Car, Plane, RV — unchanged in 0.76; Car means a trip with Travelling by's Plane and RV
+    both off, spec 03 open question 34), Food (`thing-catering-<n>`) — headings `thing-<kind>-title`, the pills as a row's
     (`OnlySomeTripsPills`, `OnlySomeTrips.swift`; never borrowed here); then `thing-some-own` (Footnote muted) naming
     the templates lit in On these templates whose row sets its own answer, measured against what the page holds
     (`Library.ownLimitWords(thingId:against:on:)`: "Set on the template instead: Hiking (Season), Swim (Food)."; a
