@@ -423,7 +423,9 @@ Updated for 0.76: `testABagOnTheTripSaysWhetherItGoesInTheCabin` reads "Plane an
 line planted: "Quick does not say that Plane and RV still count: '…Transport still counts.'"),
 `testContextSitsUnderTheWorkouts` measures against Plane (`trip-transport-1`), and the tests that use Season, Food or
 Laundry on Create new trip open More choices first (`openMoreChoices`: `testLaundryCountsPerNightThingsFourNightsAtMost`,
-`testTheEditorsLeadWithTheirHeadings`, `summerTripFromHiking` in the Only on some trips tests).
+`testTheEditorsLeadWithTheirHeadings`, `summerTripFromHiking` in the Only on some trips tests). Green on the iPhone
+(13 Oct 2026: the 20 tests that touch Create new trip's or Trip settings' answers in light, the three new ones and the
+headings test in dark) and on GitHub's Mac (a probe running the three new ones and six of the updated ones).
 UI: `testHomeBuildsATrip` (Create never greyed; early press says "Give the trip a name." — the sample's
 Common base is always packed, so no template is missing; the line goes once the name is typed; the trip opens
 with lines; it is listed as `trip-row-1`), `testAlwaysPackedAloneMakesATrip` (0.73: Trip settings saves the
