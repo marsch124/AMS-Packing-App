@@ -294,7 +294,7 @@ extension Library {
 
     /// The templates a trip can be built from: the tickable activities, in his
     /// order (Swim / Bike / Run…), grouped by his activity groups — and, last, every
-    /// template with no activity area, under "Other templates" (group id "").
+    /// template with no activity area, under "Other Templates" (group id ""; his casing, 0.78).
     ///
     /// The spec pass (5 Oct 2026): a template made with "No activity area" (A new
     /// template offers it) was shown on the Templates tab but never offered for a trip,
@@ -307,7 +307,7 @@ extension Library {
             return mine.isEmpty ? nil : (g, mine)
         }
         let other = all.filter { !GROUP_IDS.contains($0.group) }
-        return other.isEmpty ? grouped : grouped + [(ActivityGroup(id: "", label: "Other templates", hint: ""), other)]
+        return other.isEmpty ? grouped : grouped + [(ActivityGroup(id: "", label: "Other Templates", hint: ""), other)]
     }
 }
 

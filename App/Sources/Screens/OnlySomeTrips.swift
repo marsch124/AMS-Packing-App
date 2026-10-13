@@ -38,7 +38,8 @@ struct OnlySomeTripsPills: View {
             let options = OnlySomeTripsPills.options(k, stored: stored, thing: thing)
             VStack(alignment: .leading, spacing: 6) {
                 Pills(title: k.title, options: options, selected: Set(picks[k]), id: "\(id)-\(k.rawValue)",
-                      tint: tint, cursor: cursor(k), borrowed: follows(k)) { word in
+                      tint: tint, cursor: cursor(k), borrowed: follows(k),
+                      icons: k == .seasons ? HomeScreen.seasonIcon : nil) { word in
                     OnlySomeTripsPills.toggle(&picks, k, word)
                     if let clicked, let n = options.firstIndex(where: { $0.id == word }) { clicked(k, n) }
                 }

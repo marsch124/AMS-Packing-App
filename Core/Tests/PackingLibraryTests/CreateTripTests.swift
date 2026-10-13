@@ -97,7 +97,7 @@ final class CreateTripTests: XCTestCase {
         // as the web app offers them (the spec pass, 5 Oct 2026: they were never offered).
         XCTAssertEqual(choices.map { $0.group.id }, ["GA", "WET", ""])
         XCTAssertEqual(choices[1].lists.map(\.name), ["Swim", "Bike"], "race order, not the alphabet")
-        XCTAssertEqual(choices.last?.group.label, "Other templates")
+        XCTAssertEqual(choices.last?.group.label, "Other Templates")
         XCTAssertEqual(choices.last?.lists.map(\.name), ["Night run"], "a template with no activity area is never offered")
         // The always-packed, transport and bag templates are never offered as a choice.
         var base = newList(name: "Common base", role: "base"); base.items = [newItem(name: "Passport")]

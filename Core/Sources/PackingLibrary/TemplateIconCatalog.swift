@@ -61,6 +61,11 @@ public enum TemplateIconCatalog {
         i("motorbike", "Motorbike", .travel, "M2.5 16a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0 M14.5 16a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0 M6 16l3.2-5h5.3l1.8-1.5 M18 16l-3.3-8.5h-2.2 M9.5 16h5.2l1.6-4.5"),
         i("ferry", "Ferry", .travel, "M3 14.5h18l-2.2 4.5H5.2Z M5.5 14.5v-4h13v4 M8.5 10.5V7h7v3.5 M12 7V4.5 M2.5 21.2c1.6 0 1.6-.9 3.2-.9s1.6.9 3.2.9 1.6-.9 3.2-.9 1.6.9 3.2.9 1.6-.9 3.2-.9 1.6.9 2 .9"),
         i("suitcase", "Travel", .travel, "M4.5 8h15v11.5h-15Z M9 8V5c0-.6.4-1 1-1h4c.6 0 1 .4 1 1v3 M8.5 11v5.5 M15.5 11v5.5 M7 19.5v1 M17 19.5v1"),
+        // 0.78, his ask (13 Oct 2026): his small always-packed template showed the same suitcase
+        // as his big Travel one — "a nice unique icon — not the same as Travel". A soft holdall:
+        // the round-ended body, a zip along the top with its pull, and two handles, the back one
+        // over the front one.
+        i("weekendbag", "Weekend bag", .travel, "M6.5 9.5h11a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4h-11a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4Z M6.5 9.5a5.5 5.5 0 0 1 11 0 M9.5 9.5a2.5 2.5 0 0 1 5 0 M6 13.2h12 M15.5 13.2v2.2"),
         i("backpack", "Backpack", .travel, "M7.5 7.5h9c1.4 0 2.5 1.1 2.5 2.5v10.5H5V10c0-1.4 1.1-2.5 2.5-2.5Z M9.5 7.5V5.2c0-.9.7-1.7 1.7-1.7h1.6c.9 0 1.7.8 1.7 1.7v2.3 M5 13h14 M10 13v2.5h4V13"),
         i("box", "Boxes", .travel, "M3.5 7.8 12 3.8l8.5 4v8.9L12 20.7l-8.5-4Z M3.5 7.8 12 11.8l8.5-4 M12 11.8v8.9 M7.8 5.8l8.4 4"),
         i("passport", "Passport", .travel, "M6 3.5h12v17H6Z M9.2 10a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0 -5.6 0 M9 16h6"),

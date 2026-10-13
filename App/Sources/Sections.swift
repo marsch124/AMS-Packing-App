@@ -77,10 +77,12 @@ struct SectionMark: View {
     }
 }
 
-/// "GA · GOAL ACTIVITY" — his own code for a group, then the words in capitals.
+/// "GA · Goal Activity" — his own code for a group, then the words as written.
 /// The trip builder and the activity areas on Your templates both say it this way, from here,
-/// so the two can never drift apart.
+/// so the two can never drift apart. Not in capitals (0.78) — his words on the iPhone
+/// (13 Oct 2026): "GA · Goal Activity — not all caps", "Other Templates — not all caps".
+/// The code (GA, WET, OE) is his own and stays in capitals.
 func groupHeading(_ id: String, _ label: String) -> String {
     let code = jsTrim(id)
-    return code.isEmpty ? label.uppercased() : "\(code) · \(label.uppercased())"
+    return code.isEmpty ? label : "\(code) · \(label)"
 }

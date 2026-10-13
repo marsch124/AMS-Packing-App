@@ -783,18 +783,20 @@ no entry shows no marker anywhere (and fails the test).
    the last tap (0.62). (2) Grab Lists: the ones on Home
    (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on
    Home — when full, you pick which one steps back; Make refuses a name already in use (0.62). (3) The countdown to the next trip under the grab lists; tap
-   opens the trip. (4) Create new trip: name, then Full trip or Quick (Quick = only the ticked templates, no common
-   base or plane or RV template, said in the line under it — 0.76); the dates in the calendar that is always open (first day,
+   opens the trip. (4) Create new trip: name, then Full trip or Quick (Quick = only the ticked templates, not the Always
+   packed templates and no Plane or RV template, picking Plane still turns on the airport checks — the line under it
+   names the Always packed templates, 0.78; 0.76 said "no common base or plane or RV template"); the dates in the calendar that is always open (first day,
    last day, set at once; the line under it says range and nights; Clear dates leaves none; no day tapped = no
    dates; Trip settings has the field with OK and Cancel) (0.67). (5) Create trip is always ready; what is missing is said under it.
    (6) So is every Add, New, Make, Weather: empty press adds nothing and a short red line says what is missing,
    gone as soon as you type. (7) (0.76) Travelling by: Plane or RV with their drawings, both off for an ordinary
    trip, one at a time, the lit one tapped off again; the line under them says what each adds (the airport checks,
    the RV template by its name). (8) (0.76) More choices folds Season, Food and Laundry away with one line of what is
-   picked, a tap opens it; Season follows the dates (November to March Winter, otherwise Summer) until picked by
+   picked, a tap opens it; (0.78) Summer and Winter carry the sun and the snowflake, as Plane and RV carry theirs;
+   Food is Self-sufficient, Eating out or Mix; Season follows the dates (November to March Winter, otherwise Summer) until picked by
    hand; the device remembers open or closed. (9) Pick templates, Travelling by and More choices; workout colours (Swim blue, Bike yellow,
    Run green, Strength orange, Breath work lavender, Mobility pink); each picked workout its own Context line
-   (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other templates (0.62). (10) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
+   (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other Templates (0.62; his casing 0.78). (10) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
    ×4 · laundry with a washtub. (11) This Device: how many trips, things and templates.
 1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Before you go
    (0.77: one card, one count of what is left, red / orange / green All set — folded to one line, its arrow opens it;
@@ -957,12 +959,12 @@ Shipped in 0.41.
 |---|---|---|---|
 | 0 | Trip | Trips | One journey: its dates, place and templates, and the list you pack from. The Trips tab. |
 | 1 | Template | Templates | A building block: the things for one activity or need — Hiking, Swim, RV. A trip is made from templates. The Templates tab. (Until 0.76 "…Hiking, Swim, Car.") |
-| 2 | Activity area | Templates | The group a template lives in, with its code: GA · Goal activity, WET · Workout, exercise & training, and so on. ("Activity area", not "shelf": "We understand that word much better.") |
+| 2 | Activity area | Templates | The group a template lives in, with its code: GA · Goal Activity, WET · Workout, Exercise & Training, and so on (his casing since 0.78). ("Activity area", not "shelf": "We understand that word much better.") |
 | 3 | List | Trips | The one list you pack from for a trip, made from its templates. (A grab list is a list too.) |
 | 4 | Grab list | Home | A short list for a quick outing — Swim, Bike, Run — ticked as each thing is in your hand. Up to eight are on Home; the rest wait in Grab Lists. |
 | 5 | Common base | Templates | The template that comes along on every trip: passport, phone charger and the like. |
 | 6 | Transport kit | Templates | What Travelling by adds to a trip: your Plane or RV template. Both off is an ordinary trip. (Until 0.76 "What a way of travelling adds to a trip: the Car, Plane or RV things.") |
-| 7 | Quick | Home | A trip with only the templates you tick — no common base, no transport kit. |
+| 7 | Quick | Home | A trip with only the templates you tick — not your Always packed templates, no Plane or RV template. Picking Plane still turns on the airport checks. (0.78; until then "…no common base, no transport kit.") |
 | 8 | Context | Home | Indoor, Outdoor or Race: how a workout is done, picked for each workout on its own. It adds what that setting needs. |
 | 9 | Thing | Care | One thing you own, in Your things on Care. It can be on many templates; a change to it reaches all of them. |
 | 10 | Kit | Care | All your things together — what Care counts and weighs. |
@@ -1565,8 +1567,9 @@ macOS 26) — and how far a header must step in so its title starts just after t
   the tint; as a `question` (Laundry nights, Context, the review) in ink.
 - **`SectionTitle(title:, tint = ink, id:)`** — a heading that starts a part of a screen: Headline in the tint, 12 pt
   above. Not in capitals (0.62). The template's section headings, the Care parts, the picker's groups and Your
-  things' list headings are Headlines the same way; the activity areas keep his code in capitals ("GA · GOAL
-  ACTIVITY", `groupHeading`) at Headline.
+  things' list headings are Headlines the same way; the activity areas say his code in capitals and the words as he
+  writes them ("GA · Goal Activity", "Always Packed", "Other Templates", `groupHeading`) at Headline — until 0.78
+  the words were upper-cased too ("GA · GOAL ACTIVITY"); his "not all caps", 13 Oct 2026.
 - Small capitals stay where Apple uses them: column titles over a table or the bag numbers, the kind of a shared
   thing ("A TEMPLATE"), What's new's part names — Caption or Caption 2, semibold.
 

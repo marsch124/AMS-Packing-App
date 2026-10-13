@@ -83,7 +83,7 @@ struct TripSettingsScreen: View {
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                         .accessibilityIdentifier("tripset-name")
                     // Full trip | Quick under the name, as on Create new trip (0.67).
-                    TripKindChoice(quick: $quick, id: "tripset-kind", tint: AppSection.events.color)
+                    TripKindChoice(quick: $quick, note: model.library.quickNote(), id: "tripset-kind", tint: AppSection.events.color)
                     // A heading like the pills' headings below (field test, 3 Oct 2026).
                     VStack(alignment: .leading, spacing: 6) {
                         HeadingTitle(title: "Place", tint: AppSection.events.color, id: "tripset-heading-place")
@@ -122,7 +122,8 @@ struct TripSettingsScreen: View {
                     // trip, old ones too — shows both off and keeps its word unless a pill is tapped.
                     // Season does NOT follow the dates here: a made trip's season changes only by hand.
                     TravellingBy(transport: $transport, note: model.library.travelNote(quick: quick), id: "tripset-transport")
-                    Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "tripset-season") { season = $0 }
+                    Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "tripset-season",
+                          icons: HomeScreen.seasonIcon) { season = $0 }
                     // Rain gear on a dry forecast, or long before any forecast exists: his
                     // own gear tagged for these comes onto the list, whatever the weather.
                     Pills(title: "Pack weather gear anyway", options: WEATHER_CONDITIONS.map { ($0.id, $0.label) },

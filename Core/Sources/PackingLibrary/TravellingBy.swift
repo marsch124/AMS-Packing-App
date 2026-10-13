@@ -63,6 +63,21 @@ extension Library {
         return line + "."
     }
 
+    /// The quiet line under Full trip | Quick (0.78). His point (13 Oct 2026): "Plane and RV still
+    /// count" was not understood, and "Always" alone is cryptic — he thinks of his always-packed
+    /// template by its own name. So the line names them, read from the library each time like
+    /// Travelling by's line (the names are his, never the app's):
+    /// "Quick packs only what you tick — not A and B, no Plane or RV template. Plane still turns on
+    /// the airport checks." No always-packed template: the "not …" part goes. As short as the line
+    /// can be: with one name it is three lines on the iPhone SE at the default text size.
+    public func quickNote() -> String {
+        let always = Library.spoken(templates.map { coerceList($0) }
+            .filter { $0.role == Library.ALWAYS_PACKED_AREA }
+            .map { jsTrim($0.name).isEmpty ? "Untitled template" : jsTrim($0.name) })
+        return "Quick packs only what you tick \u{2014} " + (always.isEmpty ? "" : "not \(always), ")
+            + "no Plane or RV template. Plane still turns on the airport checks."
+    }
+
     /// "A", "A and B", "A, B and C" — "" for none.
     static func spoken(_ names: [String]) -> String {
         switch names.count {

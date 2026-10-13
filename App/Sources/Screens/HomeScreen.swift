@@ -10,8 +10,18 @@ struct HomeScreen: View {
         switch id {
         case "self": return "Self-sufficient"
         case "eatout": return "Eating out"
-        case "mixed": return "Mix of both"
+        case "mixed": return "Mix"
         default: return fallback
+        }
+    }
+
+    /// The drawing before a Season pill (0.78, his ask: "same idea as Travelling by") — the
+    /// template catalog's own: Summer the sun, Winter the snowflake; nil for any other word.
+    static func seasonIcon(_ word: String) -> String? {
+        switch word {
+        case "Summer": return "sun"
+        case "Winter": return "snow"
+        default: return nil
         }
     }
 
@@ -127,7 +137,7 @@ struct HomeScreen: View {
                     // What KIND of trip, first, under the name — his ask (6 Oct 2026): "the
                     // Quick check box to be placed somewhere else - more thought through".
                     // A two-way choice that says what it leaves out, not a lone switch.
-                    TripKindChoice(quick: $quick, id: "trip-kind")
+                    TripKindChoice(quick: $quick, note: model.library.quickNote(), id: "trip-kind")
                     // The month grid itself, always open (0.67) — his words: "I would like the
                     // date picker to be present all the time, and then take away the Dates
                     // checkbox", and then "always having the date picker OPEN in Create new
@@ -167,7 +177,8 @@ struct HomeScreen: View {
                                 summary: HomeScreen.moreSummary(season: season, catering: catering,
                                                                 laundry: laundry, nights: laundryNights),
                                 id: "trip-more") {
-                        Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season") {
+                        Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season",
+                              icons: HomeScreen.seasonIcon) {
                             season = $0
                             seasonByHand = true
                         }
@@ -362,7 +373,7 @@ struct HomeScreen: View {
         season = Library.seasonFor(firstDay: hasDates ? HomeScreen.ymd(start) : "")
     }
 
-    /// What More choices holds, in one line while it is closed: "Summer · Mix of both · No laundry".
+    /// What More choices holds, in one line while it is closed: "Summer · Mix · No laundry".
     static func moreSummary(season: String, catering: String, laundry: Bool, nights: Int) -> String {
         let food = shortFood(catering, CATERING.first { $0.id == catering }?.label ?? catering)
         return [season, food, laundry ? "Laundry, \(nights) nights" : "No laundry"].joined(separator: " \u{00B7} ")
@@ -515,6 +526,10 @@ struct Pills: View {
     /// thing's own "Only on some trips" (0.73, OnlySomeTrips.swift): drawn with a wash and
     /// an outline in the tint and the words in ink, instead of filled.
     var borrowed = false
+    /// A drawing before the words of some pills, by the pill's stored word: the catalog key
+    /// (the seasons, 0.78 — `HomeScreen.seasonIcon`), drawn as Travelling by draws Plane and
+    /// RV. Such a pill's accessibility value is that key, so a test can see the drawing is there.
+    var icons: ((String) -> String?)? = nil
     let choose: (String) -> Void
 
     var body: some View {
@@ -534,19 +549,27 @@ struct Pills: View {
                     let on = selected.contains(o.id)
                     let tone = tones?(o.label)
                     let lent = on && borrowed
+                    let mark = icons?(o.id).flatMap { key in TemplateIcons.icon(key).map { (key: key, path: $0.path) } }
                     Button { choose(o.id) } label: {
-                        Text(o.label)
-                            .font(.system(.subheadline, weight: on ? .semibold : .regular))
-                            .foregroundStyle(lent ? Theme.ink : on ? (tone?.ink ?? Color.white) : Theme.ink)
-                            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                            .background(Capsule().fill(lent ? tint.opacity(0.18) : on ? (tone?.fill ?? tint) : Theme.bg))
-                            .overlay(Capsule().stroke(on ? (tone?.fill ?? tint) : (tone?.fill ?? Theme.line),
-                                                      lineWidth: lent ? 1.6 : tone == nil || on ? 1 : 1.8))
-                            .contentShape(Capsule())
+                        HStack(spacing: 5) {
+                            if let mark {
+                                IconMark(path: mark.path, size: Metrics.glyph, weight: 1.8)
+                                    .accessibilityHidden(true)
+                            }
+                            Text(o.label)
+                                .font(.system(.subheadline, weight: on ? .semibold : .regular))
+                        }
+                        .foregroundStyle(lent ? Theme.ink : on ? (tone?.ink ?? Color.white) : Theme.ink)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                        .background(Capsule().fill(lent ? tint.opacity(0.18) : on ? (tone?.fill ?? tint) : Theme.bg))
+                        .overlay(Capsule().stroke(on ? (tone?.fill ?? tint) : (tone?.fill ?? Theme.line),
+                                                  lineWidth: lent ? 1.6 : tone == nil || on ? 1 : 1.8))
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .focusRing(cursor == n, tint: tint, radius: 11, gap: 2)
                     .accessibilityIdentifier("\(id)-\(startIndex + n)")
+                    .accessibilityValue(mark?.key ?? "")
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
@@ -607,6 +630,8 @@ struct CountTile: View {
 /// Ids: `<id>-full`, `<id>-quick` (the picked one `.isSelected`), `<id>-note`.
 struct TripKindChoice: View {
     @Binding var quick: Bool
+    /// What Quick leaves out, naming his always-packed templates (`Library.quickNote`, 0.78).
+    let note: String
     let id: String
     var tint: Color = AppSection.home.color
 
@@ -622,8 +647,10 @@ struct TripKindChoice: View {
             .frame(maxWidth: 360)
             // Field test 5.1/6.1 (3 Oct 2026): words that made Transport look switched
             // off left the trip on "Car" and the plane's cabin check never ran — so the
-            // line says it still counts (0.76: Plane and RV, under Travelling by).
-            Text("Quick packs only the templates you tick \u{2014} no common base, no plane or RV template. Plane and RV still count.")
+            // line says it still counts (0.76: Plane and RV, under Travelling by). Plain words
+            // since 0.78 — he did not understand "Plane and RV still count" (13 Oct 2026) — and
+            // his always-packed templates by their own names (`Library.quickNote`).
+            Text(note)
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("\(id)-note")

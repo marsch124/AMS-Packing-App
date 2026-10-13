@@ -27,7 +27,7 @@ struct TemplatesScreen: View {
         }
     }
 
-    /// One activity area (GA, WET…, or Always packed, By transport, Other) and its
+    /// One activity area (GA, WET…, or Always Packed, By Transport, Other Templates) and its
     /// templates. The template's stored field is still called `group`, as the web app
     /// reads it; only the word he sees changed (field test, Oct 2026).
     struct ActivityArea: Identifiable { let id: String; let title: String; let lists: [PackList] }
@@ -35,16 +35,16 @@ struct TemplatesScreen: View {
     static func activityAreas(_ all: [PackList]) -> [ActivityArea] {
         var out: [ActivityArea] = []
         func add(_ id: String, _ title: String, _ lists: [PackList]) { if !lists.isEmpty { out.append(ActivityArea(id: id, title: title, lists: lists)) } }
-        add("base", "Always packed", all.filter { $0.role == "base" })
-        add("transport", "By transport", all.filter { $0.role == "transport" })
+        add("base", "Always Packed", all.filter { $0.role == "base" })
+        add("transport", "By Transport", all.filter { $0.role == "transport" })
         for g in GROUPS { add(g.id, g.label, orderActivities(g.id, all.filter { $0.role.isEmpty && $0.group == g.id })) }
-        add("other", "Other templates", all.filter { $0.role.isEmpty && $0.group.isEmpty })
+        add("other", "Other Templates", all.filter { $0.role.isEmpty && $0.group.isEmpty })
         // Bags are not an activity: they have their own screen, on Care (as in the
         // web app), where each gets a weight limit.
         return out
     }
 
-    /// "GA · GOAL ACTIVITY" — his code, then the words, as he wrote them.
+    /// "GA · Goal Activity" — his code, then the words, as he wrote them (not in capitals, 0.78).
     static func areaHeading(_ area: ActivityArea) -> String {
         let code = GROUPS.first { $0.id == area.id }?.id ?? ""
         return groupHeading(code, area.title)
@@ -98,7 +98,7 @@ struct TemplatesScreen: View {
                 if let said = news { newsCard(said) }
                 ForEach(areas) { area in
                     // His own code beside the name, as the web app has it:
-                    // "GA · GOAL ACTIVITY".
+                    // "GA · Goal Activity" (not in capitals since 0.78).
                     Text(TemplatesScreen.areaHeading(area))
                         .font(.headline)
                         .foregroundStyle(Theme.ink)

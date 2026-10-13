@@ -380,8 +380,8 @@ struct OpenSharedScreen: View {
         model.change { made = $0.importTemplate(l, named: taken ? name : nil) }
         guard let made else { addNeeds = "Pick a name you do not have yet."; return }
         switch made.role {
-        case "base": finish("Added. It is under Templates, Always packed: every new trip packs it. Things you already had keep your details.")
-        case "transport": finish("Added. It is under Templates, By transport: every new \(made.transport.isEmpty ? "" : made.transport + " ")trip packs it. Things you already had keep your details.")
+        case "base": finish("Added. It is under Templates, Always Packed: every new trip packs it. Things you already had keep your details.")
+        case "transport": finish("Added. It is under Templates, By Transport: every new \(made.transport.isEmpty ? "" : made.transport + " ")trip packs it. Things you already had keep your details.")
         default: finish("Added. It is under Templates. Things you already had keep your details.")
         }
     }

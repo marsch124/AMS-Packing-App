@@ -168,7 +168,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(first.waitForExistence(timeout: 5), "no template is listed")
         XCTAssertTrue(app.buttons["template-row-2"].exists, "the sample library has three templates")
         // An activity area says his own code as well as the words, as the web app does.
-        XCTAssertEqual(words(app.staticTexts["templates-area-GA"]), "GA · GOAL ACTIVITY")
+        // Not in capitals (0.78, his words of 13 Oct 2026: "GA · Goal Activity — not all caps").
+        XCTAssertEqual(words(app.staticTexts["templates-area-GA"]), "GA · Goal Activity")
+        XCTAssertEqual(words(app.staticTexts["templates-area-base"]), "Always Packed")
+        shot(app, "templates-tab-headings")
         XCTAssertTrue(words(app.staticTexts["templates-summary"]).contains("templates"),
                       "no summary under the heading: '\(words(app.staticTexts["templates-summary"]))'")
         first.tap()
@@ -3370,12 +3373,12 @@ final class AMSPackingUITests: XCTestCase {
 
     /// Field test 7.3/6.1 (3 Oct 2026): the trip's own bag says whether it goes in the cabin,
     /// and the cabin check follows at once. (-uiTestingChecks: a plane trip, a knife and
-    /// sun cream in the carry-on.) And Quick says that Plane and RV still count (0.76; until then
-    /// "Transport still counts", a word no longer on the screen).
+    /// sun cream in the carry-on.) And Quick says that Plane still turns on the airport checks
+    /// (plain words since 0.78; 0.76 said "Plane and RV still count", which he did not understand).
     func testABagOnTheTripSaysWhetherItGoesInTheCabin() {
         let app = launch("-uiTestingChecks")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-kind-note"]).contains("Plane and RV still count") },
-                      "Quick does not say that Plane and RV still count: '\(words(app.staticTexts["trip-kind-note"]))'")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-kind-note"]).contains("Plane still turns on the airport checks") },
+                      "Quick does not say that Plane still counts: '\(words(app.staticTexts["trip-kind-note"]))'")
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -3476,7 +3479,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         let note = app.staticTexts["trip-kind-note"]
         XCTAssertTrue(note.waitForExistence(timeout: 5), "Quick does not say what it leaves out")
-        XCTAssertTrue(words(note).contains("no common base"), "'\(words(note))'")
+        // In plain words since 0.78 ("Plane and RV still count" was not understood), naming the
+        // sample's always-packed template, read from the library.
+        XCTAssertTrue(words(note).contains("not Common base, no Plane or RV template")
+                      && words(note).contains("airport checks"), "'\(words(note))'")
+        // The template groups read as he writes them, not in capitals (0.78).
+        let groups = app.staticTexts.matching(identifier: "trip-activity-title").allElementsBoundByIndex.map { words($0) }
+        XCTAssertTrue(groups.contains("GA \u{00B7} Goal Activity") && !groups.contains { $0 == $0.uppercased() },
+                      "the template groups are in capitals: \(groups)")
+        shot(app, "create-trip-groups")
         select(app, app.buttons["trip-kind-quick"])
         XCTAssertTrue(note.exists, "the line went when Quick was picked")
         select(app, app.buttons["trip-kind-full"])
@@ -3723,7 +3734,7 @@ final class AMSPackingUITests: XCTestCase {
                        || app.checkBoxes["trip-laundry"].exists, "Food or Laundry is not folded away")
         XCTAssertTrue(app.buttons["trip-activity-0"].exists && app.buttons["trip-transport-1"].exists
                       && app.staticTexts["trip-range-summary"].exists, "the templates, Travelling by or the dates went into the fold")
-        XCTAssertTrue(waitUntil { self.words(summary) == "Summer \u{00B7} Mix of both \u{00B7} No laundry" },
+        XCTAssertTrue(waitUntil { self.words(summary) == "Summer \u{00B7} Mix \u{00B7} No laundry" },
                       "the line does not say what is picked: '\(words(summary))'")
         bringIntoView(app, more)
         shot(app, "more-choices-closed")
@@ -3755,6 +3766,83 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-catering-1"]) }, "the folded Food was not kept")
         XCTAssertTrue(waitUntil { self.isSwitchOn(app, "tripset-laundry") }, "the folded Laundry was not kept")
         XCTAssertFalse(app.buttons["tripset-more"].exists, "Trip settings folds its choices too")
+    }
+
+    /// The three Food pills on ONE line (0.78) — his words (13 Oct 2026): "Self-sufficient, Eating
+    /// out & Mix — keep short so that it all fits on one line" ("Mix of both" wrapped on the
+    /// iPhone). On Create new trip and in Trip settings, by their ids: the same top, within 2 points.
+    func testTheFoodPillsFitOnOneLine() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openMoreChoices(app)
+        func oneLine(_ id: String) {
+            let pills = (0..<3).map { app.buttons["\(id)-\($0)"] }
+            bringIntoView(app, pills[2])
+            XCTAssertTrue(pills.allSatisfy { $0.exists }, "a Food pill is missing")
+            let tops = pills.map { $0.frame.minY }
+            XCTAssertLessThanOrEqual((tops.max() ?? 0) - (tops.min() ?? 0), 2,
+                                     "the Food pills wrap: \(pills.map { "\(self.words($0)) at \($0.frame.minY)" })")
+            XCTAssertEqual(words(pills[2]), "Mix", "the third Food pill does not say Mix")
+        }
+        oneLine("trip-catering")
+        shot(app, "food-one-line")
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        oneLine("tripset-catering")
+    }
+
+    /// The Season pills carry a drawing, "same idea as Travelling by" (his words, 13 Oct 2026):
+    /// Summer the sun, Winter the snowflake — on Create new trip, in Trip settings, on a
+    /// template's row and on a thing's page. Each pill's value names its drawing.
+    func testTheSeasonPillsCarryTheSunAndTheSnowflake() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        func marked(_ id: String) {
+            let summer = app.buttons["\(id)-0"], winter = app.buttons["\(id)-1"]
+            XCTAssertTrue(summer.waitForExistence(timeout: 5), "no \(id) pills")
+            bringIntoView(app, winter)
+            XCTAssertEqual(summer.value as? String, "sun", "\(id): Summer has no sun")
+            XCTAssertEqual(winter.value as? String, "snow", "\(id): Winter has no snowflake")
+        }
+        openMoreChoices(app)
+        marked("trip-season")
+        shot(app, "season-icons-create")
+        // The More choices line stays words only.
+        tapVisible(app, app.buttons["trip-more"])
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-more-summary"]).hasPrefix("Summer \u{00B7} ") },
+                      "the More choices line changed: '\(words(app.staticTexts["trip-more-summary"]))'")
+
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tapVisible(app, app.buttons["template-item-0"])
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        marked("row-seasons")
+        shot(app, "season-icons-row")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+
+        openThing(app, "Headlamp")
+        marked("thing-seasons")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // Last: Trip settings (on the small iPhone the trip's page covers the tabs).
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        marked("tripset-season")
+        shot(app, "season-icons-tripset")
     }
 
     /// The 15th of the month nearest today (forward first) that is one of `months` — a day the
@@ -5278,6 +5366,9 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-cover")
         XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the icons")
         XCTAssertTrue(app.buttons["icon-suggested"].isSelected, "Suggested is not marked as the current choice")
+        // The weekend bag (0.78, his "not the same as Travel"): a tile of its own beside Travel.
+        XCTAssertTrue(app.buttons["icon-weekendbag"].exists && app.buttons["icon-suitcase"].exists, "no weekend bag beside Travel")
+        shot(app, "icon-picker-weekendbag")
         tap(app, id: "icon-tent")
         XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
         XCTAssertTrue(waitUntil { (cover.value as? String) == "tent" }, "the tent was not taken: '\(cover.value as? String ?? "")'")
@@ -5311,7 +5402,8 @@ final class AMSPackingUITests: XCTestCase {
         // Every tile is a button called icon-<key>; Suggested, Letter and Cancel are not icons.
         let notIcons = ["icon-suggested", "icon-letter", "icon-cancel"]
         let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND NOT (identifier IN %@)", "icon-", notIcons))
-        XCTAssertTrue(waitUntil { tiles.count == 90 }, "the picker shows \(tiles.count) icons, not 90")
+        // 91 since 0.78 (the weekend bag; the name keeps its 0.74 count so its timing stays known).
+        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the picker shows \(tiles.count) icons, not 91")
         for group in ["travel", "outdoors", "sport", "beach", "city", "everyday"] {
             XCTAssertTrue(app.staticTexts["icon-group-\(group)"].exists, "no heading icon-group-\(group)")
         }

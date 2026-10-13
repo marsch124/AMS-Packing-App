@@ -69,7 +69,7 @@ public enum TripLimit: String, CaseIterable, Sendable {
         switch word {
         case "self": return "Self-sufficient"
         case "eatout": return "Eating out"
-        case "mixed": return "Mix of both"
+        case "mixed": return "Mix"
         default: return word
         }
     }

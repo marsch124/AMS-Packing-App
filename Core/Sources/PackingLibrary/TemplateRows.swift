@@ -128,9 +128,9 @@ extension Library {
     /// Context counts only on a workout (WET) template, as a trip reads it, so it is
     /// not claimed on any other (the spec pass: the row said a limit that did nothing).
     public static func onlyOnWords(_ row: Item, on list: PackList?) -> String {
-        let food = ["self": "Self-sufficient", "eatout": "Eating out", "mixed": "Mix of both"]
+        // Food in its short words, from the one place that says them (`TripLimit.label`).
         let all = row.seasons + (contextApplies(list) ? row.contexts : []) + row.transports
-            + row.catering.map { food[$0] ?? $0 }
+            + row.catering.map(TripLimit.label)
         return all.isEmpty ? "" : "Only on: " + all.joined(separator: " \u{00B7} ")
     }
 

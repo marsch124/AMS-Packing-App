@@ -114,7 +114,7 @@ struct SmallCoreSheet: View {
 
                     SectionTitle(title: "Where should \u{201C}\(bigName)\u{201D} go?", id: "smallcore-area-title")
                         .padding(.top, 16).padding(.bottom, 6)
-                    ForEach(GROUPS.map { ($0.id, "\($0.id) \u{00B7} \($0.label)") } + [("", "No activity area (Other templates)")], id: \.0) { id, label in
+                    ForEach(GROUPS.map { ($0.id, "\($0.id) \u{00B7} \($0.label)") } + [("", "No activity area (Other Templates)")], id: \.0) { id, label in
                         areaRow(id, label)
                     }
                 }

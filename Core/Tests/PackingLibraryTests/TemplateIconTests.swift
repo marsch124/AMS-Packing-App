@@ -70,11 +70,39 @@ final class TemplateIconTests: XCTestCase {
         for (name, want) in cases { XCTAssertEqual(Library.suggestedIcon(for: list(name)), want, name) }
     }
 
+    /// His ask (13 Oct 2026): a short trip's template gets "a nice unique icon — not the same as
+    /// Travel" (0.78) — the weekend bag, a drawing of its own right after Travel in the picker,
+    /// suggested by a short trip's words in English and Swedish; Travel keeps the suitcase and
+    /// no name that had a suggestion loses it.
+    func testAShortTripSuggestsTheWeekendBagNotTheTravelSuitcase() {
+        let bag = TemplateIconCatalog.icon("weekendbag")
+        XCTAssertEqual(bag?.label, "Weekend bag", "no weekend bag in the catalog")
+        XCTAssertEqual(bag?.group, .travel)
+        let keys = TemplateIconCatalog.all.map(\.key)
+        XCTAssertEqual(keys.firstIndex(of: "weekendbag"), keys.firstIndex(of: "suitcase").map { $0 + 1 }, "not right after Travel")
+        XCTAssertEqual(keys.filter { $0 == "weekendbag" }.count, 1, "the key is used twice")
+        XCTAssertNotEqual(bag?.path, TemplateIconCatalog.icon("suitcase")?.path, "the same drawing as Travel")
+        XCTAssertEqual(Set(TemplateIconCatalog.all.map(\.path)).count, TemplateIconCatalog.all.count, "two icons share a drawing")
+        XCTAssertNil(bag.flatMap { Self.drawingFault($0.path) }, "the weekend bag cannot be drawn")
+        let cases: [(PackList, String?)] = [
+            (list("Short travel kit", role: "base"), "weekendbag"), (list("Short trip"), "weekendbag"),
+            (list("Short"), "weekendbag"), (list("Weekend"), "weekendbag"), (list("Weekend away", role: "base"), "weekendbag"),
+            (list("Small core", role: "base"), "weekendbag"), (list("Kort resa"), "weekendbag"),
+            (list("Helg"), "weekendbag"), (list("Helgresa"), "weekendbag"), (list("Weekendresa"), "weekendbag"),
+            // Unchanged: Travel and an always-packed template keep the suitcase, shorts are no
+            // short trip, and a word with an icon of its own keeps it.
+            (list("Travel", role: "base"), "suitcase"), (list("Common base", role: "base"), "suitcase"),
+            (list("Resa"), "suitcase"), (list("Shorts"), nil), (list("Summer weekend"), "sun"),
+            (list("Weekend hike"), "hiking"),
+        ]
+        for (l, want) in cases { XCTAssertEqual(Library.suggestedIcon(for: l), want, l.name) }
+    }
+
     /// Every icon: a drawing the app can draw, a label, a key of its own — and every
     /// key a template may have stored since 0.46 still there.
     func testEveryIconHasADrawingALabelAndItsOwnKey() {
         let all = TemplateIconCatalog.all
-        XCTAssertEqual(all.count, 90, "the picker's count")
+        XCTAssertEqual(all.count, 91, "the picker's count")
         XCTAssertEqual(Set(all.map(\.key)).count, all.count, "a key used twice: \(Dictionary(grouping: all.map(\.key), by: { $0 }).filter { $0.value.count > 1 }.keys.sorted())")
         XCTAssertEqual(Set(all.map(\.label)).count, all.count, "two icons with the same label")
         for key in TemplateIconCatalog.firstFifty {
@@ -102,7 +130,7 @@ final class TemplateIconTests: XCTestCase {
                      "Restaurant", "Wine", "Concert", "Party", "Birthday", "Shopping", "Picnic", "Grill", "Kids", "Walk",
                      "Travel", "Summer", "Winter", "Sauna", "Kayak", "Orienteering", "Mountain", "Dog", "Coffee",
                      "Photo", "Kettlebell", "Freediving", "Diving", "Sailing", "Bil", "Flyg", "Tåg", "Färja", "Vandring",
-                     "Skidor", "Cykel", "Löpning", "Simning", "Styrka", "Fiske", "Resa"]
+                     "Skidor", "Cykel", "Löpning", "Simning", "Styrka", "Fiske", "Resa", "Weekend"]
         var seen = Set<String>()
         for name in names {
             guard let key = Library.suggestedIcon(for: list(name)) else { XCTFail("\(name) suggests nothing"); continue }

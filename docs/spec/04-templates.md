@@ -112,10 +112,13 @@ magnifier.
 2. **Refine door** (`RefineDoor`, id `refine-open`, bottom padding 4): violet card "Refine your templates" with a
    count of waiting suggestions; owns its own sheet (`RefineScreen`). Documented in the Refine spec.
 3. For each **activity area** (see Behaviour) in order:
-   - Heading — `areaHeading`: `groupHeading(code, title)` = `"<CODE> · <TITLE IN CAPITALS>"` for a GROUP, otherwise
-     just the title in capitals: "ALWAYS PACKED", "BY TRANSPORT", "GA · GOAL ACTIVITY",
-     "WET · WORKOUT, EXERCISE & TRAINING", "OE · OTHER EVENTS", "OTHER TEMPLATES". 18 heavy, `Theme.ink`, kerning
-     0.8, top padding 20 ("Much larger headings", his H.13). id `templates-area-<id>` where id is `base`,
+   - Heading — `areaHeading`: `groupHeading(code, title)` = `"<CODE> · <Title>"` for a GROUP, otherwise just the
+     title — **as he writes them, not in capitals** (0.78): "Always Packed", "By Transport", "GA · Goal Activity",
+     "WET · Workout, Exercise & Training", "OE · Other Events", "Other Templates" (his code GA / WET / OE stays in
+     capitals). His words on the iPhone (13 Oct 2026): "GA · Goal Activity — not all caps", "WET · Workout,
+     Exercise & Training — not all caps", "Other Templates — not all caps". Until 0.78 `groupHeading` upper-cased
+     the words ("GA · GOAL ACTIVITY", "ALWAYS PACKED"). Headline, `Theme.ink`, top padding 16 (until 0.62: 18
+     heavy, kerning 0.8, "Much larger headings", his H.13). id `templates-area-<id>` where id is `base`,
      `transport`, `GA`, `WET`, `OE` or `other`.
    - A `LazyVGrid` of two flexible columns (spacing 8 both ways) of **cards** (§2). Each card is a plain Button;
      id `template-row-<n>` where n = the template's index in the flattened list of all areas, top to bottom
@@ -130,12 +133,12 @@ magnifier.
   (5 Oct 2026).
 - `activityAreas(all)` takes `library.shownTemplates()` (every template but the bag list and the loose bin,
   resolved, sorted A–Z with `jsLocaleCompare` default sensitivity) and builds, **omitting empty areas**:
-  1. `base` "Always packed" — templates with `role == "base"` (A–Z).
-  2. `transport` "By transport" — `role == "transport"` (A–Z).
+  1. `base` "Always Packed" — templates with `role == "base"` (A–Z).
+  2. `transport` "By Transport" — `role == "transport"` (A–Z). (The area titles in his casing since 0.78.)
   3. For each GROUP in `GROUPS` order (GA, WET, OE): templates with `role == ""` and `group == id`, ordered by
      `orderActivities(groupId, …)` — only WET has a fixed order (`ACTIVITY_ORDER["WET"]` = Swim, Bike, Run,
      Strength, Mobility, Breath work, matched by `normName`); unknown names follow A–Z; GA/OE keep the A–Z input.
-  4. `other` "Other templates" — `role == ""` and `group == ""`.
+  4. `other` "Other Templates" — `role == ""` and `group == ""`.
   - Templates with role `container` (the bag list, "Containers"/"Bags") and `loose` (the web app's retired "Loose
     items" bin) appear in **no** area: "Bags are not an activity: they have their own screen, on Care".
   - A base or transport template that also has a group is shown only under Always packed / By transport.
@@ -161,7 +164,8 @@ sheet here can be swiped down, except a template's page while arranging (`intera
 - UI: `testEveryTabOpensItsScreen`; `testEveryDoorOfTheTemplatesTabOpens` (twice in a row: a card, Done, the
   magnifier, Done, + New, Cancel — each opens the moment the one before has closed; the Hiking card says
   "Next: in 30 days"); `testATemplateOpensAndCloses` (row-0 and row-2 exist — three sample templates;
-  `templates-area-GA` reads "GA · GOAL ACTIVITY"; summary contains "templates"; a card opens `template-detail`,
+  `templates-area-GA` reads "GA · Goal Activity" and `templates-area-base` "Always Packed" — red with the capitals
+  planted back in `groupHeading`: `("GA · GOAL ACTIVITY") is not equal to ("GA · Goal Activity")`; summary contains "templates"; a card opens `template-detail`,
   Done closes it); `testAnEmptyDeviceShowsTheTwoDoors`; `testHeMakesAListOfHisOwn` (heading reads "Your templates");
   `testRefineOffersWhatTheReviewsFoundAndKeepAndDropSettleIt` and `testTheLoopShowsWhereATripStands` (use
   `refine-open` here); `testEveryTabsHeaderIsOnOneCentreLine` (0.67: `search-open` and `templates-new` within
@@ -169,7 +173,7 @@ sheet here can be swiped down, except a template's page while arranging (`intera
 - Model: `ListsTests.testOrderActivities*` (4 tests); `CreateTripTests.testTheChoicesAreHisGroupsInHisOrder`;
   `TemplateFacesTests.testTheTemplatesLineCountsWhatItSays` (the bag list and the loose bin are not shown; things
   on them counted once; a trip packed from none of them not counted).
-- **Not covered:** the "By transport" and "Other templates" areas, the exact summary wording on screen.
+- **Not covered:** the "By Transport" and "Other Templates" areas, the exact summary wording on screen.
 
 ---
 
@@ -213,6 +217,11 @@ column width, whole card tappable):
 His test H.1. 50 icons "of my own, drawn in the app's style (one stroke, round ends, a 24-point box)"; he saw them
 on a sample sheet in day and night mode and said (2 Oct 2026): "Your suggestions are fine. Please implement."
 Released in 0.46. No stock art, no emoji in the icon set.
+
+**0.78: the weekend bag (91 icons).** His ask (13 Oct 2026, the picker on the iPhone): his small always-packed
+template showed the same suitcase as his big Travel one — "a nice unique icon — not the same as Travel". One new
+drawing in the same hand, `weekendbag` "Weekend bag", right after Travel, suggested by a short trip's words (§ Which
+icon, rules 45a and 49a). Nothing is chosen for him: a template he gave an icon keeps it.
 
 **0.74: 90 icons.** His request (12 Oct 2026, a picture of the Mac's picker open on his template "On the Beach",
 whose Suggested was the plain umbrella): "Add approximately 40 new icons, specifically one that is related to
@@ -304,6 +313,10 @@ changes; a label may** — 0.74 relabelled `gift` from "Party" to "Gift", "Party
   43. ✱ has "bbq", "barbecue", "grill" → `bbq`
   44. ✱ word "kids" or "barn", has "children", "family", "barnen", "familj" → `kids`
   45. ✱ has "walk" or "promenad" → `walk` ("City walk" is the city — rule 35 comes first)
+  45a. ✚ (0.78) a short trip that also says travel: a SHORT word — word "short", has "weekend", has "small core",
+      word "kort", has "kortresa", word "helg", has "helgresa" — together with has "travel" or word "resa"/"resor" →
+      `weekendbag` ("Short travel kit" is the weekend bag, not the big Travel suitcase). Only such names are taken
+      here; every other short name waits for rule 49a, so no name that had a suggestion loses it.
   46. has "travel" → `suitcase`
   47. ✱ old icons that had no words: has "summer"/"sommar" → `sun`; "winter"/"vinter" → `snow`; "sauna"/"bastu" →
       `sauna`; "kayak", "canoe", "paddl", "kajak", "kanot" → `kayak`; "orienteer"/"orientering" → `compass`; word
@@ -314,12 +327,15 @@ changes; a label may** — 0.74 relabelled `gift` from "Party" to "Gift", "Party
       "cykel"/"cykling" → `bike`; "löpning", word "löp" → `run`; "simning", word "sim" → `swim`; "styrka" →
       `strength`; "fiske" → `fishing`; word "resa"/"resor" → `suitcase`
   49. ✱ has "mountain", "summit" or "fjäll" → `mountain` (after "vandr": "Fjällvandring" is a hike)
+  49a. ✚ (0.78) any SHORT word of rule 45a → `weekendbag` ("Weekend", "Short trip", "Small core", "Helg",
+      "Weekendresa"; "Summer weekend" stays `sun`, "Weekend hike" `hiking`; "Shorts" is no short trip).
   50. none matched: role `base` → `suitcase`, else nil (the letter).
 
-### The 90 icons (`TemplateIconCatalog.all`, read by `TemplateIcons.all`; key → label shown in the picker; path data in the file, a 24-pt box, only the SVG commands M L H V C S Q A Z that `SVGPath` draws)
-In the picker's order, under its six headings (`TemplateIconGroup`, 0.74); ✱ = new in 0.74.
+### The 91 icons (`TemplateIconCatalog.all`, read by `TemplateIcons.all`; key → label shown in the picker; path data in the file, a 24-pt box, only the SVG commands M L H V C S Q A Z that `SVGPath` draws)
+In the picker's order, under its six headings (`TemplateIconGroup`, 0.74); ✱ = new in 0.74, ✚ = new in 0.78.
 - **Travel** (`travel`): car Car · plane Plane · rv Camper · train Train · ✱bus Bus · ✱motorbike Motorbike · ferry
-  Ferry · suitcase Travel · backpack Backpack · box Boxes · passport Passport · ✱ticket Tickets · ✱map Map · ✱hotel
+  Ferry · suitcase Travel · ✚weekendbag Weekend bag (a soft holdall: a round-ended body, a zip along the top with
+  its pull, two handles — the back one over the front one) · backpack Backpack · box Boxes · passport Passport · ✱ticket Tickets · ✱map Map · ✱hotel
   Hotel (a building with a door and its awning).
 - **Outdoors** (`outdoors`): hiking Hiking · ✱walk Walking · mountain Summit · compass Orienteering · tent Camping ·
   fire Campfire · headlamp Headlamp · ski Skiing · snow Winter · rain Rain · fishing Fishing.
@@ -378,7 +394,15 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   with their numbers and arc flags 0/1 and keeps every point inside 1…23 of the 24 box, the headings hold every
   icon once in `all`'s order) — seen red with a planted duplicate key and a `T` command ("a key used twice:
   ["shell"]", "cannot draw 'T'"); `testEverySuggestionIsAnIconThatExists` (67 probe names, each suggestion has a
-  drawing, at least 50 different ones reached).
+  drawing, at least 50 different ones reached; "Weekend" added in 0.78).
+- Model (0.78): `testAShortTripSuggestsTheWeekendBagNotTheTravelSuitcase` (the catalog has `weekendbag` "Weekend bag"
+  under Travel right after `suitcase`, its key once, a drawing of its own — no two icons share one — that the app can
+  draw; "Short travel kit" (base), "Short trip", "Short", "Weekend", "Weekend away" (base), "Small core" (base), "Kort
+  resa", "Helg", "Helgresa", "Weekendresa" → `weekendbag`; "Travel" (base), "Common base" (base), "Resa" → `suitcase`;
+  "Shorts" → nil; "Summer weekend" → `sun`; "Weekend hike" → `hiking`) — seen red with rule 45a planted out:
+  `("Optional("suitcase")") is not equal to ("Optional("weekendbag")") - Short travel kit` (and "Kort resa");
+  `testEveryIconHasADrawingALabelAndItsOwnKey` counts 91. His own template's icon is his to pick in the picker —
+  the app's Suggested offers the weekend bag; his data is not changed.
 - **Not covered:** an unknown stored key.
 
 ---
@@ -421,11 +445,13 @@ UI `testATemplatesIconIsSuggestedAndCanBeChosen`: Hiking's cover value "hiking";
 `icon-tent` closes the picker and the value becomes "tent"; it survives closing/reopening; Letter → "letter";
 Suggested → "hiking".
 
-UI `testThePickerHoldsNinetyIconsAndKeepsANewOne` (0.74): Hiking's picker has exactly 90 buttons whose id starts
+UI `testThePickerHoldsNinetyIconsAndKeepsANewOne` (0.74; the name kept): Hiking's picker has exactly 91 buttons (90
+until 0.78) whose id starts
 `icon-` apart from `icon-suggested`, `icon-letter` and `icon-cancel`; the six `icon-group-<group>` headings exist;
 `icon-lounger`, `icon-palm`, `icon-hotel`, `icon-triathlon`, `icon-kids` exist; picking `icon-lounger` closes the
 picker and the cover's value becomes "lounger"; it survives closing and reopening the template; reopened, the picker
-rings `icon-lounger` (`isSelected`); Cancel closes it.
+rings `icon-lounger` (`isSelected`); Cancel closes it. `testATemplatesIconIsSuggestedAndCanBeChosen` (0.78) also finds
+`icon-weekendbag` beside `icon-suitcase` when the picker opens.
 ---
 
 ## 5. A new template (`NewList`)
@@ -480,7 +506,7 @@ made, a typed name included), swipe down (iPhone), or
 UI `testHeMakesAListOfHisOwn` (title "A new template"; Make enabled; empty press says "…name…" and the line goes
 once a name is typed; "Hiking" shows `newlist-taken` and a press says "…do not have…"; "Mushroom picking" + GA →
 page opens; summary changes; the
-"Other templates" area does not appear); `testANewTemplateAsksForItsActivityArea` (question text, "No activity
+"Other Templates" area does not appear); `testANewTemplateAsksForItsActivityArea` (question text, "No activity
 area").
 
 Model `TemplateFacesTests.testANameIsTakenOnlyByATemplateHeCanSee` (the bag list's "Containers" is free;
@@ -715,7 +741,7 @@ both.
   `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
   row); `testATemplateMovesToAnotherActivityArea` (until 0.71: Common base offered no `template-area`; Hiking's reads "GA",
   `template-area-OE` → "OE", and on the tab OE appears and GA goes); `testATemplateMovesOutOfAndIntoAlwaysPacked` (0.71: Common
-  base's door reads "base", `template-area-base` marked; → none: under Other templates, Always packed gone, offered
+  base's door reads "base", `template-area-base` marked; → none: under Other Templates, Always Packed gone, offered
   as `trip-activity-2` on Create new trip; back to base: no longer offered); `testATemplateCountsAsWhatHeLinksItTo` (0.70,
   `-uiTestingHealth`: the Common base has no `template-counts-as`; Bike reads "Bike" by its name, `template-counts-as-9`
   → "Nothing", kept after Done and reopening; on the iPhone the review then has no "No bike" row and "Use these"
@@ -949,14 +975,15 @@ behind it stays open), "Save" (`row-save`, saves then closes; no key presses it)
      trips that match — on this template."), then
      four pill rows with a smaller heading each (`HeadingTitle`, 20 heavy violet after a 4 × 18 violet capsule),
      several choices each; this block's parts are 14 pt apart:
-     - "Season" (`row-seasons-title`): Summer `row-seasons-0`, Winter `row-seasons-1`.
+     - "Season" (`row-seasons-title`): Summer `row-seasons-0`, Winter `row-seasons-1` — with the sun and the
+       snowflake before the words since 0.78 (value "sun" / "snow"; spec 03, More choices → Season).
      - "Context" (`row-contexts-title`) — **only on a WET template** (`contextApplies(list)`: group == "WET"):
        Indoor, Outdoor, Race (`row-contexts-0…2`).
      - "Transport" (`row-transports-title`): Car, Plane, RV (`row-transports-0…2`). Unchanged in 0.76, when the trip
        screens' Transport became Travelling by (Plane / RV, both off = an ordinary trip, stored "Car"): a rule of Car
        means the trips with Plane and RV both off — spec 03, open question 34. How it works says so.
-     - "Food" (`row-catering-title`): Self-sufficient, Eating out, Mix of both (`row-catering-0…2`; stored ids
-       `self`, `eatout`, `mixed`).
+     - "Food" (`row-catering-title`): Self-sufficient, Eating out, Mix (`row-catering-0…2`; stored ids
+       `self`, `eatout`, `mixed`; "Mix of both" until 0.78 — spec 03, More choices).
      - After the app's own words, each a stored word the app does not know (a web-app "summer", "Boat") as a pill
        of its own, as stored, lit — so it can be seen and switched off (`Library.unknownConditions`; since 0.73 the
        row's own unknown words and the thing's).
@@ -1549,7 +1576,7 @@ footnote: Tick what comes on EVERY full trip…; then:
    N counted top to bottom, `isSelected` when ticked; min height `Metrics.compact`). Ticked at first
    (`smallCoreSuggestion`): every row under a heading whose name holds clothing, clothes, underwear, toiletries,
    hygiene, wash, bathroom, kläder, hygien or toalett (case and accents aside), and every thing packed per night.
-4. **Where should "<template>" go?** — GA / WET / OE / "No activity area (Other templates)" (`smallcore-area-…`,
+4. **Where should "<template>" go?** — GA / WET / OE / "No activity area (Other Templates)" (his casing since 0.78) (`smallcore-area-…`,
    default none).
 Pinned under the scroll: **Make the small core** (full colour, height 50, `smallcore-make`); pressed too early the
 line under it (`smallcore-needs`) says "Give the small core a name." / "You already have a template called that." /

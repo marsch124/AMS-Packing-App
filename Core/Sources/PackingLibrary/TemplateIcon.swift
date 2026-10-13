@@ -59,6 +59,9 @@ extension Library {
         let words = Set(name.split { !$0.isLetter }.map(String.init))
         func has(_ part: String) -> Bool { name.contains(part) }
         func word(_ w: String) -> Bool { words.contains(w) }
+        // A short trip (0.78): the weekend bag, not the big Travel suitcase — English and Swedish.
+        let short = word("short") || has("weekend") || has("small core") || word("kort") || has("kortresa")
+            || word("helg") || has("helgresa")
         let rules: [(Bool, String)] = [
             (has("freediv") || has("fridyk"), "fin"),
             (has("diving") || word("dive") || has("scuba") || has("snorkel") || has("dykning"), "diving"),
@@ -110,6 +113,10 @@ extension Library {
             (has("bbq") || has("barbecue") || has("grill"), "bbq"),
             (word("kids") || has("children") || has("family") || word("barn") || has("barnen") || has("familj"), "kids"),
             (has("walk") || has("promenad"), "walk"),
+            // Just before "travel" (0.78): "Short travel kit" is the weekend bag. Only a name that
+            // also says travel ("resa") is taken here; every other short word waits at the end,
+            // so no name that had a suggestion loses it.
+            (short && (has("travel") || word("resa") || word("resor")), "weekendbag"),
             (has("travel"), "suitcase"),
             // Old icons that had no words until 0.74 — last, so nothing above changes.
             (has("summer") || has("sommar"), "sun"),
@@ -136,6 +143,8 @@ extension Library {
             (word("resa") || word("resor"), "suitcase"),
             // After the Swedish hiking word: "Fjällvandring" is a hike.
             (has("mountain") || has("summit") || has("fjäll"), "mountain"),
+            // The weekend bag's own words (0.78) — last, so nothing above changes.
+            (short, "weekendbag"),
         ]
         if let hit = rules.first(where: { $0.0 }) { return hit.1 }
         return list.role == "base" ? "suitcase" : nil

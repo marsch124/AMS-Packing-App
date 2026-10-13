@@ -192,10 +192,16 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    trip" (id `trip-kind-full`) and "Quick" (id `trip-kind-quick`), Subheadline — semibold white on a
    blue capsule when picked, regular ink on nothing when not; min height `Metrics.chip` (28 / Mac 22);
    the picked one carries `.isSelected`. Full trip is picked to begin with. Under it, always (whichever
-   is picked), one quiet line (Footnote, muted, id `trip-kind-note`): "Quick packs only the templates
-   you tick — no common base, no plane or RV template. Plane and RV still count." (The last sentence: field
-   test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off; until 0.76 the line said "…no transport
-   kit. Transport still counts.", and the word Transport is no longer on the screen.) Until 0.67: a "Quick" switch at the
+   is picked), one quiet line (Footnote, muted, id `trip-kind-note`), `Library.quickNote()` (0.78), naming his
+   always-packed templates (role "base", template order, an unnamed one "Untitled template", joined "A", "A and
+   B", "A, B and C" — read from the library each time, like Travelling by's line): **"Quick packs only what
+   you tick — not <names>, no Plane or RV template. Plane still turns on the airport checks."**; with no
+   always-packed template the "not <names>, " part is left out. As short as it can be: with one name it is
+   three lines on the iPhone SE (375 points) at the default text size. Trip settings says the same
+   (`tripset-kind-note`). His point (13 Oct 2026): he did not understand "…no plane or RV template. Plane and RV
+   still count." (0.76), and "Always" alone is cryptic — he thinks of his always-packed template by its own name.
+   (The airport-checks sentence: field test 5.1/6.1, 3 Oct 2026 — Transport had looked switched off; until 0.76
+   the line said "…no transport kit. Transport still counts.") Until 0.67: a "Quick" switch at the
    end of the Dates line (id `trip-quick`) and, only while it was on, a green framed note
    (`QuickNote`, id `trip-quick-note`, his test C.7) — both gone.
 3. **Dates: the month grid itself, always OPEN** (`DateRangePicker(inline: true, grid: "trip-range")`,
@@ -212,9 +218,10 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    Home). Until 0.67: a "Dates" switch (`trip-dates`) showing the field and its grid. See the next
    section.
 5. **One block of pills per activity group** that has templates, in `GROUPS` order (GA, WET, OE) — and,
-   last, **"OTHER TEMPLATES"** for templates with no activity area (0.62; see "Templates offered").
-   Heading: `groupHeading(id, label)` = "GA · GOAL ACTIVITY", "WET · WORKOUT, EXERCISE & TRAINING",
-   "OE · OTHER EVENTS" (code, " · ", label upper-cased) as `HeadingTitle` (20 heavy violet with a
+   last, **"Other Templates"** for templates with no activity area (0.62; see "Templates offered").
+   Heading: `groupHeading(id, label)` = "GA · Goal Activity", "WET · Workout, Exercise & Training",
+   "OE · Other Events" (code, " · ", the label as written — **not in capitals since 0.78**, his "GA · Goal
+   Activity — not all caps", 13 Oct 2026; until then the label was upper-cased) as `HeadingTitle` (20 heavy violet with a
    4×18 violet capsule mark). Every group heading has the SAME id `trip-activity-title`.
    Pills: one per template, label = template name; ids `trip-activity-<n>` where n counts across ALL
    groups in the order offered (so "trip-activity-0" names one pill). Order inside a group:
@@ -279,14 +286,24 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    "More choices" (Subheadline semibold blue); its value is "Open" or "Closed". While CLOSED, under it, a
    muted summary of what is picked (Footnote, id `trip-more-summary`, set in under the words; a tap on it
    opens the fold too): **"<Season> · <Food> · <Laundry>"** — the season's word, the food's short words,
-   then "No laundry" or "Laundry, <n> nights" (`HomeScreen.moreSummary`), e.g. "Summer · Mix of both · No
-   laundry", "Winter · Eating out · Laundry, 4 nights". While OPEN the summary is not shown — the pills
+   then "No laundry" or "Laundry, <n> nights" (`HomeScreen.moreSummary`), e.g. "Summer · Mix · No
+   laundry", "Winter · Eating out · Laundry, 4 nights". Words only — the Season drawings are on the pills. While OPEN the summary is not shown — the pills
    below say the same — and Season, Food and Laundry follow, with their ids unchanged:
    - **Season** pills Summer, Winter (`trip-season-0…1`); heading id `trip-season-title`. Set from the
-     dates until he taps one (Behaviour, "Season from the dates").
+     dates until he taps one (Behaviour, "Season from the dates"). Each pill carries a drawing before its
+     word (0.78, his "same idea as Travelling by"): Summer the catalog's `sun`, Winter its `snow` —
+     `HomeScreen.seasonIcon`, drawn by `Pills(icons:)` exactly as Travelling by draws Plane and RV
+     (`IconMark`, `Metrics.glyph`, weight 1.8, 5 pt before the word, hidden from VoiceOver, in the pill's
+     word colour); the pill's accessibility value is the drawing's key ("sun", "snow"). The same on Trip
+     settings (`tripset-season-*`) and on Only on some trips → Season (`row-seasons-*`, `thing-seasons-*`); a
+     stored season the app does not know has no drawing (and no value).
    - **Food** pills (`trip-catering-0…2`) with his short words: "Self-sufficient" (self),
-     "Eating out" (eatout), "Mix of both" (mixed) (`HomeScreen.shortFood`; the model keeps the web app's
-     longer labels). Heading id `trip-catering-title`.
+     "Eating out" (eatout), "Mix" (mixed) (`HomeScreen.shortFood`; the model keeps the web app's
+     longer labels). Heading id `trip-catering-title`. "Mix" since 0.78 — his words (13 Oct 2026):
+     "Self-sufficient, Eating out & Mix — keep short so that it all fits on one line" ("Mix of both" wrapped
+     to a second line on the iPhone). The three fit on one line on the smallest iPhone the app runs on
+     (iPhone SE, 375 points) at the default text size, padding unchanged. The same short words on Trip
+     settings and on Only on some trips → Food (`TripLimit.label`, which `onlyOnWords` now uses too).
    - **Laundry switch** — see "Laundry" below; id prefix `trip-laundry`.
 
    **Closed to begin with**; open or closed is remembered on this device (`@AppStorage("ams.create.more")`,
@@ -375,8 +392,8 @@ always required one.
 
 **Templates offered** (`Library.activityChoices()`): resolved templates with `role == ""` whose
 `group` is one of GA, WET, OE, grouped and ordered as above — then, last, every `role == ""` template
-whose group is empty or unknown, A–Z, as a group with id "" and label "Other templates" (heading
-"OTHER TEMPLATES", violet; pills numbered on from the others). The web app offers such lists last
+whose group is empty or unknown, A–Z, as a group with id "" and label "Other Templates" (heading
+"Other Templates", violet — his casing, 0.78; pills numbered on from the others). The web app offers such lists last
 ("Other lists"); until 0.62 they were never offered here although A new template offers "No activity
 area" (the spec pass, 5 Oct 2026). The base, transport, container ("Bags") and loose roles are never
 offered.
@@ -408,11 +425,20 @@ tapped off and saved → 0/7, reopened both off; the sample's "Car" trip opens w
 pill planted to keep it lit: "trip-transport-1 did not go off"; with the line planted as "…RV adds your RV template.":
 "the line does not name the RV template"; with a Car trip loaded as RV in Trip settings: "the trip saved without Plane
 or RV shows one lit"), `testMoreChoicesFoldSeasonFoodAndLaundry` (closed to begin with — no Season, Food or Laundry;
-templates, Travelling by and the dates outside it; "Summer · Mix of both · No laundry"; opened, the line goes; Eating
+templates, Travelling by and the dates outside it; "Summer · Mix · No laundry"; opened, the line goes; Eating
 out + Laundry, closed → "Summer · Eating out · Laundry, 4 nights"; a tap on the line opens it; a trip made with it
 closed keeps Eating out and the laundry; Trip settings has no `tripset-more` — red with the fold open to begin with:
 "More choices is open to begin with"; with the line planted on "mixed": "the line does not follow the choices: 'Summer ·
-Mix of both · Laundry, 4 nights'"), `testSeasonFollowsTheFirstDayUntilHePicksOne` (the 15th of the nearest winter and
+Mix of both · Laundry, 4 nights'"; with "Mix of both" planted back (0.78): "the line does not say what is picked: 'Summer ·
+Mix of both · No laundry'"), **0.78:** `testTheFoodPillsFitOnOneLine` (More choices opened: `trip-catering-0…2` have the
+same top within 2 points and the third says "Mix"; the same for `tripset-catering-*` in the sample trip's Trip settings —
+red with "Mix of both" planted back: on the iPhone SE (375 points) "the Food pills wrap: ["Self-sufficient at 489.5",
+"Eating out at 489.5", "Mix of both at 523.5"]"; on the wider iPhone 18 Pro the three still fit, so there it is the
+words that go red: "("Mix of both") is not equal to ("Mix") - the third Food pill does not say Mix"),
+`testTheSeasonPillsCarryTheSunAndTheSnowflake` (the value of Summer is "sun" and of Winter "snow" on `trip-season-*`,
+`tripset-season-*`, Hiking's first row `row-seasons-*` and the Headlamp's `thing-seasons-*`; the More choices line still
+starts "Summer · " — red with the drawings planted out of `Pills`: "("Optional("")") is not equal to
+("Optional("sun")") - trip-season: Summer has no sun"), `testSeasonFollowsTheFirstDayUntilHePicksOne` (the 15th of the nearest winter and
 summer months, whatever day the tests run: no dates Summer; a winter first day alone → Winter; a summer one → Summer; a
 winter day trip → Winter; Clear dates → Summer; Summer by hand, then a new winter range → still Summer; the trip keeps
 Summer, and new dates in Trip settings leave it; the next trip starts over, a winter first day → Winter — red with the
@@ -449,8 +475,11 @@ times added, "Check 07:15" / "Check 09:45"; the trip made shows them again in Tr
 `setLeaveTime` lines planted out of `create`: "the trip made did not keep the time he leaves"),
 `testContextSitsUnderTheWorkouts` (Context absent until a WET pill, below the workouts,
 above Transport, Swim's pills `trip-context-1-*` set in > 24 pt), `testTheDateGridCanBeLeftAndQuickSaysSo`
-(the Quick line is there with Full trip AND with Quick picked), `testABagOnTheTripSaysWhetherItGoesInTheCabin`
-(`trip-kind-note` contains "Transport still counts"), **0.67:** `testFullTripOrQuickIsChosenUnderTheName`
+(the Quick line is there with Full trip AND with Quick picked; since 0.78 it says "not Common base, no Plane or RV
+template" and "airport checks", and the template groups read "GA · Goal Activity", none in capitals — red with the
+0.76 line planted: "'Quick packs only the templates you tick — no common base, no plane or RV template. Plane and RV
+still count.'", and with the capitals planted back: "the template groups are in capitals: [\"GA · GOAL ACTIVITY\"]"), `testABagOnTheTripSaysWhetherItGoesInTheCabin`
+(`trip-kind-note` contains "Plane still turns on the airport checks" since 0.78; "Plane and RV still count" in 0.76, "Transport still counts" before), **0.67:** `testFullTripOrQuickIsChosenUnderTheName`
 (Full trip picked to begin with, no `trip-quick` switch, the choice under the name and before the dates
 with its line under it; a Quick Hiking trip is 0/4; Trip settings shows Quick, and Full trip there makes
 it 0/7 — red with Quick ignored on Create: "Quick did not leave out the common base: '0/7'"),
@@ -462,7 +491,7 @@ Context: '0/7'"),
 `testLaundryCountsPerNightThingsFourNightsAtMost`, `testTheEditorsLeadWithTheirHeadings` (heading ids
 exist), `testATemplateWithNoActivityAreaGoesOnATrip` (a "No activity area" template is `trip-activity-2`,
 a Quick trip is made of it). Model: `CreateTripTests.testATripIsBuiltFromItsTemplatesAndTheBase`,
-`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder` (GA, WET, then "Other templates"),
+`testAQuickTripSkipsTheBase`, `testTheChoicesAreHisGroupsInHisOrder` (GA, WET, then "Other Templates"),
 `testAlwaysPackedAloneIsEnoughForAFullTrip` (0.73: `templateMissing` — nothing always packed → "…nothing is
 always packed yet."; a base template → nil and the trip is its two things; `changeTrip` with every template
 unticked → rebuilt to the base alone; Quick → "…Quick packs only the templates you tick."; a ticked template →
@@ -3119,7 +3148,7 @@ pins · [idea] a gap worth deciding on.
     grab list's delete passes 15); "Set place" 13; the On site door summary, the Bags key, captions and
     the section counts 13–14 pt; the date grid's weekday row 12 pt; "Dates" caption 13 pt.
 25. [bug] **Trip settings drops templates not offered.** Resolved in 0.62: templates with no activity area
-    are offered (last, "Other templates") on Create new trip and in Trip settings, and Save keeps the ids
+    are offered (last, "Other Templates") on Create new trip and in Trip settings, and Save keeps the ids
     it does not show.
 26. [idea] **Create new trip keeps Transport, Season and Food; no Place field.** Resolved in 0.62
     (decided, nothing changes): the next trip is usually the same car and season and the pills show it;

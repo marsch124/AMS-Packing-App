@@ -89,7 +89,7 @@ final class OnlySomeTripsTests: XCTestCase {
         XCTAssertEqual(Library.limitFromWords(.seasons, shown: [], thing: ["Winter"]),
                        "Own choice on this template. The thing says: Winter.")
         XCTAssertEqual(Library.limitFromWords(.catering, shown: ["self"], thing: ["eatout", "mixed"]),
-                       "Own choice on this template. The thing says: Eating out, Mix of both.")
+                       "Own choice on this template. The thing says: Eating out, Mix.")
     }
 
     /// Rows stored before 0.73 keep their answers as their own; a thing with no answer

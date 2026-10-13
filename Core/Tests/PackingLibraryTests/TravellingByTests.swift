@@ -48,6 +48,24 @@ final class TravellingByTests: XCTestCase {
         XCTAssertTrue(rv.entries.contains { $0.name == "Levelling blocks" }, "an RV trip did not bring the RV template")
     }
 
+    /// The line under Full trip | Quick (0.78): plain words — "Plane and RV still count" was not
+    /// understood — naming his always-packed templates, read from the library; none, no "not" part.
+    func testTheQuickLineNamesTheAlwaysPackedTemplates() {
+        var lib = LibraryTests.sample()
+        XCTAssertEqual(lib.quickNote(),
+                       "Quick packs only what you tick \u{2014} no Plane or RV template. Plane still turns on the airport checks.",
+                       "no always-packed template: nothing to name")
+        lib.saveTemplate(newList(name: "Day kit", role: "base"))
+        XCTAssertEqual(lib.quickNote(),
+                       "Quick packs only what you tick \u{2014} not Day kit, no Plane or RV template. Plane still turns on the airport checks.")
+        lib.saveTemplate(newList(name: "Big kit", role: "base"))
+        lib.saveTemplate(newList(name: "Flight bag", role: "transport", transport: "Plane"))
+        XCTAssertEqual(lib.quickNote(),
+                       "Quick packs only what you tick \u{2014} not Day kit and Big kit, no Plane or RV template. Plane still turns on the airport checks.",
+                       "both always-packed templates are not named, or a transport one is")
+        XCTAssertFalse(lib.quickNote().contains("still count"), "the old words are back")
+    }
+
     /// The line under the pills names his transport templates, read from the library — and
     /// leaves a part out when there is nothing to name.
     func testTheLineNamesTheTemplatesTheLibraryHolds() {
