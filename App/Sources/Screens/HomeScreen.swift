@@ -53,6 +53,8 @@ struct HomeScreen: View {
     /// "I leave at" (0.69, the door check): on the first day, and on the last for home.
     @State private var leaveOut = ""
     @State private var leaveHome = ""
+    /// Flights and stay (0.80, spec 07 part 18 B): only on a plane trip; Out and Home to begin with.
+    @State private var travel = TripTravel(flights: [FlightLeg(), FlightLeg()])
     @State private var opened: String?
     /// The place a code opened the trip on (0.69): the trip shows only its lines.
     @State private var openedPlace: String?
@@ -171,6 +173,14 @@ struct HomeScreen: View {
                     // His decision (13 Oct 2026, the Car template deleted — "the car is just go
                     // and drive"): Plane or RV, both off for an ordinary trip (stored "Car").
                     TravellingBy(transport: $transport, note: model.library.travelNote(quick: quick), id: "trip-transport")
+                    // The lost-luggage information (0.80, his yes of 13 Oct 2026): on a plane trip only,
+                    // right under the Plane pill that brings it. Optional — never asked for by Create.
+                    if Library.travelLit(transport, "Plane") {
+                        FlightsAndStay(travel: $travel,
+                                       firstDay: hasDates ? HomeScreen.ymd(start) : "",
+                                       lastDay: hasDates ? HomeScreen.ymd(max(start, end)) : "",
+                                       place: "", id: "trip-flights", tint: AppSection.home.color)
+                    }
                     // His ask (13 Oct 2026): the dates, the templates, Travelling by and "I leave
                     // at" stay in sight; Season, Food and Laundry fold away, said in one line.
                     MoreChoices(open: $moreOpen,
@@ -360,6 +370,7 @@ struct HomeScreen: View {
         model.change { stored = $0.createTrip(made) }
         name = ""; activities = []; workoutContexts = [:]; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
         leaveOut = ""; leaveHome = ""
+        travel = TripTravel(flights: [FlightLeg(), FlightLeg()])
         // The form starts over: the next trip's dates choose its season again (0.76).
         seasonByHand = false
         seasonFromDates()
@@ -397,6 +408,8 @@ struct HomeScreen: View {
             _ = Library.setLeaveTime(&draft, leaveOut, home: false)
             _ = Library.setLeaveTime(&draft, leaveHome, home: true)
         }
+        // Flights and stay: stored only while Plane is lit — what the form shows (cleaned: empty legs go).
+        if Library.travelLit(transport, "Plane") { Library.setFlightsAndStay(&draft, travel) }
         return draft
     }
 

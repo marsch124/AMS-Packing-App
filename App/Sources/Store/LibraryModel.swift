@@ -309,7 +309,8 @@ extension LibraryModel {
     ///                           three days ahead (reminders on a template, 0.70)
     ///  -uiTestingPackingDay   → memory, the sample + a Day pack with an AirTag holding the boots
     ///                           and the jacket: a trip with two bags (the Packing day, 0.79); +
-    ///                           -packingDayAlmost: every station done but the Map unticked
+    ///                           -packingDayAlmost: every station done but the Map unticked; +
+    ///                           -packingDayByPlane: the trip by Plane (bag-tag numbers, 0.80)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -389,8 +390,9 @@ extension LibraryModel {
             return LibraryModel(store: MemoryStore(SampleLibrary.health().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingPackingDay") {
-            let almost = args.contains("-packingDayAlmost")
-            return LibraryModel(store: MemoryStore(SampleLibrary.packingDay(almost: almost).records()), usesICloud: false, sky: sky)
+            let almost = args.contains("-packingDayAlmost"), byPlane = args.contains("-packingDayByPlane")
+            return LibraryModel(store: MemoryStore(SampleLibrary.packingDay(almost: almost, byPlane: byPlane).records()),
+                                usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingReviewedUndated") {
             return LibraryModel(store: MemoryStore(SampleLibrary.reviewedUndated().records()), usesICloud: false, sky: sky)

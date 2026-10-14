@@ -132,6 +132,7 @@ extension Library {
                 swapOpt(&trips[t].entries[e].defContainer)
             }
             dropped += moveBagNotes(trip: t, from: o, to: new, joinsAnother: joinsAnother)
+            moveBagTag(trip: t, from: o, to: new, joinsAnother: joinsAnother)   // its bag-tag number (TripTravel, 0.80)
         }
         // A photo pushed out by the three-photo limit goes the way `removeBagPhoto`
         // sends one: its record too, unless something else still shows it.

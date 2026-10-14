@@ -457,8 +457,11 @@ struct PackingDaySheet: View {
     // MARK: Tags
 
     private func tags(_ day: PackingDay) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            lead("A name tag on every bag, and the AirTag in each bag that has one.")
+        // A plane trip (0.80, spec 07 part 18 B): each bag's tag number from check-in, here too.
+        let byPlane = model.library.trips.first { $0.id == tripId }.map(Library.isPlaneTrip) ?? false
+        return VStack(alignment: .leading, spacing: 10) {
+            lead("A name tag on every bag, and the AirTag in each bag that has one."
+                 + (byPlane ? " At check-in, type the number on each checked bag\u{2019}s tag." : ""))
             ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -472,6 +475,11 @@ struct PackingDaySheet: View {
                             let t = tripId, name = bag.name, on = !bag.airTag
                             model.change { _ = $0.setAirTagIn(on, tripId: t, bag: name) }
                         }
+                    }
+                    // A checked bag only: a cabin bag gets no tag at the desk.
+                    if model.library.asksBagTag(tripId: tripId, bag: bag.name) {
+                        BagTagField(tripId: tripId, bag: bag.name, id: "day-tag-\(n)-number")
+                            .padding(.top, 4)
                     }
                     Toggle(isOn: Binding(get: { bag.hasAirTag },
                                          set: { on in let name = bag.name; model.change { _ = $0.setAirTag(container: name, on) } })) {
@@ -675,7 +683,7 @@ struct PackingDayGuideCard: View {
         case .weigh:
             return "The luggage scale, one bag after another: hang it on the scale, type what it says, Save \u{2014} the next bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself \u{2014} once per trip. Green when every bag is weighed."
         case .tags:
-            return "A Name tag tick for every bag, and an AirTag tick for each bag that has one. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags; switch it on once and every trip asks for it. Green when every tick is on."
+            return "A Name tag tick for every bag, and an AirTag tick for each bag that has one. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags; switch it on once and every trip asks for it. Green when every tick is on. On a plane trip each checked bag has a Bag-tag no. too (a bag that goes in the cabin has none): at check-in, type the number on the tag the airline puts on it (Bags on the trip has the same field) \u{2014} it does not count for green."
         case .photos:
             return "One photo of all your bags side by side, and each bag\u{2019}s own photo (the same ones as in Bags) \u{2014} for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them stays in Bags after you leave. Green when every photo is there."
         case .ready:
