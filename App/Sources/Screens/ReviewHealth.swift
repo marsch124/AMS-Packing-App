@@ -194,6 +194,7 @@ struct ThisIsMeButton: View {
 
     var body: some View {
         let on = model.library.me().map { normName($0) == normName(owner) } ?? false
+        VStack(alignment: .leading, spacing: 6) {
         HStack(spacing: 10) {
             Button {
                 model.change { _ = $0.setMe(on ? nil : owner) }
@@ -212,6 +213,9 @@ struct ThisIsMeButton: View {
             Text(on ? "Apple Health marks your things in a trip\u{2019}s review." : "Whose things Apple Health marks in a trip\u{2019}s review.")
                 .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        // His details for the lost-luggage desk, on the owner who is him (0.80, spec 07 part 18 C).
+        if on { DeskDetailsLink().environmentObject(model) }
         }
     }
 }

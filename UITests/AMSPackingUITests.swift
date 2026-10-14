@@ -12591,4 +12591,172 @@ final class AMSPackingUITests: XCTestCase {
         for query in [app.otherElements, app.staticTexts, app.groups, app.images] where query[id].exists { return query[id] }
         return app.otherElements[id]
     }
+
+    // MARK: - Lost luggage, part C: the Lost bag page (0.80, his yes of 13 Oct 2026; spec 07 part 18 C)
+
+    /// The sample's trip (`-uiTestingLostBag`): by plane, two flights and a stay, the Day pack's
+    /// details and one photo, a name and a phone of his — and no bag tag, no e-mail, no address.
+    private func openLostBagTrip(_ app: XCUIApplication) {
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+    }
+
+    /// From the Bags card: the Day pack's page says what a desk asks, says what is not filled in,
+    /// and each not-filled-in row fills in — the bag tag on the page itself, the e-mail in For the
+    /// lost-luggage desk; then Copy as text and Share as PDF.
+    func testALostBagPageSaysWhatTheDeskAsksAndFillsInWhatIsMissing() {
+        let app = launch("-uiTestingLostBag")
+        openLostBagTrip(app)
+        openBags(app)
+        XCTAssertFalse(app.buttons["bag-2-lost"].exists, "Not in a bag has a Lost bag page")
+        tap(app, id: "bag-1-lost")
+        XCTAssertTrue(appears(app, "lost-screen", timeout: 5), "Lost bag? did not open the page")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["lost-you-name"]) == "Kim Example" }, "'\(value(app.buttons["lost-you-name"]))'")
+        XCTAssertEqual(value(app.buttons["lost-you-phone"]), "+46 70 000 00 00")
+        XCTAssertEqual(value(app.buttons["lost-you-email"]), "not filled in")
+        XCTAssertEqual(value(app.buttons["lost-you-address"]), "not filled in")
+        XCTAssertEqual(value(app.buttons["lost-trip-going"]), "M\u{00E1}laga")
+        XCTAssertEqual(value(app.buttons["lost-trip-stay"]), "Hotel Exempel, Calle Falsa 1, M\u{00E1}laga, +34 900 000 000")
+        XCTAssertTrue(value(app.buttons["lost-trip-flights"]).hasPrefix("SK 1234"), "'\(value(app.buttons["lost-trip-flights"]))'")
+        XCTAssertEqual(value(app.buttons["lost-trip-tag"]), "not filled in")
+        XCTAssertEqual(value(app.buttons["lost-bag-type"]), "Backpack")
+        XCTAssertEqual(value(app.buttons["lost-bag-colour"]), "Green")
+        XCTAssertEqual(value(app.buttons["lost-bag-marks"]), "red strap")
+        XCTAssertEqual(value(app.buttons["lost-bag-airtag"]), "yes")
+        XCTAssertTrue(element(app, "lost-bag-airtag-hint").exists, "an AirTag, and no word on Find My")
+        XCTAssertTrue(app.buttons["lost-photo-0"].exists, "the Day pack's photo is not on its page")
+        XCTAssertEqual(words(element(app, "lost-inside-0")), "Hiking boots")
+        let missing = element(app, "lost-missing")
+        XCTAssertEqual(words(missing), "3 not filled in \u{2014} tap one to fill it in.")
+        shot(app, "lost-page")
+        // The bag tag: typed right on the page.
+        tap(app, id: "lost-trip-tag")
+        let tag = app.textFields["lost-trip-tag-field"]
+        XCTAssertTrue(tag.waitForExistence(timeout: 5), "no field for the bag tag")
+        type("sk 123456", into: tag)
+        tap(app, id: "lost-trip-tag-save")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["lost-trip-tag"]) == "SK 123456" }, "'\(value(app.buttons["lost-trip-tag"]))'")
+        XCTAssertTrue(waitUntil { self.words(self.element(app, "lost-missing")) == "2 not filled in \u{2014} tap one to fill it in." },
+                      "'\(words(element(app, "lost-missing")))'")
+        // The e-mail: For the lost-luggage desk opens; saved, the page has it.
+        tap(app, id: "lost-you-email")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5), "not filled in did not open For the lost-luggage desk")
+        let email = app.textFields["desk-email"]
+        XCTAssertTrue(email.waitForExistence(timeout: 5))
+        type("kim@example.com", into: email)
+        shot(app, "lost-desk")
+        tap(app, id: "desk-save")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5), "Save did not close it")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["lost-you-email"]) == "kim@example.com" }, "'\(value(app.buttons["lost-you-email"]))'")
+        XCTAssertTrue(waitUntil { self.words(self.element(app, "lost-missing")) == "1 not filled in \u{2014} tap it to fill it in." },
+                      "'\(words(element(app, "lost-missing")))'")
+        // Copy as text, and Share as PDF: two pages (the facts, the photos).
+        tap(app, id: "lost-copy")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["lost-copy"]) == "copied" }, "Copy as text did not say so")
+        tap(app, id: "lost-pdf")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(self.element(app, "lost-pdf-said")) == "PDF ready \u{2014} 2 pages" },
+                      "'\(words(element(app, "lost-pdf-said")))'")
+        shot(app, "lost-page-filled")
+        tap(app, id: "lost-done")
+        XCTAssertTrue(disappears(app, "lost-screen", timeout: 5))
+        // Settings has his e-mail now: one library-wide set of details.
+        tap(app, id: "trip-done")
+        tab(app, "settings")
+        tap(app, id: "settings-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5), "Settings has no For the lost-luggage desk")
+        XCTAssertTrue(waitUntil { (app.textFields["desk-email"].value as? String) == "kim@example.com" },
+                      "Settings does not hold the e-mail typed on the page: '\(app.textFields["desk-email"].value ?? "")'")
+        tap(app, id: "desk-cancel")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5))
+    }
+
+    /// From the Packing day: Photos opens the carry-on's page — only a name on the lines, nothing
+    /// known — whose photo is taken right there and whose details open its page (it becomes a bag);
+    /// Ready lists each bag's page with how much is not filled in.
+    func testTheLostBagPageOpensFromThePackingDayAndFillsInTheBag() {
+        let app = launch("-uiTestingLostBag")
+        openLostBagTrip(app)
+        XCTAssertTrue(appears(app, "day-row", timeout: 5))
+        station(app, "photos")
+        XCTAssertTrue(appears(app, "day-view-photos", timeout: 5))
+        tap(app, id: "day-photo-0-lost")
+        XCTAssertTrue(appears(app, "lost-screen", timeout: 5), "Photos' Lost bag? did not open the page")
+        XCTAssertEqual(value(app.buttons["lost-bag-type"]), "not filled in")
+        XCTAssertEqual(value(app.buttons["lost-bag-airtag"]), "no")
+        XCTAssertFalse(element(app, "lost-bag-airtag-hint").exists, "no AirTag, yet the Find My hint")
+        XCTAssertTrue(waitUntil { self.element(app, "lost-photo-none").exists }, "the carry-on has no photo, and the page does not say so")
+        let before = words(element(app, "lost-missing"))
+        tap(app, id: "lost-photo-take")
+        XCTAssertTrue(app.buttons["lost-photo-0"].waitForExistence(timeout: 5), "the photo taken on the page was not kept")
+        XCTAssertFalse(element(app, "lost-photo-none").exists)
+        XCTAssertNotEqual(words(element(app, "lost-missing")), before, "the photo still counts as not filled in")
+        // The bag tag, typed here too — the page stays open when its keyboard goes away.
+        tap(app, id: "lost-trip-tag")
+        let tag = app.textFields["lost-trip-tag-field"]
+        XCTAssertTrue(tag.waitForExistence(timeout: 5), "no field for the bag tag")
+        type("SK 654321", into: tag)
+        tap(app, id: "lost-trip-tag-save")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["lost-trip-tag"]) == "SK 654321" }, "'\(value(app.buttons["lost-trip-tag"]))'")
+        // The bag's details: its page opens — the carry-on becomes one of his bags.
+        tap(app, id: "lost-bag-colour")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "not filled in did not open the bag's page")
+        shot(app, "lost-bag-page")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "lost-done")
+        XCTAssertTrue(disappears(app, "lost-screen", timeout: 5))
+        // Ready: each bag's page, and how much of it is still not filled in.
+        tap(app, id: "day-sheet-station-ready")
+        XCTAssertTrue(appears(app, "day-view-ready", timeout: 5))
+        let carry = app.buttons["day-ready-lost-0"], pack = app.buttons["day-ready-lost-1"]
+        XCTAssertTrue(carry.waitForExistence(timeout: 5), "Ready has no Lost bag rows")
+        XCTAssertTrue(value(carry).hasSuffix("not filled in"), "'\(value(carry))'")
+        XCTAssertEqual(value(pack), "3 not filled in")
+        shot(app, "lost-ready")
+        tap(app, id: "day-ready-lost-1")
+        XCTAssertTrue(appears(app, "lost-screen", timeout: 5), "Ready's row did not open the page")
+        XCTAssertEqual(value(app.buttons["lost-bag-type"]), "Backpack", "Ready opened another bag's page")
+        tap(app, id: "lost-done")
+        XCTAssertTrue(disappears(app, "lost-screen", timeout: 5))
+    }
+
+    /// Settings opens with For the lost-luggage desk; it keeps his details for the library, and
+    /// This is me (Your choices → Owners) opens the same; How it works explains the page.
+    func testSettingsKeepsHisDetailsForTheLostLuggageDesk() {
+        let app = launch()
+        tab(app, "settings")
+        let door = app.buttons["settings-desk"], lists = app.buttons["settings-lists"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "Settings has no For the lost-luggage desk")
+        XCTAssertLessThan(door.frame.maxY, lists.frame.minY + 2, "For the lost-luggage desk is not above Your choices")
+        XCTAssertLessThanOrEqual(lists.frame.minY - door.frame.maxY, 1.5, "not rows of one card")
+        tap(app, id: "settings-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5))
+        type("Robin Example", into: app.textFields["desk-name"])
+        type("+46 70 111 11 11", into: app.textFields["desk-phone"])
+        shot(app, "desk-settings")
+        tap(app, id: "desk-save")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(door).contains("Robin Example") || (door.label).contains("Robin Example") },
+                      "the door does not say whose details it holds: '\(door.label)'")
+        // This is me, in Your choices → Owners: the same details, one tap away.
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-owners-name-0"].waitForExistence(timeout: 5), "no owners in Your choices")
+        tap(app, id: "list-owners-edit-0")
+        tap(app, id: "list-owners-me")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["list-owners-me"]) }, "This is me did not take")
+        tap(app, id: "list-owners-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5), "This is me does not open For the lost-luggage desk")
+        XCTAssertEqual(app.textFields["desk-name"].value as? String, "Robin Example")
+        tap(app, id: "desk-cancel")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5))
+        tap(app, id: "lists-done")
+        // How it works: a topic of its own.
+        tap(app, id: "settings-howitworks")
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5))
+        let found = (0..<30).contains { n in self.words(self.guidePart(app, "guide-topic-\(n)")).contains("If a bag goes missing") }
+            || app.staticTexts["If a bag goes missing"].exists
+        XCTAssertTrue(found, "How it works says nothing about a lost bag")
+    }
 }

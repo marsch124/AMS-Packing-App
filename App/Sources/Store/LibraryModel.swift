@@ -310,6 +310,9 @@ extension LibraryModel {
     ///  -uiTestingPackingDay   → memory, the sample + a Day pack with an AirTag holding the boots
     ///                           and the jacket: a trip with two bags (the Packing day, 0.79); +
     ///                           -packingDayAlmost: every station done but the Map unticked
+    ///  -uiTestingLostBag      → memory, the Packing day's sample as a plane trip with flights
+    ///                           and a stay, the Day pack's details and photo, and half of his
+    ///                           details for the desk (the Lost bag page, 0.80)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -387,6 +390,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingHealth") {
             return LibraryModel(store: MemoryStore(SampleLibrary.health().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingLostBag") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.lostBag().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingPackingDay") {
             let almost = args.contains("-packingDayAlmost")

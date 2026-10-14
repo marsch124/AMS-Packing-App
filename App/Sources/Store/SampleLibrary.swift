@@ -276,6 +276,29 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library for the Lost bag page (`-uiTestingLostBag`, 0.80 — spec 07 part 18 C):
+    /// the Packing day's two bags (`packingDay`) on a trip by PLANE, with two flights (SK 1234 out,
+    /// SK 1235 home), Málaga and a stay at the Hotel Exempel — but no bag-tag number; the Day pack
+    /// (`bag-1`) a green Exempel backpack, medium, with a red strap, and one photo of it packed;
+    /// the carry-on (`bag-0`) only a name on the lines, nothing known about it. His details for the
+    /// desk: a name and a phone, no e-mail, no address. All invented.
+    static func lostBag() -> Library {
+        var lib = packingDay()
+        guard !lib.trips.isEmpty else { return lib }
+        let id = lib.trips[0].id
+        lib.trips[0].transport = "Plane"
+        _ = lib.setTravel(TripTravel(flights: [FlightLeg(number: "SK 1234", from: "ARN", to: "AGP"),
+                                               FlightLeg(number: "SK 1235", from: "AGP", to: "ARN")],
+                                     destination: "M\u{00E1}laga",
+                                     stay: TripStay(name: "Hotel Exempel", address: "Calle Falsa 1\nM\u{00E1}laga", phone: "+34 900 000 000")),
+                          tripId: id)
+        _ = lib.setBagDetails(BagDetails(brand: "Exempel", colour: "Green", type: .backpack, size: .medium,
+                                         sizeNote: "55 \u{00D7} 35 \u{00D7} 25 cm", marks: "red strap"), bag: "Day pack")
+        if let jpeg = JPEG.sample() { _ = lib.addBagPhoto(tripId: id, bag: "Day pack", jpeg: jpeg) }
+        lib.setDeskDetails(DeskDetails(name: "Kim Example", phone: "+46 70 000 00 00"))
+        return lib
+    }
+
     /// The sample library with its trip been and reviewed (`-uiTestingReviewed`), for the
     /// trip's page in his Obsidian vault (0.70): it ran from six days ago to three days
     /// ago, everything went, the carry-on was weighed (2.4 kg) and photographed, a sun hat

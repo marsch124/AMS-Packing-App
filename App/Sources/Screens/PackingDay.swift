@@ -189,6 +189,8 @@ struct PackingDaySheet: View {
     @State private var scaleText = ""
     @State private var weighNeeds = ""
     @FocusState private var typing: Bool
+    /// The bag whose Lost bag page is open, from Photos or Ready (0.80, spec 07 part 18 C).
+    @State private var lost: LostBagOpen?
 
     /// Opened by itself, on Weigh, when the last thing was ticked: the trip keeps that it was
     /// offered once it is really on screen — never again on this trip.
@@ -279,6 +281,7 @@ struct PackingDaySheet: View {
             }
         }
         .onChange(of: shown) { _, _ in openFirstUnweighed(model.library.packingDay(tripId: tripId)) }
+        .sheet(item: $lost) { open in LostBagScreen(tripId: tripId, bag: open.bag).environmentObject(model) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("day-sheet")
         #if os(macOS)
@@ -516,6 +519,11 @@ struct PackingDaySheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                     BagPhotoRow(tripId: tripId, bag: bag.name, n: n, prefix: "day-photo-\(n)").environmentObject(model)
+                    // The photos are for the airline desk: the bag's whole Lost bag page is one tap away (0.80).
+                    HStack {
+                        Spacer(minLength: 0)
+                        LostBagDoor(id: "day-photo-\(n)-lost") { lost = LostBagOpen(bag: bag.name) }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
@@ -570,6 +578,9 @@ struct PackingDaySheet: View {
                     .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     .accessibilityIdentifier("day-ready-left")
             }
+            // If a bag goes missing (0.80, spec 07 part 18 C): each bag's Lost bag page, and how much
+            // of it is still not filled in — ready means the desk's answers are ready too.
+            if !day.bags.isEmpty { lostRows(day) }
             // The door check, right here: the trip's "I leave at", saved at once.
             if let trip {
                 LeaveTimes(out: leaveBinding(trip, home: false), home: leaveBinding(trip, home: true),
@@ -577,6 +588,36 @@ struct PackingDaySheet: View {
                     .padding(.top, 4)
             }
         }
+    }
+
+    private func lostRows(_ day: PackingDay) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("If a bag goes missing").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                .padding(.bottom, 2)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
+                let page = model.library.lostBag(tripId: tripId, bag: bag.name)
+                let words = page?.shortWords ?? ""
+                Button { lost = LostBagOpen(bag: bag.name) } label: {
+                    HStack(spacing: 8) {
+                        Text("Lost bag: \(bag.name)").font(.system(.body)).foregroundStyle(Theme.ink).lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(words).font(.system(.subheadline, weight: .semibold))
+                            .foregroundStyle(page?.missing == 0 ? tint : AppSection.care.color).lineLimit(1)
+                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                            .onGrid(Metrics.glyph).foregroundStyle(Theme.faint)
+                    }
+                    .frame(minHeight: Metrics.row)
+                    .contentShape(Rectangle())
+                    .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("day-ready-lost-\(n)")
+                .accessibilityLabel("Lost bag: \(bag.name)")
+                .accessibilityValue(words)
+            }
+        }
+        .padding(.top, 6)
     }
 
     private func leaveBinding(_ trip: TripEvent, home: Bool) -> Binding<String> {
