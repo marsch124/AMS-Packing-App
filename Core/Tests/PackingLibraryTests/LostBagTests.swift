@@ -217,6 +217,8 @@ final class LostBagTests: XCTestCase {
         XCTAssertNil(lib.lostBag(tripId: "nope", bag: "Day pack"))
         // A bag that is only a name on the lines has a page, without details or an AirTag.
         let page = lib.lostBag(tripId: trip, bag: carryOn)!
+        XCTAssertEqual(page.travel.map(\.key), ["trip-going", "trip-stay", "trip-until", "trip-flights"],
+                       "a cabin bag gets no tag at the desk, and is not asked for one")
         XCTAssertNil(page.bagId)
         XCTAssertFalse(page.airTag)
         XCTAssertEqual(page.airTagWords, "No")

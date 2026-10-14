@@ -2563,7 +2563,7 @@ field reported on screen under the status bar took no focus).
 - The bag-tag number is per trip; a return flight usually gives a new tag — the field holds the latest. Two numbers
   per bag (out, home) if he wants both kept.
 
-### C. The Lost bag page (and his details for the desk)
+### C. The Lost bag page
 
 > His yes (13 Oct 2026) to the lost-luggage information, part C — the page the other two parts feed: on a trip, a
 > **Lost bag** page PER BAG with everything a baggage desk asks for, in a calm, readable layout he can hand over or read
@@ -2619,7 +2619,9 @@ field reported on screen under the status bar took no focus).
      the trip's last day, else not filled in.
    - **Flights**: one line per leg, in his order — "SK 1234 · 14 Nov 2026 · ARN → AGP" (what is not said is left out;
      only a from or only a to: "from ARN" / "to AGP").
-   - **Bag-tag number**: this bag's number (part B's `bagTag`, by `normName`).
+   - **Bag-tag number**: this bag's number (part B's `bagTag`, by `normName`) — only for a bag part B asks a tag of
+     (`asksBagTag`: a CHECKED bag; a cabin bag, by his word or its name, gets no tag at the desk), or when a number is
+     kept anyway (one typed before the bag went into the cabin).
    A missing Going to, Staying at, Until or Flights opens **Trip settings** (part B's Flights and stay block is there).
    A missing **bag-tag number** is typed RIGHT ON THE PAGE: the row opens a field "Number on the bag tag" with
    **Save** — the number is on the stub the check-in desk stuck on his boarding pass, and the desk is where he reads it
@@ -2648,7 +2650,7 @@ field reported on screen under the status bar took no focus).
    nights and laundry included, as the trip shows it); then "and N more". None: "Nothing on this trip's list goes in
    this bag." Never "not filled in".
 9. **"Not filled in"** (`LostBagPage.missing`): the rows of About you, The trip (on a plane trip: Going to, Staying
-   at, Until, Flights, Bag-tag number; otherwise Going to) and The bag (five), plus the bag's own photo, that are
+   at, Until, Flights, and the Bag-tag number of a checked bag; otherwise Going to) and The bag (five), plus the bag's own photo, that are
    empty. The count heads the page ("1 not filled in — tap it to fill it in." / "3 not filled in — tap one to fill it
    in."); none: nothing is said.
 10. **Copy as text** (`LostBagPage.text`) — what a web form or a message needs, plain, one fact per line:
@@ -2713,8 +2715,7 @@ field reported on screen under the status bar took no focus).
   - Five cards (padding 12, radius 12, `Theme.card`, hairline), each headed by its name (Subheadline semibold, the
     trips' readable green): **About you** (`lost-you`), **The trip** (`lost-trip`), **The bag** (`lost-bag`),
     **Photos** (`lost-photos`), **A few things in it** (`lost-inside`).
-  - A row (`LostBagRowView`): the label (Footnote semibold muted) over the value — each line in Body ink, selectable on
-    the Mac — or "not filled in" (Body, the Care orange); at the right a drawn chevron (muted); at least `Metrics.row`
+  - A row (`LostBagRowView`): the label (Footnote semibold muted) over the value — each line in Body ink — or "not filled in" (Body, the Care orange); at the right a drawn chevron (muted); at least `Metrics.row`
     tall; a hairline between rows. The whole row is ONE button (id `lost-<card>-<key>`, label = the row's label, value
     = its lines joined with ", " or "not filled in"), opening where it is filled in (rule 4–6). Keys: `you-name`,
     `you-phone`, `you-email`, `you-address`; `trip-going`, `trip-stay`, `trip-until`, `trip-flights`, `trip-tag`;
@@ -2747,8 +2748,8 @@ field reported on screen under the status bar took no focus).
   field (the address takes new lines). Swiping the sheet away with something changed is refused (Cancel or Save).
 - **Settings** (spec 06 §1): the first card is now TWO door rows — **For the lost-luggage desk** ("Your name, phone,
   e-mail and home address", id `settings-desk`) above **Your choices** (`settings-lists`), a `CardHairline` between —
-  first, as the iPhone's own Settings starts with the person. With all four filled in its line reads "<name> ·
-  <phone>".
+  first, as the iPhone's own Settings starts with the person. Once a name and a phone are known its line reads
+  "<name> · <phone>".
 - **Your choices → Owners** (spec 06 §2): in the owner editor, on the owner marked **This is me** only, under its
   button, the door **For the lost-luggage desk…** (Subheadline semibold, the Settings slate, `list-owners-desk`) opens
   the same sheet.
@@ -2778,7 +2779,47 @@ name is filled in — the new bag. Parity: 211/211.
 
 #### Tests
 
-Model `LostBagTests` (`Core/Tests/PackingLibraryTests/LostBagTests.swift`) and UI tests — listed from the code below.
+Model `LostBagTests` (8, `Core/Tests/PackingLibraryTests/LostBagTests.swift`; a base template with a Passport and a
+Charger in the carry-on, Hike with Boots, a Jacket, Socks ×3 and a Map in the Day pack — one of his bags, with an
+AirTag — a Water bottle in no bag and a reminder in the Day pack; the trip "Sun week", 14–20 Nov 2026, by plane):
+`testTheDeskDetailsAreKeptForTheLibraryCleanedSyncedAndBackedUp` (trimmed, the address line by line, only what is said
+is written, the records, a backup's `prefs.lostDesk` and back, not in a shared trip, nothing said = no key),
+`testTheDeskNameIsTheOneTypedElseThisIsMe`, `testThePageGathersYouTheTripAndTheBag` (every row's words, the flights'
+lines, Until from the trip, the AirTag, a partial flight "SK 99 · 14 Nov 2026 · to AGP", the photo of all the bags, the
+bag's own photo counts as a photo), `testWhatIsNotKnownSaysNotFilledInAndWhereItIsFilledIn` (14 not filled in, the fill
+targets, "1 … tap it", the trip's Place as Going to), `testATripNotByPlaneAsksNoFlightsStayOrTag`,
+`testAFewThingsInItAreWhatWentInTheFirstEightAndHowManyMore` (all when nothing is ticked, only the ticked once one is,
+set aside and reminders out, "Socks ×3", another spelling of the bag, eight and "and 5 more", none),
+`testOnlyABagHasAPage` ("Other", blank, no trip → nil; a name-only bag: no details, AirTag "No", the carry-on — a cabin
+bag — asked no tag; "/" in the PDF's name), `testTheTextIsWhatADeskReads` (the whole text). Each seen RED with a planted
+fault: the backup without the key ("a backup does not carry his details"); `deskName` ignoring This is me ("("") is not
+equal to ("Kim")"); the stay without its phone ("[…"Málaga"] is not equal to […"Málaga", "+34 900 000 000"]"); the
+photo not counted ("("13") is not equal to ("14") - and the bag's own photo"); every trip a plane trip ("a car trip
+asks no flights"); every line inside, ticked or not ("["Boots", "Jacket", "Socks ×3"] is not equal to ["Boots"]");
+"Other" given a page ("XCTAssertNil failed: LostBagPage(bag: "Other" …"); flights joined with ", " (the text differs).
+All model tests 593 + 451 green; parity 211/211.
+
+UI (`-uiTestingLostBag`, `SampleLibrary.lostBag()`): `testALostBagPageSaysWhatTheDeskAsksAndFillsInWhatIsMissing` (from
+the Bags card's `bag-1-lost`; no `bag-2-lost` for Not in a bag; every row's value, the AirTag hint, the photo, the
+first thing; "3 not filled in"; the tag typed on the page → "SK 123456", "2 not filled in"; the e-mail through For the
+lost-luggage desk → on the page, "1 not filled in — tap it"; Copy → "copied"; Share as PDF → "PDF ready — 2 pages";
+Settings then holds the e-mail), `testTheLostBagPageOpensFromThePackingDayAndFillsInTheBag` (Photos' `day-photo-0-lost`
+opens the carry-on: type not filled in, AirTag "no" and no hint, `lost-photo-none`, a photo taken on the page is kept,
+no bag-tag row for the cabin bag, Colour opens the bag's page; Ready's rows "… not filled in" / "3 not filled in" and
+`day-ready-lost-1` opens the Day pack's page), `testSettingsKeepsHisDetailsForTheLostLuggageDesk` (the door above Your
+choices in one card, Save, the door names him, This is me's `list-owners-desk` opens the same details, How it works has
+the topic). Each seen RED on the iPhone simulator with its own planted fault: the tag not saved ("'not filled in'");
+the photo taken on the page not kept ("the photo taken on the page was not kept"); no link under This is me ("no
+list-owners-desk to tap"). Green again without them, day and night (pictures `lost-page`, `lost-desk`,
+`lost-page-filled`, `lost-bag-page`, `lost-ready`, `desk-settings`). The harness's taps on the page go through
+`showOnLostPage`, which scrolls by frames: asking a row scrolled off the top whether it is hittable was a hard failure
+once ("Activation point invalid").
+
+#### Traps met building it
+
+- **A text field's binding that opens the field.** The tag's field was shown while an optional held its text; the
+  field writes its text back as it loses focus, so Save (which emptied the optional) opened it again at once — the row
+  never came back. Two states now: open or not, and the text.
 
 #### Open questions
 

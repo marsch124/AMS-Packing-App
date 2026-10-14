@@ -13008,14 +13008,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["lost-photo-0"].waitForExistence(timeout: 5), "the photo taken on the page was not kept")
         XCTAssertFalse(element(app, "lost-photo-none").exists)
         XCTAssertNotEqual(words(element(app, "lost-missing")), before, "the photo still counts as not filled in")
-        // The bag tag, typed here too — the page stays open when its keyboard goes away.
-        showOnLostPage(app, "lost-trip-tag")
-        tap(app, id: "lost-trip-tag")
-        let tag = app.textFields["lost-trip-tag-field"]
-        XCTAssertTrue(tag.waitForExistence(timeout: 5), "no field for the bag tag")
-        type("SK 654321", into: tag)
-        tap(app, id: "lost-trip-tag-save")
-        XCTAssertTrue(waitUntil { self.value(app.buttons["lost-trip-tag"]) == "SK 654321" }, "'\(value(app.buttons["lost-trip-tag"]))'")
+        // A cabin bag gets no tag at the desk: no bag-tag row for the carry-on.
+        XCTAssertTrue(app.buttons["lost-trip-flights"].exists)
+        XCTAssertFalse(app.buttons["lost-trip-tag"].exists, "the carry-on (a cabin bag) is asked for a bag-tag number")
         // The bag's details: its page opens — the carry-on becomes one of his bags.
         showOnLostPage(app, "lost-bag-colour")
         tap(app, id: "lost-bag-colour")

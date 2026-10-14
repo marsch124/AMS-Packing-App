@@ -269,8 +269,13 @@ extension Library {
                 LostBagRow(key: "trip-stay", label: "Staying at", lines: stay, fill: .trip),
                 LostBagRow(key: "trip-until", label: "Until", lines: [isYMD(until) ? Library.vaultDate(until) : ""], fill: .trip),
                 LostBagRow(key: "trip-flights", label: "Flights", lines: t.flights.filter { !$0.isEmpty }.map(Library.lostFlightLine), fill: .trip),
-                LostBagRow(key: "trip-tag", label: "Bag-tag number", lines: [t.bagTag(name)], fill: .tag),
             ]
+            // The tag number: asked of a CHECKED bag only (part B's rule — a cabin bag gets no tag);
+            // one kept before the bag went into the cabin is still shown.
+            let tag = t.bagTag(name)
+            if asksBagTag(tripId: trip.id, bag: name) || !tag.isEmpty {
+                travel.append(LostBagRow(key: "trip-tag", label: "Bag-tag number", lines: [tag], fill: .tag))
+            }
         }
         let mine = bags().first { normName($0.name) == normName(name) }
         let details = bagDetails(bag: name)
