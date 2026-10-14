@@ -2590,20 +2590,41 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(undo) == "Used up" }, "after Undo it does not offer Used up again: '\(words(undo))'")
     }
 
-    /// "While packing, we need a button to check off all items" (their field test, 3 Oct
-    /// 2026): one press ticks everything still coming home; the same place clears the ticks.
-    func testEverythingIsTickedForTheWayHomeAtOnce() {
+    /// His decision of 13 Oct 2026 on the trip's Tick everything ("two very risky buttons … pressed by
+    /// mistake: catastrophe") holds for the way home's too, which ticked everything coming home in
+    /// one press and, pressed again, cleared every home tick without asking. Gone (0.79): neither
+    /// Tick everything nor Clear the ticks, before or after; the lines are ticked one by one, and a
+    /// used-up line takes no tick.
+    func testTheWayHomeIsTickedLineByLine() {
         let app = launch()
         let home = openWayHomeOfThree(app)
         tap(app, id: "wayhome-line-1-usedup")
         XCTAssertTrue(waitUntil { self.words(home) == "0/2 · 1 used up" }, "'\(words(home))'")
-        tap(app, id: "wayhome-tickall")
-        XCTAssertTrue(waitUntil { self.words(home) == "2/2 · 1 used up" }, "Tick everything did not tick everything: '\(words(home))'")
+        XCTAssertFalse(app.buttons["wayhome-tickall"].exists, "the way home still offers Tick everything")
+        tickEveryHomeLine(app)
         XCTAssertTrue(isOn(app.buttons["wayhome-line-0"]) && isOn(app.buttons["wayhome-line-2"]), "the lines do not show their ticks")
         XCTAssertFalse(isOn(app.buttons["wayhome-line-1"]), "a used-up line was ticked")
+        XCTAssertFalse(app.buttons["wayhome-tickall"].exists, "everything packed, the way home offers Clear the ticks")
         shot(app, "way-home-all-ticked")
-        tap(app, id: "wayhome-tickall")
-        XCTAssertTrue(waitUntil { self.words(home) == "0/2 · 1 used up" }, "the same place did not clear the ticks: '\(words(home))'")
+    }
+
+    /// Every line of the open way home ticked, one by one — its Tick everything is gone (0.79).
+    /// There are as many lines as the count's total and the used up ("0/2 · 1 used up" = 3); a
+    /// used-up line takes no tick.
+    private func tickEveryHomeLine(_ app: XCUIApplication) {
+        let home = app.staticTexts["wayhome-progress"]
+        XCTAssertTrue(waitUntil { self.words(home).contains("/") }, "the way home shows no count")
+        let numbers = words(home).split { !$0.isNumber }.compactMap { Int($0) }
+        let lines = numbers.dropFirst().prefix(2).reduce(0, +), total = numbers.count > 1 ? numbers[1] : 0
+        XCTAssertGreaterThan(lines, 0, "the way home has no lines: '\(words(home))'")
+        for n in 0..<lines {
+            XCTAssertTrue(scrollUntil(app, "wayhome-line-\(n)", near: n > 0 ? "wayhome-line-\(n - 1)" : nil),
+                          "line \(n + 1) of \(lines) never appeared")
+            let line = app.buttons["wayhome-line-\(n)"]
+            if !isOn(line) { tapVisible(app, line) }
+        }
+        XCTAssertTrue(waitUntil { self.words(home).hasPrefix("\(total)/\(total)") },
+                      "every line was tapped and not all is packed for home: '\(words(home))'")
     }
 
     /// "A button for each item to write maintenance in the comment" (their field test,

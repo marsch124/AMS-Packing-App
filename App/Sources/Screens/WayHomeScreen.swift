@@ -7,8 +7,8 @@ import PackingLibrary
 /// photos of the packed bags (all of each bag's, up to three) sit at the top, to repack from.
 ///
 /// Their field test (3 Oct 2026) added: a search, "1 used up" in the
-/// heading, Tick everything, Undo for Used up, a note per line for maintenance ("zip
-/// broken"), and Open — change the thing and "come straight back here when done".
+/// heading, Tick everything (gone in 0.79 — below), Undo for Used up, a note per line for
+/// maintenance ("zip broken"), and Open — change the thing and "come straight back here when done".
 /// It opens from the trip's On site page, the step it belongs to (same field test).
 struct WayHomeScreen: View {
     let tripId: String
@@ -117,9 +117,11 @@ struct WayHomeScreen: View {
                             row(line, number[line.id] ?? 0)
                         }
                     }
-                    // It ticks the WHOLE way home, so it is not offered on a narrowed list,
-                    // where it would seem to tick only what is shown.
-                    if needle.isEmpty { tickAll(p) }
+                    // Tick everything / Clear the ticks stood here until 0.79: his decision of 13 Oct
+                    // 2026 on the trip's two — "two very risky buttons: in a stressful situation, half
+                    // way packed, pressed by mistake — catastrophe" — holds for this one too, which
+                    // cleared every home tick without asking when pressed again. The bags' headings
+                    // here are words only (no round tick), so there is no Undo to offer.
                 }
                 // Full width, words at the left: with only a message to show (nothing
                 // matches) the column would otherwise shrink to it and sit in the middle.
@@ -317,40 +319,6 @@ struct WayHomeScreen: View {
         model.change { _ = $0.noteOnSite(text, tripId: tripId, entryId: id, today: Today.local) }
         writingNote = false
         noting = nil
-    }
-
-    /// "While packing, we need a button to check off all items" (their field test,
-    /// 3 Oct 2026). Once everything is ticked the same place clears the ticks again.
-    @ViewBuilder private func tickAll(_ p: (done: Int, total: Int)) -> some View {
-        if p.total > 0 {
-            let all = p.done == p.total
-            Button {
-                let id = tripId
-                model.change { _ = $0.setAllPackedHome(!all, tripId: id) }
-            } label: {
-                Group {
-                    if all {
-                        Text("Clear the ticks")
-                            .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1.4))
-                    } else {
-                        HStack(spacing: 6) {
-                            Tick().stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                                .frame(width: 22, height: 22)
-                            Text("Tick everything").font(.system(.callout, weight: .semibold))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: Metrics.row)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.events.color))
-                    }
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .padding(.top, 18)
-            .accessibilityIdentifier("wayhome-tickall")
-        }
     }
 
     private func smallWords(_ title: String) -> some View {

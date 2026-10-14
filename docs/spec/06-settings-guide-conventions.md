@@ -828,7 +828,7 @@ no entry shows no marker anywhere (and fails the test).
    (8 lines.)
 3. **On site** (Trips mark): the door appears once the trip began or something was bought, with a summary line
    ("2 bought · 1 left · 3 notes · home 4/9"); Bought on site; Left on site with Undo; Maintenance notes (also
-   dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕, Tick everything;
+   dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕ (Tick everything until 0.79);
    notes and Open on the way home; the packed-bag photos at the top, Next steps through them. (10 lines.)
 4. **After a trip** (Trips mark): Review (tap unused, type missed, pick its template, Add, Save); the loop strip
    under a trip's name (Plan · Pack · On site · Review · Refine) with the step's own mark — a map, a suitcase with

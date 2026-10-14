@@ -1503,8 +1503,9 @@ a place opened by its printed code starts the walk there by itself (switch `voic
 decision of 13 Oct 2026:** they were "two very risky buttons — in a stressful situation half way packed, pressed by
 mistake: catastrophe". So:
 1. **Tick everything is gone** from the trip — no button, no shortcut (the Mac never had one). `Library.setAllChecked`
-   stays in the model (its tests and the Batteries tests use it). Pack to go home keeps its own Tick everything
-   (`wayhome-tickall`, a different screen; not part of this decision).
+   stays in the model (its tests and the Batteries tests use it). Pack to go home's own Tick everything /
+   Clear the ticks (`wayhome-tickall`) went with it — the same reasoning, decided the same day (see Pack to go
+   home).
 2. **Clear every tick is in Trip settings**, a quiet row last on the sheet, only while something is ticked; it still
    asks first.
 3. **Undo** after a heading's round tick — which ticks (or unticks) a whole group in one press — and after Clear every
@@ -2501,7 +2502,10 @@ broken"), `testATripUnderWayStandsAtOnSite`.
 is what actually went, plus what was bought on site, less what was used up or left behind. Its own
 ticks (the way-out ticks stay as they were, for the review)." Field test 3 Oct 2026 (0.56) added search,
 "1 used up" in the heading, Tick everything, Undo, a note per line, and Open. It opens from On site
-since 0.57.
+since 0.57. **0.79:** Tick everything / Clear the ticks is gone — his decision of 13 Oct 2026 on the trip's two
+("two very risky buttons — in a stressful situation half way packed, pressed by mistake: catastrophe") holds here
+too: this one, pressed again, cleared every home tick without asking. The bag headings here are words only, with
+no round tick, so there is no Undo to offer (decided by the build); each line is ticked by hand.
 
 **How it is reached and left.** On site → **Pack to go home**. Sheet; **Done** (filled green,
 `wayhome-done`; Escape too, 0.62). Screen id `wayhome-screen`; Mac minimum 520 × 640. ONE sheet with a destination
@@ -2546,9 +2550,10 @@ used up until Show all. Packing a line whose bag has pockets opens that bag's **
   broken" (17 medium, `wayhome-note-field`, focused, Return saves) and **Save** (16 bold white on green,
   `wayhome-note-save`). There is no Cancel: pressing **Note** on the same line again closes the editor
   without saving; Note on another line moves the one editor there.
-- At the end (only when not searching and there is something to bring home): **Tick everything**
-  (16 bold white on green with a drawn 22 pt tick, min height 52) — or **Clear the ticks** (16 bold ink,
-  1.4 pt `Theme.line` outline) once all are packed — one id `wayhome-tickall` for both.
+- *(Until 0.79, at the end, only when not searching and there was something to bring home: **Tick everything**
+  (16 bold white on green with a drawn 22 pt tick, min height 52) — or **Clear the ticks** (16 bold ink, 1.4 pt
+  `Theme.line` outline) once all were packed — one id `wayhome-tickall` for both. Removed, see above; nothing
+  follows the last line now.)*
 
 ### Behaviour (model)
 - `homeLines` = lines ticked on the way out and not set aside, plus every bought-on-site line, in list
@@ -2556,9 +2561,9 @@ used up until Show all. Packing a line whose bag has pockets opens that bag's **
 - `homeProgress` = (packed home, total) over home lines not used up. `homeUsedUp` = home lines used up.
 - Tapping a line toggles `packedHome` (not on a used-up line). **Used up** → `setUsedUp(true)` (and the
   home tick goes); **Undo** → `setUsedUp(false)`.
-- **Tick everything** → `setAllPackedHome(true)`: every home line not used up and not packed.
-  **Clear the ticks** (no confirmation) → `setAllPackedHome(false)`: EVERY home tick on the trip, also on
-  a line no longer on the way home.
+- `setAllPackedHome(true/false)` (what Tick everything / Clear the ticks did until 0.79) stays in the model,
+  tested by `WayHomeTests`, with no button: true ticks every home line not used up and not packed; false clears
+  EVERY home tick on the trip, also on a line no longer on the way home.
 - **Note Save** → `noteOnSite` (as On site: it also reaches the thing — his choice of 3 Oct 2026, now
   also what the code comment on `HOME_NOTE_KEY` says); an empty note removes it (no needs line here).
 - **Open** → the thing's editor; Save or Cancel returns to the way home as it was.
@@ -2570,11 +2575,12 @@ record rewritten).
 
 ### Tests
 Model `WayHomeTests` (7, with `testLooseThingsAreOneBagAndKeepTheirPhotos`). UI `testTheWayHomeIsPackedFromWhatWent`, `testTheWayHomeIsSearched`,
-`testUsedUpIsCountedInTheHeadingAndUndone`, `testEverythingIsTickedForTheWayHomeAtOnce`,
-`testALineKeepsANoteForTheWayHome` (also listed under On site's notes), `testAThingOpensFromTheWayHomeAndComesBack`,
-`testAPackedBagKeepsItsPhoto` (photos on the way home).
-**Not covered:** the "Clear the ticks" state of the button; the screen's heading for loose things (the
-model's `homeBags` is tested).
+`testUsedUpIsCountedInTheHeadingAndUndone`, `testTheWayHomeIsTickedLineByLine` (0.79, was
+`testEverythingIsTickedForTheWayHomeAtOnce`: no `wayhome-tickall` before or after every line is ticked by hand —
+`tickEveryHomeLine` — and the used-up line takes no tick; seen red with the button planted back, and with only
+Clear the ticks planted back), `testALineKeepsANoteForTheWayHome` (also listed under On site's notes),
+`testAThingOpensFromTheWayHomeAndComesBack`, `testAPackedBagKeepsItsPhoto` (photos on the way home).
+**Not covered:** the screen's heading for loose things (the model's `homeBags` is tested).
 
 ---
 
@@ -3115,7 +3121,7 @@ testLaundryCountsPerNightThingsFourNightsAtMost, testHomeCountsDownToTheNextTrip
 testATripChecksTheCabinAndTheDatesBeforeYouGo, testABagSaysWhetherItGoesInTheCabin,
 testABagIsWeighedOnTheLuggageScale, testAShortcutOpensAGrabListOrTheNextTrip, testAPackedBagKeepsItsPhoto,
 testSomethingBoughtOnSiteGoesOnTheList, testTheWayHomeIsPackedFromWhatWent, testTheWayHomeIsSearched,
-testUsedUpIsCountedInTheHeadingAndUndone, testEverythingIsTickedForTheWayHomeAtOnce,
+testUsedUpIsCountedInTheHeadingAndUndone, testTheWayHomeIsTickedLineByLine,
 testALineKeepsANoteForTheWayHome, testAThingOpensFromTheWayHomeAndComesBack, testATripUnderWayStandsAtOnSite,
 testOnSiteHoldsBoughtLeftNotesAndTheWayHome, testANoteMadeOnSiteReachesTheThing,
 testABagOnTheTripSaysWhetherItGoesInTheCabin, testATripIsSavedAsExcel, testTheDateGridCanBeLeftAndQuickSaysSo,

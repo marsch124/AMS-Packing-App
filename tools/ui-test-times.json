@@ -363,10 +363,6 @@
   "iphone": 32.2,
   "mac": 21.4
  },
- "testEverythingIsTickedForTheWayHomeAtOnce": {
-  "iphone": 52.8,
-  "mac": 26.2
- },
  "testHeMakesAListOfHisOwn": {
   "iphone": 37.2,
   "mac": 18.9
@@ -523,6 +519,10 @@
   "iphone": 131.9,
   "mac": 121.3
  },
+ "testTheFirstOwnerIsMadeInsideWhoseItIs": {
+  "iphone": 59.0,
+  "mac": 46.8
+ },
  "testTheFirstTripStepsHaveTheirOwnDoor": {
   "iphone": 14.9,
   "mac": 10.8
@@ -583,6 +583,10 @@
   "iphone": 36.7,
   "mac": 28.6
  },
+ "testTheWayHomeIsTickedLineByLine": {
+  "iphone": 52.8,
+  "mac": 26.2
+ },
  "testTheWeatherSaysWhatItWillBeLikeAndWhatIsMissing": {
   "iphone": 26.9,
   "mac": 19.1
@@ -637,10 +641,6 @@
  "testWhoseItIsOffersEachOwnerOnce": {
   "iphone": 21.9,
   "mac": 17.1
- },
- "testTheFirstOwnerIsMadeInsideWhoseItIs": {
-  "iphone": 59.0,
-  "mac": 46.8
  },
  "testWorthALookRemovesAPhotoLeftBehind": {
   "iphone": 24.9,

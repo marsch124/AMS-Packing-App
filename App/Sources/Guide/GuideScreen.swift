@@ -186,7 +186,7 @@ struct HowItWorksScreen: View {
             "Maintenance notes: a note per thing \u{2014} \u{201C}zip broken\u{201D}, \u{201C}wash before next trip\u{201D}. Add a note picks the thing; Change rewrites it. The note also goes onto the thing itself, dated (On site 3 Oct 2026: zip broken), so Care has it after the trip.",
             "Pack to go home: what went (ticked on the way out) and what you bought on site, bag by bag, with ticks of its own; the way-out ticks stay for the review.",
             "On the way home, Used up takes a thing off \u{2014} the same as leaving it on site; the heading counts it. Undo puts it on again.",
-            "Search the way home at the top; the \u{2715} empties it. Tick everything ticks all that still comes home; pressed again it clears the ticks.",
+            "Search the way home at the top; the \u{2715} empties it. Tick each thing as it goes into its bag \u{2014} there is no Tick everything here either.",
             "Pockets on the way home too: packing a thing for home shows its bag's pockets, the one it went out in already chosen.",
             "Note on the way home is the same maintenance note. Open opens the thing to change it; Save or Cancel brings you back where you were.",
             "The photos of every packed bag are at the top of the way home; tap one to see it large, Next steps through them."]),
