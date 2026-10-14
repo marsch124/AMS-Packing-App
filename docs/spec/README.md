@@ -84,8 +84,9 @@ the keyboard on a thing's page (Mac), sections edited from a thing's page, place
 bag pockets and "Where is my …?", the door check, Apple Health filling in the review, a trip page in his Obsidian
 vault, kits (things that hold things) and hands-free packing — written BEFORE they were built, at his request —
 then batteries and To charge, Take a break with the messages when a trip moves on (0.77), and the Packing day — the
-stations of the Pack step: Bags out, Pack, Weigh, Tags, Photos, Ready (0.79) — and the decision log of what he
-turned down.
+stations of the Pack step: Bags out, Pack, Weigh, Tags, Photos, Ready (0.79), lost luggage (0.80), progress you
+can see — a green ring per group and "23 left · 2 to charge · about 25 min" at his own pace (0.82) — and the
+decision log of what he turned down.
 
 Some subjects are seen from two sides: the backup and Restore (storage in 01, the Settings screen in 06),
 Save as Excel and sharing (the file and the codes in 01, the trip screen in 03), Your choices (04 and 06),

@@ -103,6 +103,7 @@ extension Library {
             l.skipped = false
             l.edited = false
             for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt", POCKET_KEY, HOME_POCKET_KEY] { l.extra[key] = nil }
+            l.extra[TICKED_AT_KEY] = nil         // when he ticked it: his pace is his (PackingPace, 0.82)
             return l
         }
         return t

@@ -4541,6 +4541,81 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "Undo did not tick the Garage again: '\(words(progress))'")
     }
 
+    /// A group's progress mark (0.82, spec 07 part 20) — read by its value, never by its look.
+    private func groupProgress(_ app: XCUIApplication, _ g: Int) -> XCUIElement {
+        let id = "trip-group-\(g)-progress"
+        for query in [app.otherElements, app.groups, app.images, app.staticTexts] where query[id].exists { return query[id] }
+        return app.otherElements[id]
+    }
+
+    /// Green per group (0.82, his yes of 14 Oct 2026; spec 07 part 20): each heading's ring says how
+    /// many of its lines are packed, "all packed" once every one is — folded too — and the heading's
+    /// round tick stays a button of its own at the right.
+    func testAGroupTurnsGreenWhenItsLinesArePacked() {
+        let app = launch()
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
+        // From where: the Bathroom cabinet (the Toothbrush, line 2), the Chest of drawers, the Garage
+        // (the Headlamp, line 3, and the Map), the Hall closet.
+        XCTAssertEqual(choose(app, "trip-view", 2), "From where")
+        // Not there (yet) = no words: reading an element that is not there is a hard failure.
+        func ring(_ g: Int) -> String { let e = groupProgress(app, g); return e.exists ? (e.value as? String ?? "") : "" }
+        XCTAssertTrue(waitUntil { ring(0) == "0 of 1 packed" }, "the Bathroom cabinet's ring says '\(ring(0))'")
+        XCTAssertTrue(waitUntil { ring(2) == "0 of 2 packed" }, "the Garage's ring says '\(ring(2))'")
+        // Beside the count, at the left — the round tick at the other end, a button of its own.
+        let mark = groupProgress(app, 2), all = app.buttons["trip-group-2-all"]
+        XCTAssertTrue(all.exists, "the heading's round tick is gone")
+        XCTAssertLessThan(mark.frame.maxX, all.frame.minX - 40, "the ring is not left of the round tick: \(mark.frame) / \(all.frame)")
+        XCTAssertLessThan(mark.frame.width, all.frame.width, "the ring is not smaller than the round tick")
+        XCTAssertFalse(app.buttons["trip-group-2-progress"].exists, "the ring is a button")
+
+        tap(app, id: "trip-line-2")                                // the Toothbrush
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "'\(words(progress))'")
+        XCTAssertTrue(waitUntil { ring(0) == "all packed" }, "a group with every line ticked is not done: '\(ring(0))'")
+        tap(app, id: "trip-line-3")                                // the Headlamp
+        XCTAssertTrue(waitUntil { ring(2) == "1 of 2 packed" }, "the Garage's ring says '\(ring(2))'")
+        shot(app, "trip-group-progress")
+        // Folded, the heading says the same.
+        tap(app, id: "trip-group-2-fold")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-line-3"].exists }, "the Garage did not fold")
+        XCTAssertTrue(waitUntil { ring(2) == "1 of 2 packed" }, "folded, the Garage's ring says '\(ring(2))'")
+        tap(app, id: "trip-group-2-fold")
+        // Unticked again, the done group goes back to its ring.
+        tap(app, id: "trip-line-2")
+        XCTAssertTrue(waitUntil { ring(0) == "0 of 1 packed" }, "unticked, the Bathroom cabinet's ring says '\(ring(0))'")
+    }
+
+    /// What's left (0.82, his yes of 14 Oct 2026; spec 07 part 20): under the count of a trip at
+    /// Pack, "7 left · about 5 min" (45 s a thing until his own pace is known), one fewer with each
+    /// tick, "All packed" at the end; with things to charge, "· 2 to charge ·" between.
+    func testTheTripSaysWhatIsLeft() {
+        let app = launch()
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"], left = app.staticTexts["trip-left"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
+        XCTAssertTrue(waitUntil { self.words(left) == "7 left \u{00B7} about 5 min" }, "the trip says '\(words(left))'")
+        XCTAssertGreaterThanOrEqual(left.frame.minY, progress.frame.maxY - 1, "what's left is not under the count: \(left.frame) / \(progress.frame)")
+        XCTAssertEqual(left.frame.minX, progress.frame.minX, accuracy: 1.5, "what's left is not in the count's column")
+        shot(app, "trip-whats-left")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(left) == "6 left \u{00B7} about 5 min" }, "after a tick the trip says '\(words(left))'")
+        tickEveryLine(app)
+        XCTAssertTrue(waitUntil { self.words(left) == "All packed" }, "everything ticked, the trip says '\(words(left))'")
+        shot(app, "trip-whats-left-all-packed")
+        app.terminate()
+
+        // The battery sample's trip starts tomorrow: two things to charge.
+        let charging = launch("-uiTestingBattery")
+        openKitTrip(charging)
+        let count = charging.staticTexts["trip-progress"], says = charging.staticTexts["trip-left"]
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0/") }, "'\(words(count))'")
+        let lines = words(count).split(separator: "/").last.map(String.init) ?? "?"
+        XCTAssertTrue(waitUntil { self.words(says).hasPrefix("\(lines) left \u{00B7} 2 to charge \u{00B7} about ") },
+                      "with two things to charge the trip says '\(words(says))'")
+        shot(charging, "trip-whats-left-charge")
+    }
+
     /// The Undo after a heading's tick is offered for a few seconds only (6 in the app; 8 here, so a
     /// slow machine still sees it come), then goes by itself — and going changes no tick.
     func testTheUndoGoesByItself() {

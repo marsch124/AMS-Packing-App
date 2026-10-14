@@ -858,7 +858,11 @@ no entry shows no marker anywhere (and fails the test).
    Run green, Strength orange, Breath work lavender, Mobility pink); each picked workout its own Context line
    (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other Templates (0.62; his casing 0.78). (10) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
    ×4 · laundry with a washtub. (11) This Device: how many trips, things and templates.
-1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; Before you go
+1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; (0.82, spec 07 part 20)
+   "Green as you go" — the ring beside each heading's count, the green check and green heading when it is done, the
+   round button unchanged — and "Under the trip's count" — "23 left · 2 to charge · about 25 min", All packed, the time
+   from his own pace (the middle time between ticks over his last packings, a pause over 10 minutes a break, 45 s a
+   thing until 20 are measured); Before you go
    (0.77: one card, one count of what is left, red / orange / green All set — folded to one line, its arrow opens it;
    its parts: the checks — cabin red/orange, a battery in a checked bag red (0.76), expiry six months ahead for
    passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks; To charge from the day before

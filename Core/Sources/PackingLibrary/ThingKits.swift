@@ -527,6 +527,9 @@ extension Library {
         let inside = kit.inside.map(\.thing.id)
         let all = inside.allSatisfy { ticked.contains($0) }
         let keep = inside.filter { ticked.contains($0) }
+        // Packed through what is inside it: the kit's tick moment, for his pace (0.82, spec 07 part 20).
+        if all && !trips[t].entries[e].checked { trips[t].entries[e].extra[TICKED_AT_KEY] = Library.tickMoment() }
+        if !all { trips[t].entries[e].extra[TICKED_AT_KEY] = nil }
         trips[t].entries[e].checked = all
         trips[t].entries[e].extra[KIT_TICKED_KEY] = all || keep.isEmpty ? JSONValue?.none : JSONValue(keep)
         return true

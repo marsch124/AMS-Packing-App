@@ -17,6 +17,9 @@ public struct TicksChanged: Equatable, Sendable {
         public let id: String
         /// Its pocket: a tick chooses the usual one (`prechoosePocket`), and Undo takes it away.
         public let pocket: JSONValue?
+        /// Its tick moment (0.82, spec 07 part 20): a tick writes one, an untick takes it — Undo
+        /// puts back what was there.
+        public var tickedAt: JSONValue? = nil
     }
     public let tripId: String
     /// What the press set the lines to: true = ticked.
@@ -56,7 +59,7 @@ extension Library {
             guard let line = trip(tripId)?.entries.first(where: { $0.id == id }),
                   line.checked != checked, !(checked && isSetAside(line)),
                   setChecked(checked, tripId: tripId, entryId: id) else { continue }
-            changed.append(.init(id: id, pocket: line.extra[POCKET_KEY]))
+            changed.append(.init(id: id, pocket: line.extra[POCKET_KEY], tickedAt: line.extra[TICKED_AT_KEY]))
         }
         return TicksChanged(tripId: tripId, checked: checked, lines: changed)
     }
@@ -78,6 +81,7 @@ extension Library {
             guard line.checked == change.checked, !(!change.checked && isSetAside(line)) else { continue }
             trips[t].entries[e].checked = !change.checked
             trips[t].entries[e].extra[POCKET_KEY] = was.pocket
+            trips[t].entries[e].extra[TICKED_AT_KEY] = was.tickedAt
             back += 1
         }
         return back

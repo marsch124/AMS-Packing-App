@@ -1094,6 +1094,15 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
   a break waiting, "Back at 19:00", "Back tomorrow 18:00"), id `trip-break` — only while
   the trip is at Pack (the loop strip's own reading) with something left. It opens the break sheet: how far he has
   come, and "Continue when?". Everything about it: spec 07 part 16.
+- **What's left** (0.82, his yes of 14 Oct 2026; spec 07 part 20), under the count, 1 pt away, in the count's
+  column (Take a break stays at the right, centred on the two lines): ONE line, id `trip-left` (a plain
+  text) — only while the trip is at Pack (the strip's own reading, as Take a break) and has a line not set
+  aside. "23 left · 2 to charge · about 25 min": the lines not set aside and not ticked (reminders too — the count's
+  own total − done), the To charge card's things not charged (only while that card would show), and the time the rest
+  takes at his own pace (`Library.whatsLeft`, `Library.packingPace`, `Library.aboutWords` — "less than a minute",
+  to the minute under 10 min, then to 5 min, "about 1 h 25 min"). Footnote, monospaced digits, muted, up to two
+  lines (scaling to 85 % first). Nothing left: "All packed" in Footnote semibold, the done heading's readable green
+  (#227147 by day, #2f9e63 at night), then " · N to charge" while something is still to charge. Never "0 left".
 
 **Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
 
@@ -1156,8 +1165,18 @@ left, the choice beside it) are kept.
      `Metrics.line` target — 34×36 and 20 pt until 0.67; pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
      (15 heavy; sorted When: the colour of the FIRST line's phase made readable; otherwise green; id
-     `trip-group-<g>-label`; tapping the words folds too); the count "ticked/packable" (13 bold mono
-     muted, set-aside lines excluded); and at the right the **whole-section tick**: a `TickCircle` of
+     `trip-group-<g>-label`; tapping the words folds too); since 0.82 the **progress mark** (spec 07 part 20 —
+     `GroupProgressMark`, not a button, id `trip-group-<g>-progress`, label "Packed", value "<ticked> of <packable>
+     packed" / "all packed"): 14 pt across on the iPhone, 11 on the Mac, 8 pt after the words — a hairline track
+     with a green arc from the top, clockwise, as long as ticked ÷ packable; when every packable line is ticked a
+     filled green circle with a white tick, the words and the count in the trip's green made readable (#227147 by
+     day, #2f9e63 at night — `GroupProgressMark.words`), and a soft green band behind
+     the heading row (10 % by day, 18 % at night, corner 8, 6 pt past the row each side); becoming done while he
+     looks, the check springs in (from 30 %, response 0.35, damping 0.55) and the colours ease in over 0.3 s — a 0.2 s
+     fade with Reduce Motion; not drawn when every line is set aside; a folded group shows it too. Then the count
+     "ticked/packable" (13 bold mono muted — green when done — set-aside lines excluded), 5 pt after the mark; and
+     at the right the **whole-section tick** (unchanged — bigger, at the other end, and a button: the two never
+     look alike in one place): a `TickCircle` of
      `Metrics.mark` (18 / 14; 20 until 0.67) — a `Theme.line` ring, or filled green with a white tick when
      every packable line of the section is ticked — in a `Metrics.lineButton` × `Metrics.line` target (40 × 30
      on the iPhone, 30 × 22 on the Mac; 40×36 until 0.67), so it sits above the lines' ⊘; id
@@ -1494,8 +1513,16 @@ Model: `CustomLineTests.testATypedThingJoinsTheTripAndSurvivesARegenerate`, `Set
 `TripCardsTests.testEverythingDecidedIsPacked`, `OnTheTripTests.testABoughtOnSiteLineIsInHandMarkedAndKept`,
 `testTheStoredMarkKeepsItsFirstName`, `CountingTests.testProgress*`, `GroupingTests` (groupBy, container, category, storage).
 Model: `TripEditsTests.testATripsFoldsGoWithIt`, `ReviewTests.testASetAsideLineNeverCountsAsPacked`.
-**Not covered by any test:** the gradient sweep/Reduce Motion; the placeholder for a vanished trip; a stored
-sorting that is none of the five.
+UI (0.82, spec 07 part 20): `testAGroupTurnsGreenWhenItsLinesArePacked` (sorted From where: the Bathroom
+cabinet's `trip-group-0-progress` "0 of 1 packed", its line ticked → "all packed"; the Garage "0 of 2 packed", one
+line → "1 of 2 packed", folded → still "1 of 2 packed"; the round tick `trip-group-2-all` still there, to the
+right of the mark, bigger, a button; Toothbrush unticked → "0 of 1 packed"; picture `trip-group-progress`),
+`testTheTripSaysWhatIsLeft` (the sample at Pack: `trip-left` "7 left · about 5 min" under the count, in its column;
+one tick → "6 left · about 5 min", every line ticked → "All packed"; `-uiTestingBattery`: "… · 2 to charge · …";
+pictures `trip-whats-left`, `trip-whats-left-all-packed`, `trip-whats-left-charge`). Model `PackingPaceTests` (10;
+see spec 07 part 20, with the planted faults each was seen red with).
+**Not covered by any test:** the gradient sweep/Reduce Motion; the done moment's spring (an animation); the
+placeholder for a vanished trip; a stored sorting that is none of the five.
 
 ### iPhone vs Mac
 Same view. Mac minimum 520 × 640. The Sorting row is one line on both (since 0.64 there are no fall-backs:

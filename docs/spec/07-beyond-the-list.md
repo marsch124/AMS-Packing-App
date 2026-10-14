@@ -32,6 +32,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 18. Lost luggage — A: a bag's details for the desk | 0.80 | built (branch work/baginfo080) |
 | 18. Lost luggage — B. Flights and stay, bag-tag numbers | 0.80 | built (branch work/flight080) |
 | 18. Lost luggage — C. The Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
+| 20. Progress you can see — green groups and what's left | 0.82 | built (branch work/progress082) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -3042,6 +3043,165 @@ once ("Activation point invalid").
 
 ---
 
+## 20. Progress you can see — green groups and what's left
+
+> His words (14 Oct 2026), from his own packing walk-through: "once a WET, GA, Template is finished I would like to
+> enjoy a green checkbox or green colour somewhere showing me a good progress — but also indicating how much is
+> left. Both in items, charging, actual packing time etc." He said yes the same day to the two parts below. Written
+> BEFORE the build (his rule: the spec first) and then checked against the code of branch `work/progress082` (0.82):
+> the model `Core/Sources/PackingLibrary/PackingPace.swift` (the tick's moment, his pace, the words) and
+> `Library.setChecked` / `setKitContentTicked` / `undo` (the moment written and taken away); the screen
+> `App/Sources/Screens/TripScreen.swift` (`GroupProgressMark`, `WhatsLeftLine`). Per screen: spec 03 (the trip
+> header and the heading row), spec 01 §1.12 (the key).
+
+### What he gets
+
+1. **A green ring per group.** On the trip's list every group heading — whatever the Sorting: When, Into, From
+   where, Category, Section, Template — has a small ring just left of its count ("◔ 3/12"). It fills green as the
+   group's lines are ticked. When the last one is ticked the ring becomes a small **filled green check**, the
+   heading's words and count turn the trip's green and a soft green band lies behind the heading — with a short
+   "done" moment: the check springs in, a touch larger, and settles (with Reduce Motion: a plain fade). A folded
+   group shows the same.
+2. **What's left, in one line**, under the trip's count while the trip is being packed: **"23 left · 2 to charge ·
+   about 25 min"** — the things not ticked yet, the things not charged yet (only while the To charge card would show)
+   and roughly how long the rest takes at HIS pace, measured from his own ticks. Everything packed: a calm green
+   **"All packed"** instead (with " · 2 to charge" while something is still to charge).
+
+### The rules — the green groups (decided 14 Oct 2026, by the build)
+
+1. **The heading's own count.** A group's ring reads exactly the heading's "ticked/packable": the group's lines not
+   set aside, how many of them are ticked. Its reminders (To do lines, spec 07 part 12) count as lines, as they do
+   today — so a group is done only when they are ticked too. Under Template a line on two templates counts in both
+   groups (it stands under both). The ring and the count never disagree.
+2. **Only where there is something to pack.** A group whose every line is set aside has no ring (its count says
+   "0/0"; it has no round tick either). An empty group is not drawn at all (as before).
+3. **The ring** (`GroupProgressMark`, not a button): `GroupProgressMark.size` across — 14 pt on the iPhone, 11 on the
+   Mac — 8 pt after the heading's words and 5 pt before the count; a track in the hairline colour (`Theme.line`, 2 pt; 1.6 on the Mac) and over it the green arc
+   (`AppSection.events.color`, the trip's green), from the top, clockwise, as long as ticked ÷ packable, round ends.
+   Nothing ticked: the track alone.
+4. **Done** = every line of the group not set aside is ticked (and there is at least one). Then:
+   - the ring is replaced by a **filled green circle with a white tick** (the app's drawn tick, as a line's), the same
+     size as the ring;
+   - the heading's words and its count are the trip's green made readable (`GroupProgressMark.words`:
+     `readableHex("#2f9e63")` — #227147 by day, 5.4 : 1 where the green itself gives 3.4 and was hard to read on
+     the all-packed screen; #2f9e63 at night), the count semibold as before — under When the heading's own "When"
+     colour gives way to the green while the group is done, and comes back when a line is unticked;
+   - a **soft green band** lies behind the heading row: the trip's green at 10 % by day, 18 % at night, corner 8,
+     reaching 6 pt past the row on each side (so the fold arrow and the round tick sit inside it).
+5. **The done moment.** Only when a group BECOMES done while he looks (a tick, the heading's round tick, Pack by
+   voice, the other device): the check comes in with a spring (from 30 % of its size and transparent; response
+   0.35 s, damping 0.55 — it overshoots a little and settles) and the words' colour and the band ease in over
+   0.3 s. With **Reduce Motion**: no scale — the check and the band fade in over 0.2 s. A group already done when
+   the trip opens is simply shown done. Unticking a line takes the check away the same way, back to the ring.
+6. **Not the round tick.** The heading's round tick (`trip-group-<g>-all`) stays where it is, at the RIGHT end of
+   the heading above the lines' ⊘, at `Metrics.mark` (18 / 14), a button that ticks or unticks the whole group, with
+   Undo. The progress mark is at the LEFT, right beside the count it belongs to, smaller (14 / 11), and only shows —
+   it takes no press and is not a button for VoiceOver. When a group is done both show a filled green circle, at
+   opposite ends and in two sizes: one says "done", the other "untick them all".
+7. **Accessibility.** The mark is ONE element, id `trip-group-<g>-progress`, label "Packed", value "<ticked> of
+   <packable> packed" or "all packed" when done (what the tests read). The heading's count stays a plain text.
+
+### The rules — what's left (decided 14 Oct 2026, by the build)
+
+8. **When it shows.** While the trip is at **Pack** (`loopStep` on the trip screen's clock — the same reading as the
+   loop strip and Take a break) and has at least one line not set aside. Never at Plan (no lines), On site, Review or
+   Refine. Opened from a place's code it still counts the WHOLE trip (as the count above it does).
+9. **Left** = the header's `progress(trip.entries)`: total − done — every line not set aside and not ticked, its
+   reminders too. "1 left", "23 left".
+10. **To charge** = the To charge card's rows not charged (`chargeCard(tripId:today:)` — from the day before the trip
+    through its last day, kit contents included, spec 07 part 15); no card today, or all charged: no part. "1 to
+    charge", "2 to charge".
+11. **Time** = left × his pace (below), in words (`Library.aboutWords`):
+    - under 60 seconds: "less than a minute";
+    - under 10 minutes: to the minute — "about 4 min" (9 min 30 s and over rounds to "about 10 min");
+    - from 10 minutes: to the nearest 5 — "about 25 min" (12 min 29 s → 10, 12 min 30 s → 15);
+    - from an hour: "about 1 h 25 min", "about 2 h".
+    Always "about": it is an estimate, measured or not.
+12. **The line** (`WhatsLeftLine`, id `trip-left`, a plain text — its label on the iPhone, its value on the Mac): the parts joined by " · "
+    — "23 left · 2 to charge · about 25 min" — Footnote, digits monospaced, muted; it sits under the count, 1 pt
+    away, in the count's column, and Take a break (when shown) stays at the right, centred on the two lines.
+    **All packed** (nothing left, at least one line not set aside): "All packed" in Footnote semibold, in the done
+    heading's readable green (#227147 by day, #2f9e63 at night), then
+    " · 2 to charge" while the To charge card shows something not charged. The line never shows "0 left".
+
+### His pace — the estimate rule (`Library.packingPace()`)
+
+13. **A tick keeps its moment.** Every tick on a trip's line writes the line's extra key **`tickedAt`**
+    (`TICKED_AT_KEY`) = the moment, whole seconds since 1 January 1970 (UTC, a number; this device's clock,
+    `PackingEnv.now`) — one number on the line's own record, synced with the tick. Written by `setChecked(true)`
+    (a tap, the heading's round tick — all its lines get the same moment —, Pack by voice, a reminder ticked in
+    Before you go) and by a kit that becomes packed through what is ticked inside it (`setKitContentTicked`) — only
+    when the line TURNS ticked: a line already ticked keeps its first moment.
+    **Taken away** by an untick (`setChecked(false)`, a kit no longer complete). **Undo** writes back the moment the
+    line had before the press (`TicksChanged.Before.tickedAt`). NOT written by Bought on site (in hand, not packed),
+    the review, or a rebuild (a rebuilt line keeps all its marks, `followThing`); **dropped** by "Start a new trip
+    from this one" and in a shared trip (his pace is his). A line set aside keeps whatever it had, unread. The web
+    app's model sees a key it does not know (parity unchanged).
+14. **Timed ticks.** Per trip, the moments of its lines that are ticked, not set aside and carry a valid moment
+    (a number > 0) are put in order; lines with the SAME moment (one press of a heading's tick) are one step of k
+    lines. The time from the step before to this one is the gap: a gap of **10 minutes or less**
+    (`PACE_BREAK_SECONDS` = 600) gives each of the k lines **gap ÷ k** seconds — k timed ticks; a longer gap is a
+    **break** and its lines are not timed; the first step of a trip has no step before it and is not timed. Ticks of
+    different trips are never compared with each other.
+15. **Recent, across trips.** The newest **200** timed ticks of all trips (`PACE_RECENT_TICKS`, by their moment —
+    about his last three packings) are kept, and his pace is their **median** (an even number: the mean of the two
+    middle ones).
+16. **Before there is enough.** Fewer than **20** timed ticks (`PACE_MIN_TICKS`): **45 seconds per thing**
+    (`PACE_DEFAULT_SECONDS`), and the line still says "about". `PackingPace.measured` says which it is (the screen
+    does not show it).
+17. Read on the screen whenever the trip changes (no timer): the pace is the library's, so a tick on the other
+    device counts as soon as it arrives.
+
+### Where it is kept (the web model sees nothing new)
+
+| Holder | Key | Value | Meaning |
+|---|---|---|---|
+| trip line (0.82) | `tickedAt` (`TICKED_AT_KEY`) | number, whole seconds since 1970 (UTC) / absent | when it was ticked (rule 13); removed by an untick; dropped by Start again and in a shared trip |
+
+Nothing else is stored: the rings and the line are read from the trip each time; the pace from the trips' moments.
+
+### Tests
+
+Model `PackingPaceTests` (10): `testATickKeepsItsMomentAndAnUntickTakesIt` (whole seconds; ticked again keeps the
+first; Bought on site has none), `testAHeadingsTickGivesItsLinesOneMomentAndUndoPutsBackWhatWasThere`,
+`testAKitGetsItsMomentWhenTheLastThingInsideIsTicked`, `testTheGapsBetweenHisTicksAreHisPaceAndALongOneIsABreak`,
+`testOnePressOfManyLinesSharesItsGap`, `testBeforeTwentyTimedTicksItIs45SecondsAndTripsAreNeverComparedWithEachOther`,
+`testHisPaceIsTheMedianOfTheNewest200TimedTicks`, `testTheTimeIsSaidRoundedToTheMinuteThenToFive` (every band:
+59 s, 60 s, 4:29, 9:29, 9:30, 12:29, 12:30, 25 min, 57:29, 57:30, 85 min, 120 min),
+`testWhatIsLeftSaysTheThingsTheChargingAndTheTime`, `testTheMomentIsStoredBackedUpAndKeptByARebuildButNeverSentOrStartedAgain`
+(records, both kinds of backup file, the web model's `Item(json:)`, a rebuild and a change to the thing keep it;
+`justTheList` and Start again drop it). `PocketsTests.testAnAbsentPocketChangesNothing` now expects the moment beside
+the tick (and still no pocket). Each seen RED with its own planted fault: no moment on a tick ("Undo did not put back
+the first moment", 26 failures); an untick keeping it ("an untick takes the moment away"); Undo ignoring it ("Undo
+left the moment of a tick it took back"); a kit given none ("the kit packed by its last thing has no moment"); no
+breaks ("25 gaps, one of them a break"); a press not shared ("290 s for 29 things is 10 s each"); every tick instead
+of the newest 200 ("not the newest 200": 40 for 20); two trips' ticks compared ("two trips' ticks were compared");
+always to 5 minutes ("about 0 min" for 60 s); charged things counted ("5 left · 3 to charge"); Start again and a
+shared trip keeping it ("a trip started again carries the old moments", "a shared trip carries his tick moments").
+
+UI (iPhone, the own simulator; both also in the Mac probe): `testAGroupTurnsGreenWhenItsLinesArePacked` (sorted From
+where: the Bathroom cabinet's `trip-group-0-progress` "0 of 1 packed", the Garage's "0 of 2 packed"; the ring at
+least 40 pt left of the round tick `trip-group-2-all`, smaller than it, and no button; the Toothbrush ticked → "all
+packed"; the Headlamp → "1 of 2 packed"; folded, still "1 of 2 packed"; the Toothbrush unticked → "0 of 1 packed";
+picture `trip-group-progress`) and `testTheTripSaysWhatIsLeft` (the sample at Pack: `trip-left` "7 left · about 5
+min" under the count and in its column, after a tick "6 left · about 5 min", every line ticked "All packed";
+`-uiTestingBattery`: "<n> left · 2 to charge · about …"; pictures `trip-whats-left`, `trip-whats-left-all-packed`,
+`trip-whats-left-charge`). Seen RED with planted faults in the screen: a done group never done ("a group with every
+line ticked is not done: '1 of 1 packed'"); the ring hidden while folded ("folded, the Garage's ring says ''");
+"All packed" not said ("everything ticked, the trip says ''"); the line beside the count instead of under it ("what's
+left is not under the count"). Green again without them, day and night.
+
+### Open questions
+
+- The pace is one number for every kind of trip; a quick weekend may be packed faster than a big trip with kits. If
+  the estimate feels off, a pace per template is the next step.
+- A tick made on the other device while this one is offline arrives later with its own moment; the gap is still
+  measured on the moments, so the order of arrival does not matter.
+- The moment is this device's clock: a Mac and an iPhone a minute apart ticking the same trip in turns would make
+  small gaps look larger or smaller; the median keeps such outliers out.
+
+---
+
 ## 11. Decision log
 
 | Date | Decision | His words / reason |
@@ -3081,6 +3241,7 @@ once ("Activation point invalid").
 | 14 Oct 2026 | (7) Bags out: "+ Add a bag" — one of his bags not on the trip, or a new one (name, cabin yes/no, max weight optional), added to the trip's bags so Weigh, Tags and Photos include it; things go into it by their Usually packed in (a one-line hint) | His decision. How a bag is on the trip without lines decided by the build: the trip's `dayAddedBags` list, the bags its lines pack into first, then the added ones. Part 17, "0.81" item 7. |
 | 14 Oct 2026 | On a plane trip, Create new trip and Trip settings keep the flights (Out and Home, connections between), the destination and where he stays until when, in a framed block "Flights and stay" under Travelling by, optional; each bag's tag number from check-in at the Packing day's Tags and on the Bags card. Plane off keeps it unseen; Start again takes none of it; a shared trip keeps flights and stay but not the tag numbers (decided by the build) | His yes of 13 Oct 2026 to the lost-luggage information (0.80). Part 18 B. |
 | 13 Oct 2026 | Lost luggage, part C: a Lost bag page per bag of a trip — his details (name, phone, e-mail, home address, kept once for the library in Settings), the trip's flights, stay and the bag-tag number, the bag's details, AirTag, photos and a few things in it; "not filled in" opens what fills it; Share as PDF and Copy as text; reached from the Bags card and the Packing day's Photos and Ready. The bag-tag number is typed on the page itself; a trip by car or train still has a page (decided by the build) | His yes to the lost-luggage information (A bag details, B flights and stay, C the page). Part 18 C. |
+| 14 Oct 2026 | Each group heading of a trip gets a small ring beside its count that fills green as its lines are ticked; done, a filled green check, the heading green on a soft green band, a short spring (a fade with Reduce Motion); the heading's round tick stays at the right, unchanged. Under the trip's count, while it is at Pack: "23 left · 2 to charge · about 25 min" — the time from HIS pace (the median seconds per tick of his newest 200 timed ticks across trips, gaps over 10 minutes ignored as breaks; 45 s per thing until 20 are timed), rounded to 5 min (to the minute under 10); "All packed" when nothing is left | "Once a WET, GA, Template is finished I would like to enjoy a green checkbox or green colour somewhere showing me a good progress — but also indicating how much is left. Both in items, charging, actual packing time etc." Part 20. |
 
 ## Open questions
 

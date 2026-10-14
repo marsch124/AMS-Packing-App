@@ -224,11 +224,19 @@ struct TripScreen: View {
                         .accessibilityIdentifier("trip-done")
                 }
                 HStack(alignment: .center, spacing: 8) {
-                    Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
-                        .font(.system(.callout, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
-                        .accessibilityIdentifier("trip-progress")
-                        .accessibilityValue(allPacked ? "all packed" : "")
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
+                            .font(.system(.callout, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
+                            .accessibilityIdentifier("trip-progress")
+                            .accessibilityValue(allPacked ? "all packed" : "")
+                        // What's left (0.82, his yes of 14 Oct 2026; spec 07 part 20): "23 left · 2 to
+                        // charge · about 25 min" at his own pace — under the count, while the trip is at
+                        // Pack; Take a break stays at the right, centred on the two lines.
+                        if step == .pack, let left = model.library.whatsLeft(tripId: tripId, today: Today.iso(clock)) {
+                            WhatsLeftLine(left: left)
+                        }
+                    }
                     Spacer(minLength: 8)
                     // Take a break (0.77, his yes of 13 Oct 2026; spec 07 part 16): at the calm
                     // end of the count's line, while the trip is at Pack with something left.
@@ -329,6 +337,7 @@ struct TripScreen: View {
                             let mine = group.entries.filter { !isSetAside($0) }
                             let sectionDone = !mine.isEmpty && mine.allSatisfy { $0.checked }
                             let folded = isFolded(group.label)
+                            let ticked = mine.filter { $0.checked }.count
                             HStack(spacing: 8) {
                                 // Fold the section away, or open it again. The arrow is its own
                                 // button: the Mac folds a button's texts into the button, and the
@@ -344,14 +353,25 @@ struct TripScreen: View {
                                 .buttonStyle(.plain).focusEffectDisabled()
                                 .accessibilityIdentifier("trip-group-\(g)-fold")
                                 .accessibilityLabel(folded ? "Open \(group.label)" : "Fold \(group.label)")
+                                // Done (0.82, spec 07 part 20): the words and the count in the trip's
+                                // green, on a soft green band — under When the "When" colour comes back
+                                // when a line is unticked.
                                 Text(group.label)
                                     .font(.system(.subheadline, weight: .semibold))
-                                    .foregroundStyle(headingColour(group))
+                                    .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : headingColour(group))
                                     .accessibilityIdentifier("trip-group-\(g)-label")
                                     .onTapGesture { toggleFold(group.label) }
-                                Text("\(mine.filter { $0.checked }.count)/\(mine.count)")
-                                    .font(.system(.footnote, weight: .semibold).monospacedDigit())
-                                    .foregroundStyle(Theme.muted)
+                                // The green ring, LEFT of the count it reads (0.82): it fills as the lines
+                                // are ticked, a filled check when all are. Not a button — the round tick
+                                // that ticks the group stays at the right end, bigger.
+                                HStack(spacing: 5) {
+                                    if !mine.isEmpty {
+                                        GroupProgressMark(packed: ticked, total: mine.count, id: "trip-group-\(g)-progress")
+                                    }
+                                    Text("\(ticked)/\(mine.count)")
+                                        .font(.system(.footnote, weight: .semibold).monospacedDigit())
+                                        .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : Theme.muted)
+                                }
                                 Spacer()
                                 // Only while the section has something to tick: with every line set
                                 // aside there is nothing, and a switched-off grey circle is what his
@@ -375,6 +395,15 @@ struct TripScreen: View {
                                     .accessibilityAddTraits(sectionDone ? .isSelected : [])
                                 }
                             }
+                            // A done group's soft green band (0.82), a little past the row on each side.
+                            .background {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(AppSection.events.color.opacity(scheme == .dark ? 0.18 : 0.10))
+                                    .padding(.horizontal, -6)
+                                    .opacity(sectionDone ? 1 : 0)
+                                    .accessibilityHidden(true)
+                            }
+                            .animation(.easeInOut(duration: reduceMotion ? 0.2 : 0.3), value: sectionDone)
                             // A little air above a heading, none under it (12 points above,
                             // and 36-point buttons, until 0.67).
                             .padding(.top, 6)
@@ -1068,6 +1097,83 @@ struct TickCircle: View {
         }
         .frame(width: s, height: s)
         .accessibilityHidden(true)
+    }
+}
+
+/// A group's progress, beside its heading's count (0.82, his yes of 14 Oct 2026; spec 07 part 20):
+/// a hairline ring that fills green as the group's lines are ticked; all ticked, a filled green
+/// check that springs in — a touch larger, then settles — or, with Reduce Motion, fades in. It only
+/// shows: the group's round tick, a button, stays at the heading's right end and is bigger. ONE
+/// element for VoiceOver and the tests: "Packed", "3 of 12 packed" / "all packed".
+struct GroupProgressMark: View {
+    let packed: Int
+    let total: Int
+    let id: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    #if os(macOS)
+    static let size: CGFloat = 11
+    static let track: CGFloat = 1.6
+    #else
+    static let size: CGFloat = 14
+    static let track: CGFloat = 2
+    #endif
+
+    private var done: Bool { total > 0 && packed >= total }
+
+    /// Words in the trip's green that read on the screen they land on — a done heading, "All
+    /// packed": #227147 by day (5.4 : 1, where #2f9e63 gives 3.4), the green itself at night.
+    static func words(_ scheme: ColorScheme) -> Color {
+        Color(hexString: readableHex("#2f9e63", dark: scheme == .dark))
+    }
+
+    var body: some View {
+        let green = AppSection.events.color
+        let s = GroupProgressMark.size, w = GroupProgressMark.track
+        ZStack {
+            if done {
+                ZStack {
+                    Circle().fill(green)
+                    Tick().stroke(Color.white, style: StrokeStyle(lineWidth: max(1.3, s / 10), lineCap: .round, lineJoin: .round))
+                }
+                .transition(reduceMotion ? .opacity : .scale(scale: 0.3).combined(with: .opacity))
+            } else {
+                ZStack {
+                    Circle().stroke(Theme.line, lineWidth: w)
+                    if packed > 0 {
+                        Circle().trim(from: 0, to: CGFloat(packed) / CGFloat(max(total, 1)))
+                            .stroke(green, style: StrokeStyle(lineWidth: w, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                    }
+                }
+                .padding(w / 2)
+                .transition(.opacity)
+            }
+        }
+        .frame(width: s, height: s)
+        // The done moment: a spring that overshoots a little — a plain fade with Reduce Motion.
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.55), value: done)
+        .animation(.easeOut(duration: 0.25), value: packed)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Packed")
+        .accessibilityValue(done ? "all packed" : "\(packed) of \(total) packed")
+        .accessibilityIdentifier(id)
+    }
+}
+
+/// What is left on a trip being packed (0.82, spec 07 part 20), under its count: "23 left · 2 to
+/// charge · about 25 min" — muted; nothing left, "All packed" in green.
+struct WhatsLeftLine: View {
+    let left: WhatsLeft
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        Text(left.words)
+            .font(.system(.footnote, weight: left.allPacked ? .semibold : .regular).monospacedDigit())
+            .foregroundStyle(left.allPacked ? GroupProgressMark.words(scheme) : Theme.muted)
+            .lineLimit(2).minimumScaleFactor(0.85)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("trip-left")
     }
 }
 

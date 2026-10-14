@@ -167,6 +167,9 @@ final class PocketsTests: XCTestCase {
         _ = lib.setChecked(true, tripId: trip, entryId: before.id)
         var expected = before
         expected.checked = true
+        // Since 0.82 a tick also keeps its moment, for his pace (spec 07 part 20) — and still no pocket.
+        XCTAssertNotNil(lib.trips[0].entries[0].extra[TICKED_AT_KEY], "a tick kept no moment")
+        expected.extra[TICKED_AT_KEY] = lib.trips[0].entries[0].extra[TICKED_AT_KEY]
         XCTAssertEqual(lib.trips[0].entries[0], expected, "a tick without pockets wrote more than the tick")
         XCTAssertEqual(lib.pocketsByBag(), [:])
     }

@@ -241,6 +241,10 @@ public struct Library: Equatable, Sendable {
               let e = trips[t].entries.firstIndex(where: { $0.id == entryId }) else { return false }
         // A kit to check before each trip is packed only when all inside it is ticked (ThingKits).
         guard kitAllowsTick(checked, trip: t, entry: e) else { return false }
+        // The moment of a tick, for his pace (0.82, spec 07 part 20): written when it turns ticked,
+        // taken away by an untick; a line ticked again keeps its first moment.
+        if checked && !trips[t].entries[e].checked { trips[t].entries[e].extra[TICKED_AT_KEY] = Library.tickMoment() }
+        if !checked { trips[t].entries[e].extra[TICKED_AT_KEY] = nil }
         trips[t].entries[e].checked = checked
         // Its usual pocket comes along with the tick (0.69): most lines need no tap.
         if checked { prechoosePocket(trip: t, entry: e) }
