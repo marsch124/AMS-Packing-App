@@ -148,6 +148,7 @@ extension Library {
         var dated: [String: DateFlag] = [:]
         for f in dateCheck(tripId: tripId, todayISO: today) where dated[f.line.id] == nil { dated[f.line.id] = f }
         let openBuys = actions.filter { $0.kind == "shopping" && !$0.done }
+        let usedUp = usedUpLastTime(before: trip, today: today)
         var seen = Set<String>()
         var out: [BeforeYouStart.Buy] = []
         for line in trip.entries where !isSetAside(line) && !Library.isReminder(line) {
@@ -172,7 +173,7 @@ extension Library {
                 }) { why.append(.onToBuy) }
                 if conditionReplaces(now.condition) { why.append(.needsReplacing) }
                 if let f = dated[row.id] { why.append(.date(f)) }
-                if let t = row.thing, let last = usedUpLastTime(thingId: t.id, before: trip, today: today) {
+                if let t = row.thing, let last = usedUp[t.id] {
                     why.append(.usedUp(last.name))
                 }
                 guard !why.isEmpty else { continue }
@@ -182,24 +183,39 @@ extension Library {
         return out
     }
 
-    /// The trip on which this thing last went before `trip` — by start date, before `trip`'s (or
-    /// today's, when it has none); its line ticked and not set aside, or used up — when it was
-    /// USED UP there and no To buy line for it was ticked bought since that trip began. nil
-    /// otherwise: never used up, gone again since and not used up, or bought since.
-    func usedUpLastTime(thingId: String, before trip: TripEvent, today: String) -> TripEvent? {
+    /// Each thing's LAST trip before `trip` — by start date, before `trip`'s (or, when it has none,
+    /// on or before today); a trip on which its line went (ticked and not set aside, or used up) —
+    /// when it was USED UP there and no To buy line for it was ticked bought since that trip began
+    /// (`doneAt` on or after its start date). Things never used up, gone again since and not used
+    /// up, or bought since are not in it. One pass over the trips and To buy for all the things.
+    func usedUpLastTime(before trip: TripEvent, today: String) -> [String: TripEvent] {
         let limit = isYMD(trip.startDate) ? trip.startDate : Library.ymd(today, plusDays: 1)
-        func went(_ l: Item) -> Bool {
-            l.sourceItemId == thingId && ((l.checked && !isSetAside(l)) || Library.isUsedUp(l))
+        let earlier = trips.filter { t in t.id != trip.id && isYMD(t.startDate) && jsStringLess(t.startDate, limit) }
+            .stableSorted(by: { a, b in jsStringLess(a.startDate, b.startDate) })
+        // Thing → (its last trip, used up there); a later trip writes over an earlier one.
+        var last: [String: (trip: TripEvent, usedUp: Bool)] = [:]
+        for t in earlier {
+            var here: [String: Bool] = [:]
+            for l in t.entries {
+                guard let s = l.sourceItemId, !s.isEmpty else { continue }
+                let used = Library.isUsedUp(l)
+                guard (l.checked && !isSetAside(l)) || used else { continue }
+                here[s] = (here[s] ?? false) || used
+            }
+            for (s, used) in here { last[s] = (t, used) }
         }
-        let earlier = trips.filter { t in
-            t.id != trip.id && isYMD(t.startDate) && jsStringLess(t.startDate, limit) && t.entries.contains(where: went)
-        }.stableSorted(by: { a, b in jsStringLess(a.startDate, b.startDate) })
-        guard let last = earlier.last,
-              last.entries.contains(where: { went($0) && Library.isUsedUp($0) }) else { return nil }
-        let bought = actions.contains { a in
-            a.kind == "shopping" && a.done && a.itemId == thingId && !jsStringLess(String(a.doneAt.prefix(10)), last.startDate)
+        // Thing → the latest day a To buy line for it was ticked bought.
+        var bought: [String: String] = [:]
+        for a in actions where a.kind == "shopping" && a.done && !a.itemId.isEmpty {
+            let day = String(a.doneAt.prefix(10))
+            if jsStringLess(bought[a.itemId] ?? "", day) { bought[a.itemId] = day }
         }
-        return bought ? nil : last
+        var out: [String: TripEvent] = [:]
+        for (thing, l) in last where l.usedUp {
+            if let day = bought[thing], !jsStringLess(day, l.trip.startDate) { continue }
+            out[thing] = l.trip
+        }
+        return out
     }
 
     // MARK: - To prepare

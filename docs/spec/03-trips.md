@@ -1140,6 +1140,9 @@ left, the choice beside it) are kept.
   drop-down alone, as before. See "Pack by voice" below.
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
+0. **Before you start** door (0.82, his yes of 14 Oct 2026; spec 07 part 19) — only while the trip is at Plan or
+   at Pack with nothing packed yet, and one of its parts has something: what to buy and get ready ahead, a tap
+   opens its sheet. Top padding 10. Own section below, "Before you start".
 1. **Before you go** card (0.77: ONE card where two stood — Check before you go, and To charge since 0.75; only
    when one of its parts has something) — own section below. Top padding 10, as the weather card under it.
 2. **Weather card** (always) — own section below.
@@ -1847,6 +1850,30 @@ Keep in Refine, cabin changes):
 Model `ThingFollowsTests` (5 tests, with `testStillAheadGoesByTheDayWhereHeIs` and
 `testALineKeepsItsOwnMarksWhenItsThingChanges`), `TemplateRowsTests.testARowChangeReachesATripStillAhead`, `ThingsTests.testYourThingsListsEverythingAndARenameReachesEveryList`
 (a past trip keeps the old name). UI `testAChangeToAThingReachesATripStillAhead`.
+
+---
+
+## Before you start (`BeforeYouStart.swift` screens; `PackingLibrary/BeforeYouStart.swift`)
+
+**Purpose and origin.** His words of 14 Oct 2026, from his own packing walk-through: "Think if there is anything I
+need to buy or prepare well in advance." ONE door, first in the scroll area (item 0 above), on a trip that is not
+being packed yet, to a sheet that gathers what was in three places: **To buy** (the trip's things on To buy, needing
+replacing, running out before he is home, used up the last time they went), **To prepare** (the trip's reminders and
+Preparations lines that fall due before the day he leaves, and the To dos written on the trip) and **To charge** (the
+names of the things with a battery not charged yet). Every rule, word and id: **spec 07 part 19**.
+
+**How it is reached and left.** The door (`trip-beforestart`, a button; value "2 to buy · 3 to prepare · 4 to
+charge") shows while `Library.beforeStartTime` holds — the loop step, on the screen's clock, Plan or Pack, and
+nothing packed yet (`hasStartedPacking`: a reminder, a trip To do, a Preparations line, ⊘ and a charge tick are not
+packing; something ticked inside a kit is) — and one part has something. Not on a place's view. A tap opens
+`BeforeYouStartSheet` (`beforestart-sheet`; Done / Escape closes it). The door goes with the first thing packed — the
+trip's own tick, a heading's round tick, Pack by voice, a kit's inside ticks — and comes back when it is unticked.
+Before you go, under it, is unchanged: a reminder due or a date running out shows in both (in the sheet as
+something to buy or prepare ahead, in Before you go as something that needs him now).
+
+**Tests.** Model `BeforeYouStartTests` (5), UI `testBeforeYouStartGathersWhatToBuyAndGetReadyUntilPackingBegins`
+(`-uiTestingBeforeStart`) — spec 07 part 19, "Tests". `testATripsRemindersShowWhenTheyAreDue` reads the countdown's
+value from its start since 0.82 ("1 to do", then Before you start's line).
 
 ---
 
@@ -3152,7 +3179,8 @@ deleted = none). **Not covered:** the real scheduling and a real tap (the system
 ## Other ways into a trip
 
 - **Countdown card on Home** (`CountdownCard`, id `home-countdown`; Home spec): the next trip still to
-  leave (`nextTrip`: not reviewed, dated, starting today or later; soonest) — tap opens it on Home.
+  leave (`nextTrip`: not reviewed, dated, starting today or later; soonest) — tap opens it on Home. Since 0.82 it
+  also says "Before you start: 2 to buy, 3 to prepare" while that trip is not being packed (spec 07 part 19).
 - **A packing reminder** tapped (`PackingReminders.open`) or the Shortcut **Open my next trip**
   (`OpenNextTripIntent`) set `LibraryModel.tripToOpen`; `RootView` switches to Home and Home opens the
   trip sheet (and clears the request). Under UI tests the launch argument `-openNextTrip` plays it.
