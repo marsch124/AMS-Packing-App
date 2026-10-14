@@ -12602,6 +12602,29 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
     }
 
+    /// Scroll the Lost bag page until a control sits whole between its header and its foot (Share
+    /// as PDF, Copy as text). Judged by FRAMES: asking a control scrolled off the top whether it is
+    /// hittable is a hard failure ("Activation point invalid", seen once on the iPhone). Swipes down
+    /// only while the control is above the top, so the sheet is never dragged shut.
+    private func showOnLostPage(_ app: XCUIApplication, _ id: String) {
+        let e = app.buttons[id]
+        guard e.waitForExistence(timeout: 5), let page = find(app, "lost-screen") else { return }
+        let list = page.scrollViews.firstMatch
+        guard list.exists else { return }
+        for _ in 0..<10 {
+            let f = e.frame, top = list.frame.minY
+            let foot = app.buttons["lost-pdf"]
+            let bottom = foot.exists ? foot.frame.minY - 12 : list.frame.maxY
+            if f.minY > top + 2 && f.maxY < bottom { return }
+            #if os(macOS)
+            list.scroll(byDeltaX: 0, deltaY: f.minY <= top + 2 ? 160 : -160)
+            #else
+            f.minY <= top + 2 ? list.swipeDown() : list.swipeUp()
+            #endif
+            usleep(400_000)
+        }
+    }
+
     /// From the Bags card: the Day pack's page says what a desk asks, says what is not filled in,
     /// and each not-filled-in row fills in — the bag tag on the page itself, the e-mail in For the
     /// lost-luggage desk; then Copy as text and Share as PDF.
@@ -12631,6 +12654,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(missing), "3 not filled in \u{2014} tap one to fill it in.")
         shot(app, "lost-page")
         // The bag tag: typed right on the page.
+        showOnLostPage(app, "lost-trip-tag")
         tap(app, id: "lost-trip-tag")
         let tag = app.textFields["lost-trip-tag-field"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5), "no field for the bag tag")
@@ -12640,6 +12664,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(self.element(app, "lost-missing")) == "2 not filled in \u{2014} tap one to fill it in." },
                       "'\(words(element(app, "lost-missing")))'")
         // The e-mail: For the lost-luggage desk opens; saved, the page has it.
+        showOnLostPage(app, "lost-you-email")
         tap(app, id: "lost-you-email")
         XCTAssertTrue(appears(app, "desk-screen", timeout: 5), "not filled in did not open For the lost-luggage desk")
         let email = app.textFields["desk-email"]
@@ -12687,11 +12712,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(element(app, "lost-bag-airtag-hint").exists, "no AirTag, yet the Find My hint")
         XCTAssertTrue(waitUntil { self.element(app, "lost-photo-none").exists }, "the carry-on has no photo, and the page does not say so")
         let before = words(element(app, "lost-missing"))
+        showOnLostPage(app, "lost-photo-take")
         tap(app, id: "lost-photo-take")
         XCTAssertTrue(app.buttons["lost-photo-0"].waitForExistence(timeout: 5), "the photo taken on the page was not kept")
         XCTAssertFalse(element(app, "lost-photo-none").exists)
         XCTAssertNotEqual(words(element(app, "lost-missing")), before, "the photo still counts as not filled in")
         // The bag tag, typed here too — the page stays open when its keyboard goes away.
+        showOnLostPage(app, "lost-trip-tag")
         tap(app, id: "lost-trip-tag")
         let tag = app.textFields["lost-trip-tag-field"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5), "no field for the bag tag")
@@ -12699,6 +12726,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "lost-trip-tag-save")
         XCTAssertTrue(waitUntil { self.value(app.buttons["lost-trip-tag"]) == "SK 654321" }, "'\(value(app.buttons["lost-trip-tag"]))'")
         // The bag's details: its page opens — the carry-on becomes one of his bags.
+        showOnLostPage(app, "lost-bag-colour")
         tap(app, id: "lost-bag-colour")
         XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "not filled in did not open the bag's page")
         shot(app, "lost-bag-page")
