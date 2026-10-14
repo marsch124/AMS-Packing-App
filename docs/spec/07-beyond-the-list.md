@@ -3199,7 +3199,10 @@ Passport (`trip-line-0`) ticked → the door goes; unticked → back. Pictures `
 `-packing`, iPhone day and night. Seen RED with a planted fault: the door not ending with packing → "the door stayed
 once packing began"; the sheet's tick ticking nothing → "the forecast ticked is still to prepare: '2'".
 `testATripsRemindersShowWhenTheyAreDue` now reads the countdown's value from its start ("1 to do", then Before you
-start's line).
+start's line). On GitHub's Mac (a probe running just this test, `testATripsRemindersShowWhenTheyAreDue`,
+`testBeforeYouGoIsOneCardWithItsPartsInOrder`, `testATripChecksTheCabinAndTheDatesBeforeYouGo` and
+`testHomeCountsDownToTheNextTrip`): all five green; there the door's words fit beside its name on one line (pictures
+of the Mac look, day).
 
 ### Open questions
 
