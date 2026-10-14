@@ -29,6 +29,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 15. Batteries and To charge | 0.75 | built (branch work/battery075) |
 | 16. Take a break and messages when a trip moves on | 0.77 | built (branch work/break077) |
 | 17. Packing day — the stations of the Pack step | 0.79 | built (branch work/day079) |
+| 18. Lost luggage — A: a bag's details for the desk | 0.80 | building (branch work/baginfo080) |
 | 18 C. Lost luggage — the Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
@@ -2081,7 +2082,9 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
     under it) or the way to take one (`PhotoTakers`, shared with a bag's own photos since 0.79: `day-group-photo` —
     "Photo of all the bags" under the tests; on the iPhone "Take a photo" when it has a camera and "Choose a photo"
     `day-group-photo-pick`; on the Mac Choose only). With one bag instead the line "A photo of the bag packed — to
-    repack from, and for the airline desk if it goes missing." Then per bag a card: its name and the bag's own photos
+    repack from, and for the airline desk if it goes missing." Then per bag a card: its name — with, since 0.80, the
+    bag's own photo small before it (`day-photo-<n>-look`) while the trip has no photo of it packed (part 18 A rule
+    10; never counted here) — and the bag's photos packed on this trip
     (`BagPhotoRow` with the ids `day-photo-<n>-photo`, `-photo-pick`, `-photo-thumb-<k>`, `-photo-remove-<k>`,
     `-photo-full` — the row takes an id prefix since 0.79; on the Bags card it stays `bag-<n>`). All there: "Every
     photo is taken." (`day-photos-said`).
@@ -2201,6 +2204,157 @@ screen — and found the sheet over their next step). The two tests that pack ev
 
 ---
 
+## 18. Lost luggage
+
+> His yes (13 Oct 2026), 0.80: when a bag goes missing, the airline's baggage desk asks what it looks like — and on the
+> spot, tired, nobody remembers the brand or how big it is. **Part A** (this section, branch `work/baginfo080`): the
+> details are entered ONCE, on each bag's own page, and reused by every trip. **Part B** (branch `work/lostbag080`):
+> a trip's Lost bag page and its PDF, which read them. Written BEFORE part A was built, then brought in line with the
+> code (the code wins where they differ). The model: `Core/Sources/PackingLibrary/BagDetails.swift`; the block:
+> `App/Sources/Screens/BagDetail.swift` (`lostDesk(_:)`). Per screen: spec 05 (a bag's page, item 3c), spec 01 §1.12
+> (the keys).
+
+### A. A bag's details for the desk
+
+#### What he gets
+
+- On a bag's page (Care → Bags → a bag), under "Has an AirTag", a block headed **For the lost-luggage desk**: what an
+  airline's desk asks about a missing bag — **Brand**, **Colour** (typed, or one tap on a pill: Black, Grey, Blue,
+  Red, Green, Beige, Multi), **Type** (one of: Hard case, Soft case, Duffel, Backpack, Holdall / weekend bag, Garment
+  bag, Other — the desk's own categories in plain words), **Size** (Cabin, Medium or Large, and a note for the exact
+  measure — "55 × 40 × 20 cm") and **Distinctive marks** (free text — "red strap, sticker on the side"); and
+  **Photos of the bag** — how it looks, taken empty or any time, two at most (his ask of 14 Oct 2026, the same day:
+  the bag's own page had no photo; a bag's photos were only the trip's photos of it PACKED).
+- The bag's own photo also shows, small, beside the bag on a trip — in the Bags card and in the Packing day's Photos
+  station — until that trip has a photo of it packed.
+- Said once, on the bag; every trip the bag goes on uses the same answers (part B shows them on the trip's Lost bag
+  page and its PDF). Nothing to fill in per trip.
+
+#### The rules (decided 14 Oct 2026, before the build)
+
+1. **They belong to the BAG** — one of his bags (a thing on Your bags, stored as the web app's "Containers" list),
+   not to a trip. A bag that is only a name on a trip's lines has none; it becomes one of his bags (Care → Bags) the
+   moment something is said for it by name (`setBagDetails(_:bag:)` — as "Has an AirTag" from the Tags station,
+   part 17 rule 6). Part A says them only on the bag's page; part B may say them from the trip.
+2. **Brand and colour are the bag's own thing fields** — `manufacturer` and `color`, which a thing's page has
+   shown as **Brand** and **Colour** ("for bags above all", his bag page of 26 Sep 2026; "Its details" on the bag's
+   page opens that page). One value in two places, never two values: typed on the bag's page, "Its details" shows it,
+   and the other way round. The size's note is the thing's own `size` (the table's "Size" column). Type, the size
+   class and the marks are new, so they are extra keys on the bag's thing (`bagType`, `bagSize`, `bagMarks`; the web
+   model sees nothing new).
+3. **Saved as typed**, as the bag's numbers are (the 0.25 lesson: nothing waits for Return or a Save) — 0.4 s after
+   the last key (`lostTyped`: a whole save per key would be slow on his big library, `LibraryModel.commit` builds every
+   record again), and AT ONCE on Return, a pill, the "Its details" door and leaving the page (Done, Escape, a swipe —
+   `onDisappear`), so nothing typed is ever lost or missing from "Its details". Stored trimmed; an emptied field
+   removes its answer — an extra key is absent, never an empty string.
+4. **A pill row is one choice**, as Travelling by is: a tap lights it, a tap on the lit one turns it off (no answer).
+   A colour pill WRITES its word into the Colour field ("Multi" writes "Multicoloured", what a desk's list calls a bag
+   of several colours) — the field stays the answer, and typing over it is fine; a pill is lit while the field says
+   its word or its label (compared as names are: case, accents and spaces ignored).
+5. **Only what changed is written** (`setBagDetails` compares with what is kept): a type or size a later version
+   writes, which this one reads as "not said", is not wiped when another answer changes.
+6. **A rename keeps them** (they are on the bag's thing, whose id a rename keeps); **a deleted bag** takes them with
+   its thing when the thing goes; kept as a thing on a template ("Keep it on Travel"), the thing keeps them and they
+   are back if it becomes a bag again.
+7. **Synced, backed up, restored** with the bag's record, as every thing field and extra key is. **Not carried**: a
+   trip line copies only the fields `entryFromItem` names (so no line, and so no SHARED trip, carries them); a shared
+   template carries no brand, colour, size or extra key (`ListSharing`).
+8. **Two devices**: the fields follow a change that arrives from the other device (or from "Its details") while the
+   page is open (`followLost`, on a change of the kept details) — each field only where what is typed does not already
+   say it (trimmed), and none while a write is still waiting (what he typed wins).
+9. **Photos of the bag itself** are the thing's own `photos` — ids into the photo store, the web model's field (up
+   to `MAX_PHOTOS` = 5 on any thing), so they are synced (the photo records and the thing's record), backed up and
+   restored as photos are, counted in use (`photoInUse` / `photoIdsInUse` read every thing's photos: Worth a look never
+   offers them), follow a rename, and travel in no share (a trip line copies no photos; a shared template carries
+   none). The bag's page takes **two** (`BAG_OWN_PHOTOS_MAX`): a third is refused while two are stored (as stored —
+   one on its way from the other device counts) and the page says "Two photos — remove one to add another"; a bag
+   that came from the web app with more shows them all and takes none. Removing one removes its record unless
+   something else shows it; removing the FIRST also clears the thing's `thumb` (the web app's small inline picture of
+   its first photo). They are **never a photo of it packed**: the trip's `bagPhotos`, the Packing day's Photos station
+   and its count ("0 of 3 photos") see none of them. A bag deleted completely leaves its photo records as any deleted
+   thing does: nothing shows them, and Worth a look offers them a day later.
+10. **On a trip, small, until it is packed and photographed**: in the Bags card (opened) beside the bag's row, and in
+   the Packing day's Photos station beside the bag's name — the bag's FIRST own photo, 32 × 32 (corner 6), a tap shows
+   it large ("<bag> — how it looks") — only while that trip has no photo of the bag packed (`bagPhotoIds` empty) and
+   only for one of his bags (a name on the lines has none). Once the trip has a packed photo, that is the trip's
+   picture and the thumbnail goes.
+
+#### On the screens
+
+- **A bag's page** (spec 05, item 3c): after "Has an AirTag", 12 below it like every block, the block `lostDesk`
+  (container `bag-lost`, 10 apart): the heading **For the lost-luggage desk** (Body semibold ink, as "Usually in it";
+  a heading, id `bag-lost-heading`) and under it "What an airline's desk asks when a bag goes missing. Said once,
+  here — every trip uses it." (Footnote muted). Then each answer under its small label (Caption 2 semibold, capitals,
+  muted — as MAX KG over the numbers):
+  - **BRAND**: a field `bag-detail-brand`, "e.g. Samsonite" (Body ink, padding 10 sideways, 40 tall, the card's fill,
+    radius 8, a hairline — the numbers' field, in Body regular).
+  - **COLOUR**: a field `bag-detail-colour`, "e.g. Dark blue"; under it the seven pills (`FlowRow`, 6 apart), ids
+    `bag-detail-colour-<label in lower case>` (`black` … `multi`), selected when lit.
+  - **TYPE**: seven pills `bag-detail-type-<key>` — `hard`, `soft`, `duffel`, `backpack`, `holdall`, `garment`,
+    `other` (the words above), selected when chosen.
+  - **SIZE**: three pills `bag-detail-size-cabin`, `-medium`, `-large`, and under them the note field
+    `bag-detail-sizenote`, "Measures, e.g. 55 × 40 × 20 cm".
+  - **DISTINCTIVE MARKS**: a field that grows downwards (1 to 4 lines) `bag-detail-marks`, "e.g. red strap, sticker
+    on the side".
+  - **PHOTOS OF THE BAG** (`BagOwnPhotos`): none yet — "How it looks — taken empty, any time. Two at most." (Footnote
+    muted); else the photos, 80 × 80 (corner 8, `bag-detail-photo-thumb-<k>`, label "Photo k of the bag"; a tap shows
+    them large, `BigPhoto`, captioned "How the bag looks"), each with **Remove** under it (Subheadline semibold muted,
+    `bag-detail-photo-remove-<k>`, asks nothing). Then, under two, the shared `PhotoTakers` (id `bag-detail-photo`:
+    on the iPhone "Take a photo" / "Take another" with a camera and "Choose a photo" / "Choose another",
+    `bag-detail-photo-pick`; the Mac Choose only; under the tests one pill "Photo of the bag" / "Another photo" that
+    keeps a drawn picture) — at two, "Two photos — remove one to add another" (`bag-detail-photo-full`).
+  - The pills are the page's own (as "Delete"'s bag choice): Footnote semibold, 32 tall, a capsule — the bag colour
+    (orange) with white words when on, else the page's background with a hairline and ink words.
+- **The trip** (spec 03, the Bags card; part 17, the Photos station): `BagLookThumb` — a button beside the bag's
+  row (`bag-<n>-look`; beside, not inside: a button in a button never reaches the tree) and beside the bag's name in
+  the Photos station (`day-photo-<n>-look`), label "How the <bag> looks" (rule 10).
+- **The Mac**: Tab walks the page's fields in reading order — the name, MAX KG, LITRES, EMPTY G, then Brand, Colour,
+  the size's note, Distinctive marks, then the pockets' fields; Shift-Tab back (the system's own order: nothing is
+  added, nothing skipped). The pills are clicked (with Full Keyboard Access, Tab reaches them too, as every button).
+- **How it works** (spec 06 §7), Care: a line of its own after the bag page's Pockets line — "On a bag's page, For
+  the lost-luggage desk: what an airline's desk asks when a bag goes missing — its brand, colour (type it, or tap a
+  pill: Black … Multi), type (Hard case, Soft case, Duffel …), size (Cabin, Medium or Large, and its measures) and
+  distinctive marks (a red strap, a sticker). Said once, saved as you type; every trip uses it. Brand and colour are
+  the same as under Its details. A pill tapped again is taken off."
+
+#### Where it is kept (the web model sees nothing new)
+
+| Holder | Field / key | Value | Meaning |
+|---|---|---|---|
+| item (a bag) | `manufacturer` (its own field) | text | Brand — also "Brand" on its thing page |
+| item (a bag) | `color` (its own field) | text | Colour — also "Colour" on its thing page; a pill writes its word |
+| item (a bag) | `size` (its own field) | text | the size's note ("55 × 40 × 20 cm") — the table's "Size" |
+| item (a bag) | `bagType` (`BAG_TYPE_KEY`) | `hard` · `soft` · `duffel` · `backpack` · `holdall` · `garment` · `other` / absent | Type |
+| item (a bag) | `bagSize` (`BAG_SIZE_KEY`) | `cabin` · `medium` · `large` / absent | Size |
+| item (a bag) | `bagMarks` (`BAG_MARKS_KEY`) | text / absent | Distinctive marks |
+| item (a bag) | `photos` (its own field) | `[photo id]` | Photos of the bag itself (two from its page); the records in the photo store |
+
+Parity: 211/211 (only `extra` keys, and fields the web model already has).
+
+#### The model's API (`BagDetails.swift`, for part B)
+
+- `struct BagDetails { brand, colour, type: BagType?, size: BagSize?, sizeNote, marks, photoIds }` — text trimmed,
+  "" = not said; `photoIds` the bag's own photos as stored (READ only: `setBagDetails` never writes them); `isEmpty`
+  (nothing said and no photo); `sizeWords` ("Large, 75 × 50 × 30 cm"); `summary` — the whole description on one line,
+  "Black · Samsonite · Hard case · Large, 75 × 50 × 30 cm · red strap" (what is not said left out; "" when nothing is);
+  `colourPills` (label and word) and `lit(_:)`.
+- `enum BagType` (`rawValue` stored, `name` shown), `enum BagSize` (the same).
+- `Library.bagDetails(bag: name)` — by the name a trip's lines use (`normName`); empty for a name that is no bag of
+  his. `Library.bagDetails(id:)` — nil for anything not a bag. `Library.bagDetails(_ thing:)` — from a thing.
+- `Library.setBagDetails(_:id:)` (false for anything not a bag) and `setBagDetails(_:bag:)` (a name becomes a bag when
+  something is said — photo ids alone say nothing; "Other" and "" refused).
+- `Library.bagOwnPhotos(id:)` / `bagOwnPhotos(bag: name)` → `[PhotoRecord]` on this device, in the order taken;
+  `addBagOwnPhoto(id:jpeg:)` → the record, or nil (not a bag, two already, the thing full, no bytes);
+  `removeBagOwnPhoto(id:photoId:)`. `BAG_OWN_PHOTOS_MAX` = 2.
+
+#### Tests
+
+(Written from the code once built.)
+
+#### Open questions
+
+- Size **Cabin** and the switch **Goes in the cabin** are separate answers (one describes the bag for the desk, the
+  other decides the airport checks); the build does not tie them. His word welcome if Cabin should switch it on.
 ## 18 C. Lost luggage — the Lost bag page
 
 > His yes (13 Oct 2026) to the lost-luggage information, part C — the page the other two parts feed: on a trip, a
@@ -2458,6 +2612,7 @@ Model `LostBagTests` (`Core/Tests/PackingLibraryTests/LostBagTests.swift`) and U
 | 13 Oct 2026 | The Season pills carry the sun and the snowflake, as Travelling by carries its drawings — on Create new trip, Trip settings and Only on some trips; the More choices line stays words (0.78) | "same idea as Travelling by" |
 | 13 Oct 2026 | The Quick line names his always-packed templates and says the airport checks plainly: "Quick packs only what you tick — not <names>, no Plane or RV template. Plane still turns on the airport checks." (0.78) | He did not understand "Plane and RV still count", and "Always" alone is cryptic — he thinks of his short-trip template by its name |
 | 13 Oct 2026 | A guided Packing day inside the Pack step: a row of stations — Bags out, Pack, Weigh, Tags, Photos, Ready — each green when done, a tap opens it, the next open one offered; Weigh opens by itself once when the last thing is ticked; Has an AirTag on the bag; one photo of all the bags per trip; Ready pairs with "I leave at". Marks: his picks of the station sheet (day B, Bags out A, Pack C, Weigh A, Tags A, Photos C, Ready A) | His own packing walk-through (bags out on the floor for a week, pack, weigh, name tags and AirTags, photos for lost luggage, ready). Part 17. |
+| 13 Oct 2026 | Lost luggage, part A: each bag's details for the airline's baggage desk — brand, colour (with pills), type (the desk's categories in plain words), size (Cabin, Medium, Large and a note) and distinctive marks — said once on the bag's page and reused by every trip; brand and colour are the thing's own Brand and Colour, never a second copy; and up to two photos of the bag itself (the thing's own photos), shown small beside the bag on a trip until it has a photo of it packed (0.80) | His yes to the lost-luggage information (0.80); the photos his ask of 14 Oct 2026. Part 18 A. |
 | 13 Oct 2026 | Lost luggage, part C: a Lost bag page per bag of a trip — his details (name, phone, e-mail, home address, kept once for the library in Settings), the trip's flights, stay and the bag-tag number, the bag's details, AirTag, photos and a few things in it; "not filled in" opens what fills it; Share as PDF and Copy as text; reached from the Bags card and the Packing day's Photos and Ready. The bag-tag number is typed on the page itself; a trip by car or train still has a page (decided by the build) | His yes to the lost-luggage information (A bag details, B flights and stay, C the page). Part 18 C. |
 
 ## Open questions

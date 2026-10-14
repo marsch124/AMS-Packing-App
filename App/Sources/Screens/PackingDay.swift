@@ -517,7 +517,11 @@ struct PackingDaySheet: View {
             }
             ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                    HStack(spacing: 10) {
+                        // How the bag looks (0.80, spec 07 part 18 A), until it has a photo of it packed.
+                        BagLookThumb(tripId: tripId, bag: bag.name, id: "day-photo-\(n)-look").environmentObject(model)
+                        Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                    }
                     BagPhotoRow(tripId: tripId, bag: bag.name, n: n, prefix: "day-photo-\(n)").environmentObject(model)
                     // The photos are for the airline desk: the bag's whole Lost bag page is one tap away (0.80).
                     HStack {

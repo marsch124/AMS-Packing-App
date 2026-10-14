@@ -2312,6 +2312,147 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(says("trip-check-date-0").contains("Sun cream"), "the date check went with the plane")
     }
 
+    /// Lost luggage, part A (0.80, spec 07 part 18 A): a bag's page holds what an airline's desk
+    /// asks about a missing bag — brand, colour (a pill writes its word), type, size and its note,
+    /// distinctive marks — said once and kept on the bag: all there when the page opens again, and
+    /// "Its details" (the bag's thing page) shows the same brand and colour — one value, never two.
+    func testABagKeepsWhatTheLostLuggageDeskAsks() {
+        let app = launch("-uiTestingChecks")
+        openFirstBag(app)
+        let brand = app.textFields["bag-detail-brand"]
+        XCTAssertTrue(brand.waitForExistence(timeout: 5), "the bag's page has nothing for the lost-luggage desk")
+        bringIntoView(app, app.staticTexts["bag-lost-heading"])
+        type("Samsonite", into: brand)
+        hideKeyboard(app)
+        let colour = app.textFields["bag-detail-colour"]
+        tap(app, id: "bag-detail-colour-black")
+        XCTAssertTrue(waitUntil { self.value(colour) == "Black" }, "the Black pill did not write its word: '\(value(colour))'")
+        XCTAssertTrue(waitUntil { app.buttons["bag-detail-colour-black"].isSelected }, "the Black pill is not lit")
+        tap(app, id: "bag-detail-type-hard")
+        XCTAssertTrue(waitUntil { app.buttons["bag-detail-type-hard"].isSelected }, "Hard case is not chosen")
+        tap(app, id: "bag-detail-size-large")
+        XCTAssertTrue(waitUntil { app.buttons["bag-detail-size-large"].isSelected }, "Large is not chosen")
+        // One choice: another pill takes over; a tap on the lit one turns it off.
+        tap(app, id: "bag-detail-type-duffel")
+        XCTAssertTrue(waitUntil { app.buttons["bag-detail-type-duffel"].isSelected && !app.buttons["bag-detail-type-hard"].isSelected },
+                      "two types at once")
+        tap(app, id: "bag-detail-type-duffel")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-detail-type-duffel"].isSelected }, "a tap on the lit type did not turn it off")
+        tap(app, id: "bag-detail-type-hard")
+        type("75 x 50 x 30 cm", into: app.textFields["bag-detail-sizenote"])
+        type("red strap", into: anyField(app, "bag-detail-marks"))
+        hideKeyboard(app)
+        bringIntoView(app, app.buttons["bag-detail-type-hard"])
+        shot(app, "lost-bag-filled")
+        // Said once: closed and opened again, all of it is there.
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-detail-brand"]) == "Samsonite" },
+                      "the brand was not kept: '\(value(app.textFields["bag-detail-brand"]))'")
+        XCTAssertEqual(value(app.textFields["bag-detail-colour"]), "Black", "the colour was not kept")
+        XCTAssertEqual(value(app.textFields["bag-detail-sizenote"]), "75 x 50 x 30 cm", "the size's note was not kept")
+        XCTAssertEqual(value(anyField(app, "bag-detail-marks")), "red strap", "the marks were not kept")
+        XCTAssertTrue(app.buttons["bag-detail-type-hard"].isSelected, "the type was not kept")
+        XCTAssertTrue(app.buttons["bag-detail-size-large"].isSelected, "the size was not kept")
+        XCTAssertTrue(app.buttons["bag-detail-colour-black"].isSelected, "the Black pill is not lit by the kept colour")
+        // "Its details": the bag's thing page shows the same brand and colour.
+        tap(app, id: "bag-details")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Its details did not open")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-brand"]) == "Samsonite" },
+                      "Its details does not show the brand said on the bag's page: '\(value(app.textFields["thing-brand"]))'")
+        XCTAssertEqual(value(app.textFields["thing-colour"]), "Black", "Its details does not show the colour said on the bag's page")
+    }
+
+    /// On the Mac, Tab walks the lost-luggage desk's fields in reading order, as the rest of the
+    /// bag's page (0.80): Brand → Colour, the size's note → Distinctive marks, and Shift-Tab back.
+    /// Typed after each Tab, the words land in the field the focus went to.
+    func testTheMacTabsThroughTheLostLuggageFieldsInOrder() throws {
+        #if os(iOS)
+        throw XCTSkip("Tab between fields is the Mac's")
+        #else
+        let app = launch("-uiTestingChecks")
+        openFirstBag(app)
+        let brand = app.textFields["bag-detail-brand"], colour = app.textFields["bag-detail-colour"]
+        let note = app.textFields["bag-detail-sizenote"]
+        XCTAssertTrue(brand.waitForExistence(timeout: 5), "the bag's page has nothing for the lost-luggage desk")
+        bringIntoView(app, brand)
+        type("Tumi", into: brand)
+        app.typeKey(.tab, modifierFlags: [])
+        app.typeText("Navy")
+        XCTAssertTrue(waitUntil { self.value(colour) == "Navy" },
+                      "Tab from Brand did not go to Colour: colour '\(value(colour))', brand '\(value(brand))', note '\(value(note))'")
+        bringIntoView(app, note)
+        type("60 cm", into: note)
+        app.typeKey(.tab, modifierFlags: [])
+        app.typeText("tag")
+        let marks = anyField(app, "bag-detail-marks")
+        XCTAssertTrue(waitUntil { self.value(marks) == "tag" },
+                      "Tab from the size's note did not go to Distinctive marks: '\(value(marks))', note '\(value(note))'")
+        app.typeKey(.tab, modifierFlags: .shift)
+        app.typeText("70 cm")
+        XCTAssertTrue(waitUntil { self.value(note) == "70 cm" },
+                      "Shift-Tab from the marks did not go back to the size's note: '\(value(note))', marks '\(value(marks))'")
+        shot(app, "lost-bag-mac-tab")
+        #endif
+    }
+
+    /// Photos of the bag itself (0.80, his ask of 14 Oct 2026; spec 07 part 18 A): on the bag's page,
+    /// in the lost-luggage group — two at most, each with its Remove — and then, small, beside the bag
+    /// in a trip's Bags card and the Packing day's Photos station, until the trip has a photo of it
+    /// PACKED. Never counted as one.
+    func testABagsOwnPhotoIsOnItsPageAndBesideItOnTheTrip() {
+        let app = launch("-uiTestingPackingDay")
+        openFirstBag(app)      // the Day pack, the sample's one bag of his
+        tap(app, id: "bag-detail-photo")
+        XCTAssertTrue(app.buttons["bag-detail-photo-thumb-0"].waitForExistence(timeout: 5), "the bag's photo was not kept")
+        tap(app, id: "bag-detail-photo")
+        XCTAssertTrue(app.buttons["bag-detail-photo-thumb-1"].waitForExistence(timeout: 5), "a second photo was not kept")
+        XCTAssertTrue(waitUntil { self.element(app, "bag-detail-photo-full").exists }, "two photos, and it does not say so")
+        XCTAssertFalse(app.buttons["bag-detail-photo"].exists, "a third photo is offered")
+        tap(app, id: "bag-detail-photo-remove-1")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-detail-photo-thumb-1"].exists }, "Remove kept the photo")
+        XCTAssertTrue(app.buttons["bag-detail-photo"].waitForExistence(timeout: 5), "with one gone, no way to take another")
+        bringIntoView(app, app.buttons["bag-detail-photo-thumb-0"])
+        shot(app, "lost-bag-photo")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        // The trip: beside the Day pack (bag 1) — not beside the carry-on, only a name on the lines.
+        openPackingDayTrip(app)
+        openBags(app)
+        XCTAssertTrue(app.buttons["bag-1-look"].waitForExistence(timeout: 5), "the Bags card does not show how the Day pack looks")
+        XCTAssertFalse(app.buttons["bag-0-look"].exists, "the carry-on shows a photo it does not have")
+        shot(app, "bags-card-look")
+        station(app, "photos")
+        XCTAssertTrue(app.buttons["day-photo-1-look"].waitForExistence(timeout: 5), "the Photos station does not show how the Day pack looks")
+        let chip = app.buttons["day-sheet-station-photos"]
+        XCTAssertTrue(waitUntil { self.value(chip) == "0 of 3 photos" }, "the bag's own photo counted as a photo of it packed: '\(value(chip))'")
+        shot(app, "day-photos-look")
+        // A photo of it packed: the bag's own steps aside.
+        tap(app, id: "day-photo-1-photo")
+        XCTAssertTrue(app.buttons["day-photo-1-photo-thumb-0"].waitForExistence(timeout: 5), "the photo of it packed was not kept")
+        XCTAssertTrue(waitUntil { !app.buttons["day-photo-1-look"].exists },
+                      "the bag's own photo still shows beside a bag with a photo of it packed")
+    }
+
+    /// Care → Bags → the first bag's page.
+    private func openFirstBag(_ app: XCUIApplication) {
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the bag's page did not open")
+    }
+
+    /// A text field that grows downwards may be a text VIEW to the machine.
+    private func anyField(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        _ = waitUntil(timeout: 5) { app.textFields[id].exists || app.textViews[id].exists }
+        return app.textViews[id].exists ? app.textViews[id] : app.textFields[id]
+    }
+
     /// A bag says whether it goes in the cabin (his idea 4): a carry-on by its name until
     /// he says otherwise, and the plane trip's check follows his word.
     func testABagSaysWhetherItGoesInTheCabin() {

@@ -21,6 +21,12 @@ import PackingCore
 //   bagMarks  free text — "red strap, sticker on the side"
 // Each is absent when not said (never an empty string). None reaches a trip line (a line copies
 // only the fields `entryFromItem` names), a shared template or a shared trip.
+//
+// PHOTOS OF THE BAG ITSELF (his ask of 14 Oct 2026) — how it looks, taken empty or any time, for
+// the desk; not the trip's photos of it PACKED (`bagPhotos`, per trip). They are the thing's own
+// `photos` — ids into the photo store, as the web model keeps every thing's photos (up to
+// MAX_PHOTOS) — so they are synced, backed up and restored as photos are, counted in use
+// (`photoInUse`: Worth a look never offers them), follow a rename, and travel in no share.
 
 /// On a bag: its kind, in the baggage desk's words (`BagType`).
 public let BAG_TYPE_KEY = "bagType"
@@ -30,6 +36,9 @@ public let BAG_SIZE_KEY = "bagSize"
 public let BAG_MARKS_KEY = "bagMarks"
 /// Every extra key the bag details write on a bag's thing.
 public let BAG_DETAIL_KEYS = [BAG_TYPE_KEY, BAG_SIZE_KEY, BAG_MARKS_KEY]
+/// The photos of the bag itself its page takes: two. A bag that came with more (the web app
+/// keeps up to MAX_PHOTOS on a thing) shows them all and takes no new one.
+public let BAG_OWN_PHOTOS_MAX = 2
 
 /// The kind of bag — the airlines' baggage-desk categories, in plain words.
 public enum BagType: String, CaseIterable, Sendable, Identifiable {
@@ -87,17 +96,27 @@ public struct BagDetails: Equatable, Sendable {
     public var sizeNote: String
     /// "red strap, sticker on the side".
     public var marks: String
+    /// The photos of the bag itself — ids into the photo store, in the order taken, as stored
+    /// (one still on its way from the other device counts). READ only: `setBagDetails` never
+    /// writes them — `addBagOwnPhoto` / `removeBagOwnPhoto` do.
+    public var photoIds: [String]
 
     public init(brand: String = "", colour: String = "", type: BagType? = nil, size: BagSize? = nil,
-                sizeNote: String = "", marks: String = "") {
+                sizeNote: String = "", marks: String = "", photoIds: [String] = []) {
         self.brand = brand; self.colour = colour; self.type = type; self.size = size
-        self.sizeNote = sizeNote; self.marks = marks
+        self.sizeNote = sizeNote; self.marks = marks; self.photoIds = photoIds
     }
 
-    /// Nothing said at all.
-    public var isEmpty: Bool {
-        jsTrim(brand).isEmpty && jsTrim(colour).isEmpty && type == nil && size == nil
-            && jsTrim(sizeNote).isEmpty && jsTrim(marks).isEmpty
+    /// Nothing said at all, and no photo.
+    public var isEmpty: Bool { trimmed == BagDetails() }
+
+    /// Nothing SAID (photos aside): what `setBagDetails` would write.
+    var saysNothing: Bool { var d = trimmed; d.photoIds = []; return d == BagDetails() }
+
+    /// The same with every text trimmed — as it is kept.
+    public var trimmed: BagDetails {
+        BagDetails(brand: jsTrim(brand), colour: jsTrim(colour), type: type, size: size,
+                   sizeNote: jsTrim(sizeNote), marks: jsTrim(marks), photoIds: photoIds)
     }
 
     /// The pills under Colour: seven common bag colours, "Multi" for a bag of several.
@@ -136,7 +155,8 @@ extension Library {
                    type: bag.extra[BAG_TYPE_KEY]?.stringValue.flatMap(BagType.init(rawValue:)),
                    size: bag.extra[BAG_SIZE_KEY]?.stringValue.flatMap(BagSize.init(rawValue:)),
                    sizeNote: jsTrim(bag.size),
-                   marks: jsTrim(bag.extra[BAG_MARKS_KEY]?.stringValue ?? ""))
+                   marks: jsTrim(bag.extra[BAG_MARKS_KEY]?.stringValue ?? ""),
+                   photoIds: photoRefs(bag))
     }
 
     /// One of his bags by its id, or nil.
@@ -156,23 +176,22 @@ extension Library {
 
     /// Write a bag's details. Only what DIFFERS from what is kept is written — so a kind or a
     /// size a later version wrote (read here as nil) is not wiped when another detail changes.
-    /// Text is trimmed; an empty answer removes its key (never an empty string). Only a bag
-    /// takes them: false for anything else.
+    /// Text is trimmed; an empty answer removes its key (never an empty string). The photos are
+    /// not written here (`addBagOwnPhoto`). Only a bag takes them: false for anything else.
     @discardableResult
     public mutating func setBagDetails(_ details: BagDetails, id: String) -> Bool {
         guard bags().contains(where: { $0.id == id }), let thing = items.first(where: { $0.id == id }) else { return false }
         let now = Library.bagDetails(thing)
-        guard now != details else { return true }
+        var want = details.trimmed
+        want.photoIds = now.photoIds
+        guard now != want else { return true }
         return updateThing(id: id) { bag in
-            if now.brand != jsTrim(details.brand) { bag.manufacturer = jsTrim(details.brand) }
-            if now.colour != jsTrim(details.colour) { bag.color = jsTrim(details.colour) }
-            if now.sizeNote != jsTrim(details.sizeNote) { bag.size = jsTrim(details.sizeNote) }
-            if now.type != details.type { bag.extra[BAG_TYPE_KEY] = details.type.map { .string($0.rawValue) } }
-            if now.size != details.size { bag.extra[BAG_SIZE_KEY] = details.size.map { .string($0.rawValue) } }
-            if now.marks != jsTrim(details.marks) {
-                let m = jsTrim(details.marks)
-                bag.extra[BAG_MARKS_KEY] = m.isEmpty ? nil : .string(m)
-            }
+            if now.brand != want.brand { bag.manufacturer = want.brand }
+            if now.colour != want.colour { bag.color = want.colour }
+            if now.sizeNote != want.sizeNote { bag.size = want.sizeNote }
+            if now.type != want.type { bag.extra[BAG_TYPE_KEY] = want.type.map { .string($0.rawValue) } }
+            if now.size != want.size { bag.extra[BAG_SIZE_KEY] = want.size.map { .string($0.rawValue) } }
+            if now.marks != want.marks { bag.extra[BAG_MARKS_KEY] = want.marks.isEmpty ? nil : .string(want.marks) }
         }
     }
 
@@ -184,8 +203,48 @@ extension Library {
         let wanted = jsTrim(name)
         guard Library.isRealBag(wanted) else { return false }
         if let bag = bags().first(where: { normName($0.name) == normName(wanted) }) { return setBagDetails(details, id: bag.id) }
-        guard !details.isEmpty else { return true }
+        guard !details.saysNothing else { return true }
         guard let bag = addBag(name: wanted) else { return false }
         return setBagDetails(details, id: bag.id)
+    }
+
+    // MARK: - Photos of the bag itself
+
+    /// A bag's own photos on this device, in the order taken (by its id; none for anything not a bag).
+    public func bagOwnPhotos(id: String) -> [PhotoRecord] {
+        (bagDetails(id: id)?.photoIds ?? []).compactMap { pid in photos.first { $0.id == pid } }
+    }
+
+    /// The same by the bag's NAME, as a trip's lines name it — none for a name that is no bag of his.
+    public func bagOwnPhotos(bag name: String) -> [PhotoRecord] {
+        guard let bag = bags().first(where: { normName($0.name) == normName(name) }) else { return [] }
+        return bagOwnPhotos(id: bag.id)
+    }
+
+    /// Keep one more photo of the bag itself (JPEG bytes) — onto the thing's own `photos`.
+    /// Refused (nil) for anything not a bag, and when it has `BAG_OWN_PHOTOS_MAX` already (or
+    /// its thing is full, MAX_PHOTOS): a third would push one out unseen.
+    @discardableResult
+    public mutating func addBagOwnPhoto(id: String, jpeg: Data) -> PhotoRecord? {
+        guard !jpeg.isEmpty, let d = bagDetails(id: id), d.photoIds.count < BAG_OWN_PHOTOS_MAX,
+              let thing = items.first(where: { $0.id == id }), thing.photos.count < MAX_PHOTOS else { return nil }
+        let photo = PhotoRecord(id: PackingEnv.makeId(), data: "data:image/jpeg;base64,\(jpeg.base64EncodedString())",
+                                createdAt: nowISO())
+        photos.append(photo)
+        _ = updateThing(id: id) { $0.photos.append(photo.id) }
+        return photo
+    }
+
+    /// Take one photo off the bag itself. Its record goes too, unless something else still shows
+    /// it. The web app's small `thumb` is of the FIRST photo: taking that one away clears it.
+    @discardableResult
+    public mutating func removeBagOwnPhoto(id: String, photoId: String) -> Bool {
+        guard let d = bagDetails(id: id), d.photoIds.contains(photoId) else { return false }
+        _ = updateThing(id: id) { thing in
+            if thing.photos.first == photoId { thing.thumb = "" }
+            thing.photos.removeAll { $0 == photoId }
+        }
+        if !photoInUse(photoId) { photos.removeAll { $0.id == photoId } }
+        return true
     }
 }

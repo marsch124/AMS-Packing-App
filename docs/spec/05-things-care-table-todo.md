@@ -1678,6 +1678,19 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    off — never written false; `Library.setBagAirTag(id:_:)`, read by `Library.hasAirTag(container:)`). The same
    switch sits under the bag in the Packing day's Tags station, where a bag that is only a name on the trip's lines
    becomes one of his bags when it is switched on (`setAirTag(container:_:)`, as "Goes in the cabin" from the trip).
+3c. **For the lost-luggage desk** (0.80, container `bag-lost`; spec 07 part 18 A — the whole of it there): the heading
+   (`bag-lost-heading`, Body semibold ink) and "What an airline's desk asks when a bag goes missing. Said once, here —
+   every trip uses it."; then, each under a Caption 2 capitals label: **BRAND** (`bag-detail-brand`), **COLOUR**
+   (`bag-detail-colour` and seven pills `bag-detail-colour-black` … `-multi`, a pill writing its word — Multi writes
+   "Multicoloured"), **TYPE** (pills `bag-detail-type-hard`, `-soft`, `-duffel`, `-backpack`, `-holdall`, `-garment`,
+   `-other`), **SIZE** (pills `bag-detail-size-cabin`, `-medium`, `-large`, and the note `bag-detail-sizenote`),
+   **DISTINCTIVE MARKS** (`bag-detail-marks`, 1–4 lines), **PHOTOS OF THE BAG** (two at most, the thing's own
+   `photos`: thumbnails `bag-detail-photo-thumb-<k>` with Remove `bag-detail-photo-remove-<k>`, the shared
+   PhotoTakers `bag-detail-photo`, at two `bag-detail-photo-full`). One choice per pill row; the lit one tapped again is
+   taken off. Saved 0.4 s after the last key and at once on Return, a pill, "Its details" and leaving the page.
+   Brand and colour ARE the thing's `manufacturer` and `color` (the same values as "Its details" shows), the note
+   its `size`; type, size class and marks are `extra` keys `bagType`, `bagSize`, `bagMarks`
+   (`Library.setBagDetails(_:id:)`, read by `Library.bagDetails(bag:)` — which the trip's Lost bag page reads).
 3a. **Pockets** `N` (0.69, `BagPockets` in `Screens/Pockets.swift`; his idea plan, stop B: "A bag's page lists its
    pockets; you name them once"): heading "Pockets" (Body semibold ink) and the count (Subheadline semibold mono
    muted, `bag-pockets-count`). None: "None yet. Name its pockets — main, front pocket, lid — and ticking a thing on
@@ -1741,7 +1754,8 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
   cabin from the trip (`setCabin(container:)`, field test 7.3, 3 Oct 2026): a name that is not a bag yet BECOMES
   one (and then shows here); "Other" and "" are refused.
 
-**Data.** The bag's item (`cabin` and, 0.69, `pockets` in its extra keys, so the web app's model is untouched); memberships;
+**Data.** The bag's item (`cabin` and, 0.69, `pockets` in its extra keys, so the web app's model is untouched; 0.79
+`airTag`; 0.80 `bagType`, `bagSize`, `bagMarks`, with its own `manufacturer`, `color` and `size` for the desk); memberships;
 templates; trips (lines, `extra` scale/photos); photos.
 
 **iPhone vs Mac.** Mac: at least 520 × 640.
@@ -1764,7 +1778,10 @@ fourth added; Front pocket renamed; the new one moved up; Main removed — red w
 new pocket was not added: '3'"); `testAThingsUsualPocketIsOfferedWhenItsBagHasPockets` (the charger's Pocket says
 Front pocket; Lid chosen and saved is there when reopened; the Toothbrush, in a bag that is none of his (the
 carry-on is only a name in that sample), has no Pocket — red with the save line planted out: "the usual pocket was
-not kept: 'Front pocket'"); model `PocketsTests`. **0.73:** `testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage`
+not kept: 'Front pocket'"); model `PocketsTests`. **0.80:** `testABagKeepsWhatTheLostLuggageDeskAsks` (`-uiTestingChecks`, the carry-on: Brand typed,
+the Black pill writes "Black" and is lit, Hard case, Large, Duffel takes over and is taken off again, the note and the
+marks typed; closed and opened again all of it is there; "Its details" shows the same brand and colour),
+`testABagsOwnPhotoIsOnItsPageAndBesideItOnTheTrip` and, on the Mac, `testTheMacTabsThroughTheLostLuggageFieldsInOrder`; model `BagDetailsTests` (spec 07 part 18 A). **0.73:** `testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage`
 (`-uiTestingChecks`, the Map in the carry-on, a bag of his with no pockets: Pocket shows "Just in the bag", no
 pocket row; "Side pocket" made at the foot is chosen, kept on Save and is the bag's first pocket, with its pen; No
 bag takes the Pocket list away — red with the 0.69 rule planted back (`!pockets.rows.isEmpty`): "no Pocket list for
