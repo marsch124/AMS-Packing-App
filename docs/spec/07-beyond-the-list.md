@@ -3147,7 +3147,59 @@ once ("Activation point invalid").
 
 ### Tests
 
-(Filled in from the code by the build — below.)
+Model `BeforeYouStartTests` (5, `Core/Tests/PackingLibraryTests/BeforeYouStartTests.swift`; the batteries' library
+of part 15 plus Sun cream on the base, a "Hut booking" thing in Preparations on Hiking, and Hiking's reminders a month
+ahead ("Ask for leave"), a week ahead ("Check the forecast"), the day before ("Leave a route note") and on the morning
+("Water the plants"); the trip 30 Oct – 1 Nov, today 14 Oct):
+- `testItShowsUntilTheFirstThingIsPacked` — a reminder, a Preparations line, ⊘ and a charge tick leave it there; a
+  thing ticked takes it away (and the parts go), unticked it is back; a Lighter ticked inside the Camp pouch takes it
+  away; on the first day before "I leave at" 08:00 yes, at 08:00 no; a later day, after the trip, reviewed, bought on
+  site, no such trip: no.
+- `testToBuyGathersWhatIsOnToBuyWornOutAndRunningOut` — nothing at first; then the Passport (a document short of six
+  months, orange), the Phone charger (a To buy line TYPED with its name), the Sun cream (runs out on the trip, red — a
+  consumable, but that is not why), "Lighter, in the Camp pouch" (needs replacing, inside a kit), the Headlamp (a To
+  buy line for it), the Map (needs replacing) — in the trip's order, each opening its own thing; NOT the Toothbrush (a
+  consumable alone), the GPS watch (on To buy, but taken out of the pouch: not on the trip), "Coffee filters" (no thing,
+  no line of that name), the Map's To buy line once ticked bought. Set aside, the pouch and the Map go (and the Lighter
+  with its kit); a date moved on and a line ticked bought take theirs away; a line typed on the trip with a To buy
+  line's name is its own row with nothing to open.
+- `testUsedUpLastTimeIsToBuyUntilBoughtOrGoneAgain` — the Sun cream used up on "Summer hike" (1–3 Aug, reviewed):
+  "used up on Summer hike", orange; on To buy "on To buy · used up …"; ticked bought today → gone; its `doneAt` before
+  the summer hike → back; a September hike on which it went → gone; set aside on it → back; the summer hike's own list
+  (a trip AFTER it does not count) clean; an undated trip looks back from today (14 Oct yes, 31 Jul no).
+- `testToPrepareListsWhatFallsDueBeforeTheDayHeLeaves` — "Hut booking", "Ask for leave" (30 Sep), "Check the
+  forecast" (23 Oct), "Leave a route note" (29 Oct), then the To do written on the trip "Name tag for the Day pack"
+  (no day) — never "Water the plants"; the reminders open Hiking, the Preparations line its thing, the To do nothing;
+  ticked or set aside, a line leaves; without dates, the same lines with no day.
+- `testThePartsTheWordsAndHomesLine` — To charge = Toothbrush, Power bank, Headlamp; "1 to buy · 4 to prepare · 3 to
+  charge"; Home "Before you start: 1 to buy, 4 to prepare" (`nextTrip(today:).beforeStart`); charged → leaves To
+  charge; nothing to buy → the words leave it out; only To charge left → no Home line, the door still there; packing
+  begun → nothing, on Home too.
+
+Each seen RED with a planted fault: a reminder counted as packing ("XCTAssertFalse failed - a reminder, a Preparations
+line, ⊘ or a charge counted as packing"); the kit contents left out of To buy ("("["Passport: document", "Phone
+charger: on To buy", "Sun cream: runs out", "Headlamp: on To buy", …]") is not equal to …"); "bought since" ignored
+("("["Sun cream"]") is not equal to ("[]") - bought since, still used up"); the FIRST earlier trip kept instead of the
+last ("… - gone again since, still used up"); the morning's lead days 0 taken as ahead ("("["Hut booking", "Ask for
+leave", "Check the forecast", "Leave a route note", "Water the plants", …]") is not equal to …"); charged things kept
+on To charge ("("["Toothbrush", "Power bank", "Headlamp"]") is not equal to ("["Power bank", "Headlamp"]")"). Parity:
+211/211 (nothing in the web model changed).
+
+UI `testBeforeYouStartGathersWhatToBuyAndGetReadyUntilPackingBegins` (`-uiTestingBeforeStart`,
+`SampleLibrary.beforeStart()`: the sample + Sun cream on the base running out on the trip's last day and used up on a
+reviewed "Summer hike" two months ago, the Map needing replacing (the sample's own), the Headlamp with a battery,
+Hiking's reminders a week ahead, the day before and on the morning; the trip ten days ahead, nothing ticked): Home's
+`home-countdown` value "Before you start: 2 to buy, 2 to prepare"; the trip's `trip-beforestart` "2 to buy · 2 to
+prepare · 1 to charge", above `trip-beforego`; the sheet's three parts; `beforestart-buy-0` "Sun cream" (runs out
+before he is home · used up on "Summer hike"), `-1` "Map" ("Needs replacing"), no third; `beforestart-prepare-0` "Check
+the forecast" ("≥1 week ahead · from …", its icon Hiking), `-1` "Leave a route note", no third (not the plants);
+`beforestart-charge-0` "Headlamp"; the forecast ticked → `beforestart-prepare-count` "1"; the Map's row opens
+`thing-detail`, the route note's arrow `template-detail`; Done → the door "2 to buy · 1 to prepare · 1 to charge"; the
+Passport (`trip-line-0`) ticked → the door goes; unticked → back. Pictures `beforestart-home`, `-trip`, `-sheet`,
+`-packing`, iPhone day and night. Seen RED with a planted fault: the door not ending with packing → "the door stayed
+once packing began"; the sheet's tick ticking nothing → "the forecast ticked is still to prepare: '2'".
+`testATripsRemindersShowWhenTheyAreDue` now reads the countdown's value from its start ("1 to do", then Before you
+start's line).
 
 ### Open questions
 
