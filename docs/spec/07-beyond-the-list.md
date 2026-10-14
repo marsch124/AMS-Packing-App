@@ -2362,7 +2362,10 @@ model's test, the trimming the screen's. Each seen RED on the iPhone simulator w
 storing the block — "the flight was not kept (trimmed): 'Flight no.'"; Tags asking every bag on a plane trip — "the
 carry-on goes in the cabin, yet it is asked for a tag number". Green again without them, day and night (pictures
 `flights-create-top`, `flights-create`, `flights-tripset-top`, `flights-tripset`, `flights-day-tags`,
-`flights-bags-card`). The test helper `fill` keeps a field clear of the status bar and the keyboard before typing (a
+`flights-bags-card`). On the iPhone simulator, 43 neighbouring tests (every test that picks Plane, opens Trip settings,
+the Bags card, the Packing day or How it works) all green. On GitHub's Mac (a probe: the two tests with Travelling by,
+Tags, Trip settings and the cabin switch on a trip, day; the two again at night; then Tags asking every bag planted):
+all green, and the plant RED — "the carry-on goes in the cabin, yet it is asked for a tag number". The test helper `fill` keeps a field clear of the status bar and the keyboard before typing (a
 field reported on screen under the status bar took no focus).
 
 #### Open questions
