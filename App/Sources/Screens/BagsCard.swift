@@ -95,12 +95,17 @@ struct BagsCard: View {
                     GroupPhotoLine(tripId: tripId).environmentObject(model)
                     ForEach(Array(bags.enumerated()), id: \.offset) { n, bag in
                         VStack(alignment: .leading, spacing: 8) {
-                            Button { open(bag) } label: { BagWeightRow(bag: bag) }
-                                .buttonStyle(.plain).focusEffectDisabled()
-                                .accessibilityIdentifier("bag-\(n)")
-                                // What the bar shows, in words: the colour cannot be read
-                                // any other way (VoiceOver, and the tests).
-                                .accessibilityValue(BagsCard.gauge(bag))
+                            HStack(alignment: .top, spacing: 10) {
+                                // How the bag looks (0.80), while this trip has no photo of it packed —
+                                // beside the row, not in it: a button inside a button never reaches the tree.
+                                BagLookThumb(tripId: tripId, bag: bag.load.container, id: "bag-\(n)-look").environmentObject(model)
+                                Button { open(bag) } label: { BagWeightRow(bag: bag) }
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("bag-\(n)")
+                                    // What the bar shows, in words: the colour cannot be read
+                                    // any other way (VoiceOver, and the tests).
+                                    .accessibilityValue(BagsCard.gauge(bag))
+                            }
                             if weighing == bag.load.container {
                                 scaleEditor(bag, n)
                                 BagCabinRow(bag: bag.load.container, n: n).environmentObject(model)

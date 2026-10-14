@@ -2214,6 +2214,10 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   a bag WITH a max has a bar: 16 pt capsule, `Theme.line` track, fill = min(1, kg/max) of the width (at
   least 16 pt) in blue (fine), orange (close) or red (over). Weighed: "The things in it add up to
   <kilos>" (13 medium muted).
+- **How the bag looks** (0.80, spec 07 part 18 A rule 10): beside the row, at its left, the bag's own first photo
+  (`BagLookThumb`, 32 × 32, corner 6, a button `bag-<n>-look`, label "How the <bag> looks", a tap shows it large) —
+  only for one of his bags that has a photo of its own, and only while this trip has no photo of it packed. Beside the
+  row, not inside it (a button inside a button never reaches the tree).
 - Tapping a row opens (and a second tap closes) under it — only one bag open at a time:
   1. **The scale**: field "kg on the scale" (17 semibold mono, decimal pad on the iPhone, id
      `bag-<n>-scale`, Return saves), **Save** (green capsule, id `bag-<n>-scale-save`), **Clear** (15

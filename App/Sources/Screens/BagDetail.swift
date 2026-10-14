@@ -23,6 +23,13 @@ struct BagDetail: View {
     /// What Delete was missing when pressed too early, said under it.
     @State private var deleteNeeds = ""
     @State private var opened: Opened?
+    /// For the lost-luggage desk (0.80): what is typed in its four fields, written a moment
+    /// after the last key (`lostWrite`) and at once on Return, a pill, the details door or
+    /// leaving the page.
+    @State private var lost = LostTyped()
+    @State private var lostWrite: Task<Void, Never>?
+
+    struct LostTyped: Equatable { var brand = "", colour = "", sizeNote = "", marks = "" }
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
     enum Opened: Identifiable {
@@ -41,6 +48,8 @@ struct BagDetail: View {
                         numbers(bag)
                         cabinSwitch(bag)
                         airTagSwitch(bag)
+                        // For the lost-luggage desk (0.80, spec 07 part 18 A): said once, every trip uses it.
+                        lostDesk(bag)
                         // Its pockets (0.69): named once, offered when a thing is ticked.
                         BagPockets(bagId: bag.id).environmentObject(model)
                         thingsInIt(facts)
@@ -66,7 +75,15 @@ struct BagDetail: View {
             maxKg = bag.maxKg > 0 ? BagsScreen.show(bag.maxKg) : ""
             litres = bag.capacityL > 0 ? BagsScreen.show(bag.capacityL) : ""
             empty = bag.weight > 0 ? String(Int(bag.weight.rounded())) : ""
+            loadLost(model.library.bagDetails(id: bag.id) ?? BagDetails())
         }
+        // A change from the other device, or from "Its details", reaches the fields — unless
+        // what is typed already says it, or is still on its way to being written.
+        .onChange(of: model.library.bagDetails(id: bagId)) { _, kept in
+            guard let kept, lostWrite == nil else { return }
+            followLost(kept)
+        }
+        .onDisappear { writeLost() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("bag-detail")
         #if os(macOS)
@@ -187,6 +204,129 @@ struct BagDetail: View {
         .accessibilityIdentifier("bag-detail-airtag")
     }
 
+    // MARK: For the lost-luggage desk (0.80, spec 07 part 18 A)
+
+    /// What an airline's desk asks about a missing bag: brand, colour, type, size and what makes
+    /// it stand out. Said once, here; every trip reads it (`Library.bagDetails(bag:)`). Brand and
+    /// colour are the thing's own — "Its details" shows the same values.
+    private func lostDesk(_ bag: Item) -> some View {
+        let kept = model.library.bagDetails(id: bag.id) ?? BagDetails()
+        let typedColour = BagDetails(colour: lost.colour)
+        return VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("For the lost-luggage desk").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("bag-lost-heading")
+                Text("What an airline\u{2019}s desk asks when a bag goes missing. Said once, here \u{2014} every trip uses it.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            lostPart("Brand") {
+                lostField($lost.brand, "e.g. Samsonite", id: "bag-detail-brand")
+            }
+            lostPart("Colour") {
+                lostField($lost.colour, "e.g. Dark blue", id: "bag-detail-colour")
+                FlowRow(spacing: 6) {
+                    ForEach(BagDetails.colourPills) { pill in
+                        let on = typedColour.lit(pill)
+                        choice(pill.label, on: on, id: "bag-detail-colour-\(pill.label.lowercased())") {
+                            lost.colour = on ? "" : pill.value
+                            writeLost()
+                        }
+                    }
+                }
+            }
+            lostPart("Type") {
+                FlowRow(spacing: 6) {
+                    ForEach(BagType.allCases) { type in
+                        let on = kept.type == type
+                        choice(type.name, on: on, id: "bag-detail-type-\(type.rawValue)") { writeLost { $0.type = on ? nil : type } }
+                    }
+                }
+            }
+            lostPart("Size") {
+                FlowRow(spacing: 6) {
+                    ForEach(BagSize.allCases) { size in
+                        let on = kept.size == size
+                        choice(size.name, on: on, id: "bag-detail-size-\(size.rawValue)") { writeLost { $0.size = on ? nil : size } }
+                    }
+                }
+                lostField($lost.sizeNote, "Measures, e.g. 55 \u{00D7} 40 \u{00D7} 20 cm", id: "bag-detail-sizenote")
+            }
+            lostPart("Distinctive marks") {
+                lostField($lost.marks, "e.g. red strap, sticker on the side", id: "bag-detail-marks", lines: true)
+            }
+            // How it looks (his ask of 14 Oct 2026): the bag itself, empty or any time — not packed.
+            lostPart("Photos of the bag") {
+                BagOwnPhotos(bagId: bag.id).environmentObject(model)
+            }
+        }
+        .onChange(of: lost) { _, _ in lostTyped() }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("bag-lost")
+    }
+
+    /// A small label over its answer — as MAX KG over the numbers.
+    private func lostPart<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased()).font(.system(.caption2, weight: .semibold)).kerning(0.4).foregroundStyle(Theme.muted)
+            content()
+        }
+    }
+
+    /// The numbers' field, in Body regular; the marks grow downwards, up to four lines.
+    private func lostField(_ text: Binding<String>, _ prompt: String, id: String, lines: Bool = false) -> some View {
+        TextField(prompt, text: text, axis: lines ? .vertical : .horizontal)
+            .lineLimit(lines ? 1...4 : 1...1)
+            .textFieldStyle(.plain)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 10).padding(.vertical, lines ? 9 : 0).frame(minHeight: 40)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
+            .onSubmit { writeLost() }
+            .accessibilityIdentifier(id)
+    }
+
+    private func loadLost(_ d: BagDetails) {
+        lost = LostTyped(brand: d.brand, colour: d.colour, sizeNote: d.sizeNote, marks: d.marks)
+    }
+
+    /// The kept answers into the fields — each only where what is typed does not already say it.
+    private func followLost(_ d: BagDetails) {
+        if jsTrim(lost.brand) != d.brand { lost.brand = d.brand }
+        if jsTrim(lost.colour) != d.colour { lost.colour = d.colour }
+        if jsTrim(lost.sizeNote) != d.sizeNote { lost.sizeNote = d.sizeNote }
+        if jsTrim(lost.marks) != d.marks { lost.marks = d.marks }
+    }
+
+    /// A key typed: written 0.4 s after the last one (a whole save per key would be slow on a
+    /// big library — `LibraryModel.commit` builds every record again).
+    private func lostTyped() {
+        guard let kept = model.library.bagDetails(id: bagId) else { return }
+        var d = kept
+        d.brand = lost.brand; d.colour = lost.colour; d.sizeNote = lost.sizeNote; d.marks = lost.marks
+        guard d.trimmed != kept else { lostWrite?.cancel(); lostWrite = nil; return }
+        lostWrite?.cancel()
+        lostWrite = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            writeLost()
+        }
+    }
+
+    /// Write what is typed (and a pill's answer) now. Only what differs is written.
+    private func writeLost(_ edit: (inout BagDetails) -> Void = { _ in }) {
+        lostWrite?.cancel()
+        lostWrite = nil
+        guard let kept = model.library.bagDetails(id: bagId) else { return }
+        var d = kept
+        d.brand = lost.brand; d.colour = lost.colour; d.sizeNote = lost.sizeNote; d.marks = lost.marks
+        edit(&d)
+        guard d.trimmed != kept else { return }
+        let id = bagId
+        model.change { _ = $0.setBagDetails(d, id: id) }
+    }
+
     // MARK: What goes in it
 
     private func thingsInIt(_ facts: Library.BagFacts) -> some View {
@@ -253,7 +393,7 @@ struct BagDetail: View {
     // MARK: Its details as a thing
 
     private func detailsDoor(_ bag: Item) -> some View {
-        Button { opened = .thing(bag.id) } label: {
+        Button { writeLost(); opened = .thing(bag.id) } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Its details").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -413,5 +553,96 @@ struct BagDetail: View {
     private func quiet(_ text: String) -> some View {
         Text(text).font(.system(.footnote)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Photos of the bag ITSELF on its page (0.80, his ask of 14 Oct 2026; spec 07 part 18 A): how it
+/// looks, taken empty or any time, for the lost-luggage desk — two at most, the thing's own photos.
+/// Not the trip's photos of it packed (`BagPhotoRow`). Taken as those are (`PhotoTakers`), seen
+/// large on a tap, each with its own Remove.
+struct BagOwnPhotos: View {
+    let bagId: String
+    @EnvironmentObject var model: LibraryModel
+    @State private var large: Int?
+
+    var body: some View {
+        let shots = model.library.bagOwnPhotos(id: bagId).compactMap { p in JPEG.image(dataURL: p.data).map { (p.id, $0) } }
+        // As stored: a photo still on its way from the other device takes its place too.
+        let full = (model.library.bagDetails(id: bagId)?.photoIds.count ?? 0) >= BAG_OWN_PHOTOS_MAX
+        VStack(alignment: .leading, spacing: 8) {
+            if shots.isEmpty {
+                Text("How it looks \u{2014} taken empty, any time. Two at most.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(Array(shots.enumerated()), id: \.element.0) { k, shot in
+                        VStack(spacing: 2) {
+                            Button { large = k } label: {
+                                Image(decorative: shot.1, scale: 1).resizable().scaledToFill()
+                                    .frame(width: 80, height: 80).clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("bag-detail-photo-thumb-\(k)")
+                            .accessibilityLabel("Photo \(k + 1) of the bag")
+                            Button("Remove") {
+                                let b = bagId, id = shot.0
+                                model.change { _ = $0.removeBagOwnPhoto(id: b, photoId: id) }
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .frame(minWidth: 80, minHeight: 34).contentShape(Rectangle())
+                            .accessibilityIdentifier("bag-detail-photo-remove-\(k)")
+                        }
+                    }
+                }
+                .sheet(item: Binding(get: { large.map(Shown.init) }, set: { large = $0?.start })) {
+                    BigPhoto(images: shots.map(\.1), captions: shots.map { _ in "How the bag looks" }, start: $0.start)
+                }
+            }
+            if full {
+                Text("Two photos \u{2014} remove one to add another")
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("bag-detail-photo-full")
+            } else {
+                PhotoTakers(id: "bag-detail-photo", testTitle: shots.isEmpty ? "Photo of the bag" : "Another photo",
+                            take: shots.isEmpty ? "Take a photo" : "Take another",
+                            choose: shots.isEmpty ? "Choose a photo" : "Choose another") { jpeg in
+                    guard let jpeg else { return }
+                    let b = bagId
+                    model.change { _ = $0.addBagOwnPhoto(id: b, jpeg: jpeg) }
+                }
+            }
+        }
+    }
+
+    private struct Shown: Identifiable { let start: Int; var id: Int { start } }
+}
+
+/// The bag's own photo, small, where a trip shows the bag and has no photo of it PACKED yet
+/// (0.80): the Bags card's row and the Packing day's Photos station. A tap shows it large.
+/// Nothing when the bag has none — or is only a name on the lines.
+struct BagLookThumb: View {
+    let tripId: String
+    let bag: String
+    let id: String
+    var side: CGFloat = 32
+    @EnvironmentObject var model: LibraryModel
+    @State private var large = false
+
+    var body: some View {
+        if model.library.bagPhotoIds(tripId: tripId, bag: bag).isEmpty,
+           let photo = model.library.bagOwnPhotos(bag: bag).first.flatMap({ JPEG.image(dataURL: $0.data) }) {
+            Button { large = true } label: {
+                Image(decorative: photo, scale: 1).resizable().scaledToFill()
+                    .frame(width: side, height: side).clipShape(RoundedRectangle(cornerRadius: 6))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier(id)
+            .accessibilityLabel("How the \(bag) looks")
+            .sheet(isPresented: $large) { BigPhoto(images: [photo], captions: ["\(bag) \u{2014} how it looks"]) }
+        }
     }
 }
