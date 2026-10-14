@@ -2384,6 +2384,12 @@ off a card whose ticks are all on — "every tick on, the Day pack does not say 
 without them, day and night. Around them on the iPhone simulator, 23 neighbouring tests (the six Packing day tests and
 the bag-tag one, Take a break ×3, Before you go and the reminders due, the trip's pen and header, the Bags card, the
 luggage scale, bag photos and cabin, Start a new trip, the review, the door check, every tab's header): all green.
+On GitHub's Mac (a probe branch, deleted after): the four new tests, the How it works test and five neighbours (Bags
+out to the list, Ready, Tags' AirTag, Take a break, the reminders due) green by day, the four new ones again with the
+system set to dark, and the pill height planted back red — "("24.0") is not less than ("22.0") - the bags chip is as
+tall as a pill: 24.0". The first probe found the Mac trap below (the Tags test red, "the Day pack is ''"); the second,
+after the fix, was green. (The runner's "dark" pictures came out light — the system switch did not reach the app; the
+Mac's night look was not seen there.)
 Pictures, iPhone day and night and the Mac: `stations-row` (the slim row, the header's violet Review, amber "Back
 tomorrow 18:00" and green Done), `stations-tags`, `stations-tags-beforego`, `stations-ready`, `stations-bagsout`,
 `stations-addbag`.
