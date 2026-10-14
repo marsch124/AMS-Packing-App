@@ -69,6 +69,7 @@
 		ADB8FA04EBE1134791655CCD /* TableFilterSort.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6491A9AB1E25EAC20F46EB /* TableFilterSort.swift */; };
 		AEC09A016E6CEAD021B5D4C6 /* SearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */; };
 		AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */; };
+		AFDD27C6E343BA0B3237E24B /* BeforeYouStart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791FC3928B794605E9836B3F /* BeforeYouStart.swift */; };
 		B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878AF15AECFDDAD02F227DDD /* TripScreen.swift */; };
 		B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */; };
 		B12DB1EFB4C1873E0CF2716B /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A74DCE749078F203A8E87BF /* SettingsScreen.swift */; };
@@ -169,6 +170,7 @@
 		710DC970E7CB3720856D7F76 /* LostBag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LostBag.swift; sourceTree = "<group>"; };
 		76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
 		77CEDA06EFED05D4A1612077 /* EventsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsScreen.swift; sourceTree = "<group>"; };
+		791FC3928B794605E9836B3F /* BeforeYouStart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeforeYouStart.swift; sourceTree = "<group>"; };
 		79BB950979BE60A59DD34766 /* ChoiceDropDown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoiceDropDown.swift; sourceTree = "<group>"; };
 		7B024F8A00820DD9D55E10D0 /* TickAll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickAll.swift; sourceTree = "<group>"; };
 		7B24F2617CC7D137784F66F2 /* ThingsTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsTable.swift; sourceTree = "<group>"; };
@@ -361,6 +363,7 @@
 				DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */,
 				C41F92CE24B4D203B69B5870 /* BagsCard.swift */,
 				4EB48F2667254D2AD3862586 /* BagsScreen.swift */,
+				791FC3928B794605E9836B3F /* BeforeYouStart.swift */,
 				1E0A839566CDE77B068F47C5 /* BulkChange.swift */,
 				C63D25C9AA00E03651D86114 /* BuyList.swift */,
 				DAA70675722BC29FD43EA3BE /* CareCalendarView.swift */,
@@ -543,6 +546,7 @@
 				06244CC7FE9451C6DA719388 /* BagPhoto.swift in Sources */,
 				D4F50ECCC88F8FE89A931EFC /* BagsCard.swift in Sources */,
 				0C6CADF139B1A87388BE3DD4 /* BagsScreen.swift in Sources */,
+				AFDD27C6E343BA0B3237E24B /* BeforeYouStart.swift in Sources */,
 				C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */,
 				2FAA29D4DFFCB38CA02C2EDB /* Buttons.swift in Sources */,
 				21419C900E931B9CBE73B314 /* BuyList.swift in Sources */,

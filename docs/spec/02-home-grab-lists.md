@@ -1345,7 +1345,13 @@ a 1.2-pt stroke in Trips green:
   - in Trips green, one line, scaling to 60 %;
   - under the number (days > 0 only), "day" for 1, else "days" (14 pt bold `muted`).
 - **Middle:** the trip name (18 pt heavy `ink`, one line). Under it the **step line** (15 pt medium
-  `muted`, wraps).
+  `muted`, wraps). Under that, since 0.70, "To do: <names>" (the reminders due, Subheadline semibold green, up to two
+  lines); and since 0.82 **Before you start's line** (spec 07 part 19): "Before you start: 2 to buy, 3 to prepare"
+  (Subheadline semibold `ink`, wraps) — `NextTrip.beforeStart`, the trip's `BeforeYouStart.homeWords`, read with
+  today and now's time of day (`nextTrip(today:time:)`); only while the trip is at Plan or Pack with nothing packed
+  yet, and only when something is to buy or prepare (To charge is left out on Home: that is the day before's
+  work). The card's accessibility value: "1 to do", Before you start's line, or both joined by " · " ("" when
+  neither).
 - **Right:** a drawn chevron (20 pt, `muted`).
 
 **The step line** (`CountdownCard.stepLine(next, today:)`):

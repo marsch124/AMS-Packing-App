@@ -278,6 +278,12 @@ struct TripScreen: View {
                 // has typed into it (found by the test, 2026-09-23).
                 VStack(alignment: .leading, spacing: 4) {
                 if placeFilter == nil {
+                // Before you start (his yes of 14 Oct 2026, spec 07 part 19): above everything, while the
+                // trip is at Plan or at Pack with nothing packed yet — one door to what to buy and get ready
+                // ahead. It goes with the first thing ticked, when Before you go takes over.
+                BeforeYouStartDoor(tripId: trip.id, today: Today.iso(clock), time: Today.time(of: clock))
+                    .environmentObject(model)
+                    .padding(.horizontal, 16)
                 // Before you go (0.77, his yes of 13 Oct 2026): first, and only when something
                 // needs him — ONE card for what would stop him at the airport (his ideas 4 and 5),
                 // the reminders due and To charge (spec 07 part 15), which were two cards.

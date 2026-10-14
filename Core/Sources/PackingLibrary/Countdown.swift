@@ -43,6 +43,9 @@ extension Library {
         public var step: PackingStep?
         /// The reminders due by today and not yet ticked (spec 07, part 12), by name.
         public var due: [String] = []
+        /// Before you start, in Home's words (spec 07 part 19): "Before you start: 2 to buy, 3 to
+        /// prepare" — "" when it is not its time, or nothing is to buy or prepare.
+        public var beforeStart: String = ""
     }
 
     public struct PackingReminder: Equatable, Sendable {
@@ -76,15 +79,17 @@ extension Library {
     }
 
     /// The trip he leaves on next: the soonest one still to leave. A trip under way
-    /// is no countdown.
-    public func nextTrip(today: String) -> NextTrip? {
+    /// is no countdown. `time` ("HH:mm", now's time of day) decides only whether a trip leaving
+    /// today has set off yet — what Before you start's line goes by.
+    public func nextTrip(today: String, time: String = END_OF_DAY) -> NextTrip? {
         let ahead = trips.filter { stillToLeave($0, today) }
             .stableSorted(by: { a, b in jsStringLess(a.startDate, b.startDate) })
         guard let t = ahead.first, let days = daysUntil(t.startDate, today) else { return nil }
         let left = t.entries.filter { !$0.checked && !isSetAside($0) && !Library.isReminder($0) }.count
         return NextTrip(id: t.id, name: t.name, startDate: t.startDate, days: days, left: left,
                         step: packingSteps(tripId: t.id).first,
-                        due: dueReminders(tripId: t.id, today: today).map(\.name))
+                        due: dueReminders(tripId: t.id, today: today).map(\.name),
+                        beforeStart: beforeYouStart(tripId: t.id, today: today, time: time).homeWords)
     }
 
     /// A trip's reminders that are due (spec 07, part 12): not ticked, not set aside,
