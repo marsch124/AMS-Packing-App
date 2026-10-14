@@ -2389,7 +2389,11 @@ picture `bags-addbag`) and `testABagOnHimHasNoLostBag` ("On body" added on the c
 Seen RED on the iPhone simulator with planted faults: the card's panel under Bags out's ids — "+ Add a bag did not open
 on the Bags card"; the Photos door without the rule — "On body has a Lost bag? under its photos"; the card's door back to
 "not Other" — "On body has a Lost bag? on the Bags card". Model `LostBagTests.testABagOnHimHasNoPage` (red with the rule
-left out: "On body has a Lost bag page").
+left out: "On body has a Lost bag page"). Green again without them, day and night, with 17 neighbours on the iPhone simulator (the Bags
+card's eight, Bags out's Add a bag, the Lost bag page from the card, the Packing Stations and Settings, Photos, Ready,
+Weigh, Tags' bag-tag number, a bag's own photo, the Packing Stations' row and How it works): 19 of 19. On GitHub's Mac
+(a probe branch, deleted after): the two new tests with Bags out's Add a bag, both Lost bag page tests and the folded
+card, 6 of 6 green. Model 617 + 451, parity 211/211; the Release build compiles.
 Model `WeighingTests` (2), `OnTheTripTests` (photos ×5), `BagNotesTests` (rename/delete carry readings
 and photos), `BagsTests.testALimitSetHereIsTheLimitATripUses`, `TripChecksTests.testABagNameOnTheTripCanBeSaidToGoInTheCabin`.
 **Not covered:** comma decimal input; unreadable scale input clearing the reading; the camera.
