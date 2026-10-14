@@ -2208,7 +2208,7 @@ screen — and found the sheet over their next step). The two tests that pack ev
 > details are entered ONCE, on each bag's own page, and reused by every trip. **Part B** (branch `work/lostbag080`):
 > a trip's Lost bag page and its PDF, which read them. Written BEFORE part A was built, then brought in line with the
 > code (the code wins where they differ). The model: `Core/Sources/PackingLibrary/BagDetails.swift`; the block:
-> `App/Sources/Screens/BagDetail.swift` (`LostDeskBlock`). Per screen: spec 05 (a bag's page, item 3c), spec 01 §1.12
+> `App/Sources/Screens/BagDetail.swift` (`lostDesk(_:)`). Per screen: spec 05 (a bag's page, item 3c), spec 01 §1.12
 > (the keys).
 
 ### A. A bag's details for the desk
@@ -2235,8 +2235,11 @@ screen — and found the sheet over their next step). The two tests that pack ev
    and the other way round. The size's note is the thing's own `size` (the table's "Size" column). Type, the size
    class and the marks are new, so they are extra keys on the bag's thing (`bagType`, `bagSize`, `bagMarks`; the web
    model sees nothing new).
-3. **Saved as typed**, as the bag's numbers are (the 0.25 lesson: nothing waits for Return or a Save). Stored trimmed;
-   an emptied field removes its answer — an extra key is absent, never an empty string.
+3. **Saved as typed**, as the bag's numbers are (the 0.25 lesson: nothing waits for Return or a Save) — 0.4 s after
+   the last key (`lostTyped`: a whole save per key would be slow on his big library, `LibraryModel.commit` builds every
+   record again), and AT ONCE on Return, a pill, the "Its details" door and leaving the page (Done, Escape, a swipe —
+   `onDisappear`), so nothing typed is ever lost or missing from "Its details". Stored trimmed; an emptied field
+   removes its answer — an extra key is absent, never an empty string.
 4. **A pill row is one choice**, as Travelling by is: a tap lights it, a tap on the lit one turns it off (no answer).
    A colour pill WRITES its word into the Colour field ("Multi" writes "Multicoloured", what a desk's list calls a bag
    of several colours) — the field stays the answer, and typing over it is fine; a pill is lit while the field says
@@ -2250,11 +2253,12 @@ screen — and found the sheet over their next step). The two tests that pack ev
    trip line copies only the fields `entryFromItem` names (so no line, and so no SHARED trip, carries them); a shared
    template carries no brand, colour, size or extra key (`ListSharing`).
 8. **Two devices**: the fields follow a change that arrives from the other device (or from "Its details") while the
-   page is open, unless what is typed already says it (trimmed).
+   page is open (`followLost`, on a change of the kept details) — each field only where what is typed does not already
+   say it (trimmed), and none while a write is still waiting (what he typed wins).
 
 #### On the screens
 
-- **A bag's page** (spec 05, item 3c): after "Has an AirTag", 12 below it like every block, the block `LostDeskBlock`
+- **A bag's page** (spec 05, item 3c): after "Has an AirTag", 12 below it like every block, the block `lostDesk`
   (container `bag-lost`, 10 apart): the heading **For the lost-luggage desk** (Body semibold ink, as "Usually in it";
   a heading, id `bag-lost-heading`) and under it "What an airline's desk asks when a bag goes missing. Said once,
   here — every trip uses it." (Footnote muted). Then each answer under its small label (Caption 2 semibold, capitals,
@@ -2274,7 +2278,11 @@ screen — and found the sheet over their next step). The two tests that pack ev
 - **The Mac**: Tab walks the page's fields in reading order — the name, MAX KG, LITRES, EMPTY G, then Brand, Colour,
   the size's note, Distinctive marks, then the pockets' fields; Shift-Tab back (the system's own order: nothing is
   added, nothing skipped). The pills are clicked (with Full Keyboard Access, Tab reaches them too, as every button).
-- **How it works** (spec 06 §7), Care: the line about a bag's page names the block.
+- **How it works** (spec 06 §7), Care: a line of its own after the bag page's Pockets line — "On a bag's page, For
+  the lost-luggage desk: what an airline's desk asks when a bag goes missing — its brand, colour (type it, or tap a
+  pill: Black … Multi), type (Hard case, Soft case, Duffel …), size (Cabin, Medium or Large, and its measures) and
+  distinctive marks (a red strap, a sticker). Said once, saved as you type; every trip uses it. Brand and colour are
+  the same as under Its details. A pill tapped again is taken off."
 
 #### Where it is kept (the web model sees nothing new)
 

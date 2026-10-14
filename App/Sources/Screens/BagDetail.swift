@@ -23,6 +23,13 @@ struct BagDetail: View {
     /// What Delete was missing when pressed too early, said under it.
     @State private var deleteNeeds = ""
     @State private var opened: Opened?
+    /// For the lost-luggage desk (0.80): what is typed in its four fields, written a moment
+    /// after the last key (`lostWrite`) and at once on Return, a pill, the details door or
+    /// leaving the page.
+    @State private var lost = LostTyped()
+    @State private var lostWrite: Task<Void, Never>?
+
+    struct LostTyped: Equatable { var brand = "", colour = "", sizeNote = "", marks = "" }
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
     enum Opened: Identifiable {
@@ -41,6 +48,8 @@ struct BagDetail: View {
                         numbers(bag)
                         cabinSwitch(bag)
                         airTagSwitch(bag)
+                        // For the lost-luggage desk (0.80, spec 07 part 18 A): said once, every trip uses it.
+                        lostDesk(bag)
                         // Its pockets (0.69): named once, offered when a thing is ticked.
                         BagPockets(bagId: bag.id).environmentObject(model)
                         thingsInIt(facts)
@@ -66,7 +75,15 @@ struct BagDetail: View {
             maxKg = bag.maxKg > 0 ? BagsScreen.show(bag.maxKg) : ""
             litres = bag.capacityL > 0 ? BagsScreen.show(bag.capacityL) : ""
             empty = bag.weight > 0 ? String(Int(bag.weight.rounded())) : ""
+            loadLost(model.library.bagDetails(id: bag.id) ?? BagDetails())
         }
+        // A change from the other device, or from "Its details", reaches the fields — unless
+        // what is typed already says it, or is still on its way to being written.
+        .onChange(of: model.library.bagDetails(id: bagId)) { _, kept in
+            guard let kept, lostWrite == nil else { return }
+            followLost(kept)
+        }
+        .onDisappear { writeLost() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("bag-detail")
         #if os(macOS)
@@ -187,6 +204,125 @@ struct BagDetail: View {
         .accessibilityIdentifier("bag-detail-airtag")
     }
 
+    // MARK: For the lost-luggage desk (0.80, spec 07 part 18 A)
+
+    /// What an airline's desk asks about a missing bag: brand, colour, type, size and what makes
+    /// it stand out. Said once, here; every trip reads it (`Library.bagDetails(bag:)`). Brand and
+    /// colour are the thing's own — "Its details" shows the same values.
+    private func lostDesk(_ bag: Item) -> some View {
+        let kept = model.library.bagDetails(id: bag.id) ?? BagDetails()
+        let typedColour = BagDetails(colour: lost.colour)
+        return VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("For the lost-luggage desk").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("bag-lost-heading")
+                Text("What an airline\u{2019}s desk asks when a bag goes missing. Said once, here \u{2014} every trip uses it.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            lostPart("Brand") {
+                lostField($lost.brand, "e.g. Samsonite", id: "bag-detail-brand")
+            }
+            lostPart("Colour") {
+                lostField($lost.colour, "e.g. Dark blue", id: "bag-detail-colour")
+                FlowRow(spacing: 6) {
+                    ForEach(BagDetails.colourPills) { pill in
+                        let on = typedColour.lit(pill)
+                        choice(pill.label, on: on, id: "bag-detail-colour-\(pill.label.lowercased())") {
+                            lost.colour = on ? "" : pill.value
+                            writeLost()
+                        }
+                    }
+                }
+            }
+            lostPart("Type") {
+                FlowRow(spacing: 6) {
+                    ForEach(BagType.allCases) { type in
+                        let on = kept.type == type
+                        choice(type.name, on: on, id: "bag-detail-type-\(type.rawValue)") { writeLost { $0.type = on ? nil : type } }
+                    }
+                }
+            }
+            lostPart("Size") {
+                FlowRow(spacing: 6) {
+                    ForEach(BagSize.allCases) { size in
+                        let on = kept.size == size
+                        choice(size.name, on: on, id: "bag-detail-size-\(size.rawValue)") { writeLost { $0.size = on ? nil : size } }
+                    }
+                }
+                lostField($lost.sizeNote, "Measures, e.g. 55 \u{00D7} 40 \u{00D7} 20 cm", id: "bag-detail-sizenote")
+            }
+            lostPart("Distinctive marks") {
+                lostField($lost.marks, "e.g. red strap, sticker on the side", id: "bag-detail-marks", lines: true)
+            }
+        }
+        .onChange(of: lost) { _, _ in lostTyped() }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("bag-lost")
+    }
+
+    /// A small label over its answer — as MAX KG over the numbers.
+    private func lostPart<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased()).font(.system(.caption2, weight: .semibold)).kerning(0.4).foregroundStyle(Theme.muted)
+            content()
+        }
+    }
+
+    /// The numbers' field, in Body regular; the marks grow downwards, up to four lines.
+    private func lostField(_ text: Binding<String>, _ prompt: String, id: String, lines: Bool = false) -> some View {
+        TextField(prompt, text: text, axis: lines ? .vertical : .horizontal)
+            .lineLimit(lines ? 1...4 : 1...1)
+            .textFieldStyle(.plain)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 10).padding(.vertical, lines ? 9 : 0).frame(minHeight: 40)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
+            .onSubmit { writeLost() }
+            .accessibilityIdentifier(id)
+    }
+
+    private func loadLost(_ d: BagDetails) {
+        lost = LostTyped(brand: d.brand, colour: d.colour, sizeNote: d.sizeNote, marks: d.marks)
+    }
+
+    /// The kept answers into the fields — each only where what is typed does not already say it.
+    private func followLost(_ d: BagDetails) {
+        if jsTrim(lost.brand) != d.brand { lost.brand = d.brand }
+        if jsTrim(lost.colour) != d.colour { lost.colour = d.colour }
+        if jsTrim(lost.sizeNote) != d.sizeNote { lost.sizeNote = d.sizeNote }
+        if jsTrim(lost.marks) != d.marks { lost.marks = d.marks }
+    }
+
+    /// A key typed: written 0.4 s after the last one (a whole save per key would be slow on a
+    /// big library — `LibraryModel.commit` builds every record again).
+    private func lostTyped() {
+        guard let kept = model.library.bagDetails(id: bagId) else { return }
+        var d = kept
+        d.brand = lost.brand; d.colour = lost.colour; d.sizeNote = lost.sizeNote; d.marks = lost.marks
+        guard d.trimmed != kept else { lostWrite?.cancel(); lostWrite = nil; return }
+        lostWrite?.cancel()
+        lostWrite = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            writeLost()
+        }
+    }
+
+    /// Write what is typed (and a pill's answer) now. Only what differs is written.
+    private func writeLost(_ edit: (inout BagDetails) -> Void = { _ in }) {
+        lostWrite?.cancel()
+        lostWrite = nil
+        guard let kept = model.library.bagDetails(id: bagId) else { return }
+        var d = kept
+        d.brand = lost.brand; d.colour = lost.colour; d.sizeNote = lost.sizeNote; d.marks = lost.marks
+        edit(&d)
+        guard d.trimmed != kept else { return }
+        let id = bagId
+        model.change { _ = $0.setBagDetails(d, id: id) }
+    }
+
     // MARK: What goes in it
 
     private func thingsInIt(_ facts: Library.BagFacts) -> some View {
@@ -253,7 +389,7 @@ struct BagDetail: View {
     // MARK: Its details as a thing
 
     private func detailsDoor(_ bag: Item) -> some View {
-        Button { opened = .thing(bag.id) } label: {
+        Button { writeLost(); opened = .thing(bag.id) } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Its details").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
