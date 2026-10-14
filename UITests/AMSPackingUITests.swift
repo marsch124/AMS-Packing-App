@@ -3776,6 +3776,119 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "tripset-travelling-by")
     }
 
+    // MARK: - Flights and stay (0.80, his yes of 13 Oct 2026; spec 07 part 18 B)
+
+    /// A field of the Flights and stay block: a one-line field, or the address's growing one (a
+    /// text view on the iPhone).
+    private func field(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        app.textFields[id].exists ? app.textFields[id] : app.textViews[id]
+    }
+
+    /// Bring a field into view — clear of the status bar at the top and the keyboard at the
+    /// bottom (a field reported "on screen" under the status bar took no focus) — and type into it.
+    private func fill(_ app: XCUIApplication, _ id: String, _ text: String) {
+        let f = field(app, id)
+        XCTAssertTrue(f.waitForExistence(timeout: 5), "no \(id)")
+        hideKeyboard(app)
+        bringIntoView(app, f)
+        #if os(iOS)
+        let window = app.windows.firstMatch.frame
+        for _ in 0..<4 where f.exists && (f.frame.minY < window.minY + 120 || f.frame.maxY > window.maxY - 360) {
+            guard let list = biggestList(app), list.exists else { break }
+            let middle = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let dy: CGFloat = f.frame.minY < window.minY + 120 ? 180 : -180
+            middle.press(forDuration: 0.05, thenDragTo: middle.withOffset(CGVector(dx: 0, dy: dy)))
+            _ = waitUntil(timeout: 1) { self.settled(f) }
+        }
+        #endif
+        type(text, into: f)
+    }
+
+    /// Flights and stay comes only on a plane trip, right under Travelling by: Out and Home to
+    /// begin with, Add a flight puts a Connection between them (its ✕ takes it away); a trip
+    /// without dates offers Add a day. What is typed survives Plane off and on again on the form;
+    /// Create keeps it, cleaned (trimmed); Trip settings opens on it; saved with Plane off it is
+    /// kept, unseen — Plane on again, it is back. Invented flights and hotel only.
+    func testFlightsAndStayOnlyOnAPlaneTrip() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let plane = app.buttons["trip-transport-1"]
+        XCTAssertTrue(plane.waitForExistence(timeout: 5), "no Plane pill")
+        XCTAssertFalse(find(app, "trip-flights-frame") != nil, "Flights and stay on a trip that is not by plane")
+        type("Sun week", into: app.textFields["trip-name"])
+        hideKeyboard(app)
+        select(app, plane)
+        XCTAssertTrue(appears(app, "trip-flights-frame", timeout: 5), "Plane lit, and no Flights and stay")
+        XCTAssertEqual(words(app.staticTexts["trip-flights-title"]), "Flights and stay")
+        XCTAssertEqual(words(app.staticTexts["trip-flights-leg-0-label"]), "Out")
+        XCTAssertEqual(words(app.staticTexts["trip-flights-leg-1-label"]), "Home")
+        XCTAssertFalse(app.staticTexts["trip-flights-leg-2-label"].exists, "more than Out and Home to begin with")
+        XCTAssertTrue(app.buttons["trip-flights-leg-0-date-add"].exists, "a trip without dates: no Add a day")
+        // A connection goes between Out and Home; its ✕ takes it away.
+        tap(app, id: "trip-flights-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-flights-leg-1-label"]) == "Connection" },
+                      "Add a flight did not put a connection before Home: '\(words(app.staticTexts["trip-flights-leg-1-label"]))'")
+        XCTAssertEqual(words(app.staticTexts["trip-flights-leg-2-label"]), "Home")
+        XCTAssertFalse(app.buttons["trip-flights-leg-0-remove"].exists || app.buttons["trip-flights-leg-2-remove"].exists,
+                       "Out or Home can be removed")
+        tap(app, id: "trip-flights-leg-1-remove")
+        XCTAssertTrue(waitUntil { !app.staticTexts["trip-flights-leg-2-label"].exists }, "the connection did not go")
+        XCTAssertEqual(words(app.staticTexts["trip-flights-leg-1-label"]), "Home")
+
+        // A space too many after it: kept trimmed (capitals are typed — the keyboard may add its own).
+        fill(app, "trip-flights-leg-0-number", "ZZ 101 ")
+        fill(app, "trip-flights-leg-0-from", "North Field")
+        fill(app, "trip-flights-leg-0-to", "Sunport")
+        fill(app, "trip-flights-leg-1-number", "ZZ 102")
+        fill(app, "trip-flights-destination", "Sun Town")
+        fill(app, "trip-flights-stay-name", "Hotel Invented")
+        fill(app, "trip-flights-stay-phone", "123456")
+        hideKeyboard(app)
+        bringIntoView(app, app.staticTexts["trip-flights-title"])
+        shot(app, "flights-create-top")
+        bringIntoView(app, app.staticTexts["trip-flights-note"])
+        shot(app, "flights-create")
+        // Plane off: the block goes; on again, what was typed is still there.
+        unselect(app, plane)
+        XCTAssertTrue(disappears(app, "trip-flights-frame", timeout: 5), "Plane off, and Flights and stay is still there")
+        select(app, plane)
+        XCTAssertTrue(appears(app, "trip-flights-frame", timeout: 5))
+        XCTAssertEqual(field(app, "trip-flights-leg-0-number").value as? String, "ZZ 101 ", "Plane off and on lost what was typed")
+
+        tapVisible(app, app.buttons["trip-create"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip was not made")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(appears(app, "tripset-flights-frame", timeout: 5), "Trip settings of a plane trip has no Flights and stay")
+        let number = field(app, "tripset-flights-leg-0-number")
+        XCTAssertTrue(waitUntil { (number.value as? String) == "ZZ 101" }, "the flight was not kept (trimmed): '\(number.value ?? "")'")
+        XCTAssertEqual(field(app, "tripset-flights-leg-1-number").value as? String, "ZZ 102")
+        XCTAssertEqual(field(app, "tripset-flights-leg-0-to").value as? String, "Sunport")
+        XCTAssertEqual(field(app, "tripset-flights-destination").value as? String, "Sun Town")
+        XCTAssertEqual(field(app, "tripset-flights-stay-name").value as? String, "Hotel Invented")
+        bringIntoView(app, app.staticTexts["tripset-flights-title"])
+        shot(app, "flights-tripset-top")
+        bringIntoView(app, app.staticTexts["tripset-flights-note"])
+        shot(app, "flights-tripset")
+        // Saved with Plane off: kept, unseen; Plane on again, it is back.
+        unselect(app, app.buttons["tripset-transport-1"])
+        XCTAssertTrue(disappears(app, "tripset-flights-frame", timeout: 5))
+        tap(app, id: "tripset-save")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        let setPlane = app.buttons["tripset-transport-1"]
+        XCTAssertTrue(setPlane.waitForExistence(timeout: 5))
+        XCTAssertFalse(isOn(setPlane), "saved with Plane off, it is still on")
+        XCTAssertFalse(find(app, "tripset-flights-frame") != nil, "Flights and stay on a trip no longer by plane")
+        select(app, setPlane)
+        XCTAssertTrue(appears(app, "tripset-flights-frame", timeout: 5))
+        XCTAssertTrue(waitUntil { (self.field(app, "tripset-flights-leg-0-number").value as? String) == "ZZ 101" },
+                      "Plane off lost the flights")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+    }
+
     /// More choices (0.76, his ask of 13 Oct 2026): Season, Food and Laundry fold away under one
     /// row, closed to begin with, its line saying what is picked; the dates, the templates and
     /// Travelling by stay in sight. Opened, the answers are there; closed again, the line follows
@@ -12453,6 +12566,43 @@ final class AMSPackingUITests: XCTestCase {
             tap(app, id: "bag-done")
             XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
         }
+    }
+
+    /// On a plane trip (0.80, spec 07 part 18 B), Tags has a Bag-tag no. for each CHECKED bag — the
+    /// Day pack, not the carry-on, a cabin bag: typed and Return, it is kept (trimmed), does not
+    /// count for Tags' green, and the Bags card's opened bag shows the same number. A trip not by
+    /// plane has no such field.
+    func testABagTagNumberAtTheTagsStation() {
+        let app = launch("-uiTestingPackingDay", ["-packingDayByPlane"])
+        openPackingDayTrip(app)
+        station(app, "tags")
+        XCTAssertTrue(appears(app, "day-view-tags", timeout: 5), "the sheet is not on Tags")
+        let number = app.textFields["day-tag-1-number"]
+        XCTAssertTrue(number.waitForExistence(timeout: 5), "a plane trip's checked Day pack has no Bag-tag no.")
+        XCTAssertFalse(app.textFields["day-tag-0-number"].exists, "the carry-on goes in the cabin, yet it is asked for a tag number")
+        type("AB 123456 ", into: number)
+        number.typeText("\n")
+        XCTAssertTrue(waitUntil { (number.value as? String) == "AB 123456" }, "the tag number was not kept: '\(number.value ?? "")'")
+        XCTAssertEqual(value(app.buttons["day-sheet-station-tags"]), "0 of 3 ticked", "the tag number counted for Tags")
+        hideKeyboard(app)
+        shot(app, "flights-day-tags")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        openBags(app)
+        tap(app, id: "bag-1")
+        let card = app.textFields["bag-1-tagno"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "the Bags card's bag has no Bag-tag no.")
+        XCTAssertEqual(card.value as? String, "AB 123456", "the Bags card does not show the tag number")
+        bringIntoView(app, card)
+        shot(app, "flights-bags-card")
+        app.terminate()
+        // Not by plane: no Bag-tag no.
+        let car = launch("-uiTestingPackingDay")
+        openPackingDayTrip(car)
+        station(car, "tags")
+        XCTAssertTrue(appears(car, "day-view-tags", timeout: 5))
+        XCTAssertTrue(car.buttons["day-tag-1-name"].waitForExistence(timeout: 5))
+        XCTAssertFalse(car.textFields["day-tag-1-number"].exists, "a trip not by plane asks for a bag-tag number")
     }
 
     /// Photos: one of all the bags together (two bags) and each bag's own; Remove takes the one of

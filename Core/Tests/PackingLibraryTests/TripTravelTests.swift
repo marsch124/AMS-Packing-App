@@ -59,6 +59,9 @@ final class TripTravelTests: XCTestCase {
         let kept = Library.cleaned(three, firstDay: "2026-10-14", lastDay: "2026-10-20")
         XCTAssertEqual(kept.flights.map(\.number), ["A1", "B2", "C3"], "an empty leg was kept")
         XCTAssertEqual(kept.flights.map(\.date), ["2026-10-14", "2026-10-14", "2026-10-20"], "a change of plane is on the first day")
+        // Out left empty: Home is still the way home, on the last day.
+        let home = Library.cleaned(TripTravel(flights: [FlightLeg(), FlightLeg(number: "B2")]), firstDay: "2026-10-14", lastDay: "2026-10-20")
+        XCTAssertEqual(home.flights.map(\.date), ["2026-10-20"], "Home alone was put on the first day")
         // A trip without dates: no day made up.
         XCTAssertEqual(Library.cleaned(three).flights.map(\.date), ["", "", ""])
         // A day typed is his, whatever the trip's.
@@ -106,6 +109,20 @@ final class TripTravelTests: XCTestCase {
         XCTAssertTrue(lib.setBagTag("", tripId: trip, bag: "big case"))
         XCTAssertTrue(lib.setBagTag("", tripId: trip, bag: "Day pack"))
         XCTAssertNil(lib.trips[0].extra[BAG_TAGS_KEY], "the last tag taken away left a key")
+    }
+
+    func testOnlyACheckedBagOnAPlaneTripIsAskedForItsTag() {
+        var (lib, trip) = library()
+        XCTAssertTrue(lib.asksBagTag(tripId: trip, bag: "Big case"))
+        XCTAssertTrue(lib.asksBagTag(tripId: trip, bag: "a name on the lines only"), "a bag that is only a name was not asked")
+        XCTAssertFalse(lib.asksBagTag(tripId: trip, bag: "Other"), "loose things were asked for a tag")
+        XCTAssertFalse(lib.asksBagTag(tripId: trip, bag: "Carry-on / hand luggage"), "a cabin bag (by its name) was asked for a tag")
+        let pack = lib.bags().first { $0.name == "Day pack" }!.id
+        XCTAssertTrue(lib.setBagCabin(id: pack, true))
+        XCTAssertFalse(lib.asksBagTag(tripId: trip, bag: "Day pack"), "a bag he says goes in the cabin was asked for a tag")
+        XCTAssertFalse(lib.asksBagTag(tripId: "nope", bag: "Big case"))
+        _ = lib.changeTrip(id: trip) { $0.transport = "RV" }
+        XCTAssertFalse(lib.asksBagTag(tripId: trip, bag: "Big case"), "a trip not by plane was asked for a tag")
     }
 
     func testABagRenamedTakesItsTagAlongTwoMadeOneKeepTheirOwn() {

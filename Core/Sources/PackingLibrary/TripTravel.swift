@@ -36,7 +36,7 @@ public let BAG_TAGS_KEY = "bagTags"
 /// The fewest flight legs the block shows: out and home.
 public let FLIGHT_LEGS_SHOWN = 2
 
-/// One flight: its number ("SK 1234"), its day ("2026-10-14", "" = not said) and from → to
+/// One flight: its number ("ZZ 1234"), its day ("2026-10-14", "" = not said) and from → to
 /// (an airport code or a city, as he types it).
 public struct FlightLeg: Equatable, Hashable, Sendable {
     public var number: String
@@ -104,7 +104,7 @@ extension Library {
     // MARK: - Cleaning what he types
 
     /// A flight number or a bag-tag number as kept: trimmed, capitals, single spaces —
-    /// "sk  1234 " → "SK 1234".
+    /// "zz  1234 " → "ZZ 1234".
     public static func cleanCode(_ s: String) -> String {
         jsTrim(s).uppercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
     }
@@ -128,14 +128,22 @@ extension Library {
         return count > 1 && index == count - 1 ? last : first
     }
 
+    /// The day a leg shows and is kept with: its own, else `legDay` by its place among ALL the
+    /// legs as the block shows them (so an empty Out does not make Home the first leg).
+    public static func shownDay(_ legs: [FlightLeg], _ n: Int, firstDay: String, lastDay: String) -> String {
+        guard legs.indices.contains(n) else { return "" }
+        let own = jsTrim(legs[n].date)
+        return isYMD(own) ? own : legDay(index: n, of: legs.count, firstDay: firstDay, lastDay: lastDay)
+    }
+
     /// What he typed, as kept: legs with nothing typed go (wherever they are); a kept leg without
-    /// a day gets the one `legDay` gives; the stay without a last day gets the trip's last day.
+    /// a day gets the one `shownDay` gives; the stay without a last day gets the trip's last day.
     /// Bag-tag numbers: cleaned, blank ones gone, one per bag (by `normName`, the last wins).
     public static func cleaned(_ travel: TripTravel, firstDay: String = "", lastDay: String = "") -> TripTravel {
-        let kept = travel.flights.filter { !$0.isEmpty }
-        let flights = kept.enumerated().map { n, leg in
-            let day = isYMD(jsTrim(leg.date)) ? jsTrim(leg.date) : legDay(index: n, of: kept.count, firstDay: firstDay, lastDay: lastDay)
-            return FlightLeg(number: cleanCode(leg.number), date: day, from: cleanWords(leg.from), to: cleanWords(leg.to))
+        let all = travel.flights
+        let flights = all.indices.filter { !all[$0].isEmpty }.map { n in
+            FlightLeg(number: cleanCode(all[n].number), date: shownDay(all, n, firstDay: firstDay, lastDay: lastDay),
+                      from: cleanWords(all[n].from), to: cleanWords(all[n].to))
         }
         var stay = TripStay(name: cleanWords(travel.stay.name), address: cleanAddress(travel.stay.address),
                             phone: cleanWords(travel.stay.phone), until: isYMD(jsTrim(travel.stay.until)) ? jsTrim(travel.stay.until) : "")
@@ -191,6 +199,15 @@ extension Library {
 
     /// The tag number of one bag on a trip. "" = none.
     public static func bagTag(_ trip: TripEvent, bag: String) -> String { travel(trip).bagTag(bag) }
+
+    /// Is a bag on a trip asked for its tag number? Only on a plane trip, only a real bag (not
+    /// "Other", loose things), and only a CHECKED one: a bag that goes in the cabin gets no tag at
+    /// the desk — his word on the bag's page, else its name (`isCabin`, the airport checks' rule).
+    /// A number kept before the bag went into the cabin stays kept, unasked.
+    public func asksBagTag(tripId: String, bag: String) -> Bool {
+        guard let trip = trips.first(where: { $0.id == tripId }), Library.isPlaneTrip(trip) else { return false }
+        return Library.isRealBag(jsTrim(bag)) && !isCabin(container: bag)
+    }
 
     // MARK: - Writing
 

@@ -25,6 +25,7 @@
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
 		2DB98040F30155CDE2E5F575 /* OnlySomeTrips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263958326455E83D01F2A70A /* OnlySomeTrips.swift */; };
 		2E4E6528354833C443D3DDC4 /* PlaceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA67771DAAE27E418C53DDE /* PlaceScreen.swift */; };
+		2F08456F712C8BEB09FE08B2 /* FlightsAndStay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3080E21A5A50FB111FBCE7E /* FlightsAndStay.swift */; };
 		2FAA29D4DFFCB38CA02C2EDB /* Buttons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2523F591EFB11AFB55FEFF2D /* Buttons.swift */; };
 		3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200B88877006E1F006B96632 /* DateRangePicker.swift */; };
 		38D87FC50351C1AC76DA3DE1 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F661D8CCF1AD5B6AE65475 /* Shortcuts.swift */; };
@@ -179,6 +180,7 @@
 		9713345B304E68E88C1CFCB0 /* SmallCoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallCoreSheet.swift; sourceTree = "<group>"; };
 		9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsScreen.swift; sourceTree = "<group>"; };
 		A1A727717D19724FB903E1AA /* ThingKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingKeys.swift; sourceTree = "<group>"; };
+		A3080E21A5A50FB111FBCE7E /* FlightsAndStay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightsAndStay.swift; sourceTree = "<group>"; };
 		A644B6F78A0C7B86EF26025E /* AMSPacking.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPacking.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A751E258BF8E1D5C8C0CF952 /* VoiceIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIO.swift; sourceTree = "<group>"; };
 		A78A30067C884BCEB042959A /* Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sections.swift; sourceTree = "<group>"; };
@@ -365,6 +367,7 @@
 				1750ABC86D97A97B07370949 /* DropDown.swift */,
 				77CEDA06EFED05D4A1612077 /* EventsScreen.swift */,
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
+				A3080E21A5A50FB111FBCE7E /* FlightsAndStay.swift */,
 				F82D64736DCAA09F967D279E /* GrabCollectionScreen.swift */,
 				CA098293FBB7AB47DA81148E /* GrabMenu.swift */,
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
@@ -548,6 +551,7 @@
 				4AD76B6494FA68210153D99C /* DropDown.swift in Sources */,
 				8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */,
 				4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */,
+				2F08456F712C8BEB09FE08B2 /* FlightsAndStay.swift in Sources */,
 				622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */,
 				06CC2A1B9CF836CDC54430F1 /* GrabCollectionScreen.swift in Sources */,
 				5BB780225F4AD5294A389DF4 /* GrabMenu.swift in Sources */,
