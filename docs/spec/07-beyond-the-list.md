@@ -1987,7 +1987,7 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
 8. **Pack goes to the list.** On the trip screen a tap on Pack scrolls the trip to the top of its list (the Sorting
    row); in the sheet, the Pack chip and "Next: Pack" close the sheet first. Nothing else about the list changes.
 9. **Weigh opens by itself — once.** When the trip turns all packed while it is open on this device's screen (a tick,
-   a section's tick, Tick everything, Pack by voice, or the other device's ticks arriving), and the trip is at Pack,
+   a heading's tick, Pack by voice, or the other device's ticks arriving), and the trip is at Pack,
    has bags, Weigh is not done and the trip has never shown it (`dayWeighOffered`, `DAY_WEIGH_OFFERED_KEY`, true
    once; `Library.weighOpensItself`), the sheet opens on Weigh **1.5 s** after the moment (the green sweep takes
    1 s) — if all that still holds then, the trip is not opened on a place's code, and none of the trip screen's own
@@ -2119,7 +2119,74 @@ keys).
 
 ### Tests
 
-Written from the code when it is built (below, after the build).
+Model `PackingDayTests` (10, `Core/Tests/PackingLibraryTests/PackingDayTests.swift`; a base template with a Passport, a
+Charger and a Toothbrush in the carry-on, Hike with Boots and a Jacket in the Day pack — one of his bags — and a Water
+bottle in no bag; the trip "Hill week", 20–24 Oct 2026): `testEachStationWearsHisPick` (the six keys, the day's label,
+Pack's list into the case, Photos' tilted print, Pack's mark not the Pack step's, seven different marks, only the
+commands the app draws), `testTheDayAsksAboutTheBagsTheTripsBagsCardLists` (the card's bags without "Other"; a bag
+whose lines are all set aside is not asked; one bag: no photo of all of them, "0 of 1 photo"),
+`testATripWithoutBagsCannotDoTheBagStationsAndIsReadyWhenPacked` ("no bags yet", Pack next, Ready once packed),
+`testEachStationIsDoneWhenEveryBagHasWhatItAsks` (every station's words from "0 of 2 out" to "done"; a tick by another
+spelling is one tick; "Other" refused; set aside counts as packed; the scale reading, not the sum; the AirTag asked
+only once the bag has one, a tick for a bag without one not counted; the photo of all of them; "Ready to go"; a line
+unticked → "4 of 5 done", Pack next), `testTheNextStationIsOfferedRoundTheRow`, `testHasAnAirTagIsTheBagsOwn` (off is
+no key; only a bag; a name becomes a bag when switched on, not when off; "Other" refused),
+`testThePhotoOfAllTheBagsIsOnePerTripKeptInUseAndGoesWithTheTrip` (in use, never offered by Worth a look, replaced,
+removed, gone with the trip), `testWeighOpensItselfOnceWhenEverythingIsPacked` (not before, not On site, not when all
+are weighed, never twice), `testTheDaysTicksFollowABagsRenameAndAreDroppedWhenBagsBecomeOne` (rename; deleted into the
+carry-on; deleted to no bag), `testTheDayIsSyncedBackedUpAndRestoredButNeitherSharedNorCopied` (records, a backup, the
+photo and Has an AirTag through both; `justTheList` and `startAgain` carry none of the keys). Each seen RED with a
+planted fault: Pack's mark the step's ("("["bagsOnFloor", "packedCase", …]") is not equal to ("["bagsOnFloor",
+"listIntoCase", …]")"); `current` ignoring a station that cannot be done ("("bagsOut") is not equal to ("pack")"); the
+AirTag tick counted for a bag without one ("("4") is not equal to ("3")"); the photo of all the bags asked with one bag
+("("0 of 2 photos") is not equal to ("0 of 1 photo")"); `justTheList` keeping the keys ("a shared trip carries
+dayBagsOut"); the ticks moved when two bags became one ("the deleted bag's name tag tagged the carry-on");
+`photoIdsInUse` without the photo ("Worth a look offers the photo of all the bags"); `weighOpensItself` ignoring the
+mark ("Weigh offered twice"); `setBagAirTag` writing false ("off is no key, never false"); `next(after:)` ignoring done
+("("…weigh") is not equal to ("…tags")"). All model tests 566 + 451 green; parity 211/211.
+
+UI (`-uiTestingPackingDay`, `SampleLibrary.packingDay`: the carry-on with 5 lines and no AirTag, the Day pack with 2
+and an AirTag; `-packingDayAlmost`: every station done but the Map; `-dayWeighItself`: under the tests Weigh opens by
+itself ONLY with it — older tests tick everything on the sample's trip at Pack, and the sheet covered their next
+step, seen on GitHub's Mac in the first probe): `testThePackingDayLeadsFromBagsOutToTheList` (the row, Bags out
+"0 of 2 out" and next, Pack "0 of 7 packed"; Bags out's sheet: the two bags and no third, each ticked out, "All bags
+are out.", green, Next: Pack goes to the list, Pack next; `-uiTestingOnSite`: no row),
+`testWeighOpensByItselfOnceAndWeighsOneBagAfterAnother` (every heading's tick → Weigh by itself; closed, a line unticked and
+ticked again → not again; Save with nothing typed says what is missing; 6.4 → "fine, 80% of its max" and the Day pack
+next; "Every bag is weighed."; the Bags card says "6.4 kg weighed"), `testTagsAskForTheAirTagOnlyInABagThatHasOne` (no
+AirTag tick for the carry-on, one for the Day pack, "0 of 3 ticked" → done; Has an AirTag switched on for the carry-on
+→ its tick, "3 of 4 ticked"; both bags' pages say Has an AirTag — the carry-on became one of his bags),
+`testPhotosAskForAllTheBagsTogetherAndEachBag` ("0 of 3 photos" → done; Remove → "2 of 3 photos"; the Bags card shows
+`bags-group-thumb` and the bag's own photo), `testReadySaysWhatIsLeftAndPairsWithTheDoorCheck` ("Not yet — 1 station
+left.", Pack "6 of 7 packed", no Next on Ready, a row opens its station, I leave at → "Check 07:15" here and in Trip
+settings; the heading's tick → Ready done and selected, Weigh (all weighed) stays shut, "Ready to go"), and (spec 06 §7)
+`testHowItWorksExplainsThePackingDayStations`. Each seen RED on the iPhone simulator with its own planted fault: the
+row at any step — "a Packing day on a trip that has set off"; the offered mark never kept — "Weigh opened by itself a
+second time"; the AirTag tick for every bag — "the carry-on has no AirTag, yet it is asked for"; the Bags card without
+the photo — "the Bags card does not show the photo of all the bags"; Ready's I leave at not saved — "''" (no "Check
+07:15"); How it works without the part — "How it works has no Packing day part". Green again without them, day and
+night (pictures `day-row`, `day-bags`, `day-row-pack`, `day-weigh-itself`, `day-weigh`, `day-tags`, `day-bag-airtag`,
+`day-photos`, `day-bags-card`, `day-ready-left`, `day-ready`, `day-howitworks-1`, `-2`). On GitHub's Mac (a probe
+running these six with the luggage scale, the bag photos, the cabin tests and the loop's guide test): all green, the
+pictures of the Mac look kept — the first probe also showed the bag-photo test covered by Weigh opening by itself
+(hence `-dayWeighItself`) and Ready cut off in the trip's 520-point window (hence the wrap on a narrow Mac window).
+
+Around them, on the iPhone simulator, 132 neighbouring tests (every test that opens a trip, a bag or the guide, every
+test using `setSwitch` or `scrollWithin`, and the smoke set): 131 run, 4 skipped (Mac only), none red — after a first run of 120 had found 12 red, every one from the row (the
+three causes below). Three of the harness's helpers changed
+for the row: `scrollWithin` swipes the TALLEST list in a sheet (the station strip is a scroll view before the trip's
+list — five tests swiped it and found nothing); `setSwitch` nudges a switch into view with slow drags (`nudgeIntoView`:
+with the row the cabin switch needed scrolling, the swipes flung it past and a tap opened the loop strip); and Weigh by
+itself only with `-dayWeighItself` (six tests ticked everything — then by Tick everything, which 0.79 takes off the trip
+screen — and found the sheet over their next step). The two tests that pack everything do it by the headings' own ticks
+(`tickEveryHeading`), not by Tick everything.
+
+### Traps met building it
+
+- **A sheet's content closure read a separate `@State` stale.** The trip set "opened by itself" and the sheet's item in
+  one go, yet the sheet was built with the old `false` — so it never marked Weigh offered and opened it again. The flag
+  now travels IN the item (`TripScreen.DayOpen`).
+- **A strip of chips is a scroll view too** — see the harness changes above; the README's "row of pills" trap again.
 
 ### Open questions
 

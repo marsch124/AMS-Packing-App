@@ -606,7 +606,7 @@ struct TripScreen: View {
     /// second one from coming; then it is asked for again once that is gone (the panel's `closed`),
     /// or the next time the trip turns all packed.
     private func weighByItself() {
-        // Under the UI tests only when the launch asks for it: many tests press Tick everything on
+        // Under the UI tests only when the launch asks for it: many tests tick everything on
         // the sample's trip at Pack, and the sheet would cover their next step (GitHub's Mac, 0.79).
         if AMSPackingApp.testing && !ProcessInfo.processInfo.arguments.contains("-dayWeighItself") { return }
         let id = tripId

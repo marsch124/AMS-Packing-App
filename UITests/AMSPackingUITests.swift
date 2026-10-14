@@ -12154,6 +12154,22 @@ final class AMSPackingUITests: XCTestCase {
 
     private func value(_ e: XCUIElement) -> String { e.exists ? (e.value as? String ?? "") : "" }
 
+    /// Tick everything on the trip by its headings' own ticks (`trip-group-<g>-all`), each one
+    /// not yet all ticked — not by Tick everything, which 0.79 takes off the trip screen.
+    private func tickEveryHeading(_ app: XCUIApplication) {
+        for g in 0..<12 {
+            let all = app.buttons["trip-group-\(g)-all"]
+            guard all.exists else { break }
+            if all.label.hasPrefix("Tick all of") { tap(app, id: "trip-group-\(g)-all") }
+        }
+        // "7/7" (or "6/6 · 1 set aside"): done and total the same.
+        func packed() -> Bool {
+            let n = words(app.staticTexts["trip-progress"]).split(separator: " ").first?.split(separator: "/") ?? []
+            return n.count == 2 && n[0] == n[1]
+        }
+        XCTAssertTrue(waitUntil { packed() }, "the headings' ticks did not pack everything: '\(words(app.staticTexts["trip-progress"]))'")
+    }
+
     /// The row of stations on a trip being packed: Bags out first and highlighted, Pack with its
     /// count; Bags out opened ticks each bag out, says so, turns green and offers Pack — which
     /// goes to the list, with Pack the next station. A trip that has set off has no row.
@@ -12203,7 +12219,7 @@ final class AMSPackingUITests: XCTestCase {
     func testWeighOpensByItselfOnceAndWeighsOneBagAfterAnother() {
         let app = launch("-uiTestingPackingDay", ["-dayWeighItself"])
         openPackingDayTrip(app)
-        tapVisible(app, app.buttons["trip-tickall"])
+        tickEveryHeading(app)
         XCTAssertTrue(appears(app, "day-view-weigh", timeout: 8), "Weigh did not open by itself when everything was packed")
         shot(app, "day-weigh-itself")
         tap(app, id: "day-done")
@@ -12355,7 +12371,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "tripset-cancel")
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
         // The last thing: Ready to go — and Weigh, every bag weighed, does not open.
-        tapVisible(app, app.buttons["trip-tickall"])
+        tickEveryHeading(app)
         XCTAssertTrue(waitUntil { self.value(app.buttons["day-station-ready"]) == "done" },
                       "Ready is not green: '\(value(app.buttons["day-station-ready"]))'")
         XCTAssertTrue(app.buttons["day-station-ready"].isSelected)
