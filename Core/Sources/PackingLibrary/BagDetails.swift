@@ -95,9 +95,12 @@ public struct BagDetails: Equatable, Sendable {
     }
 
     /// Nothing said at all.
-    public var isEmpty: Bool {
-        jsTrim(brand).isEmpty && jsTrim(colour).isEmpty && type == nil && size == nil
-            && jsTrim(sizeNote).isEmpty && jsTrim(marks).isEmpty
+    public var isEmpty: Bool { trimmed == BagDetails() }
+
+    /// The same with every text trimmed — as it is kept.
+    public var trimmed: BagDetails {
+        BagDetails(brand: jsTrim(brand), colour: jsTrim(colour), type: type, size: size,
+                   sizeNote: jsTrim(sizeNote), marks: jsTrim(marks))
     }
 
     /// The pills under Colour: seven common bag colours, "Multi" for a bag of several.
@@ -161,18 +164,15 @@ extension Library {
     @discardableResult
     public mutating func setBagDetails(_ details: BagDetails, id: String) -> Bool {
         guard bags().contains(where: { $0.id == id }), let thing = items.first(where: { $0.id == id }) else { return false }
-        let now = Library.bagDetails(thing)
-        guard now != details else { return true }
+        let now = Library.bagDetails(thing), want = details.trimmed
+        guard now != want else { return true }
         return updateThing(id: id) { bag in
-            if now.brand != jsTrim(details.brand) { bag.manufacturer = jsTrim(details.brand) }
-            if now.colour != jsTrim(details.colour) { bag.color = jsTrim(details.colour) }
-            if now.sizeNote != jsTrim(details.sizeNote) { bag.size = jsTrim(details.sizeNote) }
-            if now.type != details.type { bag.extra[BAG_TYPE_KEY] = details.type.map { .string($0.rawValue) } }
-            if now.size != details.size { bag.extra[BAG_SIZE_KEY] = details.size.map { .string($0.rawValue) } }
-            if now.marks != jsTrim(details.marks) {
-                let m = jsTrim(details.marks)
-                bag.extra[BAG_MARKS_KEY] = m.isEmpty ? nil : .string(m)
-            }
+            if now.brand != want.brand { bag.manufacturer = want.brand }
+            if now.colour != want.colour { bag.color = want.colour }
+            if now.sizeNote != want.sizeNote { bag.size = want.sizeNote }
+            if now.type != want.type { bag.extra[BAG_TYPE_KEY] = want.type.map { .string($0.rawValue) } }
+            if now.size != want.size { bag.extra[BAG_SIZE_KEY] = want.size.map { .string($0.rawValue) } }
+            if now.marks != want.marks { bag.extra[BAG_MARKS_KEY] = want.marks.isEmpty ? nil : .string(want.marks) }
         }
     }
 
