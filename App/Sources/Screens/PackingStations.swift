@@ -320,9 +320,13 @@ struct StationAddLabel: View {
 /// "+ Add a bag", opened (0.81, his decision of 14 Oct 2026): one of his bags not yet on this trip
 /// — a tap puts it on — or a new one: its name, Goes in the cabin (by its name until he says),
 /// and its max weight if he likes. Added, the bag is on the trip, empty: Bags out, Weigh, Tags,
-/// Photos and the Bags card ask about it. Container `day-addbag-panel`.
+/// Photos and the Bags card ask about it. Container `day-addbag-panel`. The SAME panel at the foot
+/// of the trip's Bags card (0.83, his report of 14 Oct 2026: he looked for it there), its ids
+/// under `bags-addbag` (`prefix`).
 struct AddBagPanel: View {
     let tripId: String
+    /// The ids' start: "day-addbag" in Bags out, "bags-addbag" on the Bags card.
+    var prefix = "day-addbag"
     let close: () -> Void
     @EnvironmentObject var model: LibraryModel
     @Environment(\.colorScheme) private var scheme
@@ -361,7 +365,7 @@ struct AddBagPanel: View {
                             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("day-addbag-pick-\(k)")
+                        .accessibilityIdentifier("\(prefix)-pick-\(k)")
                         .accessibilityLabel("Add \(bag.name)")
                     }
                 }
@@ -375,7 +379,7 @@ struct AddBagPanel: View {
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
                 .focused($typing)
                 .onSubmit(addNew)
-                .accessibilityIdentifier("day-addbag-name")
+                .accessibilityIdentifier("\(prefix)-name")
             Toggle(isOn: Binding(get: { cabin ?? Library.cabinByItsName(name) }, set: { cabin = $0 })) {
                 Text("Goes in the cabin").font(.system(.subheadline)).foregroundStyle(Theme.ink)
             }
@@ -385,7 +389,7 @@ struct AddBagPanel: View {
             #else
             .controlSize(.small)
             #endif
-            .accessibilityIdentifier("day-addbag-cabin")
+            .accessibilityIdentifier("\(prefix)-cabin")
             HStack(spacing: 8) {
                 Text("Max weight").font(.system(.subheadline)).foregroundStyle(Theme.ink)
                 TextField("optional", text: $maxText)
@@ -398,29 +402,29 @@ struct AddBagPanel: View {
                     #if os(iOS)
                     .keyboardType(.decimalPad)
                     #endif
-                    .accessibilityIdentifier("day-addbag-max")
+                    .accessibilityIdentifier("\(prefix)-max")
                 Text("kg").font(.system(.subheadline)).foregroundStyle(Theme.muted)
                 Spacer(minLength: 0)
             }
             HStack(spacing: 12) {
                 Button(action: addNew) { FieldButtonLabel(title: "Add the bag", tint: tint) }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("day-addbag-add")
+                    .accessibilityIdentifier("\(prefix)-add")
                 Button("Cancel") { typing = false; close() }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     .frame(minHeight: Metrics.tap).contentShape(Rectangle())
-                    .accessibilityIdentifier("day-addbag-cancel")
+                    .accessibilityIdentifier("\(prefix)-cancel")
                 Spacer(minLength: 0)
             }
-            .needsLine($needs, typed: name + "|" + maxText, id: "day-addbag-needs")
+            .needsLine($needs, typed: name + "|" + maxText, id: "\(prefix)-needs")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint.opacity(0.7), lineWidth: 1.2))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("day-addbag-panel")
+        .accessibilityIdentifier("\(prefix)-panel")
     }
 
     private func heading(_ words: String) -> some View {

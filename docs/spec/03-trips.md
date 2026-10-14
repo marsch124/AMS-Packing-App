@@ -2269,14 +2269,17 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   stay texts of their own, outside the fold button (the Mac folds a button's texts into it).
 - Everything below — the key and the bag rows — only while open.
 - Its bags (`weighedBags`): every bag a line not set aside packs into, in `bagLoads`' order, "Other" ("Not in a
-  bag") among them; since 0.81 then every bag Packing Stations' "+ Add a bag" put on the trip that nothing is packed
-  in yet — last, in the order added, 0 things ("Tap to weigh"), its limit (spec 07 part 17, "0.81" item 7).
+  bag") among them; since 0.81 then every bag "+ Add a bag" put on the trip (Packing Stations' Bags out, and since 0.83
+  this card's own foot) that nothing is packed in yet — last, in the order added, 0 things ("nothing in it yet" since
+  0.83; "Tap to weigh" in 0.81–0.82), its limit (spec 07 part 17, "0.81" item 7).
 - Key (id `bags-key`): "Blue — well within its max", "Orange — nine tenths of its max or more", "Red,
   “over” — more than its max", and "No bar: no max set. Set one in Care → Bags. Tap a bag for the luggage
   scale, and a photo of it packed."
 - One row per bag (a button, id `bag-<n>`, accessibility value = the gauge in words): the name ("Not in a
   bag" for "Other"; 15 semibold); at the right "<weight> / <max> kg", or "<weight> · no max", or only the
-  weight for "Not in a bag" (14 bold mono; red when over); weight = "<kilos> weighed" once weighed. Only
+  weight for "Not in a bag" (14 bold mono; red when over); weight = "<kilos> weighed" once weighed; with nothing
+  weighed "Tap to weigh", or — a bag with no thing in it at all (one "+ Add a bag" put on the trip) — **"nothing in it
+  yet"** (0.83, as Bags out says it; the same `BagWeightRow`, so the Weigh station says it too). Only
   a bag WITH a max has a bar: 16 pt capsule, `Theme.line` track, fill = min(1, kg/max) of the width (at
   least 16 pt) in blue (fine), orange (close) or red (over). Weighed: "The things in it add up to
   <kilos>" (13 medium muted).
@@ -2316,18 +2319,35 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   for the airline desk when a bag is lost, after he has left. Taken and removed only in the Packing day.
 - The bag rows are ONE view since 0.79 (`BagWeightRow`), shared with the Packing day's Weigh station: the same
   words, bar and colours in both places.
-- **Lost bag?** (0.80, spec 07 part 18 C): under each bag's row but "Not in a bag", at the right, a small capsule
-  (Footnote semibold green, 1.2-pt green outline, at least 26 tall; id `bag-<n>-lost`) opens that bag's Lost bag page —
+- **Lost bag?** (0.80, spec 07 part 18 C): under the row of each bag a desk can lose (`Library.hasLostBagPage`: not
+  "Not in a bag", and since 0.83 not a bag on him — "On body", "On me", "Worn", "Wearing", by `normName`), right under
+  it at the right (8 pt pulled up towards its own row), a quiet **text link** since 0.83 — "Lost bag?" in Footnote
+  regular, the trips' green for words (`Library.LoopStep.pack.words`, readable day and night), no outline, 4 sideways,
+  at least 24 tall (id `bag-<n>-lost`, label "Lost bag"); 0.80–0.82 drew a capsule with a 1.2-pt green outline, and his
+  opened card (14 Oct 2026) was "a column of green outlines", "On body" with one too. It opens that bag's Lost bag page —
   everything a baggage desk asks for, Share as PDF, Copy as text. The card owns the sheet. The key's last line adds
   "Lost bag? under a bag: everything a baggage desk asks for."
+- **The ✕ of an empty bag added** (0.83, as in Bags out): beside the row of a bag "+ Add a bag" put on the trip with
+  nothing in it, at its right, a drawn ✕ (`StationDrawings.cross`, muted, `Metrics.lineButton` × `Metrics.line`; id
+  `bag-<n>-remove`, label "Take <bag> off this trip") — `removeAddedBag`, at once, no question. Not for a bag the list
+  packs into, not on a reviewed trip.
+- **"+ Add a bag"** (0.83, his report of 14 Oct 2026 — he looked for it on this card, and it was only at the foot of
+  the Packing Stations' Bags out): the opened card's LAST row, after the bags — while the trip is not reviewed
+  (`Library.isReviewed`), at every step before that. Bags out's own: the outlined `StationAddLabel` "Add a bag" (id
+  `bags-addbag`), and a tap opens the same `AddBagPanel` in its place — the same rules and words (spec 07 part 17,
+  "0.81" item 7), its ids under `bags-addbag` instead of `day-addbag` (`bags-addbag-panel`, `-pick-<k>`, `-name`,
+  `-cabin`, `-max`, `-add`, `-cancel`, `-needs`). Added, the bag is on the card and in Bags out, Weigh, Tags and Photos.
+  Above it, while a bag added has nothing in it, Bags out's hint (Footnote muted, id `bags-addbag-hint`): "To fill <the
+  first such bag>, pick it as Usually packed in on its things' pages — sorted by Into, the list shows what is in each
+  bag."
 
 ### Behaviour
 - Bags shown: `Library.weighedBags(tripId:)` = `bagLoads(lines, qtyNights, bagLimits())` with each bag's
   scale reading (`weighed`, only finite readings > 0). The Bags CARD keeps every bag with at least one
   line, weighed or not (0.62: a bag whose things weigh nothing was left off, and its scale, cabin switch
   and photos could not be reached), and is not drawn at all when there is none. A bag with nothing
-  weighed (0 g, no scale reading) says **"Tap to weigh"** where the weight goes, draws no bar, and its
-  value is "not weighed". Order: CONTAINERS order, then his own in first-appearance order. `bag-<n>`
+  weighed (0 g, no scale reading) says **"Tap to weigh"** where the weight goes (**"nothing in it yet"** when no
+  line is in it at all, 0.83), draws no bar, and its value is "not weighed". Order: CONTAINERS order, then his own in first-appearance order. `bag-<n>`
   numbers the shown bags.
 - Weight that counts: the scale reading when there is one (`WeighedBag.grams`), else the things' sum.
   `over` = max > 0 and kg > max; **close** = max > 0 and kg ≥ 0.9 × max; gauge "fine, 25% of its max" /
@@ -2362,6 +2382,14 @@ card, "not weighed", and its scale opens), `testABagIsWeighedOnTheLuggageScale` 
 the ⓘ opens and closes the key), `testAPackedBagKeepsItsPhoto` (three photos, no fourth, "2 of 3", Next
 → "3 of 3", Remove → add again, the way home shows two), `testABagOnTheTripSaysWhetherItGoesInTheCabin`,
 `testATripIsDeletedOnlyAfterAsking` (photo taken, then deleted with the trip).
+0.83 (`-uiTestingPackingDay`): `testTheBagsCardAddsABag` (the card's `bags-addbag` opens `bags-addbag-panel`; a new
+Duffel is `bag-2`, "nothing in it yet", with `bag-2-remove` and no `bag-1-remove`; Bags out's `day-bag-2` is the Duffel;
+picture `bags-addbag`) and `testABagOnHimHasNoLostBag` ("On body" added on the card is `bag-2`: `bag-1-lost` there, no
+`bag-2-lost`; in Photos `day-photo-2-photo` but no `day-photo-2-lost`, `day-photo-1-lost` kept; picture `bags-onbody`).
+Seen RED on the iPhone simulator with planted faults: the card's panel under Bags out's ids — "+ Add a bag did not open
+on the Bags card"; the Photos door without the rule — "On body has a Lost bag? under its photos"; the card's door back to
+"not Other" — "On body has a Lost bag? on the Bags card". Model `LostBagTests.testABagOnHimHasNoPage` (red with the rule
+left out: "On body has a Lost bag page").
 Model `WeighingTests` (2), `OnTheTripTests` (photos ×5), `BagNotesTests` (rename/delete carry readings
 and photos), `BagsTests.testALimitSetHereIsTheLimitATripUses`, `TripChecksTests.testABagNameOnTheTripCanBeSaidToGoInTheCabin`.
 **Not covered:** comma decimal input; unreadable scale input clearing the reading; the camera.

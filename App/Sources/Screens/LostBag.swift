@@ -21,18 +21,20 @@ struct LostBagOpen: Identifiable, Equatable {
 }
 
 /// "Lost bag?" — the small door to a bag's page: on the Bags card under each bag, and under each
-/// bag's photos in the Packing day.
+/// bag's photos in the Packing day. A quiet text link since 0.83 — Footnote in the trips' green, no
+/// outline (his Bags card of 14 Oct 2026 was "a column of green outlines"). Only for a bag that has a
+/// page (`Library.hasLostBagPage`: not "Not in a bag", not "On body") — the caller asks.
 struct LostBagDoor: View {
     let id: String
     let action: () -> Void
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Button(action: action) {
-            Text("Lost bag?").font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.events.color)
+            Text("Lost bag?").font(.system(.footnote)).foregroundStyle(Library.LoopStep.pack.words(scheme))
                 .lineLimit(1).fixedSize()
-                .padding(.horizontal, 10).frame(minHeight: 26)
-                .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
-                .contentShape(Capsule())
+                .padding(.horizontal, 4).frame(minHeight: 24)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier(id)

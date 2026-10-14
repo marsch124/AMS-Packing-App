@@ -28,6 +28,9 @@ public let LOST_AIRTAG_HINT = "In Find My, Share Item Location gives the airline
 public let LOST_NOT_FILLED = "not filled in"
 /// The line a trip that is not by plane shows in place of flights, stay and bag tag.
 public let LOST_NOT_PLANE = "Flights, where you stay and the bag-tag number are asked on a plane trip \u{2014} Travelling by, in Trip settings."
+/// Bags no baggage desk can lose: what he wears or carries on him (0.83, his Bags card of 14 Oct 2026 —
+/// "On body" had a Lost bag?). Matched by `normName`, so "on body" and "On  Body" are the same.
+public let NOT_LOSABLE_BAGS = ["On body", "On me", "Worn", "Wearing"]
 
 /// Who he is, for a baggage desk: kept once for the whole library. Text is trimmed; "" = not said.
 public struct DeskDetails: Equatable, Sendable {
@@ -241,11 +244,20 @@ extension Library {
         }
     }
 
+    /// Does this bag have a Lost bag page — can an airline lose it? A real bag (`isRealBag`: not
+    /// "Not in a bag", not blank) that is not on him ("On body", `NOT_LOSABLE_BAGS`). The ONE rule
+    /// every "Lost bag?" follows: the Bags card, the Packing Stations' Photos and Ready (0.83).
+    public static func hasLostBagPage(_ bag: String) -> Bool {
+        let name = jsTrim(bag)
+        return isRealBag(name) && !NOT_LOSABLE_BAGS.contains { normName($0) == normName(name) }
+    }
+
     /// Everything a baggage desk asks about one bag of a trip (spec 07 part 18 C). Nil for no
-    /// such trip, and for no bag ("" or "Other": "Not in a bag").
+    /// such trip, for no bag ("" or "Other": "Not in a bag") and for a bag on him ("On body",
+    /// `hasLostBagPage`).
     public func lostBag(tripId: String, bag: String) -> LostBagPage? {
         let name = jsTrim(bag)
-        guard let trip = trips.first(where: { $0.id == tripId }), Library.isRealBag(name) else { return nil }
+        guard let trip = trips.first(where: { $0.id == tripId }), Library.hasLostBagPage(name) else { return nil }
         let desk = deskDetails()
         let you = [
             LostBagRow(key: "you-name", label: "Name", lines: [deskName()], fill: .me),

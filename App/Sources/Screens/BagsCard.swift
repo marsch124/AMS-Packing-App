@@ -23,6 +23,10 @@ import PackingLibrary
 /// Folded to ONE line by default (0.74, his ask of 12 Oct 2026: the overview "takes too
 /// much space"): "Bags", the over badge — a warning, so it stays — and the total; a tap
 /// opens it. Open or folded is remembered on this device (`ams.trip.bags`), for every trip.
+///
+/// "+ Add a bag" at its foot when open (0.83, his report of 14 Oct 2026: he looked for it here) —
+/// the Packing Stations' Bags out panel (`AddBagPanel`), the same rules, ids under `bags-addbag`;
+/// until the trip is reviewed.
 struct BagsCard: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
@@ -36,6 +40,8 @@ struct BagsCard: View {
     @FocusState private var typing: Bool
     /// The bag whose Lost bag page is open — "Lost bag?" under a bag (0.80, spec 07 part 18 C).
     @State private var lost: LostBagOpen?
+    /// "+ Add a bag" is open (0.83).
+    @State private var addingBag = false
 
     var body: some View {
         // Every bag that has something in it — weighed or not (the spec pass, 5 Oct
@@ -43,6 +49,10 @@ struct BagsCard: View {
         // cabin switch and photos could not be reached from the trip. And (0.81) every bag
         // Packing Stations' "+ Add a bag" put on the trip, empty or not — it is the trip's.
         let bags = model.library.weighedBags(tripId: tripId).filter { $0.load.items > 0 || $0.added }
+        // A reviewed trip is history: no bag is added to it or taken off it here.
+        let reviewed = model.library.trips.first { $0.id == tripId }.map(Library.isReviewed) ?? true
+        // A bag "+ Add a bag" put on the trip with nothing in it yet: "nothing in it yet", and a ✕.
+        let empty = bags.filter { $0.load.items == 0 && $0.added }.map(\.load.container)
         if !bags.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
@@ -108,15 +118,32 @@ struct BagsCard: View {
                                     // What the bar shows, in words: the colour cannot be read
                                     // any other way (VoiceOver, and the tests).
                                     .accessibilityValue(BagsCard.gauge(bag))
+                                // Beside the row, not in it (a button inside a button never reaches the tree):
+                                // the ✕ of an empty bag added — as in Bags out.
+                                if !reviewed && empty.contains(bag.load.container) {
+                                    Button {
+                                        let t = tripId, name = bag.load.container
+                                        model.change { _ = $0.removeAddedBag(tripId: t, bag: name) }
+                                    } label: {
+                                        IconMark(path: StationDrawings.cross, size: Metrics.glyph * 0.8, weight: 2)
+                                            .foregroundStyle(Theme.muted)
+                                            .frame(width: Metrics.lineButton, height: Metrics.line)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain).focusEffectDisabled()
+                                    .accessibilityIdentifier("bag-\(n)-remove")
+                                    .accessibilityLabel("Take \(bag.load.container) off this trip")
+                                }
                             }
-                            // Lost bag? (0.80): everything a baggage desk asks about this bag — at
-                            // every step, for the airport. Not for "Not in a bag".
-                            if bag.load.container != "Other" {
+                            // Lost bag? (0.80): everything a baggage desk asks about this bag — at every
+                            // step, for the airport. Only for a bag a desk can lose (0.83, `hasLostBagPage`:
+                            // not "Not in a bag", not "On body"); a quiet link under the row, at the right.
+                            if Library.hasLostBagPage(bag.load.container) {
                                 HStack {
                                     Spacer(minLength: 0)
                                     LostBagDoor(id: "bag-\(n)-lost") { lost = LostBagOpen(bag: bag.load.container) }
                                 }
-                                .padding(.top, -4)
+                                .padding(.top, -8)
                             }
                             if weighing == bag.load.container {
                                 scaleEditor(bag, n)
@@ -131,6 +158,15 @@ struct BagsCard: View {
                             }
                         }
                     }
+                    if !reviewed {
+                        if let first = empty.first {
+                            Text("To fill \(first), pick it as Usually packed in on its things\u{2019} pages \u{2014} sorted by Into, the list shows what is in each bag.")
+                                .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("bags-addbag-hint")
+                        }
+                        addBag.padding(.top, 2)
+                    }
                 }
             }
             // Folded: one slim line.
@@ -141,6 +177,18 @@ struct BagsCard: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("bags-card")
             .sheet(item: $lost) { open in LostBagScreen(tripId: tripId, bag: open.bag).environmentObject(model) }
+        }
+    }
+
+    /// "+ Add a bag" (0.83): the button, or the panel it opens — Bags out's own.
+    @ViewBuilder private var addBag: some View {
+        if addingBag {
+            AddBagPanel(tripId: tripId, prefix: "bags-addbag") { addingBag = false }.environmentObject(model)
+        } else {
+            Button { addingBag = true } label: { StationAddLabel(title: "Add a bag") }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("bags-addbag")
+                .accessibilityLabel("Add a bag")
         }
     }
 
@@ -272,7 +320,8 @@ struct BagWeightRow: View {
                 Spacer(minLength: 8)
                 // Every bag says its maximum — or that it has none (his ask, 2026-09-26).
                 // A bag with nothing weighed says what to do instead of "0 g".
-                Text(bag.grams == 0 ? "Tap to weigh"
+                // A bag with nothing in it at all (one "+ Add a bag" put on the trip) says so (0.83).
+                Text(bag.grams == 0 ? (bag.load.items == 0 ? "nothing in it yet" : "Tap to weigh")
                      : limit > 0 ? "\(weight) / \(BagsCard.number(limit)) kg"
                      : bag.load.container == "Other" ? weight : "\(weight) \u{00B7} no max")
                     .font(.system(.footnote, weight: .semibold).monospacedDigit())

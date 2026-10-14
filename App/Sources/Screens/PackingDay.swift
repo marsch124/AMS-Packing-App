@@ -555,10 +555,13 @@ struct PackingDaySheet: View {
                         Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                     }
                     BagPhotoRow(tripId: tripId, bag: bag.name, n: n, prefix: "day-photo-\(n)").environmentObject(model)
-                    // The photos are for the airline desk: the bag's whole Lost bag page is one tap away (0.80).
-                    HStack {
-                        Spacer(minLength: 0)
-                        LostBagDoor(id: "day-photo-\(n)-lost") { lost = LostBagOpen(bag: bag.name) }
+                    // The photos are for the airline desk: the bag's whole Lost bag page is one tap away (0.80) —
+                    // for a bag a desk can lose (0.83: not "On body").
+                    if Library.hasLostBagPage(bag.name) {
+                        HStack {
+                            Spacer(minLength: 0)
+                            LostBagDoor(id: "day-photo-\(n)-lost") { lost = LostBagOpen(bag: bag.name) }
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -616,7 +619,7 @@ struct PackingDaySheet: View {
             }
             // If a bag goes missing (0.80, spec 07 part 18 C): each bag's Lost bag page, and how much
             // of it is still not filled in — ready means the desk's answers are ready too.
-            if !day.bags.isEmpty { lostRows(day) }
+            if day.bags.contains(where: { Library.hasLostBagPage($0.name) }) { lostRows(day) }
             // The door check, right here: the trip's "I leave at", saved at once.
             if let trip {
                 LeaveTimes(out: leaveBinding(trip, home: false), home: leaveBinding(trip, home: true),
@@ -654,7 +657,8 @@ struct PackingDaySheet: View {
             Text("If a bag goes missing").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                 .padding(.bottom, 2)
                 .accessibilityAddTraits(.isHeader)
-            ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
+            // A row per bag a desk can lose (0.83: not "On body"); `n` stays the bag's place in the day.
+            ForEach(Array(day.bags.enumerated()).filter { Library.hasLostBagPage($0.element.name) }, id: \.element.name) { n, bag in
                 let page = model.library.lostBag(tripId: tripId, bag: bag.name)
                 let words = page?.shortWords ?? ""
                 Button { lost = LostBagOpen(bag: bag.name) } label: {

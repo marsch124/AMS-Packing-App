@@ -226,6 +226,23 @@ final class LostBagTests: XCTestCase {
         XCTAssertEqual(page.pdfName, "Lost bag \u{2013} Carry-on - hand luggage.pdf", "a / cannot be in a file name")
     }
 
+    /// 0.83 (his Bags card, 14 Oct 2026): "On body" is no bag a desk can lose — no page, whatever its
+    /// spelling, and the one rule says so for every "Lost bag?".
+    func testABagOnHimHasNoPage() {
+        var (lib, trip) = library()
+        _ = lib.addNewBagToTrip(tripId: trip, name: "On body", cabin: nil, maxKg: nil)
+        XCTAssertTrue(lib.dayBags(tripId: trip).contains("On body"), "the bag is on the trip")
+        for name in ["On body", "on  BODY ", "On me", "Worn", "Wearing"] {
+            XCTAssertNil(lib.lostBag(tripId: trip, bag: name), "\(name) has a Lost bag page")
+            XCTAssertFalse(Library.hasLostBagPage(name), name)
+        }
+        for name in ["Other", "", "  "] { XCTAssertFalse(Library.hasLostBagPage(name), "'\(name)'") }
+        for name in ["Day pack", carryOn, "Body bag", "Worn duffel"] {
+            XCTAssertTrue(Library.hasLostBagPage(name), name)
+        }
+        XCTAssertNotNil(lib.lostBag(tripId: trip, bag: "Day pack"))
+    }
+
     func testTheTextIsWhatADeskReads() {
         var (lib, trip) = library()
         filledIn(&lib, trip)

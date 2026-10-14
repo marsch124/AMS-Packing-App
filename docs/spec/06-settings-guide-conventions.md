@@ -786,7 +786,8 @@ no entry shows no marker anywhere (and fails the test).
    it are numbered one more): where the Lost bag page is (Lost bag? in Bags, the Packing Stations' Photos and Ready), what it
    holds, "not filled in" and where a tap fills it in, the bag-tag number typed on the page, the AirTag's Find My hint,
    Share as PDF and Copy as text, his details in Settings → For the lost-luggage desk (or under This is me). Spec 07
-   part 18 C. **Words** gains "Lost bag" (after "Packing Stations").
+   part 18 C. **Words** gains "Lost bag" (after "Packing Stations"). (0.83) Its second line ends "Not in a bag and On
+   body (what you wear) have none — no desk can lose them."
 5. (0.79) **Packing Stations** — "The Packing day" until 0.81, when he renamed it (14 Oct 2026; spec 07 part 17
    "0.81") — (`PackingDayGuideCard`, `Screens/PackingDay.swift`; container id `guide-packingday`) —
    right after topic 1, *Packing a trip* (drawn inside the topics' `ForEach`, after the topic of that title; it has no
@@ -871,7 +872,7 @@ no entry shows no marker anywhere (and fails the test).
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one, and last Clear every tick (asks first; 0.79 — Tick everything gone); the round button's Undo for 6 seconds above the add bar (0.79); Save as
    Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
-   colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
+   colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); (0.83) + Add a bag at its foot, as in Bags out, "nothing in it yet" and its ✕ for a bag added empty; Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
    under Sorting shows every line again; typing a thing adds it
    to this trip only, Bought on site adds it ticked; Delete trip at the very end asks first (things and
    templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62); (0.77) Take a break at

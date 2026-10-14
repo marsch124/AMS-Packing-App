@@ -2319,7 +2319,11 @@ name."; a bag the trip already packs into — "<bag> is on this trip already."; 
 <bag> — pick it above."; a max that is not a number above 0 — "Type the max in kg — or leave it empty." A new bag
 (`Library.addNewBagToTrip`) becomes one of his bags (Care → Bags, as one made there), with "Goes in the cabin" written
 only when he switched it (`cabin` nil = by its name, the airport checks' own rule) and its max when given, and is put
-on the trip.
+on the trip. **Since 0.83 the same "+ Add a bag" is at the foot of the trip's Bags card** (spec 03), opened, while the
+trip is not reviewed — his report of 14 Oct 2026: he looked for it there. The same panel (`AddBagPanel`, given the id
+prefix `bags-addbag`: `bags-addbag`, `bags-addbag-panel`, `bags-addbag-pick-<k>`, `bags-addbag-name`, …), the same
+model calls and words; the card shows an empty bag added as "nothing in it yet" with its ✕ (`bag-<n>-remove`) and Bags
+out's hint (`bags-addbag-hint`), as Bags out does.
 
 **How a bag is on the trip without lines** (decided by the build): the trip keeps the bags added this way in its
 extra key `dayAddedBags` (`DAY_ADDED_BAGS_KEY`, `[bag name]`, removed when empty — `Library.addBagToTrip`,
@@ -2818,8 +2822,11 @@ field reported on screen under the status bar took no focus).
    (part 7, `me()`); else nothing ("not filled in"). The full name's field shows the This-is-me owner as its
    placeholder, so he sees what is used while it is empty.
 3. **Which bags have a page**: any bag a trip's lines name — one of his bags (Care → Bags) or only a name on the lines
-   — but never "Not in a bag" (`Other`) or no name (`Library.isRealBag`). `Library.lostBag(tripId:bag:)` is nil for
-   those and for no such trip. Where the page is offered, it is offered for the bags the trip's Bags card shows
+   — but never "Not in a bag" (`Other`) or no name (`Library.isRealBag`), and since 0.83 never a bag on him:
+   `NOT_LOSABLE_BAGS` = "On body", "On me", "Worn", "Wearing", matched by `normName` (his Bags card of 14 Oct 2026
+   offered "Lost bag?" for "On body"; the three others decided by the build, the same idea in other words). The ONE rule
+   is `Library.hasLostBagPage(_:)` (real bag and not on him), and every door asks it — the Bags card, Photos and
+   Ready. `Library.lostBag(tripId:bag:)` is nil for those bags and for no such trip. Where the page is offered, it is offered for the bags the trip's Bags card shows
    (without "Not in a bag"), the Packing day's bags.
 4. **About you** — four rows: Name (`deskName()`), Phone, E-mail, Home address (one line per address line). Each
    missing one: "not filled in", and a tap opens **For the lost-luggage desk** with that field's keyboard focus.
@@ -2965,13 +2972,17 @@ field reported on screen under the status bar took no focus).
 - **Your choices → Owners** (spec 06 §2): in the owner editor, on the owner marked **This is me** only, under its
   button, the door **For the lost-luggage desk…** (Subheadline semibold, the Settings slate, `list-owners-desk`) opens
   the same sheet.
-- **The Bags card** (spec 03), opened: under each bag's row but "Not in a bag", at the right, **Lost bag?** (Footnote
-  semibold, the trips' green, a 1.2-pt green capsule outline, 10 sideways, at least 26 tall; id `bag-<n>-lost`) — it
-  opens the page for that bag (the card owns the sheet). The key's last line adds "Lost bag? under a bag: everything a
+- **The Bags card** (spec 03), opened: under the row of each bag with a page (rule 3 — not "Not in a bag", not "On
+  body"), at the right, **Lost bag?** — since 0.83 a quiet text link: Footnote regular in the trips' green for words
+  (`Library.LoopStep.pack.words`), no outline, 4 sideways, at least 24 tall, pulled 8 pt up to its own row (0.80–0.82:
+  Footnote semibold with a 1.2-pt green capsule outline, 10 sideways, 26 tall — "a column of green outlines"); id
+  `bag-<n>-lost` — it opens the page for that bag (the card owns the sheet). `LostBagDoor` draws it everywhere. The
+  key's last line adds "Lost bag? under a bag: everything a
   baggage desk asks for."
-- **The Packing day** (part 17): in **Photos**, under each bag's photos, the same **Lost bag?** at the right
-  (`day-photo-<n>-lost`); in **Ready**, after the stations and before I leave at, "If a bag goes missing" (Subheadline
-  semibold ink) and a row per bag — "Lost bag: <name>" (Body), at the right "all filled in" (green) or "3 not filled
+- **The Packing day** (part 17): in **Photos**, under the photos of each bag with a page (rule 3), the same **Lost
+  bag?** at the right (`day-photo-<n>-lost`); in **Ready**, after the stations and before I leave at, while any bag has
+  a page, "If a bag goes missing" (Subheadline semibold ink) and a row per such bag (`n` stays the bag's place among the
+  day's bags) — "Lost bag: <name>" (Body), at the right "all filled in" (green) or "3 not filled
   in" (orange), a chevron — each a button `day-ready-lost-<n>` (value = those words) opening the page. The day's sheet
   owns that page's sheet.
 - **How it works** (spec 06 §7): a topic of its own, **If a bag goes missing** (the trips' section), right after *On
@@ -3409,6 +3420,7 @@ left is not under the count"). Green again without them, day and night.
 | 14 Oct 2026 | (4) Ready: "Add a reminder" — anything last-minute, as a To do on the trip (Before you go) | His decision. Part 17, "0.81" item 4. |
 | 14 Oct 2026 | (5) Trip header, variant A: Review in the Templates / Refine violet, Take a break ("Back at 18:00") in a warm coffee amber, Done stays green; only these three; outlined / filled as before; contrast checked day and night | His pick of variant A. Words colours chosen by the build so each reads ≥ 4.5 : 1 on its own fill (`TripHeaderTone`). Part 17, "0.81" item 5. |
 | 14 Oct 2026 | (7) Bags out: "+ Add a bag" — one of his bags not on the trip, or a new one (name, cabin yes/no, max weight optional), added to the trip's bags so Weigh, Tags and Photos include it; things go into it by their Usually packed in (a one-line hint) | His decision. How a bag is on the trip without lines decided by the build: the trip's `dayAddedBags` list, the bags its lines pack into first, then the added ones. Part 17, "0.81" item 7. |
+| 14 Oct 2026 | The trip's Bags card, opened, gets Bags out's "+ Add a bag" at its foot (same panel, rules and words; an empty bag added says "nothing in it yet" and has its ✕ there too); "On body" has no Lost bag? anywhere; Lost bag? becomes a quiet green text link without an outline (0.83) | His report on a screenshot of a trip's opened Bags card (Mac, night): he looked for "+ Add a bag" there; every row incl. "On body" had a "Lost bag?"; a column of green outlines. "On me", "Worn" and "Wearing" with "On body", the ids under `bags-addbag`, and no Add a bag on a reviewed trip decided by the build. Spec 03; part 17 item 7; part 18 C rule 3. |
 | 14 Oct 2026 | On a plane trip, Create new trip and Trip settings keep the flights (Out and Home, connections between), the destination and where he stays until when, in a framed block "Flights and stay" under Travelling by, optional; each bag's tag number from check-in at the Packing day's Tags and on the Bags card. Plane off keeps it unseen; Start again takes none of it; a shared trip keeps flights and stay but not the tag numbers (decided by the build) | His yes of 13 Oct 2026 to the lost-luggage information (0.80). Part 18 B. |
 | 14 Oct 2026 | **Before you start**: on a trip at Plan, or at Pack until the first thing is packed (a reminder, a trip To do, a Preparations line, ⊘ and a charge tick are not packing), ONE door first in the scroll area to a sheet with To buy (on To buy, needs replacing, Before you go's date rule, used up the last time it went and not bought since), To prepare (reminders and Preparations lines due before the day he leaves — lead days 1 or more — with their When and day; the To dos written on the trip) and To charge (names only; ticked in Before you go); each part only when it has something; and "Before you start: 2 to buy, 3 to prepare" on Home's countdown. A door with a sheet rather than a card, the end at the first tick, a consumable alone not listed, and To charge left off Home — decided by the build | "Think if there is anything I need to buy or prepare well in advance." His yes (0.82). Part 19. |
 | 13 Oct 2026 | Lost luggage, part C: a Lost bag page per bag of a trip — his details (name, phone, e-mail, home address, kept once for the library in Settings), the trip's flights, stay and the bag-tag number, the bag's details, AirTag, photos and a few things in it; "not filled in" opens what fills it; Share as PDF and Copy as text; reached from the Bags card and the Packing day's Photos and Ready. The bag-tag number is typed on the page itself; a trip by car or train still has a page (decided by the build) | His yes to the lost-luggage information (A bag details, B flights and stay, C the page). Part 18 C. |

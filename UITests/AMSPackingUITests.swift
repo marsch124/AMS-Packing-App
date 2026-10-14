@@ -13199,6 +13199,57 @@ final class AMSPackingUITests: XCTestCase {
                       "the Bags card does not list the bag added: '\(words(app.buttons["bag-2"]))'")
     }
 
+    // MARK: - The Bags card's "+ Add a bag", and a bag on him (0.83, his report of 14 Oct 2026)
+
+    /// The trip's Bags card, opened, has "+ Add a bag" at its foot — Bags out's own panel, its ids
+    /// under `bags-addbag`. A new Duffel joins the card empty: "nothing in it yet", a ✕ for it and
+    /// none for the Day pack; Bags out lists it too.
+    func testTheBagsCardAddsABag() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        openBags(app)
+        tap(app, id: "bags-addbag")
+        XCTAssertTrue(appears(app, "bags-addbag-panel", timeout: 5), "+ Add a bag did not open on the Bags card")
+        type("Duffel", into: app.textFields["bags-addbag-name"])
+        tap(app, id: "bags-addbag-add")
+        XCTAssertTrue(disappears(app, "bags-addbag-panel", timeout: 5), "the panel stayed open")
+        let duffel = app.buttons["bag-2"]
+        XCTAssertTrue(waitUntil { self.words(duffel).contains("Duffel") },
+                      "the Bags card does not list the bag added: '\(words(duffel))'")
+        XCTAssertTrue(words(duffel).contains("nothing in it yet"), "'\(words(duffel))'")
+        XCTAssertTrue(app.buttons["bag-2-remove"].exists, "an empty bag added cannot be taken off")
+        XCTAssertFalse(app.buttons["bag-1-remove"].exists, "a bag the list packs into can be taken off")
+        hideKeyboard(app)
+        toTopThird(app, app.buttons["bag-0"])
+        shot(app, "bags-addbag")
+        station(app, "bags")
+        XCTAssertTrue(appears(app, "day-view-bags", timeout: 5), "the sheet is not on Bags out")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["day-bag-2"]).contains("Duffel") },
+                      "Bags out does not list the bag added on the Bags card: '\(words(app.buttons["day-bag-2"]))'")
+    }
+
+    /// "On body" is no bag a desk can lose: added on the Bags card, it has no Lost bag? there nor under
+    /// its photos in the Packing Stations, while the Day pack keeps its own.
+    func testABagOnHimHasNoLostBag() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        openBags(app)
+        tap(app, id: "bags-addbag")
+        type("On body", into: app.textFields["bags-addbag-name"])
+        tap(app, id: "bags-addbag-add")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["bag-2"]).contains("On body") },
+                      "On body is not on the Bags card: '\(words(app.buttons["bag-2"]))'")
+        XCTAssertTrue(app.buttons["bag-1-lost"].waitForExistence(timeout: 5), "the Day pack has no Lost bag?")
+        XCTAssertFalse(app.buttons["bag-2-lost"].exists, "On body has a Lost bag? on the Bags card")
+        hideKeyboard(app)
+        toTopThird(app, app.buttons["bag-0"])
+        shot(app, "bags-onbody")
+        station(app, "photos")
+        XCTAssertTrue(app.buttons["day-photo-2-photo"].waitForExistence(timeout: 5), "Photos does not ask about On body")
+        XCTAssertTrue(app.buttons["day-photo-1-lost"].exists, "the Day pack has no Lost bag? under its photos")
+        XCTAssertFalse(app.buttons["day-photo-2-lost"].exists, "On body has a Lost bag? under its photos")
+    }
+
     /// Drag the list holding `e` until `e` stands in the top third of the window — for a picture
     /// of a long page that starts where it should (a list's "hittable" is no proof it is shown).
     private func toTopThird(_ app: XCUIApplication, _ e: XCUIElement) {
