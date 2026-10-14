@@ -2093,7 +2093,7 @@ TestFlight job still `needs: tests` — every group must pass.
 
 ## 28. Shipping to TestFlight — the fast lane (`tools/quick-release.sh`) and the fallback workflow (`.github/workflows/testflight.yml`, `tools/release-to-testers.py`, `TESTFLIGHT.md`)
 
-### 28a. The fast lane — the normal path since 12 Oct 2026 (`tools/quick-release.sh`, `tools/smoke-tests.txt`, `tools/ExportOptions.plist`)
+### 28a. The fast lane — the normal path since 12 Oct 2026 (`tools/quick-release.sh`, `tools/smoke-tests.txt`, `tools/ui-split.py`, `tools/ExportOptions.plist`)
 
 His decision (12 Oct 2026, "yes, switch to the fast lane"), as for his Workout Sync app: a finished change reaches
 TestFlight in about half an hour instead of about three hours. A short check on his Mac gates the upload; GitHub's
@@ -2117,15 +2117,47 @@ says the same for any other failing command). The stages:
 2. **Model tests** — `tools/test-core.sh` (both bundles).
 3. **Parity** — `tools/parity/run.sh --invented` (§31) with the web app's model beside the MAIN checkout
    (`../AMS Packing/js/model.js`, or `PARITY_MODEL`): it must end "differences: none".
-4. **iPhone build** — on the simulator named by `PACKING_SIM` (default "Packing CI iPhone 18 Pro"). Several sessions
-   share that simulator and two test runs on one kill each other: while another `xcodebuild` names it, the script
-   waits (up to `SIM_WAIT_MIN`, 30 minutes). It boots it (`bootstatus -b`) and runs `build-for-testing` unsigned,
-   like GitHub's iPhone job, into `$TMPDIR/AMSPacking-quick-<8 hex of the checkout path>` (outside Documents, kept
-   between runs).
-5. **iPhone tests** — `test-without-building` with the smoke set and the extras, `-collect-test-diagnostics never
-   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300`; it prints "N passed, N failed, N skipped"
-   from the result bundle. Red → `tools/ui-failed.py` and ONE retry of only the failed tests, as on GitHub (§27); a
-   test red twice, more than 5 failures or a red run with no failed test stop the release.
+4. **iPhone build** — ONE `build-for-testing`, unsigned like GitHub's iPhone job, into
+   `$TMPDIR/AMSPacking-quick-<8 hex of the checkout path>` (outside Documents, kept between runs), for the first test
+   simulator. **Since 14 Oct 2026 the tests run on simulators of their own, side by side** (his ask: "can we deploy
+   more agents to speed things up?"; measured below). `PACKING_SIM` (default "Packing CI iPhone 18 Pro") is no longer
+   tested on: it is the MODEL — its device type and iOS runtime — for `PACKING_SIM_COUNT` (1–9, default 3)
+   simulators named "Packing CI fast 1" … "Packing CI fast N", made with `simctl create` when missing (one made like
+   an older model or iOS, or a second of the same name, is deleted and made again). They are kept between runs and
+   left booted, and they start (`bootstatus -b`, in the background) while the app builds. They are not erased: every
+   test launches the app with an invented library held in memory (`-uiTesting`), so nothing carries over from one
+   run to the next — the single simulator before them was never erased either; `PACKING_SIM_ERASE=1` erases them
+   first. Several sessions release side by side and two test runs on one simulator kill each other, so the script
+   TAKES them: a lock folder `$TMPDIR/AMSPacking-fast-sims.lock` holding its process id (another fast lane waits; a
+   holder that is gone, or whose number now belongs to a program that is not quick-release.sh, leaves it free, and so
+   does one without an id that is older than a minute), then no other `xcodebuild` may name one of them (someone's
+   own run by hand) — waited for up to `SIM_WAIT_MIN` (30) minutes in all. The lock is given back after stage 5, or
+   by the `EXIT` trap however the script ends. The build's own `.xctestrun` (the newest
+   `Build/Products/*iphonesimulator*.xctestrun`: its products and the scheme's test settings) is what every
+   simulator's run starts from.
+5. **iPhone tests** — the smoke set and the extras (each test once) shared out over the simulators by
+   `tools/ui-split.py split`: longest first, each to the simulator with the least so far. A test's cost is what it
+   took on THIS Mac — the median of its last three passing runs (`$TMPDIR/AMSPacking-ui-times-local.json`, each
+   test's last three seconds, added after every run by `ui-split.py record` — outside the repository; a file from
+   before holds a single number per test and is read the same way) — else its GitHub time (`tools/ui-test-times.json`) scaled by how
+   this Mac compares on the tests both know, else the median. The warm-up `testAAAWarmsUpTheSimulator` goes to EVERY
+   simulator (each one's first launch is the slow one). The plan is printed ("simulator 1: 17 tests, about 9.5 min").
+   Each simulator is put in day mode (`simctl ui … appearance light`; night mode is looked at by hand, §32), then all
+   run at once, each `xcodebuild test-without-building -xctestrun <the build's> -destination <its id>
+   -only-testing:… -collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance
+   300` with its own result bundle `smoke-<n>.xcresult` and log `iphone-tests-<n>.log`. Then one line from the
+   bundles: "34 passed, 0 failed, 0 skipped — Packing CI fast 1: 17 in 12 min 54 s · Packing CI fast 2: 17 in 14 min
+   4 s" (the warm-up counts once per simulator). A red simulator → `tools/ui-failed.py` on its bundle, as on GitHub
+   (§27): a red run with no failed test (build error, hung runner) stops the release; more than 5 failed over all the
+   simulators together is a real break and stops it; otherwise ONLY the failed tests run once more, shared out the
+   same way (`smoke-retry-<n>`, `iphone-tests-retry-<n>.log`), and must pass ("red twice: …" stops it; "green on the
+   retry (flaky — worth a look)" is printed). Last, checked not trusted: `ui-split.py unpassed` — every test must
+   have passed (or skipped itself, as a Mac-only test does on the iPhone) in one of the bundles, else "these tests
+   never passed — did a test runner stop half way?" (a runner that dies half way leaves tests that never ran, which
+   a retry of only the FAILED ones would not notice). A test still running when the script stops is ended with it.
+   Xcode's own parallel testing (`-parallel-testing-enabled YES`) is not used: it shares out test CLASSES between its
+   clones, and every UI test is in the one class `AMSPackingUITests`; it also makes and deletes its clones on every
+   run.
 6. **Build number** — one above the highest build App Store Connect has for the app (any version, either platform):
    Apple refuses a repeated number, and a Mac build lower than the last. The workflow counts on the same way (§28b
    step 6).
@@ -2194,8 +2226,18 @@ group with its notes — read only, nothing written, 7 s:
 (a 409 first, then 204), the wait through PROCESSING and the group's second page were run against a stand-in
 for `asc.py`.
 
-**Where things go** — `$TMPDIR/AMSPacking-release/<version>-<date-time>[-dry]/`: the logs, the ship entitlements, the
-archives, the export. All of it outside `~/Documents` (codesign refuses the extended attributes that folder collects).
+**`--tests-only [extra tests…]`** (14 Oct 2026) — stages 4 and 5 alone, on the checkout as it is: "Ready?" only
+checks xcodebuild, xcodegen, python3 and git and runs `xcodegen generate` (uncommitted changes are allowed and named,
+no `git fetch`, no version or spec check); then the build and the tests on `PACKING_SIM_COUNT` simulators, timed, with
+the same retry and checks; the folder is `<version in project.yml>-<date-time>-tests`. No build number, certificate,
+archive, upload, commit or push. For timing the test stage, and for the fast lane's verdict on a branch before it
+ships. `-h` / `--help` prints the script's own help (its header) at any time.
+
+**Where things go** — `$TMPDIR/AMSPacking-release/<version>-<date-time>[-dry|-tests]/`: the logs (per simulator:
+`iphone-tests-<n>.log`, `smoke-<n>.xcresult`, and `-retry-<n>` for a retry; the share-out in `split.txt` and its plan
+in `split-plan.txt`), the ship entitlements, the archives, the export. All of it outside `~/Documents` (codesign
+refuses the extended attributes that folder collects). This Mac's test times: `$TMPDIR/AMSPacking-ui-times-local.json`;
+the simulators' lock: `$TMPDIR/AMSPacking-fast-sims.lock`.
 
 **The private helpers** — `private/release-tools/` of the MAIN checkout (git-ignored; found from a worktree too, or
 named in `RELEASE_TOOLS`): `asc.py` (App Store Connect with the Admin key; the issuer id is read from a note outside
@@ -2218,6 +2260,28 @@ quick tests preferred — and timed on his Mac: the warm-up `testAAAWarmsUpTheSi
 Installer"), with push set to production, iCloud, and Apple Health on the iPhone; Xcode's account signed without
 asking him for anything. A real run uploads instead of exporting, then waits for Apple's processing (usually 5–30
 minutes) before the testers have it.
+
+**Side by side, measured** (14 Oct 2026, `--tests-only` on 0.79's release commit `2cb447e`: the 21 smoke tests and
+0.79's 12 extra ones, 33 in all; warm build; his M1 Max, 10 cores, 64 GB, shared all the while with other sessions —
+2 to 6 other `xcodebuild` runs and 7–9 booted simulators). Stage 5 ("iPhone tests"), two rounds:
+
+| Simulators | Round 1 (08:19–08:55) | Round 2 (12:03–12:42) | Each simulator (round 2) |
+|---|---|---|---|
+| 1 | 25 min 17 s | 19 min 34 s | 33 tests in 19 min 31 s |
+| 2 | — (see below) | 10 min 56 s | 17 in 10 min 52 s · 17 in 10 min 50 s |
+| 3 | 9 min 36 s | **8 min 22 s** | 11 in 8 min 12 s · 12 in 7 min 45 s · 12 in 8 min 0 s |
+
+For comparison, 0.79's real release that morning ran the same 33 on the one simulator in 19 min 10 s. Every run was
+green on its first try, no retry. Three is the default: about 2.3–2.6 times as fast as one; going from two to three
+still saves about 2½ minutes, though less than from one to two (each simulator's own start — its test runner and
+the warm-up — is paid once per simulator). Round 1's run with two simulators is not counted: it took 132 minutes,
+every test in it from about 09:05 on 15 to 40 times its usual length (`testWeighOpensByItselfOnceAndWeighsOneBagAfterAnother`
+2 548 s) while the Mac was starved by something outside the run — and still passed; a first run with two at 07:59,
+under the same heavy load, took 14 min 8 s. That one run is why `ui-split.py` keeps the median of a test's last
+THREE times, not the last one: one starved run cannot skew the next split. More than three was not measured.
+The retry was proven the same day with two tests made to fail the first time only (a marker file, never committed),
+which landed on two different simulators: "33 passed, 2 failed" → "failed, so run once more: …" → one test on each of
+two simulators, "2 passed" → "green on the retry (flaky — worth a look)", the stage green in 7 min 40 s.
 
 ### 28b. The fallback — the TestFlight workflow
 
@@ -2316,8 +2380,11 @@ none), writes each to `crash-reports/<n>-<date>.txt` and always uploads the fold
   each doubled template — the ORIGINAL, created first; test trips left behind by a name list in `private/`; trips
   repointed to the kept copies).
 - **`tools/release-to-testers.py`** — §28b; `--next-build` prints the next build number (§28b step 6).
-- **`tools/quick-release.sh VERSION "notes" [extra UI tests…]`** and **`--dry-run`** — the fast lane to TestFlight from
-  his Mac (§28a); **`tools/smoke-tests.txt`** — the iPhone UI tests it runs before every upload (§28a);
+- **`tools/quick-release.sh VERSION "notes" [extra UI tests…]`**, **`--dry-run`**, **`--tests-only`** and
+  **`--testers-only`** — the fast lane to TestFlight from his Mac (§28a); **`tools/smoke-tests.txt`** — the iPhone UI
+  tests it runs before every upload (§28a); **`tools/ui-split.py`** — shares those tests out over the simulators that
+  run them side by side (`split N LOCAL.json test…`), keeps this Mac's times (`record LOCAL.json RESULT.xcresult…`)
+  and names the tests that passed in none of the bundles (`unpassed RESULT.xcresult… -- test…`) (§28a stage 5);
   **`tools/ExportOptions.plist`** — how it exports and uploads (method app-store-connect, destination upload, team,
   automatic signing, symbols, the build number left alone).
 - `private/` and `*backup*.json` are git-ignored: real data never enters the public repository.

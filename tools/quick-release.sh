@@ -6,6 +6,7 @@
 #
 #   tools/quick-release.sh VERSION "notes" [extra UI tests…]
 #   tools/quick-release.sh --dry-run [VERSION] [extra UI tests…]
+#   tools/quick-release.sh --tests-only [extra UI tests…]
 #   tools/quick-release.sh --testers-only VERSION BUILD ["notes"]
 #
 #   VERSION   the version to ship, e.g. 0.73. What's new must already lead with it (and the spec have
@@ -19,8 +20,10 @@
 #    1 Ready?          clean checkout, main can fast-forward to it, What's new leads with VERSION, the spec
 #    2 Model tests     tools/test-core.sh
 #    3 Parity          tools/parity/run.sh --invented (the web app's model beside the main checkout)
-#    4 iPhone build    for the simulator, unsigned, like GitHub's iPhone job
-#    5 iPhone tests    the smoke set + the extras; what failed is run once more (tools/ui-failed.py)
+#    4 iPhone build    for the simulator, unsigned, like GitHub's iPhone job — built ONCE
+#    5 iPhone tests    the smoke set + the extras, shared out over PACKING_SIM_COUNT simulators of their own
+#                      ("Packing CI fast 1…N") that run side by side (tools/ui-split.py); what failed is run
+#                      once more (tools/ui-failed.py), and every test must have passed once
 #    6 Build number    one above the highest App Store Connect has
 #    7 Certificates    "Created via API" development certificates revoked when the cap is near
 #    8 Archive         iPhone and Mac with the TestFlight workflow's settings; entitlements checked
@@ -30,6 +33,8 @@
 #
 # --dry-run: everything but the upload. The export writes to a folder instead (so signing and the
 # entitlements of what WOULD go up are proven), and nothing is committed, revoked, released or pushed.
+# --tests-only: stages 4 and 5 alone, on the checkout as it is (uncommitted changes too) — the iPhone
+# build and its tests, timed; no version check, build number, archive, upload or push.
 # --testers-only: stage 10 alone, for builds already uploaded (a Testers stage that stopped, run again).
 # A build already in the group with its What to Test is only read; "notes" fill an empty What to Test.
 #
@@ -38,11 +43,17 @@
 # <main checkout>/private/release-tools/ asc.py, ensure-group.sh, revoke-api-certs.sh (or RELEASE_TOOLS).
 #
 # Environment (all optional):
-#   PACKING_SIM        the simulator to test on            (default "Packing CI iPhone 18 Pro")
+#   PACKING_SIM        the model the test simulators copy  (default "Packing CI iPhone 18 Pro": its iPhone
+#                      model and iOS; it is not tested on itself any more)
+#   PACKING_SIM_COUNT  how many simulators run the tests side by side, 1–9 (default 3 — measured 14 Oct 2026
+#                      on 33 tests: 1 → 19½ min, 2 → 11, 3 → 8½; spec 06 §28a); "Packing CI fast 1…N" are
+#                      made when missing and kept, booted, for the next run
+#   PACKING_SIM_ERASE  1 = erase those simulators before the tests (default: not — every test launches the
+#                      app with an invented library held in memory, so nothing carries over)
 #   PARITY_MODEL       the web app's js/model.js            (default: "AMS Packing" beside the main checkout)
 #   RELEASE_TOOLS      the private helpers' folder
 #   CERT_NEAR          revoke when this many "Created via API" development certificates exist (default 7)
-#   SIM_WAIT_MIN       wait this long for another test run to leave the simulator (default 30)
+#   SIM_WAIT_MIN       wait this long for another test run to leave the simulators (default 30)
 #   EXPORT_IDLE_MIN    an upload silent this long counts as hung (default 10)
 #   TESTERS_WAIT_MIN   wait this long for Apple to process the builds (default 90)
 #   COMMIT_TRAILER     the last line of the release commit's message
@@ -52,12 +63,21 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 # --- the arguments --------------------------------------------------------------------------------
-DRY=0 TESTERS_ONLY=0
-if [ "${1:-}" = "--dry-run" ]; then DRY=1; shift
-elif [ "${1:-}" = "--testers-only" ]; then TESTERS_ONLY=1; shift; fi
+help() { awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; }
+DRY=0 TESTERS_ONLY=0 TESTS_ONLY=0
+case "${1:-}" in
+  --dry-run) DRY=1; shift ;;
+  --testers-only) TESTERS_ONLY=1; shift ;;
+  --tests-only) TESTS_ONLY=1; shift ;;
+  -h|--help) help; exit 0 ;;
+esac
 CURRENT=$(sed -n 's/^ *MARKETING_VERSION: *"\([^"]*\)".*/\1/p' project.yml | head -1)
 VERSION="" NOTES="" BUILD=""
-if [ $TESTERS_ONLY = 1 ]; then
+SIM_COUNT="${PACKING_SIM_COUNT:-3}"
+[[ "$SIM_COUNT" =~ ^[1-9]$ ]] || { echo "PACKING_SIM_COUNT must be 1 to 9, not \"$SIM_COUNT\""; exit 2; }
+if [ $TESTS_ONLY = 1 ]; then
+  VERSION=$CURRENT
+elif [ $TESTERS_ONLY = 1 ]; then
   if [ $# -lt 2 ] || [ $# -gt 3 ] || ! [[ "$1" =~ ^[0-9]+(\.[0-9]+)+$ ]] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
     echo "Usage: tools/quick-release.sh --testers-only VERSION BUILD [\"notes\"]   e.g. --testers-only 0.74 96"
     exit 2
@@ -70,9 +90,9 @@ elif [ $DRY = 1 ]; then
   NOTES="(dry run — nothing is sent)"
 else
   if [ $# -lt 2 ] || ! [[ "$1" =~ ^[0-9]+(\.[0-9]+)+$ ]] || [ -z "${2// /}" ]; then
-    sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'
+    help
     echo
-    echo "Usage: tools/quick-release.sh VERSION \"notes\" [extra UI tests…]   (or --dry-run)"
+    echo "Usage: tools/quick-release.sh VERSION \"notes\" [extra UI tests…]   (or --dry-run, --tests-only)"
     exit 2
   fi
   VERSION=$1 NOTES=$2
@@ -101,9 +121,11 @@ for t in ${EXTRA[@]+"${EXTRA[@]}"}; do
 done
 # A name that is not a test would quietly run nothing: check them all against the test file.
 [ ${#ONLY[@]} -gt 0 ] || { echo "tools/smoke-tests.txt names no test"; exit 2; }
+NAMES=()   # the same tests by bare name, once each — what tools/ui-split.py shares out
 for o in "${ONLY[@]}"; do
   name="${o##*/}"
   grep -q "func $name()" UITests/AMSPackingUITests.swift || { echo "No UI test called $name (tools/smoke-tests.txt or the extras)"; exit 2; }
+  case " ${NAMES[*]:-} " in *" $name "*) ;; *) NAMES+=("$name") ;; esac
 done
 
 # --- how each stage is timed and reported -------------------------------------------------------------
@@ -132,14 +154,26 @@ fail() {
 }
 # Anything else that stops the script (set -e) still says where it stopped.
 on_exit() {
-  local st=$?
+  local st=$? p
   if [ $st -ne 0 ] && [ $FAILED = 0 ]; then
     echo
     echo "STOPPED at \"$STAGE\": a step went wrong — the lines above say what"
     summary
   fi
+  # A test run still going on a simulator (the script stopped or was interrupted) is ended with it.
+  for p in ${WORKERS[@]+"${WORKERS[@]}"}; do kill "$p" 2>/dev/null || true; done
+  release_sims
   if [ -n "${HELPERS:-}" ]; then rm -rf "$HELPERS"; fi
   exit $st
+}
+WORKERS=()
+# The test simulators belong to ONE run at a time (sessions run the fast lane side by side, and two test
+# runs on one simulator kill each other): a lock folder with the holder's process id, taken in stage 4 and
+# given back after stage 5 — or here, however the script ends. A holder that is gone leaves it free.
+SIMLOCK=""
+release_sims() {
+  if [ -n "$SIMLOCK" ] && [ "$(cat "$SIMLOCK/pid" 2>/dev/null)" = "$$" ]; then rm -rf "$SIMLOCK"; fi
+  SIMLOCK=""
 }
 trap on_exit EXIT
 say() { echo "   $*"; }
@@ -149,7 +183,9 @@ TMP="${TMPDIR:-/tmp}"; TMP="${TMP%/}"
 KEY=$(printf '%s' "$ROOT" | shasum | cut -c1-8)
 DD_TEST="$TMP/AMSPacking-quick-$KEY"          # the simulator build, kept between runs (faster next time)
 DD_ARCHIVE="$TMP/AMSPacking-archive-$KEY"     # the archives' derived data, kept between runs too
-SIM_NAME="${PACKING_SIM:-Packing CI iPhone 18 Pro}"
+SIM_NAME="${PACKING_SIM:-Packing CI iPhone 18 Pro}"   # the model the test simulators are made like
+FAST_SIM="Packing CI fast"                     # the test simulators: "Packing CI fast 1" … "… $SIM_COUNT"
+LOCAL_TIMES="$TMP/AMSPacking-ui-times-local.json"   # each test's seconds on this Mac, for the next split
 BUNDLE_ID=com.schabbauer.AMSPacking
 TEAM=$(/usr/libexec/PlistBuddy -c "Print :teamID" tools/ExportOptions.plist)
 
@@ -373,12 +409,24 @@ if [ $TESTERS_ONLY = 1 ]; then
   exit 0
 fi
 
-echo "AMS Packing $VERSION — the fast lane$([ $DRY = 1 ] && echo ', DRY RUN: nothing is uploaded, committed or pushed')"
+if [ $TESTS_ONLY = 1 ]; then
+  echo "AMS Packing $VERSION — the iPhone build and tests only (no version check, build number, archive, upload or push)"
+else
+  echo "AMS Packing $VERSION — the fast lane$([ $DRY = 1 ] && echo ', DRY RUN: nothing is uploaded, committed or pushed')"
+fi
 echo "Checkout: $ROOT"
-echo "UI tests: ${#ONLY[@]} (${#SMOKE[@]} smoke + ${#EXTRA[@]} extra) on \"$SIM_NAME\""
+echo "UI tests: ${#NAMES[@]} (${#SMOKE[@]} smoke + $(( ${#NAMES[@]} - ${#SMOKE[@]} )) more) on $SIM_COUNT simulator(s) side by side, made like \"$SIM_NAME\""
 
 # ==== 1 Ready? ===========================================================================================
 stage "Ready?"
+if [ $TESTS_ONLY = 1 ]; then
+  for tool in xcodebuild xcodegen python3 git; do
+    command -v $tool >/dev/null || fail "$tool is not installed"
+  done
+  case "$TMP" in *" "*) fail "the temporary folder has a space in its path: $TMP" ;; esac
+  xcodegen generate >/dev/null
+  done_stage "the checkout as it is: commit $(git rev-parse --short HEAD)$([ -z "$(git status --porcelain)" ] || echo ', with uncommitted changes')"
+else
 for tool in xcodebuild xcodegen node gh python3 git; do
   command -v $tool >/dev/null || fail "$tool is not installed"
 done
@@ -415,11 +463,14 @@ if [ $DRY = 0 ] && [ -n "$(git status --porcelain)" ]; then
 fi
 tools/check-spec.sh | sed 's/^/   /' || fail "What's new changed without docs/spec — update the spec in the same commit"
 done_stage "$VERSION, commit $(git rev-parse --short HEAD)"
+fi
 
-# ==== 2 Model tests =======================================================================================
-WORK="$TMP/AMSPacking-release/$VERSION-$(date +%Y%m%d-%H%M%S)$DRYTAG"
+WORK="$TMP/AMSPacking-release/$VERSION-$(date +%Y%m%d-%H%M%S)$DRYTAG$([ $TESTS_ONLY = 0 ] || echo -tests)"
 mkdir -p "$WORK"
-say "logs and archives: $WORK"
+say "logs$([ $TESTS_ONLY = 1 ] || echo ' and archives'): $WORK"
+
+if [ $TESTS_ONLY = 0 ]; then
+# ==== 2 Model tests =======================================================================================
 stage "Model tests"
 if ! tools/test-core.sh > "$WORK/model-tests.log" 2>&1; then
   grep -E "error:|failed" "$WORK/model-tests.log" | cut -c1-300 | head -10
@@ -437,66 +488,202 @@ if ! PARITY_MODEL="$PARITY_MODEL" tools/parity/run.sh --invented > "$WORK/parity
   fail "the Swift model and the web app's model answer differently — log: $WORK/parity.log"
 fi
 done_stage "$(grep -E 'questions|differences' "$WORK/parity.log" | tail -2 | sed 's/^ *//' | tr '\n' ';' | sed 's/;$//; s/;/ · /g')"
+fi
 
 # ==== 4 iPhone build ======================================================================================
+# The tests run on simulators of their own (his ask, 14 Oct 2026: "can we deploy more agents to speed things
+# up?"): "Packing CI fast 1" … "N", made like PACKING_SIM (its iPhone model and iOS) when missing, kept — and
+# left booted — for the next run. ONE build serves them all. Xcode's own parallel testing does not help this
+# suite: it shares out test CLASSES, and every UI test is in the one class AMSPackingUITests.
 stage "iPhone build"
-UDID=$(xcrun simctl list devices available -j | python3 -c '
+read -r SIM_TYPE SIM_RUNTIME <<< "$(xcrun simctl list devices available -j | python3 -c '
 import json, sys
-name = sys.argv[1]
 for runtime, devices in json.load(sys.stdin)["devices"].items():
     for d in devices:
-        if d["name"] == name and "iOS" in runtime:
-            print(d["udid"]); sys.exit()' "$SIM_NAME")
-[ -n "$UDID" ] || fail "there is no simulator called \"$SIM_NAME\" (set PACKING_SIM)"
-# Several sessions share a simulator; two test runs on one kill each other. Wait for the other to end.
+        if d["name"] == sys.argv[1] and "iOS" in runtime:
+            print(d["deviceTypeIdentifier"], runtime); sys.exit()' "$SIM_NAME")" || true
+[ -n "${SIM_RUNTIME:-}" ] || fail "there is no simulator called \"$SIM_NAME\" (set PACKING_SIM) — the test simulators are made like it"
+
+# Take the test simulators: the lock (another fast lane), then no other xcodebuild naming one of them.
+SIMLOCK_PATH="$TMP/AMSPacking-fast-sims.lock"
 waited=0
-while pgrep -f "^[^ ]*/xcodebuild .*$UDID" >/dev/null; do
-  [ $waited -ge $(( ${SIM_WAIT_MIN:-30} * 60 )) ] && fail "another test run has held \"$SIM_NAME\" for ${SIM_WAIT_MIN:-30} minutes"
-  [ $((waited % 300)) = 0 ] && say "another test run is using \"$SIM_NAME\" — waiting for it to finish"
+until mkdir "$SIMLOCK_PATH" 2>/dev/null; do
+  holder=$(cat "$SIMLOCK_PATH/pid" 2>/dev/null || true)
+  # A holder that is gone (or whose number now belongs to something else) leaves the lock behind: taken over.
+  if [ -n "$holder" ] && ! ps -p "$holder" -o command= 2>/dev/null | grep -q quick-release; then
+    rm -rf "$SIMLOCK_PATH"; continue
+  fi
+  if [ -z "$holder" ] && [ $(( $(date +%s) - $(stat -f %m "$SIMLOCK_PATH" 2>/dev/null || date +%s) )) -gt 60 ]; then
+    rm -rf "$SIMLOCK_PATH"; continue
+  fi
+  [ $waited -ge $(( ${SIM_WAIT_MIN:-30} * 60 )) ] && fail "another fast lane (process $holder) has held the test simulators for ${SIM_WAIT_MIN:-30} minutes"
+  [ $((waited % 300)) = 0 ] && say "another fast lane (process $holder) is using the test simulators — waiting for it to finish"
   sleep 15; waited=$((waited + 15))
 done
-xcrun simctl boot "$UDID" 2>/dev/null || true
-xcrun simctl bootstatus "$UDID" -b >/dev/null
-DEST="platform=iOS Simulator,id=$UDID"
+echo $$ > "$SIMLOCK_PATH/pid"
+SIMLOCK="$SIMLOCK_PATH"
+
+CLONES=()
+for i in $(seq 1 "$SIM_COUNT"); do
+  name="$FAST_SIM $i"
+  found=$(xcrun simctl list devices -j | python3 -c '
+import json, sys
+name, kind, runtime = sys.argv[1:]
+for rt, devices in json.load(sys.stdin)["devices"].items():
+    for d in devices:
+        if d["name"] == name:
+            same = rt == runtime and d.get("deviceTypeIdentifier") == kind and d.get("isAvailable", True)
+            print(("ok " if same else "old ") + d["udid"])' "$name" "$SIM_TYPE" "$SIM_RUNTIME")
+  udid=""
+  while read -r how id; do
+    [ -n "${how:-}" ] || continue
+    if [ "$how" = ok ] && [ -z "$udid" ]; then udid=$id; continue; fi
+    # Made like an older model or iOS (or a second one of that name): ours, so it is replaced.
+    xcrun simctl shutdown "$id" >/dev/null 2>&1 || true
+    xcrun simctl delete "$id" >/dev/null 2>&1 || true
+    say "removed an outdated \"$name\""
+  done <<< "$found"
+  if [ -z "$udid" ]; then
+    udid=$(xcrun simctl create "$name" "$SIM_TYPE" "$SIM_RUNTIME") || fail "could not make the simulator \"$name\""
+    say "made \"$name\" (${SIM_TYPE##*.} · ${SIM_RUNTIME##*.})"
+  fi
+  CLONES+=("$udid")
+done
+# Someone's own test run on one of them (by hand, not through this script) is waited for too.
+for i in "${!CLONES[@]}"; do
+  while pgrep -f "^[^ ]*/xcodebuild .*${CLONES[$i]}" >/dev/null; do
+    [ $waited -ge $(( ${SIM_WAIT_MIN:-30} * 60 )) ] && fail "another test run has held \"$FAST_SIM $((i + 1))\" for ${SIM_WAIT_MIN:-30} minutes"
+    [ $((waited % 300)) = 0 ] && say "another test run is using \"$FAST_SIM $((i + 1))\" — waiting for it to finish"
+    sleep 15; waited=$((waited + 15))
+  done
+done
+# They start while the app builds.
+BOOTS=()
+for u in "${CLONES[@]}"; do
+  if [ "${PACKING_SIM_ERASE:-0}" = 1 ]; then
+    xcrun simctl shutdown "$u" >/dev/null 2>&1 || true
+    xcrun simctl erase "$u" || fail "could not erase the simulator $u"
+  fi
+  xcrun simctl bootstatus "$u" -b >/dev/null 2>&1 &
+  BOOTS+=($!)
+done
+[ "${PACKING_SIM_ERASE:-0}" = 1 ] && say "erased: $SIM_COUNT simulator(s)"
+DEST="platform=iOS Simulator,id=${CLONES[0]}"
 if ! xcodebuild build-for-testing -project AMSPacking.xcodeproj -scheme AMSPacking -destination "$DEST" \
      -derivedDataPath "$DD_TEST" CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
      > "$WORK/iphone-build.log" 2>&1; then
   grep -E "error:" "$WORK/iphone-build.log" | sort -u | cut -c1-300 | head -10
   fail "the iPhone app does not build — log: $WORK/iphone-build.log"
 fi
+# What every simulator's run starts from: the build's own test description (its products and settings).
+XCTESTRUN=$(ls -t "$DD_TEST/Build/Products/"*iphonesimulator*.xctestrun 2>/dev/null | head -1 || true)
+[ -n "$XCTESTRUN" ] || fail "the build left no .xctestrun in $DD_TEST/Build/Products — log: $WORK/iphone-build.log"
 done_stage
 
 # ==== 5 iPhone tests ======================================================================================
 stage "iPhone tests"
-TEST_ARGS=(-project AMSPacking.xcodeproj -scheme AMSPacking -destination "$DEST" -derivedDataPath "$DD_TEST"
-  -collect-test-diagnostics never -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
-  CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="")
-counts() {   # counts RESULT.xcresult — "N passed, N failed, N skipped"
-  xcrun xcresulttool get test-results summary --path "$1" --compact 2>/dev/null | python3 -c '
-import json, sys
-d = json.load(sys.stdin)
-print("%d passed, %d failed, %d skipped" % (d.get("passedTests", 0), d.get("failedTests", 0), d.get("skippedTests", 0)))' 2>/dev/null || echo "no result"
+for p in "${BOOTS[@]}"; do wait "$p" || true; done
+for i in "${!CLONES[@]}"; do
+  xcrun simctl bootstatus "${CLONES[$i]}" -b >/dev/null 2>&1 || fail "the simulator \"$FAST_SIM $((i + 1))\" does not start"
+  # Day mode on every one, whatever a look by hand left behind (night mode is looked at by hand, §32).
+  xcrun simctl ui "${CLONES[$i]}" appearance light >/dev/null 2>&1 || true
+done
+TEST_OPTS=(-xctestrun "$XCTESTRUN" -collect-test-diagnostics never -test-timeouts-enabled YES
+  -maximum-test-execution-time-allowance 300)
+# run_side_by_side SUFFIX test… — the tests shared out over the simulators (tools/ui-split.py), each share
+# run with test-without-building on its own simulator, all at once; then each one's exit status, result
+# bundle and log, in simulator order: RUN_STATUS, RUN_BUNDLES, RUN_LOGS, RUN_SIM.
+run_side_by_side() {
+  local suffix=$1 i=0 line t p st
+  local pids=() args=()
+  shift
+  python3 tools/ui-split.py split "${#CLONES[@]}" "$LOCAL_TIMES" "$@" \
+    > "$WORK/split$suffix.txt" 2> "$WORK/split$suffix-plan.txt" || fail "tools/ui-split.py could not share out the tests"
+  sed 's/^/   /' "$WORK/split$suffix-plan.txt"
+  RUN_STATUS=() RUN_BUNDLES=() RUN_LOGS=() RUN_SIM=()
+  while IFS= read -r line; do
+    i=$((i + 1))
+    [ -n "$line" ] || continue
+    args=()
+    for t in $line; do args+=("-only-testing:$UI_BUNDLE/$t"); done
+    rm -rf "$WORK/smoke$suffix-$i.xcresult"
+    xcodebuild test-without-building "${args[@]}" -destination "platform=iOS Simulator,id=${CLONES[$((i - 1))]}" \
+      -resultBundlePath "$WORK/smoke$suffix-$i.xcresult" "${TEST_OPTS[@]}" > "$WORK/iphone-tests$suffix-$i.log" 2>&1 &
+    pids+=($!)
+    WORKERS+=($!)
+    RUN_BUNDLES+=("$WORK/smoke$suffix-$i.xcresult")
+    RUN_LOGS+=("$WORK/iphone-tests$suffix-$i.log")
+    RUN_SIM+=($i)
+  done < "$WORK/split$suffix.txt"
+  for p in "${pids[@]}"; do st=0; wait "$p" || st=$?; RUN_STATUS+=($st); done
+  WORKERS=()
 }
-say "${#ONLY[@]} tests on \"$SIM_NAME\"…"
-st=0
-xcodebuild test-without-building "${ONLY[@]}" -resultBundlePath "$WORK/smoke.xcresult" "${TEST_ARGS[@]}" \
-  > "$WORK/iphone-tests.log" 2>&1 || st=$?
-say "$(counts "$WORK/smoke.xcresult")"
-if [ $st -ne 0 ]; then
-  RETRY=$(python3 tools/ui-failed.py "$WORK/smoke.xcresult" 2> "$WORK/why-no-retry.txt") \
-    || { grep -E "error: -\[" "$WORK/iphone-tests.log" | cut -c1-300 | head -8
-         fail "the iPhone tests are red and not worth a retry: $(cat "$WORK/why-no-retry.txt") — log: $WORK/iphone-tests.log"; }
-  say "failed, so run once more:" $(echo "$RETRY" | sed 's|.*/||')
-  st=0
-  xcodebuild test-without-building $RETRY -resultBundlePath "$WORK/smoke-retry.xcresult" "${TEST_ARGS[@]}" \
-    > "$WORK/iphone-tests-retry.log" 2>&1 || st=$?
-  if [ $st -ne 0 ]; then
-    grep -E "error: -\[" "$WORK/iphone-tests-retry.log" | cut -c1-300 | head -8
-    fail "red twice: $(python3 tools/ui-failed.py "$WORK/smoke-retry.xcresult" 2>/dev/null | sed 's|.*/||' | tr '\n' ' ')— log: $WORK/iphone-tests-retry.log"
+# counts BUNDLE… — "N passed, N failed, N skipped" over them all, then each simulator's tests and minutes.
+counts() {
+  local b
+  for b in "$@"; do xcrun xcresulttool get test-results summary --path "$b" --compact 2>/dev/null || echo '{}'; echo; done \
+    | python3 -c '
+import json, sys
+p = f = s = 0; each = []
+for line in sys.stdin:
+    if not line.strip():
+        continue
+    try:
+        d = json.loads(line)
+    except ValueError:
+        d = {}
+    p += d.get("passedTests", 0); f += d.get("failedTests", 0); s += d.get("skippedTests", 0)
+    dev = (d.get("devicesAndConfigurations") or [{}])[0].get("device", {}).get("deviceName", "?")
+    secs, n = int(d.get("finishTime", 0) - d.get("startTime", 0)), d.get("totalTestCount", 0)
+    each.append(f"{dev}: {n} in {secs // 60} min {secs % 60} s" if d else "a simulator: no result")
+print(f"{p} passed, {f} failed, {s} skipped — " + " · ".join(each))' 2>/dev/null || echo "no result"
+}
+red_lines() { grep -h -E "error: -\[" "$@" 2>/dev/null | cut -c1-300 | head -8 || true; }
+
+say "${#NAMES[@]} tests on $SIM_COUNT simulator(s) side by side:"
+run_side_by_side "" "${NAMES[@]}"
+ALL_BUNDLES=("${RUN_BUNDLES[@]}")
+say "$(counts "${RUN_BUNDLES[@]}")"
+RETRY=() REDLOGS=()
+for k in "${!RUN_STATUS[@]}"; do
+  [ "${RUN_STATUS[$k]}" -ne 0 ] || continue
+  REDLOGS+=("${RUN_LOGS[$k]}")
+  failed=$(python3 tools/ui-failed.py "${RUN_BUNDLES[$k]}" 2> "$WORK/why-no-retry.txt") \
+    || { red_lines "${RUN_LOGS[$k]}"
+         fail "the iPhone tests are red on \"$FAST_SIM ${RUN_SIM[$k]}\" and not worth a retry: $(cat "$WORK/why-no-retry.txt") — log: ${RUN_LOGS[$k]}"; }
+  for t in $failed; do RETRY+=("${t##*/}"); done
+done
+if [ ${#RETRY[@]} -gt 0 ]; then
+  # tools/ui-failed.py's limit, over all the simulators together: more than 5 is a real break.
+  if [ ${#RETRY[@]} -gt 5 ]; then
+    red_lines "${REDLOGS[@]}"
+    fail "${#RETRY[@]} tests failed (more than 5 — a real break, no retry): ${RETRY[*]} — logs: ${REDLOGS[*]}"
   fi
-  say "green on the retry (flaky — worth a look):" $(echo "$RETRY" | sed 's|.*/||')
+  say "failed, so run once more: ${RETRY[*]}"
+  run_side_by_side "-retry" "${RETRY[@]}"
+  ALL_BUNDLES+=("${RUN_BUNDLES[@]}")
+  say "$(counts "${RUN_BUNDLES[@]}")"
+  for k in "${!RUN_STATUS[@]}"; do
+    if [ "${RUN_STATUS[$k]}" -ne 0 ]; then
+      red_lines "${RUN_LOGS[@]}"
+      fail "red twice: $(for b in "${RUN_BUNDLES[@]}"; do python3 tools/ui-failed.py "$b" 2>/dev/null; done | sed 's|.*/||' | tr '\n' ' ')— logs: ${RUN_LOGS[*]}"
+    fi
+  done
+  say "green on the retry (flaky — worth a look): ${RETRY[*]}"
 fi
-done_stage
+python3 tools/ui-split.py record "$LOCAL_TIMES" "${ALL_BUNDLES[@]}" 2>/dev/null || true
+# Checked, not trusted: every test passed once (a runner that died half way leaves tests that never ran).
+NEVER=$(python3 tools/ui-split.py unpassed "${ALL_BUNDLES[@]}" -- "${NAMES[@]}" | tr '\n' ' ')
+[ -z "${NEVER// /}" ] || fail "these tests never passed — did a test runner stop half way? $NEVER— logs: $WORK/iphone-tests*.log"
+release_sims
+done_stage "${#NAMES[@]} tests, every one passed, on $SIM_COUNT simulator(s)"
+
+if [ $TESTS_ONLY = 1 ]; then
+  summary
+  echo
+  echo "The iPhone tests of $(git rev-parse --short HEAD) are green on $SIM_COUNT simulator(s). Logs: $WORK"
+  exit 0
+fi
 
 # ==== 6 Build number ======================================================================================
 stage "Build number"
