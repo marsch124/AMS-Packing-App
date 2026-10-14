@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.80", date: "14 Oct 2026", title: "If a bag goes missing",
+                new: ["Lost bag: a page for each bag with everything a baggage desk asks for \u{2014} you, the trip, the bag, its photos and a few things in it. Share it as a PDF or copy it as text. Open it with Lost bag? on the Bags card or the Packing day.",
+                      "A bag's page: For the lost-luggage desk \u{2014} type, size, distinctive marks and photos of the bag itself, beside its brand and colour. Entered once, used on every trip.",
+                      "Plane trips: Flights and stay \u{2014} Out, Home and any connections, the destination, where you stay and until when \u{2014} right on Create new trip or in Trip settings. A checked bag gets its bag-tag number at the Tags station.",
+                      "Settings \u{2192} For the lost-luggage desk: your name, phone, e-mail and home address, kept once."]),
         Release(version: "0.79", date: "14 Oct 2026", title: "Packing day",
                 new: ["Packing day: on a trip you are packing, a row of stations under the steps \u{2014} Bags out, Pack, Weigh, Tags, Photos, Ready. Each turns green when it is done, and the next one is offered. When the last thing is ticked, Weigh opens by itself.",
                       "Tags: a name tag on every bag, and the AirTag in each bag that has one \u{2014} set Has an AirTag once on the bag.",
