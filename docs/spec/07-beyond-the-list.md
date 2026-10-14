@@ -2373,7 +2373,15 @@ on this trip's To do already."; Before you go's To do has it, the count "0/8"; t
 Pack "6 of 8 packed", in Before you go), `testBagsOutAddsANewBagAndOneOfHis` (no bag to pick; "Day pack is on this trip
 already."; Duffel, 23 kg → the third bag, "nothing in it yet", "0 of 3 out", a ✕ for it and none for the Day pack;
 Weigh, Tags and Photos ask about it; ✕ → gone; offered as "Add Duffel" and put back), and the How it works test
-(spec 06 §7) now also asks for "Packing Stations", "Add a bag", "Remind me" and "Add a reminder".
+(spec 06 §7) now also asks for "Packing Stations", "Add a bag", "Remind me" and "Add a reminder"; the Bags out test ends
+on the trip's Bags card, which lists the Duffel (`bag-2`). Each seen RED on the iPhone simulator with its own planted
+fault: the chips back at `Metrics.chip` — "("32.0") is not less than ("28.0") - the bags chip is as tall as a pill";
+Remind me with nothing prefilled — "Remind me offers 'What to remember'"; the composer writing nothing — "Pack does not
+wait for the To do: '6 of 7 packed'"; the Bags card dropping a bag with nothing in it — "the Bags card does not list
+the bag added: ''"; How it works' title left "Packing day" — "How it works still says 'Packing day'". Green again
+without them, day and night. Around them on the iPhone simulator, 23 neighbouring tests (the six Packing day tests and
+the bag-tag one, Take a break ×3, Before you go and the reminders due, the trip's pen and header, the Bags card, the
+luggage scale, bag photos and cabin, Start a new trip, the review, the door check, every tab's header): all green.
 Pictures, iPhone day and night and the Mac: `stations-row` (the slim row, the header's violet Review, amber "Back
 tomorrow 18:00" and green Done), `stations-tags`, `stations-tags-beforego`, `stations-ready`, `stations-bagsout`,
 `stations-addbag`.
