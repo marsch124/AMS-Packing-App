@@ -32,6 +32,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 18. Lost luggage — A: a bag's details for the desk | 0.80 | built (branch work/baginfo080) |
 | 18. Lost luggage — B. Flights and stay, bag-tag numbers | 0.80 | built (branch work/flight080) |
 | 18. Lost luggage — C. The Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
+| 19. Before you start — what to buy and get ready, in one place | 0.82 | built (branch work/beforestart082) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -3039,6 +3040,121 @@ once ("Activation point invalid").
   their own page with their own details on their phone.
 - The PDF draws the page in English with the app's words, as everything else; an airline abroad may prefer a form of
   its own — Copy as text is for that.
+
+---
+
+## 19. Before you start
+
+> His words (14 Oct 2026), from his own packing walk-through: "Think if there is anything I need to buy or prepare
+> well in advance." His yes the same day: ONE place, on a trip that is not being packed yet, for everything to buy
+> or get ready ahead — until then it stood in three: To do → To buy, the reminders on his templates, and a thing's
+> own Valid until and battery. Written here BEFORE it was built (branch `work/beforestart082`), then brought in line
+> with the code by the same branch: the model `Core/Sources/PackingLibrary/BeforeYouStart.swift`; the door and the
+> sheet `App/Sources/Screens/BeforeYouStart.swift`; Home's line in `App/Sources/Screens/Countdown.swift`. Per
+> screen: spec 03 (the trip screen, scroll area item 0, and "Before you start"), spec 02 §11 (the countdown card).
+
+### What he gets
+
+- **A trip not yet being packed**: first in its scroll area, above Before you go, a slim door **Before you start**
+  with what it holds in a few words — "2 to buy · 3 to prepare · 4 to charge". A tap opens a sheet of that name with
+  up to three parts: **To buy**, **To prepare**, **To charge**.
+- **Home's countdown** (the next trip): under its lines, "Before you start: 2 to buy, 3 to prepare".
+
+### The rules (decided 14 Oct 2026, by the build)
+
+1. **When — the Plan step, and Pack until he has started packing** (`Library.beforeStartTime(trip, today:, time:)`).
+   The trip's loop step (`loopStep`, on the screen's clock — the day and the time of day) is **Plan** or **Pack**:
+   not reviewed, its last day not passed, not set off, nothing bought on site. And **nothing is packed yet**
+   (`Library.hasStartedPacking`): no line is ticked that is a thing to pack. A reminder, a To do written on the trip
+   and a line of a step of things to DO (a `task` step — the factory Preparations) are not packing, so ticking one
+   here does not end Before you start; neither is a line set aside, nor a thing marked charged. Something ticked
+   inside a kit (`kitTicked`) is packing. *Why it ends at the first tick (decided by the build):* from then on the
+   trip is being packed and Before you go, right under it, holds what still needs him — the flags, each reminder as
+   its step comes, To charge from the day before; the door would be a second list of the same things. A trip at Plan
+   has no lines (that is what Plan means on a trip, `loopStep`), so nothing to show: the door comes with the first
+   lines.
+2. **Not on a place's view.** A trip opened from a place's code shows only that place's lines, as for the other
+   cards — no door.
+3. **Each part only when it has something; the door only when one part has.**
+4. **To buy** (`Library.toBuyBeforeStart(tripId:today:)`) — one row per THING on the trip, in the trip's order, a
+   thing once: each line not set aside and not a reminder, its thing as it is now (`thingNow`); and each thing
+   inside a kit on the trip, not taken out (`insideLines` — "Lighter, in the Camp pouch"). A line typed on the trip
+   only (no thing behind it) is its own row. A row is there for any of these reasons, said in this order:
+   - a. **On To buy** — an open line of To buy (`actions`, `kind` "shopping", not done) for it: one made for this
+     thing (`itemId`), or one typed without a thing that has its name (`normName`).
+   - b. **Needs replacing** — its Condition is one that replaces (`conditionReplaces`, To buy's own suggestion rule).
+   - c. **Valid until** — Before you go's date rule, exactly (`dateCheck`): out of date already, running out before he
+     is home, a document (Documents & money) within six months of it. The same words as there.
+   - d. **Used up last time** — the last trip before this one on which it went (by start date before this trip's;
+     before today when this trip has no dates; its line ticked and not set aside, or used up) marked it **Used up**
+     on the way home (`usedUp`), and no To buy line for it was ticked bought since that trip began (`doneAt` on or
+     after its start date). A later trip on which it went and was not used up clears it.
+   Not listed (decided by the build): a consumable alone — the app does not know how much is left, and To buy's own
+   "Restock" suggestion stays where it is; "Replace soon" by today's 30 days — the trip's own date rule (c) judges
+   it; To buy lines about things not on this trip, and lines typed without a thing whose name is on no line; the To
+   do tab's to-dos — they belong to no trip.
+5. **To prepare** (`Library.toPrepare(tripId:today:)`) — the trip's lines not ticked and not set aside that are
+   things to DO: a reminder (`itemType` "reminder", spec 07 part 12) or a line of a `task` step (Preparations), whose
+   When falls due BEFORE the day he leaves — lead days 1 or more (the factory steps: Preparations 30, ≥1 week ahead
+   7, Day before 1). Steps on the day itself (lead days 0: the morning, the front door, worn) are no preparation
+   "well in advance": they come in Before you go when due. And every **To do written on the trip** (0.81, `tripTodo`;
+   due at once, whatever its When). Order: by the day it falls due (most lead days first; the same day in the
+   timeline's order), then the trip's order; the trip's To dos last, in the order written. Each row says its When
+   ("≥1 week ahead") and, on a dated trip, when it falls due — "from 13 Oct", or "now" once that day has come; a To do
+   written on the trip says "Added on the trip".
+6. **To charge** — the things on the trip with a battery (`toCharge`, part 15 rule 3) not charged yet: just the
+   count and the names (a thing inside a kit "in the Camp pouch"). Charging is ticked in Before you go's To charge,
+   from the day before the trip (part 15 rule 5) — the sheet says so; it has no ticks of its own.
+7. **The words.** The door: the parts that have something, "<n> to buy · <n> to prepare · <n> to charge"
+   (`BeforeYouStart.words`). Home: "Before you start: <n> to buy, <n> to prepare" (`homeWords`) — To charge is left
+   out on Home (charging is the day before's work, not weeks ahead); no line when both are none.
+8. **Ticks.** A To prepare row's tick is the trip line's own (`setChecked`): the same line ticks on the trip's list
+   and leaves Before you go's To do; it leaves the sheet. To buy rows have no tick: what is bought is ticked on To
+   buy (which keeps Reminders in step), and a condition or a date is put right on the thing's page.
+9. **What a row opens.** To buy: the thing's page (`ThingEditor`); a line typed on the trip only opens nothing (no
+   arrow). To prepare: its arrow opens the template a reminder comes from (`TemplateDetail`, the first of
+   `lineTemplates`) — or the thing behind a Preparations line; a To do written on the trip, or a reminder whose
+   template is gone, has no arrow. To charge: nothing.
+10. **Nothing new is stored.** Before you start only reads the trip, the things, To buy and the other trips.
+
+### On the screens
+
+- **The door** (`BeforeYouStartDoor`, id `trip-beforestart`, a button; label "Before you start", value = the
+  door's words): first in the trip's scroll area (spec 03 item 0), top padding 10, sideways 16. A card (`Theme.card`,
+  corner 12, a 1.2-pt border in the trip's green, as the On site door), at least `Metrics.row` tall (40 / 30):
+  "Before you start" (Body semibold ink), the words (Footnote, muted, mono digits) and a drawn chevron — on one line
+  when they fit (the Mac, most iPhones with one or two parts), else the words under the name (`ViewThatFits`).
+- **The sheet** (`BeforeYouStartSheet`, id `beforestart-sheet`; Mac at least 520 × 560): "Before you start" (Title 3
+  bold) and **Done** (filled green, Escape, `beforestart-done`); under it the trip's name and "before you start
+  packing" (Subheadline muted, `beforestart-says`). Then each part with its heading — the part's name (Headline) and
+  its count (Footnote semibold mono muted): `beforestart-part-buy` / `-prepare` / `-charge`, counts
+  `beforestart-buy-count`, `beforestart-prepare-count`, `beforestart-charge-count`.
+  - **To buy** rows `beforestart-buy-<n>` (a button, min `Metrics.tap`; label = the name, value = the reasons): the
+    name (Callout semibold ink), under it the reasons joined by " · " — "On To buy", "Needs replacing", the date
+    words, "Used up on <trip>" (Subheadline; red when one will stop him — Needs replacing, or a red date — else
+    orange for a document short of six months or used up, else muted), the chevron when it opens a thing.
+  - **To prepare** rows: the tick (`beforestart-prepare-<n>`, a button — a 22-pt ring in the trip's green, the name
+    in Callout semibold ink, under it the When and its day in green, Subheadline; label "<name>, to prepare. Tick
+    it"), the icons of the templates it comes from (`TemplateMarks`, `beforestart-prepare-<n>-from`) and the arrow
+    (`beforestart-prepare-<n>-open`, label "Open <template>" / "Open <thing>").
+  - **To charge**: the battery mark beside the heading; one quiet line per thing (`beforestart-charge-<n>`, Callout
+    ink, "In the Camp pouch" muted), then "Tick them in Before you go as they are charged, from the day before the
+    trip." (Footnote muted, `beforestart-charge-note`).
+  - All parts empty while the sheet is open (the last one ticked): "Nothing left to buy or get ready." (`beforestart-none`).
+- **Home's countdown** (spec 02 §11): after its To do line, "Before you start: 2 to buy, 3 to prepare"
+  (Subheadline semibold ink). The card's accessibility value gains it: "1 to do · Before you start: 1 to buy, 2 to
+  prepare" (parts with nothing left out).
+
+### Tests
+
+(Filled in from the code by the build — below.)
+
+### Open questions
+
+- "Used up" is cleared by a To buy line ticked bought, or by the thing going on a trip again; a thing bought without
+  the app keeps saying "Used up on …" until then. A "Bought it" press on the row would clear it on the spot — worth it?
+- A reminder on the day he leaves (lead days 0) is not in Before you start; if he keeps last-day reminders that need
+  preparing (a taxi to book), move them to the day before — or say so and they come in.
 
 ---
 

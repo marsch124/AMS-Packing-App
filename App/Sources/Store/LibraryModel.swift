@@ -307,6 +307,8 @@ extension LibraryModel {
     ///                           dates taken away (a reviewed trip goes to Done, 0.73)
     ///  -uiTestingReminders    → memory, the sample + two reminders on Hiking, its trip
     ///                           three days ahead (reminders on a template, 0.70)
+    ///  -uiTestingBeforeStart  → memory, the sample with things to buy, reminders to prepare and a
+    ///                           battery, its trip ten days ahead, nothing ticked (Before you start, 0.82)
     ///  -uiTestingPackingDay   → memory, the sample + a Day pack with an AirTag holding the boots
     ///                           and the jacket: a trip with two bags (the Packing day, 0.79); +
     ///                           -packingDayAlmost: every station done but the Map unticked; +
@@ -366,6 +368,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingSections") {
             return LibraryModel(store: MemoryStore(SampleLibrary.sectioned().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingBeforeStart") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.beforeStart().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingReminders") {
             return LibraryModel(store: MemoryStore(SampleLibrary.reminders().records()), usesICloud: false, sky: sky)

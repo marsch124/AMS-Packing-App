@@ -12513,7 +12513,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         let card = app.buttons["home-countdown"]
         XCTAssertTrue(card.waitForExistence(timeout: 10), "no countdown")
-        XCTAssertTrue(waitUntil { (card.value as? String ?? "") == "1 to do" },
+        // "1 to do", then (0.82) Before you start's line: the trip is not being packed yet.
+        XCTAssertTrue(waitUntil { (card.value as? String ?? "").hasPrefix("1 to do") },
                       "the countdown does not name the reminder due: '\(card.value as? String ?? "")'")
         shot(app, "reminders-home")
         tap(app, id: "home-countdown")
@@ -12534,6 +12535,89 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "reminders-trip-line")
     }
 
+
+    // MARK: - Before you start (spec 07 part 19, his yes of 14 Oct 2026)
+
+    /// `-uiTestingBeforeStart`: the trip ten days ahead, nothing ticked. Home's countdown counts what
+    /// to buy and prepare; the trip's door, above Before you go, names all three parts; the sheet
+    /// lists the Sun cream (running out before he is home, used up on the Summer hike) and the Map
+    /// (needs replacing) to buy, the forecast and the route note to prepare — not the morning's
+    /// plants — and the Headlamp to charge. A tick there ticks the reminder, and it leaves; a To buy
+    /// row opens its thing, a reminder's arrow its template. The first thing packed takes the door
+    /// away; unticked, it is back.
+    func testBeforeYouStartGathersWhatToBuyAndGetReadyUntilPackingBegins() {
+        let app = launch("-uiTestingBeforeStart")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let card = app.buttons["home-countdown"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "no countdown")
+        XCTAssertTrue(waitUntil { (card.value as? String ?? "") == "Before you start: 2 to buy, 2 to prepare" },
+                      "the countdown does not count Before you start: '\(card.value as? String ?? "")'")
+        shot(app, "beforestart-home")
+        tap(app, id: "home-countdown")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let door = app.buttons["trip-beforestart"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "no Before you start on a trip not yet packed")
+        XCTAssertTrue(waitUntil { (door.value as? String) == "2 to buy \u{00B7} 2 to prepare \u{00B7} 1 to charge" },
+                      "the door says '\(door.value as? String ?? "")'")
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 5), "no Before you go for the sun cream running out")
+        XCTAssertLessThan(door.frame.minY, find(app, "trip-beforego")?.frame.minY ?? 0, "Before you start is not above Before you go")
+        shot(app, "beforestart-trip")
+
+        tap(app, id: "trip-beforestart")
+        XCTAssertTrue(appears(app, "beforestart-sheet", timeout: 5), "the door did not open Before you start")
+        for id in ["beforestart-part-buy", "beforestart-part-prepare", "beforestart-part-charge"] {
+            XCTAssertTrue(appears(app, id, timeout: 5), "Before you start has no \(id)")
+        }
+        // To buy: the sun cream and the map, each saying why; the toothbrush (a consumable alone) not.
+        let cream = app.buttons["beforestart-buy-0"], map = app.buttons["beforestart-buy-1"]
+        XCTAssertTrue(cream.waitForExistence(timeout: 5), "nothing to buy")
+        XCTAssertEqual(cream.label, "Sun cream")
+        let creamWhy = cream.value as? String ?? ""
+        XCTAssertTrue(creamWhy.contains("before you are home") && creamWhy.contains("Used up on \u{201C}Summer hike\u{201D}"),
+                      "the sun cream does not say why: '\(creamWhy)'")
+        XCTAssertEqual(map.label, "Map")
+        XCTAssertEqual(map.value as? String, "Needs replacing")
+        XCTAssertFalse(app.buttons["beforestart-buy-2"].exists, "something else is to buy: '\(words(app.buttons["beforestart-buy-2"]))'")
+        // To prepare: the forecast a week ahead, the route note the day before — not the morning's plants.
+        let forecast = app.buttons["beforestart-prepare-0"]
+        XCTAssertTrue(forecast.label.hasPrefix("Check the forecast"), "'\(forecast.label)'")
+        XCTAssertTrue((forecast.value as? String ?? "").hasPrefix("\u{2265}1 week ahead \u{00B7} from "),
+                      "the forecast does not say when: '\(forecast.value as? String ?? "")'")
+        XCTAssertTrue(app.buttons["beforestart-prepare-1"].label.hasPrefix("Leave a route note"), "'\(app.buttons["beforestart-prepare-1"].label)'")
+        XCTAssertFalse(app.buttons["beforestart-prepare-2"].exists, "the morning's reminder is something to prepare ahead")
+        XCTAssertEqual(marksWords(app, "beforestart-prepare-0-from"), "Hiking")
+        // To charge: the headlamp, its name only.
+        XCTAssertEqual(words(app.staticTexts["beforestart-charge-0"]), "Headlamp")
+        shot(app, "beforestart-sheet")
+
+        // A tick here is the trip's own: the forecast leaves, one is left to prepare.
+        tap(app, id: "beforestart-prepare-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["beforestart-prepare-count"]) == "1" },
+                      "the forecast ticked is still to prepare: '\(words(app.staticTexts["beforestart-prepare-count"]))'")
+        XCTAssertTrue(app.buttons["beforestart-prepare-0"].label.hasPrefix("Leave a route note"))
+        // A To buy row opens its thing; a reminder's arrow its template.
+        tap(app, id: "beforestart-buy-1")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "the map's row did not open the map")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "beforestart-prepare-0-open")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5), "the route note's arrow did not open Hiking")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tap(app, id: "beforestart-done")
+        XCTAssertTrue(disappears(app, "beforestart-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { (door.value as? String) == "2 to buy \u{00B7} 1 to prepare \u{00B7} 1 to charge" },
+                      "the door still counts the forecast: '\(door.value as? String ?? "")'")
+
+        // The first thing packed: the door goes. Unticked: it is back.
+        XCTAssertTrue(scrollUntil(app, "trip-line-0"), "no first line")
+        XCTAssertTrue(words(app.buttons["trip-line-0"]).contains("Passport"), "line 0 is not the passport: '\(words(app.buttons["trip-line-0"]))'")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-beforestart"].exists }, "the door stayed once packing began")
+        shot(app, "beforestart-packing")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(app.buttons["trip-beforestart"].waitForExistence(timeout: 5), "unticked, the door did not come back")
+    }
 
     // MARK: - The Packing day (0.79, his yes of 13 Oct 2026; spec 07 part 17)
 

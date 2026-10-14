@@ -34,6 +34,13 @@ struct CountdownCard: View {
                             .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
                             .lineLimit(2)
                     }
+                    // Before you start (spec 07 part 19): what to buy and get ready, counted, while
+                    // nothing is packed yet — "Before you start: 2 to buy, 3 to prepare".
+                    if !next.beforeStart.isEmpty {
+                        Text(next.beforeStart)
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Spacer(minLength: 4)
                 SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
@@ -47,7 +54,10 @@ struct CountdownCard: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("home-countdown")
-        .accessibilityValue(next.due.isEmpty ? "" : "\(next.due.count) to do")
+        // What a test reads (the Mac folds a button's words into it): "1 to do", then Before you
+        // start's line — parts with nothing left out.
+        .accessibilityValue([next.due.isEmpty ? "" : "\(next.due.count) to do", next.beforeStart]
+            .filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
     }
 
     /// "≥1 week ahead: 12 to pack, from 14 Oct" — or "now" once it is due.

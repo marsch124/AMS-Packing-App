@@ -117,7 +117,7 @@ struct HomeScreen: View {
 
                 // The trip he leaves on next, counted down (his idea 6) — under the grab
                 // lists, which keep their place at the top.
-                if let next = model.library.nextTrip(today: Today.local) {
+                if let next = model.library.nextTrip(today: Today.local, time: Today.time) {
                     CountdownCard(next: next) { openedPlace = nil; opened = next.id }
                         .padding(.top, 4)
                 }

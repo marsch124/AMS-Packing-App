@@ -564,6 +564,47 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library for Before you start (`-uiTestingBeforeStart`, spec 07 part 19): Sun cream
+    /// on the base running out on the trip's last day, and used up on an earlier trip ("Summer hike",
+    /// reviewed, two months ago); the Map already needs replacing (the sample's own); the Headlamp has a
+    /// battery; Hiking's reminders a week ahead, the day before, and on the morning (no preparation).
+    /// Its trip starts in ten days, nothing ticked: 2 to buy (Sun cream, Map), 2 to prepare (the
+    /// forecast from three days on, the route note), 1 to charge.
+    static func beforeStart() -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if let base = lib.templates.first(where: { $0.role == "base" }), let cream = lib.addThing(name: "Sun cream") {
+            _ = lib.setOnTemplate(itemId: cream.id, templateId: base.id, on: true)
+            _ = lib.updateThing(id: cream.id) { $0.expiry = day(12); $0.consumable = true; $0.weight = 120 }
+        }
+        if let lamp = lib.items.first(where: { $0.name == "Headlamp" })?.id { _ = lib.setThingBattery(id: lamp, true) }
+        if let hiking = lib.templates.first(where: { $0.name == "Hiking" }) {
+            lib.addReminder(templateId: hiking.id, name: "Check the forecast", when: "week")
+            lib.addReminder(templateId: hiking.id, name: "Leave a route note", when: "daybefore")
+            lib.addReminder(templateId: hiking.id, name: "Water the plants", when: "morning")
+        }
+        let hiking = lib.templates.filter { $0.name == "Hiking" }.map(\.id)
+        var summer = newEvent(name: "Summer hike", startDate: day(-60), endDate: day(-58))
+        summer.activities = hiking
+        let past = lib.createTrip(summer).id
+        if let t = lib.trips.firstIndex(where: { $0.id == past }), let e = lib.trips[t].entries.firstIndex(where: { $0.name == "Sun cream" }) {
+            lib.trips[t].entries[e].checked = true
+            _ = lib.setUsedUp(true, tripId: past, entryId: lib.trips[t].entries[e].id)
+            lib.trips[t].status = "done"
+            lib.trips[t].reviewedAt = "\(day(-57))T10:00:00.000Z"
+        }
+        if let t = lib.trips.firstIndex(where: { $0.name == "Weekend in the hills" }) {
+            lib.trips[t].startDate = day(10)
+            lib.trips[t].endDate = day(12)
+            lib.trips[t].entries = lib.builtLines(lib.trips[t])
+        }
+        return lib
+    }
+
     /// The sample library with reminders on Hiking (`-uiTestingReminders`, 0.70 — spec
     /// 07, part 12): "Check the forecast" a week ahead and "Leave a route note" the day
     /// before; its trip starts in three days, so the first is due and the second not yet.
