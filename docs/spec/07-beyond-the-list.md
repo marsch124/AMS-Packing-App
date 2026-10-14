@@ -29,6 +29,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 15. Batteries and To charge | 0.75 | built (branch work/battery075) |
 | 16. Take a break and messages when a trip moves on | 0.77 | built (branch work/break077) |
 | 17. Packing day — the stations of the Pack step | 0.79 | built (branch work/day079) |
+| 18 C. Lost luggage — the Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -2200,6 +2201,233 @@ screen — and found the sheet over their next step). The two tests that pack ev
 
 ---
 
+## 18 C. Lost luggage — the Lost bag page
+
+> His yes (13 Oct 2026) to the lost-luggage information, part C — the page the other two parts feed: on a trip, a
+> **Lost bag** page PER BAG with everything a baggage desk asks for, in a calm, readable layout he can hand over or read
+> out, with **Share as PDF** and **Copy as text**. Part A keeps a bag's own details (type, brand, colour, size,
+> distinctive marks — on the bag's page, `PackingLibrary/BagDetails.swift`); part B keeps a trip's flights, where he
+> stays and until when, and each bag's tag number (`PackingLibrary/TripTravel.swift`). This part adds who he is for
+> the desk (name, phone, e-mail, home address) and the page itself. Built on branch `work/lostbag080` (0.80); written
+> BEFORE it was built, then brought in line with the code (the code wins where they differ). The model:
+> `Core/Sources/PackingLibrary/LostBag.swift`; the page, its PDF and his details' sheet:
+> `App/Sources/Screens/LostBag.swift`. Per screen: spec 03 (the Bags card's "Lost bag?"), spec 06 §1 and §2 (the
+> Settings door and This is me), spec 07 part 17 (the Packing day's Photos and Ready), spec 01 §1.11 and §10 (the key,
+> the backup).
+
+### What he gets
+
+- **Who he is, once.** Settings opens with a door **For the lost-luggage desk** — "Your name, phone, e-mail and home
+  address". Its sheet keeps four fields: Full name, Phone, E-mail, Home address (several lines). They belong to the
+  library (both devices, the backup), not to a trip. The same sheet opens from Your choices → Owners, under **This is
+  me** on the owner marked as him, and from any of those four rows of a Lost bag page that says "not filled in".
+- **A Lost bag page per bag** of a trip, reached three ways: each bag of the trip's **Bags card** (opened) has a small
+  **Lost bag?** under its row; the Packing day's **Photos** station has the same under each bag's photos; its **Ready**
+  station lists "If a bag goes missing" with a row per bag that says how much is still not filled in.
+- The page, top to bottom: **About you** (name, phone, e-mail, home address) · **The trip** (the trip and its dates,
+  where he is going, where he stays, until when, the flights, the bag-tag number) · **The bag** (type, brand, colour,
+  size, distinctive marks, and AirTag yes/no — with yes, "In Find My, Share Item Location gives the airline a link to
+  where it is.") · **Photos** (the bag's own, and the photo of all the bags together) · **A few things in it** (the
+  trip's lines in that bag, the first eight, and "and N more").
+- Anything not known says **not filled in**, and a tap on it opens the page that fills it in. A line at the top says
+  how many: "3 not filled in — tap one to fill it in."
+- At the foot, always in view: **Share as PDF** (the system share sheet with a PDF of the page — to mail, AirDrop,
+  print, or save) and **Copy as text** (the same words, for a web form or a chat with the airline).
+
+### The rules (decided 13–14 Oct 2026, by the build)
+
+1. **His details** (`DeskDetails`: `name`, `phone`, `email`, `address`) are kept in `meta` under **`lostDesk`**
+   (`LOST_DESK_KEY`) as `{name, phone, email, address}` — only the ones said, each trimmed (single spaces inside a
+   line), the address line by line with blank lines gone; nothing said = no key. ONE record, synced; in a backup under
+   `prefs.lostDesk` and back with an import and a restore. The web app sees nothing (parity 211/211).
+2. **The name the desk gets** (`Library.deskName()`): the full name he typed; else the owner marked **This is me**
+   (part 7, `me()`); else nothing ("not filled in"). The full name's field shows the This-is-me owner as its
+   placeholder, so he sees what is used while it is empty.
+3. **Which bags have a page**: any bag a trip's lines name — one of his bags (Care → Bags) or only a name on the lines
+   — but never "Not in a bag" (`Other`) or no name (`Library.isRealBag`). `Library.lostBag(tripId:bag:)` is nil for
+   those and for no such trip. Where the page is offered, it is offered for the bags the trip's Bags card shows
+   (without "Not in a bag"), the Packing day's bags.
+4. **About you** — four rows: Name (`deskName()`), Phone, E-mail, Home address (one line per address line). Each
+   missing one: "not filled in", and a tap opens **For the lost-luggage desk** with that field's keyboard focus.
+5. **The trip** — first the trip's name and its days ("Weekend in the hills · 14 Nov 2026 – 16 Nov 2026"; one day:
+   that day; no dates: the name alone). Then, **on a plane trip** (Travelling by = Plane, part B's `planeTravel`):
+   - **Going to**: part B's destination, else the trip's Place (`Library.travelDestination`).
+   - **Staying at**: the stay's name, its address lines and its phone, one line each, what is said.
+   - **Until**: the stay's last day (part B fills it with the trip's last day when a stay is typed without one), else
+     the trip's last day, else not filled in.
+   - **Flights**: one line per leg, in his order — "SK 1234 · 14 Nov 2026 · ARN → AGP" (what is not said is left out;
+     only a from or only a to: "from ARN" / "to AGP").
+   - **Bag-tag number**: this bag's number (part B's `bagTag`, by `normName`).
+   A missing Going to, Staying at, Until or Flights opens **Trip settings** (part B's Flights and stay block is there).
+   A missing **bag-tag number** is typed RIGHT ON THE PAGE: the row opens a field "Number on the bag tag" with
+   **Save** — the number is on the stub the check-in desk stuck on his boarding pass, and the desk is where he reads it
+   (`setBagTag`, the same number the Tags station keeps). Save with the field empty takes a number away; a filled row
+   opens the same field to correct it.
+   **Not a plane trip**: only Going to, and the quiet line "Flights, where you stay and the bag-tag number are asked on
+   a plane trip — Travelling by, in Trip settings." (A trip by car, train or bus still gets the page: a bag can go
+   missing anywhere, and the rest of the page is what a lost-property office asks.)
+6. **The bag** — Type, Brand, Colour, Size, Distinctive marks: part A's `bagDetails(bag:)` (Type its name, "Hard
+   case"…; Size its words, "Large, 75 × 50 × 30 cm"). Each missing one: not filled in, a tap opens **the bag's page**
+   (Care → Bags → the bag, where part A's details are). A bag that is only a name on the lines BECOMES one of his bags
+   first (`addBag`), as Goes in the cabin and Has an AirTag do from a trip — its page needs a bag. Then **AirTag**: "Yes"
+   (the bag's own switch, part 17 rule 6) with the hint "In Find My, Share Item Location gives the airline a link to
+   where it is." (`LOST_AIRTAG_HINT`), or "No" — never "not filled in" (no AirTag is an answer). A tap on AirTag
+   opens the bag's page too (its switch is there).
+7. **Photos** — the bag's own photos on this trip (the Bags card's, up to three, as stored), then the photo of all the
+   trip's bags together (part 17), captioned "All your bags". A tap shows one large (`BigPhoto`, captions "Day pack 1
+   of 2" … "All your bags", Next steps through all). No photo of the bag itself: the row "Photo of the bag — not
+   filled in" and the ways to take one right there (`PhotoTakers`: on the iPhone Take a photo / Choose a photo, on the
+   Mac Choose) — kept as the bag's photo on this trip (`addBagPhoto`), as if taken in the Bags card. Only the bag's own
+   photo counts towards "not filled in"; the photo of all the bags is shown when there is one.
+8. **A few things in it** — the trip's lines in this bag (`container` by `normName`), set-aside lines and reminders
+   left out, in the trip's own order; when any of them is ticked, ONLY the ticked ones (what went in), else all of
+   them (what is meant to). The first **eight** (`LOST_INSIDE_SHOWN`), each "Name" or "Name ×3" (the line's count,
+   nights and laundry included, as the trip shows it); then "and N more". None: "Nothing on this trip's list goes in
+   this bag." Never "not filled in".
+9. **"Not filled in"** (`LostBagPage.missing`): the rows of About you, The trip (on a plane trip: Going to, Staying
+   at, Until, Flights, Bag-tag number; otherwise Going to) and The bag (five), plus the bag's own photo, that are
+   empty. The count heads the page ("1 not filled in — tap it to fill it in." / "3 not filled in — tap one to fill it
+   in."); none: nothing is said.
+10. **Copy as text** (`LostBagPage.text`) — what a web form or a message needs, plain, one fact per line:
+
+    ```
+    LOST BAG: Day pack
+    Trip: Weekend in the hills · 14 Nov 2026 – 16 Nov 2026
+
+    ABOUT ME
+    Name: Kim Example
+    Phone: +46 70 000 00 00
+    E-mail: not filled in
+    Home address: Exempelgatan 1, 123 45 Exempelstad
+
+    THE TRIP
+    Going to: Málaga
+    Staying at: Hotel Exempel, Calle Falsa 1, Málaga, +34 900 000 000
+    Until: 16 Nov 2026
+    Flights: SK 1234 · 14 Nov 2026 · ARN → AGP; SK 1235 · 16 Nov 2026 · AGP → ARN
+    Bag-tag number: SK 123456
+
+    THE BAG
+    Type: Backpack
+    Brand: Exempel
+    Colour: Green
+    Size: Medium, 55 × 35 × 25 cm
+    Distinctive marks: red strap
+    AirTag: Yes. In Find My, Share Item Location gives the airline a link to where it is.
+    Photos: 2 (in the PDF)
+
+    A FEW THINGS IN IT
+    Hiking boots
+    Rain jacket
+    ```
+
+    Several lines of one fact (an address, the stay) are joined with ", ", flights with "; ". "Photos: none" when
+    there is none; "and N more" as the last line of the things. Not a plane trip: THE TRIP holds Going to and the
+    plane line's words. The button says **Copied** for a moment after (value "copied").
+11. **Share as PDF** — the page drawn again for paper (`LostBagPDF`), A4 (595 × 842 points), always light, black on
+    white: **page 1** the title "Lost bag: <bag>", the trip line, and the four blocks in two columns (About you and The
+    trip at the left, The bag and A few things in it at the right), "not filled in" where nothing is known; **page 2**
+    (only when there are photos) the photos, as large as two to a page allows, each captioned. Written by SwiftUI's
+    `ImageRenderer` into a PDF context (no other library), into the device's temporary folder as "Lost bag – <bag>.pdf"
+    (characters a file name cannot hold become "-"), then handed to the system share sheet (iPhone:
+    `UIActivityViewController`; Mac: the sharing menu at the button). Under the UI tests no share sheet opens: the file is
+    written and the page says "PDF ready — 2 pages" (`lost-pdf-said`) — no test can work the system's share sheet.
+12. **Live** — the page reads the library on every drawing: a field filled in on the sheet it opened is on the page
+    the moment that sheet closes; a change on the other device arrives as it syncs. The trip deleted while the page is
+    open: it closes.
+13. **Nothing new travels with a trip**: the page keeps nothing of its own. A shared trip carries part B's flights and
+    stay (part B) but never his details (they are in `meta`, not the trip); Start a new trip from this one copies none
+    of it.
+
+### On the screens
+
+- **The page** (`LostBagScreen`, a sheet, id `lost-screen`; on the Mac at least 520 × 640):
+  - Header (padding 16): "Lost bag" (Title 3 bold, ink) and under it the bag's name (Subheadline semibold muted, one
+    line) — one element `lost-heading`; at the right **Done** (filled, the trips' green, Escape, id `lost-done`).
+  - In a scroll (`KeyboardAwayScroll`, 16 sideways, 24 below, 12 between the blocks): the lead "Everything a baggage
+    desk asks for. Hand it over, read it out, or share it." (Footnote muted, `lost-lead`); when something is missing,
+    "3 not filled in — tap one to fill it in." (Subheadline semibold, the Care orange, `lost-missing`).
+  - Five cards (padding 12, radius 12, `Theme.card`, hairline), each headed by its name (Subheadline semibold, the
+    trips' readable green): **About you** (`lost-you`), **The trip** (`lost-trip`), **The bag** (`lost-bag`),
+    **Photos** (`lost-photos`), **A few things in it** (`lost-inside`).
+  - A row (`LostBagRowView`): the label (Footnote semibold muted) over the value — each line in Body ink, selectable on
+    the Mac — or "not filled in" (Body, the Care orange); at the right a drawn chevron (muted); at least `Metrics.row`
+    tall; a hairline between rows. The whole row is ONE button (id `lost-<card>-<key>`, label = the row's label, value
+    = its lines joined with ", " or "not filled in"), opening where it is filled in (rule 4–6). Keys: `you-name`,
+    `you-phone`, `you-email`, `you-address`; `trip-going`, `trip-stay`, `trip-until`, `trip-flights`, `trip-tag`;
+    `bag-type`, `bag-brand`, `bag-colour`, `bag-size`, `bag-marks`, `bag-airtag` (value "yes" / "no"; the hint under
+    "Yes" in Footnote muted, id `lost-bag-airtag-hint`).
+  - The trip's first line: the name and days (Subheadline semibold ink, `lost-trip-name`). Not a plane trip: the line
+    of rule 5 (Footnote muted, `lost-trip-noplane`).
+  - The tag number's field (rule 5): "Number on the bag tag" (`lost-trip-tag-field`, all capitals on the iPhone's
+    keyboard), **Save** (filled green capsule, `lost-trip-tag-save`), **Cancel** (Subheadline semibold muted,
+    `lost-trip-tag-cancel`); Return saves.
+  - Photos: thumbnails 96 pt, corner 8 (`lost-photo-<k>`, label "Photo k of the bag"; the photo of all the bags
+    `lost-photo-all`, label "Photo of all your bags", with "All your bags" under it in Footnote muted); none of the bag:
+    the row "Photo of the bag" / "not filled in" (`lost-photo-none`, a text, not a button) and the takers
+    (`lost-photo-take`, `-pick`; under the tests one pill "Photo of the bag").
+  - Things: one line each (Body ink, `lost-inside-<k>`), "and N more" (Footnote muted, `lost-inside-more`); none: the
+    rule-8 words (`lost-inside-none`).
+  - **The foot**, outside the scroll, always in view (16 sideways, 10 above and below, a hairline over it, the page's
+    colour): **Share as PDF** (Body semibold white on the trips' green, rounded 12, `Metrics.tap` tall, half the width,
+    `lost-pdf`) and **Copy as text** (the same, outlined green, `lost-copy`, value "copied" after a press).
+    `lost-pdf-said` sits above them under the tests.
+  - Sheets it opens (one `.sheet(item:)`): **For the lost-luggage desk** (`DeskDetailsScreen`), **Trip settings**
+    (`TripSettingsScreen`), **the bag's page** (`BagDetail`), and a photo large (`BigPhoto`).
+- **For the lost-luggage desk** (`DeskDetailsScreen`, a sheet, id `desk-screen`; Mac at least 460 × 480): header
+  "For the lost-luggage desk" (Title 3 bold), **Cancel** (outlined, Escape, `desk-cancel`) and **Save** (filled, the
+  Settings slate, `desk-save`; never grey — with nothing changed it just closes); "What a baggage desk asks about you.
+  Kept on your devices and in your backup, and shown only on a bag's Lost bag page." (Footnote muted); four fields,
+  each with its label above (Footnote semibold muted): **Full name** (`desk-name`; placeholder the This-is-me owner, or
+  "As on your passport"), **Phone** (`desk-phone`, phone keyboard), **E-mail** (`desk-email`, e-mail keyboard, no
+  capitals, no corrections), **Home address** (`desk-address`, several lines, 3 to 6 tall). Return moves to the next
+  field (the address takes new lines). Swiping the sheet away with something changed is refused (Cancel or Save).
+- **Settings** (spec 06 §1): the first card is now TWO door rows — **For the lost-luggage desk** ("Your name, phone,
+  e-mail and home address", id `settings-desk`) above **Your choices** (`settings-lists`), a `CardHairline` between —
+  first, as the iPhone's own Settings starts with the person. With all four filled in its line reads "<name> ·
+  <phone>".
+- **Your choices → Owners** (spec 06 §2): in the owner editor, on the owner marked **This is me** only, under its
+  button, the door **For the lost-luggage desk…** (Subheadline semibold, the Settings slate, `list-owners-desk`) opens
+  the same sheet.
+- **The Bags card** (spec 03), opened: under each bag's row but "Not in a bag", at the right, **Lost bag?** (Footnote
+  semibold, the trips' green, a 1.2-pt green capsule outline, 10 sideways, at least 26 tall; id `bag-<n>-lost`) — it
+  opens the page for that bag (the card owns the sheet). The key's last line adds "Lost bag? under a bag: everything a
+  baggage desk asks for."
+- **The Packing day** (part 17): in **Photos**, under each bag's photos, the same **Lost bag?** at the right
+  (`day-photo-<n>-lost`); in **Ready**, after the stations and before I leave at, "If a bag goes missing" (Subheadline
+  semibold ink) and a row per bag — "Lost bag: <name>" (Body), at the right "all filled in" (green) or "3 not filled
+  in" (orange), a chevron — each a button `day-ready-lost-<n>` (value = those words) opening the page. The day's sheet
+  owns that page's sheet.
+- **How it works** (spec 06 §7): a topic of its own, **If a bag goes missing** (the trips' section), right after *On
+  site* — where the page is, what it holds, not filled in and the tap, the bag-tag number on the page, Share as PDF and
+  Copy as text, his details in Settings. **Words** (spec 06 §10): "Lost bag".
+
+### Where it is kept (the web model sees nothing new)
+
+| Holder | Key | Value | Meaning |
+|---|---|---|---|
+| meta | `lostDesk` (`LOST_DESK_KEY`) | `{name, phone, email, address}`, each only when said / absent | his details for the baggage desk (rule 1) |
+| backup | `prefs.lostDesk` | the same object | carried by a backup; read back by an import and a restore |
+
+Everything else on the page is read from what parts A and B, part 17 and the trip already keep; the page writes only
+his details, a bag-tag number (part B's key), a bag photo (the Bags card's) and — when a detail of a bag that was only a
+name is filled in — the new bag. Parity: 211/211.
+
+### Tests
+
+Model `LostBagTests` (`Core/Tests/PackingLibraryTests/LostBagTests.swift`) and UI tests — listed from the code below.
+
+### Open questions
+
+- The page reads the way OUT: on the way home (Pack to go home) a thing may travel in another bag, and "A few things in
+  it" still lists what went out in this one. If he loses a bag on the way home, the home bags' ticks could decide it.
+- A trip with several travellers: the page is his (his details, his bags' tags). A shared trip's other traveller gets
+  their own page with their own details on their phone.
+- The PDF draws the page in English with the app's words, as everything else; an airline abroad may prefer a form of
+  its own — Copy as text is for that.
+
+---
+
 ## 11. Decision log
 
 | Date | Decision | His words / reason |
@@ -2230,6 +2458,7 @@ screen — and found the sheet over their next step). The two tests that pack ev
 | 13 Oct 2026 | The Season pills carry the sun and the snowflake, as Travelling by carries its drawings — on Create new trip, Trip settings and Only on some trips; the More choices line stays words (0.78) | "same idea as Travelling by" |
 | 13 Oct 2026 | The Quick line names his always-packed templates and says the airport checks plainly: "Quick packs only what you tick — not <names>, no Plane or RV template. Plane still turns on the airport checks." (0.78) | He did not understand "Plane and RV still count", and "Always" alone is cryptic — he thinks of his short-trip template by its name |
 | 13 Oct 2026 | A guided Packing day inside the Pack step: a row of stations — Bags out, Pack, Weigh, Tags, Photos, Ready — each green when done, a tap opens it, the next open one offered; Weigh opens by itself once when the last thing is ticked; Has an AirTag on the bag; one photo of all the bags per trip; Ready pairs with "I leave at". Marks: his picks of the station sheet (day B, Bags out A, Pack C, Weigh A, Tags A, Photos C, Ready A) | His own packing walk-through (bags out on the floor for a week, pack, weigh, name tags and AirTags, photos for lost luggage, ready). Part 17. |
+| 13 Oct 2026 | Lost luggage, part C: a Lost bag page per bag of a trip — his details (name, phone, e-mail, home address, kept once for the library in Settings), the trip's flights, stay and the bag-tag number, the bag's details, AirTag, photos and a few things in it; "not filled in" opens what fills it; Share as PDF and Copy as text; reached from the Bags card and the Packing day's Photos and Ready. The bag-tag number is typed on the page itself; a trip by car or train still has a page (decided by the build) | His yes to the lost-luggage information (A bag details, B flights and stay, C the page). Part 18 C. |
 
 ## Open questions
 
