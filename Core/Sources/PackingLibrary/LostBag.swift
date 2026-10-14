@@ -108,7 +108,9 @@ public struct LostBagPage: Equatable, Sendable {
     public var travel: [LostBagRow]
     public var bagRows: [LostBagRow]
     public var airTag: Bool
-    /// The bag's own photos on this trip, as stored (one still syncing in counts).
+    /// The photos of the bag itself — how it looks, from its page (part A) — as stored.
+    public var lookIds: [String]
+    /// This trip's photos of it packed (the Bags card's), as stored (one still syncing in counts).
     public var photoIds: [String]
     /// The photo of all the trip's bags together; "" = none.
     public var groupPhotoId: String
@@ -117,9 +119,12 @@ public struct LostBagPage: Equatable, Sendable {
     /// How many more there are.
     public var moreInside: Int
 
-    /// The rows not filled in, and the bag's own photo when it has none.
+    /// No photo of the bag at all — neither how it looks nor packed on this trip.
+    public var noPhoto: Bool { lookIds.isEmpty && photoIds.isEmpty }
+
+    /// The rows not filled in, and a photo of the bag when it has none.
     public var missing: Int {
-        (you + travel + bagRows).filter(\.missing).count + (photoIds.isEmpty ? 1 : 0)
+        (you + travel + bagRows).filter(\.missing).count + (noPhoto ? 1 : 0)
     }
 
     /// "3 not filled in — tap one to fill it in." — "" when nothing is missing.
@@ -159,7 +164,7 @@ public struct LostBagPage: Equatable, Sendable {
         out.append("")
         out += block("THE BAG", bagRows)
         out.append("AirTag: \(airTag ? "Yes. \(LOST_AIRTAG_HINT)" : "No")")
-        let shots = photoIds.count + (groupPhotoId.isEmpty ? 0 : 1)
+        let shots = lookIds.count + photoIds.count + (groupPhotoId.isEmpty ? 0 : 1)
         out.append("Photos: \(shots == 0 ? "none" : "\(shots) (in the PDF)")")
         out += ["", "A FEW THINGS IN IT"]
         out += inside.isEmpty ? [Library.lostNothingInside] : inside
@@ -279,7 +284,7 @@ extension Library {
         let inside = lostInside(trip, bag: name)
         return LostBagPage(bag: name, bagId: mine?.id, tripId: trip.id, tripLine: tripLine, planeTrip: plane,
                            you: you, travel: travel, bagRows: bagRows, airTag: hasAirTag(container: name),
-                           photoIds: bagPhotoIds(tripId: trip.id, bag: name), groupPhotoId: Library.groupPhotoId(trip),
+                           lookIds: details.photoIds, photoIds: bagPhotoIds(tripId: trip.id, bag: name), groupPhotoId: Library.groupPhotoId(trip),
                            inside: Array(inside.prefix(LOST_INSIDE_SHOWN)), moreInside: max(0, inside.count - LOST_INSIDE_SHOWN))
     }
 }

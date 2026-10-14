@@ -29,6 +29,8 @@ struct TripSettingsScreen: View {
     /// "I leave at" (0.69, the door check): on the first day, and on the last for home.
     @State private var leaveOut = ""
     @State private var leaveHome = ""
+    /// Flights and stay (0.80, spec 07 part 18 B): the trip's own, padded to Out and Home.
+    @State private var travel = TripTravel()
     @State private var activities: Set<String> = []
     /// Indoor / Outdoor / Race PER WORKOUT (0.67): template id → its contexts. A trip
     /// made before 0.67 opens with each workout showing the trip-wide ones — what its
@@ -124,6 +126,13 @@ struct TripSettingsScreen: View {
                     // trip, old ones too — shows both off and keeps its word unless a pill is tapped.
                     // Season does NOT follow the dates here: a made trip's season changes only by hand.
                     TravellingBy(transport: $transport, note: model.library.travelNote(quick: quick), id: "tripset-transport")
+                    // Flights and stay (0.80): only while Plane is lit; Plane off keeps what is stored, unseen.
+                    if Library.travelLit(transport, "Plane") {
+                        FlightsAndStay(travel: $travel,
+                                       firstDay: hasDates ? HomeScreen.ymd(start) : "",
+                                       lastDay: hasDates ? HomeScreen.ymd(max(start, end)) : "",
+                                       place: place, id: "tripset-flights", tint: AppSection.events.color, fill: Theme.card)
+                    }
                     Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "tripset-season",
                           icons: HomeScreen.seasonIcon) { season = $0 }
                     // Rain gear on a dry forecast, or long before any forecast exists: his
@@ -277,6 +286,9 @@ struct TripSettingsScreen: View {
         laundryNights = PackingCore.laundryNights(t)
         leaveOut = Library.leaveTime(t, home: false)
         leaveHome = Library.leaveTime(t, home: true)
+        var flights = Library.travel(t)
+        flights.flights = flights.legsForEditing
+        travel = flights
         activities = Set(t.activities)
         storedContexts = t.activityContexts
         // What each workout's things are narrowed by now (`contextsFor`): its own entry,
@@ -297,7 +309,8 @@ struct TripSettingsScreen: View {
         [name, place, "\(hasDates)", HomeScreen.ymd(start), HomeScreen.ymd(end), "\(quick)", "\(laundry)",
          "\(laundryNights)", activities.sorted().joined(separator: ","),
          activities.sorted().map { "\($0):\(workoutContexts[$0, default: []].sorted().joined(separator: "+"))" }.joined(separator: ","),
-         transport, season, catering, weatherOn.sorted().joined(separator: ","), leaveOut, leaveHome]
+         transport, season, catering, weatherOn.sorted().joined(separator: ","), leaveOut, leaveHome,
+         String(describing: travel)]
     }
 
     /// What is still missing before Save, in the words of Create new trip — "" when
@@ -350,6 +363,9 @@ struct TripSettingsScreen: View {
         t.endDate = hasDates ? HomeScreen.ymd(max(start, end)) : ""
         _ = Library.setLeaveTime(&t, leaveOut, home: false)
         _ = Library.setLeaveTime(&t, leaveHome, home: true)
+        // Flights and stay (0.80), after the dates (a leg without a day takes the trip's): only while
+        // Plane is lit — saved with Plane off, what was stored stays. Bag-tag numbers are not touched.
+        if Library.travelLit(transport, "Plane") { Library.setFlightsAndStay(&t, travel) }
     }
 }
 

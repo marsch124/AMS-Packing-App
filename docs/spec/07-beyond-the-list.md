@@ -30,6 +30,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 16. Take a break and messages when a trip moves on | 0.77 | built (branch work/break077) |
 | 17. Packing day — the stations of the Pack step | 0.79 | built (branch work/day079) |
 | 18. Lost luggage — A: a bag's details for the desk | 0.80 | building (branch work/baginfo080) |
+| 18. Lost luggage — B. Flights and stay, bag-tag numbers | 0.80 | built (branch work/flight080) |
 | 18 C. Lost luggage — the Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
@@ -2075,7 +2076,9 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
     bag has an AirTag — **AirTag in it** (`day-tag-<n>-air`) (a `TickCircle` and the words in Body, `Metrics.line`
     tall, value "on"/"off", selected when on), and the switch **Has an AirTag** (`day-tag-<n>-has`, green, its words
     Footnote semibold muted, a mini switch on the iPhone, a small check box on the Mac). All on: "Every tag is on."
-    (`day-tags-said`).
+    (`day-tags-said`). On a plane trip (0.80, part 18 B) the lead adds "At check-in, type the number on each checked
+    bag's tag." and each CHECKED bag's card (not a cabin bag's) holds, between the ticks and Has an AirTag, **Bag-tag
+    no.** and its field (`day-tag-<n>-number`); the number does not count for Tags' green.
   - **Photos** (`day-view-photos`): with two bags or more first a card **All your bags** (Subheadline semibold) — "One
     photo of all of them side by side: for the airline desk if one goes missing." — and its photo (`GroupPhotoRow`:
     `day-group-thumb`, 80 pt, corner 8, a tap shows it large captioned "All your bags"; **Remove** `day-group-remove`
@@ -2208,7 +2211,7 @@ screen — and found the sheet over their next step). The two tests that pack ev
 
 > His yes (13 Oct 2026), 0.80: when a bag goes missing, the airline's baggage desk asks what it looks like — and on the
 > spot, tired, nobody remembers the brand or how big it is. **Part A** (this section, branch `work/baginfo080`): the
-> details are entered ONCE, on each bag's own page, and reused by every trip. **Part B** (branch `work/lostbag080`):
+> details are entered ONCE, on each bag's own page, and reused by every trip. **Part C** (branch `work/lostbag080`):
 > a trip's Lost bag page and its PDF, which read them. Written BEFORE part A was built, then brought in line with the
 > code (the code wins where they differ). The model: `Core/Sources/PackingLibrary/BagDetails.swift`; the block:
 > `App/Sources/Screens/BagDetail.swift` (`lostDesk(_:)`). Per screen: spec 05 (a bag's page, item 3c), spec 01 §1.12
@@ -2227,7 +2230,7 @@ screen — and found the sheet over their next step). The two tests that pack ev
   the bag's own page had no photo; a bag's photos were only the trip's photos of it PACKED).
 - The bag's own photo also shows, small, beside the bag on a trip — in the Bags card and in the Packing day's Photos
   station — until that trip has a photo of it packed.
-- Said once, on the bag; every trip the bag goes on uses the same answers (part B shows them on the trip's Lost bag
+- Said once, on the bag; every trip the bag goes on uses the same answers (part C shows them on the trip's Lost bag
   page and its PDF). Nothing to fill in per trip.
 
 #### The rules (decided 14 Oct 2026, before the build)
@@ -2235,7 +2238,7 @@ screen — and found the sheet over their next step). The two tests that pack ev
 1. **They belong to the BAG** — one of his bags (a thing on Your bags, stored as the web app's "Containers" list),
    not to a trip. A bag that is only a name on a trip's lines has none; it becomes one of his bags (Care → Bags) the
    moment something is said for it by name (`setBagDetails(_:bag:)` — as "Has an AirTag" from the Tags station,
-   part 17 rule 6). Part A says them only on the bag's page; part B may say them from the trip.
+   part 17 rule 6). Part A says them only on the bag's page; part C may say them from the trip.
 2. **Brand and colour are the bag's own thing fields** — `manufacturer` and `color`, which a thing's page has
    shown as **Brand** and **Colour** ("for bags above all", his bag page of 26 Sep 2026; "Its details" on the bag's
    page opens that page). One value in two places, never two values: typed on the bag's page, "Its details" shows it,
@@ -2355,7 +2358,177 @@ Parity: 211/211 (only `extra` keys, and fields the web model already has).
 
 - Size **Cabin** and the switch **Goes in the cabin** are separate answers (one describes the bag for the desk, the
   other decides the airport checks); the build does not tie them. His word welcome if Cabin should switch it on.
-## 18 C. Lost luggage — the Lost bag page
+
+> His yes (13 Oct 2026), 0.80: when a checked bag does not come off the belt, everything the airline's baggage desk
+> asks for is in the app, ready to show or hand over. Three pieces, built side by side: **A** — each bag's own
+> details (brand, colour, type, size, what makes it stand out) on the bag's page; **B** — the trip's flights and
+> stay, and each bag's tag number (this section); and the Lost bag page with its PDF, which reads A and B.
+
+### B. Flights and stay, and the bag-tag numbers (0.80)
+
+Built on branch `work/flight080`, written before the screens, then brought in line with the code (the code wins where
+they differ). The model: `Core/Sources/PackingLibrary/TripTravel.swift` (`TripTravel`, `FlightLeg`, `TripStay`); the
+block: `App/Sources/Screens/FlightsAndStay.swift`; per screen: spec 03 (Create new trip item 7a, Trip settings, the
+Bags card, Start a new trip from this one), spec 01 §1.12 (the keys).
+
+#### What he gets
+
+- On a **plane trip** — Travelling by = Plane — Create new trip and Trip settings show one more framed block right under
+  Travelling by: **Flights and stay**. It is there only while Plane is lit; Plane off, it goes (what was typed is
+  kept, unseen — Plane on again, it is all back).
+- In it: the **flights** — at least two, **Out** and **Home**, each its flight number, its day and from → to; **Add a
+  flight** puts a **Connection** between them (as many as he needs; a connection has a quiet ✕). Then the
+  **Destination** (the city), and **Where you stay**: the hotel's or flat's name, its address, its phone, and **Until**
+  (the last day there).
+- On a plane trip's **Packing day → Tags**, under each CHECKED bag's ticks, a field **Bag-tag no.** — the number on
+  the tag the airline puts on the bag at check-in. The same field is on the trip's **Bags card**, when a bag is opened.
+  A bag that goes in the cabin gets no tag at the desk, so it has no field.
+- All of it is **optional**: nothing here is ever needed for Create trip or Save changes (the main button never
+  grey), and it says so ("Optional." in the block's note).
+
+#### The rules (decided 13–14 Oct 2026, by the build)
+
+1. **Only a plane trip** shows the block and the bag-tag field (`Library.isPlaneTrip`: `transport == "Plane"`). An
+   RV or ordinary trip has no flights and no tag from a check-in desk.
+2. **Plane off keeps it.** Trip settings saved with Plane off leaves the stored flights, stay and tags as they were
+   (not shown, not used — `Library.planeTravel` says nil); Plane on again shows them. Create new trip with Plane off
+   stores none of it (nothing it shows is stored).
+3. **Out and Home always offered.** The block shows his legs, padded with empty ones up to two
+   (`TripTravel.legsForEditing`, `FLIGHT_LEGS_SHOWN` = 2). The first is labelled **Out**, the last **Home**, any
+   between **Connection**; Add a flight inserts a connection BEFORE Home, so what is typed under Out and Home stays
+   under those words (a connection on the way out is typed in the new row as Out's second flight; on the way home,
+   Home's first). Only a connection can be removed (✕); Out and Home are emptied instead.
+4. **A leg nothing was typed in is not kept** — a number, from or to makes it a leg; a day alone does not. Empty legs
+   anywhere in the list go; the rest keep their order (`Library.cleaned`).
+5. **A leg's day.** Shown in a compact date picker; one he never set shows (and is saved as) `Library.legDay`: the
+   first leg the trip's first day, the last of two or more its last day, a connection the first day. A trip without
+   dates: an empty day shows **Add a day** (a capsule; it sets today), and a leg saved without one keeps "" — no day is
+   made up.
+6. **What is kept, cleaned.** Flight numbers and bag-tag numbers: trimmed, capitals, single spaces ("zz  1234 " →
+   "ZZ 1234", `Library.cleanCode`). From, to, destination, the stay's name and phone: trimmed, single spaces. The
+   address: each line trimmed, blank lines gone (it may be pasted on three lines). The stay with only a day is no stay;
+   a stay with no **Until** gets the trip's last day.
+7. **The destination falls back to the Place.** Empty, the desk is given the trip's Place
+   (`Library.travelDestination`); the field shows the Place as its placeholder, so he sees what will be said.
+8. **A bag-tag number is per bag on the trip**, by the bag's name as the trip's Bags card shows it, compared by
+   `normName` (one number per bag). "Other" (loose things) and a blank name take none. Emptied, it goes; the last one
+   gone, the key goes. **Only a checked bag is asked** (`Library.asksBagTag(tripId:bag:)`): a plane trip, a real bag,
+   and not a cabin bag — his word on the bag's page ("Goes in the cabin"), else its name, the airport checks' own rule
+   (`isCabin`). The sample's "Carry-on / hand luggage" is asked nothing. A number kept before the bag went into the
+   cabin stays kept, unasked (the Lost bag page decides what it shows).
+9. **It does not count for Tags.** Tags turns green on its ticks as before (spec 07 part 17): the tag number comes at
+   the airport's check-in desk, after the Packing day.
+10. **A renamed bag** takes its tag number along; two bags made one keep the kept bag's own number (or none); a bag
+    deleted to no bag loses it — as the scale's reading does (`moveBagTag`, called from `renameBagEverywhere`).
+11. **Start a new trip from this one takes none of it** — other flights, another stay, new tags (`startAgain` copies no
+    trip key but the laundry nights).
+12. **A shared trip** (link or file) **keeps the flights, the destination and the stay** — the people he shares a trip
+    with travel with him, on those flights to that hotel — **but not the bag-tag numbers**: those are on HIS bags
+    (`justTheList` drops `bagTags`). Decided by the build, 14 Oct 2026; his word welcome.
+13. **Synced, backed up, restored** with the trip's own record, like every trip key.
+
+#### On the screens
+
+- **The block** (`FlightsAndStay`, `App/Sources/Screens/FlightsAndStay.swift`), the look of "I leave at" (spec 03 item
+  3a): a rounded frame (corner 12, padding 12) with a 1.5-pt border in the screen's tint (Create blue, Trip settings
+  the trip's own) over 6 % of it, id `<p>-frame` (an accessibility container; everything inside keeps its own id), where
+  `<p>` is `trip-flights` on Create new trip and `tripset-flights` in Trip settings. Placed directly under Travelling
+  by's line (Create: above More choices; Trip settings: above Season).
+  - Header row: the **plane** drawing of the template icons (`TemplateIcons.icon("plane")`, the one on Travelling
+    by's Plane pill; `Metrics.glyph`, stroke 1.8, in the tint, hidden from VoiceOver), **"Flights and stay"**
+    (`HeadingTitle`, id `<p>-title`) and, pushed right, **"for a lost bag"** (Footnote muted, id `<p>-what`).
+  - **Each leg** `n` (0-based, id prefix `<p>-leg-<n>`), 6 apart: line one — its word (**Out** / **Connection** /
+    **Home**; Subheadline semibold ink, id `…-label`), the flight-number field (placeholder "Flight no.", capitals as
+    typed, no autocorrect; id `…-number`) and the day (compact date picker, id `…-date`; or **Add a day**, id
+    `…-date-add`); line two — From field (placeholder "From"), an arrow "→" (muted), To field (placeholder "To"), ids
+    `…-from`, `…-to`; a connection ends the line with a small quiet ✕ (id `…-remove`, label "Remove this flight"). A
+    field: Body, padding 8 sideways, `Metrics.tap` tall, the card's colour, 1-pt `Theme.line` border, corner 8.
+  - **Add a flight** (Footnote semibold capsule outline in the tint, `Metrics.chip` tall, id `<p>-add`).
+  - **Destination**: its word (Subheadline semibold ink) over a field (placeholder the trip's Place, else "City";
+    id `<p>-destination`).
+  - **Where you stay** (Subheadline semibold ink): **Hotel or flat** (id `<p>-stay-name`), **Address** (one to three
+    lines, grows; id `<p>-stay-address`), **Phone** (the phone keypad on the iPhone; id `<p>-stay-phone`), and a line
+    **Until** with a compact date picker (id `<p>-stay-until`) or **Add a day** (id `<p>-stay-until-add`).
+  - A hairline (1 pt `Theme.line`), then (Footnote muted, id `<p>-note`): **"Optional. What the airline's desk asks
+    when a bag does not arrive. Each checked bag's tag number goes in on the Packing day, under Tags."**
+- **Create new trip**: the form's flights start as Out and Home, empty; Create stores them (Plane on) and the form
+  starts over, as "I leave at" does. **Trip settings**: opens on the trip's own (`Library.travel`), Save keeps them
+  (`Library.setFlightsAndStay` — the bag-tag numbers are left as they are); part of what a swipe down guards.
+- **Packing day → Tags** (plane trips): the lead adds "At check-in, type the number on each checked bag's tag."
+  Under each checked bag's ticks (`asksBagTag`), before Has an AirTag: **Bag-tag no.** (Footnote semibold muted) and a field (monospaced, placeholder "from
+  check-in", capitals; id `day-tag-<n>-number`). Kept when Return is pressed, when the field loses focus, and when the
+  station closes (`BagTagField`, one model change per number, not per key).
+- **The Bags card** (plane trips): a checked bag tapped open shows, after its photo row, the same field (id
+  `bag-<n>-tagno`); a cabin bag and "Other" have none.
+- **How it works** (spec 06): Create new trip's part says what Flights and stay is; the Packing day's Tags says where the
+  tag number goes.
+
+#### Where it is kept (the web model sees nothing new)
+
+| Holder | Key | Value | Meaning |
+|---|---|---|---|
+| trip | `travel` (`TRIP_TRAVEL_KEY`) | `{ "flights": [{ "number", "date", "from", "to" }], "destination", "stay": { "name", "address", "phone", "until" } }` — each part only when it holds something / absent | the flights, the destination and the stay; written by Create new trip and Trip settings |
+| trip | `bagTags` (`BAG_TAGS_KEY`) | `{ "<bag name>": "<tag number>" }` / absent | each bag's tag number; written by the Packing day's Tags and the Bags card |
+
+Dates are "YYYY-MM-DD" (`isYMD`) or "". Nothing typed = no key. Parity: 211/211 (only `extra` keys).
+
+The API the Lost bag page reads: `Library.travel(_ trip:)` / `travel(tripId:)` → `TripTravel { flights: [FlightLeg {
+number, date, from, to }], destination, stay: TripStay { name, address, phone, until }, bagTags: [bag name: number] }`,
+`TripTravel.bagTag(_ bag:)` (by `normName`), `Library.bagTag(_ trip:, bag:)`, `asksBagTag(tripId:bag:)` (a plane trip's
+checked bag), `Library.travelDestination(_:)` (own
+destination, else the Place), `Library.planeTravel(_:)` (nil unless Plane), `Library.isPlaneTrip(_:)`. Writing:
+`setTravel(_:tripId:)`, `Library.setTravel(&trip, _)`, `Library.setFlightsAndStay(&trip, _)`, `setBagTag(_:tripId:bag:)`.
+
+#### Tests
+
+Model `TripTravelTests` (9, `Core/Tests/PackingLibraryTests/TripTravelTests.swift`; invented flights, hotel and numbers
+— the repository is public; the trip "Sun week", 14–20 Oct 2026, by Plane, Place "Seaside", a Passport in the Big case
+and a Charger in the Day pack, both his bags): `testFlightsAndStayAreKeptCleanedOnTheTrip` (capitals, Home's day the
+last day, the address's lines, Until the last day; records, a backup; emptied = no key),
+`testLegsNothingWasTypedInGoAndTheBlockShowsOutAndHome` (two offered; empty legs go; a connection on the first day; Out
+left empty, Home still on the last day; no dates no day; his own day kept; a stay with only a day is none),
+`testTheDestinationFallsBackToTheTripsPlace`, `testOnlyAPlaneTripShowsItAndPlaneOffKeepsIt`,
+`testCreateAndTripSettingsLeaveTheBagTagsAlone`, `testABagTagIsKeptPerBagAndTakenAwayWithNothing` (cleaned; one per
+bag by `normName`; "Other" and a blank name refused; the last gone = no key),
+`testOnlyACheckedBagOnAPlaneTripIsAskedForItsTag` (a bag, a name on the lines; not "Other", not the carry-on by its
+name, not a bag he says goes in the cabin, not an RV trip), `testABagRenamedTakesItsTagAlongTwoMadeOneKeepTheirOwn`
+(rename; deleted into the Day pack; deleted to no bag), `testAStartAgainTakesNoneOfItASharedTripKeepsFlightsButNotTags`.
+Each seen RED with a planted fault: `cleanCode` without capitals ("flight numbers not in capitals"); `legsForEditing`
+padding to one ("("1") is not equal to ("2") - the block did not offer out and home"); a leg's day counted among the
+kept legs only ("("["2026-10-14"]") is not equal to ("["2026-10-20"]") - Home alone was put on the first day");
+`travelDestination` without the Place ("("") is not equal to ("Seaside")"); `planeTravel` ignoring the transport ("a
+trip by car showed flights"); `setFlightsAndStay` dropping the tags ("saving the block lost a bag tag"); `setBagTag`
+comparing names exactly ("("["Day pack": "CD 9", "Big case": "ab 123456"]") is not equal to ("["BIG CASE": "EF 7",
+"Day pack": "CD 9"]")"); `asksBagTag` without the cabin ("a cabin bag (by its name) was asked for a tag", "a bag he says
+goes in the cabin was asked for a tag"); no `moveBagTag` ("a renamed bag lost its tag"); `justTheList` keeping
+`bagTags` ("his bag tags went with a shared trip"). All model tests 579 + 451 green; parity 211/211 on the invented
+backup (209/209 on his own, on his Mac).
+
+UI (`AMSPackingUITests`): `testFlightsAndStayOnlyOnAPlaneTrip` (`-uiTesting`: no block until Plane; "Flights and stay",
+Out and Home, no third; Add a day without dates; Add a flight → Connection before Home, Out and Home have no ✕, the ✕
+takes it away; a flight, from → to, the destination, the hotel and a phone typed; Plane off → gone, on → what was typed
+is back; Create; Trip settings opens on it, the number trimmed; saved with Plane off → no block, Plane on again → the
+flight is still there) and `testABagTagNumberAtTheTagsStation` (`-uiTestingPackingDay -packingDayByPlane`: the Day pack
+— checked — has Bag-tag no., the carry-on — a cabin bag by its name — has none; typed + Return → kept trimmed, Tags
+still "0 of 3 ticked"; the Bags card's opened Day pack shows it; `-uiTestingPackingDay` alone — not by plane — no
+field). Typed in capitals with a space too many: the keyboard may capitalise on its own, so the capitals are the
+model's test, the trimming the screen's. Each seen RED on the iPhone simulator with its own planted fault: Create not
+storing the block — "the flight was not kept (trimmed): 'Flight no.'"; Tags asking every bag on a plane trip — "the
+carry-on goes in the cabin, yet it is asked for a tag number". Green again without them, day and night (pictures
+`flights-create-top`, `flights-create`, `flights-tripset-top`, `flights-tripset`, `flights-day-tags`,
+`flights-bags-card`). The test helper `fill` keeps a field clear of the status bar and the keyboard before typing (a
+field reported on screen under the status bar took no focus).
+
+#### Open questions
+
+- A shared trip carries the hotel's address and phone to whoever he shares it with (rule 12). Right for the people
+  he travels with; if he shares trips as lists with others, a "keep my stay to myself" would be the fix.
+- The flight's times (departure, arrival) are not asked — the desk asks the flight and the day. Worth adding if the
+  Lost bag page wants them.
+- The bag-tag number is per trip; a return flight usually gives a new tag — the field holds the latest. Two numbers
+  per bag (out, home) if he wants both kept.
+
+### C. The Lost bag page (and his details for the desk)
 
 > His yes (13 Oct 2026) to the lost-luggage information, part C — the page the other two parts feed: on a trip, a
 > **Lost bag** page PER BAG with everything a baggage desk asks for, in a calm, readable layout he can hand over or read
@@ -2369,7 +2542,7 @@ Parity: 211/211 (only `extra` keys, and fields the web model already has).
 > Settings door and This is me), spec 07 part 17 (the Packing day's Photos and Ready), spec 01 §1.11 and §10 (the key,
 > the backup).
 
-### What he gets
+#### What he gets
 
 - **Who he is, once.** Settings opens with a door **For the lost-luggage desk** — "Your name, phone, e-mail and home
   address". Its sheet keeps four fields: Full name, Phone, E-mail, Home address (several lines). They belong to the
@@ -2388,7 +2561,7 @@ Parity: 211/211 (only `extra` keys, and fields the web model already has).
 - At the foot, always in view: **Share as PDF** (the system share sheet with a PDF of the page — to mail, AirDrop,
   print, or save) and **Copy as text** (the same words, for a web form or a chat with the airline).
 
-### The rules (decided 13–14 Oct 2026, by the build)
+#### The rules (decided 13–14 Oct 2026, by the build)
 
 1. **His details** (`DeskDetails`: `name`, `phone`, `email`, `address`) are kept in `meta` under **`lostDesk`**
    (`LOST_DESK_KEY`) as `{name, phone, email, address}` — only the ones said, each trimmed (single spaces inside a
@@ -2427,12 +2600,13 @@ Parity: 211/211 (only `extra` keys, and fields the web model already has).
    (the bag's own switch, part 17 rule 6) with the hint "In Find My, Share Item Location gives the airline a link to
    where it is." (`LOST_AIRTAG_HINT`), or "No" — never "not filled in" (no AirTag is an answer). A tap on AirTag
    opens the bag's page too (its switch is there).
-7. **Photos** — the bag's own photos on this trip (the Bags card's, up to three, as stored), then the photo of all the
-   trip's bags together (part 17), captioned "All your bags". A tap shows one large (`BigPhoto`, captions "Day pack 1
-   of 2" … "All your bags", Next steps through all). No photo of the bag itself: the row "Photo of the bag — not
-   filled in" and the ways to take one right there (`PhotoTakers`: on the iPhone Take a photo / Choose a photo, on the
-   Mac Choose) — kept as the bag's photo on this trip (`addBagPhoto`), as if taken in the Bags card. Only the bag's own
-   photo counts towards "not filled in"; the photo of all the bags is shown when there is one.
+7. **Photos** — the photos of the bag itself (how it looks, from its page — part A's `photoIds`, up to two), then this
+   trip's photos of it packed (the Bags card's, up to three, as stored), then the photo of all the trip's bags together
+   (part 17), captioned "All your bags". A tap shows one large (`BigPhoto`, captions "Day pack 1
+   of 2" … "All your bags", Next steps through all). No photo of the bag at all (neither how it looks nor packed on this
+   trip, `LostBagPage.noPhoto`): the row "Photo of the bag — not filled in" and the ways to take one right there (`PhotoTakers`: on the iPhone Take a photo / Choose a photo, on the
+   Mac Choose) — kept as the bag's photo on this trip (`addBagPhoto`), as if taken in the Bags card. Only a photo of
+   the bag itself counts towards "not filled in"; the photo of all the bags is shown when there is one.
 8. **A few things in it** — the trip's lines in this bag (`container` by `normName`), set-aside lines and reminders
    left out, in the trip's own order; when any of them is ticked, ONLY the ticked ones (what went in), else all of
    them (what is meant to). The first **eight** (`LOST_INSIDE_SHOWN`), each "Name" or "Name ×3" (the line's count,
@@ -2493,7 +2667,7 @@ Parity: 211/211 (only `extra` keys, and fields the web model already has).
     stay (part B) but never his details (they are in `meta`, not the trip); Start a new trip from this one copies none
     of it.
 
-### On the screens
+#### On the screens
 
 - **The page** (`LostBagScreen`, a sheet, id `lost-screen`; on the Mac at least 520 × 640):
   - Header (padding 16): "Lost bag" (Title 3 bold, ink) and under it the bag's name (Subheadline semibold muted, one
@@ -2556,7 +2730,7 @@ Parity: 211/211 (only `extra` keys, and fields the web model already has).
   site* — where the page is, what it holds, not filled in and the tap, the bag-tag number on the page, Share as PDF and
   Copy as text, his details in Settings. **Words** (spec 06 §10): "Lost bag".
 
-### Where it is kept (the web model sees nothing new)
+#### Where it is kept (the web model sees nothing new)
 
 | Holder | Key | Value | Meaning |
 |---|---|---|---|
@@ -2567,11 +2741,11 @@ Everything else on the page is read from what parts A and B, part 17 and the tri
 his details, a bag-tag number (part B's key), a bag photo (the Bags card's) and — when a detail of a bag that was only a
 name is filled in — the new bag. Parity: 211/211.
 
-### Tests
+#### Tests
 
 Model `LostBagTests` (`Core/Tests/PackingLibraryTests/LostBagTests.swift`) and UI tests — listed from the code below.
 
-### Open questions
+#### Open questions
 
 - The page reads the way OUT: on the way home (Pack to go home) a thing may travel in another bag, and "A few things in
   it" still lists what went out in this one. If he loses a bag on the way home, the home bags' ticks could decide it.
@@ -2613,6 +2787,7 @@ Model `LostBagTests` (`Core/Tests/PackingLibraryTests/LostBagTests.swift`) and U
 | 13 Oct 2026 | The Quick line names his always-packed templates and says the airport checks plainly: "Quick packs only what you tick — not <names>, no Plane or RV template. Plane still turns on the airport checks." (0.78) | He did not understand "Plane and RV still count", and "Always" alone is cryptic — he thinks of his short-trip template by its name |
 | 13 Oct 2026 | A guided Packing day inside the Pack step: a row of stations — Bags out, Pack, Weigh, Tags, Photos, Ready — each green when done, a tap opens it, the next open one offered; Weigh opens by itself once when the last thing is ticked; Has an AirTag on the bag; one photo of all the bags per trip; Ready pairs with "I leave at". Marks: his picks of the station sheet (day B, Bags out A, Pack C, Weigh A, Tags A, Photos C, Ready A) | His own packing walk-through (bags out on the floor for a week, pack, weigh, name tags and AirTags, photos for lost luggage, ready). Part 17. |
 | 13 Oct 2026 | Lost luggage, part A: each bag's details for the airline's baggage desk — brand, colour (with pills), type (the desk's categories in plain words), size (Cabin, Medium, Large and a note) and distinctive marks — said once on the bag's page and reused by every trip; brand and colour are the thing's own Brand and Colour, never a second copy; and up to two photos of the bag itself (the thing's own photos), shown small beside the bag on a trip until it has a photo of it packed (0.80) | His yes to the lost-luggage information (0.80); the photos his ask of 14 Oct 2026. Part 18 A. |
+| 14 Oct 2026 | On a plane trip, Create new trip and Trip settings keep the flights (Out and Home, connections between), the destination and where he stays until when, in a framed block "Flights and stay" under Travelling by, optional; each bag's tag number from check-in at the Packing day's Tags and on the Bags card. Plane off keeps it unseen; Start again takes none of it; a shared trip keeps flights and stay but not the tag numbers (decided by the build) | His yes of 13 Oct 2026 to the lost-luggage information (0.80). Part 18 B. |
 | 13 Oct 2026 | Lost luggage, part C: a Lost bag page per bag of a trip — his details (name, phone, e-mail, home address, kept once for the library in Settings), the trip's flights, stay and the bag-tag number, the bag's details, AirTag, photos and a few things in it; "not filled in" opens what fills it; Share as PDF and Copy as text; reached from the Bags card and the Packing day's Photos and Ready. The bag-tag number is typed on the page itself; a trip by car or train still has a page (decided by the build) | His yes to the lost-luggage information (A bag details, B flights and stay, C the page). Part 18 C. |
 
 ## Open questions

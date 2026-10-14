@@ -84,9 +84,16 @@ trip *Weekend in the hills* (Hiking + base, always 30–32 days from the day the
 | `bagPhotos` | `BAG_PHOTOS_KEY` | `{ "<bag name>": ["<photo id>", …] }` (0.52/0.53 wrote one plain string id; read as a list of one) | bag photos |
 | `leaveAt` | `LEAVE_AT_KEY` | "HH:mm" (0.69) — the time he leaves on the first day; absent = none | Create trip, Trip settings ("I leave at") |
 | `leaveHomeAt` | `LEAVE_HOME_AT_KEY` | "HH:mm" (0.69) — the time he leaves for home on the last day | Create trip, Trip settings |
+| `travel` | `TRIP_TRAVEL_KEY` | `{ "flights": [{ "number", "date", "from", "to" }], "destination", "stay": { "name", "address", "phone", "until" } }` (0.80) — each part only when it holds something; absent = none | Create trip, Trip settings ("Flights and stay", plane trips) |
+| `bagTags` | `BAG_TAGS_KEY` | `{ "<bag name>": "<tag number>" }` (0.80) | the Packing day's Tags, the Bags card (plane trips) |
 
 Neither leave time is copied by Start again (a new trip has no dates); both travel in a shared trip (the
 people he shares a trip with leave with him). See "The door check".
+
+`travel` and `bagTags` (0.80, spec 07 part 18 B — the lost-luggage information): neither is copied by Start again
+(other flights, another stay, new tags); in a shared trip `travel` goes along (they fly with him, to the same stay)
+and `bagTags` is dropped (`justTheList`: the tags are on HIS bags). `bagTags` follows a bag's rename as the scale
+reading does.
 
 `breakUntil` (`BREAK_UNTIL_KEY`, 0.77) — "yyyy-MM-dd HH:mm", Take a break's moment to go back to packing (spec 07
 part 16): written by the break sheet, removed by Just pause and when everything is packed; NOT copied by Start
@@ -281,6 +288,17 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
      - **Quick** picked: no template names at all — Quick packs no transport template (the line under Full
        trip | Quick says so) — so the line is "Leave both off for an ordinary trip. Plane adds the airport
        checks." (the cabin check runs on a Quick plane trip too).
+7a. **Flights and stay** (`FlightsAndStay`, 0.80 — spec 07 part 18 B), only while **Plane** is lit, directly under
+   Travelling by's line: the framed block of "I leave at" (item 3a: corner 12, 1.5-pt blue border over 6 % blue),
+   ids `trip-flights-*` (`trip-flights-frame`, `-title`, `-what`, `-leg-<n>-label/number/date/date-add/from/to/remove`,
+   `-add`, `-destination`, `-stay-name`, `-stay-address`, `-stay-phone`, `-stay-until`, `-stay-until-add`, `-note`).
+   The plane drawing, "Flights and stay", "for a lost bag"; the flights — **Out** and **Home** to begin with, **Add a
+   flight** puts a **Connection** before Home (a connection has a ✕) — each a flight number, a day (the trip's first day
+   for Out, its last for Home until he picks one; no dates: Add a day) and From → To; **Destination** (the Place as
+   placeholder); **Where you stay**: Hotel or flat, Address, Phone, Until (the last day until he picks one); the note
+   "Optional. What the airline's desk asks when a bag does not arrive. Each checked bag's tag number goes in on the Packing
+   day, under Tags." Optional: never in the still-needed line. Create stores it only with Plane lit
+   (`Library.setFlightsAndStay`, cleaned — empty legs go); the form starts over with Out and Home empty.
 8. **More choices** (`MoreChoices`, 0.76 — his ask of 13 Oct 2026: Dates, the templates, Travelling by and
    "I leave at" stay in sight; the rest folds). One row after Travelling by: a button (id `trip-more`, min
    height 28) holding a chevron (pointing right when closed, down when open; ink, `Metrics.glyph`) and
@@ -418,6 +436,10 @@ Same view. On the Mac the screen column is at most 720 pt wide (`RootView`). The
 a sheet window.
 
 ### Tests
+**0.80:** `testFlightsAndStayOnlyOnAPlaneTrip` — Flights and stay only with Plane lit, Out and Home, a connection added
+and removed, kept through Plane off and on, stored by Create and shown (trimmed) by Trip settings, kept unseen when
+saved with Plane off; `testABagTagNumberAtTheTagsStation` (the Packing day's Tags and the Bags card). Model
+`TripTravelTests` (9). Spec 07 part 18 B.
 **0.76:** `testTravellingByIsPlaneOrRVOrNeither` (`-uiTestingTravel`: "Travelling by", Plane `trip-transport-1` and
 RV `trip-transport-2`, no `trip-transport-0`, both off; the line "Leave both off for an ordinary trip. Plane adds the
 airport checks · RV adds Camper kit.", Quick → no name, Full trip → the name again; RV then Plane → only Plane, the lit
@@ -1644,7 +1666,11 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   `tripset-context-<n>-0…2`, n = its `tripset-activity-<n>`), **Travelling by** (0.76, `TravellingBy` as on
   Create new trip, blue like the sheet's other pills: heading `tripset-transport-title`, Plane `tripset-transport-1`, RV
   `tripset-transport-2`, the line `tripset-transport-note` — `Library.travelNote(quick:)` for the sheet's
-  own Full trip | Quick; until 0.76 Transport, Car / Plane / RV `tripset-transport-0…2`),
+  own Full trip | Quick; until 0.76 Transport, Car / Plane / RV `tripset-transport-0…2`), **Flights and stay**
+  (0.80, only while Plane is lit; as on Create new trip, item 7a, in the sheet's own colour, ids `tripset-flights-*`;
+  loaded from `extra.travel` (`Library.travel`, padded to Out and Home); part of the sheet's snapshot; Save writes it
+  with `Library.setFlightsAndStay` inside `changeTrip` — only while Plane is lit: saved with Plane off, what was stored
+  stays, unseen; the bag-tag numbers are never touched here),
   Season, **Pack weather gear anyway** (0.62: pills Rain, Cold, Heat, Wind, Snow — `WEATHER_CONDITIONS`,
   ids `tripset-weather-0…4`, heading `tripset-weather-title`, blue, several at once — the trip's
   `weatherOn`: his gear tagged for a picked condition comes onto the list whatever the forecast; the
@@ -1769,7 +1795,8 @@ ended up, after a week of corrections."
 season, contexts, `activityContexts` (each workout's Context, 0.67), weatherOn, catering, laundry, destination and `extra.laundryNights`; NOT the dates,
 weather, map point, status or review. Every line copied with a new id, `checked = false`,
 `skipped = false`, `used = nil`, and its marks `packedAt`, `boughtThere`, `packedHome`, `usedUp`,
-`homeNote` (and since 0.75 the charge ticks `charged` and `kitCharged`, spec 07 part 15) removed (0.62: a copied bought-on-site mark made the new trip stand at On site at once);
+`homeNote` (and since 0.75 the charge ticks `charged` and `kitCharged`, spec 07 part 15) removed — and no trip
+key but `laundryNights` is copied, so the flights and stay and the bag-tag numbers (0.80) stay behind (0.62: a copied bought-on-site mark made the new trip stand at On site at once);
 `custom` and `_edited` stay — what the line IS comes along, what happened on the old trip does not.
 The new trip is appended (not via `createTrip`: no `generatedAt`, nights 0). Trip settings
 closes WITHOUT saving any other edits made in the sheet, and the trip screen switches to the new trip
@@ -2204,6 +2231,11 @@ tests, like `ams.view`). Until 0.74 the card was always open.
      `bag-<n>-photo-pick`); on the Mac only Choose; under the UI tests one pill "Photo of the packed
      bag"/"Another photo" (id `bag-<n>-photo`) that keeps a drawn picture. At three: "Three photos —
      remove one to add another" (15 medium muted, id `bag-<n>-photo-full`).
+  4. **Bag-tag no.** (0.80, a plane trip's CHECKED bags only — not a cabin bag, not "Not in a bag",
+     `asksBagTag`; spec 07 part 18 B): the label (Footnote semibold
+     muted) and a field (monospaced, placeholder "from check-in", capitals; id `bag-<n>-tagno`) for the number on the
+     tag the airline put on the bag at check-in — kept on Return, when the field loses focus and when the bag closes
+     (`BagTagField`, shared with the Packing day's Tags, where it is `day-tag-<n>-number`).
 - A thumbnail opens **BigPhoto** (sheet): "k of N" (15 bold mono muted, id `bag-photo-count`) when
   more than one, a caption when given (17 heavy green, up to 2 lines, `bag-photo-caption`), **Next**
   (outlined, only with more than one, id `bag-photo-next`) and **Done** (filled, id `bag-photo-done`);

@@ -128,6 +128,16 @@ final class LostBagTests: XCTestCase {
         XCTAssertEqual(row(lib.lostBag(tripId: trip, bag: "Day pack")!, "trip-flights").lines, ["SK 99 \u{00B7} 14 Nov 2026 \u{00B7} to AGP"])
         let all = lib.setGroupPhoto(tripId: trip, jpeg: Data([7]))!
         XCTAssertEqual(lib.lostBag(tripId: trip, bag: "Day pack")!.groupPhotoId, all.id)
+        // How the bag looks (its own photo, from its page) counts as a photo of it too.
+        var looks = library().0
+        let tripB = looks.trips[0].id
+        XCTAssertTrue(looks.lostBag(tripId: tripB, bag: "Day pack")!.noPhoto)
+        let pack = looks.bags().first { $0.name == "Day pack" }!.id
+        XCTAssertNotNil(looks.addBagOwnPhoto(id: pack, jpeg: Data([5])))
+        let page2 = looks.lostBag(tripId: tripB, bag: "Day pack")!
+        XCTAssertEqual(page2.lookIds.count, 1)
+        XCTAssertFalse(page2.noPhoto, "the photo of how the bag looks is a photo of it")
+        XCTAssertTrue(page2.text.contains("Photos: 1 (in the PDF)"))
     }
 
     func testWhatIsNotKnownSaysNotFilledInAndWhereItIsFilledIn() {

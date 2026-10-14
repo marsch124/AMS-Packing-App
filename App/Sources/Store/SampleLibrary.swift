@@ -253,7 +253,9 @@ enum SampleLibrary {
     /// ahead and at Pack, has two bags: the carry-on (5 lines, `day-bag-0`) and the Day pack (2,
     /// `day-bag-1`). `almost` (`-packingDayAlmost`): every station done but the last line — the
     /// Map unticked — so ticking it makes the day Ready (and Weigh, all weighed, stays shut).
-    static func packingDay(almost: Bool = false) -> Library {
+    /// `byPlane` (`-packingDayByPlane`, 0.80 — spec 07 part 18 B): the trip goes by Plane, so Tags
+    /// and the Bags card ask for each bag's tag number.
+    static func packingDay(almost: Bool = false, byPlane: Bool = false) -> Library {
         var lib = make()
         guard let pack = lib.addBag(name: "Day pack") else { return lib }
         _ = lib.setBagAirTag(id: pack.id, true)
@@ -261,6 +263,7 @@ enum SampleLibrary {
             lib.items[n].container = "Day pack"
         }
         guard !lib.trips.isEmpty else { return lib }
+        if byPlane { lib.trips[0].transport = "Plane" }
         lib.trips[0].entries = buildTotalEntries(lib.trips[0], lib.resolvedTemplates())
         guard almost else { return lib }
         let id = lib.trips[0].id

@@ -259,10 +259,12 @@ struct LostBagScreen: View {
 
     private struct Shot { let image: CGImage; let caption: String }
 
-    /// The bag's own photos on this trip (those on this device), then the photo of all the bags.
+    /// The photos of the bag itself (how it looks, from its page), then this trip's photos of it
+    /// packed — those on this device — then the photo of all the bags.
+    private func ownImages() -> [CGImage] { LostBagPDF.ownImages(model.library, tripId: tripId, bag: bag) }
+
     private func shots() -> [Shot] {
-        let own = model.library.bagPhotos(tripId: tripId, bag: bag).compactMap { JPEG.image(dataURL: $0.data) }
-        var all = own.map { Shot(image: $0, caption: bag) }
+        var all = ownImages().map { Shot(image: $0, caption: bag) }
         if let group = model.library.groupPhoto(tripId: tripId).flatMap({ JPEG.image(dataURL: $0.data) }) {
             all.append(Shot(image: group, caption: "All your bags"))
         }
@@ -270,7 +272,7 @@ struct LostBagScreen: View {
     }
 
     @ViewBuilder private func photos(_ page: LostBagPage) -> some View {
-        let own = model.library.bagPhotos(tripId: tripId, bag: bag).compactMap { JPEG.image(dataURL: $0.data) }
+        let own = ownImages()
         let group = model.library.groupPhoto(tripId: tripId).flatMap { JPEG.image(dataURL: $0.data) }
         if !own.isEmpty || group != nil {
             FlowRow(spacing: 10) {
@@ -283,7 +285,7 @@ struct LostBagScreen: View {
             }
             .padding(.top, 2)
         }
-        if page.photoIds.isEmpty {
+        if page.noPhoto {
             VStack(alignment: .leading, spacing: 6) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Photo of the bag").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
@@ -651,9 +653,15 @@ struct DeskDetailsLink: View {
 enum LostBagPDF {
     static let size = CGSize(width: 595, height: 842)
 
+    /// The bag's pictures that are on this device: how it looks (its page), then packed on this trip.
+    static func ownImages(_ library: Library, tripId: String, bag: String) -> [CGImage] {
+        let look = library.bagDetails(bag: bag).photoIds.compactMap { id in library.photos.first { $0.id == id } }
+        return (look + library.bagPhotos(tripId: tripId, bag: bag)).compactMap { JPEG.image(dataURL: $0.data) }
+    }
+
     /// Write the PDF into the temporary folder: its file and how many pages it has.
     static func write(_ page: LostBagPage, library: Library) -> (url: URL, pages: Int)? {
-        let own = library.bagPhotos(tripId: page.tripId, bag: page.bag).compactMap { JPEG.image(dataURL: $0.data) }
+        let own = ownImages(library, tripId: page.tripId, bag: page.bag)
         var pictures = own.enumerated().map { k, image in
             (image: image, caption: own.count > 1 ? "\(page.bag) \u{00B7} \(k + 1) of \(own.count)" : page.bag)
         }
@@ -720,7 +728,7 @@ private struct LostBagPDFFacts: View {
                             Text(LOST_AIRTAG_HINT).font(.system(size: 9.5)).foregroundStyle(grey)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        let shots = page.photoIds.count + (page.groupPhotoId.isEmpty ? 0 : 1)
+                        let shots = page.lookIds.count + page.photoIds.count + (page.groupPhotoId.isEmpty ? 0 : 1)
                         fact("Photos", [shots == 0 ? "" : "\(shots), on the next page"])
                     }
                     VStack(alignment: .leading, spacing: 3) {

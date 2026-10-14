@@ -122,6 +122,11 @@ struct BagsCard: View {
                                 BagCabinRow(bag: bag.load.container, n: n).environmentObject(model)
                                 // A photo of it packed (his idea 11), to repack from on the way home.
                                 BagPhotoRow(tripId: tripId, bag: bag.load.container, n: n).environmentObject(model)
+                                // A plane trip's checked bag (0.80, spec 07 part 18 B): the number on its tag from check-in.
+                                if model.library.asksBagTag(tripId: tripId, bag: bag.load.container) {
+                                    BagTagField(tripId: tripId, bag: bag.load.container, id: "bag-\(n)-tagno")
+                                        .environmentObject(model)
+                                }
                             }
                         }
                     }
