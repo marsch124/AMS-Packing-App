@@ -1635,6 +1635,28 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip did not open")
     }
 
+    /// Every line of the open trip ticked, one by one as he would — Tick everything is gone (his
+    /// decision of 13 Oct 2026). 🪤 The lines sit in a LAZY list: travel to each, the row above as
+    /// the guide (`testTheScreenSaysSoWhenEverythingIsPacked`). There are as many lines as the
+    /// count's total and those set aside ("1/6 · 1 set aside" = 7); a line set aside takes no tick.
+    /// Sorted by Template a line on two templates stands twice under one id: its first copy is
+    /// tapped (one tick ticks both).
+    private func tickEveryLine(_ app: XCUIApplication) {
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress).contains("/") }, "the trip shows no count")
+        let numbers = words(progress).split { !$0.isNumber }.compactMap { Int($0) }
+        let lines = numbers.dropFirst().prefix(2).reduce(0, +)
+        XCTAssertGreaterThan(lines, 0, "the trip has no lines: '\(words(progress))'")
+        for n in 0..<lines {
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil),
+                          "line \(n + 1) of \(lines) never appeared")
+            let line = app.buttons.matching(identifier: "trip-line-\(n)").firstMatch
+            if !isOn(line) { tapVisible(app, line) }
+        }
+        XCTAssertTrue(waitUntil(timeout: 10) { (progress.value as? String) == "all packed" },
+                      "every line was tapped and the trip is not all packed: '\(words(progress))'")
+    }
+
     /// The walk goes by what it HEARS: forgiving words ("Packed it", "next", "where is
     /// it", "pack"; no apostrophe — a launch argument loses it), one it does not know ("hello" — asked again, and counted), and stop.
     /// The trip's lines are ticked, set aside and left exactly as the words said.
@@ -1747,8 +1769,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(words(needs).contains("microphone"), "it does not say the microphone is not allowed: '\(words(needs))'")
         XCTAssertNil(find(app, "voice-panel"), "the panel opened without a microphone")
         shot(app, "voice-refused")
-        tapVisible(app, app.buttons["trip-tickall"])
-        XCTAssertTrue(waitUntil { !app.buttons["trip-tickall"].exists }, "Tick everything did not tick everything")
+        tickEveryLine(app)
         tap(app, id: "voice-start")
         XCTAssertTrue(waitUntil { self.words(needs) == "Everything on this trip is packed or set aside." },
                       "with nothing to pack it did not say so: '\(words(needs))'")
@@ -2442,8 +2463,7 @@ final class AMSPackingUITests: XCTestCase {
         // The way home shows every photo of the bag, to repack from — everything packed first,
         // so the bag goes home; and a thing bought there, so the way home is open whatever
         // the sample trip's dates.
-        tapVisible(app, app.buttons["trip-tickall"])
-        XCTAssertTrue(waitUntil { !app.buttons["trip-tickall"].exists }, "Tick everything did not tick everything")
+        tickEveryLine(app)
         type("Sun hat", into: app.textFields["trip-add-name"])
         tap(app, id: "trip-add-bought")
         hideKeyboard(app)
@@ -2586,20 +2606,41 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(undo) == "Used up" }, "after Undo it does not offer Used up again: '\(words(undo))'")
     }
 
-    /// "While packing, we need a button to check off all items" (their field test, 3 Oct
-    /// 2026): one press ticks everything still coming home; the same place clears the ticks.
-    func testEverythingIsTickedForTheWayHomeAtOnce() {
+    /// His decision of 13 Oct 2026 on the trip's Tick everything ("two very risky buttons … pressed by
+    /// mistake: catastrophe") holds for the way home's too, which ticked everything coming home in
+    /// one press and, pressed again, cleared every home tick without asking. Gone (0.79): neither
+    /// Tick everything nor Clear the ticks, before or after; the lines are ticked one by one, and a
+    /// used-up line takes no tick.
+    func testTheWayHomeIsTickedLineByLine() {
         let app = launch()
         let home = openWayHomeOfThree(app)
         tap(app, id: "wayhome-line-1-usedup")
         XCTAssertTrue(waitUntil { self.words(home) == "0/2 · 1 used up" }, "'\(words(home))'")
-        tap(app, id: "wayhome-tickall")
-        XCTAssertTrue(waitUntil { self.words(home) == "2/2 · 1 used up" }, "Tick everything did not tick everything: '\(words(home))'")
+        XCTAssertFalse(app.buttons["wayhome-tickall"].exists, "the way home still offers Tick everything")
+        tickEveryHomeLine(app)
         XCTAssertTrue(isOn(app.buttons["wayhome-line-0"]) && isOn(app.buttons["wayhome-line-2"]), "the lines do not show their ticks")
         XCTAssertFalse(isOn(app.buttons["wayhome-line-1"]), "a used-up line was ticked")
+        XCTAssertFalse(app.buttons["wayhome-tickall"].exists, "everything packed, the way home offers Clear the ticks")
         shot(app, "way-home-all-ticked")
-        tap(app, id: "wayhome-tickall")
-        XCTAssertTrue(waitUntil { self.words(home) == "0/2 · 1 used up" }, "the same place did not clear the ticks: '\(words(home))'")
+    }
+
+    /// Every line of the open way home ticked, one by one — its Tick everything is gone (0.79).
+    /// There are as many lines as the count's total and the used up ("0/2 · 1 used up" = 3); a
+    /// used-up line takes no tick.
+    private func tickEveryHomeLine(_ app: XCUIApplication) {
+        let home = app.staticTexts["wayhome-progress"]
+        XCTAssertTrue(waitUntil { self.words(home).contains("/") }, "the way home shows no count")
+        let numbers = words(home).split { !$0.isNumber }.compactMap { Int($0) }
+        let lines = numbers.dropFirst().prefix(2).reduce(0, +), total = numbers.count > 1 ? numbers[1] : 0
+        XCTAssertGreaterThan(lines, 0, "the way home has no lines: '\(words(home))'")
+        for n in 0..<lines {
+            XCTAssertTrue(scrollUntil(app, "wayhome-line-\(n)", near: n > 0 ? "wayhome-line-\(n - 1)" : nil),
+                          "line \(n + 1) of \(lines) never appeared")
+            let line = app.buttons["wayhome-line-\(n)"]
+            if !isOn(line) { tapVisible(app, line) }
+        }
+        XCTAssertTrue(waitUntil { self.words(home).hasPrefix("\(total)/\(total)") },
+                      "every line was tapped and not all is packed for home: '\(words(home))'")
     }
 
     /// "A button for each item to write maintenance in the comment" (their field test,
@@ -2858,7 +2899,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(said.contains("Leaving for Weekend in the hills?"), said)
         XCTAssertTrue(said.contains("Still unticked: Passport, Phone charger, Toothbrush, Headlamp, Hiking boots and 2 more"), said)
         // Everything ticked: nothing to say, so no check.
-        tap(app, id: "trip-tickall")
+        tickEveryLine(app)
         XCTAssertTrue(app.staticTexts["door-check-none"].waitForExistence(timeout: 8), "a door check with everything ticked: '\(words(out))'")
     }
 
@@ -3097,7 +3138,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "break-done")
         XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
         // Everything ticked: no break to take.
-        tapVisible(app, app.buttons["trip-tickall"])
+        tickEveryLine(app)
         XCTAssertTrue(waitUntil { !app.buttons["trip-break"].exists }, "Take a break with everything packed")
     }
 
@@ -3158,7 +3199,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "break-done")
         XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
         XCTAssertTrue(waitUntil(timeout: 8) { message.exists })
-        tapVisible(app, app.buttons["trip-tickall"])
+        tickEveryLine(app)
         XCTAssertTrue(waitUntil(timeout: 8) { !message.exists }, "a break waiting with everything packed")
         tap(app, id: "trip-line-0")
         XCTAssertTrue(waitUntil { (door.value as? String) == "Take a break" }, "the break came back with a line unticked: '\(door.value as? String ?? "")'")
@@ -4110,38 +4151,152 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
     }
 
-    /// The web app's "Mark everything packed" / "Clear every tick" (gap list,
-    /// 2026-09-27): Tick everything takes the trip to all packed at once; Clear asks
-    /// first, Keep them keeps them, and Clear the ticks takes them all away.
-    func testEverythingIsTickedAndClearedAtOnce() {
-        let app = launch()
-        tab(app, "events")
-        XCTAssertTrue(appears(app, "screen-events"))
-        app.buttons["trip-row-0"].tap()
-        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+    /// His decision (13 Oct 2026): "Tick everything" and "Clear every tick" at the foot of the trip
+    /// were "two very risky buttons — in a stressful situation half way packed, pressed by mistake:
+    /// catastrophe". The foot has neither now. Clear every tick is a quiet row, last in Trip
+    /// settings, only while something is ticked; it asks first and Keep them keeps; Clear the ticks
+    /// clears them, closes Trip settings, and the trip offers Undo, which brings back exactly those
+    /// ticks. With other answers changed and not saved, the question says they are not saved.
+    func testEveryTickIsClearedFromTripSettingsAndCanBeUndone() {
+        // The Undo stays until used (`-undoSeconds`): GitHub's Mac takes longer than its 6 seconds to
+        // reach it. That it goes by itself: `testTheUndoGoesByItself`.
+        let app = launch("-uiTesting", ["-undoSeconds", "600"])
+        openSampleTrip(app)
         let progress = app.staticTexts["trip-progress"]
-        app.buttons["trip-line-0"].tap()
-        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the tick did not count: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
+        // The foot of the trip: Excel, Share, Delete trip — no Tick everything, no Clear every tick.
+        let delete = app.buttons["trip-delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 5), "no Delete trip at the foot of the trip")
+        bringIntoView(app, delete)
+        XCTAssertFalse(app.buttons["trip-tickall"].exists, "Tick everything is still on the trip")
+        XCTAssertFalse(app.buttons["trip-clearall"].exists, "Clear every tick is still on the trip")
+        shot(app, "trip-foot")
+        // Nothing ticked: nothing to clear in Trip settings.
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-again"), "no Start a new trip in Trip settings")
+        XCTAssertFalse(app.buttons["tripset-clearall"].exists, "Clear every tick is offered with nothing ticked")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
 
-        let all = app.buttons["trip-tickall"]
-        XCTAssertTrue(all.waitForExistence(timeout: 5), "no Tick everything on the trip")
-        XCTAssertEqual(all.value as? String, "6", "it does not say how many are still unticked")
-        bringIntoView(app, all)
-        shot(app, "tick-all")
-        tapVisible(app, all)
-        XCTAssertTrue(waitUntil { self.words(progress) == "7/7" }, "Tick everything did not tick everything: '\(words(progress))'")
-        XCTAssertTrue(waitUntil { !app.buttons["trip-tickall"].exists }, "Tick everything is still offered with nothing left")
-
-        tapVisible(app, app.buttons["trip-clearall"])
-        XCTAssertTrue(app.buttons["trip-clearall-yes"].waitForExistence(timeout: 5), "Clear did not ask first")
-        shot(app, "clear-asks")
-        tap(app, id: "trip-clearall-no")
-        XCTAssertTrue(waitUntil { !app.buttons["trip-clearall-yes"].exists })
-        XCTAssertEqual(words(progress), "7/7", "Keep them cleared the ticks")
-        tapVisible(app, app.buttons["trip-clearall"])
-        tap(app, id: "trip-clearall-yes")
+        // Two ticked by hand: Trip settings offers to clear them — last, below Start a new trip.
+        tap(app, id: "trip-line-0")
+        tap(app, id: "trip-line-1")
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" }, "'\(words(progress))'")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-clearall"), "no Clear every tick in Trip settings with 2 ticked")
+        let clear = app.buttons["tripset-clearall"]
+        bringIntoView(app, clear)
+        XCTAssertEqual(clear.value as? String, "2", "it does not say how many are ticked")
+        XCTAssertGreaterThan(clear.frame.minY, app.buttons["tripset-again"].frame.maxY, "Clear every tick is not below Start a new trip")
+        shot(app, "tripset-clear-row")
+        tapVisible(app, clear)
+        XCTAssertTrue(app.buttons["tripset-clearall-yes"].waitForExistence(timeout: 5), "Clear did not ask first")
+        XCTAssertFalse(app.staticTexts["tripset-clearall-unsaved"].exists, "it warns of changes not saved with none made")
+        bringIntoView(app, app.buttons["tripset-clearall-yes"])
+        shot(app, "tripset-clear-asks")
+        tap(app, id: "tripset-clearall-no")
+        XCTAssertTrue(waitUntil { !app.buttons["tripset-clearall-yes"].exists }, "Keep them did not close the question")
+        XCTAssertNotNil(find(app, "tripset-screen"), "Keep them closed Trip settings")
+        tap(app, id: "tripset-clearall")
+        tap(app, id: "tripset-clearall-yes")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Clear the ticks did not close Trip settings")
         XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "Clear the ticks left some: '\(words(progress))'")
-        XCTAssertFalse(app.buttons["trip-clearall"].exists, "Clear is offered with nothing ticked")
+
+        // Undo on the trip brings back exactly those two.
+        let said = app.staticTexts["trip-undo-said"]
+        XCTAssertTrue(app.buttons["trip-undo"].waitForExistence(timeout: 5), "no Undo after Clear every tick")
+        XCTAssertTrue(waitUntil { self.words(said) == "Cleared 2 ticks" }, "the Undo bar says '\(words(said))'")
+        shot(app, "trip-undo-cleared")
+        tap(app, id: "trip-undo")
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" }, "Undo did not bring the ticks back: '\(words(progress))'")
+        XCTAssertTrue(isOn(app.buttons["trip-line-0"]) && isOn(app.buttons["trip-line-1"]), "Undo did not tick the two again")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-undo"].exists }, "Undo is still offered after it was used")
+
+        // A changed name not saved: the question says Clear the ticks closes without it.
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        replace("Weekend away", in: app.textFields["tripset-name"])
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-clearall"))
+        tap(app, id: "tripset-clearall")
+        XCTAssertTrue(app.staticTexts["tripset-clearall-unsaved"].waitForExistence(timeout: 5), "no word that the new name is not saved")
+        tap(app, id: "tripset-clearall-no")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" }, "Keep them cleared the ticks: '\(words(progress))'")
+    }
+
+    /// His decision (13 Oct 2026): the round tick by a heading ticks — or unticks — a whole group in
+    /// one press, so it says what it did and offers Undo for 6 seconds, between the list and the add
+    /// bar. Undo puts back exactly the ticks the group had (the Passport, ticked by hand before,
+    /// stays ticked); one Undo at a time — a new press replaces it; an untick is undone too.
+    func testAHeadingsTickIsTakenBackByUndo() {
+        // The Undo stays until used (`-undoSeconds`): on GitHub's Mac the test took longer than its
+        // 6 seconds to reach it (0.79's probe). That it goes by itself: `testTheUndoGoesByItself`.
+        let app = launch("-uiTesting", ["-undoSeconds", "600"])
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
+        // From where: Bathroom cabinet (the Toothbrush), Chest of drawers (the Passport, line 0, and
+        // the Phone charger, line 1), Garage (2 lines), Hall closet (2 lines).
+        XCTAssertEqual(choose(app, "trip-view", 2), "From where")
+        func heading(_ g: Int) -> String { words(app.staticTexts["trip-group-\(g)-label"]) }
+        XCTAssertTrue(waitUntil { heading(1) == "Chest of drawers" && heading(3) == "Hall closet" },
+                      "the headings are '\(heading(0))', '\(heading(1))', '\(heading(2))', '\(heading(3))'")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "'\(words(progress))'")
+        XCTAssertFalse(app.buttons["trip-undo"].exists, "Undo after a tick by hand")
+
+        // The heading ticks the rest of its group; Undo takes back only that.
+        tap(app, id: "trip-group-1-all")
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" }, "the heading did not tick its group: '\(words(progress))'")
+        let undo = app.buttons["trip-undo"], said = app.staticTexts["trip-undo-said"]
+        // What the bar said when last read — it may be gone by the time a failure is reported.
+        var heard = ""
+        func undoSays(_ text: String) -> Bool { waitUntil { heard = self.words(said); return heard == text } }
+        XCTAssertTrue(undo.waitForExistence(timeout: 5), "no Undo after a heading's tick")
+        XCTAssertTrue(undoSays("Ticked 1 in Chest of drawers"), "the Undo bar says '\(heard)'")
+        let add = app.textFields["trip-add-name"]
+        XCTAssertTrue(add.exists && undo.frame.maxY <= add.frame.minY, "Undo is not above the add bar: \(undo.frame) / \(add.frame)")
+        shot(app, "trip-undo-heading")
+        tap(app, id: "trip-undo")
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "Undo did not take the group's tick back: '\(words(progress))'")
+        XCTAssertTrue(isOn(app.buttons["trip-line-0"]), "Undo took the Passport's tick, which was there before")
+        XCTAssertFalse(isOn(app.buttons["trip-line-1"]), "Undo left the Phone charger ticked")
+        XCTAssertTrue(waitUntil { !undo.exists }, "Undo is still offered after it was used")
+
+        // One at a time: the Garage, then the Hall closet — Undo takes back the Hall closet only.
+        tap(app, id: "trip-group-2-all")
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "'\(words(progress))'")
+        tap(app, id: "trip-group-3-all")
+        XCTAssertTrue(waitUntil { self.words(progress) == "5/7" }, "'\(words(progress))'")
+        XCTAssertTrue(undoSays("Ticked 2 in Hall closet"), "the newer press did not replace the Undo: '\(heard)'")
+        tap(app, id: "trip-undo")
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "Undo did not take back the Hall closet alone: '\(words(progress))'")
+
+        // Unticking a whole group is offered back too.
+        tap(app, id: "trip-group-2-all")
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the heading did not untick its group: '\(words(progress))'")
+        XCTAssertTrue(undoSays("Unticked 2 in Garage"), "the Undo bar says '\(heard)'")
+        tap(app, id: "trip-undo")
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "Undo did not tick the Garage again: '\(words(progress))'")
+    }
+
+    /// The Undo after a heading's tick is offered for a few seconds only (6 in the app; 8 here, so a
+    /// slow machine still sees it come), then goes by itself — and going changes no tick.
+    func testTheUndoGoesByItself() {
+        let app = launch("-uiTesting", ["-undoSeconds", "8"])
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
+        XCTAssertEqual(choose(app, "trip-view", 2), "From where")
+        tap(app, id: "trip-group-0-all")                           // the Bathroom cabinet: the Toothbrush
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "'\(words(progress))'")
+        let undo = app.buttons["trip-undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 5), "no Undo after a heading's tick")
+        XCTAssertTrue(waitUntil(timeout: 25) { !undo.exists }, "Undo did not go by itself")
+        XCTAssertEqual(words(progress), "1/7", "going by itself, Undo changed the ticks")
     }
 
     /// The weather card's "Add all" (the web app's): everything the forecast asks for

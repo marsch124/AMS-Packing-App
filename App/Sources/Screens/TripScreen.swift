@@ -58,6 +58,10 @@ struct TripScreen: View {
     @State private var onlyUnticked = false
     /// A tapped door check for the way home: On site opens, and in it Pack to go home.
     @State private var homeFromDoor = false
+    /// The last press that ticked or unticked many lines — a heading's round tick, Clear every
+    /// tick in Trip settings — offered back for 6 seconds above the add bar (0.79, his decision
+    /// of 13 Oct 2026). One at a time: a new press replaces it.
+    @State private var undo: TickUndo?
     /// The clock the loop's step and the On site door are read by (0.75): read when the trip
     /// opens, again at the next moment the trip turns by the clock alone (`Library.clockTurns`:
     /// it sets off at the time he leaves, or goes to Review) and whenever the app comes back to
@@ -192,7 +196,7 @@ struct TripScreen: View {
                         let from = trip.name
                         startedId = new.id
                         rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are under the pen."
-                    })
+                    }, cleared: { change in undo = change.isEmpty ? nil : .cleared(change) })
                     .environmentObject(model)
                     Spacer(minLength: 8)
                     // After the trip: what did I use, what did I miss. Once, then it says so —
@@ -354,9 +358,10 @@ struct TripScreen: View {
                                     Color.clear.frame(width: Metrics.lineButton, height: Metrics.line)
                                 } else {
                                     Button {
-                                        model.change { lib in
-                                            for line in mine { _ = lib.setChecked(!sectionDone, tripId: tripId, entryId: line.id) }
-                                        }
+                                        // What it changed, offered back as Undo (0.79): exactly those ticks.
+                                        var change: TicksChanged?
+                                        model.change { change = $0.setChecked(!sectionDone, tripId: tripId, entryIds: mine.map(\.id)) }
+                                        if let change, !change.isEmpty { undo = .heading(change, group: group.label) }
                                     } label: {
                                         TickCircle(on: sectionDone, tint: AppSection.events.color, ring: sectionDone ? nil : Theme.line)
                                             .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
@@ -461,9 +466,8 @@ struct TripScreen: View {
                 .padding(.horizontal, 16)
 
                 if placeFilter == nil {
-                // The web app's "Mark everything packed" / "Clear every tick", under the list.
-                TickAllRow(tripId: tripId, done: p.done, total: p.total).environmentObject(model)
-                    .padding(.horizontal, 16).padding(.top, 18)
+                // Tick everything and Clear every tick stood here until 0.79 — "two very risky
+                // buttons" (his decision of 13 Oct 2026): Clear every tick is in Trip settings now.
                 // The web app's Excel button (the trip as a spreadsheet) and its Share (a
                 // link, a QR code when it fits, or a file) — two real buttons side by side,
                 // his test D.22.
@@ -497,6 +501,16 @@ struct TripScreen: View {
             }
             // "Also the tripod" — a thing for THIS trip only, typed on the spot. Not while
             // one place's lines are shown: a line typed here has no place, and would vanish.
+            // (Right above that bar: Undo, for 6 seconds after a heading's round tick or Clear every
+            // tick — 0.79. Between the list and the bar, over no line: the list is shorter meanwhile.
+            // Not for another trip: Start a new trip from this one changes the trip on this screen.)
+            if let u = undo, u.change.tripId == tripId {
+                TickUndoBar(undo: u, act: {
+                    model.change { _ = $0.undo(u.change) }
+                    undo = nil
+                }, gone: { if undo?.id == u.id { undo = nil } })
+                .padding(.bottom, placeFilter == nil ? 0 : 10)
+            }
             if placeFilter == nil {
             HStack(spacing: 8) {
                 TextField("Add a thing to this trip", text: $newName)
