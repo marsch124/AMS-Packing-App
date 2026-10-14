@@ -5,7 +5,8 @@ Everything is automated except two things only the account owner can do, once.
 **Since 12 Oct 2026 a new version goes out by the fast lane** — his decision: a
 finished change reaches TestFlight in about half an hour. `tools/quick-release.sh
 VERSION "notes"` runs on his Mac (Claude runs it; he never needs the Terminal): the
-model tests, parity and about twenty iPhone UI tests there, then the iPhone and the
+model tests, parity and about twenty iPhone UI tests there (since 14 Oct 2026 shared
+out over three simulators that run side by side), then the iPhone and the
 Mac build are archived and uploaded from the Mac with Xcode's account, released to
 the tester group with the notes as What to Test, and only then pushed to main —
 where GitHub's full suite runs after the fact, as the safety net. Details: spec 06
