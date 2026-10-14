@@ -18,6 +18,14 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.81", date: "14 Oct 2026", title: "Packing Stations",
+                new: ["Tags: Remind me under a bag adds a To do to the trip \u{2014} \u{201C}Name tag for the duffel\u{201D} \u{2014} which shows in Before you go.",
+                      "Ready: Add a reminder, for anything last-minute.",
+                      "Bags out: + Add a bag \u{2014} one of your bags, or a new one \u{2014} so Weigh, Tags and Photos include it."],
+                changed: ["The Packing day is now called Packing Stations \u{2014} packing takes more than a day.",
+                          "The stations' pills are slimmer, so their drawings stand out.",
+                          "Tags looks friendlier: a drawn bag by each name, the tag and AirTag drawn on their ticks, and a bag turns green when it is done.",
+                          "A trip's top buttons have their own colours: Review violet, Take a break warm amber, Done green."]),
         Release(version: "0.80", date: "14 Oct 2026", title: "If a bag goes missing",
                 new: ["Lost bag: a page for each bag with everything a baggage desk asks for \u{2014} you, the trip, the bag, its photos and a few things in it. Share it as a PDF or copy it as text. Open it with Lost bag? on the Bags card or the Packing day.",
                       "A bag's page: For the lost-luggage desk \u{2014} type, size, distinctive marks and photos of the bag itself, beside its brand and colour. Entered once, used on every trip.",

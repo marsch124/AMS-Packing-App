@@ -672,11 +672,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (80 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (81 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.81 | 14 Oct 2026 | Packing Stations | N3 C4 | renamed from Packing day; slimmer station chips; Tags Remind me + friendlier look; Ready Add a reminder (tripTodo lines, due at once); Bags out + Add a bag (dayAddedBags); header tones (TripHeaderTone); fast lane on three simulators (ui-split.py) |
 | 0.80 | 14 Oct 2026 | If a bag goes missing | N4 | chapter 07 part 18: A bag details (BagDetails, own photos), B flights and stay + bag-tag numbers (TripTravel), C the Lost bag page + PDF (LostBag); Settings → For the lost-luggage desk |
 | 0.79 | 14 Oct 2026 | Packing day | N4 C2 | Packing day stations (PackingDay.swift, chapter 07 part 17; his seven drawn icons); Has an AirTag on a bag; the photo of all the bags; Undo after a heading's tick and Clear every tick; Tick everything removed from the trip and Pack to go home; Clear every tick in Trip settings; How it works part |
 | 0.78 | 13 Oct 2026 | Calmer words | N1 C4 | group headings not upper-cased (groupHeading, Templates tab, activityChoices "Other Templates"); weekendbag icon + short/weekend suggestions; Food label Mix; Season pills draw sun / snow (Pills(icons:)); Library.quickNote names the Always Packed templates |
