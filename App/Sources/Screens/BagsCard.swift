@@ -34,6 +34,8 @@ struct BagsCard: View {
     @State private var weighing: String?
     @State private var scaleText = ""
     @FocusState private var typing: Bool
+    /// The bag whose Lost bag page is open — "Lost bag?" under a bag (0.80, spec 07 part 18 C).
+    @State private var lost: LostBagOpen?
 
     var body: some View {
         // Every bag that has something in it — weighed or not (the spec pass, 5 Oct
@@ -106,6 +108,15 @@ struct BagsCard: View {
                                     // any other way (VoiceOver, and the tests).
                                     .accessibilityValue(BagsCard.gauge(bag))
                             }
+                            // Lost bag? (0.80): everything a baggage desk asks about this bag — at
+                            // every step, for the airport. Not for "Not in a bag".
+                            if bag.load.container != "Other" {
+                                HStack {
+                                    Spacer(minLength: 0)
+                                    LostBagDoor(id: "bag-\(n)-lost") { lost = LostBagOpen(bag: bag.load.container) }
+                                }
+                                .padding(.top, -4)
+                            }
                             if weighing == bag.load.container {
                                 scaleEditor(bag, n)
                                 BagCabinRow(bag: bag.load.container, n: n).environmentObject(model)
@@ -128,6 +139,7 @@ struct BagsCard: View {
                 .stroke(bags.contains(where: \.over) ? AppSection.actions.color : Theme.line, lineWidth: 1))
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("bags-card")
+            .sheet(item: $lost) { open in LostBagScreen(tripId: tripId, bag: open.bag).environmentObject(model) }
         }
     }
 
@@ -137,7 +149,7 @@ struct BagsCard: View {
             keyLine(AppSection.home.color, "Blue", "well within its max")
             keyLine(AppSection.care.color, "Orange", "nine tenths of its max or more")
             keyLine(AppSection.actions.color, "Red, \u{201C}over\u{201D}", "more than its max")
-            Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag for the luggage scale, and a photo of it packed.")
+            Text("No bar: no max set. Set one in Care \u{2192} Bags. Tap a bag for the luggage scale, and a photo of it packed. Lost bag? under a bag: everything a baggage desk asks for.")
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }

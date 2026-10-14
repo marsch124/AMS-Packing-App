@@ -2250,6 +2250,10 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   for the airline desk when a bag is lost, after he has left. Taken and removed only in the Packing day.
 - The bag rows are ONE view since 0.79 (`BagWeightRow`), shared with the Packing day's Weigh station: the same
   words, bar and colours in both places.
+- **Lost bag?** (0.80, spec 07 part 18 C): under each bag's row but "Not in a bag", at the right, a small capsule
+  (Footnote semibold green, 1.2-pt green outline, at least 26 tall; id `bag-<n>-lost`) opens that bag's Lost bag page —
+  everything a baggage desk asks for, Share as PDF, Copy as text. The card owns the sheet. The key's last line adds
+  "Lost bag? under a bag: everything a baggage desk asks for."
 
 ### Behaviour
 - Bags shown: `Library.weighedBags(tripId:)` = `bagLoads(lines, qtyNights, bagLimits())` with each bag's

@@ -44,7 +44,7 @@ points apart** (0.67; 10 until then, 14 before 0.62) — padded 16 left/right an
 
 | # | Element | Shown when | Id |
 |---|---|---|---|
-| 1 | *Your choices* door (§2), a card of one row | always; `Metrics.screenTop` (4 pt) above it — where every tab's first line starts (0.67; 14 before); on the Mac under the empty title bar strip | `settings-lists` |
+| 1 | *For the lost-luggage desk* (0.80, spec 07 part 18 C: his name, phone, e-mail and home address, `DeskDoor`, its own sheet) above the *Your choices* door (§2) — a card of two rows since 0.80 | always; `Metrics.screenTop` (4 pt) above it — where every tab's first line starts (0.67; 14 before); on the Mac under the empty title bar strip | `settings-desk`, `settings-lists` |
 | 2 | *Remind me to pack* card (§3) — on the iPhone also *Messages when a trip moves on* (0.77, §3c) | always | `settings-reminders-card` (`settings-moves-on`) |
 | 3 | *iCloud sync* card (§4) | always | `sync-card` |
 | 4 | ONE card of four door rows (0.67; four cards 10 apart until then): *What's new*, *How it works*, *Your first real trip* (§5) and *Open a shared link* (§11), a `CardHairline` between them | always | `settings-whatsnew`, `settings-howitworks`, `settings-firsttrip`, `settings-openshared` |
@@ -195,7 +195,9 @@ the sheet down on the iPhone. Nothing is ever
       `Metrics.chip`; slate outline on 10 % slate, filled slate with white words while this owner is him; id
       `list-owners-me`, `.isSelected` when on) with a muted line beside it: "Whose things Apple Health marks in a
       trip's review." / "Apple Health marks your things in a trip's review." Press → `setMe(owner)`; pressed on the
-      owner already marked → `setMe(nil)` (nobody). One at most: marking another moves the mark. Under the card, its needs line
+      owner already marked → `setMe(nil)` (nobody). One at most: marking another moves the mark. On the owner marked as
+      him only, under the pill (0.80, spec 07 part 18 C), **For the lost-luggage desk…** (Subheadline semibold slate,
+      id `list-owners-desk`) opens his details for a baggage desk — the same sheet as Settings' first door. Under the card, its needs line
       (id `list-<kind>-edit-needs`, §20): what Rename was missing or refused, or "<label> is already at the top." /
       "… at the bottom." for an arrow that cannot move it.
     - The Add row (`HStack(spacing: 8)`): a plain `TextField` with the placeholder **"Add to <title lower-cased>"**
@@ -777,6 +779,11 @@ no entry shows no marker anywhere (and fails the test).
 4. Twelve topic cards (eleven until 0.71) (padding 14, card, radius 12, line border, container id `guide-topic-<n>`): a header row —
    the topic's section mark (`SectionMark`, 24 pt, line 1.9, in the section's colour) and the title (19 heavy ink)
    — then each line as a 6-pt dot in the section colour + text (16 ink, wraps).
+4a. (0.80) A topic of its own, **If a bag goes missing** (the trips' section), right after *On site* (so the topics after
+   it are numbered one more): where the Lost bag page is (Lost bag? in Bags, the Packing day's Photos and Ready), what it
+   holds, "not filled in" and where a tap fills it in, the bag-tag number typed on the page, the AirTag's Find My hint,
+   Share as PDF and Copy as text, his details in Settings → For the lost-luggage desk (or under This is me). Spec 07
+   part 18 C. **Words** gains "Lost bag" (after "Packing day").
 5. (0.79) **The Packing day** (`PackingDayGuideCard`, `Screens/PackingDay.swift`; container id `guide-packingday`) —
    right after topic 1, *Packing a trip* (drawn inside the topics' `ForEach`, after the topic of that title; it has no
    `guide-topic-<n>` id, so the topics keep their numbers). His ask of 13 Oct 2026: "remember to write about the

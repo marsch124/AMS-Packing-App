@@ -34,11 +34,17 @@ struct SettingsScreen: View {
             // marked): "Far too much space in the settings tab." (Until 0.67 every door was
             // a card of its own, 60 points tall, and the cards stood 10 points apart.)
             VStack(alignment: .leading, spacing: 8) {
-                Button { lists = true } label: {
-                    SettingsDoorLabel(title: "Your choices", line: "Storage places, owners, packers, conditions, \"When\" steps")
+                // First, as the iPhone's own Settings starts with the person (0.80, spec 07 part 18 C):
+                // his details for the lost-luggage desk, then Your choices — rows of one card.
+                VStack(spacing: 0) {
+                    DeskDoor().environmentObject(model)
+                    CardHairline()
+                    Button { lists = true } label: {
+                        SettingsDoorLabel(title: "Your choices", line: "Storage places, owners, packers, conditions, \"When\" steps")
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("settings-lists")
                 }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("settings-lists")
                 .settingsCard()
                 // Settings has no header line: its first card starts where every tab's
                 // first line does (Metrics.screenTop, 0.67; was 14).

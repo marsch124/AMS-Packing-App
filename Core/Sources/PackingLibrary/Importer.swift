@@ -164,6 +164,11 @@ public enum Importer {
         }
         // Which owner is him (0.70).
         if let me = prefs?[Library.meKey]?.stringValue, !me.isEmpty { lib.meta[Library.meKey] = .string(me) }
+        // His details for the lost-luggage desk (0.80), cleaned as Settings keeps them.
+        if let desk = prefs?[LOST_DESK_KEY]?.objectValue {
+            func text(_ k: String) -> String { desk[k]?.stringValue ?? "" }
+            lib.setDeskDetails(DeskDetails(name: text("name"), phone: text("phone"), email: text("email"), address: text("address")))
+        }
         // His kinds of thing (0.69).
         if let kinds = prefs?[Library.categoriesKey]?.arrayValue?.compactMap({ $0.stringValue }), !kinds.isEmpty {
             lib.setCategories(kinds)
