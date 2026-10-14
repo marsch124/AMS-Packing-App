@@ -148,6 +148,50 @@ final class BagDetailsTests: XCTestCase {
         XCTAssertTrue(lib.bagDetails(bag: "Hill pack").isEmpty)
     }
 
+    // MARK: - Photos of the bag itself
+
+    func testABagsOwnPhotosAreItsThingsPhotosTwoAtMostAndApartFromTheTrips() {
+        var (lib, trip) = library()
+        let caseId = bag(lib, "Big case").id
+        XCTAssertTrue(lib.bagOwnPhotos(id: caseId).isEmpty)
+        let first = lib.addBagOwnPhoto(id: caseId, jpeg: Data([1]))!
+        XCTAssertEqual(bag(lib, "Big case").photos, [first.id], "the photo is not the thing's own")
+        XCTAssertEqual(lib.bagDetails(bag: "big case").photoIds, [first.id], "the details do not show the photo")
+        XCTAssertEqual(lib.bagOwnPhotos(bag: "BIG CASE").map(\.id), [first.id])
+        let second = lib.addBagOwnPhoto(id: caseId, jpeg: Data([2]))!
+        XCTAssertNil(lib.addBagOwnPhoto(id: caseId, jpeg: Data([3])), "a third photo of the bag was taken")
+        XCTAssertEqual(lib.bagOwnPhotos(id: caseId).map(\.id), [first.id, second.id])
+        XCTAssertNil(lib.addBagOwnPhoto(id: bag(lib, "Boots").id, jpeg: Data([4])), "a thing that is no bag took a bag photo")
+        XCTAssertNil(lib.addBagOwnPhoto(id: caseId, jpeg: Data()))
+        // In use: never offered by Worth a look, a week on.
+        XCTAssertTrue(lib.photoInUse(first.id))
+        PackingEnv.freeze(at: "2026-10-21T12:00:00.000Z")
+        XCTAssertFalse(lib.unusedPhotos().contains { $0.id == first.id }, "Worth a look offers the bag's own photo")
+        // The details' writer never touches them; a name with only photo ids becomes no bag.
+        XCTAssertTrue(lib.setBagDetails(BagDetails(brand: "Tumi"), id: caseId))
+        XCTAssertEqual(lib.bagDetails(id: caseId)?.photoIds, [first.id, second.id], "writing the details took the photos away")
+        XCTAssertTrue(lib.setBagDetails(BagDetails(photoIds: [first.id]), bag: "Carry-on / hand luggage"))
+        XCTAssertFalse(lib.bags().contains { $0.name == "Carry-on / hand luggage" }, "photo ids alone made a bag")
+        // Not a photo of it PACKED: the trip's photos and the Packing day count none of them.
+        XCTAssertTrue(lib.bagPhotoIds(tripId: trip, bag: "Big case").isEmpty)
+        XCTAssertEqual(lib.packingDay(tripId: trip)?.bags.first { $0.name == "Big case" }?.photos, 0,
+                       "the bag's own photo counts as a photo of it packed")
+        // Renamed, synced, backed up: they go along.
+        XCTAssertTrue(lib.renameThing(id: caseId, to: "Blue case"))
+        XCTAssertEqual(lib.bagOwnPhotos(bag: "Blue case").count, 2, "the photos stayed with the old name")
+        XCTAssertEqual(Library(records: lib.records()).bagOwnPhotos(bag: "Blue case").count, 2, "the records lost the bag's photos")
+        let restored = try! Importer.read(lib.backupData(exportedAt: "2026-10-21T12:00:00.000Z")).library
+        XCTAssertEqual(restored.bagOwnPhotos(bag: "Blue case").map(\.id), [first.id, second.id], "a backup lost the bag's photos")
+        // Removed: its record goes, and the web app's thumbnail of the first photo with it.
+        XCTAssertTrue(lib.updateThing(id: caseId) { $0.thumb = "data:image/jpeg;base64,AQ==" })
+        XCTAssertTrue(lib.removeBagOwnPhoto(id: caseId, photoId: first.id))
+        XCTAssertEqual(bag(lib, "Blue case").photos, [second.id])
+        XCTAssertEqual(bag(lib, "Blue case").thumb, "", "the thumbnail of a removed first photo stayed")
+        XCTAssertFalse(lib.photos.contains { $0.id == first.id }, "the removed photo's record stayed")
+        XCTAssertFalse(lib.removeBagOwnPhoto(id: caseId, photoId: first.id))
+        XCTAssertNotNil(lib.addBagOwnPhoto(id: caseId, jpeg: Data([5])), "with one gone, a second is refused")
+    }
+
     // MARK: - The words
 
     func testTheDeskHearsPlainWords() {
