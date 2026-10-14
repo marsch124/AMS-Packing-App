@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.82", date: "14 Oct 2026", title: "See it grow",
+                new: ["Every group in the list has a small ring that fills green as you pack it, and turns into a green check when it is done.",
+                      "Under the trip's count: what is left \u{2014} \u{201C}23 left \u{00B7} 2 to charge \u{00B7} about 25 min\u{201D}. The minutes come from your own packing pace.",
+                      "Before you start: on a trip you are planning, one list of what to buy, what to get ready and what to charge."]),
         Release(version: "0.81", date: "14 Oct 2026", title: "Packing Stations",
                 new: ["Tags: Remind me under a bag adds a To do to the trip \u{2014} \u{201C}Name tag for the duffel\u{201D} \u{2014} which shows in Before you go.",
                       "Ready: Add a reminder, for anything last-minute.",
