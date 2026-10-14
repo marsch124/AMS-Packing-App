@@ -3098,8 +3098,10 @@ once ("Activation point invalid").
    Undo. The progress mark is at the LEFT, right beside the count it belongs to, smaller (14 / 11), and only shows —
    it takes no press and is not a button for VoiceOver. When a group is done both show a filled green circle, at
    opposite ends and in two sizes: one says "done", the other "untick them all".
-7. **Accessibility.** The mark is ONE element, id `trip-group-<g>-progress`, label "Packed", value "<ticked> of
-   <packable> packed" or "all packed" when done (what the tests read). The heading's count stays a plain text.
+7. **Accessibility.** The mark is ONE element, id `trip-group-<g>-progress`, its LABEL "<ticked> of <packable>
+   packed" or "all packed" when done (what VoiceOver says and the tests read). Not a value: a value on such an
+   element never reached the Mac's tests (GitHub's Mac probe, 14 Oct 2026: "the Bathroom cabinet's ring says ''"
+   while the iPhone read it). The heading's count stays a plain text.
 
 ### The rules — what's left (decided 14 Oct 2026, by the build)
 

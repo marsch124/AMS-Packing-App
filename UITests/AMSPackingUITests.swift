@@ -4541,7 +4541,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "Undo did not tick the Garage again: '\(words(progress))'")
     }
 
-    /// A group's progress mark (0.82, spec 07 part 20) — read by its value, never by its look.
+    /// A group's progress mark (0.82, spec 07 part 20) — read by its words, never by its look.
     private func groupProgress(_ app: XCUIApplication, _ g: Int) -> XCUIElement {
         let id = "trip-group-\(g)-progress"
         for query in [app.otherElements, app.groups, app.images, app.staticTexts] where query[id].exists { return query[id] }
@@ -4559,8 +4559,8 @@ final class AMSPackingUITests: XCTestCase {
         // From where: the Bathroom cabinet (the Toothbrush, line 2), the Chest of drawers, the Garage
         // (the Headlamp, line 3, and the Map), the Hall closet.
         XCTAssertEqual(choose(app, "trip-view", 2), "From where")
-        // Not there (yet) = no words: reading an element that is not there is a hard failure.
-        func ring(_ g: Int) -> String { let e = groupProgress(app, g); return e.exists ? (e.value as? String ?? "") : "" }
+        // Its words are its label (a value never reached the Mac's tests); not there (yet) = no words.
+        func ring(_ g: Int) -> String { words(groupProgress(app, g)) }
         XCTAssertTrue(waitUntil { ring(0) == "0 of 1 packed" }, "the Bathroom cabinet's ring says '\(ring(0))'")
         XCTAssertTrue(waitUntil { ring(2) == "0 of 2 packed" }, "the Garage's ring says '\(ring(2))'")
         // Beside the count, at the left — the round tick at the other end, a button of its own.

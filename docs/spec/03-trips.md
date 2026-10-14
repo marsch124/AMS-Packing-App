@@ -1166,8 +1166,8 @@ left, the choice beside it) are kept.
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
      (15 heavy; sorted When: the colour of the FIRST line's phase made readable; otherwise green; id
      `trip-group-<g>-label`; tapping the words folds too); since 0.82 the **progress mark** (spec 07 part 20 —
-     `GroupProgressMark`, not a button, id `trip-group-<g>-progress`, label "Packed", value "<ticked> of <packable>
-     packed" / "all packed"): 14 pt across on the iPhone, 11 on the Mac, 8 pt after the words — a hairline track
+     `GroupProgressMark`, not a button, id `trip-group-<g>-progress`, its label "<ticked> of <packable> packed" /
+     "all packed"): 14 pt across on the iPhone, 11 on the Mac, 8 pt after the words — a hairline track
      with a green arc from the top, clockwise, as long as ticked ÷ packable; when every packable line is ticked a
      filled green circle with a white tick, the words and the count in the trip's green made readable (#227147 by
      day, #2f9e63 at night — `GroupProgressMark.words`), and a soft green band behind

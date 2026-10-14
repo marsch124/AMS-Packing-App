@@ -1104,7 +1104,8 @@ struct TickCircle: View {
 /// a hairline ring that fills green as the group's lines are ticked; all ticked, a filled green
 /// check that springs in — a touch larger, then settles — or, with Reduce Motion, fades in. It only
 /// shows: the group's round tick, a button, stays at the heading's right end and is bigger. ONE
-/// element for VoiceOver and the tests: "Packed", "3 of 12 packed" / "all packed".
+/// element for VoiceOver and the tests, its words as its LABEL: "3 of 12 packed" / "all packed" (a
+/// value set on such an element never reached the Mac's tests — GitHub's Mac probe, 14 Oct 2026).
 struct GroupProgressMark: View {
     let packed: Int
     let total: Int
@@ -1155,8 +1156,7 @@ struct GroupProgressMark: View {
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.55), value: done)
         .animation(.easeOut(duration: 0.25), value: packed)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Packed")
-        .accessibilityValue(done ? "all packed" : "\(packed) of \(total) packed")
+        .accessibilityLabel(done ? "all packed" : "\(packed) of \(total) packed")
         .accessibilityIdentifier(id)
     }
 }
