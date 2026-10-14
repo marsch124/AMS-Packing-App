@@ -178,7 +178,7 @@ struct BagDetail: View {
                                     set: { on in model.change { _ = $0.setBagAirTag(id: bag.id, on) } })) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Has an AirTag").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                Text("On a Packing day, Tags asks you to check it is in the bag.")
+                Text("In Packing Stations, Tags asks you to check it is in the bag.")
                     .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }

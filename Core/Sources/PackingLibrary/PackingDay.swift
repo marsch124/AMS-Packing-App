@@ -25,8 +25,9 @@ public let DAY_GROUP_PHOTO_KEY = "dayBagsPhoto"
 public let DAY_WEIGH_OFFERED_KEY = "dayWeighOffered"
 /// A bag's (thing's) extra key: true = it has an AirTag; absent = it has none. Never false.
 public let AIRTAG_KEY = "airTag"
-/// The bag-name lists the day keeps on a trip — they follow a bag's rename (Bags.swift).
-public let DAY_BAG_KEYS = [DAY_BAGS_OUT_KEY, DAY_NAME_TAGS_KEY, DAY_AIRTAGS_KEY]
+/// The bag-name lists the day keeps on a trip — they follow a bag's rename (Bags.swift). Since 0.81
+/// also the bags "+ Add a bag" put on the trip (`DAY_ADDED_BAGS_KEY`, PackingStations.swift).
+public let DAY_BAG_KEYS = [DAY_BAGS_OUT_KEY, DAY_NAME_TAGS_KEY, DAY_AIRTAGS_KEY, DAY_ADDED_BAGS_KEY]
 /// Every key the day writes on a trip — none travels in a shared trip (Sharing.swift).
 public let DAY_TRIP_KEYS = DAY_BAG_KEYS + [DAY_GROUP_PHOTO_KEY, DAY_WEIGH_OFFERED_KEY]
 
@@ -203,9 +204,13 @@ extension Library {
 
     /// The bags a trip's Packing day asks about: the bags its Bags card lists — every bag a
     /// line not set aside is packed in, reminders left out, in the card's order — without "Not
-    /// in a bag" (the card's "Other": loose things are no bag to lay out, weigh, tag or photograph).
-    public func dayBags(tripId: String) -> [String] {
-        weighedBags(tripId: tripId).filter { $0.load.items > 0 && Library.isRealBag($0.load.container) }.map(\.load.container)
+    /// in a bag" (the card's "Other": loose things are no bag to lay out, weigh, tag or photograph);
+    /// since 0.81 then the bags "+ Add a bag" put on the trip, empty ones too, in the order added.
+    public func dayBags(tripId: String) -> [String] { dayRows(tripId: tripId).map(\.load.container) }
+
+    /// The Bags card's rows the day asks about (see `dayBags`).
+    func dayRows(tripId: String) -> [WeighedBag] {
+        weighedBags(tripId: tripId).filter { Library.isRealBag($0.load.container) && ($0.load.items > 0 || $0.added) }
     }
 
     /// A bag's name that is one: not empty, not "Other" (no bag).
@@ -220,7 +225,7 @@ extension Library {
         let tags = Library.dayNames(trip, DAY_NAME_TAGS_KEY)
         let airs = Library.dayNames(trip, DAY_AIRTAGS_KEY)
         func has(_ names: [String], _ bag: String) -> Bool { names.contains { normName($0) == normName(bag) } }
-        let bags = weighedBags(tripId: tripId).filter { $0.load.items > 0 && Library.isRealBag($0.load.container) }.map { w in
+        let bags = dayRows(tripId: tripId).map { w in
             let name = w.load.container
             return PackingDay.Bag(name: name, things: w.load.items, out: has(out, name), scaleGrams: scale[name],
                                   nameTag: has(tags, name), hasAirTag: hasAirTag(container: name), airTag: has(airs, name),
@@ -238,7 +243,7 @@ extension Library {
 
     /// Tick (or untick) a bag in one of the day's lists. The name is kept as given; the lists
     /// compare by `normName`, so one bag is never in a list twice. Empty lists go.
-    private mutating func setDayTick(_ on: Bool, key: String, tripId: String, bag: String) -> Bool {
+    mutating func setDayTick(_ on: Bool, key: String, tripId: String, bag: String) -> Bool {
         guard let n = trips.firstIndex(where: { $0.id == tripId }), Library.isRealBag(bag) else { return false }
         var names = Library.dayNames(trips[n], key).filter { normName($0) != normName(bag) }
         if on { names.append(bag) }

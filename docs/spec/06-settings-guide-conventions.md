@@ -777,14 +777,15 @@ no entry shows no marker anywhere (and fails the test).
 4. Twelve topic cards (eleven until 0.71) (padding 14, card, radius 12, line border, container id `guide-topic-<n>`): a header row —
    the topic's section mark (`SectionMark`, 24 pt, line 1.9, in the section's colour) and the title (19 heavy ink)
    — then each line as a 6-pt dot in the section colour + text (16 ink, wraps).
-5. (0.79) **The Packing day** (`PackingDayGuideCard`, `Screens/PackingDay.swift`; container id `guide-packingday`) —
+5. (0.79) **Packing Stations** — "The Packing day" until 0.81, when he renamed it (14 Oct 2026; spec 07 part 17
+   "0.81") — (`PackingDayGuideCard`, `Screens/PackingDay.swift`; container id `guide-packingday`) —
    right after topic 1, *Packing a trip* (drawn inside the topics' `ForEach`, after the topic of that title; it has no
    `guide-topic-<n>` id, so the topics keep their numbers). His ask of 13 Oct 2026: "remember to write about the
    Packing-Day-Stations in the How-this-works". Card padding 14, radius 12, `Theme.card`, a 1.2-pt ring of the Pack
    green at 70 % (the topics' is the hairline). Top to bottom, 12 apart:
    - the day's mark (`StationMark`, 24 pt, a sun rising out of an open case, the Pack step's readable green) and
-     "Packing day" (Body semibold ink), one element `guide-day-title`;
-   - "On a trip you are packing, a row sits right under the loop: Packing day, then six stations in the order you go
+     "Packing Stations" (Body semibold ink), one element `guide-day-title`;
+   - "On a trip you are packing, a row sits right under the loop: Packing Stations, then six stations in the order you go
      through them. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides
      sideways." (Callout ink);
    - the six stations, in the row's order, each a row: the station's mark (20 pt, white) in a 34-pt green disc — the
@@ -793,26 +794,37 @@ no entry shows no marker anywhere (and fails the test).
      under it what the station does and what turns it green (Callout ink); the words (`PackingDayGuideCard.says`)
      one element `guide-day-<key>` (`bags`, `pack`, `weigh`, `tags`, `photos`, `ready`):
      1. **Bags out** — "Lay every bag out where you pack, and tick it as it comes out. The bags are the ones your list
-        packs into — “Not in a bag” is not one. Green when every bag is out."
+        packs into — “Not in a bag” is not one. Green when every bag is out." Since 0.81 then: "At the foot, + Add a bag:
+        one of your bags not on the trip yet, or a new one (its name, whether it goes in the cabin, its max weight if
+        you like). It joins the trip empty, and Weigh, Tags, Photos and Bags ask about it too; to fill it, pick it as
+        Usually packed in on its things' pages. The ✕ beside an empty one takes it off again."
      2. **Pack** — "The trip's own list. Its station shows how far you are — 12/40 — and a tap takes you straight to
         the list. Green when everything is packed; a thing set aside ⊘ counts as done."
      3. **Weigh** — "The luggage scale, one bag after another: hang it on the scale, type what it says, Save — the next
         bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself
         — once per trip. Green when every bag is weighed."
-     4. **Tags** — "A Name tag tick for every bag, and an AirTag tick for each bag that has one. Has an AirTag is the
+     4. **Tags** — (0.81) "A card for every bag, with a green edge: a Name tag tick, and an AirTag tick for each bag
+        that has one — each wearing the tag's or the AirTag's drawing. A bag whose ticks are all on turns light green,
+        with a ✓. Remind me, under a bag not done yet, writes a To do on the trip — “Name tag for …”, ready to change —
+        and it shows in Before you go." (until 0.81 "A Name tag tick for every bag, and an AirTag tick for each bag
+        that has one.") "Has an AirTag is the
         bag's own switch — under the bag here, or on its page in Care → Bags; switch it on once and every trip asks for
         it. Green when every tick is on."
      5. **Photos** — "One photo of all your bags side by side, and each bag's own photo (the same ones as in Bags) —
         for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them
         stays in Bags after you leave. Green when every photo is there."
      6. **Ready** — "Every station, done or what is left — tap one to open it — and Ready to go once all are green. I
-        leave at is right there: 15 minutes before, the iPhone names what is still unticked."
-   - three dotted lines (as a topic's, Pack green): getting around ("tap a station in the row to open it — Pack goes
+        leave at is right there: 15 minutes before, the iPhone names what is still unticked." Since 0.81 then: "Add a
+        reminder, at the foot: anything last-minute, written as a To do on the trip — it shows in Before you go."
+   - four dotted lines since 0.81 (three before; as a topic's, Pack green): getting around ("tap a station in the row to open it — Pack goes
      straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the
      stations are at the top too. Done closes it."); a trip with no bags yet ("those four stations are faded with a
      dashed edge and say “no bags yet”; opened, they say how to give things a bag … Ready then waits only for the
-     packing."); afterwards ("Once the trip sets off, the row is gone — the weights and photos stay in Bags. A trip you
-     share, or start again from this one, begins its Packing day afresh.").
+     packing."); (0.81) a To do written here ("A To do written here (Remind me, Add a reminder) is a line of the trip's
+     own, under To do: due at once, so it is in Before you go at the top of the trip straight away — tick it there or
+     on the list. Like every reminder it counts on the list: Pack waits for it."); afterwards ("Once the trip sets off,
+     the row is gone — the weights and photos stay in Bags. A trip you share, or start again from this one, begins its
+     stations afresh." — "its Packing day afresh" until 0.81).
    Spec 07 part 17 holds every rule behind these words.
 
 **The topics and their lines** (summarised; the code holds the exact sentences):
@@ -1019,7 +1031,7 @@ Shipped in 0.41.
 | 16 | Set aside ⊘ | Trips | Not this time: the thing stays on the list but is not packed, and leaves the count. ↻ brings it back. |
 | 17 | The loop | Trips | Plan (Home) › Pack (Trips) › On site (the trip, while away) › Review (the trip, afterwards) › Refine (Templates) — and round again. |
 | 18 | Loop strip | Trips | The five steps under a trip's name, each with a mark of its own: a map with a route for Plan, a suitcase with a tick for Pack, a pin on a map for On site, a magnifier over a list for Review, a sprout for Refine. The filled one is where this trip stands, with its mark (on a wide screen every step has its mark). (Until 0.77: "with the mark of the tab where that step is done".) |
-| 19 | Packing day | Trips | The stations of a trip’s Pack step, in a row under its loop strip: Bags out, Pack, Weigh, Tags, Photos, Ready. Each turns green when it is done; Ready to go when all are. (0.79, spec 07 part 17) |
+| 19 | Packing Stations | Trips | The stations of a trip’s Pack step, in a row under its loop strip: Bags out, Pack, Weigh, Tags, Photos, Ready. Each turns green when it is done; Ready to go when all are. (Packing day until 0.81.) — "Packing day" until 0.81 (spec 07 part 17 "0.81"). |
 | 20 | Review | Trips | Looking back at ONE trip: what you did not use, and what you missed. |
 | 21 | Refine | Templates | Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab. |
 | 22 | Keep · Drop | Templates | In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays. |

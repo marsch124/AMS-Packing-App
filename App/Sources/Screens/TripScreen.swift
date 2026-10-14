@@ -207,9 +207,12 @@ struct TripScreen: View {
                         TripStateBadge(state: .reviewed).fixedSize()
                             .accessibilityIdentifier("trip-reviewed")
                     } else if !trip.entries.isEmpty {
+                        // In the Templates (Refine) violet — what a review teaches goes to the templates
+                        // (0.81, his pick of variant A, 14 Oct 2026); Done stays the trip's green.
                         Button("Review") { reviewing = true }
-                            .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: false)).focusEffectDisabled()
-                            .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                            .buttonStyle(HeaderButtonStyle(tint: TripHeaderTone.review.ringColour, filled: false,
+                                                           words: TripHeaderTone.review.wordsColour)).focusEffectDisabled()
+                            .font(.system(.body, weight: .semibold))
                             .accessibilityIdentifier("trip-review")
                     }
                     Button("Done") { dismiss() }

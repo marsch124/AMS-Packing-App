@@ -1673,10 +1673,10 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    Your bags.
 3. **Goes in the cabin** switch (`bag-detail-cabin`, orange): "Goes in the cabin" / "Carry-on. On a plane trip,
    the trip checks it for liquids and things not allowed on board."
-3b. **Has an AirTag** switch (0.79, `bag-detail-airtag`, orange; spec 07 part 17): "Has an AirTag" / "On a Packing
-   day, Tags asks you to check it is in the bag." Kept on the bag's thing as `extra["airTag"]` = true (absent when
+3b. **Has an AirTag** switch (0.79, `bag-detail-airtag`, orange; spec 07 part 17): "Has an AirTag" / "In Packing
+   Stations, Tags asks you to check it is in the bag." ("On a Packing day, …" until 0.81, when the day was renamed.) Kept on the bag's thing as `extra["airTag"]` = true (absent when
    off — never written false; `Library.setBagAirTag(id:_:)`, read by `Library.hasAirTag(container:)`). The same
-   switch sits under the bag in the Packing day's Tags station, where a bag that is only a name on the trip's lines
+   switch sits under the bag in Packing Stations' Tags station, where a bag that is only a name on the trip's lines
    becomes one of his bags when it is switched on (`setAirTag(container:_:)`, as "Goes in the cabin" from the trip).
 3a. **Pockets** `N` (0.69, `BagPockets` in `Screens/Pockets.swift`; his idea plan, stop B: "A bag's page lists its
    pockets; you name them once"): heading "Pockets" (Body semibold ink) and the count (Subheadline semibold mono

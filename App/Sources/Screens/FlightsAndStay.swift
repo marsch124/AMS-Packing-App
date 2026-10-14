@@ -69,7 +69,7 @@ struct FlightsAndStay: View {
             }
             Rectangle().fill(Theme.line).frame(height: 1)
                 .accessibilityHidden(true)
-            Text("Optional. What the airline\u{2019}s desk asks when a bag does not arrive. Each checked bag\u{2019}s tag number goes in on the Packing day, under Tags.")
+            Text("Optional. What the airline\u{2019}s desk asks when a bag does not arrive. Each checked bag\u{2019}s tag number goes in at Packing Stations, under Tags.")
                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("\(id)-note")

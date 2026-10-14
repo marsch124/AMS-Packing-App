@@ -15,6 +15,8 @@ public struct WeighedBag: Equatable, Sendable {
     public var load: BagLoad
     /// What the scale said, in grams — nil until he weighs it.
     public var scaleGrams: Double?
+    /// On the trip by Packing Stations' "+ Add a bag" (0.81) — with or without things in it.
+    public var added = false
 
     /// The weight it is judged by: the scale's when there is one.
     public var grams: Double { scaleGrams ?? load.grams }
@@ -43,11 +45,23 @@ extension Library {
     }
 
     /// The trip's bags as the Bags card shows them — each with its sum, its limit,
-    /// and what the scale said.
+    /// and what the scale said. Then (0.81) each bag Packing Stations' "+ Add a bag" put on the
+    /// trip that nothing on the list is packed in yet: last, in the order added, empty, with its
+    /// limit — a bag added that the list packs into is the list's row, marked `added`.
     public func weighedBags(tripId: String) -> [WeighedBag] {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return [] }
         let scale = weighed(tripId: tripId)
+        let limits = bagLimits()
+        let added = Library.addedBags(trip)
+        func isAdded(_ name: String) -> Bool { added.contains { normName($0) == normName(name) } }
         // A kit weighs what is inside it — on a reviewed trip, what was inside it then (ThingKits).
-        return bagLoads(linesWithKitWeights(trip: trip), qtyNights(trip), bagLimits()).map { WeighedBag(load: $0, scaleGrams: scale[$0.container]) }
+        var rows = bagLoads(linesWithKitWeights(trip: trip), qtyNights(trip), limits).map {
+            WeighedBag(load: $0, scaleGrams: scale[$0.container], added: isAdded($0.container))
+        }
+        for name in added where !rows.contains(where: { normName($0.load.container) == normName(name) }) {
+            let limit = limits[name] ?? 0
+            rows.append(WeighedBag(load: BagLoad(container: name, limitKg: limit.isNaN ? 0 : limit), scaleGrams: scale[name], added: true))
+        }
+        return rows
     }
 }
