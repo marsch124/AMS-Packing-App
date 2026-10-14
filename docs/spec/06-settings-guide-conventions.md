@@ -670,11 +670,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (78 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (79 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.79 | 14 Oct 2026 | Packing day | N4 C2 | Packing day stations (PackingDay.swift, chapter 07 part 17; his seven drawn icons); Has an AirTag on a bag; the photo of all the bags; Undo after a heading's tick and Clear every tick; Tick everything removed from the trip and Pack to go home; Clear every tick in Trip settings; How it works part |
 | 0.78 | 13 Oct 2026 | Calmer words | N1 C4 | group headings not upper-cased (groupHeading, Templates tab, activityChoices "Other Templates"); weekendbag icon + short/weekend suggestions; Food label Mix; Season pills draw sun / snow (Pills(icons:)); Library.quickNote names the Always Packed templates |
 | 0.77 | 13 Oct 2026 | Take a break | N2 C2 | Take a break sheet + Continue when? reminder; messages when a trip moves on (Have a good trip / Welcome home), Settings switch; Before you go = one card (flags, To do, To charge); the five step marks he picked (LoopStep.mark) |
 | 0.76 | 13 Oct 2026 | Simpler new trips | N1 C4 | battery in a checked bag on plane trips (cabinCheck, inABag); Travelling by Plane / RV only, neither = Car stored; Season from the dates (Nov–Mar Winter) until picked; More choices fold (Season, Food, Laundry); new kits start kitCheck on unless switched off |

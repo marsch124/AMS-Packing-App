@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.79", date: "14 Oct 2026", title: "Packing day",
+                new: ["Packing day: on a trip you are packing, a row of stations under the steps \u{2014} Bags out, Pack, Weigh, Tags, Photos, Ready. Each turns green when it is done, and the next one is offered. When the last thing is ticked, Weigh opens by itself.",
+                      "Tags: a name tag on every bag, and the AirTag in each bag that has one \u{2014} set Has an AirTag once on the bag.",
+                      "Photos: one photo of all your bags together, besides each bag's own \u{2014} it is in the Bags card too, ready for the airport desk.",
+                      "Undo: after a heading's tick or Clear every tick, Undo puts the ticks back for a few seconds."],
+                changed: ["Tick everything is gone from the trip and from Pack to go home \u{2014} one wrong tap could tick a whole trip. Clear every tick is now the last row in Trip settings, and still asks first.",
+                          "How it works has a part of its own on the Packing day."]),
         Release(version: "0.78", date: "13 Oct 2026", title: "Calmer words",
                 new: ["A new template icon, Weekend bag \u{2014} a soft holdall, suggested for short or weekend templates."],
                 changed: ["Template groups are no longer in capitals: Always Packed, By Transport, GA \u{00B7} Goal Activity, WET \u{00B7} Workout, Exercise & Training, OE \u{00B7} Other Events, Other Templates.",
