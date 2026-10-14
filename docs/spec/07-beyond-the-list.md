@@ -29,9 +29,9 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 15. Batteries and To charge | 0.75 | built (branch work/battery075) |
 | 16. Take a break and messages when a trip moves on | 0.77 | built (branch work/break077) |
 | 17. Packing day — the stations of the Pack step | 0.79 | built (branch work/day079) |
-| 18. Lost luggage — A: a bag's details for the desk | 0.80 | building (branch work/baginfo080) |
+| 18. Lost luggage — A: a bag's details for the desk | 0.80 | built (branch work/baginfo080) |
 | 18. Lost luggage — B. Flights and stay, bag-tag numbers | 0.80 | built (branch work/flight080) |
-| 18 C. Lost luggage — the Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
+| 18. Lost luggage — C. The Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -2352,7 +2352,39 @@ Parity: 211/211 (only `extra` keys, and fields the web model already has).
 
 #### Tests
 
-(Written from the code once built.)
+Model `BagDetailsTests` (6, `Core/Tests/PackingLibraryTests/BagDetailsTests.swift`; Travel with Boots and the Day pack
+in the Big case — both the Big case and the Day pack his bags, the Day pack also a thing he packs; the trip "Coast
+week", 20–24 Oct 2026): `testTheDetailsAreTheBagsOwnAndBrandAndColourAreItsThingsOwn` (brand, colour and the note are
+`manufacturer`, `color`, `size`; the extra keys as stored words; read by the lines' name, trimmed; "Its details"'
+writes read back; emptied → no key; only a bag), `testANameOnTheLinesBecomesABagOnlyWhenSomethingIsSaid`,
+`testOnlyWhatChangedIsWrittenSoALaterVersionsAnswerStays` (an unknown type and size survive another answer; the
+same answers write nothing), `testTheDetailsFollowARenameAndAreSyncedBackedUpButNeverOnATripLine` (rename, records,
+backup; no line of an old or new trip, no shared trip carries them; deleted completely, gone),
+`testABagsOwnPhotosAreItsThingsPhotosTwoAtMostAndApartFromTheTrips` (the thing's own photos, two at most, in use a
+week on, untouched by `setBagDetails`, photo ids alone make no bag, not a packed photo, through rename/records/backup,
+Remove takes the record and the first photo's `thumb`), `testTheDeskHearsPlainWords`. Each seen RED with a planted
+fault: the brand written to an extra key ("the brand is not the thing's own Brand"); the name guard removed ("nothing
+said, yet the name became a bag"); the type written unconditionally ("a later version's type was wiped"); a trip line
+copying the thing's extra keys (`entryFromItem`; "a new trip's line carries the bag's bagType", "a shared trip carries
+bag details"); the pill compared by its exact spelling ("a pill is lit only by its exact spelling"); the two-photo
+limit lifted ("a third photo of the bag was taken"); the photo ids not read ("the details do not show the photo").
+All model tests 576 + 451 green; parity 211/211 (invented backup) and 209/209 (his).
+
+UI (`-uiTestingChecks`, the carry-on; `-uiTestingPackingDay`, the Day pack): `testABagKeepsWhatTheLostLuggageDeskAsks`
+(both devices — Brand typed, the Black pill writes "Black" and is lit, Hard case, Large, Duffel takes over and is
+taken off again, note and marks typed; closed and opened, all kept; "Its details" shows the same brand and colour),
+`testTheMacTabsThroughTheLostLuggageFieldsInOrder` (Mac only: Brand → Colour, the note → marks, Shift-Tab back),
+`testABagsOwnPhotoIsOnItsPageAndBesideItOnTheTrip` (two photos, "Two photos — remove one…", no third offered, Remove;
+the Day pack's photo beside its row in the Bags card, none beside the carry-on; beside it in the Photos station, which
+still says "0 of 3 photos"; a packed photo taken → the thumbnail goes). Seen RED: on the iPhone simulator the type pill
+writing nothing — "Hard case is not chosen"; the thumbnail shown whatever the trip has — "the bag's own photo still
+shows beside a bag with a photo of it packed"; on GitHub's Mac (a probe branch, deleted after) the Colour field out of
+the Tab order — "Tab from Brand did not go to Colour: colour '', brand 'Tumi', note 'Navy'". Green without them: the
+iPhone day and night (pictures `lost-bag-filled`, `lost-bag-photo`, `bags-card-look`, `day-photos-look`); the Mac probe
+ran the three with seven neighbours (cabin, pockets, Your bags' number, rename and delete, the packed bag's photos,
+the Photos station, Tags) — all green. Neighbours on the iPhone simulator: every test that opens a bag's page, the Bags
+card or the Photos station, and the How it works tests (29 runs) — green; the Ready test once timed out on a tap
+while two Release builds shared the machine, and passed alone (52 s).
 
 #### Open questions
 
