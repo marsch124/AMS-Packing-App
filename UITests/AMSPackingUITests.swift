@@ -1631,8 +1631,12 @@ final class AMSPackingUITests: XCTestCase {
         let numbers = words(progress).split { !$0.isNumber }.compactMap { Int($0) }
         let lines = numbers.dropFirst().prefix(2).reduce(0, +)
         XCTAssertGreaterThan(lines, 0, "the trip has no lines: '\(words(progress))'")
+        // 🪤 Start at the top of the list, steered by the Sorting row (in the same list, never lazy):
+        // with no row above the first line, the Mac scrolled the Trips screen BEHIND the trip and line 1
+        // "never appeared" (0.79's probe, after the bag photos had scrolled the list down).
+        bringIntoView(app, app.buttons["trip-view"])
         for n in 0..<lines {
-            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil),
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : "trip-view"),
                           "line \(n + 1) of \(lines) never appeared")
             let line = app.buttons.matching(identifier: "trip-line-\(n)").firstMatch
             if !isOn(line) { tapVisible(app, line) }
