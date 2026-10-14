@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.83", date: "14 Oct 2026", title: "Add a bag anywhere",
+                new: ["The trip's Bags card has + Add a bag too \u{2014} one of your bags or a new one, right where you look at the bags."],
+                changed: ["No Lost bag? under On body \u{2014} that is you, not a bag a desk can lose.",
+                          "Lost bag? is a quiet link under each bag instead of a button."]),
         Release(version: "0.82", date: "14 Oct 2026", title: "See it grow",
                 new: ["Every group in the list has a small ring that fills green as you pack it, and turns into a green check when it is done.",
                       "Under the trip's count: what is left \u{2014} \u{201C}23 left \u{00B7} 2 to charge \u{00B7} about 25 min\u{201D}. The minutes come from your own packing pace.",
