@@ -2398,6 +2398,46 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    /// Photos of the bag itself (0.80, his ask of 14 Oct 2026; spec 07 part 18 A): on the bag's page,
+    /// in the lost-luggage group — two at most, each with its Remove — and then, small, beside the bag
+    /// in a trip's Bags card and the Packing day's Photos station, until the trip has a photo of it
+    /// PACKED. Never counted as one.
+    func testABagsOwnPhotoIsOnItsPageAndBesideItOnTheTrip() {
+        let app = launch("-uiTestingPackingDay")
+        openFirstBag(app)      // the Day pack, the sample's one bag of his
+        tap(app, id: "bag-detail-photo")
+        XCTAssertTrue(app.buttons["bag-detail-photo-thumb-0"].waitForExistence(timeout: 5), "the bag's photo was not kept")
+        tap(app, id: "bag-detail-photo")
+        XCTAssertTrue(app.buttons["bag-detail-photo-thumb-1"].waitForExistence(timeout: 5), "a second photo was not kept")
+        XCTAssertTrue(waitUntil { self.element(app, "bag-detail-photo-full").exists }, "two photos, and it does not say so")
+        XCTAssertFalse(app.buttons["bag-detail-photo"].exists, "a third photo is offered")
+        tap(app, id: "bag-detail-photo-remove-1")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-detail-photo-thumb-1"].exists }, "Remove kept the photo")
+        XCTAssertTrue(app.buttons["bag-detail-photo"].waitForExistence(timeout: 5), "with one gone, no way to take another")
+        bringIntoView(app, app.buttons["bag-detail-photo-thumb-0"])
+        shot(app, "lost-bag-photo")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        // The trip: beside the Day pack (bag 1) — not beside the carry-on, only a name on the lines.
+        openPackingDayTrip(app)
+        openBags(app)
+        XCTAssertTrue(app.buttons["bag-1-look"].waitForExistence(timeout: 5), "the Bags card does not show how the Day pack looks")
+        XCTAssertFalse(app.buttons["bag-0-look"].exists, "the carry-on shows a photo it does not have")
+        shot(app, "bags-card-look")
+        station(app, "photos")
+        XCTAssertTrue(app.buttons["day-photo-1-look"].waitForExistence(timeout: 5), "the Photos station does not show how the Day pack looks")
+        let chip = app.buttons["day-sheet-station-photos"]
+        XCTAssertTrue(waitUntil { self.value(chip) == "0 of 3 photos" }, "the bag's own photo counted as a photo of it packed: '\(value(chip))'")
+        shot(app, "day-photos-look")
+        // A photo of it packed: the bag's own steps aside.
+        tap(app, id: "day-photo-1-photo")
+        XCTAssertTrue(app.buttons["day-photo-1-photo-thumb-0"].waitForExistence(timeout: 5), "the photo of it packed was not kept")
+        XCTAssertTrue(waitUntil { !app.buttons["day-photo-1-look"].exists },
+                      "the bag's own photo still shows beside a bag with a photo of it packed")
+    }
+
     /// Care → Bags → the first bag's page.
     private func openFirstBag(_ app: XCUIApplication) {
         tab(app, "care")

@@ -1684,7 +1684,9 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    (`bag-detail-colour` and seven pills `bag-detail-colour-black` … `-multi`, a pill writing its word — Multi writes
    "Multicoloured"), **TYPE** (pills `bag-detail-type-hard`, `-soft`, `-duffel`, `-backpack`, `-holdall`, `-garment`,
    `-other`), **SIZE** (pills `bag-detail-size-cabin`, `-medium`, `-large`, and the note `bag-detail-sizenote`),
-   **DISTINCTIVE MARKS** (`bag-detail-marks`, 1–4 lines). One choice per pill row; the lit one tapped again is
+   **DISTINCTIVE MARKS** (`bag-detail-marks`, 1–4 lines), **PHOTOS OF THE BAG** (two at most, the thing's own
+   `photos`: thumbnails `bag-detail-photo-thumb-<k>` with Remove `bag-detail-photo-remove-<k>`, the shared
+   PhotoTakers `bag-detail-photo`, at two `bag-detail-photo-full`). One choice per pill row; the lit one tapped again is
    taken off. Saved 0.4 s after the last key and at once on Return, a pill, "Its details" and leaving the page.
    Brand and colour ARE the thing's `manufacturer` and `color` (the same values as "Its details" shows), the note
    its `size`; type, size class and marks are `extra` keys `bagType`, `bagSize`, `bagMarks`
@@ -1778,8 +1780,8 @@ Front pocket; Lid chosen and saved is there when reopened; the Toothbrush, in a 
 carry-on is only a name in that sample), has no Pocket — red with the save line planted out: "the usual pocket was
 not kept: 'Front pocket'"); model `PocketsTests`. **0.80:** `testABagKeepsWhatTheLostLuggageDeskAsks` (`-uiTestingChecks`, the carry-on: Brand typed,
 the Black pill writes "Black" and is lit, Hard case, Large, Duffel takes over and is taken off again, the note and the
-marks typed; closed and opened again all of it is there; "Its details" shows the same brand and colour) and, on the
-Mac, `testTheMacTabsThroughTheLostLuggageFieldsInOrder`; model `BagDetailsTests` (spec 07 part 18 A). **0.73:** `testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage`
+marks typed; closed and opened again all of it is there; "Its details" shows the same brand and colour),
+`testABagsOwnPhotoIsOnItsPageAndBesideItOnTheTrip` and, on the Mac, `testTheMacTabsThroughTheLostLuggageFieldsInOrder`; model `BagDetailsTests` (spec 07 part 18 A). **0.73:** `testABagWithNoPocketsMakesItsFirstPocketOnAThingsPage`
 (`-uiTestingChecks`, the Map in the carry-on, a bag of his with no pockets: Pocket shows "Just in the bag", no
 pocket row; "Side pocket" made at the foot is chosen, kept on Save and is the bag's first pocket, with its pen; No
 bag takes the Pocket list away — red with the 0.69 rule planted back (`!pockets.rows.isEmpty`): "no Pocket list for

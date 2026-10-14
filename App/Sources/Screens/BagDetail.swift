@@ -256,6 +256,10 @@ struct BagDetail: View {
             lostPart("Distinctive marks") {
                 lostField($lost.marks, "e.g. red strap, sticker on the side", id: "bag-detail-marks", lines: true)
             }
+            // How it looks (his ask of 14 Oct 2026): the bag itself, empty or any time — not packed.
+            lostPart("Photos of the bag") {
+                BagOwnPhotos(bagId: bag.id).environmentObject(model)
+            }
         }
         .onChange(of: lost) { _, _ in lostTyped() }
         .accessibilityElement(children: .contain)
@@ -549,5 +553,96 @@ struct BagDetail: View {
     private func quiet(_ text: String) -> some View {
         Text(text).font(.system(.footnote)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Photos of the bag ITSELF on its page (0.80, his ask of 14 Oct 2026; spec 07 part 18 A): how it
+/// looks, taken empty or any time, for the lost-luggage desk — two at most, the thing's own photos.
+/// Not the trip's photos of it packed (`BagPhotoRow`). Taken as those are (`PhotoTakers`), seen
+/// large on a tap, each with its own Remove.
+struct BagOwnPhotos: View {
+    let bagId: String
+    @EnvironmentObject var model: LibraryModel
+    @State private var large: Int?
+
+    var body: some View {
+        let shots = model.library.bagOwnPhotos(id: bagId).compactMap { p in JPEG.image(dataURL: p.data).map { (p.id, $0) } }
+        // As stored: a photo still on its way from the other device takes its place too.
+        let full = (model.library.bagDetails(id: bagId)?.photoIds.count ?? 0) >= BAG_OWN_PHOTOS_MAX
+        VStack(alignment: .leading, spacing: 8) {
+            if shots.isEmpty {
+                Text("How it looks \u{2014} taken empty, any time. Two at most.")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(Array(shots.enumerated()), id: \.element.0) { k, shot in
+                        VStack(spacing: 2) {
+                            Button { large = k } label: {
+                                Image(decorative: shot.1, scale: 1).resizable().scaledToFill()
+                                    .frame(width: 80, height: 80).clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("bag-detail-photo-thumb-\(k)")
+                            .accessibilityLabel("Photo \(k + 1) of the bag")
+                            Button("Remove") {
+                                let b = bagId, id = shot.0
+                                model.change { _ = $0.removeBagOwnPhoto(id: b, photoId: id) }
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .frame(minWidth: 80, minHeight: 34).contentShape(Rectangle())
+                            .accessibilityIdentifier("bag-detail-photo-remove-\(k)")
+                        }
+                    }
+                }
+                .sheet(item: Binding(get: { large.map(Shown.init) }, set: { large = $0?.start })) {
+                    BigPhoto(images: shots.map(\.1), captions: shots.map { _ in "How the bag looks" }, start: $0.start)
+                }
+            }
+            if full {
+                Text("Two photos \u{2014} remove one to add another")
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("bag-detail-photo-full")
+            } else {
+                PhotoTakers(id: "bag-detail-photo", testTitle: shots.isEmpty ? "Photo of the bag" : "Another photo",
+                            take: shots.isEmpty ? "Take a photo" : "Take another",
+                            choose: shots.isEmpty ? "Choose a photo" : "Choose another") { jpeg in
+                    guard let jpeg else { return }
+                    let b = bagId
+                    model.change { _ = $0.addBagOwnPhoto(id: b, jpeg: jpeg) }
+                }
+            }
+        }
+    }
+
+    private struct Shown: Identifiable { let start: Int; var id: Int { start } }
+}
+
+/// The bag's own photo, small, where a trip shows the bag and has no photo of it PACKED yet
+/// (0.80): the Bags card's row and the Packing day's Photos station. A tap shows it large.
+/// Nothing when the bag has none — or is only a name on the lines.
+struct BagLookThumb: View {
+    let tripId: String
+    let bag: String
+    let id: String
+    var side: CGFloat = 32
+    @EnvironmentObject var model: LibraryModel
+    @State private var large = false
+
+    var body: some View {
+        if model.library.bagPhotoIds(tripId: tripId, bag: bag).isEmpty,
+           let photo = model.library.bagOwnPhotos(bag: bag).first.flatMap({ JPEG.image(dataURL: $0.data) }) {
+            Button { large = true } label: {
+                Image(decorative: photo, scale: 1).resizable().scaledToFill()
+                    .frame(width: side, height: side).clipShape(RoundedRectangle(cornerRadius: 6))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier(id)
+            .accessibilityLabel("How the \(bag) looks")
+            .sheet(isPresented: $large) { BigPhoto(images: [photo], captions: ["\(bag) \u{2014} how it looks"]) }
+        }
     }
 }
