@@ -92,13 +92,14 @@ extension Library {
         for key in [MISSED_AT_REVIEW_KEY, TRIP_WORKOUTS_KEY, VAULT_WAITING_KEY, VAULT_WRITTEN_KEY] { t.extra[key] = nil }
         t.extra[KITS_KEPT_KEY] = nil             // it arrives not reviewed: its kits are theirs now (ThingKits)
         t.extra[BREAK_UNTIL_KEY] = nil           // his break: their phone must not call them back to packing (TakeABreak, 0.77)
-        for key in DAY_TRIP_KEYS { t.extra[key] = nil }   // his Packing day: bags out, tags, the photo's id, Weigh offered (0.79)
+        for key in DAY_TRIP_KEYS { t.extra[key] = nil }   // his Packing Stations: bags out, tags, bags added, the photo's id, Weigh offered (0.79, 0.81)
         t.extra[BAG_TAGS_KEY] = nil              // his bags' tag numbers; the flights and stay go along (TripTravel, 0.80)
         t.entries = t.entries.map { line in
             var l = line
             l.extra[KIT_TICKED_KEY] = nil        // what was ticked inside a kit (ThingKits)
             l.extra[KIT_THEN_KEY] = nil          // what was inside it at his review (ThingKits, 0.73)
             for key in Library.chargeKeys { l.extra[key] = nil }   // charged for his trip (Batteries, 0.75)
+            l.extra[TRIP_TODO_KEY] = nil         // a To do he wrote on the trip goes as a plain reminder (Packing Stations, 0.81)
             l.skipped = false
             l.edited = false
             for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt", POCKET_KEY, HOME_POCKET_KEY] { l.extra[key] = nil }

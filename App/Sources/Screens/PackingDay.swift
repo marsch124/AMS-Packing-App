@@ -2,8 +2,8 @@ import SwiftUI
 import PackingCore
 import PackingLibrary
 
-// The Packing day (0.79, spec 07 part 17) — his yes of 13 Oct 2026, from his own packing
-// walk-through: the bags out on the floor, pack, weigh, name tags and AirTags, photos for lost
+// Packing Stations — "Packing day" until 0.81, when he renamed it (14 Oct 2026). (0.79, spec 07
+// part 17) — his yes of 13 Oct 2026, from his own packing walk-through: the bags out on the floor, pack, weigh, name tags and AirTags, photos for lost
 // luggage, ready. On a trip being packed, a slim row of STATIONS under the loop strip — Bags out
 // · Pack · Weigh · Tags · Photos · Ready — each green when done; a tap opens it in the Packing
 // day sheet (Pack goes to the list), and the sheet offers the next open one. What each station
@@ -33,8 +33,16 @@ struct StationChip: View {
 
     #if os(macOS)
     static let markSize: Double = 13
+    /// The capsule's height — 0.81, his ask of 14 Oct 2026: slimmer pills, so the drawn marks pop;
+    /// the mark and the words stay their size. `Metrics.chip` (22 on the Mac, 28 on the iPhone)
+    /// until then. Only the stations' chips: the loop's step pills and every other pill keep theirs.
+    static let height: CGFloat = 18
+    /// Above and below the capsule, still taking the tap: the row is no taller than it must be.
+    static let reach: CGFloat = 1
     #else
     static let markSize: Double = 15
+    static let height: CGFloat = 22
+    static let reach: CGFloat = 2
     #endif
 
     var body: some View {
@@ -53,20 +61,21 @@ struct StationChip: View {
             }
         }
         .foregroundStyle(words)
-        .padding(.horizontal, 9).frame(minHeight: Metrics.chip)
+        .padding(.horizontal, 9).frame(height: StationChip.height)
         .background(Capsule().fill(look == .done || look == .doneHere ? tint : look == .here ? tint.opacity(0.14) : Theme.card))
         .overlay {
             switch look {
             case .done: EmptyView()
             // Done AND the one highlighted (shown in the sheet; on the trip, Ready once all is
             // green): a white ring just inside the green, so it never grows past its row.
-            case .doneHere: Capsule().strokeBorder(Color.white.opacity(0.85), lineWidth: 1.5).padding(2.5)
+            case .doneHere: Capsule().strokeBorder(Color.white.opacity(0.85), lineWidth: 1.5).padding(2)
             case .here: Capsule().stroke(tint, lineWidth: 2)
             case .open: Capsule().stroke(tint.opacity(0.7), lineWidth: 1.2)
             case .cannot: Capsule().stroke(Theme.line, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
         }
-        .contentShape(Capsule())
+        .padding(.vertical, StationChip.reach)
+        .contentShape(Rectangle())
     }
 }
 
@@ -105,7 +114,7 @@ struct StationChips: View {
     }
 }
 
-/// The trip screen's row: the day's mark and "Packing day", then the chips — the next station
+/// The trip screen's row: the day's mark and "Packing Stations", then the chips — the next station
 /// to do highlighted. ONE line where it fits (a wide Mac window); else, on the iPhone, the whole
 /// line scrolls sideways, from one edge of the screen to the other, and keeps the next station
 /// (and the one after it) in view; on a narrow Mac window the chips wrap onto a second line.
@@ -162,12 +171,12 @@ struct PackingDayRow: View {
     private var title: some View {
         HStack(spacing: 5) {
             StationMark(mark: PackingDayStation.dayMark, size: 17)
-            Text("Packing day").font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
+            Text("Packing Stations").font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
         }
         .foregroundStyle(Library.LoopStep.pack.words(scheme))
-        .frame(minHeight: Metrics.chip)
+        .frame(minHeight: StationChip.height + 2 * StationChip.reach)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Packing day")
+        .accessibilityLabel("Packing Stations")
         .accessibilityAddTraits(.isHeader)
         .accessibilityIdentifier("day-title")
     }
@@ -175,7 +184,8 @@ struct PackingDayRow: View {
 
 // MARK: - The sheet
 
-/// The Packing day: the row again, the station shown, and the next open one offered.
+/// Packing Stations (the Packing day until 0.81): the row again, the station shown, and the next
+/// open one offered.
 struct PackingDaySheet: View {
     let tripId: String
     /// Pack is the trip's list: the sheet closes and the trip goes to it.
@@ -184,6 +194,10 @@ struct PackingDaySheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
     @State private var shown: PackingDayStation
+    /// Bags out's "+ Add a bag" is open; Ready's "Add a reminder" is open, and what it added (0.81).
+    @State private var addingBag = false
+    @State private var readyReminding = false
+    @State private var readyAdded = ""
     /// Weigh: the bag whose reading is being typed, what is typed, what Save was missing.
     @State private var weighing: String?
     @State private var scaleText = ""
@@ -219,7 +233,7 @@ struct PackingDaySheet: View {
                     HStack(spacing: 8) {
                         StationMark(mark: PackingDayStation.dayMark, size: 22)
                             .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.center] + 6 }
-                        Text("Packing day").font(.system(.title3, weight: .bold))
+                        Text("Packing Stations").font(.system(.title3, weight: .bold))
                     }
                     .foregroundStyle(Library.LoopStep.pack.words(scheme))
                     .accessibilityElement(children: .combine)
@@ -242,6 +256,8 @@ struct PackingDaySheet: View {
                     Group {
                         if !day.usable(shown) {
                             noBags
+                            // Bags out can put a bag on the trip even when it has none (0.81).
+                            if shown == .bagsOut { addBag(day) }
                         } else {
                             switch shown {
                             case .bagsOut, .pack: bagsOut(day)
@@ -296,6 +312,8 @@ struct PackingDaySheet: View {
             toList()
         } else {
             weighNeeds = ""
+            addingBag = false
+            readyReminding = false
             shown = s
         }
     }
@@ -349,19 +367,57 @@ struct PackingDaySheet: View {
     // MARK: Bags out
 
     private func bagsOut(_ day: PackingDay) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        // A bag "+ Add a bag" put on the trip with nothing in it yet (0.81): it says so, a ✕ takes it
+        // off again, and one line says how to fill it.
+        let empty = day.bags.filter { $0.things == 0 && model.library.isAddedBag(tripId: tripId, bag: $0.name) }.map(\.name)
+        return VStack(alignment: .leading, spacing: 6) {
             lead("Lay every bag out where you pack, and tick it as it comes out.")
             VStack(spacing: 0) {
                 ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
-                    tickRow(bag.name, on: bag.out, detail: "\(bag.things) thing\(bag.things == 1 ? "" : "s")",
-                            id: "day-bag-\(n)", value: ("out", "not out")) {
-                        let t = tripId, name = bag.name, on = !bag.out
-                        model.change { _ = $0.setBagOut(on, tripId: t, bag: name) }
+                    HStack(spacing: 4) {
+                        tickRow(bag.name, on: bag.out,
+                                detail: bag.things == 0 ? "nothing in it yet" : "\(bag.things) thing\(bag.things == 1 ? "" : "s")",
+                                id: "day-bag-\(n)", value: ("out", "not out")) {
+                            let t = tripId, name = bag.name, on = !bag.out
+                            model.change { _ = $0.setBagOut(on, tripId: t, bag: name) }
+                        }
+                        // Beside the row, not in it: a button inside a button never reaches the tree.
+                        if empty.contains(bag.name) {
+                            Button {
+                                let t = tripId, name = bag.name
+                                model.change { _ = $0.removeAddedBag(tripId: t, bag: name) }
+                            } label: {
+                                IconMark(path: StationDrawings.cross, size: Metrics.glyph * 0.8, weight: 2)
+                                    .foregroundStyle(Theme.muted)
+                                    .frame(width: Metrics.lineButton, height: Metrics.line)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).focusEffectDisabled()
+                            .accessibilityIdentifier("day-bag-\(n)-remove")
+                            .accessibilityLabel("Take \(bag.name) off this trip")
+                        }
                     }
                     .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                 }
             }
             if day.done(.bagsOut) { said("All bags are out.", id: "day-bags-said") }
+            if let first = empty.first {
+                lead("To fill \(first), pick it as Usually packed in on its things\u{2019} pages \u{2014} sorted by Into, the list shows what is in each bag.")
+                    .accessibilityIdentifier("day-addbag-hint")
+            }
+            addBag(day).padding(.top, 4)
+        }
+    }
+
+    /// "+ Add a bag" (0.81): the button, or the panel it opens.
+    @ViewBuilder private func addBag(_ day: PackingDay) -> some View {
+        if addingBag {
+            AddBagPanel(tripId: tripId) { addingBag = false }.environmentObject(model)
+        } else {
+            Button { addingBag = true } label: { StationAddLabel(title: "Add a bag") }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("day-addbag")
+                .accessibilityLabel("Add a bag")
         }
     }
 
@@ -465,42 +521,10 @@ struct PackingDaySheet: View {
         return VStack(alignment: .leading, spacing: 10) {
             lead("A name tag on every bag, and the AirTag in each bag that has one."
                  + (byPlane ? " At check-in, type the number on each checked bag\u{2019}s tag." : ""))
+            // One card per bag (0.81, his decision of 14 Oct 2026): a soft green edge, the bag's drawing,
+            // the tag and AirTag drawings on the ticks, light green with a ✓ once done; Remind me.
             ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .padding(.bottom, 2)
-                    tickRow("Name tag", on: bag.nameTag, id: "day-tag-\(n)-name", value: ("on", "off")) {
-                        let t = tripId, name = bag.name, on = !bag.nameTag
-                        model.change { _ = $0.setNameTag(on, tripId: t, bag: name) }
-                    }
-                    if bag.hasAirTag {
-                        tickRow("AirTag in it", on: bag.airTag, id: "day-tag-\(n)-air", value: ("on", "off")) {
-                            let t = tripId, name = bag.name, on = !bag.airTag
-                            model.change { _ = $0.setAirTagIn(on, tripId: t, bag: name) }
-                        }
-                    }
-                    // A checked bag only: a cabin bag gets no tag at the desk.
-                    if model.library.asksBagTag(tripId: tripId, bag: bag.name) {
-                        BagTagField(tripId: tripId, bag: bag.name, id: "day-tag-\(n)-number")
-                            .padding(.top, 4)
-                    }
-                    Toggle(isOn: Binding(get: { bag.hasAirTag },
-                                         set: { on in let name = bag.name; model.change { _ = $0.setAirTag(container: name, on) } })) {
-                        Text("Has an AirTag").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
-                    }
-                    .tint(tint)
-                    #if os(iOS)
-                    .controlSize(.mini)
-                    #else
-                    .controlSize(.small)
-                    #endif
-                    .padding(.top, 4)
-                    .accessibilityIdentifier("day-tag-\(n)-has")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                TagsBagCard(tripId: tripId, bag: bag, n: n).environmentObject(model)
             }
             if day.done(.tags) { said("Every tag is on.", id: "day-tags-said") }
         }
@@ -599,6 +623,29 @@ struct PackingDaySheet: View {
                            id: "day-leave", tint: tint)
                     .padding(.top, 4)
             }
+            readyReminder.padding(.top, 6)
+        }
+    }
+
+    /// Ready's "Add a reminder" (0.81, his decision of 14 Oct 2026): anything last-minute, written as
+    /// a To do on the trip — it shows in Before you go.
+    @ViewBuilder private var readyReminder: some View {
+        if readyReminding {
+            TripTodoComposer(tripId: tripId, prefill: "", id: "day-ready-remind",
+                             lead: "Anything last-minute \u{2014} a To do on this trip, in Before you go:",
+                             placeholder: "e.g. Buy euros") { words in
+                readyAdded = words
+                readyReminding = false
+            } cancel: { readyReminding = false }
+            .environmentObject(model)
+        } else {
+            Button { readyReminding = true; readyAdded = "" } label: { StationAddLabel(title: "Add a reminder") }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("day-ready-remind")
+                .accessibilityLabel("Add a reminder")
+        }
+        if !readyAdded.isEmpty {
+            TripTodoComposer.said(readyAdded, id: "day-ready-remind-said", tint: Library.LoopStep.pack.words(scheme))
         }
     }
 
@@ -709,8 +756,8 @@ struct GroupPhotoLine: View {
 
 // MARK: - How it works
 
-/// The Packing day's part of How it works (0.79) — his ask of 13 Oct 2026: "remember to write
-/// about the Packing-Day-Stations in the How-this-works". What it is and where it sits; each
+/// Packing Stations' part of How it works (0.79; renamed from "Packing day" in 0.81) — his ask of
+/// 13 Oct 2026: "remember to write about the Packing-Day-Stations in the How-this-works". What it is and where it sits; each
 /// station in order, with its own mark, what the mark shows, what it does and what turns it green;
 /// how to get from one to the next; a trip without bags. Container `guide-packingday`; each
 /// station one element `guide-day-<key>` (its name, what its mark shows, its words), its mark
@@ -722,17 +769,17 @@ struct PackingDayGuideCard: View {
     static func says(_ s: PackingDayStation) -> String {
         switch s {
         case .bagsOut:
-            return "Lay every bag out where you pack, and tick it as it comes out. The bags are the ones your list packs into \u{2014} \u{201C}Not in a bag\u{201D} is not one. Green when every bag is out."
+            return "Lay every bag out where you pack, and tick it as it comes out. The bags are the ones your list packs into \u{2014} \u{201C}Not in a bag\u{201D} is not one. Green when every bag is out. At the foot, + Add a bag: one of your bags not on the trip yet, or a new one (its name, whether it goes in the cabin, its max weight if you like). It joins the trip empty, and Weigh, Tags, Photos and Bags ask about it too; to fill it, pick it as Usually packed in on its things\u{2019} pages. The \u{2715} beside an empty one takes it off again."
         case .pack:
             return "The trip\u{2019}s own list. Its station shows how far you are \u{2014} 12/40 \u{2014} and a tap takes you straight to the list. Green when everything is packed; a thing set aside \u{2298} counts as done."
         case .weigh:
             return "The luggage scale, one bag after another: hang it on the scale, type what it says, Save \u{2014} the next bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself \u{2014} once per trip. Green when every bag is weighed."
         case .tags:
-            return "A Name tag tick for every bag, and an AirTag tick for each bag that has one. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags; switch it on once and every trip asks for it. Green when every tick is on. On a plane trip each checked bag has a Bag-tag no. too (a bag that goes in the cabin has none): at check-in, type the number on the tag the airline puts on it (Bags on the trip has the same field) \u{2014} it does not count for green."
+            return "A card for every bag, with a green edge: a Name tag tick, and an AirTag tick for each bag that has one \u{2014} each wearing the tag\u{2019}s or the AirTag\u{2019}s drawing. A bag whose ticks are all on turns light green, with a \u{2713}. Remind me, under a bag not done yet, writes a To do on the trip \u{2014} \u{201C}Name tag for \u{2026}\u{201D}, ready to change \u{2014} and it shows in Before you go. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags; switch it on once and every trip asks for it. Green when every tick is on. On a plane trip each checked bag has a Bag-tag no. too (a bag that goes in the cabin has none): at check-in, type the number on the tag the airline puts on it (Bags on the trip has the same field) \u{2014} it does not count for green."
         case .photos:
             return "One photo of all your bags side by side, and each bag\u{2019}s own photo (the same ones as in Bags) \u{2014} for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them stays in Bags after you leave. Green when every photo is there."
         case .ready:
-            return "Every station, done or what is left \u{2014} tap one to open it \u{2014} and Ready to go once all are green. I leave at is right there: 15 minutes before, the iPhone names what is still unticked."
+            return "Every station, done or what is left \u{2014} tap one to open it \u{2014} and Ready to go once all are green. I leave at is right there: 15 minutes before, the iPhone names what is still unticked. Add a reminder, at the foot: anything last-minute, written as a To do on the trip \u{2014} it shows in Before you go."
         }
     }
 
@@ -742,11 +789,11 @@ struct PackingDayGuideCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 StationMark(mark: PackingDayStation.dayMark, size: 24).foregroundStyle(words)
-                Text("Packing day").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("Packing Stations").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
             }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("guide-day-title")
-            Text("On a trip you are packing, a row sits right under the loop: Packing day, then six stations in the order you go through them. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways.")
+            Text("On a trip you are packing, a row sits right under the loop: Packing Stations, then six stations in the order you go through them. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways.")
                 .font(.system(.callout)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(Array(PackingDayStation.allCases.enumerated()), id: \.element) { n, s in
@@ -774,7 +821,8 @@ struct PackingDayGuideCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 line("Getting around: tap a station in the row to open it \u{2014} Pack goes straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the stations are at the top too. Done closes it.")
                 line("A trip with no bags yet has nothing to lay out, weigh, tag or photograph: those four stations are faded with a dashed edge and say \u{201C}no bags yet\u{201D}; opened, they say how to give things a bag (Usually packed in, on a thing\u{2019}s page). Ready then waits only for the packing.")
-                line("Once the trip sets off, the row is gone \u{2014} the weights and photos stay in Bags. A trip you share, or start again from this one, begins its Packing day afresh.")
+                line("A To do written here (Remind me, Add a reminder) is a line of the trip\u{2019}s own, under To do: due at once, so it is in Before you go at the top of the trip straight away \u{2014} tick it there or on the list. Like every reminder it counts on the list: Pack waits for it.")
+                line("Once the trip sets off, the row is gone \u{2014} the weights and photos stay in Bags. A trip you share, or start again from this one, begins its stations afresh.")
             }
             .padding(.top, 2)
         }

@@ -1911,7 +1911,11 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
 - The Mac never shows the messages. If he wants a Mac-only day (packing at the Mac with the iPhone elsewhere), a
   per-device switch for the Mac would be the way.
 
-## 17. Packing day
+## 17. Packing Stations (the Packing day until 0.81)
+
+> **Renamed in 0.81** — his decision of 14 Oct 2026: "Packing day" became **"Packing Stations"** everywhere he reads
+> it (see "0.81" at the end of this part). The sections below keep the words of 0.79 where they describe what was
+> built then; the ids, keys and code names never changed.
 
 > His yes (13 Oct 2026), from his own packing walk-through: the bags laid out on the living-room floor for a week;
 > pack per kit, then per template, then per place it is kept; take breaks; weigh; name tags and AirTags; photos for
@@ -2107,7 +2111,8 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
   and what turns it green, how to get from one to the next, a trip without bags, afterwards (his ask of 13 Oct 2026:
   "remember to write about the Packing-Day-Stations in the How-this-works"). **Words** (spec 06 §10): "Packing day".
 - **A bag's page** (spec 05): under "Goes in the cabin", the switch **Has an AirTag** (`bag-detail-airtag`, orange) —
-  "On a Packing day, Tags asks you to check it is in the bag."
+  "On a Packing day, Tags asks you to check it is in the bag." (since 0.81 "In Packing Stations, Tags asks you to check
+  it is in the bag.")
 
 ### Where it is kept (the web model sees nothing new)
 
@@ -2194,6 +2199,211 @@ screen — and found the sheet over their next step). The two tests that pack ev
   one go, yet the sheet was built with the old `false` — so it never marked Weigh offered and opened it again. The flag
   now travels IN the item (`TripScreen.DayOpen`).
 - **A strip of chips is a scroll view too** — see the harness changes above; the README's "row of pills" trap again.
+
+### 0.81 — Packing Stations: his decisions of 14 Oct 2026
+
+> His decisions on 0.79's Packing day, from his screenshots of a Mac trip (14 Oct 2026), numbered as he gave them
+> (he gave no 6). Built on branch `work/stations081`, written from the code. The model:
+> `Core/Sources/PackingLibrary/PackingStations.swift` (and `PackingDay.swift`, `Weighing.swift`, `Countdown.swift`,
+> `TripAgain.swift`, `Sharing.swift`); the screens: `App/Sources/Screens/PackingStations.swift` (and `PackingDay.swift`,
+> `TripScreen.swift`, `TakeABreak.swift`, `TripChecks.swift`, `Buttons.swift`). Where this section and the ones above
+> differ, this one is the newer.
+
+**1. The name: "Packing Stations".** Everywhere he reads it: the trip row's title (`day-title`, label "Packing
+Stations"), the sheet's heading (`day-heading`), How it works' part (its title `guide-day-title` and its words —
+spec 06 §7), Words (term "Packing Stations", its meaning ending "(Packing day until 0.81.)" — spec 06 §10), a bag's
+page ("In Packing Stations, Tags asks you to check it is in the bag." — spec 05), the flights block ("Each checked bag's
+tag number goes in at Packing Stations, under Tags." — part 18 B). Unchanged: every id (`day-…`, `guide-day-…`,
+`guide-packingday`), the launch flags (`-uiTestingPackingDay`, `-packingDayAlmost`), the code's names (`PackingDay`,
+`PackingDaySheet`, `PackingDayRow`, `PackingDayGuideCard`), the keys (`day…`), and What's new of 0.79 — history, as it
+was released.
+
+**2. Slimmer chips — the six station chips only.** The capsule is **22 pt** tall on the iPhone and **18** on the Mac
+(`StationChip.height`; until 0.81 `Metrics.chip`, 28 / 22); the mark (15 / 13) and the words (Footnote semibold) keep
+their size, so the drawn marks stand out. Above and below the capsule, **2 pt** on the iPhone and **1** on the Mac
+still take the tap (`StationChip.reach`; the button's content shape is the rectangle), so each chip — and the row — is
+26 / 20 tall. The "done and highlighted" white ring now sits 2 inside the edge (2.5 before). The row's title ("Packing
+Stations" and the day's mark) is as tall as a chip with its reach. The loop strip's step pills and every other pill in
+the app are unchanged; in the sheet the chips wrap as before, at the new height.
+
+**3. Tags — Remind me, and a happier look.** Each bag is a card of its own (`TagsBagCard`, container `day-tag-<n>`):
+- **The card** (padding 12, 4 more on the left; corner 12): on the card colour with a soft green edge down its left
+  side — the trip's green at 45 %, 5 pt wide, following the corners (`mask`); a hairline round it. **Done** — every tick
+  the bag asks for on (`PackingDay.tagsDone`: its name tag, and its AirTag when it has one) — the whole card turns a
+  light green (the green at 12 % by day, 20 % at night), the edge full green, the hairline the green at 65 %.
+- **Its head**: the bag's drawing (20 pt,
+  the Pack step's readable green) — a backpack for a name holding "pack", "rucksack" or "ryggsäck", the soft holdall
+  for "duffel", "holdall", "weekend", "sports bag" or "gym bag", else the suitcase (the template icons' own,
+  `StationDrawings.bag`; hidden from VoiceOver) — the name (Subheadline semibold ink, up to two lines; a text with the
+  header trait, id `day-tag-<n>-bag`, value "done" / "open"), and, when done, a drawn ✓ and "done" (Footnote semibold
+  green; the word a text of its own, `day-tag-<n>-done`) at the right.
+- **The ticks** keep their ids, words and values (`day-tag-<n>-name` "Name tag", `day-tag-<n>-air` "AirTag in it",
+  value "on" / "off", selected when on, `Metrics.line` tall + 3 above and below). Instead of the bare tick circle each
+  wears its drawing in a round badge (`DrawnTick`, 26 pt on the iPhone, 20 on the Mac): the luggage tag on its string,
+  and the AirTag — the Tags station mark's two halves, each taken out and centred on the 24 grid
+  (`StationDrawings.nameTag`, `.airTag`), stroke 2. Off: the drawing in the readable green on the green at 8 %, a ring
+  of the green at 55 %. On: the drawing white on the green, and a drawn ✓ in green at the row's right.
+- Then, as before: on a plane trip a checked bag's **Bag-tag no.** (0.80, part 18 B — `day-tag-<n>-number`), and the
+  bag's **Has an AirTag** switch (`day-tag-<n>-has`, now hugging its words at the card's left).
+- **Remind me** — at the right of Has an AirTag's line, while the bag is NOT done (a bag whose ticks are all on has
+  nothing to remember): a drawn bell and "Remind me" (Footnote semibold, readable green, `Metrics.compact` tall), id
+  `day-tag-<n>-remind`. It opens, under the line, the To do composer (below) prefilled with what is not ticked yet
+  (`PackingDay.reminder(for:)`): "Name tag for <bag>", "AirTag for <bag>", both missing "Name tag and AirTag for
+  <bag>" — everything ticked (never shown then) "Name tag for <bag>"; its lead "A To do on this trip — it shows in
+  Before you go:". Added: the composer closes and the card says, in green with a drawn ✓, "Added to To do: "<words>"
+  — see Before you go." (`day-tag-<n>-remind-said`) until the sheet closes or Remind me opens again.
+
+**4. Ready — Add a reminder.** At the foot of Ready, after I leave at: "+ Add a reminder" (`StationAddLabel`: a drawn
+plus and the words, Subheadline semibold readable green, the green at 10 % in a 1.2-pt green capsule,
+`Metrics.compact` tall; id `day-ready-remind`). It opens the To do composer empty — lead "Anything last-minute — a To
+do on this trip, in Before you go:", placeholder "e.g. Buy euros". Added: "Added to To do: "Buy euros" — see Before you
+go." (`day-ready-remind-said`), and the button is back. Switching station closes an open composer (and Add a bag).
+
+**The To do composer** (`TripTodoComposer`, ids from its prefix — `<id>-text`, `<id>-add`, `<id>-cancel`,
+`<id>-needs`): the lead (Footnote muted), then one line — the field (Body, `Metrics.tap` tall, `Theme.bg` in a hairline,
+corner 8; focused on opening, Return adds), **Add** (`FieldButtonLabel`, always full colour) and **Cancel** (Subheadline
+semibold muted). Add with nothing written: "Write what to remember." under it (red, `NeedsLine`, gone as soon as
+anything is typed); with the name of a To do of the trip not yet done: "That is on this trip's To do already."
+(`Library.tripTodoProblem`: blank / alreadyThere, by `normName`, among the trip's reminder lines not ticked and not set
+aside — a ticked one may be written again).
+
+**A To do written on the trip — the rules** (`Library.addTripTodo(tripId:name:today:)`):
+1. It is the web app's own reminder line on the trip: `itemType` "reminder", `custom` true (no template behind it —
+   a rebuild keeps it, as "Add a thing to this trip" does), not ticked, in no bag (`container` ""), kind "Reminders",
+   its name trimmed, appended last — and marked **written on the trip**: the line's extra key `tripTodo` = true
+   (`TRIP_TODO_KEY`; never written false). So the trip's list shows it as any reminder ("To do" in the bag's place,
+   under "To do" sorted by Into, under "Added on the trip" sorted by Template).
+2. **Due at once.** `dueReminders` (part 12) lists, after the reminders due by their steps, every To do written on the
+   trip not yet ticked nor set aside — whatever its When and whatever the trip's dates (an undated trip too), in the
+   order written. So it is in **Before you go**'s To do straight away (spec 03), where, instead of a step, the line
+   under its name says **"Added on the trip"**; a tick there ticks the line. Home's countdown names it as due too.
+3. **Its When** (`todoWhen`) only sorts it on the list: of the steps before leaving (lead days 0 or more), the latest
+   one already due by the trip's dates — what is being done now (the 13th, for a trip on the 20th: "≥1 week ahead";
+   the day before: "Day before"; on the day: the first of the day's steps, the Morning list) — else, with none due
+   yet or no dates, the earliest step of all (Preparations); no step before leaving at all: a new thing's step.
+4. **It counts** on the list as every reminder does (spec 03 "Counting": "All packed" waits for reminders): the trip's
+   count grows by one, Pack's chip and Ready say so ("6 of 8 packed"), and Pack and Ready are not green until it is
+   ticked. Weigh opening by itself stays once per trip.
+5. **Not carried as due at once.** A shared trip carries the line as a plain reminder (`justTheList` removes
+   `tripTodo` — "at once" was his packing); Start a new trip from this one copies the line (what the line IS comes
+   along) without the mark, so on the new trip it is due by its When like any reminder. Synced and backed up with its
+   line.
+
+**5. The trip header's colours** (variant A, his pick): the three buttons on the trip's name line — only these.
+**Review** (outlined, as before) in the Templates / Refine violet: ring and 10 % fill `#7c5cd6`, its words `#6548c0` by
+day and `#a58ce6` at night (the violet itself is 3.9 : 1 on its fill by day — too faint for words). **Take a break**
+(the count line's capsule — "Take a break", "Back at 18:00", "Back tomorrow 18:00"; outlined as before, its cup mark
+and words in the words colour) in a warm **coffee amber**: ring and fill `#a8651a` by day, `#e0a458` at night; words
+`#8a5215` by day, `#e0a458` at night. **Done** stays filled in the trip's green with white words. All in the model as
+`TripHeaderTone` (`.review`, `.takeABreak`, `.done`: `ring`, `words`, `filled`) — the app makes each pair a light/dark
+colour (`ringColour`, `wordsColour`); `HeaderButtonStyle` takes a `words` colour for an outlined button since 0.81.
+Contrast (WCAG, words on the button's own 10 % fill, on the page and on a card): Review 5.3–6.1 : 1, Take a break
+5.2–7.3 : 1; Done's white on green 3.4 : 1 (bold, unchanged). Until 0.81 Review and Take a break were the trip's
+green, their words 2.8 : 1 on their fill by day. The Take a break sheet itself stays green.
+
+**7. Bags out — "+ Add a bag".** At the foot of Bags out, after "All bags are out.": "+ Add a bag" (`StationAddLabel`,
+id `day-addbag`) — also under the no-bags words when the trip has no bag at all (`day-nobags`), so a trip can be given
+its first bag here. It opens **the panel** (`AddBagPanel`, container `day-addbag-panel`; padding 12, the card colour, a
+1.2-pt green ring at 70 %, corner 12): "Add a bag to this trip" (Subheadline semibold, a heading); then, when he has
+any, "One of your bags" (Footnote semibold muted) and his bags NOT on this trip yet, in Care → Bags' order
+(`Library.bagsToAdd`) — one row button each, `day-addbag-pick-<k>`, label "Add <bag>" (its drawing, its name in Body,
+a drawn plus at the right, `Metrics.row` tall, a hairline under it); a tap puts it on the trip and closes the panel.
+Then "Or a new one" ("A new bag" when there is no bag to pick): the name field (`day-addbag-name`, "Its name — e.g.
+Duffel"), **Goes in the cabin** (`day-addbag-cabin`; it shows what the name says — "Cabin bag", "Carry-on" — until he
+switches it), **Max weight** (`day-addbag-max`, "optional", decimal pad, 90 wide) "kg", and **Add the bag**
+(`FieldButtonLabel`, `day-addbag-add`) and **Cancel** (`day-addbag-cancel`). What Add the bag says when it cannot
+(`day-addbag-needs`, red): blank — "Type the bag's name."; "Other" — ""Other" means things in no bag — give it another
+name."; a bag the trip already packs into — "<bag> is on this trip already."; one of his bags — "You have a bag called
+<bag> — pick it above."; a max that is not a number above 0 — "Type the max in kg — or leave it empty." A new bag
+(`Library.addNewBagToTrip`) becomes one of his bags (Care → Bags, as one made there), with "Goes in the cabin" written
+only when he switched it (`cabin` nil = by its name, the airport checks' own rule) and its max when given, and is put
+on the trip.
+
+**How a bag is on the trip without lines** (decided by the build): the trip keeps the bags added this way in its
+extra key `dayAddedBags` (`DAY_ADDED_BAGS_KEY`, `[bag name]`, removed when empty — `Library.addBagToTrip`,
+`removeAddedBag`, `addedBags`, `isAddedBag`). The trip's bags (`weighedBags`, so the Bags card, Weigh, the Obsidian
+page; and `dayBags`, so Bags out, Tags, Photos, Ready) are the bags its lines pack into, in the card's order, THEN each
+added bag nothing on the list is packed in yet — last, in the order added, empty (0 things, 0 g), with its limit
+(`bagLimits`); an added bag the list does pack into is simply the list's row (marked `added`). So: never twice; not
+"Other"; not a bag the lines already pack into (refused). It is a bag like any other from then on — weighed, tagged,
+photographed by its name; the Bags card lists it ("Tap to weigh"), and its card filter no longer drops a bag with
+nothing in it. In Bags out an added bag with nothing in it says "nothing in it yet" instead of "N things", has a **✕**
+beside its row (not in it: a button inside a button never reaches the tree) — `day-bag-<n>-remove`, label "Take <bag>
+off this trip" — which takes it off the trip again (what the day kept for it stays stored, ignored), and under the list
+one line (Footnote muted, `day-addbag-hint`): "To fill <bag>, pick it as Usually packed in on its things' pages —
+sorted by Into, the list shows what is in each bag." (The trip has no "move this line to another bag" of its own: a
+thing's bag is its Usually packed in, which reaches the trips still ahead — spec 03, "A change to a thing reaches the
+trips still ahead".) The key is one of the day's bag-name lists (`DAY_BAG_KEYS`): it follows a bag's rename, and is
+dropped where two bags become one or the bag is deleted to "No bag" (`moveBagNotes`); a shared trip and Start a new
+trip from this one carry none of it (`DAY_TRIP_KEYS`).
+
+#### Where it is kept (0.81)
+
+| Holder | Key | Value | Meaning |
+|---|---|---|---|
+| trip | `dayAddedBags` (`DAY_ADDED_BAGS_KEY`) | `[bag name]` / absent | the bags "+ Add a bag" put on the trip; follows a rename; not shared, not copied |
+| trip line | `tripTodo` (`TRIP_TODO_KEY`) | true / absent | a To do written on the trip (Remind me, Add a reminder): due at once; dropped in a shared trip and by Start again |
+
+Parity: 211/211 (only `extra` keys, and a reminder line the web app knows).
+
+#### Tests (0.81)
+
+Model `PackingStationsTests` (8, `Core/Tests/PackingLibraryTests/PackingStationsTests.swift`, the same invented library
+as `PackingDayTests`): `testRemindMeOffersWhatIsNotTickedYet`, `testAToDoWrittenOnTheTripIsDueAtOnceAndShowsInBeforeYouGo`
+(a reminder line, custom, no bag, "week" on the 13th for the 20th; due; Before you go 1 left; the count and Pack +1;
+no bag; one open To do per name; ticked, it may be written again), `testAToDoIsDueWhateverTheTripsDatesAndSortsUnderASensibleStep`
+(tomorrow "daybefore", today "morning", far ahead and undated "prep"; undated and still due),
+`testAToDoIsSyncedAndBackedUpButNeitherSharedNorCopiedAsDueAtOnce`, `testAddABagPutsOneOfHisBagsOnTheTripAndEveryStationAsksAboutIt`
+(offered, added last and empty, "0 of 3 out" … "0 of 4 photos", weighed, refused twice / Other / blank / a bag of the
+lines / no trip; a line moved in — still one bag; ✕), `testANewBagIsMadeHisAndPutOnTheTrip` (the four problems; a
+cabin bag by its name with 8 kg; said not to go in the cabin; a max of 0 is none), `testAnAddedBagFollowsARenameAndIsNeitherSharedNorCopied`,
+`testTheHeaderButtonsWearTheirOwnColoursAndReadDayAndNight` (Review the Templates violet, Done green and filled, three
+different rings, the amber warm, every outlined button's words ≥ 4.5 : 1 on its own 10 % fill on the page and a card,
+day and night; Done's white ≥ 3 : 1). Each seen RED with a planted fault: the To dos left out of `dueReminders` —
+"("[]") is not equal to ("["Name tag for Day pack"]")"; `todoWhen` taking the earliest step — "("prep") is not equal
+to ("daybefore")"; `weighedBags` without the added bags — "("["Carry-on / hand luggage", "Day pack"]") is not equal to
+("[…, "Duffel"]")"; `DAY_BAG_KEYS` without the added bags — "("["Duffel"]") is not equal to ("["Holdall"]")";
+`justTheList` keeping the mark — "a shared trip carries his To do as due at once"; Review's words the violet itself —
+"("3.938590468282447") is less than ("4.5") - review on the day page"; Remind me ignoring the AirTag — "("Name tag for
+Day pack") is not equal to ("Name tag and AirTag for Day pack")"; a new bag written "not in the cabin" when nothing was
+said — "no word given: the name decides". All model tests 587 + 451 green; parity 211/211.
+
+UI (`-uiTestingPackingDay`): `testPackingStationsIsNamedSoWithSlimChips` (the row's title "Packing Stations"; every
+chip lower than a pill — under 28 on the iPhone, 22 on the Mac — and not squashed; Review, a break for tomorrow — "Back
+tomorrow 18:00" — and Done in the header; the sheet's heading), `testTagsRemindMeWritesAToDoThatShowsInBeforeYouGo`
+(no Before you go at first; the Day pack without "done" and with Remind me, both ticks → `day-tag-1-done` and no Remind me; the carry-on's Remind me offers
+"Name tag for Carry-on / hand luggage", changed to "Buy a name tag for the carry-on", added and said; again → "That is
+on this trip's To do already."; Before you go's To do has it, the count "0/8"; ticked there "1/8"),
+`testReadyAddsALastMinuteReminder` (`-packingDayAlmost`: Add with nothing → "Write what to remember."; "Buy euros" added,
+Pack "6 of 8 packed", in Before you go), `testBagsOutAddsANewBagAndOneOfHis` (no bag to pick; "Day pack is on this trip
+already."; Duffel, 23 kg → the third bag, "nothing in it yet", "0 of 3 out", a ✕ for it and none for the Day pack;
+Weigh, Tags and Photos ask about it; ✕ → gone; offered as "Add Duffel" and put back), and the How it works test
+(spec 06 §7) now also asks for "Packing Stations", "Add a bag", "Remind me" and "Add a reminder"; the Bags out test ends
+on the trip's Bags card, which lists the Duffel (`bag-2`). Each seen RED on the iPhone simulator with its own planted
+fault: the chips back at `Metrics.chip` — "("32.0") is not less than ("28.0") - the bags chip is as tall as a pill";
+Remind me with nothing prefilled — "Remind me offers 'What to remember'"; the composer writing nothing — "Pack does not
+wait for the To do: '6 of 7 packed'"; the Bags card dropping a bag with nothing in it — "the Bags card does not list
+the bag added: ''"; How it works' title left "Packing day" — "How it works still says 'Packing day'"; the "done" left
+off a card whose ticks are all on — "every tick on, the Day pack does not say done". Green again
+without them, day and night. Around them on the iPhone simulator, 23 neighbouring tests (the six Packing day tests and
+the bag-tag one, Take a break ×3, Before you go and the reminders due, the trip's pen and header, the Bags card, the
+luggage scale, bag photos and cabin, Start a new trip, the review, the door check, every tab's header): all green.
+On GitHub's Mac (a probe branch, deleted after): the four new tests, the How it works test and five neighbours (Bags
+out to the list, Ready, Tags' AirTag, Take a break, the reminders due) green by day, the four new ones again with the
+system set to dark, and the pill height planted back red — "("24.0") is not less than ("22.0") - the bags chip is as
+tall as a pill: 24.0". The first probe found the Mac trap below (the Tags test red, "the Day pack is ''"); the second,
+after the fix, was green. (The runner's "dark" pictures came out light — the system switch did not reach the app; the
+Mac's night look was not seen there.)
+Pictures, iPhone day and night and the Mac: `stations-row` (the slim row, the header's violet Review, amber "Back
+tomorrow 18:00" and green Done), `stations-tags`, `stations-tags-beforego`, `stations-ready`, `stations-bagsout`,
+`stations-addbag`.
+
+#### Traps met building it (0.81)
+
+- **A combined element's value did not reach the Mac's tree.** The Tags card's head was first ONE element (children
+  ignored) carrying the value "done" / "open": the iPhone read it, GitHub's Mac read '' (the first Mac probe, "the Day
+  pack is ''"). The name is now a plain text with the header trait, and "done" a text of its own that the tests look
+  for — a plain text is a text on both.
 
 ### Open questions
 
@@ -2863,6 +3073,12 @@ once ("Activation point invalid").
 | 13 Oct 2026 | The Quick line names his always-packed templates and says the airport checks plainly: "Quick packs only what you tick — not <names>, no Plane or RV template. Plane still turns on the airport checks." (0.78) | He did not understand "Plane and RV still count", and "Always" alone is cryptic — he thinks of his short-trip template by its name |
 | 13 Oct 2026 | A guided Packing day inside the Pack step: a row of stations — Bags out, Pack, Weigh, Tags, Photos, Ready — each green when done, a tap opens it, the next open one offered; Weigh opens by itself once when the last thing is ticked; Has an AirTag on the bag; one photo of all the bags per trip; Ready pairs with "I leave at". Marks: his picks of the station sheet (day B, Bags out A, Pack C, Weigh A, Tags A, Photos C, Ready A) | His own packing walk-through (bags out on the floor for a week, pack, weigh, name tags and AirTags, photos for lost luggage, ready). Part 17. |
 | 13 Oct 2026 | Lost luggage, part A: each bag's details for the airline's baggage desk — brand, colour (with pills), type (the desk's categories in plain words), size (Cabin, Medium, Large and a note) and distinctive marks — said once on the bag's page and reused by every trip; brand and colour are the thing's own Brand and Colour, never a second copy; and up to two photos of the bag itself (the thing's own photos), shown small beside the bag on a trip until it has a photo of it packed (0.80) | His yes to the lost-luggage information (0.80); the photos his ask of 14 Oct 2026. Part 18 A. |
+| 14 Oct 2026 | (1) "Packing day" is renamed **Packing Stations** wherever he reads it — row, sheet, How it works, Words, a bag's page; ids, keys and 0.79's What's new unchanged | His decision on 0.79's screenshots of a Mac trip. Part 17, "0.81". |
+| 14 Oct 2026 | (2) Slimmer pills — ONLY the station chips: 22 pt on the iPhone, 18 on the Mac (28 / 22 before), mark and words the same size, so the drawn icons pop; the step pills and other pills unchanged | His decision, the same screenshots. Part 17, "0.81" item 2. |
+| 14 Oct 2026 | (3) Tags: "Remind me" per bag adds a To do to the trip ("Name tag for …" / "AirTag for …", prefilled, editable), shown in Before you go; a happier look — a soft green left edge, the bag's drawing by its name, the tag and AirTag drawings on the ticks, a done bag light green with a ✓, day and night | His decision. A To do written on the trip is due at once and says "Added on the trip" (decided by the build: a step not yet come would hide it from Before you go). Part 17, "0.81" item 3. |
+| 14 Oct 2026 | (4) Ready: "Add a reminder" — anything last-minute, as a To do on the trip (Before you go) | His decision. Part 17, "0.81" item 4. |
+| 14 Oct 2026 | (5) Trip header, variant A: Review in the Templates / Refine violet, Take a break ("Back at 18:00") in a warm coffee amber, Done stays green; only these three; outlined / filled as before; contrast checked day and night | His pick of variant A. Words colours chosen by the build so each reads ≥ 4.5 : 1 on its own fill (`TripHeaderTone`). Part 17, "0.81" item 5. |
+| 14 Oct 2026 | (7) Bags out: "+ Add a bag" — one of his bags not on the trip, or a new one (name, cabin yes/no, max weight optional), added to the trip's bags so Weigh, Tags and Photos include it; things go into it by their Usually packed in (a one-line hint) | His decision. How a bag is on the trip without lines decided by the build: the trip's `dayAddedBags` list, the bags its lines pack into first, then the added ones. Part 17, "0.81" item 7. |
 | 14 Oct 2026 | On a plane trip, Create new trip and Trip settings keep the flights (Out and Home, connections between), the destination and where he stays until when, in a framed block "Flights and stay" under Travelling by, optional; each bag's tag number from check-in at the Packing day's Tags and on the Bags card. Plane off keeps it unseen; Start again takes none of it; a shared trip keeps flights and stay but not the tag numbers (decided by the build) | His yes of 13 Oct 2026 to the lost-luggage information (0.80). Part 18 B. |
 | 13 Oct 2026 | Lost luggage, part C: a Lost bag page per bag of a trip — his details (name, phone, e-mail, home address, kept once for the library in Settings), the trip's flights, stay and the bag-tag number, the bag's details, AirTag, photos and a few things in it; "not filled in" opens what fills it; Share as PDF and Copy as text; reached from the Bags card and the Packing day's Photos and Ready. The bag-tag number is typed on the page itself; a trip by car or train still has a page (decided by the build) | His yes to the lost-luggage information (A bag details, B flights and stay, C the page). Part 18 C. |
 

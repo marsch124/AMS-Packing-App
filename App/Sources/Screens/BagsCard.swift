@@ -40,8 +40,9 @@ struct BagsCard: View {
     var body: some View {
         // Every bag that has something in it — weighed or not (the spec pass, 5 Oct
         // 2026): a bag whose things had no weight was left off, and its luggage scale,
-        // cabin switch and photos could not be reached from the trip.
-        let bags = model.library.weighedBags(tripId: tripId).filter { $0.load.items > 0 }
+        // cabin switch and photos could not be reached from the trip. And (0.81) every bag
+        // Packing Stations' "+ Add a bag" put on the trip, empty or not — it is the trip's.
+        let bags = model.library.weighedBags(tripId: tripId).filter { $0.load.items > 0 || $0.added }
         if !bags.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {

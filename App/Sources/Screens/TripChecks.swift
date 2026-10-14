@@ -184,7 +184,10 @@ struct BeforeYouGoCard: View {
                     TickCircle(on: false, tint: tint).frame(width: 22, height: 22)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(line.name).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                        Text(phaseOrFallback(line.phase).label).font(.system(.subheadline)).foregroundStyle(tint)
+                        // A To do written on the trip (Packing Stations, 0.81) is due at once: it says
+                        // where it came from instead of a step that has not come.
+                        Text(Library.isTripTodo(line) ? Library.addedOnTheTrip : phaseOrFallback(line.phase).label)
+                            .font(.system(.subheadline)).foregroundStyle(tint)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 6)

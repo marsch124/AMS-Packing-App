@@ -12858,8 +12858,186 @@ final class AMSPackingUITests: XCTestCase {
         }
         XCTAssertTrue(words(guidePart(app, "guide-day-weigh")).contains("opens by itself"), "Weigh does not say it opens by itself")
         XCTAssertTrue(words(guidePart(app, "guide-day-tags")).contains("Has an AirTag"), "Tags does not name the bag's switch")
+        // 0.81: the new name, and what each station gained (his decisions of 14 Oct 2026).
+        XCTAssertTrue(words(title).contains("Packing Stations"), "How it works still says '\(words(title))'")
+        XCTAssertTrue(words(guidePart(app, "guide-day-bags")).contains("Add a bag"), "Bags out does not explain + Add a bag")
+        XCTAssertTrue(words(guidePart(app, "guide-day-tags")).contains("Remind me"), "Tags does not explain Remind me")
+        XCTAssertTrue(words(guidePart(app, "guide-day-ready")).contains("Add a reminder"), "Ready does not explain Add a reminder")
         toTopThird(app, guidePart(app, "guide-day-tags"))
         shot(app, "day-howitworks-2")
+    }
+
+    // MARK: - Packing Stations (0.81, his decisions of 14 Oct 2026; spec 07 part 17 "0.81")
+
+    /// The row is "Packing Stations" now, on the trip and in its sheet, and its chips are slimmer
+    /// than a pill (`Metrics.chip`: 28 on the iPhone, 22 on the Mac) — the marks and words as they
+    /// were. The trip header's three buttons are there: Review, Take a break (here "Back tomorrow
+    /// 18:00"), Done — their colours are the model's `TripHeaderTone`, checked there.
+    func testPackingStationsIsNamedSoWithSlimChips() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        let title = element(app, "day-title")
+        XCTAssertTrue(waitUntil { title.exists }, "no title on the row")
+        XCTAssertEqual(title.label, "Packing Stations", "the row is still called '\(title.label)'")
+        #if os(macOS)
+        let pill: CGFloat = 22
+        #else
+        let pill: CGFloat = 28
+        #endif
+        for key in ["bags", "pack", "weigh", "tags", "photos", "ready"] {
+            let chip = app.buttons["day-station-\(key)"]
+            XCTAssertTrue(chip.waitForExistence(timeout: 5), "no \(key) station")
+            XCTAssertLessThan(chip.frame.height, pill, "the \(key) chip is as tall as a pill: \(chip.frame.height)")
+            XCTAssertGreaterThan(chip.frame.height, pill - 12, "the \(key) chip is squashed: \(chip.frame.height)")
+        }
+        // The header: Review (violet), Take a break (amber) — a break set for tomorrow — and Done.
+        XCTAssertTrue(app.buttons["trip-review"].exists, "no Review on the trip")
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5), "Take a break did not open")
+        tap(app, id: "break-tomorrow")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.buttons["trip-break"].value as? String) == "Back tomorrow 18:00" },
+                      "'\(app.buttons["trip-break"].value as? String ?? "")'")
+        XCTAssertTrue(app.buttons["trip-done"].exists)
+        shot(app, "stations-row")
+        station(app, "bags")
+        let heading = element(app, "day-heading")
+        XCTAssertTrue(waitUntil { self.words(heading).contains("Packing Stations") }, "the sheet says '\(words(heading))'")
+    }
+
+    /// Tags: a bag whose ticks are all on is done (its card light green, Remind me gone); Remind
+    /// me under the carry-on offers "Name tag for Carry-on / hand luggage", changed before it is
+    /// added — and the To do is on the trip at once: in Before you go, on the list, in the count.
+    func testTagsRemindMeWritesAToDoThatShowsInBeforeYouGo() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        XCTAssertFalse(find(app, "trip-beforego") != nil, "Before you go before anything is due")
+        station(app, "tags")
+        XCTAssertTrue(appears(app, "day-view-tags", timeout: 5), "the sheet is not on Tags")
+        // The Day pack's card: not done (no "done" on it, Remind me under it) until both its ticks are on.
+        XCTAssertTrue(app.buttons["day-tag-1-remind"].waitForExistence(timeout: 5), "no Remind me under a bag not done")
+        XCTAssertFalse(app.staticTexts["day-tag-1-done"].exists, "the Day pack is done before its ticks")
+        tap(app, id: "day-tag-1-name")
+        tap(app, id: "day-tag-1-air")
+        XCTAssertTrue(waitUntil { app.staticTexts["day-tag-1-done"].exists }, "every tick on, the Day pack does not say done")
+        XCTAssertTrue(waitUntil { !app.buttons["day-tag-1-remind"].exists }, "Remind me under a bag that is done")
+        // The carry-on: Remind me, prefilled with what is missing.
+        tap(app, id: "day-tag-0-remind")
+        let field = app.textFields["day-tag-0-remind-text"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Remind me did not open")
+        XCTAssertTrue(waitUntil { (field.value as? String) == "Name tag for Carry-on / hand luggage" },
+                      "Remind me offers '\(field.value as? String ?? "")'")
+        replace("Buy a name tag for the carry-on", in: field)
+        tap(app, id: "day-tag-0-remind-add")
+        let said = element(app, "day-tag-0-remind-said")
+        XCTAssertTrue(waitUntil { self.words(said).contains("Buy a name tag for the carry-on") }, "it does not say it added it: '\(words(said))'")
+        XCTAssertFalse(app.textFields["day-tag-0-remind-text"].exists, "the field stayed open")
+        hideKeyboard(app)
+        shot(app, "stations-tags")
+        // Again: one open To do of a name is enough.
+        tap(app, id: "day-tag-0-remind")
+        let again = app.textFields["day-tag-0-remind-text"]
+        XCTAssertTrue(again.waitForExistence(timeout: 5))
+        replace("Buy a name tag for the carry-on", in: again)
+        tap(app, id: "day-tag-0-remind-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["day-tag-0-remind-needs"]) == "That is on this trip\u{2019}s To do already." },
+                      "'\(words(app.staticTexts["day-tag-0-remind-needs"]))'")
+        tap(app, id: "day-tag-0-remind-cancel")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        // On the trip: in Before you go, due at once, and on the list's count.
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 5), "the To do is not in Before you go")
+        let todo = app.buttons["trip-check-todo-0"]
+        XCTAssertTrue(waitUntil { self.words(todo).contains("Buy a name tag for the carry-on") }, "Before you go's To do: '\(words(todo))'")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "0/8" }, "'\(words(app.staticTexts["trip-progress"]))'")
+        shot(app, "stations-tags-beforego")
+        // Ticked there, it is done.
+        tap(app, id: "trip-check-todo-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "1/8" }, "'\(words(app.staticTexts["trip-progress"]))'")
+    }
+
+    /// Ready (`-packingDayAlmost`): Add a reminder — nothing written says so; "Buy euros" is a To do
+    /// on the trip: Pack waits for it ("6 of 8 packed"), and Before you go has it.
+    func testReadyAddsALastMinuteReminder() {
+        let app = launch("-uiTestingPackingDay", ["-packingDayAlmost"])
+        openPackingDayTrip(app)
+        station(app, "ready")
+        XCTAssertTrue(appears(app, "day-view-ready", timeout: 5), "the sheet is not on Ready")
+        tap(app, id: "day-ready-remind")
+        let field = app.textFields["day-ready-remind-text"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Add a reminder did not open")
+        tap(app, id: "day-ready-remind-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["day-ready-remind-needs"]) == "Write what to remember." },
+                      "Add with nothing written says '\(words(app.staticTexts["day-ready-remind-needs"]))'")
+        type("Buy euros", into: field)
+        tap(app, id: "day-ready-remind-add")
+        XCTAssertTrue(waitUntil { self.words(self.element(app, "day-ready-remind-said")).contains("Buy euros") },
+                      "'\(words(element(app, "day-ready-remind-said")))'")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-ready-pack"]) == "6 of 8 packed" },
+                      "Pack does not wait for the To do: '\(value(app.buttons["day-ready-pack"]))'")
+        hideKeyboard(app)
+        shot(app, "stations-ready")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 5), "the To do is not in Before you go")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["trip-check-todo-0"]).contains("Buy euros") },
+                      "Before you go's To do: '\(words(app.buttons["trip-check-todo-0"]))'")
+    }
+
+    /// Bags out: + Add a bag — a name the trip has is refused; a new bag, Duffel, 23 kg, joins the
+    /// trip empty and Weigh, Tags and Photos ask about it; ✕ takes it off, and it is then offered as
+    /// one of his bags, a tap putting it back — and the trip's Bags card lists it.
+    func testBagsOutAddsANewBagAndOneOfHis() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        station(app, "bags")
+        XCTAssertTrue(appears(app, "day-view-bags", timeout: 5), "the sheet is not on Bags out")
+        tap(app, id: "day-addbag")
+        XCTAssertTrue(appears(app, "day-addbag-panel", timeout: 5), "+ Add a bag did not open")
+        XCTAssertFalse(app.buttons["day-addbag-pick-0"].exists, "a bag offered that the trip already has")
+        let name = app.textFields["day-addbag-name"]
+        type("Day pack", into: name)
+        tap(app, id: "day-addbag-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["day-addbag-needs"]) == "Day pack is on this trip already." },
+                      "'\(words(app.staticTexts["day-addbag-needs"]))'")
+        replace("Duffel", in: name)
+        type("23", into: app.textFields["day-addbag-max"])
+        tap(app, id: "day-addbag-add")
+        XCTAssertTrue(disappears(app, "day-addbag-panel", timeout: 5), "the panel stayed open")
+        let duffel = app.buttons["day-bag-2"]
+        XCTAssertTrue(waitUntil { self.words(duffel).contains("Duffel") }, "the new bag is not on the trip: '\(words(duffel))'")
+        XCTAssertTrue(words(duffel).contains("nothing in it yet"), "'\(words(duffel))'")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-sheet-station-bags"]) == "0 of 3 out" },
+                      "'\(value(app.buttons["day-sheet-station-bags"]))'")
+        XCTAssertTrue(app.buttons["day-bag-2-remove"].exists, "an empty bag added cannot be taken off")
+        XCTAssertFalse(app.buttons["day-bag-1-remove"].exists, "a bag the list packs into can be taken off")
+        hideKeyboard(app)
+        shot(app, "stations-bagsout")
+        // Weigh, Tags and Photos ask about it.
+        tap(app, id: "day-sheet-station-weigh")
+        XCTAssertTrue(app.buttons["day-weigh-2"].waitForExistence(timeout: 5), "Weigh does not ask about the Duffel")
+        tap(app, id: "day-sheet-station-tags")
+        XCTAssertTrue(app.buttons["day-tag-2-name"].waitForExistence(timeout: 5), "Tags does not ask about the Duffel")
+        tap(app, id: "day-sheet-station-photos")
+        XCTAssertTrue(app.buttons["day-photo-2-photo"].waitForExistence(timeout: 5), "Photos does not ask about the Duffel")
+        // Taken off, then put back as one of his bags.
+        tap(app, id: "day-sheet-station-bags")
+        tap(app, id: "day-bag-2-remove")
+        XCTAssertTrue(waitUntil { !app.buttons["day-bag-2"].exists }, "✕ left the Duffel on the trip")
+        tap(app, id: "day-addbag")
+        let pick = app.buttons["day-addbag-pick-0"]
+        XCTAssertTrue(pick.waitForExistence(timeout: 5), "the Duffel is not offered as one of his bags")
+        XCTAssertEqual(pick.label, "Add Duffel")
+        shot(app, "stations-addbag")
+        tap(app, id: "day-addbag-pick-0")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["day-bag-2"]).contains("Duffel") }, "the Duffel did not come back")
+        // The trip's Bags card lists it too, empty.
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        openBags(app)
+        XCTAssertTrue(waitUntil { self.words(app.buttons["bag-2"]).contains("Duffel") },
+                      "the Bags card does not list the bag added: '\(words(app.buttons["bag-2"]))'")
     }
 
     /// Drag the list holding `e` until `e` stands in the top third of the window — for a picture

@@ -30,7 +30,9 @@ struct TakeABreakButton: View {
     @EnvironmentObject var model: LibraryModel
     @State private var open = false
 
-    private var tint: Color { AppSection.events.color }
+    /// A warm coffee amber (0.81, his pick of variant A, 14 Oct 2026): the ring and its 10 % fill,
+    /// and words made to read on that fill, day and night (`TripHeaderTone`).
+    private var tint: Color { TripHeaderTone.takeABreak.ringColour }
 
     var body: some View {
         let until = model.library.trips.first { $0.id == tripId }.map(Library.breakUntil) ?? ""
@@ -40,7 +42,7 @@ struct TakeABreakButton: View {
                 CupMark().frame(width: 16, height: 16)
                 Text(says).font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
             }
-            .foregroundStyle(tint)
+            .foregroundStyle(TripHeaderTone.takeABreak.wordsColour)
             .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
             .background(Capsule().fill(tint.opacity(0.10)))
             .overlay(Capsule().stroke(tint, lineWidth: 1.2))

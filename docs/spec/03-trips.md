@@ -1076,8 +1076,10 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
   only a review time, from the web app, offered Review again here) — since 0.73 the Trips row's own badge,
   `TripStateBadge(state: .reviewed)` (Footnote semibold muted on a `Theme.line` capsule, padding 10 sideways,
   min height 22 — see `TripRow`), never squeezed (`fixedSize`), id `trip-reviewed` (a text); until 0.73
-  "Reviewed" in Subheadline semibold muted words. Otherwise, if the trip has lines, **Review** (outlined green,
-  id `trip-review`) — offered at ANY time, before the trip too.
+  "Reviewed" in Subheadline semibold muted words. Otherwise, if the trip has lines, **Review** (outlined, id
+  `trip-review`) — offered at ANY time, before the trip too. Since 0.81 (his pick of variant A, 14 Oct 2026) in the
+  Templates / Refine violet — ring and 10 % fill `#7c5cd6`, words `#6548c0` by day, `#a58ce6` at night
+  (`TripHeaderTone.review`; `HeaderButtonStyle(words:)`); green until then. Spec 07 part 17, "0.81" item 5.
   Then **Done** (filled green, id `trip-done`; **Escape** presses it — `.keyboardShortcut(.cancelAction)`,
   ⌘. on an iPhone keyboard — 0.62). Both buttons use `HeaderButtonStyle`, whose own font wins over the
   one the call site sets — 17 pt bold since 0.62, the size the call sites ask for (16 until then; the same
@@ -1086,20 +1088,24 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
 - Under the line, 2 pt away, at the left: the progress "done/total" or "done/total · N set aside" (Callout
   semibold mono; green when all packed, else muted; id `trip-progress`; accessibility value "all packed" when
   all packed, else "").
-- At the right end of that count line (0.77, his yes of 13 Oct 2026): **Take a break** — a small outlined green
-  pill, the drawn cup and "Take a break" (or, with a break waiting, "Back at 19:00"), id `trip-break` — only while
+- At the right end of that count line (0.77, his yes of 13 Oct 2026): **Take a break** — a small outlined pill,
+  since 0.81 in a warm coffee amber (ring and 10 % fill `#a8651a` by day, `#e0a458` at night; the cup and words
+  `#8a5215` / `#e0a458` — `TripHeaderTone.takeABreak`; green until then), the drawn cup and "Take a break" (or, with
+  a break waiting, "Back at 19:00", "Back tomorrow 18:00"), id `trip-break` — only while
   the trip is at Pack (the loop strip's own reading) with something left. It opens the break sheet: how far he has
   come, and "Continue when?". Everything about it: spec 07 part 16.
 
 **Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
 
-**Packing day row** (0.79, his yes of 13 Oct 2026; spec 07 part 17) — only while the trip is at Pack (the strip's own
-reading) and not opened from a place's code: right under the strip, fixed above the scroll area, ONE slim row
-(container `day-row`) — the day's mark and "Packing day" (`day-title`), then six station chips, **Bags out · Pack ·
+**Packing Stations row** ("Packing day" until 0.81; 0.79, his yes of 13 Oct 2026; spec 07 part 17) — only while the
+trip is at Pack (the strip's own reading) and not opened from a place's code: right under the strip, fixed above the
+scroll area, ONE slim row (container `day-row`) — the day's mark and "Packing Stations" (`day-title`), then six
+station chips (since 0.81 slimmer than a pill: 22 pt on the iPhone, 18 on the Mac, 2 / 1 more above and below taking
+the tap), **Bags out · Pack ·
 Weigh · Tags · Photos · Ready** (`day-station-<key>`: `bags`, `pack`, `weigh`, `tags`, `photos`, `ready`; value =
 "done", "no bags yet" or the station's words; the next one to do selected). Done = green with white words; the next
-one lit; Pack carries "12/40". A tap on Pack scrolls to the list (the Sorting row); any other opens the Packing day
-sheet on that station. Too wide for the iPhone it scrolls sideways, keeping the next station in view. When the trip
+one lit; Pack carries "12/40". A tap on Pack scrolls to the list (the Sorting row); any other opens the Packing
+Stations sheet on that station. Too wide for the iPhone it scrolls sideways, keeping the next station in view. When the trip
 turns all packed while open here, Weigh opens by itself once per trip, 1.5 s later (part 17, rule 9).
 
 **What the last settings save did** (only after one; 15 bold green, id `trip-rebuilt`):
@@ -1910,7 +1916,8 @@ and below) between two parts that both show:
 2. **To do** — id **`trip-beforego-part-todo`**: the heading "To do" (Footnote semibold muted, header trait), then one
    row per reminder due, **`trip-check-todo-<n>`** (the id it had): a tick circle 22 pt in the trip's green, the name
    (Callout semibold ink) and under it the step it belongs to (Subheadline green) — "A week ahead" (until 0.77 "To do ·
-   A week ahead": the part's heading says it now). A press ticks the line — on the trip's list too, it is the same
+   A week ahead": the part's heading says it now); a To do written on the trip (Packing Stations' Remind me and Add a
+   reminder, 0.81) says **"Added on the trip"** there instead (`Library.addedOnTheTrip`). A press ticks the line — on the trip's list too, it is the same
    line — and it leaves the card. Label "<name>, to do. Tick it".
    **Where a reminder comes from** (0.75, his yes of 13 Oct 2026 — he "could not tell which template each comes
    from"): at the right of each reminder due, the icons of the templates it comes from, exactly as on the trip's
@@ -1965,7 +1972,9 @@ Reasons of the flags (`TripChecksCard.says`), dates as "3 Mar 2027" (fixed Engli
 ### Behaviour — To do
 - `dueReminders`: the trip's reminder lines, not ticked, not set aside, whose step's day — the trip's start less the
   step's lead days — is today or past; in the timeline's order, then the trip's. A trip without a start date has none
-  due. (Spec 07 part 12.) Until 0.77 a card holding only reminders was the trip's green; now it is orange like
+  due. (Spec 07 part 12.) Then (0.81) every To do written on the trip itself (`tripTodo`, Packing Stations' Remind me
+  and Add a reminder) not ticked nor set aside — due at once, whatever its When or the trip's dates, in the order
+  written (spec 07 part 17, "0.81"). Until 0.77 a card holding only reminders was the trip's green; now it is orange like
   anything else left — green means All set.
 
 ### Behaviour — To charge
@@ -2205,6 +2214,9 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   weight of the shown bags (Footnote semibold mono muted, id `bags-total`), folded or not. The badge and the total
   stay texts of their own, outside the fold button (the Mac folds a button's texts into it).
 - Everything below — the key and the bag rows — only while open.
+- Its bags (`weighedBags`): every bag a line not set aside packs into, in `bagLoads`' order, "Other" ("Not in a
+  bag") among them; since 0.81 then every bag Packing Stations' "+ Add a bag" put on the trip that nothing is packed
+  in yet — last, in the order added, 0 things ("Tap to weigh"), its limit (spec 07 part 17, "0.81" item 7).
 - Key (id `bags-key`): "Blue — well within its max", "Orange — nine tenths of its max or more", "Red,
   “over” — more than its max", and "No bar: no max set. Set one in Care → Bags. Tap a bag for the luggage
   scale, and a photo of it packed."

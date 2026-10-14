@@ -90,16 +90,21 @@ extension Library {
     /// A trip's reminders that are due (spec 07, part 12): not ticked, not set aside,
     /// and their step's day — the trip's start less its lead days — is today or past.
     /// In the timeline's order, then the trip's. A trip without a start date, or a line
-    /// whose When this device does not know, has none due.
+    /// whose When this device does not know, has none due. Then (0.81) the To dos written
+    /// on the trip itself (Packing Stations' Remind me and Add a reminder, `TRIP_TODO_KEY`):
+    /// due at once, whatever their When or the trip's dates, in the order written.
     public func dueReminders(tripId: String, today: String) -> [Item] {
-        guard let trip = trips.first(where: { $0.id == tripId }), isYMD(trip.startDate) else { return [] }
+        guard let trip = trips.first(where: { $0.id == tripId }) else { return [] }
+        func open(_ l: Item) -> Bool { Library.isReminder(l) && !l.checked && !isSetAside(l) }
         var out: [Item] = []
-        for phase in PHASES {
-            let day = Library.ymd(trip.startDate, plusDays: -phase.leadDays)
-            guard !jsStringLess(today, day) else { continue }
-            out += trip.entries.filter { Library.isReminder($0) && $0.phase == phase.id && !$0.checked && !isSetAside($0) }
+        if isYMD(trip.startDate) {
+            for phase in PHASES {
+                let day = Library.ymd(trip.startDate, plusDays: -phase.leadDays)
+                guard !jsStringLess(today, day) else { continue }
+                out += trip.entries.filter { open($0) && !Library.isTripTodo($0) && $0.phase == phase.id }
+            }
         }
-        return out
+        return out + trip.entries.filter { open($0) && Library.isTripTodo($0) }
     }
 
     /// What to remind him of: one reminder per trip per day a step falls due, from

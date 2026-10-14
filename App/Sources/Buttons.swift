@@ -15,11 +15,14 @@ struct HeaderButtonStyle: ButtonStyle {
     var filled = true
     /// Share the width of a card's row (Keep it · Take it off) instead of hugging the word.
     var stretch = false
+    /// The words of an outlined button when they are not the tint — a colour made to read on the
+    /// tint's own 10 % fill, day and night (the trip header's Review, 0.81).
+    var words: Color? = nil
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.body, weight: .semibold))
-            .foregroundStyle(filled ? Color.white : tint)
+            .foregroundStyle(filled ? Color.white : (words ?? tint))
             .lineLimit(1)
             .fixedSize()                    // a button's word is never cut ("D…", 0.40's photos)
             .frame(maxWidth: stretch ? .infinity : nil)
