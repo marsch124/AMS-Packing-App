@@ -2227,11 +2227,12 @@ the app are unchanged; in the sheet the chips wrap as before, at the new height.
   side — the trip's green at 45 %, 5 pt wide, following the corners (`mask`); a hairline round it. **Done** — every tick
   the bag asks for on (`PackingDay.tagsDone`: its name tag, and its AirTag when it has one) — the whole card turns a
   light green (the green at 12 % by day, 20 % at night), the edge full green, the hairline the green at 65 %.
-- **Its head** (one element `day-tag-<n>-bag`, label the bag's name, value "done" / "open"): the bag's drawing (20 pt,
+- **Its head**: the bag's drawing (20 pt,
   the Pack step's readable green) — a backpack for a name holding "pack", "rucksack" or "ryggsäck", the soft holdall
   for "duffel", "holdall", "weekend", "sports bag" or "gym bag", else the suitcase (the template icons' own,
-  `StationDrawings.bag`) — the name (Subheadline semibold ink, up to two lines), and, when done, a drawn ✓ and "done"
-  (Footnote semibold green) at the right.
+  `StationDrawings.bag`; hidden from VoiceOver) — the name (Subheadline semibold ink, up to two lines; a text with the
+  header trait, id `day-tag-<n>-bag`, value "done" / "open"), and, when done, a drawn ✓ and "done" (Footnote semibold
+  green; the word a text of its own, `day-tag-<n>-done`) at the right.
 - **The ticks** keep their ids, words and values (`day-tag-<n>-name` "Name tag", `day-tag-<n>-air` "AirTag in it",
   value "on" / "off", selected when on, `Metrics.line` tall + 3 above and below). Instead of the bare tick circle each
   wears its drawing in a round badge (`DrawnTick`, 26 pt on the iPhone, 20 on the Mac): the luggage tag on its string,
@@ -2366,7 +2367,7 @@ said — "no word given: the name decides". All model tests 587 + 451 green; par
 UI (`-uiTestingPackingDay`): `testPackingStationsIsNamedSoWithSlimChips` (the row's title "Packing Stations"; every
 chip lower than a pill — under 28 on the iPhone, 22 on the Mac — and not squashed; Review, a break for tomorrow — "Back
 tomorrow 18:00" — and Done in the header; the sheet's heading), `testTagsRemindMeWritesAToDoThatShowsInBeforeYouGo`
-(no Before you go at first; the Day pack "open", both ticks → "done" and no Remind me; the carry-on's Remind me offers
+(no Before you go at first; the Day pack without "done" and with Remind me, both ticks → `day-tag-1-done` and no Remind me; the carry-on's Remind me offers
 "Name tag for Carry-on / hand luggage", changed to "Buy a name tag for the carry-on", added and said; again → "That is
 on this trip's To do already."; Before you go's To do has it, the count "0/8"; ticked there "1/8"),
 `testReadyAddsALastMinuteReminder` (`-packingDayAlmost`: Add with nothing → "Write what to remember."; "Buy euros" added,
@@ -2378,13 +2379,21 @@ on the trip's Bags card, which lists the Duffel (`bag-2`). Each seen RED on the 
 fault: the chips back at `Metrics.chip` — "("32.0") is not less than ("28.0") - the bags chip is as tall as a pill";
 Remind me with nothing prefilled — "Remind me offers 'What to remember'"; the composer writing nothing — "Pack does not
 wait for the To do: '6 of 7 packed'"; the Bags card dropping a bag with nothing in it — "the Bags card does not list
-the bag added: ''"; How it works' title left "Packing day" — "How it works still says 'Packing day'". Green again
+the bag added: ''"; How it works' title left "Packing day" — "How it works still says 'Packing day'"; the "done" left
+off a card whose ticks are all on — "every tick on, the Day pack does not say done". Green again
 without them, day and night. Around them on the iPhone simulator, 23 neighbouring tests (the six Packing day tests and
 the bag-tag one, Take a break ×3, Before you go and the reminders due, the trip's pen and header, the Bags card, the
 luggage scale, bag photos and cabin, Start a new trip, the review, the door check, every tab's header): all green.
 Pictures, iPhone day and night and the Mac: `stations-row` (the slim row, the header's violet Review, amber "Back
 tomorrow 18:00" and green Done), `stations-tags`, `stations-tags-beforego`, `stations-ready`, `stations-bagsout`,
 `stations-addbag`.
+
+#### Traps met building it (0.81)
+
+- **A combined element's value did not reach the Mac's tree.** The Tags card's head was first ONE element (children
+  ignored) carrying the value "done" / "open": the iPhone read it, GitHub's Mac read '' (the first Mac probe, "the Day
+  pack is ''"). The name is now a plain text with the header trait, and "done" a text of its own that the tests look
+  for — a plain text is a text on both.
 
 ### Open questions
 

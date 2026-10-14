@@ -89,23 +89,26 @@ struct TagsBagCard: View {
             HStack(spacing: 8) {
                 IconMark(path: StationDrawings.bag(bag.name), size: 20).foregroundStyle(words)
                     .accessibilityHidden(true)
+                // The name is the card's heading; "done" a text of its own — a plain text is a text on
+                // the iPhone AND the Mac (a combined element's value did not reach the Mac's tree).
                 Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityValue(done ? "done" : "open")
+                    .accessibilityIdentifier("day-tag-\(n)-bag")
                 Spacer(minLength: 8)
                 if done {
                     HStack(spacing: 4) {
                         Tick().stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
                             .frame(width: 13, height: 11)
+                            .accessibilityHidden(true)
                         Text("done").font(.system(.footnote, weight: .semibold))
+                            .accessibilityIdentifier("day-tag-\(n)-done")
                     }
                     .foregroundStyle(words)
                 }
             }
             .padding(.bottom, 4)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(bag.name)
-            .accessibilityValue(done ? "done" : "open")
-            .accessibilityIdentifier("day-tag-\(n)-bag")
             row("Name tag", drawing: StationDrawings.nameTag, on: bag.nameTag, id: "day-tag-\(n)-name") {
                 let t = tripId, name = bag.name, on = !bag.nameTag
                 model.change { _ = $0.setNameTag(on, tripId: t, bag: name) }

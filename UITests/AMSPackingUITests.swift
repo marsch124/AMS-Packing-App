@@ -12770,12 +12770,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(find(app, "trip-beforego") != nil, "Before you go before anything is due")
         station(app, "tags")
         XCTAssertTrue(appears(app, "day-view-tags", timeout: 5), "the sheet is not on Tags")
-        let pack = element(app, "day-tag-1-bag")
-        XCTAssertTrue(waitUntil { (pack.value as? String) == "open" }, "the Day pack is '\(pack.value as? String ?? "")'")
-        XCTAssertTrue(app.buttons["day-tag-1-remind"].exists, "no Remind me under a bag not done")
+        // The Day pack's card: not done (no "done" on it, Remind me under it) until both its ticks are on.
+        XCTAssertTrue(app.buttons["day-tag-1-remind"].waitForExistence(timeout: 5), "no Remind me under a bag not done")
+        XCTAssertFalse(app.staticTexts["day-tag-1-done"].exists, "the Day pack is done before its ticks")
         tap(app, id: "day-tag-1-name")
         tap(app, id: "day-tag-1-air")
-        XCTAssertTrue(waitUntil { (pack.value as? String) == "done" }, "every tick on, the Day pack is '\(pack.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil { app.staticTexts["day-tag-1-done"].exists }, "every tick on, the Day pack does not say done")
         XCTAssertTrue(waitUntil { !app.buttons["day-tag-1-remind"].exists }, "Remind me under a bag that is done")
         // The carry-on: Remind me, prefilled with what is missing.
         tap(app, id: "day-tag-0-remind")
