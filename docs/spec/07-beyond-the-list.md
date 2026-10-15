@@ -2647,7 +2647,9 @@ bags:)`, over the trip's bags as its Bags card names them (`dayBags`):
   count of every bag — "the inner bag counts for Tags: '0 of 5 ticked'"; How it works without the words — "Tags does
   not explain that a bag inside another has no card". Green again without them, day and night, with the seven
   neighbours on the iPhone simulator (Tags' AirTag, the bag-tag number, Remind me, Ready's reminder, Add a bag, Bags
-  out to the list, Ready and the door check). Pictures `tags-inside`, `tags-inside-out`.
+  out to the list, Ready and the door check). On GitHub's Mac (a probe branch, deleted after): the new test, How it
+  works, Tags' AirTag and Remind me — all four green, light. Pictures `tags-inside`, `tags-inside-out`, iPhone day and
+  night and the Mac.
 
 ### Open questions
 
