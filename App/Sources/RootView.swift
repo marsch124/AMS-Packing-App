@@ -53,10 +53,12 @@ struct RootView: View {
                 model.tripFocus = LibraryModel.TripFocus(tripId: id, home: kind == .home)
                 model.tripToOpen = id
             }
-            // A tapped trip message (0.77, spec 07 part 16): its trip — "Welcome home", its review.
+            // A tapped trip message (0.77, spec 07 part 16): its trip — "Welcome home", its review;
+            // "Charge tonight" (0.87), its To charge.
             TripMessages.shared.open = { id, kind in
                 section = .home
                 if kind == .home { model.tripFocus = LibraryModel.TripFocus(tripId: id, home: false, review: true) }
+                if kind == .charge { model.tripFocus = LibraryModel.TripFocus(tripId: id, home: false, charge: true) }
                 model.tripToOpen = id
             }
             if AMSPackingApp.testing {
@@ -111,7 +113,7 @@ struct RootView: View {
         DoorChecks.shared.open?(trip.id, home ? .home : .out)
     }
 
-    /// UI tests only (`-tapTripMessage break|onsite|review`): a trip message tapped as the app
+    /// UI tests only (`-tapTripMessage break|onsite|review|charge`): a trip message tapped as the app
     /// opens — for the first trip with lines.
     private static func playTappedTripMessage(_ model: LibraryModel) {
         let args = ProcessInfo.processInfo.arguments

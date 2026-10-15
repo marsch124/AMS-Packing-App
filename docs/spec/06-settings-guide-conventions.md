@@ -480,9 +480,11 @@ his iPhone and his Mac both reminding him would be the same news twice."
   device's Settings, under Notifications."** (15 semibold red, id `settings-reminders-refused`). Never asked yet is no
   refusal: no line.
 - (0.77, iPhone only) Under its own lines, a 1-pt hairline (`Theme.line`, 4 pt above and below) and a second
-  `Toggle`, **"Messages when a trip moves on"** (id `settings-moves-on`, green; its words "On this iPhone: "Have a
-  good trip" when a trip sets off — at the time you leave, else at 8 — and the morning after its last day, at 10, a
-  word to review it."; `UserDefaults` `ams.movesOn`, absent = ON). Turning it on asks the system's one question
+  `Toggle`, **"Messages when a trip moves on"** (id `settings-moves-on`, green; its words since 0.87 "On this
+  iPhone: "Charge tonight" at 20:00 the evening before a trip, if something still needs charging; "Have a good
+  trip" when a trip sets off — at the time you leave, else at 8 — and the morning after its last day, at 10, a word
+  to review it." — until 0.87 without the first clause; `UserDefaults` `ams.movesOn`, absent = ON). Since 0.87 the
+  switch holds Charge tonight too (spec 07 part 16, "0.87"). Turning it on asks the system's one question
   (`askToShow`); either way `TripMessages.reschedule` runs. See §3c. The red line below (since 0.77) sits under BOTH
   switches — it holds for every message the app sends — and the "Next" line under the first one.
 - Else, if on: **"Next: <d Mon> · <trip name> — <says>"**, e.g. "Next: 14 Oct · Sunny weeks — ≥1 week ahead: 12 to
@@ -563,15 +565,17 @@ like the door check (§3a):
   reminds him — the sheet says "your iPhone will remind you"), has no Messages switch and never asks.
 - **Permission**: the same one. Asked when a break time is picked, when the Messages switch is turned on, and —
   with the switch on and the iPhone never asked — the first time a trip at Pack is opened (`TripMessages.askOnce`).
-- **Scheduling**: `TripMessages.reschedule(library)` — removes every pending id starting `break-` or `moves-`, then
+- **Scheduling**: `TripMessages.reschedule(library)` — removes every pending id starting `break-`, `moves-` or
+  (0.87) `charge-` (`TripMessages.prefixes`), then
   adds one calendar notification per `Library.tripMessages(now:movesOn:)` entry (title, body, default sound,
-  `userInfo` `tripId` + `trip` = `break` | `onsite` | `review`); `now` is `Today.now` (the tests' clock too). Run from
+  `userInfo` `tripId` + `trip` = `break` | `onsite` | `review` | `charge`); `now` is `Today.now` (the tests' clock too). Run from
   `RootView` whenever the library settles (debounced 2 s) and when the app comes to the front, after a choice in the
   break sheet and after the switch. Under the UI tests: `planned` holds the plan (`-showTripMessages`).
 - **Tapped**: the shared delegate sees `trip` in `userInfo` (checked before `door`) and calls `TripMessages.open`:
-  Home and the trip; for `review`, `model.tripFocus` with `review: true` — the trip opens its Review.
-- **Budget**: an iPhone keeps 64 waiting notifications per app: packing reminders ≤ 48, the moves-on messages ≤ 6
-  (the soonest), one break per trip, the door checks (two per trip with times).
+  Home and the trip; for `review`, `model.tripFocus` with `review: true` — the trip opens its Review; for `charge`
+  (0.87), `charge: true` — every line shown, Before you go's To charge scrolled into view (spec 03).
+- **Budget**: an iPhone keeps 64 waiting notifications per app: packing reminders ≤ 48, the moves-on messages and
+  (0.87) Charge tonight together ≤ 6 (the soonest), one break per trip, the door checks (two per trip with times).
 
 ## 3b. "Where is my …?" — Siri and Shortcuts (`Store/WhereIsIntent.swift`; 0.69)
 
@@ -879,7 +883,9 @@ no entry shows no marker anywhere (and fails the test).
    (0.77: one card, one count of what is left, red / orange / green All set — folded to one line, its arrow opens it;
    its parts: the checks — cabin red/orange, a battery in a checked bag red (0.76), expiry six months ahead for
    passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks; To charge from the day before
-   the trip, with "1 of 2", a charge tick apart from packing); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
+   the trip, with "1 of 2", a charge tick apart from packing — and (0.87) "Charge tonight" on the iPhone at 20:00 the
+   evening before, the names not charged yet, four then how many more, only while something is left, a tap opens
+   the trip at To charge); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one, and last Clear every tick (asks first; 0.79 — Tick everything gone); the round button's Undo for 6 seconds above the add bar (0.79); Save as
    Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
@@ -940,7 +946,8 @@ no entry shows no marker anywhere (and fails the test).
 9. **Settings** (Settings mark): Remind me to pack (9 in the morning, per device, next reminder shown; says in red when the iPhone does not allow
    notifications, switch on or off, and where to allow them — 0.62); (0.77) Messages when a trip moves on (iPhone, on
    until switched off: Have a good trip when it sets off, else at 8; Welcome home at 10 the morning after, tap → the
-   review; nothing without lines or dates, or once reviewed); iCloud sync
+   review; (0.87) the same switch holds Charge tonight, at 20:00 the evening before, while something is still to
+   charge; nothing without lines or dates, or once reviewed); iCloud sync
    (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62); Save a backup / restore (a copy is kept
    first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, the grip drags (0.70), owners stay A–Z,
    no duplicates, the reason for a refused remove right under it, Owners from his things when he has no list — 0.62);
@@ -1943,9 +1950,9 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-pretendRemindersBlocked` | (PackingReminders) switched on earlier, then blocked in the device's Settings — also "I leave at"'s red line (0.69) | 0.62 |
 | `-showDoorChecks` | (DEBUG, testing only) the trip lists the door checks that would be scheduled (`door-check-out/home/none`) | 0.69 |
 | `-tapDoorCheck out\|home` | (testing only) a door check tapped at launch, for the first trip with that time | 0.69 |
-| `-showTripMessages` | (DEBUG, testing only) the trip lists the break and moves-on messages that would be scheduled (`trip-message-break/onsite/review/none`) | 0.77 |
+| `-showTripMessages` | (DEBUG, testing only) the trip lists the break and moves-on messages that would be scheduled (`trip-message-break/onsite/review/none`; `trip-message-charge` since 0.87) | 0.77 |
 | `-breakRealCalendar` | (testing only) Add to Calendar hands the break over for real — the system's New Event window on the iPhone, Calendar on the Mac — instead of only saying what it would; for looking by hand, no test uses it | 0.77 |
-| `-tapTripMessage break\|onsite\|review` | (testing only) a trip message tapped at launch, for the first trip with lines (`review` opens its Review) | 0.77 |
+| `-tapTripMessage break\|onsite\|review\|charge` | (testing only) a trip message tapped at launch, for the first trip with lines (`review` opens its Review; `charge`, 0.87, its To charge) | 0.77 |
 | `-reviewAtPack` | (testing only) the trip header's Review shows at Pack too (`TripScreen.reviewAtPack`) — for the tests about the review itself on the sample trip a month ahead; the rule of when it shows (`Library.offersReview`, once the trip has started) is tested without it | 0.84 |
 | `-clockAt HH:mm:ss` | (testing only) the app's clock (`Today.now`) is today at that time when the app opened, and runs on — when a trip sets off (spec 03, The loop) | 0.75 |
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |

@@ -488,7 +488,7 @@ struct CalendarMark: View {
 
 /// Settings → "Messages when a trip moves on" — this iPhone's own switch, on until he turns it
 /// off (spec 07 part 16). Inside the Remind me to pack card. Not on the Mac: the messages come
-/// on the iPhone only.
+/// on the iPhone only. Since 0.87 it holds "Charge tonight" too — the app's own trip messages.
 struct MovesOnSwitch: View {
     @EnvironmentObject var model: LibraryModel
     @AppStorage(TripMessages.onKey) private var on = true
@@ -503,7 +503,7 @@ struct MovesOnSwitch: View {
         })) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Messages when a trip moves on").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                Text("On this iPhone: \u{201C}Have a good trip\u{201D} when a trip sets off \u{2014} at the time you leave, else at 8 \u{2014} and the morning after its last day, at 10, a word to review it.")
+                Text("On this iPhone: \u{201C}Charge tonight\u{201D} at 20:00 the evening before a trip, if something still needs charging; \u{201C}Have a good trip\u{201D} when a trip sets off \u{2014} at the time you leave, else at 8 \u{2014} and the morning after its last day, at 10, a word to review it.")
                     .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -518,8 +518,8 @@ struct MovesOnSwitch: View {
 #if DEBUG
 /// UI tests only (`-showTripMessages`): what the device would have in its list for this trip
 /// — a test cannot see a notification. One line per message, `trip-message-break` /
-/// `trip-message-onsite` / `trip-message-review`, saying its id, day and time, title and
-/// words; `trip-message-none` when there is none.
+/// `trip-message-onsite` / `trip-message-review` / `trip-message-charge` (0.87), saying its
+/// id, day and time, title and words; `trip-message-none` when there is none.
 struct TripMessageList: View {
     let tripId: String
     @ObservedObject private var messages = TripMessages.shared

@@ -96,9 +96,11 @@ public struct TripMessage: Equatable, Sendable, Identifiable {
         case setOff = "onsite"
         /// On site → Review: "Welcome home".
         case home = "review"
+        /// The evening before the trip: "Charge tonight" (0.87, `ChargeTonight.swift`).
+        case charge = "charge"
     }
-    /// "break-<trip id>", "moves-onsite-<trip id>", "moves-review-<trip id>" — the
-    /// notification's own id, so a new plan replaces the old one.
+    /// "break-<trip id>", "moves-onsite-<trip id>", "moves-review-<trip id>", "charge-<trip
+    /// id>" — the notification's own id, so a new plan replaces the old one.
     public var id: String
     public var tripId: String
     public var kind: Kind
@@ -253,6 +255,10 @@ extension Library {
     /// in two minutes?", the day after its last day at 10:00. A moment already past has none;
     /// only the six soonest of these wait. Review → Refine says nothing: he saves the review
     /// in the app, and the app is in front of him.
+    ///
+    /// With `movesOn` too (0.87, his yes of 15 Oct 2026): "Charge tonight" the evening before
+    /// the first day at 20:00, naming what is still to charge (`chargeTonight`) — one of the
+    /// six soonest, as the moves-on messages are.
     public func tripMessages(now: String, movesOn: Bool) -> [TripMessage] {
         guard let now = Library.cleanMoment(now) else { return [] }
         let today = String(now.prefix(10)), time = String(now.suffix(5))
@@ -270,6 +276,8 @@ extension Library {
                                           title: "\(BREAK_TITLE) \(name)", body: o.leftWords))
             }
             guard movesOn, !trip.entries.isEmpty, isYMD(trip.startDate) else { continue }
+            // The evening before: what still needs charging (0.87).
+            if let charge = chargeTonight(tripId: trip.id, now: now) { moves.append(charge) }
             // Pack → On site: when he sets off.
             let leave = Library.leaveTime(trip, home: false)
             let setOff = "\(trip.startDate) \(leave.isEmpty ? SET_OFF_MESSAGE_AT : leave)"

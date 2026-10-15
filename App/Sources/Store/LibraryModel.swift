@@ -35,8 +35,8 @@ final class LibraryModel: ObservableObject {
     /// takes it as it opens, and clears it.
     @Published var tripFocus: TripFocus?
     /// `review`: a tapped "Welcome home — review …" (0.77, spec 07 part 16) — the trip opens
-    /// on its review.
-    struct TripFocus: Equatable { let tripId: String; let home: Bool; var review = false }
+    /// on its review. `charge`: a tapped "Charge tonight" (0.87) — the trip opens at its To charge.
+    struct TripFocus: Equatable { let tripId: String; let home: Bool; var review = false; var charge = false }
     /// A grab list asked to open from a Shortcut (the Action button). Home opens it.
     @Published var grabToOpen: String?
     /// The Action button's "Choose a grab list": Home shows the menu of grab lists.

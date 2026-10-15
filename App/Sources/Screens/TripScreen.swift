@@ -80,6 +80,8 @@ struct TripScreen: View {
     }
     /// Bumped to send the trip to the top of its list (the Packing day's Pack).
     @State private var toList = 0
+    /// Bumped to bring Before you go's To charge into view (a tapped "Charge tonight", 0.87).
+    @State private var toCharge = 0
     struct CheckedThing: Identifiable { let id: String }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // His words (2026-09-25): "Where" → "Into" (the bag it goes into), and "From where" —
@@ -541,6 +543,11 @@ struct TripScreen: View {
             .onChange(of: toList) { _, _ in
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { proxy.scrollTo(TripScreen.listTop, anchor: .top) }
             }
+            // A tapped "Charge tonight" (0.87): To charge in view — centred, so a part near the top
+            // does not move and the card's heading stays above it.
+            .onChange(of: toCharge) { _, _ in
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { proxy.scrollTo(TripScreen.chargeAnchor, anchor: .center) }
+            }
             // "Also the tripod" — a thing for THIS trip only, typed on the spot. Not while
             // one place's lines are shown: a line typed here has no place, and would vanish.
             // (Right above that bar: Undo, for 6 seconds after a heading's round tick or Clear every
@@ -653,6 +660,8 @@ struct TripScreen: View {
 
     /// Where the Packing day's Pack sends the list (the Sorting row, above the first heading).
     static let listTop = "trip-list-top"
+    /// Where a tapped "Charge tonight" brings the screen: Before you go's To charge (0.87).
+    static let chargeAnchor = "trip-charge-anchor"
 
     /// The last thing ticked: Weigh opens by itself — once per trip — a moment after the tick has
     /// settled (the green sweep takes 1 s), if the trip is still all packed then, still at Pack with
@@ -699,6 +708,10 @@ struct TripScreen: View {
             // A tapped "Welcome home — review …" (0.77): its review, unless it is reviewed already.
             guard let trip = model.library.trips.first(where: { $0.id == tripId }), !Library.isReviewed(trip) else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { reviewing = true }
+        } else if focus.charge {
+            // A tapped "Charge tonight" (0.87): every line, Before you go's To charge in view —
+            // once the screen has arrived and laid out its cards.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { toCharge += 1 }
         } else if focus.home {
             homeFromDoor = true
             // After this window has finished arriving: one cannot come up while another still is.
