@@ -624,7 +624,7 @@ id `template-counts-as-title`) then the field (id `template-counts-as`) showing 
 (`extra["countsAs"]`), else the one its NAME meets (`WorkoutKind.named`, compared as `WorkoutTone` compares:
 `normName`, no white space — "Swim", "Breath work", "Mobility & Breath work", "Diving and Freediving"…), else
 "Nothing". Its list (`template-counts-as-list`): rows `template-counts-as-0…8` = Swim, Bike, Run, Strength,
-Mobility & breath work, Hiking, Golf, Climbing, Diving, and `template-counts-as-9` = Nothing. A choice →
+Mobility & breath, Hiking, Golf, Climbing, Diving, and `template-counts-as-9` = Nothing. A choice →
 `setCountsAs(templateId:to:)` (stored even when it is what the name says; "none" = meets nothing whatever its name).
 The common base and transport templates have no field and never meet a workout.
 

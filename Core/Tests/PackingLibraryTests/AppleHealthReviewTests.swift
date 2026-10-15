@@ -260,7 +260,7 @@ final class AppleHealthReviewTests: XCTestCase {
         XCTAssertEqual(review.rows.map(\.words), [
             "Swim \u{00B7} indoor \u{00B7} 3 times",
             "Run \u{00B7} outdoor \u{00B7} 2 times",
-            "Mobility & breath work \u{00B7} once",
+            "Mobility & breath \u{00B7} once",
             "No bike",
         ])
         XCTAssertEqual(review.rows.map(\.done), [true, true, true, false])

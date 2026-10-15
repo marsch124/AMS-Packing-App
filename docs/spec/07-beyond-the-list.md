@@ -87,7 +87,7 @@ row per kind (`review-health-row-<n>`, top to bottom), for example
 and a button **"Use these"** (`review-health-use`; green, always in full colour). Row words, from
 `Library.rowWords`: the kind's name; then "indoor" or "outdoor" when every workout of the kind had that context,
 "2 indoor, 1 outdoor" when they differ, nothing when Apple Health could not tell any; then "once" or "N times".
-Kinds done come first in the kinds' order (Swim, Bike, Run, Strength, Mobility & breath work, Hiking, Golf,
+Kinds done come first in the kinds' order (Swim, Bike, Run, Strength, Mobility & breath, Hiking, Golf,
 Climbing, Diving), then the "No …" rows in the same order — "No " + the kind's name in lower case ("No bike",
 "No mobility & breath work"). Done rows are Callout semibold ink, "No …" rows Callout regular muted.
 
@@ -127,7 +127,7 @@ is WET); the common base and the transport templates never do.
 | Bike | bike, biking, cycling, cycle |
 | Run | run, running |
 | Strength | strength, strength training, gym |
-| Mobility & breath work | mobility, breath work, breath, Mobility & Breath work, Mobility and Breath work, Mobility & breath, yoga, stretching |
+| Mobility & breath | mobility, breath work, breath, Mobility & Breath work, Mobility and Breath work, Mobility & breath, yoga, stretching |
 | Hiking | hiking, hike |
 | Golf | golf |
 | Climbing | climbing, climb |
@@ -151,7 +151,7 @@ lines are left alone and it never gets a "No …" row.
 | Cycling (13) | Bike | indoor workout → Indoor; otherwise (also not said) Outdoor |
 | Running (37) | Run | indoor workout → Indoor; otherwise Outdoor |
 | Traditional strength training (50), functional strength training (20), core training (59) | Strength | Indoor |
-| Yoga (57), mind and body (29), flexibility (62), cooldown (80), preparation and recovery (33) | Mobility & breath work | — (either) |
+| Yoga (57), mind and body (29), flexibility (62), cooldown (80), preparation and recovery (33) | Mobility & breath | — (either) |
 | Hiking (24) | Hiking | Outdoor |
 | Golf (21) | Golf | Outdoor |
 | Climbing (9) | Climbing | indoor workout → Indoor; otherwise Outdoor |
@@ -3566,6 +3566,7 @@ left is not under the count"). Green again without them, day and night.
 | 15 Oct 2026 | A grab list's Share leaves its header (Edit and Done stay) for the bottom right, on the line of the words under Ready to go: a quiet ROUND button, the share mark in the list's colour on its 10 % fill with a ring, 38 across on the iPhone, 30 on the Mac, never grey; same id, same sheet (0.84) | Same picture: "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can we make the share button more rounded?" Spec 02 §6 item 6. |
 | 15 Oct 2026 | **A grab list's headings are HIS (0.85), replacing 0.84's grouping by Kind of thing.** In Edit: "A new heading" + Add (a template's "A new section") puts a heading LAST; its grip ≡ (on the Mac ▲▼ too) moves it alone, like a line; a thing belongs to the heading above it, so he groups things by moving them under a heading; tap a heading's name to change it; ✕ removes it, asking nothing — its things stay and join what is above. A heading row is clearly not a thing's: Headline in the list's colour on no box, a heading's grip, no "1 in 10". The open list shows his headings with 0.84's small grey look (Footnote semibold, muted, letter-spaced; `grab-group-<g>`); things above the first heading stand under none; a heading with nothing under it is not shown; a list without headings is flat as before. Headings are never ticked, skipped or counted (`GrabDefinition.items` = the things alone; a list changes through `lines`). STORED among the list's own names in a reserved form — U+2063, "##", a space, the name — because a field of its own survives the store but not the next save (`grabToRows` writes `GrabList`'s five fields) nor the backup (built field by field); the names already travel through store, iCloud, backup, restore and share links, and no keyboard types U+2063, so his "- " and "❄️" names stay things. Share sends headings as their own lines; this app reads them back as headings. GrabKinds, `-uiTestingGrabKinds` and their tests are gone. Spec 02 §5–7, §10 | His question before 0.84 shipped: "How do I define the small headings, and how do I group the items in the various headings? I need to be able to do that, I believe." His verdict on 0.84: "I think you have misunderstood the grab list, and you have made the sections wrong." His lists are free text ("Start fans", "Open windows"), and he already made groups by hand with prefixes in the names. Tests seen RED with planted faults first: model `GrabHeadingsTests` (12) on seven faults, e.g. "XCTAssertEqual failed: (\"7\") is not equal to (\"11\") - the link's lines: 7 things and 4 headings"; UI `testHisOwnHeadingGroupsAGrabList` and `testAGrabListOpensUnderHisHeadings` on six, e.g. "XCTAssertTrue failed - the heading was counted: '0 of 8 in hand'", "XCTAssertTrue failed - its thing went with it" (spec 02 §6 lists them all). |
 | 15 Oct 2026 | **"Heading above" (0.85):** in a grab list's Edit, each THING's name has a context menu — held on the iPhone, right-clicked on the Mac — with one entry, "Heading above", which puts a heading with no name right above that thing, the keyboard on it; a heading left unnamed is dropped on Save (nothing he can see changed, so nothing asks). On the iPhone the menu is on the name only, not the whole row: holding the grip still drags. On the Mac a right-click on a text field is the field's own (Cut, Copy, Paste), so a view behind the name catches the right-click first (`RightClickMenu`, a local event monitor; a layer over the field made it "not hittable"), and the rest of the row has the same menu. The foot's "A new heading" stays; the hint adds "Hold a thing (right-click on the Mac) for a heading above it." Spec 02 §7 | Asked before 0.85 shipped: a new heading always went last, a long drag on his 17-thing lists. Test `testAHeadingGoesAboveTheThingHeHolds`, seen RED with planted faults first ("XCTAssertTrue failed - no heading above the thing held", "XCTAssertTrue failed - the new heading does not have the keyboard", "XCTAssertTrue failed - holding a thing offers no Heading above", "XCTAssertEqual failed: (\"Heading\") is not equal to (\"In the bag\") - the unnamed heading was kept, or the named one lost"). |
+| 15 Oct 2026 | The Mobility kind is called **"Mobility & breath"** (was "Mobility & breath work") on the review's rows and in Counts as | His words: "Adjust: “Mobility & Breath work” to “Mobility & Breath”". His template was renamed the same day in his app; a template's Counts as is stored as the kind (`mobility`), not its label, and "Mobility & Breath" already meets the kind by its name, so nothing of his changes. |
 
 ## Open questions
 
