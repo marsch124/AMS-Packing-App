@@ -274,7 +274,8 @@ struct HowItWorksScreen: View {
             "Packing offers four actions to Shortcuts and the Action button: Choose a grab list (a menu of them all, every time), Open a grab list (always the same one), Open my next trip, and Where is my thing? \u{2014} it answers with the bag and pocket, and opens nothing.",
             "The Action button: iPhone Settings \u{2192} Action Button \u{2192} swipe to Shortcut \u{2192} Choose a Shortcut \u{2192} Packing \u{2192} Choose a grab list. Press it: your grab lists appear; tap the one for today.",
             "If Packing is not in the list there: open Packing once, then look again.",
-            "Or add the Shortcut to the Home Screen, or say \u{201C}Open Swim in Packing\u{201D} to Siri."]),
+            "Or add the Shortcut to the Home Screen, or say \u{201C}Open Swim in Packing\u{201D} to Siri.",
+            "Hold the Packing icon on the Home Screen for the four grab lists you opened last \u{2014} tap one and it opens, ready to tick; on the Mac, right-click Packing in the Dock for all of them."]),
         Topic(section: .settings, title: "iPhone and Mac", lines: [
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",
             "The magnifier at the top of most screens searches everything at once \u{2014} a thing\u{2019}s notes too.",

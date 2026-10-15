@@ -28,12 +28,11 @@ struct GrabListQuery: EntityQuery {
     }
     @MainActor func suggestedEntities() async throws -> [GrabListEntity] { Self.all() }
 
-    /// Home's eight first, in his order, then the ones waiting in Grab Lists.
+    /// Home's eight first, in his order, then the ones waiting in Grab Lists — the order of
+    /// the entries under the app icon and the Mac's Dock menu too (0.86).
     @MainActor static func all() -> [GrabListEntity] {
-        let lib = LibraryModel.shared.library
-        let home = lib.homeGrabLists()
-        let rest = lib.allGrabLists().filter { g in !home.contains { $0.id == g.id } }
-        return (home + rest).map { GrabListEntity(id: $0.id, title: $0.title.isEmpty ? $0.label : $0.title, word: $0.label) }
+        LibraryModel.shared.library.grabListsInHomeOrder()
+            .map { GrabListEntity(id: $0.id, title: GrabOpenings.title($0), word: $0.label) }
     }
 }
 

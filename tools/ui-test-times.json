@@ -291,6 +291,9 @@
   "iphone": 94.6,
   "mac": 54.5
  },
+ "testAnEntryUnderTheAppIconOpensItsGrabList": {
+  "iphone": 60.0
+ },
  "testArrangeTurnsOnAndOff": {
   "iphone": 42.5,
   "mac": 35.0
@@ -378,6 +381,9 @@
  "testHisOwnListsAreAddedAndProtectedWhileInUse": {
   "iphone": 67.7,
   "mac": 39.9
+ },
+ "testHoldingTheAppIconShowsHisGrabLists": {
+  "iphone": 1.0
  },
  "testHomeBuildsATrip": {
   "iphone": 32.9,
@@ -514,6 +520,9 @@
  "testTheDateGridWaitsForOK": {
   "iphone": 25.9,
   "mac": 37.9
+ },
+ "testTheDockMenuOpensAGrabList": {
+  "mac": 45.0
  },
  "testTheEditorsLeadWithTheirHeadings": {
   "iphone": 131.9,

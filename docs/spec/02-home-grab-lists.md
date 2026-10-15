@@ -18,20 +18,22 @@ is covered by another file. This file covers everything else on Home and everyth
 - the countdown card to the next trip;
 - the **This Device** count tiles;
 - the three Shortcuts actions that open a place (App Intents) — a fourth, "Where is my …?" (0.69), answers in words and opens nothing (spec 06 §3b);
+- (0.86) the grab lists under the app icon — held on the iPhone's Home Screen — and in the Mac's Dock icon menu (section 13b);
 - packing reminders (Settings → **Remind me to pack**; its code lives in `Countdown.swift` and
   `Store/Reminders.swift`);
 - **Search** (the magnifier), which opens from Home and from four other tabs.
 
 How Home is reached: the **Home** tab (`tab-home`); app launch (the app always starts on Home); a
-tapped packing reminder; any of the three Shortcuts actions (each switches to Home first).
+tapped packing reminder; any of the three Shortcuts actions (each switches to Home first); (0.86) an entry under the app
+icon on the iPhone's Home Screen, or a grab list chosen in the Mac's Dock icon menu (both switch to Home first).
 
 Source files: `App/Sources/RootView.swift`, `AMSPackingApp.swift`, `Sections.swift`, `Theme.swift`,
 `Buttons.swift`, `ScreenHeader.swift` (0.67), `Screens/FirstRunView.swift`, `Screens/HomeScreen.swift` (all but Create new trip),
 `Screens/Countdown.swift`, `Screens/GrabScreen.swift`, `Screens/GrabCollectionScreen.swift`,
 `Screens/GrabMenu.swift`, `Screens/SearchScreen.swift`, `Screens/Share.swift` (the grab-list parts),
-`Store/LibraryModel.swift` (the open-requests and test launch modes), `Store/Shortcuts.swift`,
+`Store/LibraryModel.swift` (the open-requests and test launch modes), `Store/Shortcuts.swift`, `Store/QuickActions.swift` (0.86),
 `Store/Reminders.swift`, `Store/Today.swift`, `Store/ShopReminders.swift` (only its read-back on return);
-model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `GrabHeadings.swift` (0.85; it replaced 0.84's `GrabKinds.swift`), `Countdown.swift`,
+model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `GrabQuickActions.swift` (0.86), `GrabHeadings.swift` (0.85; it replaced 0.84's `GrabKinds.swift`), `Countdown.swift`,
 `Sharing.swift` (grab parts), `Backup.swift` / `Importer.swift` (grab parts); `PackingCore/GrabSharing.swift`,
 `PackingCore/SharedRows.swift` (grab rows).
 
@@ -122,7 +124,11 @@ marks "On this device".
   also emits its current value on subscription, so this runs about 2 s after launch as well. Each run
   (a) reschedules the packing reminders for the new library (`PackingReminders.reschedule`, section 14) and
   (b) calls `PackingShortcuts.updateAppShortcutParameters()`, so the grab lists offered by name in
-  Shortcuts/Siri follow the owner's lists.
+  Shortcuts/Siri follow the owner's lists, and (c) (0.86, iPhone) `GrabQuickActions.refresh(library)`, so the
+  entries under the app icon follow a list added, renamed, removed or moved on Home — here or on the other
+  device (section 13b).
+- **Whenever the app goes to the background** (0.86, iPhone): `GrabQuickActions.refresh` again, so what he finds
+  under the icon on the Home Screen is right as he gets there.
 - **Whenever the app comes to the front** (`scenePhase` becomes `.active`, which includes launch):
   `PackingReminders.reschedule` (since 0.62: he may just have allowed reminders again in the device's
   Settings, and they are put back at once rather than at the next library change), and
@@ -146,7 +152,13 @@ marks "On this device".
   (`wasAway`), `playWhatHappenedWhileAway` plays what would reach the app from outside meanwhile:
   `-openGrabOnReturn <word>` sets `grabToOpen` (as a Shortcut does), `-openNextTripOnReturn` calls
   `PackingReminders.open` with the next trip (as a tapped reminder does), `-dropOwnGrabListsOnReturn`
-  removes `meta["grabOwnLists"]` (as a later write from the other device that no longer holds them).
+  removes `meta["grabOwnLists"]` (as a later write from the other device that no longer holds them), and
+  (0.86, iPhone) `-quickActionOnReturn <title>` hands the entry under the app icon with that title to the
+  scene's delegate, as iOS does when he taps it while the app runs (section 13b).
+- **Mac (0.86):** on appear each window counts itself into `GrabQuickActions.mainWindows` and leaves its
+  `openWindow(id: "main")` in `GrabQuickActions.openMainWindow`; on disappear it counts itself out. A Dock menu
+  choice made with no window open opens one first (section 13b). Under the UI tests `-dockMenu <title>` plays
+  that menu's entry once the window is up, `-dockMenuWhenClosed <title>` once the last main window has closed.
 
 **Data.** Reads `model.state`, `model.library`. Writes nothing itself (the test-only
 `-dropOwnGrabListsOnReturn` aside).
@@ -749,6 +761,8 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
 - **In:**
   - a Home tile;
   - the Open a grab list Shortcut (`grabToOpen`);
+  - (0.86) an entry under the app icon on the iPhone's Home Screen, or a list chosen in the Mac's Dock icon menu
+    — the same `grabToOpen` (section 13b);
   - a tile in the Which grab list? menu, where the list replaces the menu inside the same sheet.
 - **Out:**
   - "Done" (`grab-done`) → `dismiss()` — Escape too (0.62; ⌘. on an iPhone keyboard). While the list is
@@ -772,7 +786,8 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
 **What is on screen** (not editing):
 1. Header row (16 pt padding, 8 pt spacing):
    - the drawing at 36 pt in the tone;
-   - `title`, 22 pt heavy `ink`, one line, scaling to 70 %;
+   - `title`, 22 pt heavy `ink`, one line, scaling to 70 % (id `grab-title` since 0.86 — the tests read which
+     list opened);
    - a spacer;
    - **"Edit"** (`grab-edit`): an outlined capsule in the tone;
    - **"Done"** (`grab-done`): a capsule filled with the tone, white text.
@@ -845,7 +860,8 @@ The whole screen is the container `grab-detail` on a `bg` background.
 
 **Behaviour.**
 - **Opening:** `state = library.openingState(listId:, held: GrabStore.held(listId))`, then it is saved
-  straight away. A session still under way (`at` within 6 h) is kept exactly as it is. Otherwise a fresh
+  straight away. (0.86) Then `GrabQuickActions.didOpen(listId)`: the list goes first in this iPhone's record of
+  openings and the entries under the app icon follow (section 13b; nothing on the Mac). A session still under way (`at` within 6 h) is kept exactly as it is. Otherwise a fresh
   session starts with `at = now` and the list's "only sometimes" names already skipped (section 7). The
   held ticks are filtered against the list's own names for every list, factory or own (`openingState`
   reads `grabList(id:)`; until 0.61 it read the factory six only, so an own list's ticks were lost on
@@ -1797,7 +1813,9 @@ on the shared `LibraryModel.shared`, the same object the app's window uses.
   indoor and the outdoor swim (Siri asks which) — the guide's example says "Swim".
 
 **`GrabListQuery`:**
-- `suggestedEntities` = **Home's lists in Home order, then the waiting ones** in `allGrabLists()` order;
+- `suggestedEntities` = **Home's lists in Home order, then the waiting ones** in `allGrabLists()` order
+  (`Library.grabListsInHomeOrder()` since 0.86 — the order of the entries under the app icon and the Mac's Dock
+  menu too, section 13b);
 - `entities(for:)` = the same list filtered to the asked ids;
 - it reads the library in memory at the time of asking. A list deleted since (in its editor on this
   device, or on the other device) is simply not returned.
@@ -1840,6 +1858,112 @@ Packing is not in the list there: open Packing once, then look again."
 - UI `testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp` (section 3).
 - **Not covered:** the intents themselves (no test runs Shortcuts); entity titles, synonyms and order;
   Siri phrases; a next trip that does not exist.
+- 🪤 (found 15 Oct 2026 by the 0.86 Mac probes) Run on GitHub's Mac with only the warm-up before it,
+  `testAShortcutOpensAGrabListOrTheNextTrip` fails: the app launched with `-openGrab Bike` shows NO window at all
+  for 12 s (`app.windows.count` 0) — the same at 0.85 (`b9812b5`), so not 0.86's app delegate. In the full suite's
+  Mac group it passes. The test launches with a bare `XCUIApplication().launch()`, without `launch()`'s ⌘N
+  fallback for a Mac that comes up with no window.
+
+## 13b. Grab lists by holding the app icon (iPhone) and in the Dock icon's menu (Mac) — 0.86
+
+**Purpose and origin.** His yes of 15 Oct 2026: "Yes - grab lists by holding the app icon". The idea as it was
+put to him: "hold the AMS Packing icon on your iPhone and tap Outdoor bike or Indoor swim — straight into that list
+without opening the app first." The Mac's share — the Dock icon's menu — is a small extra (he starts apps by
+typing in Raycast).
+
+**iPhone: the entries under the icon** (Home Screen quick actions, `UIApplicationShortcutItem`, set by the app
+at run time — none are written in the Info.plist). Holding the Packing icon shows, above Edit Home Screen and
+Remove App:
+- **Which:** iOS shows at most four (`GRAB_QUICK_ACTIONS`). The build's decision: the **four grab lists opened
+  most recently on this iPhone**, shown in **his Home order** (Home's eight as he arranged them, then the ones
+  waiting in Grab Lists — `Library.grabListsInHomeOrder()`), so an entry keeps its place while he uses them. Until
+  four have been opened, the **first ones on Home fill the rest**; a new iPhone shows Indoor swim, Indoor bike,
+  Indoor run and Outdoor swim. A list deleted since it was opened is passed over and the next most recent steps
+  up. Model: `Library.quickActionGrabLists(opened:count:)` (`PackingLibrary/GrabQuickActions.swift`).
+- **"Opened"** = the grab list's screen appeared (`GrabScreen` on appear): from a Home tile, Grab Lists, the
+  Action button's menu, a Shortcut, Siri or an entry under the icon itself. The record is this iPhone's alone —
+  `UserDefaults` key `ams.grab.opened`, the list ids most recent first, each once, at most 16
+  (`GRAB_OPENED_KEEP`; `GrabOpenings.opened(_:after:)`); never synced, never in a backup. The Mac keeps none.
+  Under the UI tests the key is removed at launch, with the other remembered choices.
+- **Each entry:** title = the list's title ("Outdoor bike"), or the word on its tile when it has none
+  (`GrabOpenings.title`, the same rule as Shortcuts' `GrabListEntity`); no subtitle; kind
+  `com.schabbauer.AMSPacking.grab.<list id>` (the Home Screen gives it as the entry's accessibility identifier);
+  `userInfo["id"]` = the list id. Its picture is the one on the list's tile, as a **template image** that iOS tints
+  (black by day, white by night): the doodle (`grab-swim`, `grab-bike`, `grab-run`, `grab-swim-sun`,
+  `grab-bike-sun`, `grab-run-sun`) — a name the app has no drawing for wears the runner, as `GrabDoodle` does; for
+  a list of his own with no doodle, its **initial** (`grab-initial-<hex of the capital>`: A–Z, Å Ä Ö Ü, 0–9, in
+  the system font's heaviest weight); any other initial, or a picture missing from the catalog, the Home tab's
+  suitcase (`grab-list`). No SF Symbol, no emoji. The pictures are in `Assets.xcassets/GrabIcons` (folder without
+  a namespace), 35 × 35-point vector PDFs drawn by `tools/grab-icons.sh` from GrabDoodle's own path data
+  (spec 06 §30).
+- **When they are put right** (`GrabQuickActions.refresh`): about 2 s after every settled change of the library
+  (section 1: a list added, renamed, removed, its picture changed, moved on or off Home — here or on the other
+  device), when a list is opened, and when the app goes to the background. An unchanged set (ids, titles,
+  pictures) is not handed to the system again. The system keeps the entries while the app is not running.
+- **Tapping one** opens the app on that list, ready to tick — the request Siri's "Open a grab list" sets
+  (`GrabQuickActions.open(id:)` → `model.grabToOpen`; RootView switches to Home, Home opens the sheet, closing any
+  of its own first — section 3). **Cold start:** the entry arrives with the app's scene
+  (`PackingAppDelegate.application(_:configurationForConnecting:options:)` reads `options.shortcutItem`).
+  **Running or in the background:** the scene's delegate (`PackingSceneDelegate`, named in that configuration)
+  gets `windowScene(_:performActionFor:completionHandler:)`. Both through `GrabQuickActions.perform`: a kind that
+  is not `com.schabbauer.AMSPacking.grab.…`, or a list that no longer exists, opens nothing (and answers false).
+  The delegates exist only for this (`@UIApplicationDelegateAdaptor`); SwiftUI keeps its own window, and a place's
+  link still reaches `onOpenURL` (checked by hand on the simulator, 15 Oct 2026).
+
+**Mac: the Dock icon's menu** (`PackingMacDelegate.applicationDockMenu`, `@NSApplicationDelegateAdaptor`).
+Right-click (or hold) the Dock icon while the app runs: a section heading **"Grab lists"**, then every grab list in
+Home's order (`grabListsInHomeOrder()`), each by its title, no pictures; then the Dock's own entries. Nothing when
+there is no grab list. Choosing one (`GrabQuickActions.openFromDock`): the app comes to the front; with no main
+window open (RootView counts them, `mainWindows`) one is opened first (`openMainWindow`, kept from a window's
+`openWindow`); then `grabToOpen`, as above.
+
+**UI-test stand-ins** (only under `-uiTesting…`; spec 06 §24):
+- `-quickAction <title>` (iPhone): at the start, the entry with that title — taken from the entries the app hands
+  the system (refreshed first), so a list not among the four cannot be opened this way — goes through the same
+  cold-start path as `options.shortcutItem`.
+- `-quickActionOnReturn <title>` (iPhone): as the app comes back to the front, that entry is handed to the
+  scene's delegate (`scene.delegate … windowScene(_:performActionFor:)`), as iOS hands it.
+- `-dockMenu <title>` / `-dockMenuWhenClosed <title>` (Mac): the app's delegate is asked for the Dock menu and
+  that entry performed (`NSMenu.performActionForItem(at:)`), a second after the window is up / after the last main
+  window closed.
+
+**Tests.**
+- Model `GrabQuickActionsTests` (7): a new device offers the first four on Home; the four opened most recently in
+  Home's order, and opening one again moves nothing; one opened is filled from Home's first; his Home arrangement
+  decides and a waiting list comes after Home's; a deleted list is passed over, an id met twice counts once, a
+  renamed list follows; a list with no title carries its word; the record of openings (first, once, sixteen at
+  most). Seen RED with five planted faults, e.g. shown in the order opened: "XCTAssertEqual failed:
+  ("["run-out", "bike-out", "swim", "run"]") is not equal to ("["swim", "run", "bike-out", "run-out"]") - not the
+  four opened most recently, or not in Home's order"; no filling from Home: "… ("["Outdoor bike"]") is not equal
+  to ("["Indoor swim", "Indoor bike", "Indoor run", "Outdoor bike"]") - the one he opened is missing, or Home's
+  first ones did not fill in"; no cap at four; an unbounded record ("("21") is not equal to ("16") - the record
+  grows without end"); unknown ids not skipped.
+- UI `testAnEntryUnderTheAppIconOpensItsGrabList` (iPhone): `-quickAction "Outdoor swim"` → `grab-detail`,
+  `grab-title` "Outdoor swim"; then `-quickActionOnReturn "Outdoor bike"`: open Outdoor bike (`grab-4`), Done, Home
+  button, back → `grab-detail` "Outdoor bike" (it is among the four only because it was opened). Seen RED with four
+  planted faults: no scene delegate in the configuration and no `didOpen` on opening ("XCTAssertTrue failed -
+  Outdoor bike, opened just before, is not under the icon — or its entry opened nothing while the app ran"), the
+  cold-start entry not performed ("XCTAssertTrue failed - the entry under the icon opened nothing at a cold
+  start"), the handler opening another list ("XCTAssertTrue failed - a cold start opened another list: 'Indoor
+  swim'").
+- UI `testHoldingTheAppIconShowsHisGrabLists` (iPhone, **opt-in**: `TEST_RUNNER_SPRINGBOARD=1`, skipped
+  otherwise): the real Home Screen — open Outdoor bike, Home button, HOLD the Packing icon (SpringBoard's icon,
+  identifier "Packing"; up to four pages looked through, skipped when it is on none) → the four entries are Indoor
+  swim, Indoor bike, Indoor run and Outdoor bike (by their kinds); tapping Outdoor bike's opens it. Opt-in because
+  the Home Screen never reports itself idle while the menu is open: the hold and the tap each wait XCUITest's
+  full minute (about 2½ minutes a run). Its pictures `icon-menu` (day and night) are how the menu is looked at.
+  🪤 On the simulator a software keyboard comes up under the menu (the simulator's, no hardware keyboard
+  connected); not seen on an iPhone.
+- UI `testTheDockMenuOpensAGrabList` (Mac): `-dockMenu "Outdoor bike"` → `grab-detail` "Outdoor bike"; then
+  `-dockMenuWhenClosed "Outdoor run"`, ⌘W → a window comes back with `grab-detail` "Outdoor run". Seen RED on
+  GitHub's Mac with two planted faults (probe run 38743228484): no window opened when none is ("XCTAssertTrue
+  failed - with no window open, choosing in the Dock menu brought no window with the list"), the menu's entry naming
+  another list ("XCTAssertTrue failed - the Dock menu opened another list: 'Indoor swim'"). With `SHOTS_DIR` set it
+  also right-clicks the real Dock icon (the Dock item whose name holds "Packing" and not "Runner" — the Dock gives
+  no other handle) for the picture `dock-menu`, asserting nothing.
+- **Not covered:** the pictures themselves (looked at: `icon-menu`, `dock-menu`); a refresh after a change on
+  the other device (the same debounced path as Shortcuts); a list deleted while its entry is shown (opens nothing,
+  model-tested as "passed over").
 
 ---
 
@@ -2050,7 +2174,7 @@ nothing on GitHub's slower runner, and would have on the phone too.
 - Home: `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none` (0.62), `home-countdown`,
   `home-create-heading`, `device-heading`, `count-trips`, `count-things`, `count-templates`.
 - Grab list:
-  - `grab-detail`, `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
+  - `grab-detail`, `grab-title` (0.86), `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
   - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom), `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`,
     `grab-reset`, `grab-empty` (0.62), `grab-share` (at the foot since 0.84);
   - `grab-notyet`, `grab-message`, `grab-message-ok`;
