@@ -1996,6 +1996,10 @@ to packing at 19:00 — …" line, not in the moves-on messages, not in the cale
 
 ## 17. Packing Stations (the Packing day until 0.81)
 
+> **0.86** (his yes of 15 Oct 2026: "Yes - no tags inside another bag"): Tags asks only about the bags that travel
+> by themselves — a bag packed inside another bag on this trip (a toiletry bag in the suitcase) has no card and does
+> not count; one quiet line under the cards names it. See "0.86" at the end of this part.
+
 > **0.84** (his ask of 15 Oct 2026): the row says "Stations" and its chips the short words — Bags, Pack, Weigh, Tag,
 > Photo, Ready — Pack without its count; the header's Review only once the trip has started. See "0.84" at the end of
 > this part.
@@ -2060,7 +2064,9 @@ to packing at 19:00 — …" line, not in the moves-on messages, not in the cale
    - **Weigh**: every bag has a luggage-scale reading (`weighed`, the Bags card's key — the same reading, typed in
      either place). A sum of the things' weights is not a weighing. Words "1 of 2 weighed".
    - **Tags**: every bag's Name tag is ticked, and every bag that has an AirTag has its AirTag ticked. Kept on the
-     trip: `dayNameTags`, `dayAirTags` = the names ticked. Words "3 of 4 ticked" (the ticks asked for).
+     trip: `dayNameTags`, `dayAirTags` = the names ticked. Words "3 of 4 ticked" (the ticks asked for). Since 0.86
+     only the bags that travel by themselves (`PackingDay.tagged`) — not one packed inside another bag on this trip
+     (see "0.86").
    - **Photos**: every bag has at least one photo of it packed (the Bags card's `bagPhotos`, up to three — the same
      photos), and, with two bags or more, the photo of all the bags together exists. Kept on the trip:
      `dayBagsPhoto` = that photo's id (`DAY_GROUP_PHOTO_KEY`; an ordinary photo record, synced like any other). A
@@ -2555,15 +2561,122 @@ ahead (`TripScreen.reviewAtPack`; spec 03).
   packed" — in the new test and in `testPackingStationsIsNamedSoWithSlimChips`; "no Review on a trip under way").
   Green results: part 16 "0.84".
 
+### 0.86 — no tags inside another bag: his yes of 15 Oct 2026
+
+> The idea as put to him: Tags asks for a name tag and an AirTag on every bag that is out; a bag packed INSIDE another
+> bag (a toiletry bag or a packing cube inside the suitcase) never goes through the airport on its own, so it needs no
+> name tag — leave those out of Tags, so the list holds only the bags that travel by themselves. His answer: **"Yes -
+> no tags inside another bag"**. Built on branch `work/tags086`, written from the code. The model:
+> `Core/Sources/PackingLibrary/TagsInside.swift` (`Library.bagsInside`, `bagInside`; `PackingDay.tagged`,
+> `insideAnother`, `tagsInsideWords`) and `PackingDay.swift` (`PackingDay.Bag.inside`, `counts(.tags)`,
+> `packingDay`); the station `App/Sources/Screens/PackingDay.swift` (`tags`, `PackingDayGuideCard.says(.tags)`).
+
+**How the app knows that a bag is inside another on THIS trip** (decided by the build) — `Library.bagsInside(trip,
+bags:)`, over the trip's bags as its Bags card names them (`dayBags`):
+
+1. **The trip's own line, and only it.** A bag is inside another when its OWN line on the trip — the line of its thing:
+   by the thing's id (`sourceItemId`) when the bag is one of his bags (Care → Bags), else by its name (`normName`) —
+   **not set aside and not a reminder**, is packed in ANOTHER of the trip's bags (a real bag: not empty, not "Other",
+   not itself). The first such line decides. That line's bag is what he sees on the trip's list (the line stands under
+   that bag's heading, sorted by Into); it comes from the thing's Usually packed in through the template's row (a bag
+   chosen for that one template wins), and follows a change to it while the line is open (not ticked, not added or
+   changed on the trip — `followThing`, spec 03 "A change to a thing reaches the trips still ahead").
+2. **The thing's Usually packed in alone is NOT read.** A bag with no line of its own on the trip (only a bag its
+   things go in, or one put on by "+ Add a bag") travels by itself. Why: every thing the app makes — a new bag
+   included (`addBag` → `addThing` → `newItem`) — and every thing from the web app starts "Usually packed in: Carry-on /
+   hand luggage" (the built-in default), so the app cannot tell his choice from the default. Trusting it would drop
+   the sample's Day pack, a new Duffel — and his suitcase — from Tags on any trip with a carry-on: planted, exactly
+   that happened (below).
+3. **A line set aside says nothing** (the bag is "not this time", yet things are packed in it): the bag is asked about.
+   A reminder of the bag's name is no line of the bag.
+4. **Nested**: a pill pouch in the toiletry bag in the suitcase — the pouch is inside the toiletry bag, the toiletry
+   bag inside the suitcase; both left out, each named with the bag it is directly in.
+5. **A ring** (A's line in B and B's line in A — nothing outside them): a bag whose chain leads back to itself
+   travels by itself, so both are asked about; a bag inside one of them is still inside it.
+6. **Taken out again** — its Usually packed in set to No bag (or the bag it really travels as), which reaches its open
+   line on a trip still ahead; or its line set aside — it travels by itself and Tags asks about it at once. A line
+   already ticked keeps its bag (as every ticked line does).
+
+**What Tags does with it:**
+- `PackingDay.Bag.inside` = the bag it is in ("" = travels by itself); `PackingDay.tagged` = the bags with none, in the
+  trip's order; `insideAnother` = the others. **`counts(.tags)` counts only `tagged`**: a name tag per such bag, an
+  AirTag per such bag that has one. So Tags' chip, its words ("0 of 3 ticked"), its green, Ready's list and Ready
+  itself, and the next station offered go by the bags that travel alone.
+- **The AirTag follows the same rule** (decided by the build): an inner bag's AirTag is not asked for either, even
+  when the bag has one. An AirTag is for finding a bag lost on its own; an inner bag goes where the bag it is in goes,
+  and is found with it. Its **Has an AirTag** stays the bag's own (its page in Care → Bags unchanged); taken out, the
+  bag's AirTag is asked for again.
+- **The station** (`day-view-tags`): a card (`TagsBagCard`) only for each bag that travels by itself. Its ids keep the
+  bag's place among the trip's bags (`day-tag-<n>-…`, the same `n` as `day-bag-<n>`, `day-weigh-<n>`,
+  `day-photo-<n>`), so with a Toiletry bag first and inside the carry-on the cards are `day-tag-1` and `day-tag-2`.
+  Under the cards (after "Every tag is on." when all are on) **one quiet line**, Footnote muted — the station's lead
+  style — id `day-tags-inside`, in his own words: **"No tags inside another bag: Toiletry bag (in the Carry-on / hand
+  luggage)."**; several: "No tags inside another bag: Toiletry bag (in the Suitcase), Pill pouch (in the Toiletry
+  bag)." — in the trip's order; none: no line. It names what was left out and why, so a bag dropped by a wrong line is
+  seen (the line's bag is then fixed on the thing's page).
+- **What a tick kept for an inner bag does**: nothing while it is inside — kept, ignored, counted again once it is
+  taken out (as for a bag no longer on the trip, rule 11).
+- **Unchanged** (his ask was Tags only): Bags out, Weigh and Photos still ask about every bag, an inner one too (lay
+  it out, weigh it, photograph it packed); the Bags card, the Lost bag pages and the trip's Obsidian page are as
+  before. **Nothing new is stored**: the rule reads the trip's lines each time — synced, backed up and shared as
+  before; parity 211/211.
+- **How it works** (spec 06 §7): Tags' words gain "A bag packed inside another bag on this trip — a toiletry bag in the
+  suitcase — never goes through the airport on its own, so it has no card here, nor an AirTag tick: one quiet line
+  under the cards names it ("No tags inside another bag: …"). Which bag it is in is what the trip's list says (sorted
+  by Into); take it out — its Usually packed in set to No bag — and its card is back."
+
+#### Tests (0.86)
+
+- Model `TagsInsideTests` (4, `Core/Tests/PackingLibraryTests/TagsInsideTests.swift`; PackingDayTests' invented
+  library plus a Toiletry bag — one of his bags — on the base template, packed in the carry-on, the Toothbrush in it):
+  `testTagsLeaveOutABagPackedInsideAnotherAndAskAgainOnceItTravelsAlone` (three bags, the Toiletry bag first; Bags out
+  "0 of 3 out", Weigh "0 of 3", Photos "0 of 4" unchanged; Tags the carry-on and the Day pack, "0 of 2 ticked", the
+  line's words; its AirTag not asked; its kept name tag not counted; done with the two; Ready counts Tags; its Usually
+  packed in No bag reaches the trip → three cards, "3 of 4 ticked", no line),
+  `testOnlyTheBagsOwnLineOnTheTripSaysItIsInside` (the Day pack's own default "Carry-on / hand luggage" and no line →
+  travels by itself; set aside → asked; a reminder of its name → no line; found by its thing under another name;
+  packed in itself, in no bag, in "Other" → travels by itself; no trip → ""),
+  `testABagInsideABagInsideABagAndARingWithNothingOutsideIt`, `testABagAddedToTheTripWithNoLineOfItsOwnIsAskedAbout`.
+  Each seen RED with a planted fault: Tags counting every bag again — "("0 of 3 ticked") is not equal to ("0 of 2
+  ticked")", "("4") is not equal to ("2") - an AirTag inside an inner bag was asked for", "("1 of 4 ticked") is not
+  equal to ("0 of 2 ticked") - the inner bag's tick counted"; the thing's Usually packed in trusted when the bag has no
+  line — "("["Carry-on / hand luggage"]") is not equal to ("["Carry-on / hand luggage", "Day pack", "Duffel"]")", and
+  in PackingDayTests "("0 of 1 ticked") is not equal to ("0 of 2 ticked")" (the Day pack gone); a set-aside line still
+  read — "("["Carry-on / hand luggage", "Day pack"]") is not equal to ("["Toiletry bag", "Carry-on / hand luggage",
+  "Day pack"]")"; a reminder read as the bag's line — "("Carry-on / hand luggage") is not equal to ("")"; no ring rule
+  — "("["Carry-on / hand luggage"]") is not equal to ("["Blue pouch", "Red pouch", "Carry-on / hand luggage"]")";
+  found by name only — "("") is not equal to ("Day pack") - found by name only, not by its thing". All model tests
+  634 + 451 green; parity 211/211.
+- UI `testTagsLeaveOutABagPackedInsideAnother` (`-uiTestingPackingDay -packingDayInner` — `SampleLibrary.packingDay(inner:)`:
+  a Toiletry bag with an AirTag, the Toothbrush in it, itself on Common base packed in the carry-on): Tags has
+  `day-tag-1-bag` and `day-tag-2-bag` and no `day-tag-0-…`, its chip "0 of 3 ticked", `day-tags-inside` says the
+  line; Bags out "0 of 3 out", `day-bag-0` the Toiletry bag; then the Toiletry bag's page (Care → Your things, search),
+  Usually packed in → No bag, Save; back on the trip, Tags has all three cards, `day-tag-0-air`, "0 of 5 ticked" and
+  no line. And `testHowItWorksExplainsThePackingDayStations` asks Tags' words for "inside another bag". Each seen RED
+  on the iPhone simulator with its own planted fault: every bag's card shown — "Tags asks about a bag packed inside
+  another: cards [0, 1, 2]"; the quiet line left out — "no line says which bag was left out, and why"; the thing's
+  Usually packed in trusted — "Tags asks about a bag packed inside another: cards [1]" (the Day pack gone too); the
+  count of every bag — "the inner bag counts for Tags: '0 of 5 ticked'"; How it works without the words — "Tags does
+  not explain that a bag inside another has no card". Green again without them, day and night, with the seven
+  neighbours on the iPhone simulator (Tags' AirTag, the bag-tag number, Remind me, Ready's reminder, Add a bag, Bags
+  out to the list, Ready and the door check). On GitHub's Mac (a probe branch, deleted after): the new test, How it
+  works, Tags' AirTag and Remind me — all four green, light. Pictures `tags-inside`, `tags-inside-out`, iPhone day and
+  night and the Mac.
+
 ### Open questions
 
 - Two devices with the trip open when it turns all packed may each open Weigh once (the "offered" mark is the trip's
   record, the ticks are the lines' — which arrives first is iCloud's choice). Harmless; his word welcome.
 - The photo of all the bags is not on the trip's Obsidian page (part 8) nor at the top of the way home (spec 03 "Pack
   to go home"), where each bag's photos are. Worth adding if he wants it there.
-- Tags are asked for EVERY bag, a toiletry bag inside the case included — the app cannot tell a bag that travels on
-  its own from one packed inside another. If that is noise, a per-bag "travels on its own" would decide which bags
-  the day asks about.
+- SETTLED in 0.86 (his yes, "no tags inside another bag"): ~~Tags are asked for EVERY bag, a toiletry bag inside the
+  case included~~ — a bag whose own line on the trip is packed in another bag is left out of Tags (see "0.86").
+- Bags out, Weigh and Photos still ask about a bag inside another (0.86 changed Tags only, as asked). Weighing the
+  toiletry bag on its own is mostly noise once the suitcase is weighed with it inside; his word welcome.
+- A bag put on a template as a thing keeps the built-in "Usually packed in: Carry-on / hand luggage" unless he changed
+  it — a suitcase on a template that way would be "inside the carry-on" and left out of Tags. The quiet line shows it
+  ("No tags inside another bag: Suitcase (in the Carry-on / hand luggage)."), and its Usually packed in → No bag fixes
+  it; not seen in the invented data, worth a look on his first real trip.
 
 ---
 
@@ -3578,6 +3691,7 @@ left is not under the count"). Green again without them, day and night.
 | 15 Oct 2026 | A grab list's Share leaves its header (Edit and Done stay) for the bottom right, on the line of the words under Ready to go: a quiet ROUND button, the share mark in the list's colour on its 10 % fill with a ring, 38 across on the iPhone, 30 on the Mac, never grey; same id, same sheet (0.84) | Same picture: "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can we make the share button more rounded?" Spec 02 §6 item 6. |
 | 15 Oct 2026 | **A grab list's headings are HIS (0.85), replacing 0.84's grouping by Kind of thing.** In Edit: "A new heading" + Add (a template's "A new section") puts a heading LAST; its grip ≡ (on the Mac ▲▼ too) moves it alone, like a line; a thing belongs to the heading above it, so he groups things by moving them under a heading; tap a heading's name to change it; ✕ removes it, asking nothing — its things stay and join what is above. A heading row is clearly not a thing's: Headline in the list's colour on no box, a heading's grip, no "1 in 10". The open list shows his headings with 0.84's small grey look (Footnote semibold, muted, letter-spaced; `grab-group-<g>`); things above the first heading stand under none; a heading with nothing under it is not shown; a list without headings is flat as before. Headings are never ticked, skipped or counted (`GrabDefinition.items` = the things alone; a list changes through `lines`). STORED among the list's own names in a reserved form — U+2063, "##", a space, the name — because a field of its own survives the store but not the next save (`grabToRows` writes `GrabList`'s five fields) nor the backup (built field by field); the names already travel through store, iCloud, backup, restore and share links, and no keyboard types U+2063, so his "- " and "❄️" names stay things. Share sends headings as their own lines; this app reads them back as headings. GrabKinds, `-uiTestingGrabKinds` and their tests are gone. Spec 02 §5–7, §10 | His question before 0.84 shipped: "How do I define the small headings, and how do I group the items in the various headings? I need to be able to do that, I believe." His verdict on 0.84: "I think you have misunderstood the grab list, and you have made the sections wrong." His lists are free text ("Start fans", "Open windows"), and he already made groups by hand with prefixes in the names. Tests seen RED with planted faults first: model `GrabHeadingsTests` (12) on seven faults, e.g. "XCTAssertEqual failed: (\"7\") is not equal to (\"11\") - the link's lines: 7 things and 4 headings"; UI `testHisOwnHeadingGroupsAGrabList` and `testAGrabListOpensUnderHisHeadings` on six, e.g. "XCTAssertTrue failed - the heading was counted: '0 of 8 in hand'", "XCTAssertTrue failed - its thing went with it" (spec 02 §6 lists them all). |
 | 15 Oct 2026 | **"Heading above" (0.85):** in a grab list's Edit, each THING's name has a context menu — held on the iPhone, right-clicked on the Mac — with one entry, "Heading above", which puts a heading with no name right above that thing, the keyboard on it; a heading left unnamed is dropped on Save (nothing he can see changed, so nothing asks). On the iPhone the menu is on the name only, not the whole row: holding the grip still drags. On the Mac a right-click on a text field is the field's own (Cut, Copy, Paste), so a view behind the name catches the right-click first (`RightClickMenu`, a local event monitor; a layer over the field made it "not hittable"), and the rest of the row has the same menu. The foot's "A new heading" stays; the hint adds "Hold a thing (right-click on the Mac) for a heading above it." Spec 02 §7 | Asked before 0.85 shipped: a new heading always went last, a long drag on his 17-thing lists. Test `testAHeadingGoesAboveTheThingHeHolds`, seen RED with planted faults first ("XCTAssertTrue failed - no heading above the thing held", "XCTAssertTrue failed - the new heading does not have the keyboard", "XCTAssertTrue failed - holding a thing offers no Heading above", "XCTAssertEqual failed: (\"Heading\") is not equal to (\"In the bag\") - the unnamed heading was kept, or the named one lost"). |
+| 15 Oct 2026 | **No tags inside another bag (0.86):** Packing Stations' Tags lists only the bags that travel by themselves. A bag is inside another when its OWN line on the trip (its thing's line, by id or name; not set aside, not a reminder) is packed in another of the trip's bags; the thing's Usually packed in alone is not read (every new thing starts in the carry-on, so the Day pack — and a suitcase — would drop out). Its AirTag is not asked either (found with the bag it is in); Has an AirTag stays its own. One quiet line under the cards: "No tags inside another bag: Toiletry bag (in the Carry-on / hand luggage)." Taken out (No bag) it is asked again. Bags out, Weigh, Photos, the Bags card and the Lost bag pages unchanged. The rule (the trip's line only), the AirTag, the line's words, rings and nesting decided by the build | His words: "Yes - no tags inside another bag" — his answer to the idea that a bag packed inside another (a toiletry bag or a packing cube in the suitcase) never goes through the airport on its own, so it needs no name tag. Part 17, "0.86". |
 | 15 Oct 2026 | The Mobility kind is called **"Mobility & breath"** (was "Mobility & breath work") on the review's rows and in Counts as | His words: "Adjust: “Mobility & Breath work” to “Mobility & Breath”". His template was renamed the same day in his app; a template's Counts as is stored as the kind (`mobility`), not its label, and "Mobility & Breath" already meets the kind by its name, so nothing of his changes. |
 | 15 Oct 2026 | The things table gets a **Battery** column (0.86): the drawn battery mark when a thing has a battery, an empty cell when not; a tap changes it; it sorts, filters and takes Change all like Liquid, and Undo puts it back both ways. Only "Has a battery" is shown — the model knows nothing more about a battery, and how a thing charges stays the web app's Charges column. Placed before Charges among the thing's own columns; a starting column; put once among the columns he had already chosen (hidden afterwards, it stays hidden) | His words: "Battery column: yes". Part 15; spec 05, Table columns, "Battery". Tests seen RED with planted faults first: UI `testTheTableShowsWhichThingsHaveABattery` ("XCTAssertTrue failed - the Power bank's row shows no battery: 'no'"; "XCTAssertTrue failed - the Battery column did not arrive among his columns"), model `BatteriesTests.testTheTableFiltersSortsAndChangesAllByBattery` ("XCTAssertEqual failed: ("0") is not equal to ("1") - Undo of Battery: no put nothing back"). |
 

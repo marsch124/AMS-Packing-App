@@ -826,7 +826,11 @@ no entry shows no marker anywhere (and fails the test).
         and it shows in Before you go." (until 0.81 "A Name tag tick for every bag, and an AirTag tick for each bag
         that has one.") "Has an AirTag is the
         bag's own switch — under the bag here, or on its page in Care → Bags; switch it on once and every trip asks for
-        it. Green when every tick is on."
+        it. Green when every tick is on." Since 0.86 (spec 07 part 17 "0.86") then: "A bag packed inside another bag on
+        this trip — a toiletry bag in the suitcase — never goes through the airport on its own, so it has no card here,
+        nor an AirTag tick: one quiet line under the cards names it (“No tags inside another bag: …”). Which bag it is in
+        is what the trip's list says (sorted by Into); take it out — its Usually packed in set to No bag — and its card
+        is back."
      5. **Photos** — "One photo of all your bags side by side, and each bag's own photo (the same ones as in Bags) —
         for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them
         stays in Bags after you leave. Green when every photo is there."

@@ -254,13 +254,26 @@ enum SampleLibrary {
     /// `day-bag-1`). `almost` (`-packingDayAlmost`): every station done but the last line — the
     /// Map unticked — so ticking it makes the day Ready (and Weigh, all weighed, stays shut).
     /// `byPlane` (`-packingDayByPlane`, 0.80 — spec 07 part 18 B): the trip goes by Plane, so Tags
-    /// and the Bags card ask for each bag's tag number.
-    static func packingDay(almost: Bool = false, byPlane: Bool = false) -> Library {
+    /// and the Bags card ask for each bag's tag number. `inner` (`-packingDayInner`, 0.86 — spec 07
+    /// part 17 "0.86"): a Toiletry bag, one of his bags WITH an AirTag, that the Toothbrush goes in —
+    /// and that is itself on Common base, packed in the carry-on. So the trip has three bags, the
+    /// Toiletry bag first (the web app's bag order: `day-bag-0`, the carry-on `day-bag-1` with 5
+    /// lines, the Day pack `day-bag-2`), and Tags asks only about the carry-on and the Day pack.
+    static func packingDay(almost: Bool = false, byPlane: Bool = false, inner: Bool = false) -> Library {
         var lib = make()
         guard let pack = lib.addBag(name: "Day pack") else { return lib }
         _ = lib.setBagAirTag(id: pack.id, true)
         for n in lib.items.indices where ["Hiking boots", "Rain jacket"].contains(lib.items[n].name) {
             lib.items[n].container = "Day pack"
+        }
+        if inner, let base = lib.templates.first(where: { $0.name == "Common base" }),
+           let wash = lib.addBag(name: "Toiletry bag") {
+            _ = lib.setBagAirTag(id: wash.id, true)
+            _ = lib.setOnTemplate(itemId: wash.id, templateId: base.id, on: true)
+            for n in lib.items.indices {
+                if lib.items[n].id == wash.id { lib.items[n].container = "Carry-on / hand luggage" }
+                if lib.items[n].name == "Toothbrush" { lib.items[n].container = "Toiletry bag" }
+            }
         }
         guard !lib.trips.isEmpty else { return lib }
         if byPlane { lib.trips[0].transport = "Plane" }
