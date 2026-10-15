@@ -1959,6 +1959,18 @@ to packing at 19:00 — …" line, not in the moves-on messages, not in the cale
   an hour taken, the sheet opened again: "outlined", nothing selected. `testTakeABreakSaysHowFarHeHasCome`,
   `testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked` and `testABreakIsOnlyWhileTheTripIsBeingPacked` now expect
   no value without a break (was "Take a break") and the backpack in the calendar entry and the message.
+- **Seen red first** with planted faults (one planted build, every test run to its end): the model — the title
+  without the backpack ("Back to packing Sun week" is not equal to "🎒 Back to packing Sun week"), the night fill
+  `#e0a458` ("white on the filled amber by night: 2.18"); the iPhone — the old pill ("Take a break is not round like
+  the pen: … 121.3 … against … 36.0"; "the capsule is not compact: … 130.3 …"), its words as the value ("Take a break"
+  is not equal to ""), Add to Calendar never filled ("Add to Calendar after a choice is 'outlined'"), no backpack
+  ("the calendar entry is 'Back to packing Weekend in the hills · …'", "the break's reminder: '… 19:00 · Back to
+  packing Weekend in the hills 7 things left'"). Then green: the model 451 of 451 and parity 211 of 211; the iPhone
+  ("Packing CI trims", iOS 27) 16 of 16 by day — the six above, the How it works test and the nine review tests of
+  part 17 "0.84" — and the new test with the Packing Stations and the break-and-message tests by night; on GitHub's
+  Mac (a probe branch, deleted after) ten green by day (the new test, the five break / stations / On site tests, Escape,
+  the vault's saved review, the loop, How it works) and four again with the runner set to dark — whose setting did not
+  reach the app, as before (the pictures are light). The Release build compiles for the iPhone and the Mac.
 
 ### Open questions
 
@@ -2523,6 +2535,13 @@ ahead (`TripScreen.reviewAtPack`; spec 03).
   `testATripReviewIsSavedAndTheMissedThingIsFiled`, `testTheReviewSaysWhereAThingWentAndLetsHimFixIt`,
   `testTheEditorsLeadWithTheirHeadings`, `testAReviewedTripShowsWhatWasInsideItsKitThen`,
   `testASavedReviewAsksForTheTripsPage`; `-uiTestingHealth`'s trip is over already.
+- **Seen red first** with planted faults: the model — `offersReview` always true ("Review on a trip still being
+  packed", "Review before he leaves on the first day"), Tag as "Tags" (`["Bags", "Pack", "Weigh", "Tags", "Photo",
+  "Ready"]` is not equal to `[… "Tag" …]`); the iPhone — the old title ("Packing Stations" is not equal to
+  "Stations"), the full names as labels ("the bags chip says 'Bags out'", "… 'Tags'", "… 'Photos'"), Pack's count back
+  ("Pack still carries its count: 93.3 against Weigh's 77.3"), the Review rule inverted ("Review on a trip still being
+  packed" — in the new test and in `testPackingStationsIsNamedSoWithSlimChips`; "no Review on a trip under way").
+  Green results: part 16 "0.84".
 
 ### Open questions
 
