@@ -16,7 +16,25 @@ public struct GrabDefinition: Equatable, Sendable {
     public var title: String     // on the screen ("Indoor swim")
     public var tone: String      // blue | yellow | green
     public var icon: String      // swim | bike | run | swim-sun | bike-sun | run-sun | …
-    public var items: [String]
+    /// The list as he arranged it in Edit, top to bottom: his things and (0.85) his own
+    /// headings (`GrabHeadings.swift`).
+    public var lines: [GrabLine]
+
+    /// Its THINGS alone, in his order — what is ticked, skipped, counted, marked "1 in 10"
+    /// and said to be missing. Never a heading. Read only: a list is changed through its
+    /// `lines`, so no change of things can drop his headings unseen.
+    public var items: [String] {
+        lines.compactMap { if case .thing(let n) = $0 { return n } else { return nil } }
+    }
+
+    /// A list of things alone (the factory six, and every list until 0.85).
+    public init(id: String, label: String, title: String, tone: String, icon: String, items: [String]) {
+        self.init(id: id, label: label, title: title, tone: tone, icon: icon, lines: items.map { .thing($0) })
+    }
+
+    public init(id: String, label: String, title: String, tone: String, icon: String, lines: [GrabLine]) {
+        self.id = id; self.label = label; self.title = title; self.tone = tone; self.icon = icon; self.lines = lines
+    }
 }
 
 /// The drawings this app has for a grab list (`GrabDoodle`), and the tones it
@@ -50,7 +68,10 @@ extension Library {
         return GRAB_FACTORY.map { factory in
             guard let row = edited.first(where: { $0.id == factory.id }) else { return factory }
             var d = factory
-            if !row.items.isEmpty { d.items = row.items }
+            // His things and his headings (0.85), read from the names the row holds. A row
+            // holding no thing at all keeps the factory's things.
+            let lines = GrabLine.lines(stored: row.items)
+            if lines.contains(where: { !$0.isHeading }) { d.lines = lines }
             if !row.label.isEmpty { d.label = row.label }
             if !row.icon.isEmpty { d.icon = row.icon }
             if !row.tone.isEmpty { d.tone = row.tone }
@@ -126,16 +147,24 @@ extension Library {
     /// his additions to a list he had made himself were silently thrown away.
     @discardableResult
     public mutating func saveGrabList(id: String, items newItems: [String]) -> Bool {
-        var seen = Set<String>()
-        let clean = newItems.map(jsTrim).filter { !$0.isEmpty && seen.insert(normName($0)).inserted }
-        guard !clean.isEmpty else { return false }
+        saveGrabList(id: id, lines: newItems.map { .thing($0) })
+    }
+
+    /// The same for a list with his headings among its things (0.85): the lines are kept as
+    /// he arranged them, each heading stored among the names in its reserved form
+    /// (`GrabHeadings.swift`), so it travels wherever the names do. A list with headings but
+    /// no thing is refused, as an empty one is.
+    @discardableResult
+    public mutating func saveGrabList(id: String, lines newLines: [GrabLine]) -> Bool {
+        let clean = GrabLine.cleaned(newLines)
+        guard clean.contains(where: { !$0.isHeading }) else { return false }
         guard let at = GRAB_FACTORY.firstIndex(where: { $0.id == id }) else {
             guard var own = ownGrabLists().first(where: { $0.id == id }) else { return false }
-            own.items = clean
+            own.lines = clean
             return saveOwnGrabList(own)
         }
         let before = grabFromRows(shared).first { $0.id == id }
-        var rows = grabToRows([GrabList(id: id, items: clean, label: before?.label ?? "",
+        var rows = grabToRows([GrabList(id: id, items: GrabLine.stored(clean), label: before?.label ?? "",
                                         icon: before?.icon ?? "", tone: before?.tone ?? "")])
         guard !rows.isEmpty else { return false }
         rows[0].order = Double(at)   // the Home-row order, as the web app keeps it
@@ -150,7 +179,13 @@ extension Library {
     /// mark, so every mark on the list was lost and nothing was said.
     @discardableResult
     public mutating func saveGrabEdit(id: String, items: [String], sometimes names: [String]) -> Bool {
-        guard saveGrabList(id: id, items: items) else { return false }
+        saveGrabEdit(id: id, lines: items.map { .thing($0) }, sometimes: names)
+    }
+
+    /// The editor's Save with his headings among the things (0.85).
+    @discardableResult
+    public mutating func saveGrabEdit(id: String, lines: [GrabLine], sometimes names: [String]) -> Bool {
+        guard saveGrabList(id: id, lines: lines) else { return false }
         setSometimes(listId: id, names: names)
         return true
     }

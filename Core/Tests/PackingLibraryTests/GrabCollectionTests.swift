@@ -127,7 +127,7 @@ final class GrabCollectionTests: XCTestCase {
     func testAListOfHisOwnIsEditedAndKeepsItsThings() {
         var lib = Library()
         var padel = lib.addGrabList(label: "Padel", items: ["Racket", "Balls"])!
-        padel.items = ["Racket", "Balls", "Grip", "  ", "Grip"]     // blanks and twins go
+        padel.lines = ["Racket", "Balls", "Grip", "  ", "Grip"].map { .thing($0) }     // blanks and twins go
         padel.label = "Padel  "
         XCTAssertTrue(lib.saveOwnGrabList(padel))
         XCTAssertEqual(lib.ownGrabLists()[0].items, ["Racket", "Balls", "Grip"])

@@ -132,7 +132,10 @@ Six kinds in ONE table, one row per entry: `conditions`, `presets`, `people`, `o
 - people: `data = {color}`; the person's id IS the row id.
 - owners / places: no data. Owners read A–Z; places read in stored order (he arranges them).
 - presets: `data = {config, createdAt}`; a preset with a falsy config is dropped; same name replaces.
-- grab: `data = {gid, items, label, icon, tone}` (label ≤24, items ≤80 units each, blanks dropped).
+- grab: `data = {gid, items, label, icon, tone}` (label ≤24, items ≤80 units each, blanks dropped). Since 0.85
+  `items` also holds his own HEADINGS of the list, each in a reserved form — U+2063, "##", a space, the name
+  (`GRAB_HEADING_MARK`, `PackingLibrary/GrabHeadings.swift`) — read back into headings by `GrabLine.lines(stored:)`;
+  no new field: the row's shape, PackingCore and the backup's shape are unchanged (why: spec 02 §5).
 
 `sharedRowsOfKind` filters to one kind, drops rows without key or name, sorts by order then id. Writing a list that is still exactly the factory list REMOVES its rows (`isFactoryList`; `setNames`, `setPeople`, `setConditions`). The factory lists live in code: `DEFAULT_ITEM_CONDITIONS` (new, good, worn, retire), two factory people (names in SharedRows.swift), `DEFAULT_STORAGE_LOCATIONS` (Bedroom wardrobe, Chest of drawers, Hall closet, Bathroom cabinet, Kitchen cupboard, Garage, …, RV / camper).
 
@@ -146,7 +149,7 @@ Six kinds in ONE table, one row per entry: `conditions`, `presets`, `people`, `o
 |---|---|---|---|
 | `import` | `{at, exportedAt, templates, items, memberships, trips, lines}` | `Importer.library` | this library came from a backup file: when, which file (its `exportedAt`), how many of each. Shown since 0.62 under This device holds (`broughtInWords`, §13) |
 | `syncCheck.iPhone`, `syncCheck.Mac` | `{at: ISO, device}` | `Library.checkIn` (Sync now) | when that device last checked in. A "device note" (`isDeviceNote`, 0.62): not counted by `isEmpty`, and carried across an import and a restore (`keepingDeviceNotes`, §9, §11) |
-| `grabOwnLists` (`GRAB_OWN_META`) | `[{id, label, title, tone, icon, items}]` | GrabCollection | grab lists he made himself (ids `own-` + `PackingEnv.makeId()` since 0.62; lists made before keep `own-<ms>-<3 digits>`) |
+| `grabOwnLists` (`GRAB_OWN_META`) | `[{id, label, title, tone, icon, items}]` | GrabCollection | grab lists he made himself (ids `own-` + `PackingEnv.makeId()` since 0.62; lists made before keep `own-<ms>-<3 digits>`); since 0.85 `items` holds his headings too, in their stored form (as a `grab` row's) |
 | `grabHome` (`GRAB_HOME_META`) | `[id]` | GrabCollection (`setHomeGrabLists`; `deleteOwnGrabList` takes a deleted list's id out) | which grab lists sit on Home, in order (at most 8 places) |
 | `grabOff` (`GRAB_OFF_META`, 0.61) | `[id]` | GrabCollection (`setHomeGrabLists`, written together with `grabHome`; an empty list removes the key) | the grab lists he left off Home when he last arranged it: they wait until he puts them back, and a free place on Home never pulls one of them in |
 | `grabSometimes` (`GRAB_SOMETIMES_META`) | `{listId: [names]}` | GrabSometimes | things taken "only sometimes", per grab list |
@@ -712,7 +715,7 @@ A thing on no list and in no trip is deliberately NOT a worry.
 - `listFromShare`: fresh ids (sections, items, list); sections rebuilt and items pointed at them by name (case-insensitive); role "loose" or "container" becomes "" (the two system bins never arrive as themselves); never built-in; empty name → "Shared template".
 
 **A grab list** (`encodeGrabShare`, GrabSharing.swift):
-- Link = `SHARE_WEB_BASE` + `#/g/` + code. Code `{k: "grab", v: 1, n: name (≤14), x: items, i: icon, c: tone}` (icon/tone only when set). Items: strings only, trimmed and collapsed, ≤60 each, blanks and case-insensitive repeats dropped, at most 100. No items → "This list has nothing on it to share." (link nil).
+- Link = `SHARE_WEB_BASE` + `#/g/` + code. Code `{k: "grab", v: 1, n: name (≤14), x: items, i: icon, c: tone}` (icon/tone only when set). Items: strings only, trimmed and collapsed, ≤60 each, blanks and case-insensitive repeats dropped, at most 100. No items → "This list has nothing on it to share." (link nil). Since 0.85 his headings go among the items in their stored form (spec 02 §10) and come back as headings when added here.
 - Reading: not a grab list → "This is not an AMS Packing grab-list link or code."; no items → "The shared list is empty.".
 
 `Library.readShared(text)` (trimmed; "" → nil) tries, in the web app's order: grab list, template, then trip (the code after `#/t/` when present, else the whole text). Anything else → nil.

@@ -41,7 +41,9 @@ extension Library {
     /// A grab list as a link.
     public func shareLink(grabId: String) -> String? {
         guard let g = allGrabLists().first(where: { $0.id == grabId }),
-              let code = try? encodeGrabShare(name: g.label, icon: g.icon, tone: g.tone, items: g.items) else { return nil }
+              // His headings (0.85) travel as their own lines, in their stored form; this
+              // app reads them back as headings (`importGrab`).
+              let code = try? encodeGrabShare(name: g.label, icon: g.icon, tone: g.tone, items: GrabLine.stored(g.lines)) else { return nil }
         return SHARE_WEB_BASE + "#/g/" + code
     }
 

@@ -372,7 +372,8 @@ struct OpenSharedScreen: View {
                     }
                 }
             case .grab(let g):
-                line("A grab list", g.name, OpenSharedScreen.things(g.items.count))
+                // Its THINGS — a heading of his (0.85) comes along among them, never counted.
+                line("A grab list", g.name, OpenSharedScreen.things(GrabLine.thingCount(stored: g.items)))
                 bigButton("Add it to your grab lists", id: "shared-add") {
                     var made: GrabDefinition?
                     model.change { made = $0.importGrab(g) }

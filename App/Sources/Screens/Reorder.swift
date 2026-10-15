@@ -49,13 +49,17 @@ struct ReorderGrip: View {
     @Binding var drag: ReorderDrag?
     let canMove: (Int) -> Bool
     let move: (Int) -> Void
+    /// A heading's grip (0.85, a grab list's own headings): bolder, in the list's colour on a
+    /// soft patch of it — the look a template's heading grip has in Arrange.
+    var heading = false
+    var tint: Color = AppSection.templates.color
     /// True while the grip is held. It falls back by itself however the gesture ends —
     /// also when the system CANCELS it, which calls no `onEnded` (the iPhone, 8 Oct 2026:
     /// a kind let go stayed lifted half a row low). Its fall settles the row.
     @GestureState private var holding = false
 
     var body: some View {
-        GripMark(id: id, label: label)
+        GripMark(id: id, label: label, heading: heading, tint: tint)
             .accessibilityHint(ReorderArrows.shown ? "Hold and drag to move it; the arrows move it one place"
                                                    : "Hold and drag to move it")
             // VoiceOver's way to move it (the iPhone has no arrows since 0.72): one place a time.

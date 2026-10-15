@@ -157,8 +157,8 @@ struct GrabButtons: View {
 
 /// One grab list: tap each thing as you pick it up, ⊘ to leave one behind just
 /// this once; "Ready to go" refuses until everything not skipped is in hand.
-/// Edit: rename, move, remove and add things — saved for the account, so the
-/// other device has the same list.
+/// Edit: rename, move, remove and add things — and (0.85) his own headings — saved
+/// for the account, so the other device has the same list.
 struct GrabScreen: View {
     let listId: String
     @EnvironmentObject var model: LibraryModel
@@ -167,7 +167,8 @@ struct GrabScreen: View {
     @State private var message = ""
     @State private var flash = false
     @State private var editing = false
-    @State private var draft: [String] = []
+    /// The list being edited, top to bottom: things and (0.85) his headings.
+    @State private var draft: [GrabLine] = []
     /// One key per draft row, moved with it (0.72): the rows are followed by these, not by
     /// their place, so a row carried by its grip keeps its gesture as the others move.
     @State private var rowKeys: [Int] = []
@@ -177,6 +178,9 @@ struct GrabScreen: View {
     @State private var newThing = ""
     /// What Add was missing, said under the field (never a grey button).
     @State private var addNeeds = ""
+    /// "A new heading" (0.85), and what its Add was missing.
+    @State private var newHeading = ""
+    @State private var headingNeeds = ""
     /// While editing: which names are marked "only sometimes", by their plain form.
     @State private var draftSometimes: Set<String> = []
     /// "Delete <name>?" is up, at the foot of the editor.
@@ -240,17 +244,19 @@ struct GrabScreen: View {
                             .padding(.vertical, 5)
                             .accessibilityIdentifier("grab-empty")
                     }
-                    // Grouped by Kind of thing, under small grey headings (0.84) — his words,
-                    // 15 Oct 2026: "a bit more visual with some grouping … only for visuals but
-                    // important to me". A list of one kind stays flat (`grabGroups` is empty).
-                    let groups = model.library.grabGroups(items)
-                    if groups.isEmpty {
-                        ForEach(Array(items.enumerated()), id: \.offset) { n, name in line(n, name) }
-                    } else {
-                        ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
-                            kindHeading(group.kind, first: g == 0).accessibilityIdentifier("grab-group-\(g)")
-                            ForEach(group.rows, id: \.self) { n in line(n, items[n]) }
+                    // HIS OWN headings (0.85), small and grey, each over the things he put under
+                    // it in Edit; what is above his first heading stands under none, and a list
+                    // with no headings is one flat run, as before. His words, 15 Oct 2026: "How
+                    // do I define the small headings, and how do I group the items in the
+                    // various headings? I need to be able to do that, I believe." (0.84 grouped
+                    // by Kind of thing by itself: "you have made the sections wrong".)
+                    let groups = list.groups
+                    let lead = groups.first?.heading.isEmpty == true ? 1 : 0
+                    ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
+                        if !group.heading.isEmpty {
+                            groupHeading(group.heading, first: g == 0).accessibilityIdentifier("grab-group-\(g - lead)")
                         }
+                        ForEach(group.rows, id: \.self) { n in line(n, items[n]) }
                     }
                     Button {
                         if complete { flash = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { dismiss() }; return }
@@ -368,13 +374,14 @@ struct GrabScreen: View {
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }
 
-    /// A kind of thing over its lines (0.84): small and grey — his words, "small headings in
-    /// the list … maybe another colour, grey or something like that", not the big headings
-    /// of a trip. Footnote semibold in `muted`, a hair of letter-spacing, his own spelling
-    /// (no capitals: 0.62 took capitals with letter-spacing out of every heading); no tick,
-    /// no count and no line of its own — the count stays the one at the top.
-    private func kindHeading(_ kind: String, first: Bool) -> some View {
-        Text(kind)
+    /// One of his headings over its lines: small and grey — his words (15 Oct 2026, on 0.84's
+    /// look, which this keeps), "small headings in the list … maybe another colour, grey or
+    /// something like that", not the big headings of a trip. Footnote semibold in `muted`, a
+    /// hair of letter-spacing, his own spelling (no capitals: 0.62 took capitals with
+    /// letter-spacing out of every heading); no tick, no count and no line of its own — the
+    /// count stays the one at the top.
+    private func groupHeading(_ heading: String, first: Bool) -> some View {
+        Text(heading)
             .font(.system(.footnote, weight: .semibold)).tracking(0.4)
             .foregroundStyle(Theme.muted)
             .lineLimit(1).truncationMode(.tail)
@@ -389,51 +396,56 @@ struct GrabScreen: View {
         VStack(spacing: 0) {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(ReorderArrows.shown ? "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. Saved for both your devices."
-                                             : "Tap a name to change it · hold ≡ and drag to move · ✕ remove. Saved for both your devices.")
+                    Text(ReorderArrows.shown ? "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. A thing goes under the heading above it. Saved for both your devices."
+                                             : "Tap a name to change it · hold ≡ and drag to move · ✕ remove. A thing goes under the heading above it. Saved for both your devices.")
                         .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                     ForEach(Array(rowKeys.prefix(draft.count).enumerated()), id: \.element) { n, key in
-                        HStack(spacing: 2) {
-                            // The grip (0.72, his "drag and drop on the phone as well"): hold and
-                            // drag; each place passed is one swap, as ▲ ▼ make (the Mac's only).
-                            if draft.count > 1 {
-                                ReorderGrip(id: "grab-grip-\(n)", label: "Move \(n < draft.count ? draft[n] : "")", key: "\(key)",
-                                            step: (heights["\(key)"] ?? Metrics.tap) + 4, drag: $carried,   // a row and the gap under it
-                                            canMove: { by in canSwap(key, by) }, move: { by in swapRow(key, by) })
-                                    .padding(.leading, -8)
+                        // A heading of his (0.85) has a row of its own; a thing's row is as before.
+                        if draft[n].isHeading { headingRow(n, key) } else {
+                            HStack(spacing: 2) {
+                                // The grip (0.72, his "drag and drop on the phone as well"): hold and
+                                // drag; each place passed is one swap, as ▲ ▼ make (the Mac's only).
+                                if draft.count > 1 {
+                                    ReorderGrip(id: "grab-grip-\(n)", label: "Move \(n < draft.count ? draft[n].name : "")", key: "\(key)",
+                                                step: (heights["\(key)"] ?? Metrics.tap) + 4, drag: $carried,   // a row and the gap under it
+                                                canMove: { by in canSwap(key, by) }, move: { by in swapRow(key, by) })
+                                        .padding(.leading, -8)
+                                }
+                                TextField("Name", text: Binding(get: { n < draft.count ? draft[n].name : "" },
+                                                                set: { if n < draft.count { draft[n].name = $0 } }))
+                                    .textFieldStyle(.plain)
+                                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                                    .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
+                                    .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+                                    .accessibilityIdentifier("grab-rename-\(n)")
+                                if ReorderArrows.shown {
+                                    mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { swapRow(key, -1) }
+                                    mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { swapRow(key, 1) }
+                                }
+                                // "Only sometimes": it starts skipped every time.
+                                Button {
+                                    let name = n < draft.count ? draft[n].name : ""
+                                    if !jsTrim(name).isEmpty { draftSometimes.formSymmetricDifference([normName(name)]) }
+                                } label: {
+                                    Text("1 in 10")
+                                        .font(.system(.caption, weight: .semibold))
+                                        .foregroundStyle(draftSometimes.contains(normName(n < draft.count ? draft[n].name : "")) ? .white : Theme.muted)
+                                        .padding(.horizontal, 8).frame(minHeight: 30)
+                                        .background(Capsule().fill(draftSometimes.contains(normName(n < draft.count ? draft[n].name : "")) ? tint : Theme.card))
+                                        .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
+                                        .contentShape(Capsule())
+                                }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("grab-sometimes-\(n)")
+                                .accessibilityLabel("Take \(n < draft.count ? draft[n].name : "") only sometimes")
+                                .accessibilityAddTraits(draftSometimes.contains(normName(n < draft.count ? draft[n].name : "")) ? .isSelected : [])
+                                // The last THING stays (a heading or two does not make a list).
+                                mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: draftThings > 1, label: "Remove") { removeRow(n) }
                             }
-                            TextField("Name", text: Binding(get: { n < draft.count ? draft[n] : "" },
-                                                            set: { if n < draft.count { draft[n] = $0 } }))
-                                .textFieldStyle(.plain)
-                                .font(.system(.body)).foregroundStyle(Theme.ink)
-                                .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
-                                .accessibilityIdentifier("grab-rename-\(n)")
-                            if ReorderArrows.shown {
-                                mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { swapRow(key, -1) }
-                                mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { swapRow(key, 1) }
-                            }
-                            // "Only sometimes": it starts skipped every time.
-                            Button {
-                                let name = n < draft.count ? draft[n] : ""
-                                if !jsTrim(name).isEmpty { draftSometimes.formSymmetricDifference([normName(name)]) }
-                            } label: {
-                                Text("1 in 10")
-                                    .font(.system(.caption, weight: .semibold))
-                                    .foregroundStyle(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? .white : Theme.muted)
-                                    .padding(.horizontal, 8).frame(minHeight: 30)
-                                    .background(Capsule().fill(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? tint : Theme.card))
-                                    .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
-                                    .contentShape(Capsule())
-                            }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("grab-sometimes-\(n)")
-                            .accessibilityLabel("Take \(n < draft.count ? draft[n] : "") only sometimes")
-                            .accessibilityAddTraits(draftSometimes.contains(normName(n < draft.count ? draft[n] : "")) ? .isSelected : [])
-                            mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: draft.count > 1, label: "Remove") { draft.remove(at: n); rowKeys.remove(at: n) }
+                            .reorderStep("\(key)", into: $heights)
+                            .reorderLift(carried, key: "\(key)", tint: tint)
                         }
-                        .reorderStep("\(key)", into: $heights)
-                        .reorderLift(carried, key: "\(key)", tint: tint)
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -452,7 +464,24 @@ struct GrabScreen: View {
                     .accessibilityIdentifier("grab-add")
             }
             .needsLine($addNeeds, typed: newThing, id: "grab-add-needs")
-            .padding(.horizontal, 16).padding(.vertical, 10)
+            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 6)
+            // A heading of his own (0.85), named the way a template's new section is ("A new
+            // section"): it goes last, as a new thing does; ≡ takes it where he wants it.
+            HStack(spacing: 8) {
+                TextField("A new heading", text: $newHeading)
+                    .textFieldStyle(.plain)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                    .onSubmit { addHeadingToDraft() }
+                    .accessibilityIdentifier("grab-add-heading-name")
+                Button { addHeadingToDraft() } label: { FieldButtonLabel(title: "Add", tint: tint) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("grab-add-heading")
+            }
+            .needsLine($headingNeeds, typed: newHeading, id: "grab-add-heading-needs")
+            .padding(.horizontal, 16).padding(.bottom, 10)
             // Last on the screen, quiet, and it asks first — as Delete template does.
             if isOwn { deleteList.padding(.horizontal, 16).padding(.bottom, 10) }
         }
@@ -526,11 +555,14 @@ struct GrabScreen: View {
     }
 
     private func startEditing() {
-        draft = list.items
+        draft = list.lines
         rowKeys = Array(0..<draft.count)
         nextKey = draft.count
         draftSometimes = Set(model.library.sometimes(listId: listId).map(normName))
         newThing = ""
+        newHeading = ""
+        addNeeds = ""
+        headingNeeds = ""
         saveNeeds = ""
         askingToDelete = false
         editing = true
@@ -545,22 +577,72 @@ struct GrabScreen: View {
     private func addToDraft() {
         let name = jsTrim(newThing)
         guard !name.isEmpty else { addNeeds = "Type a thing first."; return }
-        if !draft.contains(where: { normName($0) == normName(name) }) {
-            draft.append(name)
+        if !draft.contains(where: { !$0.isHeading && normName($0.name) == normName(name) }) {
+            draft.append(.thing(name))
             rowKeys.append(nextKey); nextKey += 1
         }
         newThing = ""
     }
 
+    /// A heading of his own goes last (0.85); what he adds after it goes under it.
+    private func addHeadingToDraft() {
+        let name = jsTrim(newHeading)
+        guard !name.isEmpty else { headingNeeds = "Type the heading\u{2019}s name first."; return }
+        draft.append(.heading(name))
+        rowKeys.append(nextKey); nextKey += 1
+        newHeading = ""
+    }
+
+    /// How many THINGS the draft holds — the last one cannot be removed.
+    private var draftThings: Int { draft.filter { !$0.isHeading }.count }
+
+    private func removeRow(_ n: Int) {
+        guard n < draft.count else { return }
+        draft.remove(at: n); rowKeys.remove(at: n)
+    }
+
+    /// A heading of his, while editing (0.85): clearly not a thing — its name in the list's
+    /// colour, semibold, on no box, as a template's heading reads in Arrange; a heading's grip
+    /// (bolder, on a patch of the list's colour); no "1 in 10". Tap the name to change it;
+    /// ≡ (and on the Mac ▲▼) moves it like a line — a thing belongs to the heading above it;
+    /// ✕ removes it, and its things stay, joining what is above.
+    private func headingRow(_ n: Int, _ key: Int) -> some View {
+        HStack(spacing: 2) {
+            if draft.count > 1 {
+                ReorderGrip(id: "grab-grip-\(n)", label: "Move the heading \(n < draft.count ? draft[n].name : "")", key: "\(key)",
+                            step: (heights["\(key)"] ?? Metrics.tap) + 4, drag: $carried,
+                            canMove: { by in canSwap(key, by) }, move: { by in swapRow(key, by) },
+                            heading: true, tint: tint)
+                    .padding(.leading, -8)
+            }
+            TextField("Heading", text: Binding(get: { n < draft.count ? draft[n].name : "" },
+                                               set: { if n < draft.count { draft[n].name = $0 } }))
+                .textFieldStyle(.plain)
+                .font(.system(.headline)).foregroundStyle(tint)
+                .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
+                .overlay(alignment: .bottom) { tint.opacity(0.45).frame(height: 1.5).padding(.horizontal, 10) }
+                .accessibilityIdentifier("grab-heading-\(n)")
+                .accessibilityHint("A heading. The things under it, down to the next heading, are its things.")
+            if ReorderArrows.shown {
+                mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { swapRow(key, -1) }
+                mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { swapRow(key, 1) }
+            }
+            mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: true, label: "Remove heading") { removeRow(n) }
+        }
+        .padding(.top, n == 0 ? 0 : 8)
+        .reorderStep("\(key)", into: $heights)
+        .reorderLift(carried, key: "\(key)", tint: tint)
+    }
+
     private func saveEdits() {
-        let items = draft
-        let sometimes = items.filter { draftSometimes.contains(normName($0)) }
+        let lines = draft
+        let sometimes = lines.filter { !$0.isHeading }.map(\.name).filter { draftSometimes.contains(normName($0)) }
         let markedBefore = model.library.sometimes(listId: listId)
         // One door for every list, his own ones too (they were thrown away here
         // until 4 Oct 2026: the door took the original six only). The things and the
         // marks are saved together or not at all.
         var saved = false
-        model.change { saved = $0.saveGrabEdit(id: listId, items: items, sometimes: sometimes) }
+        model.change { saved = $0.saveGrabEdit(id: listId, lines: lines, sometimes: sometimes) }
         guard saved else { saveNeeds = "Put at least one thing on the list first."; return }
         editing = false
         askingToDelete = false

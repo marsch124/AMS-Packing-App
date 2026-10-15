@@ -10175,52 +10175,126 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThanOrEqual(ready.frame.height, tightTile + 0.5, "Ready to go is \(ready.frame.height) points tall; at most \(tightTile)")
     }
 
-    /// His words (15 Oct 2026, "Outdoor bike" open on the Mac, seventeen things in one run):
-    /// "a bit more visual with some grouping … only for visuals but important to me" —
-    /// "small headings in the list … maybe another colour, grey". An open grab list falls
-    /// under its things' kinds, in HIS order of kinds (Electronics moved first), "Other"
-    /// last, each line under its own heading, the list's order within; the count is the
-    /// list's as before. A list whose things are all of one kind has no heading at all.
-    func testAnOpenGrabListIsGroupedByKindOfThing() {
-        let app = launch("-uiTestingGrabKinds")
+    /// His own headings in a grab list (0.85) — his words, 15 Oct 2026: "How do I define the
+    /// small headings, and how do I group the items in the various headings? I need to be able
+    /// to do that, I believe." In Edit, A new heading → Add puts a heading last: a heading row
+    /// (its own field, no "1 in 10"); ≡ moves it like a line, one place up, so Flip-flops (the
+    /// last thing) falls under it. Saved, the open list shows it small and grey over Flip-flops
+    /// alone; the count is still the seven things' — a heading is never counted, and a tick
+    /// under it counts. Kept when the list is opened again; removed, its thing stays and the
+    /// list is flat again. A list without headings has none (`grab-group-0`).
+    func testHisOwnHeadingGroupsAGrabList() {
+        let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         tap(app, id: "grab-0")
         XCTAssertTrue(appears(app, "grab-detail"), "the grab list did not open")
-        let kinds = ["Electronics", "Sport gear", "Comfort & misc", "Other"]
-        let headings = kinds.indices.map { app.staticTexts["grab-group-\($0)"] }
-        XCTAssertTrue(headings[0].waitForExistence(timeout: 5), "no heading over the first kind")
-        XCTAssertEqual(headings.map { words($0) }, kinds, "the headings, in his order of kinds")
-        XCTAssertFalse(app.staticTexts["grab-group-4"].exists, "a fifth heading")
-        // Top to bottom: each heading, then the list's lines of that kind (their places on
-        // the list: Swim trunks 0, Goggles 1, Swim cap 2, Towel 3, Drink 4, watch 5, Flip-flops 6).
-        let under = [[5], [1, 2], [3], [0, 4, 6]]
-        var above = -CGFloat.infinity
+        XCTAssertTrue(app.buttons["grab-item-6"].waitForExistence(timeout: 5), "no seventh line")
+        XCTAssertFalse(app.staticTexts["grab-group-0"].exists, "a list without headings of his has a heading")
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 7") }, "the count: '\(words(count))'")
+
+        tap(app, id: "grab-edit")
+        type("In the bag", into: app.textFields["grab-add-heading-name"])
+        tap(app, id: "grab-add-heading")
+        let heading = app.textFields["grab-heading-7"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "the new heading is not last in the list")
+        XCTAssertEqual(heading.value as? String, "In the bag")
+        XCTAssertFalse(app.textFields["grab-rename-7"].exists, "the heading is a thing's row")
+        XCTAssertFalse(app.buttons["grab-sometimes-7"].exists, "a heading has 1 in 10")
+        XCTAssertTrue(app.buttons["grab-sometimes-6"].exists, "the things lost 1 in 10")
+        // ≡ moves it like a line: one place up, over Flip-flops.
+        hideKeyboard(app)
+        #if os(macOS)
+        tap(app, id: "grab-up-7")
+        #else
+        drag(app, "grab-grip-7", to: "grab-grip-6")
+        #endif
+        XCTAssertTrue(waitUntil { app.textFields["grab-heading-6"].exists }, "the heading did not move up a place")
+        XCTAssertTrue(app.textFields["grab-rename-7"].exists, "no thing under the heading")
+        XCTAssertEqual(app.textFields["grab-rename-7"].value as? String, "Flip-flops", "Flip-flops is not under the heading")
+        shot(app, "grabhead-edit-new")
+        tap(app, id: "grab-edit")                                    // Save
+
+        let group = app.staticTexts["grab-group-0"]
+        XCTAssertTrue(group.waitForExistence(timeout: 5), "no heading on the open list")
+        XCTAssertEqual(words(group), "In the bag")
+        XCTAssertFalse(app.staticTexts["grab-group-1"].exists, "a second heading")
+        let above = app.buttons["grab-item-5"], under = app.buttons["grab-item-6"]
+        XCTAssertTrue(under.waitForExistence(timeout: 5), "no seventh line")
+        XCTAssertLessThanOrEqual(above.frame.maxY, group.frame.minY + 0.5, "the watch is not above the heading")
+        XCTAssertGreaterThanOrEqual(under.frame.minY, group.frame.maxY - 0.5, "Flip-flops is not under the heading")
+        XCTAssertTrue(under.label.contains("Flip-flops"), "the line under the heading: '\(under.label)'")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 7") }, "the heading was counted: '\(words(count))'")
+        tap(app, id: "grab-item-6")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 7") }, "the tick under the heading did not count: '\(words(count))'")
+        shot(app, "grabhead-open-new")
+
+        // Kept: closed and opened again, it is still there.
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail"), "the grab list did not open again")
+        XCTAssertTrue(app.staticTexts["grab-group-0"].waitForExistence(timeout: 5), "the heading was not kept")
+
+        // Removed: its thing stays, and the list is flat again.
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(app.textFields["grab-heading-6"].waitForExistence(timeout: 5), "the heading is not in Edit")
+        tap(app, id: "grab-remove-6")
+        XCTAssertTrue(waitUntil { !app.textFields["grab-heading-6"].exists }, "the heading was not removed")
+        XCTAssertTrue(app.textFields["grab-rename-6"].exists, "its thing went with it")
+        XCTAssertEqual(app.textFields["grab-rename-6"].value as? String, "Flip-flops", "its thing went with it")
+        tap(app, id: "grab-edit")                                    // Save
+        XCTAssertTrue(app.buttons["grab-item-6"].waitForExistence(timeout: 5), "Flip-flops went")
+        XCTAssertFalse(app.staticTexts["grab-group-0"].exists, "the removed heading is still on the open list")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 7") }, "the count after the heading went: '\(words(count))'")
+    }
+
+    /// An open list under three headings of his (`-uiTestingGrabHeadings`): Outdoor bike
+    /// (`grab-4`) — "Check the tyres" above them all, under no heading; then "On me", "On the
+    /// bike" and "After", small and grey, top to bottom, each over its own things in his order;
+    /// the count is the ten things'. In Edit each heading is a heading row at its place
+    /// (`grab-heading-<n>`, no "1 in 10"). The pictures for him: the open list and Edit.
+    func testAGrabListOpensUnderHisHeadings() {
+        let app = launch("-uiTestingGrabHeadings")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-4")
+        XCTAssertTrue(appears(app, "grab-detail"), "Outdoor bike did not open")
+        let names = ["On me", "On the bike", "After"]
+        let headings = names.indices.map { app.staticTexts["grab-group-\($0)"] }
+        XCTAssertTrue(headings[0].waitForExistence(timeout: 5), "no heading on the open list")
+        XCTAssertEqual(headings.map { words($0) }, names, "his headings, in his order")
+        XCTAssertFalse(app.staticTexts["grab-group-3"].exists, "a fourth heading")
+        // Top to bottom: the line above them all, then each heading and its lines.
+        let lead = app.buttons["grab-item-0"]
+        XCTAssertTrue(lead.exists && lead.label.contains("Check the tyres"), "the first line: '\(lead.label)'")
+        XCTAssertLessThanOrEqual(lead.frame.maxY, headings[0].frame.minY + 0.5, "the line above every heading is under one")
+        let under = [[1, 2, 3, 4], [5, 6, 7], [8, 9]]
+        var above = lead.frame.maxY
         for (g, lines) in under.enumerated() {
-            XCTAssertGreaterThanOrEqual(headings[g].frame.minY, above - 0.5, "'\(kinds[g])' is not under what comes before it")
+            XCTAssertGreaterThanOrEqual(headings[g].frame.minY, above - 0.5, "'\(names[g])' is not under what comes before it")
             above = headings[g].frame.maxY
             for n in lines {
                 let line = app.buttons["grab-item-\(n)"]
                 XCTAssertTrue(line.exists, "no line \(n)")
-                XCTAssertGreaterThanOrEqual(line.frame.minY, above - 0.5, "line \(n) is not under '\(kinds[g])'")
+                XCTAssertGreaterThanOrEqual(line.frame.minY, above - 0.5, "line \(n) is not under '\(names[g])'")
                 above = line.frame.maxY
             }
         }
-        shot(app, "grab-kinds")
-        // Only the look: the count and a tick are the list's, as before.
         let count = app.staticTexts["grab-count"]
-        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 7") }, "the count changed: '\(words(count))'")
-        tap(app, id: "grab-item-5")
-        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 7") }, "the tick under Electronics did not count: '\(words(count))'")
-        XCTAssertTrue(isOn(app.buttons["grab-item-5"]), "the watch is not ticked")
-        tap(app, id: "grab-done")
-        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 10") }, "the headings were counted: '\(words(count))'")
+        shot(app, "grabhead-open")
 
-        // Outdoor bike: the watch is the one thing of his on it — one kind, no heading.
-        tap(app, id: "grab-4")
-        XCTAssertTrue(appears(app, "grab-detail"), "Outdoor bike did not open")
-        XCTAssertTrue(app.buttons["grab-item-0"].waitForExistence(timeout: 5), "no lines on Outdoor bike")
-        XCTAssertFalse(app.staticTexts["grab-group-0"].exists, "a list of one kind has a heading")
-        shot(app, "grab-kinds-flat")
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(app.textFields["grab-rename-0"].waitForExistence(timeout: 5), "Edit did not open")
+        for (n, name) in [(1, "On me"), (6, "On the bike"), (10, "After")] {
+            let row = app.textFields["grab-heading-\(n)"]
+            XCTAssertTrue(row.exists, "no heading row \(n)")
+            XCTAssertEqual(row.value as? String, name)
+            XCTAssertFalse(app.buttons["grab-sometimes-\(n)"].exists, "the heading '\(name)' has 1 in 10")
+        }
+        XCTAssertEqual(app.textFields["grab-rename-0"].value as? String, "Check the tyres")
+        XCTAssertEqual(app.textFields["grab-rename-2"].value as? String, "Helmet", "a thing is not at its place")
+        shot(app, "grabhead-edit")
     }
 
     // MARK: Headers on one line (0.67 — his notes on 0.63)

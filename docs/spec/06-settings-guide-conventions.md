@@ -677,7 +677,7 @@ against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
-| 0.84 | 15 Oct 2026 | Calmer, and in groups | N1 C6 | grab list grouped by Kind of thing (GrabKinds.grabGroups, small grey headings `grab-group-<n>`); Take a break a round cup / time capsule; Add to Calendar filled amber once chosen; 🎒 BREAK_TITLE; short station chips (`chip`); header Review only from On site (`Loop.offersReview`, test switch -reviewAtPack); grab Share round at the bottom right (ShareDoor round:) |
+| 0.84 | 15 Oct 2026 | Calmer, and in groups | N1 C6 | grab list grouped by Kind of thing (GrabKinds.grabGroups, small grey headings `grab-group-<n>`; replaced in 0.85 by his own headings, spec 02 §6–7); Take a break a round cup / time capsule; Add to Calendar filled amber once chosen; 🎒 BREAK_TITLE; short station chips (`chip`); header Review only from On site (`Loop.offersReview`, test switch -reviewAtPack); grab Share round at the bottom right (ShareDoor round:) |
 | 0.83 | 14 Oct 2026 | Add a bag anywhere | N1 C2 | + Add a bag on the Bags card (AddBagPanel with id prefix); Library.hasLostBagPage excludes On body / On me / Worn / Wearing; Lost bag? a quiet link |
 | 0.82 | 14 Oct 2026 | See it grow | N3 | green ring per group + What's left with his pace (PackingPace, tickedAt; chapter 07 part 20); Before you start (chapter 07 part 19) |
 | 0.81 | 14 Oct 2026 | Packing Stations | N3 C4 | renamed from Packing day; slimmer station chips; Tags Remind me + friendlier look; Ready Add a reminder (tripTodo lines, due at once); Bags out + Add a bag (dayAddedBags); header tones (TripHeaderTone); fast lane on three simulators (ui-split.py) |
@@ -845,9 +845,11 @@ no entry shows no marker anywhere (and fails the test).
 
 **The topics and their lines** (summarised; the code holds the exact sentences):
 
-0. **Home** (Home mark): (1) eight grab lists, four in a row; tap one, tick what is in your hand; (0.84) things of
-   two kinds or more fall under small grey headings, one per Kind of thing, in his order of kinds, Other last, the
-   list's own order within, Edit as he made it; the count stays at
+0. **Home** (Home mark): (1) eight grab lists, four in a row; tap one, tick what is in your hand; (0.85, replacing
+   0.84's grouping by Kind of thing) HIS OWN small grey headings group it: in Edit, A new heading + Add puts one last,
+   its grip ≡ (on the Mac ▲▼ too) moves it, a thing belongs to the heading above it, tap a heading's name to change
+   it, ✕ removes it and its things stay, joining what is above; headings are never ticked or counted; a list without
+   them stays one plain list; the count stays at
    the top; Ready to go too early says Not yet in the middle with what is missing; ticks clear themselves 6 hours after
    the last tap (0.62). (2) Grab Lists: the ones on Home
    (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on
@@ -1930,7 +1932,7 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-uiTestingNotes` | memory, `SampleLibrary.notes()` | 0.69 |
 | `-uiTestingPockets` | memory, `SampleLibrary.pockets()` | 0.69 |
 | `-uiTestingTravel` | memory, `SampleLibrary.travel()` | 0.76: the sample plus an RV transport template "Camper kit" (Travelling by) |
-| `-uiTestingGrabKinds` | memory, `SampleLibrary.grabKinds()` | 0.84: kinds of thing behind Indoor swim, his kinds in his own order (an open grab list grouped by kind) |
+| `-uiTestingGrabHeadings` | memory, `SampleLibrary.grabHeadings()` | 0.85: Outdoor bike under three headings of his own (it replaced 0.84's `-uiTestingGrabKinds`, kinds of thing behind Indoor swim) |
 | `-uiTesting` | memory, `SampleLibrary.make()` | checked last |
 | (none) | SwiftData; iCloud when the Info.plist key `PackingUsesICloud` is "YES" | a failure to open → `.failed("The library could not be opened: …")` |
 | `-openGrab <label or title>`, `-openGrabMenu`, `-openNextTrip` | (testing only) play a Shortcut | |
@@ -2027,12 +2029,11 @@ every one of his things does.
 - **`travel()`** (`-uiTestingTravel`, 0.76): `make()` + a transport template **"Camper kit"** (role `transport`,
   transport `RV`; an invented name) holding Levelling blocks and Wheel chocks — under Templates → By transport. No
   Plane or Car template; the sample trip stays an ordinary one ("Car"). An RV trip from Hiking is 9 lines.
-- **`grabKinds()`** (`-uiTestingGrabKinds`, 0.84): `make()` + a new thing **Sports watch** (`addThing`) of kind
-  Electronics; Goggles and Swim cap become Sport gear; the Towel keeps the starting Comfort & misc; his kinds of thing
-  are the app's twelve with Electronics moved first (`setCategories`). So Indoor swim (`grab-0`) opens under four
-  headings — Electronics (Sports watch), Sport gear (Goggles, Swim cap), Comfort & misc (Towel), Other (Swim trunks,
-  Drink / water bottle, Flip-flops) — and Outdoor bike (`grab-4`), whose one thing of his is the watch, stays flat.
-  11 things. Spec 02 §6.
+- **`grabHeadings()`** (`-uiTestingGrabHeadings`, 0.85): `make()` + Outdoor bike (`grab-4`, the factory `bike-out`)
+  saved with `saveGrabList(id:lines:)` as he might arrange it: "Check the tyres" above every heading (free text, no
+  thing of his), then **On me** (Helmet, Sunglasses, Cycling gloves, Sports watch), **On the bike** (Drink / water
+  bottle, Spare tube & pump, iPhone) and **After** (Towel, Recovery drink) — ten things, three headings, invented
+  names. Spec 02 §6. (It replaced 0.84's `grabKinds()`, kinds of thing behind Indoor swim, with the grouping by kind.)
 - **`fileToRestore()`**: a DIFFERENT library as backup bytes (exportedAt 2026-09-22T09:00:00.000Z): one template "Day
   out" (`role: "base"`) with Water bottle and Sun hat — 2 things where the device holds 10, "so a restore that only
   ADDS would be caught". Read by *Restore from a file…* under the tests.

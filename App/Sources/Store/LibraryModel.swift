@@ -316,8 +316,8 @@ extension LibraryModel {
     ///  -uiTestingLostBag      → memory, the Packing day's sample as a plane trip with flights
     ///                           and a stay, the Day pack's details and photo, and half of his
     ///                           details for the desk (the Lost bag page, 0.80)
-    ///  -uiTestingGrabKinds    → memory, the sample with kinds of thing behind Indoor swim, his
-    ///                           kinds in his own order (an open grab list grouped by kind, 0.84)
+    ///  -uiTestingGrabHeadings → memory, the sample with Outdoor bike under three headings of
+    ///                           his own (a grab list's headings, 0.85)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -383,8 +383,8 @@ extension LibraryModel {
         if args.contains("-uiTestingTravel") {
             return LibraryModel(store: MemoryStore(SampleLibrary.travel().records()), usesICloud: false, sky: sky)
         }
-        if args.contains("-uiTestingGrabKinds") {
-            return LibraryModel(store: MemoryStore(SampleLibrary.grabKinds().records()), usesICloud: false, sky: sky)
+        if args.contains("-uiTestingGrabHeadings") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.grabHeadings().records()), usesICloud: false, sky: sky)
         }
         if let n = args.firstIndex(of: "-uiTestingPlaces") {
             let when = n + 1 < args.count ? args[n + 1] : ""

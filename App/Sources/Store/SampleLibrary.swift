@@ -429,21 +429,19 @@ enum SampleLibrary {
         return lib
     }
 
-    /// The sample library with kinds of thing behind a grab list (`-uiTestingGrabKinds`,
-    /// 0.84 — an open grab list grouped by kind): his kinds in his own order, Electronics
-    /// moved first; Goggles and Swim cap are Sport gear; a new thing Sports watch is
-    /// Electronics; the Towel keeps the starting Comfort & misc. So Indoor swim (`grab-0`)
-    /// opens under four headings — Electronics (Sports watch), Sport gear (Goggles, Swim
-    /// cap), Comfort & misc (Towel), Other (Swim trunks, Drink / water bottle, Flip-flops) —
-    /// and Outdoor bike (`grab-4`), whose one known thing is the watch, stays flat.
-    static func grabKinds() -> Library {
+    /// The sample library with his own headings on a grab list (`-uiTestingGrabHeadings`,
+    /// 0.85): Outdoor bike (`grab-4`) as he might arrange it — "Check the tyres" above every
+    /// heading (free text, no thing of his), then "On me" (Helmet, Sunglasses, Cycling gloves,
+    /// Sports watch), "On the bike" (Drink / water bottle, Spare tube & pump, iPhone) and
+    /// "After" (Towel, Recovery drink): ten things, three headings. Invented names.
+    static func grabHeadings() -> Library {
         var lib = make()
-        _ = lib.addThing(name: "Sports watch")
-        let kinds = ["Goggles": "Sport gear", "Swim cap": "Sport gear", "Sports watch": "Electronics"]
-        for n in lib.items.indices {
-            if let k = kinds[lib.items[n].name] { lib.items[n].category = k }
-        }
-        lib.setCategories(["Electronics"] + CATEGORIES.filter { $0 != "Electronics" })
+        _ = lib.saveGrabList(id: "bike-out", lines: [
+            .thing("Check the tyres"),
+            .heading("On me"), .thing("Helmet"), .thing("Sunglasses"), .thing("Cycling gloves"), .thing("Sports watch"),
+            .heading("On the bike"), .thing("Drink / water bottle"), .thing("Spare tube & pump"), .thing("iPhone"),
+            .heading("After"), .thing("Towel"), .thing("Recovery drink"),
+        ])
         return lib
     }
 

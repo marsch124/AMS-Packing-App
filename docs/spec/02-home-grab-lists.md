@@ -31,7 +31,7 @@ Source files: `App/Sources/RootView.swift`, `AMSPackingApp.swift`, `Sections.swi
 `Screens/GrabMenu.swift`, `Screens/SearchScreen.swift`, `Screens/Share.swift` (the grab-list parts),
 `Store/LibraryModel.swift` (the open-requests and test launch modes), `Store/Shortcuts.swift`,
 `Store/Reminders.swift`, `Store/Today.swift`, `Store/ShopReminders.swift` (only its read-back on return);
-model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `GrabKinds.swift` (0.84), `Countdown.swift`,
+model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `GrabHeadings.swift` (0.85; it replaced 0.84's `GrabKinds.swift`), `Countdown.swift`,
 `Sharing.swift` (grab parts), `Backup.swift` / `Importer.swift` (grab parts); `PackingCore/GrabSharing.swift`,
 `PackingCore/SharedRows.swift` (grab rows).
 
@@ -457,7 +457,15 @@ device's own working state.
 - `title`: the screen heading, e.g. "Indoor swim"
 - `tone`
 - `icon`
-- `items: [String]`: thing names. **Plain strings, not links to things in the library.**
+- `lines: [GrabLine]` (0.85): the list as he arranged it in Edit, top to bottom — `.thing(name)` and
+  `.heading(name)`, his own headings (sections 6 and 7). `GrabLine` (`PackingLibrary/GrabHeadings.swift`) has
+  `name` (get and set; a set keeps the kind of line) and `isHeading`.
+- `items: [String]`: thing names. **Plain strings, not links to things in the library.** Since 0.85 it is
+  **read only**: the THINGS of `lines`, in order, never a heading. Everything that ticks, skips, counts, marks
+  "1 in 10", says what is still missing, counts a list's things in Grab Lists or opens a list by Shortcut reads
+  `items`, so none of it can see a heading. A list is changed through `lines` — `items = …` does not compile —
+  so no change of things can drop his headings unseen (the scoped-field lesson). Two initialisers: with
+  `items:` (things only — the factory six) and with `lines:`.
 
 **The factory six** (`GRAB_FACTORY`, in Home order):
 
@@ -472,12 +480,14 @@ device's own working state.
 
 **Functions** (`extension Library`):
 - `grabLists()`: the six factory lists, each with its `grab` row laid over it where one exists. Each of
-  the row's non-empty `items`, `label`, `icon` and `tone` replaces the factory value. `title` is never
+  the row's non-empty `items`, `label`, `icon` and `tone` replaces the factory value. Since 0.85 the row's
+  names are read as lines (`GrabLine.lines(stored:)`, below), so his headings come back as headings; a row
+  whose names hold no THING at all (headings only — no save writes one) keeps the factory things. `title` is never
   overridden (the row has no title). Always exactly six, in factory order. Rows for ids that are not
   factory ids are ignored here.
 - `ownGrabLists()`: reads `meta["grabOwnLists"]`, an array of objects. Entries without a non-empty `id`
   are dropped. Missing fields default to `label ""`, `title ""`, `tone "blue"`, `icon ""`, `items []`;
-  only string items are kept. Nothing else is checked: an entry restored from a backup can have an empty
+  only string items are kept, and (0.85) they are read as lines — his headings among them. Nothing else is checked: an entry restored from a backup can have an empty
   title (the grab screen's heading is then blank) or repeated names.
 - `allGrabLists()` = `grabLists() + ownGrabLists()`: factory first, then own lists in the order made.
   Every "waiting" order below follows this.
@@ -515,12 +525,14 @@ device's own working state.
     `own-<milliseconds since 1970>-<random 100…999>`);
   - `title` = the trimmed title, or the label when that is blank;
   - `tone` defaults to "blue" and `icon` to "";
-  - items are trimmed and blanks dropped, but **repeats are not removed here**;
+  - items are trimmed and blanks dropped, but **repeats are not removed here**; then read as lines (0.85), so
+    a list received by a link brings its headings;
   - the list is appended to `meta["grabOwnLists"]`. It is added to neither `grabHome` nor `grabOff`, so
     it is new: it takes the first free place on Home through the fill (a place freed by Off Home
     included) and waits only when Home holds 8.
 - `saveOwnGrabList(_:)`: replaces an own list by id (false for an id that is not an own list). Trims the
-  label (empty → false). Items are trimmed, blanks dropped, repeats removed by `normName` (first kept).
+  label (empty → false). Its lines are cleaned by `GrabLine.cleaned` (0.85): things trimmed, blanks dropped,
+  repeats removed by `normName` (first kept); headings trimmed, cut to `GRAB_HEADING_MAX`, blanks dropped.
   Called by `saveGrabList` for an own list (since 0.61).
 - `deleteOwnGrabList(id:)`: false for an id that is not an own list. Otherwise it removes the own list,
   removes its id from `grabHome`, removes it from `grabOff` (0.62; it stayed there, unread, before — and
@@ -529,10 +541,49 @@ device's own working state.
   The place a deleted list held on Home stays free unless a new list exists. Called by the grab editor's
   "Delete the grab list" (section 7, since 0.61).
 - `saveGrabList(id:items:)`: any list (section 7): a factory list as a `grab` row, an own list through
-  `saveOwnGrabList`. False for an unknown id or when nothing is left after cleaning.
+  `saveOwnGrabList`. False for an unknown id or when nothing is left after cleaning. Since 0.85 it is
+  `saveGrabList(id:lines:)` with every name a thing — a list of things alone, NO headings: a caller holding a
+  list with headings saves its `lines`.
+- `saveGrabList(id:lines:)` (0.85): the same door with his headings among the things: `GrabLine.cleaned`, refused
+  (false, nothing changed) when no THING is left — headings alone are no list.
 - `saveGrabEdit(id:items:sometimes:)` (0.62): what the editor's Save calls — `saveGrabList`, and only
-  when that succeeds, `setSometimes`. Refused whole (false, nothing changed) when no name is left.
-- `writeOwn`, `writeOff`: an empty array removes the key altogether.
+  when that succeeds, `setSometimes`. Refused whole (false, nothing changed) when no name is left. Since 0.85 the
+  editor calls `saveGrabEdit(id:lines:sometimes:)`, the same with lines.
+- `writeOwn`, `writeOff`: an empty array removes the key altogether. `writeOwn` writes each list's `items` as
+  `GrabLine.stored(lines)` (0.85) — written from `items`, every heading on every one of his lists would go with
+  the next change to ANY of them (all his lists are one record).
+
+**His headings among the stored names (0.85; `PackingLibrary/GrabHeadings.swift`).** A heading is stored INSIDE the
+list's own names, in a reserved form: **U+2063 INVISIBLE SEPARATOR, "##", a space, the name** — `GRAB_HEADING_MARK`
+is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factory list it is one of the `grab` row's
+`data.items`; on his own list one of the `items` in `meta["grabOwnLists"]`.
+- **Why not a field of its own** (checked 15 Oct 2026, before the build): the store and iCloud keep a `grab` row's
+  `data` whole (the record IS the row's JSON, `LibraryRecords`), but PackingCore reads a row into `GrabList` —
+  `{ id, items, label, icon, tone }`, nothing else — and every save writes the row afresh from that shape
+  (`grabToRows`), so a new field would be dropped by the next edit; the backup writes a factory list as
+  `prefs.grab.items` / `prefs.grab.meta` and his own lists field by field (`own`), and the web app reads that
+  shape — a new field needs a new key in the backup, the import and the share link, each one a place to forget;
+  and PackingCore is the web app's model, held to it by the parity check. The NAMES already travel everywhere —
+  the store, iCloud, the backup and its restore (both kinds of list), a share link and its import — so a heading
+  among them travels too, with nothing new to forget. PackingCore, the parity check and the backup's shape are
+  unchanged.
+- **Why that form:** no keyboard types U+2063, so no name he ever typed is read as a heading — his "- Sunscreen",
+  "❄️Hat", even a typed "## Not a heading", stay things exactly as they were; JS's `trim` and `jsTrim` leave it
+  alone (it is no white space); XML and JSON both allow it. Checked against his own data (the private backup, read
+  on this Mac only): no name of his starts with "#" or holds a control character. Where the form IS seen — the web
+  app opening a shared link, or a device still on 0.84 — the line reads "## On me", which still says "a heading".
+- **Reading** (`GrabLine.lines(stored:)`, the one door): a stored name whose trimmed form starts with the mark is a
+  heading named by what follows, trimmed; a heading with no name is no line; every other name is a thing, kept
+  exactly as stored. `headingName(stored:)` answers one name; `thingCount(stored:)` counts the things (a shared
+  list's "7 things"). **Writing:** `GrabLine.stored(lines)`.
+- **Cleaning** (`GrabLine.cleaned`, every save): names trimmed, blanks dropped; a thing named twice (by `normName`)
+  kept once, the first; a heading cut to **`GRAB_HEADING_MAX` = 56** UTF-16 units (`GRAB_SHARE_ITEM_MAX` 60 less
+  the mark and its space, so a heading arrives whole in a share link; a `grab` row cuts every name at 80). Two
+  headings may share a name — each is its own line.
+- **Never shown raw:** every screen reads a list through `GrabDefinition` (`items`, `lines`, `groups`), which hold
+  names, never the stored form; the backup and the share link carry the stored form on purpose, and both are read
+  back through `lines(stored:)`. Voice, Excel and the Obsidian page read no grab list; Search finds none.
+- **His lists as they are** (no heading until he adds one) store, read, look and count exactly as before.
 
 **Session state, `GrabState`** (`Codable`, per list, this device only):
 - `done: [String]`, `skipped: [String]` (names exactly as the list spells them, compared by exact
@@ -584,8 +635,9 @@ device's own working state.
   Home (`grabHome` is read first; `grabOff` only stops the fill), a list in neither counts as new and
   takes a free place.
 - Backup (`Library.backupFile`): `prefs.grab` = `{ items: {gid: [names]}, meta: {gid: {label, icon, tone}} }`
-  for the factory rows (the web app's shape), plus our own keys `sometimes: {listId: [names]}`,
-  `own: [{id,label,title,tone,icon,items}]`, `home: [ids]` and (0.61) `off: [ids]` ("or a restore would
+  for the factory rows (the web app's shape; since 0.85 the names hold his headings in their stored form, as the
+  row does), plus our own keys `sometimes: {listId: [names]}`,
+  `own: [{id,label,title,tone,icon,items}]` (`items` = `GrabLine.stored(lines)`, 0.85), `home: [ids]` and (0.61) `off: [ids]` ("or a restore would
   put them straight back"; since 0.62 it never names a deleted list). Each of our keys is written only when non-empty. When there are no factory
   rows but there are marks, own lists, an arrangement or off ids, `prefs.grab` holds only those keys.
 - Import (`Importer`): rebuilds the factory rows from the union of `items` and `meta` ids, **sorted**
@@ -613,6 +665,34 @@ device's own working state.
   `testADeletedListLeavesNoTraceInTheArrangement`, `testANameAlreadyInUseIsTaken`,
   `testEveryListCanWaitOffHome`).
 - `GrabSometimesTests` (marks, opening state, own lists' marks and ticks, section 7).
+- `GrabHeadingsTests` (0.85, his headings; every one seen RED on a planted fault — the faults and their red lines
+  in spec 07 §11's row of 15 Oct 2026 and below):
+  - `testAListIsGroupedUnderHisHeadingsAndTheirThingsAreNeverHeadings` — `items` holds the things alone; `groups`:
+    the things above the first heading under none, each heading over its things, a heading with nothing under it
+    not shown;
+  - `testAListWithoutHeadingsIsOneFlatGroupAsBefore` — one group under no heading; "- Sunscreen", "❄️Hat",
+    "## Not a heading", "#3 bottle", "Start fans" stay things and store unchanged;
+  - `testHeadingsAreNeverCounted` — active, complete, a shared list's thing count, "1 in 10" and the opening state
+    see no heading;
+  - `testASaveKeepsHisHeadingsWhereHePutThem` (trimmed, a blank and a twin thing dropped, two headings of one name
+    kept, a long heading cut to 56), `testAListOfHeadingsAloneIsRefused` (marks kept; his own list too),
+    `testRemovingAHeadingKeepsItsThings` (they join the heading above; all gone = flat),
+    `testAddingAHeadingKeepsTodaysTicks`;
+  - every door: `testHeadingsSurviveTheStore` (both kinds; still one `grab:bike-out` record),
+    `testHeadingsSurviveABackupAndItsRestore` (both kinds), `testChangingOneOwnListKeepsTheOthersHeadings` (a
+    change to one of his lists and a deletion keep another's heading),
+    `testHeadingsTravelInAShareLinkAndComeBackAsHeadings` (11 lines in the link, 7 things; imported, the same
+    lines), `testTheStoredFormIsNeverShown` (U+2063 in no name, heading or group any list gives).
+  - Red with a planted fault each (copied from the run): own lists written from their things — `XCTAssertEqual
+    failed: ("Optional([PackingLibrary.GrabLine.thing("Racket")])") is not equal to
+    ("Optional([PackingLibrary.GrabLine.heading("Court"), PackingLibrary.GrabLine.thing("Racket")])") - another
+    list's change took this one's heading` (and the store and backup tests); the backup writing things only — `…
+    - a restore lost his own list's headings`; the share link made from the things — `XCTAssertEqual failed:
+    ("7") is not equal to ("11") - the link's lines: 7 things and 4 headings`; `items` holding the headings —
+    `XCTAssertEqual failed: ("11") is not equal to ("7") - a heading was counted as a thing to take` (and four
+    more); an empty heading shown — `XCTAssertEqual failed: ("["", "On me", "Empty for now", "After"]") is not
+    equal to ("["", "On me", "After"]")`; a typed "## " read as a heading — `… - his names changed on the way
+    through`; a save dropping two headings of one name — `testASaveKeepsHisHeadingsWhereHePutThem` red.
 - `PackingCore` `SharedRowsTests`:
   - `testGrabToRowsGrabFromRowsAListSurvivesTheRoundTripHyphenAndAll`
   - `testGrabToRowsTheRowIdIsStableSoTwoDevicesMergeInsteadOfDoubling`
@@ -624,6 +704,11 @@ device's own working state.
 **Traps.**
 - 🪤 A new shared-row kind does not survive PackingCore (it keeps only the web app's kinds). That is why
   own lists, the arrangement and the marks are in `meta`.
+- 🪤 (0.85) A new FIELD on a `grab` row does survive the store, but not the next save (`grabToRows` writes the
+  row afresh from `GrabList`'s five fields) nor the backup (`prefs.grab` is built field by field) — which is why
+  his headings live among the names. And every writer of `meta["grabOwnLists"]` writes ALL his lists: one
+  written from `items` instead of `lines` strips every heading on every list (planted, the model tests went
+  red).
 - 🪤 Until 4 Oct 2026 a free place on Home was always filled from the waiting lists, so "Off Home" put
   the very list he had taken off straight back at the end and the button seemed to do nothing; a model
   test even expected that refill. The arrangement now remembers what it left out (`grabOff`).
@@ -644,10 +729,18 @@ device's own working state.
 - Test B.4: "Not yet" is a red card in the middle of the screen ("even more distinctive — maybe a pop-up
   window at the center of the screen").
 - Both shipped in release 0.40 (28 Sep 2026).
-- **0.84 (15 Oct 2026), grouped by Kind of thing.** His words, on a picture of "Outdoor bike" open on the Mac —
-  "0 of 17 in hand" over seventeen things in one flat run: "a bit more visual with some grouping … only for
-  visuals but important to me"; on the look: "small headings in the list … maybe another colour, grey or something
-  like that" (not the big headings of a trip). See "Grouped by Kind of thing" below.
+- **0.84 (15 Oct 2026), grouped by Kind of thing — REPLACED in 0.85.** His words, on a picture of "Outdoor bike"
+  open on the Mac — "0 of 17 in hand" over seventeen things in one flat run: "a bit more visual with some grouping
+  … only for visuals but important to me"; on the look: "small headings in the list … maybe another colour, grey
+  or something like that" (not the big headings of a trip). 0.84 grouped the list by each thing's Kind of thing by
+  itself.
+- **0.85 (15 Oct 2026), HIS OWN headings.** His words before 0.84 shipped: "How do I define the small headings,
+  and how do I group the items in the various headings? I need to be able to do that, I believe." And his verdict
+  on 0.84: "I think you have misunderstood the grab list, and you have made the sections wrong." His grab lists
+  are free text ("Start fans", "Open windows" are no things of his), so a Kind of thing said nothing about them,
+  and he was already making groups by hand with prefixes in the names ("- Sunscreen", "❄️…"). So the headings are
+  his, set in Edit (section 7), shown here with 0.84's small grey look, which he liked. See "His own headings"
+  below.
 - **0.84, Share at the bottom right.** His words, the same day and the same picture (header: Edit · Share ·
   Done): "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can
   we make the share button more rounded?"
@@ -719,14 +812,16 @@ device's own working state.
      with a slash); when skipped, the ↻ (an arrow round). Accessibility label "Leave <name> behind, just
      this once" or "Take <name> along after all".
    - Rows are keyed by their position (`id: \.offset`).
-   - **Grouped by Kind of thing (0.84)** when the list's things are of two kinds or more (the rule under
-     "Grouped by Kind of thing" below): each group starts with a **small grey heading** (`grab-group-<g>`, `g` = 0, 1, …
-     top to bottom), then its lines in the list's own order. The heading: the kind's name as his list of kinds
-     spells it (or "Other"), **Footnote semibold in `muted`, letter-spacing 0.4**, one line (cut at the end), left;
-     **12 pt above it, 4 above the first, 2 below**; no tick, no count, no line of its own (the line under the row
-     above stays); the `.isHeader` trait. Not in capitals: 0.62 took capitals with letter-spacing out of every
-     heading (spec 06 §21). A line keeps its id by its place on the LIST (`grab-item-<n>`, `grab-skip-<n>`),
-     whichever group shows it.
+   - **Under his own headings (0.85)** when he has set any (the rule under "His own headings" below): his
+     things above his first heading come first, under no heading; then each of his headings — a **small grey
+     heading** (`grab-group-<g>`, `g` = 0, 1, … his headings top to bottom, as shown) — and the things under it,
+     down to the next. The heading: his words as he typed them, **Footnote semibold in `muted`, letter-spacing
+     0.4**, one line (cut at the end), left; **12 pt above it (4 when it is the very first line), 2 below**; no
+     tick, no count, no line of its own (the line under the row above stays); the `.isHeader` trait. Not in
+     capitals: 0.62 took capitals with letter-spacing out of every heading (spec 06 §21). This is 0.84's look,
+     kept (`groupHeading`, the `kindHeading` of 0.84). A line keeps its id by its place among the list's THINGS
+     (`grab-item-<n>`, `grab-skip-<n>`), whichever heading shows it. A list with no headings is one flat run with
+     no `grab-group-…` at all, exactly as before 0.84.
 4. **"Ready to go"** (`grab-ready`), 12 pt above (14 until 0.67): full width, **`Metrics.tap` tall — 36
    on the iPhone, 26 on the Mac** (`Metrics.row`, 40 / 30, until 0.67), a radius-12 rounded rectangle
    filled with the tone, Body semibold white. **Never grey.**
@@ -792,9 +887,25 @@ The whole screen is the container `grab-detail` on a `bg` background.
 - **The list goes while open** (0.62): the screen closes, still showing the list as last seen (see "How
   it is reached and left"). Nothing is saved under another list's key.
 
-**Grouped by Kind of thing** (0.84; `Library.grabGroups(_:)` and `grabKind(of:)` in `PackingLibrary/GrabKinds.swift`).
-Only the LOOK changes: the list is still a run of names in his order — nothing is stored, ticked, skipped or
-counted differently, and Edit shows it flat, as he made it.
+**His own headings** (0.85; `GrabDefinition.groups` in `PackingLibrary/GrabHeadings.swift`). He sets them in Edit
+(section 7); a thing belongs to the heading above it.
+- **Groups:** one per heading he set, in his order, holding the things below it down to the next heading; first, a
+  group under NO heading holding the things above his first heading (no `grab-group-…` is drawn for it). A heading
+  with no thing under it is **not shown** (Edit still has it — he may be building the list). A list with no
+  headings is one group under no heading: flat.
+- **Numbering:** `grab-group-<g>` counts the headings SHOWN, top to bottom, from 0 — the group under no heading is
+  not one of them.
+- **Never counted:** headings are not in `items`, so the count ("x of y in hand", "· n skipped"), the bar, ticks,
+  skips, Still missing, "All there — go!", Ready to go, Start over and the 6-hour rule are exactly as before. "Still
+  missing: A, B, C." names things in the list's order, which is the order on screen.
+- **Where:** wherever a grab list is open for picking — `GrabScreen`, from a Home tile, Grab Lists, the Action
+  button's menu or a Shortcut.
+
+**Grouped by Kind of thing** (0.84 — **REPLACED in 0.85** by his own headings, above: `GrabKinds.swift`, its launch
+mode `-uiTestingGrabKinds`, `SampleLibrary.grabKinds()`, the UI test `testAnOpenGrabListIsGroupedByKindOfThing` and
+the model `GrabKindsTests` are gone; kept here as the record of what 0.84 did). Only the LOOK changed: the list was
+still a run of names in his order — nothing was stored, ticked, skipped or counted differently, and Edit showed it
+flat, as he made it.
 - **A name's kind** is the Kind of thing (`category`) of his THING of that name, matched by `normName` (trimmed,
   lower-case, spaces collapsed) — the first such thing with a kind. A name that is none of his things (a grab list's
   names are free text: "GPS course", "Bar | Dried fruit"), or a thing whose kind is blank, has no kind. Only the name
@@ -816,16 +927,37 @@ counted differently, and Edit shows it flat, as he made it.
   button's menu or a Shortcut. The **editor stays flat** in his order (decided by the build: the order he edits is
   the order that decides the order within each group, and a row moved by its grip must move where he sees it).
 
-**Data.** Reads the list definition and `sometimes(listId:)`; for the groups (0.84) his things' names and kinds and
-his list of kinds (`categories()`) — read only. Reads and writes `UserDefaults
-ams.grab.<listId>`. Nothing about ticking is synced or backed up.
+**Data.** Reads the list definition (its `lines`, so its headings, since 0.85) and `sometimes(listId:)`. Reads and
+writes `UserDefaults ams.grab.<listId>`. Nothing about ticking is synced or backed up. (0.84 also read his things'
+kinds and his list of kinds for its grouping; 0.85 reads neither.)
 
 **iPhone vs Mac.** The Mac sheet is at least **480 × 600**. Share at the foot is 38 across on the iPhone, 30 on
 the Mac (0.84); the headings are Footnote on both (13 pt on the iPhone, the Mac's own Footnote there). Everything
 else is the same.
 
 **Tests.**
-- UI `testAnOpenGrabListIsGroupedByKindOfThing` (0.84, `-uiTestingGrabKinds`, spec 06 §25): Indoor swim (`grab-0`)
+- UI `testAGrabListOpensUnderHisHeadings` (0.85, `-uiTestingGrabHeadings`, spec 06 §25): Outdoor bike (`grab-4`)
+  shows exactly `grab-group-0…2` reading "On me", "On the bike", "After" and no `grab-group-3`; "Check the tyres"
+  (`grab-item-0`) above the first heading; top to bottom each heading and then its lines — 1–4, 5–7, 8–9 — each
+  line under its heading; the count reads "0 of 10"; in Edit, `grab-heading-1`, `-6`, `-10` hold the three
+  names, with no `grab-sometimes-` beside them, `grab-rename-0` "Check the tyres" and `grab-rename-2` "Helmet".
+  Pictures `grabhead-open`, `grabhead-edit` (day and night). RED with planted faults: the open list drawing no heading — `XCTAssertTrue failed - no heading on the open list`; the
+  headings counted — `XCTAssertTrue failed - the headings were counted: '0 of 13 in hand'`; Edit drawing a heading as a
+  thing's row — `XCTAssertTrue failed - no heading row 1`. Green on the iPhone (iOS 27, "Packing CI head", day and
+  night).
+- UI `testHisOwnHeadingGroupsAGrabList` (0.85, the sample): Indoor swim has no `grab-group-0` and "0 of 7"; Edit →
+  "In the bag" into `grab-add-heading-name`, `grab-add-heading` → `grab-heading-7` holds it, with no
+  `grab-rename-7` and no `grab-sometimes-7` (`grab-sometimes-6` still there); its grip dragged onto row 6's (the
+  Mac: `grab-up-7`) → `grab-heading-6`, `grab-rename-7` "Flip-flops"; Save → `grab-group-0` "In the bag", no
+  `grab-group-1`, item 5 above it and item 6 (Flip-flops) under it; still "0 of 7"; a tick on item 6 → "1 of 7";
+  Done and open again → the heading is kept; Edit, `grab-remove-6` → the heading goes, `grab-rename-6` is
+  Flip-flops; Save → no `grab-group-0`, "1 of 7". Pictures `grabhead-edit-new`, `grabhead-open-new`. RED with
+  planted faults: the open list drawing no heading — `XCTAssertTrue failed - no heading on the open list`; a heading
+  counted — `XCTAssertTrue failed - the heading was counted: '0 of 8 in hand'`; A new heading adding a thing —
+  `XCTAssertTrue failed - the new heading is not last in the list`; removing a heading taking the thing under it —
+  `XCTAssertTrue failed - its thing went with it`; a heading over a list without his — `XCTAssertFalse failed - a list
+  without headings of his has a heading`. Green on the iPhone (day and night).
+- (0.84, gone in 0.85) UI `testAnOpenGrabListIsGroupedByKindOfThing` (`-uiTestingGrabKinds`): Indoor swim (`grab-0`)
   shows exactly `grab-group-0…3` reading "Electronics", "Sport gear", "Comfort & misc", "Other" (his order, with
   Electronics moved first — not the app's) and no `grab-group-4`; top to bottom each heading and then its lines —
   item 5 (Sports watch); 1, 2 (Goggles, Swim cap); 3 (Towel); 0, 4, 6 (Swim trunks, Drink / water bottle,
@@ -837,7 +969,7 @@ else is the same.
   enough for headings — `XCTAssertFalse failed - a list of one kind has a heading`. Green on the iPhone (iOS 27,
   day and night) with the other 20 grab-list tests, and on GitHub's Mac in a probe (light; the runner's Mac stayed
   light with dark asked for).
-- Model `GrabKindsTests` (0.84): `testThingsGoUnderTheirKindInHisOrderAndTheRestUnderOtherLast` (the app's twelve
+- (0.84, gone in 0.85) Model `GrabKindsTests`: `testThingsGoUnderTheirKindInHisOrderAndTheRestUnderOtherLast` (the app's twelve
   in order, the list's order within, every place under exactly one heading),
   `testHisOwnOrderOfKindsDecidesAndHisSpellingIsTheHeading`, `testAListOfOneKindStaysFlat` (one kind; one kind and
   unknown names; nothing known; empty), `testNamesMatchHisThingsLooselyAndAThingWithNoKindIsOther`,
@@ -885,9 +1017,10 @@ else is the same.
   - ticks surviving close and reopen on a FACTORY list (only an own list is reopened in a UI test);
   - the 6-hour expiry in the app (the model test pins it);
   - "8 of 7" on screen (it needs an edit from another device; the model test pins the counting);
-  - the grouping following a change of a thing's kind or of his list of kinds while the list is open (the model
-    pins the answer; the screen reads it on every redraw);
-  - a heading cut at the end on a narrow screen.
+  - his headings changing while the list is open (an edit arriving from the other device; the screen reads
+    `lines` on every redraw);
+  - a heading cut at the end on a narrow screen;
+  - a heading with nothing under it being hidden on screen (the model pins `groups`).
 
 ---
 
@@ -906,6 +1039,13 @@ else is the same.
 - **Deleting one of his own** (the same release, under New): "A grab list you made yourself can be
   deleted: Edit, then Delete grab list at the bottom. It asks first." The code comment: "4 Oct 2026: there
   was no way to." The factory six "can be taken off Home, never thrown away."
+- **His own headings** (0.85, 15 Oct 2026): "How do I define the small headings, and how do I group the items in
+  the various headings? I need to be able to do that, I believe." — after 0.84 had grouped the open list by Kind of
+  thing ("you have made the sections wrong"). The same idea and words as a template's headings, which he already
+  knows: "A new …" to add one (a template's "A new section"), the name tapped to change it, ≡ to move it, ✕ to
+  remove it with its things staying ("Its things stay, under no heading" on a template). Unlike a template's, a
+  grab list's heading moves ALONE, like a line: a thing belongs to the heading above it, so he groups things by
+  moving them (or the heading) — a grab list has no Section field per thing.
 
 **How it is reached and left.**
 - **In:** "Edit" (`grab-edit`) on an open list.
@@ -915,17 +1055,20 @@ else is the same.
 - While editing, the counter, Share and Done are hidden. The button's identifier stays `grab-edit`
   whether it reads "Edit" or "Save".
 
-**What is on screen** (editing) — **flat**, in the list's own order, never grouped by kind (0.84; the order he sets
-here is the order within each group of the open list):
+**What is on screen** (editing) — the list's lines in his order, things and (0.85) his headings, each heading a
+line of its own (0.84 showed it flat while the open list was grouped by kind):
 1. The header with **"Save"** (a capsule filled with the tone). Under the header, after a refused Save
    (0.62): **"Put at least one thing on the list first."** (`grab-save-needs`, 15 pt bold red — the
    shared `NeedsLine`). It goes as soon as the draft changes (a name typed, a thing added or removed) and
    when editing starts again.
 2. A scroll (4 pt spacing, 16 pt side padding):
-   - The hint — Mac: "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. Saved for both your devices.";
-     iPhone (0.72): "Tap a name to change it · hold ≡ and drag to move · ✕ remove. Saved for both your devices."
-     (14 pt medium `muted`).
-   - One row per draft name (since 0.72 followed by a key that moves with it, `rowKeys`, not by its place):
+   - The hint — Mac: "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. A thing goes under the heading above
+     it. Saved for both your devices."; iPhone (0.72): "Tap a name to change it · hold ≡ and drag to move · ✕ remove.
+     A thing goes under the heading above it. Saved for both your devices." (Footnote `muted`, wrapping; the
+     sentence about the heading since 0.85).
+   - One row per draft line (since 0.72 followed by a key that moves with it, `rowKeys`, not by its place; `n` = the
+     line's place among ALL lines, things and headings — on a list with no headings, exactly as before). A THING's
+     row:
      - with two or more, a **grip ≡** first (0.72, both devices; `grab-grip-<n>`, `ReorderGrip`, spec 06 §21): hold
        and drag, each place passed (a row and its 4-pt gap) one swap, as ▲ ▼ make — in the draft, kept on Save;
      - a text field (`grab-rename-<n>`, placeholder "Name", 17 pt medium `ink`, a radius-8 `card`
@@ -936,14 +1079,34 @@ here is the order within each group of the open list):
      - **"1 in 10"** (`grab-sometimes-<n>`, accessibility label "Take <name> only sometimes", the
        `.isSelected` trait when marked): a 30-tall capsule, 12 pt heavy. Marked = tone fill and white
        text; unmarked = `card` fill and `muted` text; `line` stroke either way;
-     - **✕ remove** (`grab-remove-<n>`, "Remove"), disabled when only one name is left.
+     - **✕ remove** (`grab-remove-<n>`, "Remove"), disabled when only one THING is left (0.85: headings do not
+       count; before, one name).
      - The up, down and remove marks are 22-pt drawn glyphs in a 38 × 44 hit area: `ink` when enabled,
        `line` colour and disabled when not.
+   - **A HEADING's row** (0.85, `headingRow`) — clearly not a thing's, the look a template's heading has in
+     Arrange:
+     - with two lines or more, a **heading's grip** ≡ (`grab-grip-<n>`, accessibility label "Move the heading
+       <name>"): `GripMark` with `heading: true` — bolder (2.2), in the list's tone on a capsule of the tone at
+       16 % — the grip a template's heading has (`ReorderGrip` takes `heading:` and `tint:` since 0.85). It moves
+       the heading ALONE, one place per row passed, like a thing's;
+     - a text field (`grab-heading-<n>`, placeholder "Heading" — a template heading's field's word), **Headline in
+       the tone**, on NO box (a thing's sits on a `card` box), a 1.5-pt line in the tone at 45 % under it, minimum
+       44 tall; accessibility hint "A heading. The things under it, down to the next heading, are its things.";
+     - up / down on the Mac (`grab-up-<n>`, `grab-down-<n>`), as on a thing;
+     - **no "1 in 10"** — a heading is never taken;
+     - **✕** (`grab-remove-<n>`, accessibility label "Remove heading" — a template's word), always enabled; it asks
+       nothing: nothing is lost, its things stay and join what is above;
+     - 8 pt more above it than a thing has (none when it is the first line).
 3. The bottom bar (outside the scroll, so it stays in place): a field (`grab-add-name`, placeholder "Add a
    thing", 17 pt, 44 tall, outlined) and **"Add"** (`grab-add`): always full colour, white 16 pt bold on
    the tone, 44 tall. Under the bar, when Add was pressed with nothing typed: **"Type a thing first."**
    (`grab-add-needs`, 15 pt bold red). It goes as soon as the field changes (`NeedsLine`). The bar has
-   16 pt side and 10 pt vertical padding.
+   16 pt side padding, 10 above and (since 0.85) 6 below.
+   - **Under it (0.85), a heading's bar:** a field (`grab-add-heading-name`, placeholder **"A new heading"** — a
+     template's "A new section", the app's "A new …" for adding to a list of his) and **"Add"**
+     (`grab-add-heading`), the same look; with nothing typed: **"Type the heading’s name first."**
+     (`grab-add-heading-needs`, the template's "Type the section's name first."). 16 pt side and 10 pt bottom
+     padding.
 4. **Only on one of his own lists** (`isOwn` = the id is among `ownGrabLists()`, so a list received by
    sharing counts too), last on the screen, under the bar, with 16 pt side and 10 pt bottom padding:
    - **"Delete grab list"** (`grab-delete`): the shared `SmallDeleteButton`, Footnote semibold like every Delete
@@ -963,16 +1126,19 @@ here is the order within each group of the open list):
 
 **Behaviour.**
 - **Start editing:**
-  - `draft = list.items` (empty for a list just made with Make: no rows, only the hint and the add bar);
+  - `draft = list.lines` — things and (0.85) headings (empty for a list just made with Make: no rows, only the
+    hint and the add bars);
+  - both add fields and their "needs" lines are cleared (0.85);
   - any "Put at least one thing" line is cleared;
   - `draftSometimes` = the list's marked names, as `normName` (trimmed, lower-cased, runs of whitespace
     collapsed to one space);
   - the add field is cleared;
   - any open delete question is closed.
-- **Rename:** edits `draft[n]` in place.
-- **Up/down:** `swapAt`.
-- **Remove:** `draft.remove(at:)`, refused while only one name is left. It does not unmark: a mark on a
-  removed name is dropped at Save because the name is gone.
+- **Rename:** edits `draft[n].name` in place (a heading stays a heading).
+- **Up/down:** `swapAt` — a heading and a thing alike.
+- **Remove:** `draft.remove(at:)`, refused on a thing while only one THING is left (0.85). It does not unmark: a
+  mark on a removed name is dropped at Save because the name is gone. A heading removed takes nothing with it:
+  its things now stand under the heading above (or under none).
 - **"1 in 10":** toggles `normName(name)` in `draftSometimes`; ignored when the name is blank. The mark
   follows the **spelling at the time of the tap**: rename a marked thing afterwards and the mark no longer
   matches it, so it is lost at Save.
@@ -980,28 +1146,34 @@ here is the order within each group of the open list):
   - trims the field; empty → "Type a thing first.";
   - when the name matches an existing draft name by `normName`, it is **silently not added**, and the
     field is still cleared;
-  - otherwise it is appended at the end.
+  - otherwise it is appended at the end (0.85: matched against the draft's THINGS only — a thing may share a
+    heading's name).
+- **Add a heading** (0.85; button or Return in its field): trims the field; empty → "Type the heading’s name
+  first."; otherwise appended at the END as a heading (whatever he adds after it goes under it; ≡ takes it where he
+  wants it), and the field is cleared. A heading of a name already used is added all the same.
 - **Save:**
-  1. `items = draft`, raw (untrimmed);
-  2. `sometimes` = the draft names whose `normName` is marked; the list's marks before the save are noted;
-  3. one `model.change`: `saveGrabEdit(id:items:sometimes:)` — `saveGrabList(id:items:)`, and only if
-     that succeeds `setSometimes(listId:names:)`, which validates against the new items. "One door for
+  1. `lines = draft`, raw (untrimmed);
+  2. `sometimes` = the draft THINGS whose `normName` is marked; the list's marks before the save are noted;
+  3. one `model.change`: `saveGrabEdit(id:lines:sometimes:)` (0.85; `…items:…` before) — `saveGrabList(id:lines:)`,
+     and only if that succeeds `setSometimes(listId:names:)`, which validates against the new items. "One door for
      every list, his own ones too."
-  4. **Refused** (nothing left on the list): nothing is stored, the editor stays open, and
-     `grab-save-needs` says "Put at least one thing on the list first." (0.62).
+  4. **Refused** (no THING left on the list — headings alone count as nothing, 0.85): nothing is stored, the
+     editor stays open, and `grab-save-needs` says "Put at least one thing on the list first." (0.62).
   5. Otherwise editing ends and the delete question closes.
   6. **Today's session is kept** (0.62): `stateAfterEdit(listId:held:markedBefore:)` — ticks and skips on
      names still on the list stay; a name just marked "1 in 10" is set aside unless it is already ticked;
      a name just unmarked comes back into the count; a session not under way (or older than 6 h) starts
      from the defaults as an opening does. It is saved. (Until 0.62 every Save restarted the session —
      all ticks gone — even with nothing changed.)
-- **`saveGrabList(id:items:)`** (the one door for an edit of a list's things, whichever kind it is):
-  1. trims every name, drops blanks, drops repeats by `normName` (first kept);
-  2. refuses an empty result (returns false and changes nothing), for any id;
+- **`saveGrabList(id:lines:)`** (the one door for an edit of a list's things and headings, whichever kind it is;
+  `saveGrabList(id:items:)` is it with every name a thing):
+  1. `GrabLine.cleaned`: trims every name, drops blanks, drops THING repeats by `normName` (first kept), cuts a
+     heading to 56 units (section 5);
+  2. refuses a result with no thing (returns false and changes nothing), for any id;
   3. a **factory** id: keeps the existing row's label, icon and tone ("what he did not change keeps
      whatever it was") and writes **one** `grab` row with `order` = the factory index, replacing any
-     earlier row;
-  4. an **own** id: that own list with its `items` replaced by the cleaned names goes through
+     earlier row — its names `GrabLine.stored(lines)`, headings among them (0.85);
+  4. an **own** id: that own list with its `lines` replaced by the cleaned lines goes through
      `saveOwnGrabList` (label, title, tone and drawing unchanged; the label is trimmed again and an empty
      label refused; the items are cleaned again, which changes nothing), so it is written into
      `meta["grabOwnLists"]` — never as a `grab` row, which the web app would read;
@@ -1026,7 +1198,7 @@ here is the order within each group of the open list):
     under way is HIS: whatever he ticked or brought in today stays exactly as it is."
   - otherwise a fresh state with `at = now` and `skipped` = the list's items, **as the list spells them**,
     whose `normName` is marked.
-- **What a rebuild must keep:** the edit changes only the **things**. The list's label, title, drawing and
+- **What a rebuild must keep:** the edit changes only the **things** and (0.85) **his headings**. The list's label, title, drawing and
   tone cannot be changed in this app, for his own lists too. They change only through a `grab` row written
   by the web app or a restored backup.
 - **"Delete grab list"** only opens the question. **"Keep it"** closes the question; the editor stays
@@ -1045,9 +1217,12 @@ here is the order within each group of the open list):
 - `meta["grabHome"]` and `meta["grabOff"]` (a deleted list's id is removed from both).
 - `UserDefaults ams.grab.<id>` for the session after a Save (kept, 0.62), removed by Delete.
 
-**iPhone vs Mac.** The same. The add field's Return submits on both.
+**iPhone vs Mac.** The same. The add fields' Return submits on both. On the Mac a heading has ▲▼ as a thing has.
 
 **Tests.**
+- UI `testHisOwnHeadingGroupsAGrabList` (0.85; section 6): A new heading → Add → the heading row last, no "1 in
+  10"; its grip (the Mac: ▲) one place up over Flip-flops; Save, the open list; Remove heading keeps Flip-flops;
+  `testAGrabListOpensUnderHisHeadings`: Edit shows each heading as `grab-heading-<n>` at its place.
 - UI `testAGrabListIsEditedAndStaysEdited`: rename row 0 to "Swim shorts", remove row 1, add "Nose clip"
   (appears as `grab-rename-6`), Save; then the count is exactly "0 of 7 in hand", item 0 says "Swim
   shorts" and item 6 says "Nose clip"; after Done and reopening, item 0 still says "Swim shorts".
@@ -1093,7 +1268,9 @@ here is the order within each group of the open list):
   - `testTicksOnHisOwnListSurviveClosingIt` (section 6)
   - `testTheDefaultsTravelInABackup`
 - **Not covered:**
-  - moving rows up or down;
+  - moving rows up or down (a heading's move is covered, 0.85);
+  - "Type the heading’s name first." (an empty Add a heading);
+  - renaming a heading in the editor (the field is the same as a thing's);
   - a duplicate Add being dropped;
   - a refused save of a list whose names were all blanked (the UI test uses a list with none; the model
     test covers blanks);
@@ -1336,6 +1513,10 @@ web app for anyone, and in this app under Settings → Open a shared link.
   (`GRAB_SHARE_NAME_MAX`).
 - Items are trimmed, blanks and case-insensitive repeats dropped, each cut to **60** units, at most
   **100** items.
+- **His headings (0.85)** go along as their own lines, in their stored form (`GrabLine.stored(lines)`; section 5):
+  this app reads them back as headings when the list is added; the web app shows such a line as a thing reading
+  "## On me" (the invisible mark before it). Headings count towards the 100; two headings of one name arrive as
+  one (the repeat rule).
 - A list with nothing on it cannot be encoded ("This list has nothing on it to share."), so the link is
   nil.
 - The Share screen (`ShareScreen`, its own sheet owned by `ShareDoor`; container `share-screen`; Mac
@@ -1362,7 +1543,8 @@ web app for anyone, and in this app under Settings → Open a shared link.
   first, then a template, then a trip.
 - A grab list shows "A GRAB LIST" (`shared-kind`, 12 pt heavy `muted`, kerning 0.6), its name
   (`shared-name`, 18 pt bold) and "1 thing" / "<n> things" (15 pt medium `muted`, `shared-count`; "1 things"
-  until 0.62 — the trips spec pass).
+  until 0.62 — the trips spec pass) — its THINGS: a heading among them is not counted (0.85,
+  `GrabLine.thingCount(stored:)`).
   `decodeGrabShare` refuses a code with no items ("The shared list is empty."), and `readShared` then tries
   a template and a trip, so such a code ends as `shared-bad`.
 - **"Add it to your grab lists"** (`shared-add`, Trips-green fill, 48 tall) runs `importGrab`, which is
@@ -1372,7 +1554,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
     tile wears the list's initial (0.62; an unknown key used to show as the **runner**);
   - tone = the shared tone when it is one of `GRAB_TONES` (blue, yellow, green, red, purple, teal), else
     "blue" (0.62; an unknown tone used to show as slate `#64748b`);
-  - items as decoded.
+  - items as decoded — read as lines (0.85), so the sender's headings are headings here too.
 - The result line (`shared-result`, 15 pt bold Trips green; the preview and the typed text are cleared):
   - "Added — it is on Home, in a free place." when the fill put it on Home (a received list is new, so it
     takes any free place, one freed by Off Home included);
@@ -1387,6 +1569,7 @@ web app for anyone, and in this app under Settings → Open a shared link.
   rubbish and blank text read as nothing.
 - Model `SharingTests.testAReceivedGrabListGetsTheStandardLookForWhatIsUnknown` (0.62): a known drawing and
   colour are kept; "kite" and "magenta" become "" and "blue".
+- Model `GrabHeadingsTests.testHeadingsTravelInAShareLinkAndComeBackAsHeadings` (0.85; section 5).
 - UI `testAnEmptyGrabListSaysHowToFillIt`: Share on an empty list shows `share-empty`, not `share-toolong`.
 - UI `testShareSitsOnItsHeadersCentreLine` (0.67; 0.84): on `grab-0`, `grab-edit` sits on the centre line of
   `grab-done` (within 1.5 pt) and `grab-share` under `grab-ready`, at its right edge, round (section 6); until 0.84
@@ -1808,11 +1991,12 @@ nothing on GitHub's slower runner, and would have on the phone too.
   `home-create-heading`, `device-heading`, `count-trips`, `count-things`, `count-templates`.
 - Grab list:
   - `grab-detail`, `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
-  - `grab-group-<g>` (0.84, a kind's heading, top to bottom), `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`,
+  - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom), `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`,
     `grab-reset`, `grab-empty` (0.62), `grab-share` (at the foot since 0.84);
   - `grab-notyet`, `grab-message`, `grab-message-ok`;
-  - editing: `grab-rename-<n>`, `grab-grip-<n>` (0.72), `grab-up-<n>`, `grab-down-<n>` (Mac), `grab-sometimes-<n>`, `grab-remove-<n>`,
-    `grab-add-name`, `grab-add`, `grab-add-needs`, `grab-save-needs` (0.62);
+  - editing: `grab-rename-<n>`, `grab-heading-<n>` (0.85, a heading's field), `grab-grip-<n>` (0.72), `grab-up-<n>`,
+    `grab-down-<n>` (Mac), `grab-sometimes-<n>`, `grab-remove-<n>`, `grab-add-name`, `grab-add`, `grab-add-needs`,
+    `grab-add-heading-name`, `grab-add-heading`, `grab-add-heading-needs` (0.85), `grab-save-needs` (0.62);
   - deleting one of his own (0.61): `grab-delete`, `grab-delete-question`, `grab-delete-no`,
     `grab-delete-yes`.
 - Grab Lists: `grablists-detail`, `grablists-done`, `grablists-made` (replaced `grablists-problem` in
@@ -1987,3 +2171,12 @@ keep their tag and say why they were left.
     (every list may go off Home), but Home then says where they are, and that line opens Grab Lists
     (`home-grab-none`, section 3). Pinned by `testHomeWithEveryGrabListOffSaysWhereTheyAre` and
     `testEveryListCanWaitOffHome`.
+38. [idea] (0.85) **A shared list's headings in the web app** read "## On me" as a THING line (the stored form,
+    its invisible mark first): the web app knows no headings. He almost never shares (his words for 0.84's Share);
+    left until the web app is retired or he asks.
+39. [untested] (0.85) **Two headings of one name** are kept in the app and in a backup, but a share link drops the
+    second (its case-insensitive repeat rule, PackingCore, the web app's own) — its things then stand under the
+    first. Left: PackingCore is the web app's model.
+40. [idea] (0.85) **Moving a heading far** on the iPhone is a long drag (one place per row passed; the list does not
+    scroll under a carried row) — as it is for a thing. A new heading always goes last, so on a long list made before
+    0.85 each heading is carried up to its place (or its things down to it). Worth watching in his field test.

@@ -73,7 +73,8 @@ extension Library {
         if !own.isEmpty {
             ours["own"] = .array(own.map { list in
                 ["id": .string(list.id), "label": .string(list.label), "title": .string(list.title),
-                 "tone": .string(list.tone), "icon": .string(list.icon), "items": JSONValue(list.items)]
+                 // His headings (0.85) ride among the names, as they are stored.
+                 "tone": .string(list.tone), "icon": .string(list.icon), "items": JSONValue(GrabLine.stored(list.lines))]
             })
         }
         let home = (meta[GRAB_HOME_META]?.arrayValue ?? []).compactMap { $0.stringValue }

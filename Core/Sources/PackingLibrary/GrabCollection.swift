@@ -44,7 +44,8 @@ extension Library {
                                   title: one["title"]?.stringValue ?? "",
                                   tone: one["tone"]?.stringValue ?? "blue",
                                   icon: one["icon"]?.stringValue ?? "",
-                                  items: (one["items"]?.arrayValue ?? []).compactMap { $0.stringValue })
+                                  // His things and (0.85) his headings, from the stored names.
+                                  lines: GrabLine.lines(stored: (one["items"]?.arrayValue ?? []).compactMap { $0.stringValue }))
         }
     }
 
@@ -118,8 +119,9 @@ extension Library {
         // to Date() and Int.random, so no model test could pin a new list's id (the
         // spec pass, 2026-10-05). Lists made before keep their "own-<ms>-<nnn>" ids.
         let id = "own-" + PackingEnv.makeId()
+        // The names as stored: a list received by a link brings its headings (0.85) among them.
         let made = GrabDefinition(id: id, label: name, title: jsTrim(title).isEmpty ? name : jsTrim(title),
-                                  tone: tone, icon: icon, items: items.map(jsTrim).filter { !$0.isEmpty })
+                                  tone: tone, icon: icon, lines: GrabLine.lines(stored: items.map(jsTrim).filter { !$0.isEmpty }))
         var all = ownGrabLists()
         all.append(made)
         writeOwn(all)
@@ -135,8 +137,7 @@ extension Library {
         var clean = list
         clean.label = jsTrim(list.label)
         guard !clean.label.isEmpty else { return false }
-        var seen = Set<String>()
-        clean.items = list.items.map(jsTrim).filter { !$0.isEmpty && seen.insert(normName($0)).inserted }
+        clean.lines = GrabLine.cleaned(list.lines)
         all[n] = clean
         writeOwn(all)
         return true
@@ -165,7 +166,10 @@ extension Library {
         guard !lists.isEmpty else { meta[GRAB_OWN_META] = nil; return }
         meta[GRAB_OWN_META] = .array(lists.map { list in
             ["id": .string(list.id), "label": .string(list.label), "title": .string(list.title),
-             "tone": .string(list.tone), "icon": .string(list.icon), "items": JSONValue(list.items)]
+             "tone": .string(list.tone), "icon": .string(list.icon),
+             // The things AND his headings (0.85) — written from `items`, every heading on
+             // every one of his lists would go with the next change to any of them.
+             "items": JSONValue(GrabLine.stored(list.lines))]
         })
     }
 }
