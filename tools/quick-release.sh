@@ -248,6 +248,9 @@ asc, app, version, build, group, notes_path, wait_min, result_path = sys.argv[1:
 API = "https://api.appstoreconnect.apple.com"
 NAME = {"IOS": "iPhone", "MAC_OS": "Mac"}
 text = open(notes_path).read().strip()[:4000]
+# Apple refuses What to Test with an emoji in it (409 INVALID_TEXT for the 0.84 notes' backpack, 15 Oct 2026):
+# drop emoji: anything past the Basic Multilingual Plane, the symbol blocks U+2600–27BF, the variation selector.
+text = " ".join("".join(ch for ch in text if ord(ch) < 0x10000 and not 0x2600 <= ord(ch) <= 0x27BF and ch != "\ufe0f").split(" ")).replace("  ", " ").strip()
 
 def call(method, path, body=None):
     args = ["python3", asc, method, path] + ([json.dumps(body)] if body is not None else [])
