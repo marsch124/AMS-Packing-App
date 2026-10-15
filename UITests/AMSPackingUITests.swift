@@ -10578,6 +10578,88 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "grabhead-edit")
     }
 
+    /// A grab-list heading's ring (0.87) — read by its words, never by its look.
+    private func grabRing(_ app: XCUIApplication, _ g: Int) -> XCUIElement {
+        let id = "grab-group-\(g)-progress"
+        for query in [app.otherElements, app.groups, app.images, app.staticTexts] where query[id].exists { return query[id] }
+        return app.otherElements[id]
+    }
+
+    /// Done headings turn green and fold (0.87) — his yes, 15 Oct 2026: "in a grab list, when
+    /// everything under a heading is in hand, it turns green and folds to one line, like the groups
+    /// on a trip. You scroll less at the door." Outdoor bike under his three headings
+    /// (`-uiTestingGrabHeadings`): each heading's ring says how many of its things are in hand;
+    /// "Check the tyres", under no heading, never folds; the last of "On the bike"'s three ticked →
+    /// "all in hand" and its things are gone, "After" right under it; a tap on the heading brings
+    /// them back; one unticked → "2 of 3", and they stay; ticked again → folded again. A skip counts
+    /// as done ("After": one ticked, one skipped → folded). Start over opens everything. The count
+    /// at the top is the ten things' throughout.
+    func testADoneHeadingTurnsGreenAndFolds() {
+        let app = launch("-uiTestingGrabHeadings")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-4")
+        XCTAssertTrue(appears(app, "grab-detail"), "Outdoor bike did not open")
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 10") }, "the count: '\(words(count))'")
+        func ring(_ g: Int) -> String { words(grabRing(app, g)) }
+        func shown(_ n: Int) -> Bool { app.buttons["grab-item-\(n)"].exists }
+        XCTAssertTrue(waitUntil { ring(1) == "0 of 3 in hand" }, "'On the bike' has no ring: '\(ring(1))'")
+        XCTAssertTrue(waitUntil { ring(0) == "0 of 4 in hand" }, "'On me' has no ring: '\(ring(0))'")
+
+        // Under no heading: ticked, it stays.
+        tap(app, id: "grab-item-0")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 10") }, "the count: '\(words(count))'")
+        usleep(1_200_000)
+        XCTAssertTrue(shown(0), "'Check the tyres', under no heading, folded away")
+
+        // The ring fills; the last one ticked, the heading is done and its things fold away.
+        tap(app, id: "grab-item-5")
+        tap(app, id: "grab-item-6")
+        XCTAssertTrue(waitUntil { ring(1) == "2 of 3 in hand" }, "the ring did not fill: '\(ring(1))'")
+        XCTAssertTrue(shown(5) && shown(6) && shown(7), "a heading with a thing left to take folded")
+        tap(app, id: "grab-item-7")
+        XCTAssertTrue(waitUntil { ring(1) == "all in hand" }, "every thing in hand, and the heading is not done: '\(ring(1))'")
+        XCTAssertTrue(waitUntil { !shown(5) && !shown(6) && !shown(7) }, "the done heading did not fold")
+        let bike = app.staticTexts["grab-group-1"], after = app.staticTexts["grab-group-2"]
+        XCTAssertEqual(words(bike), "On the bike", "the folded heading lost its words")
+        XCTAssertTrue(waitUntil { after.exists && after.frame.minY - bike.frame.maxY < 30 },
+                      "'After' is not right under the folded heading: \(bike.frame) / \(after.frame)")
+        XCTAssertTrue(shown(4) && shown(8), "a neighbour's things folded too")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("4 of 10") }, "folding changed the count: '\(words(count))'")
+        usleep(500_000)                                              // the fold settles (0.3 s) before the picture
+        shot(app, "grabfold-done")
+
+        // A tap on it: its things are back.
+        tapVisible(app, bike)
+        XCTAssertTrue(waitUntil { shown(5) && shown(6) && shown(7) }, "a tap on the folded heading did not open it")
+        XCTAssertEqual(ring(1), "all in hand")
+        shot(app, "grabfold-opened")
+        // One unticked: open, and no longer done.
+        tap(app, id: "grab-item-6")
+        XCTAssertTrue(waitUntil { ring(1) == "2 of 3 in hand" }, "unticked, the ring says '\(ring(1))'")
+        usleep(1_200_000)
+        XCTAssertTrue(shown(5) && shown(6) && shown(7), "with a thing left to take, its heading folded")
+        // Ticked again: done again, and folded again.
+        tap(app, id: "grab-item-6")
+        XCTAssertTrue(waitUntil { ring(1) == "all in hand" }, "'\(ring(1))'")
+        XCTAssertTrue(waitUntil { !shown(5) && !shown(6) && !shown(7) }, "done again, the heading did not fold again")
+
+        // A skip counts as done.
+        tap(app, id: "grab-skip-9")
+        XCTAssertTrue(waitUntil { ring(2) == "0 of 1 in hand" }, "the skip was counted as a thing to take: '\(ring(2))'")
+        tap(app, id: "grab-item-8")
+        XCTAssertTrue(waitUntil { ring(2) == "all in hand" }, "one ticked and one skipped, and 'After' is not done: '\(ring(2))'")
+        XCTAssertTrue(waitUntil { !shown(8) && !shown(9) }, "one ticked and one skipped, and 'After' did not fold")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("5 of 9") }, "the count: '\(words(count))'")
+        usleep(500_000)                                              // the fold settles (0.3 s) before the picture
+        shot(app, "grabfold-two")
+
+        // Start over opens everything.
+        tap(app, id: "grab-reset")
+        XCTAssertTrue(waitUntil { (5...9).allSatisfy(shown) }, "Start over left a heading folded")
+        XCTAssertTrue(waitUntil { ring(1) == "0 of 3 in hand" && ring(2) == "0 of 2 in hand" }, "'\(ring(1))' / '\(ring(2))'")
+    }
+
     // MARK: Headers on one line (0.67 — his notes on 0.63)
 
     /// Where a tab's page begins for the eye: under the status bar on the iPhone; on

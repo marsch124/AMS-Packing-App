@@ -1138,6 +1138,8 @@ struct GroupProgressMark: View {
     let packed: Int
     let total: Int
     let id: String
+    /// The word its label ends in: "packed" on a trip; "in hand" on a grab list's heading (0.87).
+    var word = "packed"
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     #if os(macOS)
@@ -1184,7 +1186,7 @@ struct GroupProgressMark: View {
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.55), value: done)
         .animation(.easeOut(duration: 0.25), value: packed)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(done ? "all packed" : "\(packed) of \(total) packed")
+        .accessibilityLabel(done ? "all \(word)" : "\(packed) of \(total) \(word)")
         .accessibilityIdentifier(id)
     }
 }

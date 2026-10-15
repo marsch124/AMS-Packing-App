@@ -198,6 +198,18 @@ struct GrabScreen: View {
     @State private var lastSeen: GrabDefinition?
     /// What Save was missing, said under it (a list with nothing on it is not saved).
     @State private var saveNeeds = ""
+    /// Done headings turn green and fold (0.87, `GrabFolds.swift`): the done headings he opened
+    /// again by a tap, by their place in `list.groups` — only while the list is open, and only
+    /// while each is still done.
+    @State private var openedByHand: Set<Int> = []
+    /// The groups whose things take no room now…
+    @State private var folded: Set<Int> = []
+    /// …and whose things cannot be seen, heard by VoiceOver or tapped. The same groups as
+    /// `folded` but for a moment with Reduce Motion: the things fade out before their room goes,
+    /// and the room comes back before they fade in.
+    @State private var faded: Set<Int> = []
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var list: GrabDefinition {
         leaving ?? model.library.grabList(id: listId) ?? lastSeen ?? GRAB_FACTORY[0]
@@ -254,13 +266,24 @@ struct GrabScreen: View {
                     // do I define the small headings, and how do I group the items in the
                     // various headings? I need to be able to do that, I believe." (0.84 grouped
                     // by Kind of thing by itself: "you have made the sections wrong".)
+                    //
+                    // A heading whose things are all in hand turns green and folds to its one line
+                    // (0.87, his yes of 15 Oct 2026): "You scroll less at the door." Its things stay
+                    // where they are, their room closed (`folded`) and out of sight (`faded`).
                     let groups = list.groups
                     let lead = groups.first?.heading.isEmpty == true ? 1 : 0
                     ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
                         if !group.heading.isEmpty {
-                            groupHeading(group.heading, first: g == 0).accessibilityIdentifier("grab-group-\(g - lead)")
+                            groupHeading(group, g: g, shown: g - lead, items: items, first: g == 0)
                         }
-                        ForEach(group.rows, id: \.self) { n in line(n, items[n]) }
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(group.rows, id: \.self) { n in line(n, items[n]) }
+                        }
+                        .opacity(faded.contains(g) ? 0 : 1)
+                        .frame(height: folded.contains(g) ? 0 : nil, alignment: .top)
+                        .clipped()
+                        .allowsHitTesting(!faded.contains(g))
+                        .accessibilityHidden(faded.contains(g))
                     }
                     Button {
                         if complete { flash = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { dismiss() }; return }
@@ -329,6 +352,14 @@ struct GrabScreen: View {
             GrabStore.shared.save(listId, state)
             // The four under the app icon are the four opened most recently (0.86).
             GrabQuickActions.didOpen(listId)
+            // A heading already done when the list opens is folded already (0.87).
+            refoldAtOnce()
+        }
+        // His headings changed — by his Save, or arriving from the other device: the folds are
+        // read again, and what he had opened by hand is forgotten (the places may have moved).
+        .onChange(of: list.groups) { _, _ in
+            openedByHand = []
+            refoldAtOnce()
         }
         // Gone while open (the other device deleted it, or wrote over it): close,
         // still showing it, rather than become another list.
@@ -384,16 +415,96 @@ struct GrabScreen: View {
     /// look, which this keeps), "small headings in the list … maybe another colour, grey or
     /// something like that", not the big headings of a trip. Footnote semibold in `muted`, a
     /// hair of letter-spacing, his own spelling (no capitals: 0.62 took capitals with
-    /// letter-spacing out of every heading); no tick, no count and no line of its own — the
-    /// count stays the one at the top.
-    private func groupHeading(_ heading: String, first: Bool) -> some View {
-        Text(heading)
-            .font(.system(.footnote, weight: .semibold)).tracking(0.4)
-            .foregroundStyle(Theme.muted)
-            .lineLimit(1).truncationMode(.tail)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, first ? 4 : 12).padding(.bottom, 2)
-            .accessibilityAddTraits(.isHeader)
+    /// letter-spacing out of every heading); no tick, no count in words and no line of its own —
+    /// the count stays the one at the top.
+    ///
+    /// Done headings turn green and fold (0.87, his yes of 15 Oct 2026; `GrabFolds.swift`): beside
+    /// the words, the trip's small ring (`GroupProgressMark`, 0.82) fills as its things are ticked —
+    /// read against its things to take, a skipped one not among them; not drawn while all of them
+    /// are skipped. Done — every thing in hand or skipped, one at least in hand — the ring is the
+    /// filled green check, the words the trip's green on its soft green band, and its things fold
+    /// away (`refold`). A tap on a done heading opens it, or folds it again; one not done does
+    /// nothing, so nothing still to take is ever hidden.
+    private func groupHeading(_ group: GrabGroup, g: Int, shown: Int, items: [String], first: Bool) -> some View {
+        let p = state.progress(of: group, items: items)
+        let done = p.done
+        return HStack(spacing: 6) {
+            Text(group.heading)
+                .font(.system(.footnote, weight: .semibold)).tracking(0.4)
+                .foregroundStyle(done ? GroupProgressMark.words(scheme) : Theme.muted)
+                .lineLimit(1).truncationMode(.tail)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityHint(!done ? "" : faded.contains(g) ? "All in hand, folded. Tap to see its things." : "All in hand. Tap to fold it.")
+                .accessibilityIdentifier("grab-group-\(shown)")
+            if p.toTake > 0 {
+                GroupProgressMark(packed: p.inHand, total: p.toTake, id: "grab-group-\(shown)-progress", word: "in hand")
+            }
+            Spacer(minLength: 0)
+        }
+        // The trip's soft green band (0.82), a little past the words on each side.
+        .background {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(AppSection.events.color.opacity(scheme == .dark ? 0.18 : 0.10))
+                .padding(.horizontal, -6).padding(.vertical, -2)
+                .opacity(done ? 1 : 0)
+                .accessibilityHidden(true)
+        }
+        .animation(.easeInOut(duration: reduceMotion ? 0.2 : 0.3), value: done)
+        .padding(.top, first ? 4 : 12).padding(.bottom, 2)
+        .contentShape(Rectangle())
+        .onTapGesture { toggleFold(g) }
+    }
+
+    // MARK: Folding (0.87)
+
+    /// A tap on a done heading: opens it when folded, folds it again when open. Not done: nothing.
+    private func toggleFold(_ g: Int) {
+        guard list.folds(g, state) else { return }
+        if faded.contains(g) { openedByHand.insert(g) } else { openedByHand.remove(g) }
+        showFolds(list.foldedGroups(state, opened: openedByHand))
+    }
+
+    /// After a tick or a skip: a heading no longer done opens at once; one just done folds
+    /// `delay` seconds later — first the tick lands and the check springs in — if it is still
+    /// done then (a quick untick keeps it open).
+    private func refold(delay: Double) {
+        openedByHand = list.keptOpen(openedByHand, state)
+        let target = list.foldedGroups(state, opened: openedByHand)
+        showFolds(target.intersection(faded))
+        guard !target.isSubset(of: faded) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            openedByHand = list.keptOpen(openedByHand, state)
+            showFolds(list.foldedGroups(state, opened: openedByHand))
+        }
+    }
+
+    /// The folds as they stand, with no animation — the list opening, or changed by an edit.
+    private func refoldAtOnce() {
+        openedByHand = list.keptOpen(openedByHand, state)
+        let target = list.foldedGroups(state, opened: openedByHand)
+        folded = target
+        faded = target
+    }
+
+    /// Fold and open to `target`, calmly: 0.3 s, the things fading as their room closes. With
+    /// Reduce Motion a fade of 0.2 s and no movement — the room goes after the things have faded,
+    /// and comes back before they fade in.
+    private func showFolds(_ target: Set<Int>) {
+        guard target != faded || target != folded else { return }
+        if reduceMotion {
+            let closing = target.subtracting(folded)
+            folded.formIntersection(target)
+            withAnimation(.easeInOut(duration: 0.2)) { faded = target }
+            guard !closing.isEmpty else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                folded.formUnion(closing.intersection(faded))
+            }
+        } else {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                folded = target
+                faded = target
+            }
+        }
     }
 
     // MARK: Editing
@@ -697,6 +808,9 @@ struct GrabScreen: View {
         // changed); only what the edit changed is applied to them.
         state = model.library.stateAfterEdit(listId: listId, held: state, markedBefore: markedBefore)
         GrabStore.shared.save(listId, state)
+        // The folds as the edited list stands (0.87): its headings and its ticks may have changed.
+        openedByHand = []
+        refoldAtOnce()
     }
 
     /// The list as it opens: what he takes only sometimes already set aside.
@@ -775,6 +889,7 @@ struct GrabScreen: View {
         state = body(state)
         message = ""
         GrabStore.shared.save(listId, state)
+        refold(delay: 0.4)
         if !was && state.isComplete(list.items) {
             flash = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { flash = false }

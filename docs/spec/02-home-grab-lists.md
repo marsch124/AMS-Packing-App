@@ -33,7 +33,7 @@ Source files: `App/Sources/RootView.swift`, `AMSPackingApp.swift`, `Sections.swi
 `Screens/GrabMenu.swift`, `Screens/SearchScreen.swift`, `Screens/Share.swift` (the grab-list parts),
 `Store/LibraryModel.swift` (the open-requests and test launch modes), `Store/Shortcuts.swift`, `Store/QuickActions.swift` (0.86),
 `Store/Reminders.swift`, `Store/Today.swift`, `Store/ShopReminders.swift` (only its read-back on return);
-model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `GrabQuickActions.swift` (0.86), `GrabHeadings.swift` (0.85; it replaced 0.84's `GrabKinds.swift`), `Countdown.swift`,
+model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `GrabQuickActions.swift` (0.86), `GrabHeadings.swift` (0.85; it replaced 0.84's `GrabKinds.swift`), `GrabFolds.swift` (0.87), `Countdown.swift`,
 `Sharing.swift` (grab parts), `Backup.swift` / `Importer.swift` (grab parts); `PackingCore/GrabSharing.swift`,
 `PackingCore/SharedRows.swift` (grab rows).
 
@@ -705,6 +705,22 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
     more); an empty heading shown — `XCTAssertEqual failed: ("["", "On me", "Empty for now", "After"]") is not
     equal to ("["", "On me", "After"]")`; a typed "## " read as a heading — `… - his names changed on the way
     through`; a save dropping two headings of one name — `testASaveKeepsHisHeadingsWhereHePutThem` red.
+- `GrabFoldsTests` (0.87, done headings fold; each seen RED on a planted fault):
+  - `testAHeadingIsDoneWhenEveryThingUnderItIsInHand` — 0 of 3, 2 of 3 (not done, no fold), 3 of 3 done; only that
+    heading folds;
+  - `testASkipCountsAsDoneButSkipsAloneAreNot` — one ticked and one skipped: 1 of 1, folds; both skipped: 0 of 0,
+    does not fold;
+  - `testWhatIsUnderNoHeadingNeverFolds` — the things above the first heading, done, do not fold; Indoor swim (no
+    headings) all ticked folds nothing;
+  - `testAHeadingOpenedByHandFoldsAgainOnceDoneAgain` — opened by hand: not folded, kept while done; unticked:
+    forgotten; ticked again: folds;
+  - `testNothingStillToTakeIsEverFolded` — after each of eight taps, no folded heading holds a thing still missing.
+  - Red with a planted fault each (copied from the run): done without "something in hand" — `XCTAssertFalse failed -
+    a heading with nothing in hand folded — its skips could not be taken back`; the group under no heading allowed
+    to fold — `XCTAssertFalse failed - the things above every heading folded` and `XCTAssertEqual failed: ("[0]") is
+    not equal to ("[]") - a list without headings folded`; `keptOpen` not forgetting — `XCTAssertEqual failed:
+    ("[1]") is not equal to ("[]") - a heading no longer done is still remembered as opened` and `XCTAssertEqual
+    failed: ("[3]") is not equal to ("[1, 3]") - done again, it did not fold`.
 - `PackingCore` `SharedRowsTests`:
   - `testGrabToRowsGrabFromRowsAListSurvivesTheRoundTripHyphenAndAll`
   - `testGrabToRowsTheRowIdIsStableSoTwoDevicesMergeInsteadOfDoubling`
@@ -753,6 +769,9 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
   and he was already making groups by hand with prefixes in the names ("- Sunscreen", "❄️…"). So the headings are
   his, set in Edit (section 7), shown here with 0.84's small grey look, which he liked. See "His own headings"
   below.
+- **0.87 (15 Oct 2026), done headings turn green and fold.** His yes to the idea put to him: "Done headings turn
+  green and fold: in a grab list, when everything under a heading is in hand, it turns green and folds to one line,
+  like the groups on a trip. You scroll less at the door." See "Done headings fold" below.
 - **0.84, Share at the bottom right.** His words, the same day and the same picture (header: Edit · Share ·
   Done): "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can
   we make the share button more rounded?"
@@ -832,7 +851,9 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
      heading** (`grab-group-<g>`, `g` = 0, 1, … his headings top to bottom, as shown) — and the things under it,
      down to the next. The heading: his words as he typed them, **Footnote semibold in `muted`, letter-spacing
      0.4**, one line (cut at the end), left; **12 pt above it (4 when it is the very first line), 2 below**; no
-     tick, no count, no line of its own (the line under the row above stays); the `.isHeader` trait. Not in
+     tick, no count in words, no line of its own (the line under the row above stays); the `.isHeader` trait.
+     Since 0.87 the trip's small ring sits 6 pt right of the words and a done heading turns green and folds —
+     "Done headings fold" below. Not in
      capitals: 0.62 took capitals with letter-spacing out of every heading (spec 06 §21). This is 0.84's look,
      kept (`groupHeading`, the `kindHeading` of 0.84). A line keeps its id by its place among the list's THINGS
      (`grab-item-<n>`, `grab-skip-<n>`), whichever heading shows it. A list with no headings is one flat run with
@@ -917,6 +938,57 @@ The whole screen is the container `grab-detail` on a `bg` background.
 - **Where:** wherever a grab list is open for picking — `GrabScreen`, from a Home tile, Grab Lists, the Action
   button's menu or a Shortcut.
 
+**Done headings fold** (0.87; model `PackingLibrary/GrabFolds.swift`, screen `groupHeading`, `toggleFold`, `refold`,
+`showFolds` in `GrabScreen`). His yes of 15 Oct 2026 (see the purpose list). Only the open list (not Edit).
+- **The ring.** Beside each of his headings, 6 pt right of its words (the words, the ring, then a spacer), the trip's
+  `GroupProgressMark` (0.82, spec 07 part 20; TripScreen.swift) — **14 pt across on the iPhone, 11 on the Mac**, a
+  hairline `line` track that fills in the trip's green (`AppSection.events`) from the top, clockwise, as the
+  heading's things are ticked: **in hand / to take**, where "to take" is its things not skipped (⊘) and "in hand"
+  those of them ticked — the top count's own rule (`inHand`, `active`) asked of the heading's things alone
+  (`GrabState.progress(of:items:)` → `GrabGroupProgress`). It is not drawn while every thing under the heading is
+  skipped (nothing to take; the trip does the same for a group all set aside). The heading keeps its height (the
+  ring is smaller than the words). Not a button. ONE accessibility element, `grab-group-<g>-progress`, whose LABEL
+  is its words: **"<in hand> of <to take> in hand"**, **"all in hand"** when done (the mark's `word` is "in hand"
+  here, "packed" on a trip). The heading's text keeps `grab-group-<g>` and his words as its label.
+- **Done** (`GrabGroupProgress.done`) — **at least one thing under the heading in hand, and every one not skipped in
+  hand**: the whole list's "All there" rule (`isComplete`) asked of the heading's things. Decided by the build:
+  **a skipped thing counts as done** — it does not hold its heading open (he chose to leave it behind); and **a
+  heading whose things are ALL skipped is NOT done** — nothing under it is in hand, and it stays open with its ↻ in
+  reach, so a skip can be taken back. Done, the heading reads as a trip's done group: the ring becomes the filled
+  green check (a short spring; a fade with Reduce Motion — the mark's own), the words turn the trip's green
+  (`GroupProgressMark.words`: `#227147` by day, `#2f9e63` at night), on the trip's **soft green band** — a radius-8
+  rounded rectangle in `AppSection.events` at 10 % by day, 18 % at night, 6 pt past the heading's row on each side
+  and 2 above and below; 0.3 s ease-in-out (0.2 with Reduce Motion).
+- **It folds.** A done heading's things fold away to that one line: their room closes and they cannot be seen,
+  heard by VoiceOver or tapped (`grab-item-<n>` / `grab-skip-<n>` are not in the tree). The things are still on
+  the list — counted, and named by Still missing (which a folded heading never holds: only a done one folds).
+  - **When:** **0.4 s after the tap** that made it done (the tick lands and the check springs in first), if it is
+    still done then (a quick untick keeps it open) — `refold(delay: 0.4)` from every tick, untick, skip and Start
+    over (`change`).
+  - **How:** **0.3 s ease-in-out**: the things fade as their room closes from the bottom up (the rows' frame to
+    0 tall, top-aligned and clipped), and what is below moves up with it. **Reduce Motion: a 0.2 s fade and no
+    movement** — the things fade out and then their room goes at once; opening, the room comes back at once and
+    they fade in (`faded` and `folded`, the same groups but for those 0.2 s).
+  - **A list opened with a heading already done** shows it folded at once, no animation (`refoldAtOnce` on appear);
+    so does the list after his Save in Edit (`saveEdits`), and a list whose headings changed on the other device
+    (`onChange(of: list.groups)`) — both forget what he had opened by hand, the groups' places may have moved.
+- **Opening it again.** A tap on a done heading's line (its words, its ring, or the band's row — the whole row is
+  the target, `contentShape`) **opens a folded one** and **folds an open one again**; a tap on a heading not done
+  does nothing, so nothing still to take is ever hidden. VoiceOver: the words' hint says "All in hand, folded. Tap
+  to see its things." or "All in hand. Tap to fold it." (no hint while not done). A heading opened by a tap stays
+  open while it is done — later ticks elsewhere do not fold it (`keptOpen`); once it is no longer done (a thing
+  under it unticked, or a skip taken back) that is forgotten, so the next time everything under it is in hand **it
+  folds again**. Opened-by-hand is the screen's alone, while the list is open: closed and opened again, a done
+  heading is folded.
+- **Untick → open.** Unticking a thing under an opened heading makes it not done: green, check and band go back to
+  the grey words and the ring (0.3 s), and it stays open.
+- **Never folds:** the things above his first heading (under no heading); a list without headings (one plain run,
+  as before); a heading with nothing in hand. **Unchanged:** the count "x of y in hand" (· "n skipped"), the bar,
+  "All there — go!" and its flash, Still missing / Not yet, Ready to go, the footer and Share. **Start over** opens
+  every heading (nothing is ticked any more, so none is done).
+- **Nothing is stored.** The folds follow the ticks and skips, which are this device's own (`GrabStore`); nothing is
+  synced, backed up or shared, and the web app is unaffected.
+
 **Grouped by Kind of thing** (0.84 — **REPLACED in 0.85** by his own headings, above: `GrabKinds.swift`, its launch
 mode `-uiTestingGrabKinds`, `SampleLibrary.grabKinds()`, the UI test `testAnOpenGrabListIsGroupedByKindOfThing` and
 the model `GrabKindsTests` are gone; kept here as the record of what 0.84 did). Only the LOOK changed: the list was
@@ -962,6 +1034,23 @@ else is the same.
   thing's row — `XCTAssertTrue failed - no heading row 1`. Green on the iPhone (iOS 27, "Packing CI head", day and
   night, with 21 other grab-list tests) and on GitHub's Mac in a probe (8 of 8 light with six grab-list
   neighbours; the dark step green too, though the runner's Mac stayed light).
+- UI `testADoneHeadingTurnsGreenAndFolds` (0.87, `-uiTestingGrabHeadings`): Outdoor bike (`grab-4`), "0 of 10";
+  `grab-group-1-progress` reads "0 of 3 in hand", `grab-group-0-progress` "0 of 4 in hand"; `grab-item-0` (under no
+  heading) ticked → "1 of 10" and, 1.2 s on, still there; items 5 and 6 ticked → "2 of 3 in hand", 5–7 still there;
+  item 7 → "all in hand" and `grab-item-5…7` gone, `grab-group-1` still "On the bike", `grab-group-2` less than 30
+  pt under it, items 4 and 8 still there, "4 of 10"; a tap on `grab-group-1` → 5–7 back, still "all in hand"; item
+  6 unticked → "2 of 3 in hand" and, 1.2 s on, 5–7 still there; ticked again → "all in hand" and folded again;
+  `grab-skip-9` → `grab-group-2-progress` "0 of 1 in hand"; item 8 → "all in hand", items 8 and 9 gone, "5 of 9";
+  `grab-reset` → items 5–9 back, "0 of 3 in hand" and "0 of 2 in hand". Pictures `grabfold-done`,
+  `grabfold-opened`, `grabfold-two` (day and night). RED with planted faults (copied from the runs):
+  no fold after a tick — `XCTAssertTrue failed - the done heading did not fold`; a tap on a folded heading doing
+  nothing — `XCTAssertTrue failed - a tap on the folded heading did not open it`; opened-by-hand never forgotten —
+  `XCTAssertTrue failed - done again, the heading did not fold again`; no ring — `XCTAssertTrue failed - 'On the bike'
+  has no ring: ''`; a skip counted as a thing to take — `XCTAssertTrue failed - the skip was counted as a thing to
+  take: '0 of 2 in hand'`. Green on the iPhone (iOS 27, "Packing CI fold", day and night, with 18 grab-list and
+  heading neighbours and the trip's `testAGroupTurnsGreenWhenItsLinesArePacked`, whose ring it shares) and on
+  GitHub's Mac in a probe (5 of 5, light, with `testAGrabListOpensUnderHisHeadings`,
+  `testHisOwnHeadingGroupsAGrabList`, `testAGrabListCountsRefusesAndClears` and the trip's ring test).
 - UI `testHisOwnHeadingGroupsAGrabList` (0.85, the sample): Indoor swim has no `grab-group-0` and "0 of 7"; Edit →
   "In the bag" into `grab-add-heading-name`, `grab-add-heading` → `grab-heading-7` holds it, with no
   `grab-rename-7` and no `grab-sometimes-7` (`grab-sometimes-6` still there); its grip dragged onto row 6's (the
@@ -1038,7 +1127,10 @@ else is the same.
   - his headings changing while the list is open (an edit arriving from the other device; the screen reads
     `lines` on every redraw);
   - a heading cut at the end on a narrow screen;
-  - a heading with nothing under it being hidden on screen (the model pins `groups`).
+  - a heading with nothing under it being hidden on screen (the model pins `groups`);
+  - (0.87) the fold's animation and its Reduce Motion fade, a done heading folded again by a second tap, and a list
+    opened with a done heading already folded;
+  - (0.87) a heading whose things are all skipped showing no ring (the model pins it not done).
 
 ---
 
@@ -2175,7 +2267,9 @@ nothing on GitHub's slower runner, and would have on the phone too.
   `home-create-heading`, `device-heading`, `count-trips`, `count-things`, `count-templates`.
 - Grab list:
   - `grab-detail`, `grab-title` (0.86), `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
-  - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom), `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`,
+  - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom; since 0.87
+    a tap on it opens or folds it again when done), `grab-group-<g>-progress` (0.87, its ring: "x of y in hand" /
+    "all in hand"), `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`,
     `grab-reset`, `grab-empty` (0.62), `grab-share` (at the foot since 0.84);
   - `grab-notyet`, `grab-message`, `grab-message-ok`;
   - editing: `grab-rename-<n>`, `grab-heading-above-<n>` (0.85, the entry in a thing's context menu),
