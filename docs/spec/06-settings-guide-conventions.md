@@ -841,7 +841,9 @@ no entry shows no marker anywhere (and fails the test).
 
 **The topics and their lines** (summarised; the code holds the exact sentences):
 
-0. **Home** (Home mark): (1) eight grab lists, four in a row; tap one, tick what is in your hand; the count stays at
+0. **Home** (Home mark): (1) eight grab lists, four in a row; tap one, tick what is in your hand; (0.84) things of
+   two kinds or more fall under small grey headings, one per Kind of thing, in his order of kinds, Other last, the
+   list's own order within, Edit as he made it; the count stays at
    the top; Ready to go too early says Not yet in the middle with what is missing; ticks clear themselves 6 hours after
    the last tap (0.62). (2) Grab Lists: the ones on Home
    (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on
@@ -908,8 +910,8 @@ no entry shows no marker anywhere (and fails the test).
    stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
    Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
    folding in the picker (Fold all / Unfold all, counts, search opens
-   all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first, with Activity area beside it (0.62); Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (also on
-   a grab list); Refine (violet card) after two or more reviews — Keep / Drop. (13 lines.)
+   all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first, with Activity area beside it (0.62); Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (a grab
+   list's at its bottom right, round, under Ready to go — 0.84); Refine (violet card) after two or more reviews — Keep / Drop. (13 lines.)
 7. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
    again — 0.62); Just added at the top until you
    leave; ✕ in search; (0.69) the search finds words in a thing's notes and its templates' notes, the matching line
@@ -1920,6 +1922,7 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-uiTestingNotes` | memory, `SampleLibrary.notes()` | 0.69 |
 | `-uiTestingPockets` | memory, `SampleLibrary.pockets()` | 0.69 |
 | `-uiTestingTravel` | memory, `SampleLibrary.travel()` | 0.76: the sample plus an RV transport template "Camper kit" (Travelling by) |
+| `-uiTestingGrabKinds` | memory, `SampleLibrary.grabKinds()` | 0.84: kinds of thing behind Indoor swim, his kinds in his own order (an open grab list grouped by kind) |
 | `-uiTesting` | memory, `SampleLibrary.make()` | checked last |
 | (none) | SwiftData; iCloud when the Info.plist key `PackingUsesICloud` is "YES" | a failure to open → `.failed("The library could not be opened: …")` |
 | `-openGrab <label or title>`, `-openGrabMenu`, `-openNextTrip` | (testing only) play a Shortcut | |
@@ -2015,6 +2018,12 @@ every one of his things does.
 - **`travel()`** (`-uiTestingTravel`, 0.76): `make()` + a transport template **"Camper kit"** (role `transport`,
   transport `RV`; an invented name) holding Levelling blocks and Wheel chocks — under Templates → By transport. No
   Plane or Car template; the sample trip stays an ordinary one ("Car"). An RV trip from Hiking is 9 lines.
+- **`grabKinds()`** (`-uiTestingGrabKinds`, 0.84): `make()` + a new thing **Sports watch** (`addThing`) of kind
+  Electronics; Goggles and Swim cap become Sport gear; the Towel keeps the starting Comfort & misc; his kinds of thing
+  are the app's twelve with Electronics moved first (`setCategories`). So Indoor swim (`grab-0`) opens under four
+  headings — Electronics (Sports watch), Sport gear (Goggles, Swim cap), Comfort & misc (Towel), Other (Swim trunks,
+  Drink / water bottle, Flip-flops) — and Outdoor bike (`grab-4`), whose one thing of his is the watch, stays flat.
+  11 things. Spec 02 §6.
 - **`fileToRestore()`**: a DIFFERENT library as backup bytes (exportedAt 2026-09-22T09:00:00.000Z): one template "Day
   out" (`role: "base"`) with Water bottle and Sun hat — 2 things where the device holds 10, "so a restore that only
   ADDS would be caught". Read by *Restore from a file…* under the tests.

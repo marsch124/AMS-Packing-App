@@ -429,6 +429,24 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with kinds of thing behind a grab list (`-uiTestingGrabKinds`,
+    /// 0.84 — an open grab list grouped by kind): his kinds in his own order, Electronics
+    /// moved first; Goggles and Swim cap are Sport gear; a new thing Sports watch is
+    /// Electronics; the Towel keeps the starting Comfort & misc. So Indoor swim (`grab-0`)
+    /// opens under four headings — Electronics (Sports watch), Sport gear (Goggles, Swim
+    /// cap), Comfort & misc (Towel), Other (Swim trunks, Drink / water bottle, Flip-flops) —
+    /// and Outdoor bike (`grab-4`), whose one known thing is the watch, stays flat.
+    static func grabKinds() -> Library {
+        var lib = make()
+        _ = lib.addThing(name: "Sports watch")
+        let kinds = ["Goggles": "Sport gear", "Swim cap": "Sport gear", "Sports watch": "Electronics"]
+        for n in lib.items.indices {
+            if let k = kinds[lib.items[n].name] { lib.items[n].category = k }
+        }
+        lib.setCategories(["Electronics"] + CATEGORIES.filter { $0 != "Electronics" })
+        return lib
+    }
+
     /// The sample library with two kits (`-uiTestingKits`, 0.70): a Camp pouch (60 g, on
     /// Hiking, kept in the Garage) holding a Lighter (30 g, not allowed in the cabin), Spare
     /// cord (80 g) and Plasters (20 g, valid for 10 more days — before the trip ends); and a

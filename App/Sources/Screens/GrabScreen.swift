@@ -214,9 +214,8 @@ struct GrabScreen: View {
                     .font(.system(.body, weight: .semibold)).foregroundStyle(tint)
                     .accessibilityIdentifier("grab-edit")
                 if !editing {
-                    ShareDoor(id: "grab-share", tint: tint, markOnly: true) {
-                        ShareOffer(title: "Share \u{201C}\(list.label)\u{201D}", link: model.library.shareLink(grabId: listId))
-                    }
+                    // Share is no longer here: it sits at the bottom right (0.84, his "I almost
+                    // never use it").
                     Button("Done") { dismiss() }
                         .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
                         .font(.system(.body, weight: .semibold)).foregroundStyle(tint)
@@ -241,40 +240,17 @@ struct GrabScreen: View {
                             .padding(.vertical, 5)
                             .accessibilityIdentifier("grab-empty")
                     }
-                    // Lines as tall as their words (`Metrics.line`), no space between them —
-                    // his words (6 Oct 2026, testing 0.63): "Far too big buttons" (46 points
-                    // top to top, a 26-point circle, until 0.67).
-                    ForEach(Array(items.enumerated()), id: \.offset) { n, name in
-                        let ticked = state.done.contains(name)
-                        let skipped = state.skipped.contains(name)
-                        HStack(spacing: 4) {
-                            Button { change { $0.tapped(name) } } label: {
-                                HStack(spacing: 8) {
-                                    TickCircle(on: ticked, tint: tint, ring: skipped ? Theme.line : nil)
-                                    Text(name)
-                                        .font(.system(.body, weight: ticked ? .regular : .semibold))
-                                        .foregroundStyle(skipped || ticked ? Theme.muted : Theme.ink)
-                                        .strikethrough(skipped, pattern: .solid, color: Theme.muted)
-                                    Spacer(minLength: 8)
-                                    if skipped {
-                                        Text(onlySometimes.contains(normName(name)) ? "only sometimes" : "not this time")
-                                            .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
-                                    }
-                                }
-                                .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("grab-item-\(n)")
-                            .accessibilityAddTraits(ticked ? .isSelected : [])
-                            Button { change { $0.skipToggled(name) } } label: {
-                                AsideMark(back: skipped).onGrid(Metrics.glyph)
-                                    .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("grab-skip-\(n)")
-                            .accessibilityLabel(skipped ? "Take \(name) along after all" : "Leave \(name) behind, just this once")
+                    // Grouped by Kind of thing, under small grey headings (0.84) — his words,
+                    // 15 Oct 2026: "a bit more visual with some grouping … only for visuals but
+                    // important to me". A list of one kind stays flat (`grabGroups` is empty).
+                    let groups = model.library.grabGroups(items)
+                    if groups.isEmpty {
+                        ForEach(Array(items.enumerated()), id: \.offset) { n, name in line(n, name) }
+                    } else {
+                        ForEach(Array(groups.enumerated()), id: \.offset) { g, group in
+                            kindHeading(group.kind, first: g == 0).accessibilityIdentifier("grab-group-\(g)")
+                            ForEach(group.rows, id: \.self) { n in line(n, items[n]) }
                         }
-                        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                     }
                     Button {
                         if complete { flash = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { dismiss() }; return }
@@ -310,8 +286,20 @@ struct GrabScreen: View {
                     }
                     // The six hours run from the LAST tap — a list he is still ticking is
                     // still the same outing — and the words now say so (5 Oct 2026).
-                    Text("Tap each thing as you pick it up — or tap ⊘ to leave something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap.")
-                        .font(.system(.subheadline)).foregroundStyle(Theme.muted).padding(.top, 8)
+                    // Share at the right of these words, round and quiet (0.84) — his words,
+                    // 15 Oct 2026: "Please move the share button down to the bottom right. I
+                    // almost never use it. … can we make the share button more rounded?" It
+                    // was the mark in an outlined capsule between Edit and Done until then.
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("Tap each thing as you pick it up — or tap ⊘ to leave something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap.")
+                            .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        ShareDoor(id: "grab-share", tint: tint, round: true) {
+                            ShareOffer(title: "Share \u{201C}\(list.label)\u{201D}", link: model.library.shareLink(grabId: listId))
+                        }
+                    }
+                    .padding(.top, 8)
                 }
                 .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 24)
             } }
@@ -341,6 +329,58 @@ struct GrabScreen: View {
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 600)
         #endif
+    }
+
+    /// One line of the open list: the tick and the name, and ⊘ at the right. Lines as tall
+    /// as their words (`Metrics.line`), no space between them — his words (6 Oct 2026,
+    /// testing 0.63): "Far too big buttons" (46 points top to top, a 26-point circle, until
+    /// 0.67). `n` is the line's place in the LIST, whatever group it is shown under.
+    private func line(_ n: Int, _ name: String) -> some View {
+        let ticked = state.done.contains(name)
+        let skipped = state.skipped.contains(name)
+        return HStack(spacing: 4) {
+            Button { change { $0.tapped(name) } } label: {
+                HStack(spacing: 8) {
+                    TickCircle(on: ticked, tint: tint, ring: skipped ? Theme.line : nil)
+                    Text(name)
+                        .font(.system(.body, weight: ticked ? .regular : .semibold))
+                        .foregroundStyle(skipped || ticked ? Theme.muted : Theme.ink)
+                        .strikethrough(skipped, pattern: .solid, color: Theme.muted)
+                    Spacer(minLength: 8)
+                    if skipped {
+                        Text(onlySometimes.contains(normName(name)) ? "only sometimes" : "not this time")
+                            .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+                    }
+                }
+                .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("grab-item-\(n)")
+            .accessibilityAddTraits(ticked ? .isSelected : [])
+            Button { change { $0.skipToggled(name) } } label: {
+                AsideMark(back: skipped).onGrid(Metrics.glyph)
+                    .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("grab-skip-\(n)")
+            .accessibilityLabel(skipped ? "Take \(name) along after all" : "Leave \(name) behind, just this once")
+        }
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+    }
+
+    /// A kind of thing over its lines (0.84): small and grey — his words, "small headings in
+    /// the list … maybe another colour, grey or something like that", not the big headings
+    /// of a trip. Footnote semibold in `muted`, a hair of letter-spacing, his own spelling
+    /// (no capitals: 0.62 took capitals with letter-spacing out of every heading); no tick,
+    /// no count and no line of its own — the count stays the one at the top.
+    private func kindHeading(_ kind: String, first: Bool) -> some View {
+        Text(kind)
+            .font(.system(.footnote, weight: .semibold)).tracking(0.4)
+            .foregroundStyle(Theme.muted)
+            .lineLimit(1).truncationMode(.tail)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, first ? 4 : 12).padding(.bottom, 2)
+            .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: Editing
