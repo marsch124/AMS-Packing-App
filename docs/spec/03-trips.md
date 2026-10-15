@@ -2002,7 +2002,10 @@ and below) between two parts that both show:
    orange, filled with a white tick when charged; a `Theme.line` ring otherwise), the name (Callout semibold; ink, or
    muted and struck through when charged) and, for a thing inside a kit, "In the <kit>" under it (Subheadline muted).
    Accessibility: label "<name>" or "<name>, in the <kit>"; value "charged" / "not charged"; selected trait when
-   charged.
+   charged. (0.87) The part carries the scroll id `TripScreen.chargeAnchor` ("trip-charge-anchor"): a tapped "Charge
+   tonight" (spec 07 part 16, "0.87") opens the trip and, 0.7 s after it arrives, scrolls the part to the centre
+   (`proxy.scrollTo(…, anchor: .center)` — a part already near the top does not move); folded All set, there is
+   no part and nothing moves.
 
 Reasons of the flags (`TripChecksCard.says`), dates as "3 Mar 2027" (fixed English months, `TripChecksCard.day`):
 - not allowed (red): "Not allowed in the cabin · in <bag>"

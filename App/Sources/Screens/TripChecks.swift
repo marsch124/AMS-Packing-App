@@ -43,6 +43,8 @@ struct BeforeYouGoCard: View {
                     if !card.charge.isEmpty {
                         if !card.cabin.isEmpty || !card.dates.isEmpty || !card.due.isEmpty { rule }
                         ToChargePart(tripId: tripId, rows: card.charge).environmentObject(model)
+                            // Where a tapped "Charge tonight" brings the trip (0.87).
+                            .id(TripScreen.chargeAnchor)
                     }
                 }
             }

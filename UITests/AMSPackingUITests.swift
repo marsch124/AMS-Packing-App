@@ -12292,6 +12292,49 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(appears(app, "trip-beforego-part-charge", timeout: 3), "To charge shows two months before the trip")
     }
 
+    /// "Charge tonight" (0.87, his yes of 15 Oct 2026; spec 07 part 16): the trip starting
+    /// tomorrow (`-uiTestingBattery`) has two things to charge, so the debug list of what the
+    /// iPhone would schedule (`-showTripMessages`, the clock at 14:00) has the message tonight at
+    /// 20:00 naming both, in To charge's order; the power bank charged, only the toothbrush;
+    /// both charged, it goes; the toothbrush unticked again, it is back.
+    func testChargeTonightNamesWhatIsLeftAndGoesOnceAllIsCharged() {
+        let app = launch("-uiTestingBattery", ["-showTripMessages", "-clockAt", "14:00:00"])
+        openKitTrip(app)
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "no To charge the day before the trip")
+        let message = app.staticTexts["trip-message-charge"]
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).contains("\(self.sampleDay(0)) 20:00 \u{00B7} Charge tonight Toothbrush, Power bank") },
+                      "Charge tonight: '\(words(message))'")
+        XCTAssertTrue(words(message).hasPrefix("charge-"), "its id: '\(words(message))'")
+        shot(app, "charge-tonight-waiting")
+        // The power bank charged: only the toothbrush is named.
+        tap(app, id: "trip-charge-1")
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).hasSuffix("Charge tonight Toothbrush") },
+                      "the power bank is charged, still: '\(words(message))'")
+        // Both charged: nothing is left to charge, so no message.
+        tap(app, id: "trip-charge-0")
+        XCTAssertTrue(waitUntil(timeout: 8) { !message.exists }, "everything charged, still: '\(words(message))'")
+        XCTAssertTrue(app.staticTexts["trip-message-onsite"].exists, "the trip's other messages went too")
+        // The toothbrush unticked (the card, all set, opened first): back.
+        tap(app, id: "trip-beforego-fold")
+        XCTAssertTrue(app.buttons["trip-charge-0"].waitForExistence(timeout: 5), "the chevron does not open the card")
+        tap(app, id: "trip-charge-0")
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).hasSuffix("Charge tonight Toothbrush") },
+                      "unticked, the toothbrush is not named: '\(words(message))'")
+    }
+
+    /// A tapped "Charge tonight" opens its trip at To charge — every line shown (not a door
+    /// check's "Only what is still unticked"), the things to charge in view.
+    func testATappedChargeTonightOpensTheTripAtToCharge() {
+        let app = launch("-uiTestingBattery", ["-tapTripMessage", "charge"])
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "Charge tonight did not open its trip")
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "the trip opened without its To charge")
+        XCTAssertTrue(waitUntil { app.buttons["trip-charge-0"].exists && app.buttons["trip-charge-0"].isHittable },
+                      "To charge is not in view")
+        XCTAssertFalse(app.staticTexts["trip-unticked-only"].waitForExistence(timeout: 2), "Charge tonight opened on just the unticked lines")
+        XCTAssertFalse(appears(app, "review-detail", timeout: 1), "Charge tonight opened the review")
+        shot(app, "charge-tonight-tapped")
+    }
+
     /// A battery in the hold (0.76, his yes of 13 Oct 2026): on a plane trip, Check before you
     /// go says a thing with a battery in a CHECKED bag must travel in the cabin — red, with the
     /// battery mark. (`-uiTestingBattery -batteryByPlane`: the Power bank is in the Camp pouch,

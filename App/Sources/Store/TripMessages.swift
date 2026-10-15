@@ -3,9 +3,9 @@ import UserNotifications
 import PackingCore
 import PackingLibrary
 
-/// Take a break's "Back to packing", and the messages when a trip moves on, on this device
-/// (spec 07 part 16, his yes of 13 Oct 2026). WHAT is said and WHEN is the model's
-/// (`Library.tripMessages`); this puts it in the device's list, and puts it right again
+/// Take a break's "Back to packing", the messages when a trip moves on, and "Charge tonight"
+/// the evening before a trip, on this device (spec 07 part 16, his yeses of 13 and 15 Oct
+/// 2026). WHAT is said and WHEN is the model's (`Library.tripMessages`); this puts it in the device's list, and puts it right again
 /// whenever the library changes — a tick, a new break, new dates or a new time he leaves, a
 /// trip deleted or reviewed — exactly as the door check does (`DoorChecks`).
 ///
@@ -22,8 +22,9 @@ import PackingLibrary
 @MainActor
 final class TripMessages: ObservableObject {
     static let shared = TripMessages()
-    /// Every notification of ours starts with one of these: the break's, and the moves-on.
-    static let prefixes = ["break-", "moves-"]
+    /// Every notification of ours starts with one of these: the break's, the moves-on, and
+    /// Charge tonight's (0.87).
+    static let prefixes = ["break-", "moves-", "charge-"]
     /// Settings → "Messages when a trip moves on", this device's own switch: on until he
     /// turns it off.
     static let onKey = "ams.movesOn"
@@ -32,7 +33,8 @@ final class TripMessages: ObservableObject {
     /// UI tests only: what would be in the device's list now.
     @Published private(set) var planned: [TripMessage] = []
 
-    /// Where a tapped message goes: its trip — and for "Welcome home", its review.
+    /// Where a tapped message goes: its trip — for "Welcome home", its review; for "Charge
+    /// tonight", its To charge.
     var open: ((String, TripMessage.Kind) -> Void)?
 
     func reschedule(_ library: Library) async {

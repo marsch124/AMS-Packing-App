@@ -27,7 +27,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 13. His lists changed inside their drop-downs | 0.69 | built (branch work/ddedit069) |
 | 14. Only on some trips, set once on the thing | 0.73 | built (branch work/cond073) |
 | 15. Batteries and To charge | 0.75 | built (branch work/battery075) |
-| 16. Take a break and messages when a trip moves on | 0.77 | built (branch work/break077) |
+| 16. Take a break and messages when a trip moves on | 0.77 | built (branch work/break077); Charge tonight 0.87 (branch work/charge087) |
 | 17. Packing day — the stations of the Pack step | 0.79 | built (branch work/day079) |
 | 18. Lost luggage — A: a bag's details for the desk | 0.80 | built (branch work/baginfo080) |
 | 18. Lost luggage — B. Flights and stay, bag-tag numbers | 0.80 | built (branch work/flight080) |
@@ -1540,6 +1540,8 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
 - **The things table** (0.86, his "Battery column: yes", 15 Oct 2026): a **Battery** column — the drawn battery mark
   in the row of each thing that has one, an empty cell for one that has none; a tap gives or takes it; it sorts,
   filters and takes Change all like every column. Spec 05, Table columns, "Battery".
+- **Charge tonight** (0.87, his yes of 15 Oct 2026): at 20:00 the evening before the trip, the iPhone names what on
+  To charge is not charged yet — only while something is left. It is one of the trip's messages: part 16, "0.87".
 - **Check before you go** (0.76, his yes of 13 Oct 2026; Before you go's flags since 0.77): on a PLANE trip, a thing
   with a battery in a CHECKED bag is a red line — "Battery: carry it in the cabin · in Checked luggage" — because airlines want lithium batteries and
   power banks in the cabin. Rule 8 below.
@@ -1723,6 +1725,9 @@ Tests.
 
 ## 16. Take a break and messages when a trip moves on
 
+> **0.87** (his yes of 15 Oct 2026): one more message, **"Charge tonight"** — the evening before a trip, what still
+> needs charging — see "0.87 — Charge tonight" at the end of this part.
+
 > **0.84** (his asks of 15 Oct 2026): the header's door is a round cup (a compact capsule with the time while a break
 > waits), Add to Calendar is filled once a time is chosen, and the reminder starts with 🎒 — see "0.84" at the end of
 > this part. The sections below keep the words of 0.77 / 0.81 where they describe what was built then.
@@ -1806,7 +1811,7 @@ Tests.
     - **Review → Refine: nothing.** He saves the review in the app; the app is in front of him.
     - A moment already past has none; a reviewed or deleted trip has none; new dates or a new time he leaves move them
       at the next change. Only the six soonest wait (`MOVES_ON_LIMIT`; an iPhone keeps 64 waiting notifications per
-      app, and the packing reminders may take 48); every break waits.
+      app, and the packing reminders may take 48); every break waits. Since 0.87 Charge tonight is one of the six.
 11. **Where they come: the iPhone only.** He packs and travels with his iPhone; the Mac at home saying the same would
     be the same news twice (his word on the packing reminders, 2 Oct 2026; the door check is the same). The Mac shows
     Take a break whole — the overview, the choices, the break kept — and says it is the iPhone that reminds him; it
@@ -1850,7 +1855,9 @@ Tests.
 - **Settings** (spec 06 §3): inside the Remind me to pack card on the iPhone, under its own lines and a hairline, a
   second switch **"Messages when a trip moves on"** (id `settings-moves-on`, green) with "On this iPhone: "Have a
   good trip" when a trip sets off — at the time you leave, else at 8 — and the morning after its last day, at 10, a
-  word to review it." The card's red "does not allow" line now sits under both switches (it holds for every message).
+  word to review it." (since 0.87 it begins "On this iPhone: "Charge tonight" at 20:00 the evening before a trip, if
+  something still needs charging; "Have a good trip" …"). The card's red "does not allow" line now sits under both
+  switches (it holds for every message).
 
 ### Where it is kept
 
@@ -1859,9 +1866,10 @@ Tests.
 | trip | `breakUntil` (`BREAK_UNTIL_KEY`) | "yyyy-MM-dd HH:mm" / absent | the break waiting: back to packing then. Synced, backed up, restored |
 | device (`UserDefaults`) | `ams.movesOn` (`TripMessages.onKey`) | Bool, absent = on | Messages when a trip moves on, this device's own; cleared at launch under the UI tests |
 
-The notifications live in the system's list, ids `break-<trip>`, `moves-onsite-<trip>`, `moves-review-<trip>`;
-`userInfo` `tripId` + `trip` = `break` / `onsite` / `review`. `TripMessages.reschedule` removes every pending id
-starting `break-` or `moves-` and adds the plan — run from `RootView` whenever the library settles (debounced 2 s),
+The notifications live in the system's list, ids `break-<trip>`, `moves-onsite-<trip>`, `moves-review-<trip>`
+(and since 0.87 `charge-<trip>`); `userInfo` `tripId` + `trip` = `break` / `onsite` / `review` (/ `charge`).
+`TripMessages.reschedule` removes every pending id starting `break-` or `moves-` (or `charge-`, 0.87 —
+`TripMessages.prefixes`) and adds the plan — run from `RootView` whenever the library settles (debounced 2 s),
 when the app comes to the front, after a choice in the sheet and after the Settings switch. A tapped one goes through
 the shared delegate (`PackingReminders`) to `TripMessages.open`: Home, then the trip (`model.tripToOpen`); for
 `review` also `model.tripFocus.review`, and the trip opens its Review 0.7 s after it arrives (unless it is reviewed by
@@ -1983,6 +1991,103 @@ to packing at 19:00 — …" line, not in the moves-on messages, not in the cale
   Mac (a probe branch, deleted after) ten green by day (the new test, the five break / stations / On site tests, Escape,
   the vault's saved review, the loop, How it works) and four again with the runner set to dark — whose setting did not
   reach the app, as before (the pictures are light). The Release build compiles for the iPhone and the Mac.
+
+### 0.87 — Charge tonight: his yes of 15 Oct 2026
+
+> The idea put to him on 15 Oct 2026, and his yes: "Charge-tonight reminder: the evening before you leave, your
+> iPhone says what still needs charging — 'Charge tonight: Garmin, power pack, bike computer' — only if something
+> is left to charge." Built on branch `work/charge087` and written from the code: the model
+> `Core/Sources/PackingLibrary/ChargeTonight.swift` (`chargeTonight`, `chargeTonightNames`, the constants) and one line
+> in `tripMessages` (`TakeABreak.swift`); the notifications `App/Sources/Store/TripMessages.swift` (the `charge-`
+> prefix); the tap `RootView` (`TripMessages.open`), `LibraryModel.TripFocus.charge`, `TripScreen.takeFocus` and the
+> scroll id on `ToChargePart` (`TripChecks.swift`). Where this section and the ones above differ, this one is the newer.
+
+**What he gets.** On the iPhone, at **20:00 the evening before a trip's first day**, a notification titled **"Charge
+tonight"** whose words are the names of the things on the trip still to charge — "Toothbrush, Power bank" — in To
+charge's own order. A tap opens the trip with To charge in view. With everything charged (or nothing on the trip with a
+battery) there is no message at all.
+
+**The rules** (`Library.chargeTonight(tripId:now:)`, called by `tripMessages` for each trip):
+
+1. **When**: the day before the trip's start date (`addDays(start, -1)` — the first of a month goes back to the last of
+   the month before) at **20:00** (`CHARGE_TONIGHT_AT`). Decided by the build: home by then and in time to charge
+   overnight, and not the minute of a break's "This evening" (19:00), so two messages never come at once. A time he
+   leaves ("I leave at") does not move it.
+2. **What**: title `CHARGE_TONIGHT_TITLE` = "Charge tonight" (his words; no trip name, as he put it). Body: the names of
+   To charge's rows that evening (`chargeCard(tripId:today:)` with today = that evening — the very list the Before you
+   go card, Take a break's overview and What's left read; part 15 rule 3: lines not set aside and not reminders whose
+   thing has a battery, the things inside a kit by their own name, each thing once) that are **not charged**, in the
+   card's order, joined ", "; more than four → the first four and "and N more" (`chargeTonightNames`,
+   `CHARGE_TONIGHT_NAMES` = 4 — "A, B, C, D and 1 more"; the door check's way with names, at four).
+3. **Only when something is left to charge**: no row, or every row charged → none. Charging and packing stay apart
+   (part 15 rule 4): a packed line still to charge is still named.
+4. **Not**: when the trip is reviewed, has no start date, or has no lines (at Plan); when the evening's moment is not
+   ahead of now (20:00 itself has come — and a trip starting today has none); with the device's switch off.
+5. **The switch**: it is one of the app's own trip messages, so it goes with the iPhone's **"Messages when a trip moves
+   on"** (on until he turns it off; its words now name it first). Decided by the build: one switch for the app's own
+   messages rather than a third switch; a break is his own ask and still needs none.
+6. **Kept up to date** as every trip message is: the plan is made again whenever the library settles (a charge tick,
+   a thing given a battery, new dates, a trip deleted or reviewed) and when the app comes to the front, so the names
+   are those at the last change and the message goes the moment the last thing is charged. A charge ticked on the Mac
+   reaches the iPhone's plan by sync; if the iPhone is not opened in between, the message can still come — opening it
+   shows To charge as it is (All set, folded, when all is charged).
+7. **Among the six soonest** (`MOVES_ON_LIMIT`): it is put with the moves-on messages, soonest first, so the iPhone's
+   64-notification budget holds (spec 06 §3c). One per trip; id `charge-<trip id>`, so a new plan replaces it.
+8. **The iPhone only**, with the one notification permission (rules 11 and 12 above): the Mac schedules nothing.
+9. **Tapped** (`userInfo` `trip` = `charge`): Home, the trip, every line shown (not a door check's "Only what is still
+   unticked"), and 0.7 s after it arrives Before you go's To charge is scrolled to the centre
+   (`TripScreen.chargeAnchor` on `ToChargePart`; spec 03).
+
+**On the screens.** Nothing new on a screen: the Settings switch's words (above; spec 06 §3) and How it works — under
+*Packing a trip*, after "Last To charge…": "At 20:00 the evening before the trip, the iPhone says "Charge tonight" with
+the names not charged yet (four, then how many more) — only while something is left to charge; tap it and the trip
+opens at To charge."; under *Settings*, in "Messages when a trip moves on…": "The same switch holds "Charge tonight",
+at 20:00 the evening before a trip, while something on it is still to charge."
+
+**Where it is kept.** Nothing new is stored: the message is worked out from the trip's dates, its lines, the things'
+`battery` key and the lines' charge ticks (part 15). The notification: id `charge-<trip>`, `userInfo` `tripId` + `trip`
+= `charge`; the debug list's line `trip-message-charge`.
+
+#### Tests (0.87)
+
+- Model `ChargeTonightTests` (5, `Core/Tests/PackingLibraryTests/ChargeTonightTests.swift`, on `BatteriesTests.library()`
+  and its trip "Weekend in the hills", 17–20 Oct 2026, To charge "Toothbrush", "Power bank" (in the Camp pouch),
+  "Headlamp"): `testTheEveningBeforeItNamesWhatIsStillToCharge` (id, kind, "2026-10-16 20:00", "Charge tonight",
+  "Toothbrush, Power bank, Headlamp"; soonest first before the set-off message; one charged → two names; all charged →
+  none; one unticked → back; every line packed → still named), `testItComesOnlyWhileTheEveningIsAheadAndTheTripIsDated`
+  (19:59 yes, 20:00 no, the next morning no; I leave at changes nothing; new dates follow, 1 Nov → 31 Oct; starting
+  today none; undated none; the switch off, reviewed, deleted, no such trip none), `testNothingToChargeSaysNothing` (set
+  aside not named; no battery → none, the other messages as they were; no lines → nothing),
+  `testFourNamesThenHowManyMore` ("A, B, C, D and 1 more", "… and 3 more"; on the trip with the GPS watch put back and
+  a Camera in the pouch: "Toothbrush, Power bank, GPS watch, Camera and 1 more"), `testItIsOneOfTheSixSoonestMessages`
+  (four trips, three messages each → six, charge / set off / review twice). **Seen red first**, three planted builds,
+  every test red by at least one fault: charged things still named ("("Optional("Toothbrush, Power bank, Headlamp")")
+  is not equal to ("Optional("Toothbrush, Headlamp")")", "everything charged, still: Charge tonight"); the evening never
+  passing ("XCTAssertNil failed: … - the evening has passed"); every name, no "and N more" ("("A, B, C, D, E") is not
+  equal to ("A, B, C, D and 1 more")"); the switch ignored ("… - the switch is off"); the start day instead of the
+  evening before ("("Optional("2026-10-17 20:00")") is not equal to ("Optional("2026-10-16 20:00")") - not the evening
+  before the first day at 20:00"); outside the six ("("10") is not equal to ("6")"); a message with nothing to charge
+  ("XCTAssertNil failed: "TripMessage(… body: "")""). Then green: the model 635 + 451 of 635 + 451; parity 211 of 211.
+- UI (iPhone and the Mac; `-uiTestingBattery`, the kits sample with its first trip starting tomorrow and To charge
+  "Toothbrush" (`trip-charge-0`) and "Power bank" (`trip-charge-1`)): `testChargeTonightNamesWhatIsLeftAndGoesOnceAllIsCharged`
+  (`-showTripMessages -clockAt 14:00:00`: `trip-message-charge` "charge-… · <today> 20:00 · Charge tonight Toothbrush,
+  Power bank"; the power bank charged → "… Charge tonight Toothbrush"; both charged → no `trip-message-charge`, the
+  set-off message still there; the card's chevron `trip-beforego-fold` opened and the toothbrush unticked → back) and
+  `testATappedChargeTonightOpensTheTripAtToCharge` (`-tapTripMessage charge`: `trip-detail`, `trip-beforego-part-charge`,
+  `trip-charge-0` hittable, no `trip-unticked-only`, no review). **Seen red first** on the iPhone simulator ("Packing CI
+  charge", iOS 27), one planted build: charged things still named — "the power bank is charged, still: 'charge-… ·
+  <today> 20:00 · Charge tonight Toothbrush, Power bank'"; the tap's focus not handled (it fell to a door check's view)
+  — "XCTAssertFalse failed - Charge tonight opened on just the unticked lines". Then green: by day the two with seven
+  neighbours (`testATappedTripMessageOpensItsTrip`, `testATripSaysWhenItMovesOn`, `testToChargeIsTickedApartFromPacking`,
+  `testABatterySwitchOnAThingPutsItOnTheTripsToCharge`, `testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked`,
+  `testTakeABreakSaysHowFarHeHasCome`, `testHowItWorksExplainsThePackingDayStations`) — 9 of 9; by night the two with
+  `testATripSaysWhenItMovesOn` and `testToChargeIsTickedApartFromPacking` — 4 of 4 (pictures `charge-tonight-waiting`,
+  `charge-tonight-tapped`, `moves-on-settings` with the switch's new words). On GitHub's Mac (a probe branch running the two with `testATappedTripMessageOpensItsTrip`,
+  `testATripSaysWhenItMovesOn` and `testToChargeIsTickedApartFromPacking`, deleted after): all five green, by day
+  (pictures of the Mac look) — its first run found the test, not the app, wrong: the card's chevron was looked for
+  among groups (`appears`) where it is a button; it is tapped as a button now, and "Only what is still unticked" is
+  looked for as the text it is. The Release build
+  compiles for the iPhone and the Mac.
 
 ### Open questions
 
@@ -3695,6 +3800,7 @@ left is not under the count"). Green again without them, day and night.
 | 15 Oct 2026 | The Mobility kind is called **"Mobility & breath"** (was "Mobility & breath work") on the review's rows and in Counts as | His words: "Adjust: “Mobility & Breath work” to “Mobility & Breath”". His template was renamed the same day in his app; a template's Counts as is stored as the kind (`mobility`), not its label, and "Mobility & Breath" already meets the kind by its name, so nothing of his changes. |
 | 15 Oct 2026 | The things table gets a **Battery** column (0.86): the drawn battery mark when a thing has a battery, an empty cell when not; a tap changes it; it sorts, filters and takes Change all like Liquid, and Undo puts it back both ways. Only "Has a battery" is shown — the model knows nothing more about a battery, and how a thing charges stays the web app's Charges column. Placed before Charges among the thing's own columns; a starting column; put once among the columns he had already chosen (hidden afterwards, it stays hidden) | His words: "Battery column: yes". Part 15; spec 05, Table columns, "Battery". Tests seen RED with planted faults first: UI `testTheTableShowsWhichThingsHaveABattery` ("XCTAssertTrue failed - the Power bank's row shows no battery: 'no'"; "XCTAssertTrue failed - the Battery column did not arrive among his columns"), model `BatteriesTests.testTheTableFiltersSortsAndChangesAllByBattery` ("XCTAssertEqual failed: ("0") is not equal to ("1") - Undo of Battery: no put nothing back"). |
 | 15 Oct 2026 | **Grab lists by holding the app icon (0.86).** On the iPhone, holding the Packing icon on the Home Screen shows up to four grab lists; tapping one opens the app straight on that list, ready to tick (the path Siri's "Open a grab list" takes), from a cold start or while it runs. Which four — the four opened most recently on that iPhone, shown in his Home order so an entry keeps its place, the first ones on Home filling in until four have been opened — decided by the build, as was the record of openings being the device's own. Each entry wears its list's drawing (the doodle, or the initial of a list of his own) as a template picture from the app's own asset catalog, never an SF Symbol; on the Mac, the Dock icon's menu lists every grab list in Home's order (no pictures) and opens one, with a window if none is open | His yes of 15 Oct 2026: "Yes - grab lists by holding the app icon", to the idea put as "hold the AMS Packing icon on your iPhone and tap Outdoor bike or Indoor swim — straight into that list without opening the app first." Spec 02 §13b. Tests seen RED with planted faults first: model `GrabQuickActionsTests` (7) on five faults, e.g. "XCTAssertEqual failed: (\"[\"run-out\", \"bike-out\", \"swim\", \"run\"]\") is not equal to (\"[\"swim\", \"run\", \"bike-out\", \"run-out\"]\") - not the four opened most recently, or not in Home's order"; UI `testAnEntryUnderTheAppIconOpensItsGrabList` on four, e.g. "XCTAssertTrue failed - Outdoor bike, opened just before, is not under the icon — or its entry opened nothing while the app ran" (no scene delegate), "XCTAssertTrue failed - the entry under the icon opened nothing at a cold start"; UI `testTheDockMenuOpensAGrabList` (Mac) on two, "XCTAssertTrue failed - with no window open, choosing in the Dock menu brought no window with the list" and "XCTAssertTrue failed - the Dock menu opened another list: 'Indoor swim'". |
+| 15 Oct 2026 | **Charge tonight (0.87):** at 20:00 the evening before a trip's first day, the iPhone says "Charge tonight" with the names of the things on To charge not charged yet (To charge's order; four, then "and N more"); none when nothing is left to charge, the trip is undated, reviewed or without lines, or the evening has passed; a charge tick takes a name off at the next change; a tap opens the trip at To charge. 20:00 (not 19:00, the break's This evening), the iPhone's "Messages when a trip moves on" switch holding it, and its place among the six soonest messages decided by the build | His yes to the idea put to him: "Charge-tonight reminder: the evening before you leave, your iPhone says what still needs charging — 'Charge tonight: Garmin, power pack, bike computer' — only if something is left to charge." Part 16, "0.87". |
 
 ## Open questions
 
