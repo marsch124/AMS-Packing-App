@@ -834,7 +834,9 @@ else is the same.
   `grab-kinds`, `grab-kinds-flat`. Seen RED twice with a planted fault: the groups in the order the list meets them
   — `XCTAssertEqual failed: ("["Sport gear", "Comfort & misc", "Electronics", "Other"]") is not equal to
   ("["Electronics", "Sport gear", "Comfort & misc", "Other"]") - the headings, in his order of kinds`; one kind
-  enough for headings — `XCTAssertFalse failed - a list of one kind has a heading`.
+  enough for headings — `XCTAssertFalse failed - a list of one kind has a heading`. Green on the iPhone (iOS 27,
+  day and night) with the other 21 grab-list tests, and on GitHub's Mac in a probe (light; the runner's Mac stayed
+  light with dark asked for).
 - Model `GrabKindsTests` (0.84): `testThingsGoUnderTheirKindInHisOrderAndTheRestUnderOtherLast` (the app's twelve
   in order, the list's order within, every place under exactly one heading),
   `testHisOwnOrderOfKindsDecidesAndHisSpellingIsTheHeading`, `testAListOfOneKindStaysFlat` (one kind; one kind and
@@ -844,7 +846,8 @@ else is the same.
 - UI `testShareSitsOnItsHeadersCentreLine` (grab half changed in 0.84): `grab-edit` on `grab-done`'s centre line;
   `grab-share` under `grab-ready` (its top below Ready to go's foot), its right edge within 1.5 pt of Ready to go's,
   round (width = height within 1), and it opens `share-screen`. Pictures `share-grab-header`, `share-grab-foot`.
-  Seen RED with Share planted back in the header: "Share is not under Ready to go".
+  Seen RED with Share planted back in the header: "Share is not under Ready to go". Green on the iPhone and on
+  GitHub's Mac (the probe, with `testAnEmptyGrabListSaysHowToFillIt`, whose Share is now at the foot).
 - UI `testAGrabListCountsRefusesAndClears`:
   - `grab-0` opens `grab-detail`; the count starts "0 of";
   - `grab-item-0` → "1 of"; `grab-skip-1` → the count contains "skipped";
