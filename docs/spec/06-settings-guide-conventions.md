@@ -851,7 +851,10 @@ no entry shows no marker anywhere (and fails the test).
    Mac) → Heading above puts one right above it, ready to name (unnamed, dropped on Save), A new heading + Add puts
    one last, its grip ≡ (on the Mac ▲▼ too) moves it, a thing belongs to the heading above it, tap a heading's name to change
    it, ✕ removes it and its things stay, joining what is above; headings are never ticked or counted; a list without
-   them stays one plain list; the count stays at
+   them stays one plain list; (0.87) beside each heading a small ring fills as its things are ticked, and once everything
+   under it is in hand (a thing left behind with ⊘ counts too) the heading turns green with a check and folds to that
+   one line ("so you scroll less at the door"), a tap on a folded heading opens it again, a thing unticked under it
+   keeps it open until everything is in hand again, Start over opens them all; the count stays at
    the top; Ready to go too early says Not yet in the middle with what is missing; ticks clear themselves 6 hours after
    the last tap (0.62). (2) Grab Lists: the ones on Home
    (up to eight) in order, and the waiting ones; make a new one at the bottom; tapping a waiting one opens it, On Home puts it on

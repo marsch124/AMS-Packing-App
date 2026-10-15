@@ -10424,6 +10424,7 @@ final class AMSPackingUITests: XCTestCase {
                       "'After' is not right under the folded heading: \(bike.frame) / \(after.frame)")
         XCTAssertTrue(shown(4) && shown(8), "a neighbour's things folded too")
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("4 of 10") }, "folding changed the count: '\(words(count))'")
+        usleep(500_000)                                              // the fold settles (0.3 s) before the picture
         shot(app, "grabfold-done")
 
         // A tap on it: its things are back.
@@ -10448,6 +10449,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { ring(2) == "all in hand" }, "one ticked and one skipped, and 'After' is not done: '\(ring(2))'")
         XCTAssertTrue(waitUntil { !shown(8) && !shown(9) }, "one ticked and one skipped, and 'After' did not fold")
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("5 of 9") }, "the count: '\(words(count))'")
+        usleep(500_000)                                              // the fold settles (0.3 s) before the picture
         shot(app, "grabfold-two")
 
         // Start over opens everything.
