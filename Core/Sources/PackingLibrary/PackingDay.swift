@@ -113,10 +113,14 @@ public struct PackingDay: Equatable, Sendable {
         public var airTag: Bool
         /// Its photos of it packed, as stored (one on its way from the other device counts).
         public var photos: Int
+        /// The bag it is packed INSIDE on this trip, as the trip names it — a toiletry bag in the
+        /// suitcase; "" = it travels by itself. Tags does not ask about it (0.86, `bagsInside`).
+        public var inside: String
         public init(name: String, things: Int = 0, out: Bool = false, scaleGrams: Double? = nil, nameTag: Bool = false,
-                    hasAirTag: Bool = false, airTag: Bool = false, photos: Int = 0) {
+                    hasAirTag: Bool = false, airTag: Bool = false, photos: Int = 0, inside: String = "") {
             self.name = name; self.things = things; self.out = out; self.scaleGrams = scaleGrams
             self.nameTag = nameTag; self.hasAirTag = hasAirTag; self.airTag = airTag; self.photos = photos
+            self.inside = inside
         }
     }
 
@@ -139,17 +143,17 @@ public struct PackingDay: Equatable, Sendable {
     public func usable(_ s: PackingDayStation) -> Bool { !s.needsBags || !bags.isEmpty }
 
     /// How much of a station is done, of how much it asks: Bags out the bags out; Pack the
-    /// header's count; Weigh the bags weighed; Tags the ticks asked for (a name tag per bag, an
-    /// AirTag per bag that has one); Photos each bag's photo and the one of all of them; Ready
-    /// the other stations that can be done.
+    /// header's count; Weigh the bags weighed; Tags the ticks asked for (a name tag per bag that
+    /// travels by itself, an AirTag per such bag that has one — `tagged`); Photos each bag's photo
+    /// and the one of all of them; Ready the other stations that can be done.
     public func counts(_ s: PackingDayStation) -> (done: Int, of: Int) {
         switch s {
         case .bagsOut: return (bags.filter(\.out).count, bags.count)
         case .pack: return (packed, total)
         case .weigh: return (bags.filter { ($0.scaleGrams ?? 0) > 0 }.count, bags.count)
         case .tags:
-            let asked = bags.count + bags.filter(\.hasAirTag).count
-            let on = bags.filter(\.nameTag).count + bags.filter { $0.hasAirTag && $0.airTag }.count
+            let asked = tagged.count + tagged.filter(\.hasAirTag).count
+            let on = tagged.filter(\.nameTag).count + tagged.filter { $0.hasAirTag && $0.airTag }.count
             return (on, asked)
         case .photos:
             let group = groupPhotoAsked ? 1 : 0
@@ -240,11 +244,13 @@ extension Library {
         let tags = Library.dayNames(trip, DAY_NAME_TAGS_KEY)
         let airs = Library.dayNames(trip, DAY_AIRTAGS_KEY)
         func has(_ names: [String], _ bag: String) -> Bool { names.contains { normName($0) == normName(bag) } }
-        let bags = dayRows(tripId: tripId).map { w in
+        let rows = dayRows(tripId: tripId)
+        let inside = bagsInside(trip, bags: rows.map(\.load.container))     // 0.86: no tags inside another bag
+        let bags = rows.map { w in
             let name = w.load.container
             return PackingDay.Bag(name: name, things: w.load.items, out: has(out, name), scaleGrams: scale[name],
                                   nameTag: has(tags, name), hasAirTag: hasAirTag(container: name), airTag: has(airs, name),
-                                  photos: bagPhotoIds(tripId: tripId, bag: name).count)
+                                  photos: bagPhotoIds(tripId: tripId, bag: name).count, inside: inside[name] ?? "")
         }
         return PackingDay(bags: bags, packed: p.done, total: p.total, groupPhoto: Library.groupPhotoId(trip))
     }

@@ -518,10 +518,20 @@ struct PackingDaySheet: View {
                  + (byPlane ? " At check-in, type the number on each checked bag\u{2019}s tag." : ""))
             // One card per bag (0.81, his decision of 14 Oct 2026): a soft green edge, the bag's drawing,
             // the tag and AirTag drawings on the ticks, light green with a ✓ once done; Remind me.
+            // Only for a bag that travels by itself (0.86, his yes of 15 Oct 2026: "no tags inside
+            // another bag"); `n` stays the bag's place among the trip's bags, as in every station.
             ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
-                TagsBagCard(tripId: tripId, bag: bag, n: n).environmentObject(model)
+                if bag.inside.isEmpty {
+                    TagsBagCard(tripId: tripId, bag: bag, n: n).environmentObject(model)
+                }
             }
             if day.done(.tags) { said("Every tag is on.", id: "day-tags-said") }
+            // The bags left out, and why — one quiet line.
+            if !day.tagsInsideWords.isEmpty {
+                lead(day.tagsInsideWords)
+                    .padding(.top, 2)
+                    .accessibilityIdentifier("day-tags-inside")
+            }
         }
     }
 
@@ -774,7 +784,7 @@ struct PackingDayGuideCard: View {
         case .weigh:
             return "The luggage scale, one bag after another: hang it on the scale, type what it says, Save \u{2014} the next bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself \u{2014} once per trip. Green when every bag is weighed."
         case .tags:
-            return "A card for every bag, with a green edge: a Name tag tick, and an AirTag tick for each bag that has one \u{2014} each wearing the tag\u{2019}s or the AirTag\u{2019}s drawing. A bag whose ticks are all on turns light green, with a \u{2713}. Remind me, under a bag not done yet, writes a To do on the trip \u{2014} \u{201C}Name tag for \u{2026}\u{201D}, ready to change \u{2014} and it shows in Before you go. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags; switch it on once and every trip asks for it. Green when every tick is on. On a plane trip each checked bag has a Bag-tag no. too (a bag that goes in the cabin has none): at check-in, type the number on the tag the airline puts on it (Bags on the trip has the same field) \u{2014} it does not count for green."
+            return "A card for every bag, with a green edge: a Name tag tick, and an AirTag tick for each bag that has one \u{2014} each wearing the tag\u{2019}s or the AirTag\u{2019}s drawing. A bag whose ticks are all on turns light green, with a \u{2713}. Remind me, under a bag not done yet, writes a To do on the trip \u{2014} \u{201C}Name tag for \u{2026}\u{201D}, ready to change \u{2014} and it shows in Before you go. Has an AirTag is the bag\u{2019}s own switch \u{2014} under the bag here, or on its page in Care \u{2192} Bags; switch it on once and every trip asks for it. Green when every tick is on. A bag packed inside another bag on this trip \u{2014} a toiletry bag in the suitcase \u{2014} never goes through the airport on its own, so it has no card here, nor an AirTag tick: one quiet line under the cards names it (\u{201C}No tags inside another bag: \u{2026}\u{201D}). Which bag it is in is what the trip\u{2019}s list says (sorted by Into); take it out \u{2014} its Usually packed in set to No bag \u{2014} and its card is back. On a plane trip each checked bag has a Bag-tag no. too (a bag that goes in the cabin has none): at check-in, type the number on the tag the airline puts on it (Bags on the trip has the same field) \u{2014} it does not count for green."
         case .photos:
             return "One photo of all your bags side by side, and each bag\u{2019}s own photo (the same ones as in Bags) \u{2014} for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them stays in Bags after you leave. Green when every photo is there."
         case .ready:

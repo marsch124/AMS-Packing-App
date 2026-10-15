@@ -13098,6 +13098,64 @@ final class AMSPackingUITests: XCTestCase {
         }
     }
 
+    /// No tags inside another bag (0.86, his yes of 15 Oct 2026; spec 07 part 17 "0.86"): with
+    /// `-packingDayInner` the trip has a Toiletry bag (with an AirTag) whose own line is packed in the
+    /// carry-on. Tags has cards for the carry-on and the Day pack only — the Toiletry bag's name tag
+    /// and AirTag are not asked — and one quiet line names it; Bags out still lays out all three.
+    /// Taken out to travel by itself (its Usually packed in No bag, which reaches the trip ahead), it
+    /// has its card again, its AirTag asked for too.
+    func testTagsLeaveOutABagPackedInsideAnother() {
+        let app = launch("-uiTestingPackingDay", ["-packingDayInner"])
+        openPackingDayTrip(app)
+        station(app, "tags")
+        XCTAssertTrue(appears(app, "day-view-tags", timeout: 5), "the sheet is not on Tags")
+        // A card keeps its bag's place among the trip's bags: 0 the Toiletry bag, 1 the carry-on, 2 the
+        // Day pack (Bags out below says so). Read by place — the card's heading is a text, and a text's
+        // words are its label on the iPhone but not on the Mac.
+        func cards() -> [Int] { (0..<4).filter { self.element(app, "day-tag-\($0)-bag").exists } }
+        XCTAssertTrue(waitUntil { cards() == [1, 2] }, "Tags asks about a bag packed inside another: cards \(cards())")
+        XCTAssertFalse(app.buttons["day-tag-0-name"].exists, "the Toiletry bag, inside the carry-on, is asked for a name tag")
+        let chip = app.buttons["day-sheet-station-tags"]
+        XCTAssertTrue(waitUntil { self.value(chip) == "0 of 3 ticked" }, "the inner bag counts for Tags: '\(value(chip))'")
+        let inside = element(app, "day-tags-inside")
+        XCTAssertTrue(waitUntil { inside.exists }, "no line says which bag was left out, and why")
+        XCTAssertEqual(words(inside), "No tags inside another bag: Toiletry bag (in the Carry-on / hand luggage).")
+        bringIntoView(app, inside)
+        shot(app, "tags-inside")
+        // The other stations still ask about all three bags.
+        tap(app, id: "day-sheet-station-bags")
+        XCTAssertTrue(appears(app, "day-view-bags", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-sheet-station-bags"]) == "0 of 3 out" },
+                      "Bags out: '\(value(app.buttons["day-sheet-station-bags"]))'")
+        for (n, bag) in ["Toiletry bag", "Carry-on / hand luggage", "Day pack"].enumerated() {
+            XCTAssertTrue(waitUntil { self.words(app.buttons["day-bag-\(n)"]).contains(bag) },
+                          "bag \(n) is not the \(bag): '\(words(app.buttons["day-bag-\(n)"]))'")
+        }
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        // Taken out: the Toiletry bag's Usually packed in → No bag (the last row).
+        openThing(app, "Toiletry bag")
+        XCTAssertEqual(app.textFields["thing-name"].value as? String, "Toiletry bag", "another thing opened")
+        openDropDown(app, "thing-bag")
+        let noBag = (0..<40).last { app.buttons["thing-bag-\($0)"].exists }!
+        closeDropDown(app, "thing-bag")
+        XCTAssertEqual(choose(app, "thing-bag", noBag), "No bag")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Save did not close")
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        openPackingDayTrip(app)
+        station(app, "tags")
+        XCTAssertTrue(appears(app, "day-view-tags", timeout: 5))
+        XCTAssertTrue(waitUntil { cards() == [0, 1, 2] }, "taken out, the Toiletry bag is not asked about again: cards \(cards())")
+        XCTAssertTrue(app.buttons["day-tag-0-air"].waitForExistence(timeout: 5), "its AirTag is not asked for again")
+        XCTAssertTrue(waitUntil { self.value(chip) == "0 of 5 ticked" }, "'\(value(chip))'")
+        XCTAssertFalse(element(app, "day-tags-inside").exists, "a bag that travels by itself is said to be inside another")
+        shot(app, "tags-inside-out")
+    }
+
     /// On a plane trip (0.80, spec 07 part 18 B), Tags has a Bag-tag no. for each CHECKED bag — the
     /// Day pack, not the carry-on, a cabin bag: typed and Return, it is kept (trimmed), does not
     /// count for Tags' green, and the Bags card's opened bag shows the same number. A trip not by
@@ -13248,6 +13306,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(words(guidePart(app, "guide-day-bags")).contains("Add a bag"), "Bags out does not explain + Add a bag")
         XCTAssertTrue(words(guidePart(app, "guide-day-tags")).contains("Remind me"), "Tags does not explain Remind me")
         XCTAssertTrue(words(guidePart(app, "guide-day-ready")).contains("Add a reminder"), "Ready does not explain Add a reminder")
+        // 0.86: no tags inside another bag (his yes of 15 Oct 2026).
+        XCTAssertTrue(words(guidePart(app, "guide-day-tags")).contains("inside another bag"),
+                      "Tags does not explain that a bag inside another has no card")
         toTopThird(app, guidePart(app, "guide-day-tags"))
         shot(app, "day-howitworks-2")
     }

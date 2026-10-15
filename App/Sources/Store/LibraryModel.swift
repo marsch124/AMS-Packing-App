@@ -312,7 +312,9 @@ extension LibraryModel {
     ///  -uiTestingPackingDay   → memory, the sample + a Day pack with an AirTag holding the boots
     ///                           and the jacket: a trip with two bags (the Packing day, 0.79); +
     ///                           -packingDayAlmost: every station done but the Map unticked; +
-    ///                           -packingDayByPlane: the trip by Plane (bag-tag numbers, 0.80)
+    ///                           -packingDayByPlane: the trip by Plane (bag-tag numbers, 0.80); +
+    ///                           -packingDayInner: a Toiletry bag with an AirTag, packed in the
+    ///                           carry-on, the Toothbrush in it (no tags inside another bag, 0.86)
     ///  -uiTestingLostBag      → memory, the Packing day's sample as a plane trip with flights
     ///                           and a stay, the Day pack's details and photo, and half of his
     ///                           details for the desk (the Lost bag page, 0.80)
@@ -407,7 +409,8 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingPackingDay") {
             let almost = args.contains("-packingDayAlmost"), byPlane = args.contains("-packingDayByPlane")
-            return LibraryModel(store: MemoryStore(SampleLibrary.packingDay(almost: almost, byPlane: byPlane).records()),
+            let inner = args.contains("-packingDayInner")
+            return LibraryModel(store: MemoryStore(SampleLibrary.packingDay(almost: almost, byPlane: byPlane, inner: inner).records()),
                                 usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingReviewedUndated") {
