@@ -172,7 +172,13 @@ WORKERS=()
 # given back after stage 5 — or here, however the script ends. A holder that is gone leaves it free.
 SIMLOCK=""
 release_sims() {
-  if [ -n "$SIMLOCK" ] && [ "$(cat "$SIMLOCK/pid" 2>/dev/null)" = "$$" ]; then rm -rf "$SIMLOCK"; fi
+  if [ -n "$SIMLOCK" ] && [ "$(cat "$SIMLOCK/pid" 2>/dev/null)" = "$$" ]; then
+    # Shut its simulators down too: three left booted after 0.85 kept the Mac's load near 600 and
+    # stalled the helpers that wait for free simulators (15 Oct 2026).
+    local u
+    for u in ${CLONES[@]+"${CLONES[@]}"}; do xcrun simctl shutdown "$u" >/dev/null 2>&1 || true; done
+    rm -rf "$SIMLOCK"
+  fi
   SIMLOCK=""
 }
 trap on_exit EXIT
