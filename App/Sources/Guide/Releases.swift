@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.86", date: "15 Oct 2026", title: "Battery, tags, and your lists at a hold",
+                new: ["The table of things has a Battery column: the battery mark for things that have one. Tap the cell to change it; sort and filter by it.",
+                      "Hold the Packing icon on your iPhone for the four grab lists you opened last \u{2014} tap one and it opens, ready to tick. On the Mac, right-click Packing in the Dock for all of them."],
+                changed: ["Tags asks only about bags that travel on their own: a bag packed inside another bag gets no name tag or AirTag question, and a quiet line says which one was left out and where it is."]),
         Release(version: "0.85", date: "15 Oct 2026", title: "Your own headings",
                 new: ["Grab lists take your own headings: in Edit, add a heading, name it, and put things under it \u{2014} the way a template\u{2019}s headings work. The open list shows them small and grey.",
                       "Heading above: hold a thing in a grab list\u{2019}s Edit (right-click on the Mac) for a new heading right above it."],
