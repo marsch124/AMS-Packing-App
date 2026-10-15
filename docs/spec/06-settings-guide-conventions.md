@@ -2078,7 +2078,8 @@ so a change to `project.yml` is committed together with the regenerated files. "
   backups; depends on PackingCore), the executables `parity` (depends on PackingCore only — public API) and
   `import-check` (PackingLibrary), and the test targets `PackingCoreTests`, `PackingLibraryTests`.
 - **Target `AMSPacking`** (application, destinations iOS and macOS): sources `App/Sources`, `App/Resources` (asset
-  catalogue: `AppIcon`, `AccentColor`); depends on both library products. Bundle id `<prefix>.AMSPacking`.
+  catalogue: `AppIcon`, `AccentColor`, and since 0.86 the folder `GrabIcons` — the grab lists' pictures under the app
+  icon, §19, §30); depends on both library products. Bundle id `<prefix>.AMSPacking`.
   `TARGETED_DEVICE_FAMILY` "1" (iPhone only, no iPad); `INFOPLIST_FILE` `App/Config/Info.plist`, not generated;
   `PACKING_USES_ICLOUD` "NO" by default.
 - **Entitlements, plain build** (`AMSPacking.entitlements`, generated from project.yml): app sandbox,
