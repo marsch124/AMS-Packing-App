@@ -3735,8 +3735,12 @@ final class AMSPackingUITests: XCTestCase {
     private func dockMenuPicture(_ name: String) {
         guard let dir = ProcessInfo.processInfo.environment["SHOTS_DIR"], !dir.isEmpty else { return }
         let dock = XCUIApplication(bundleIdentifier: "com.apple.dock")
-        let icon = dock.icons.matching(NSPredicate(format: "label == 'Packing' OR label == 'AMS Packing'")).firstMatch
-        guard icon.waitForExistence(timeout: 5) else { print("SHOT \(name): no Dock icon found"); return }
+        let mine = NSPredicate(format: "label CONTAINS 'Packing' AND NOT (label CONTAINS 'Runner')")
+        let icon = dock.descendants(matching: .dockItem).matching(mine).firstMatch
+        guard icon.waitForExistence(timeout: 5) else {
+            print("SHOT \(name): no Dock icon found among \(dock.descendants(matching: .dockItem).allElementsBoundByIndex.map(\.label))")
+            return
+        }
         icon.rightClick()
         sleep(2)
         let image = XCUIScreen.main.screenshot()
