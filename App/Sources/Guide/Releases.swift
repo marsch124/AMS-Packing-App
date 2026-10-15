@@ -18,6 +18,14 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.84", date: "15 Oct 2026", title: "Calmer, and in groups",
+                new: ["An open grab list falls into small grey headings by Kind of thing, in the order of your kinds. A list of one kind stays as it is."],
+                changed: ["Take a break is just the cup. While a break waits, the cup shows its time.",
+                          "Add to Calendar turns amber once you have picked a time.",
+                          "The break\u{2019}s reminder and its calendar entry start with \u{1F392}: \u{201C}\u{1F392} Back to packing \u{2026}\u{201D}.",
+                          "Shorter stations: Stations \u{00B7} Bags \u{00B7} Pack \u{00B7} Weigh \u{00B7} Tag \u{00B7} Photo \u{00B7} Ready. Pack no longer shows a count.",
+                          "The trip\u{2019}s Review button shows once the trip has started \u{2014} from On site on, not while you plan or pack.",
+                          "A grab list\u{2019}s Share sits at the bottom right, round, under Ready to go."]),
         Release(version: "0.83", date: "14 Oct 2026", title: "Add a bag anywhere",
                 new: ["The trip's Bags card has + Add a bag too \u{2014} one of your bags or a new one, right where you look at the bags."],
                 changed: ["No Lost bag? under On body \u{2014} that is you, not a bag a desk can lose.",
