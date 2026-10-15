@@ -87,7 +87,7 @@ row per kind (`review-health-row-<n>`, top to bottom), for example
 and a button **"Use these"** (`review-health-use`; green, always in full colour). Row words, from
 `Library.rowWords`: the kind's name; then "indoor" or "outdoor" when every workout of the kind had that context,
 "2 indoor, 1 outdoor" when they differ, nothing when Apple Health could not tell any; then "once" or "N times".
-Kinds done come first in the kinds' order (Swim, Bike, Run, Strength, Mobility & breath work, Hiking, Golf,
+Kinds done come first in the kinds' order (Swim, Bike, Run, Strength, Mobility & breath, Hiking, Golf,
 Climbing, Diving), then the "No …" rows in the same order — "No " + the kind's name in lower case ("No bike",
 "No mobility & breath work"). Done rows are Callout semibold ink, "No …" rows Callout regular muted.
 
@@ -127,7 +127,7 @@ is WET); the common base and the transport templates never do.
 | Bike | bike, biking, cycling, cycle |
 | Run | run, running |
 | Strength | strength, strength training, gym |
-| Mobility & breath work | mobility, breath work, breath, Mobility & Breath work, Mobility and Breath work, Mobility & breath, yoga, stretching |
+| Mobility & breath | mobility, breath work, breath, Mobility & Breath work, Mobility and Breath work, Mobility & breath, yoga, stretching |
 | Hiking | hiking, hike |
 | Golf | golf |
 | Climbing | climbing, climb |
@@ -151,7 +151,7 @@ lines are left alone and it never gets a "No …" row.
 | Cycling (13) | Bike | indoor workout → Indoor; otherwise (also not said) Outdoor |
 | Running (37) | Run | indoor workout → Indoor; otherwise Outdoor |
 | Traditional strength training (50), functional strength training (20), core training (59) | Strength | Indoor |
-| Yoga (57), mind and body (29), flexibility (62), cooldown (80), preparation and recovery (33) | Mobility & breath work | — (either) |
+| Yoga (57), mind and body (29), flexibility (62), cooldown (80), preparation and recovery (33) | Mobility & breath | — (either) |
 | Hiking (24) | Hiking | Outdoor |
 | Golf (21) | Golf | Outdoor |
 | Climbing (9) | Climbing | indoor workout → Indoor; otherwise Outdoor |
@@ -3564,6 +3564,7 @@ left is not under the count"). Green again without them, day and night.
 | 15 Oct 2026 | The trip header's Review only once the trip has started — On site or later (on the first day from the time he leaves); never at Plan or Pack; a trip with no start date keeps it at any time; the loop strip's Review step unchanged | His words on the Review button beside Done at Pack: "is that really necessary?" — then his yes to "only once the trip has started". The undated trip decided by the build (else it could never be reviewed). Part 17, "0.84"; spec 03. |
 | 15 Oct 2026 | An open grab list falls under small grey headings, one per **Kind of thing** of its things (a name matched to his thing by its plain name), in HIS order of kinds, then a kind no longer on his list, "Other" last (names that are none of his things, no kind, or a kind he called Other); the list's own order within each; only when its things are of two kinds or more ("Other" does not count), else flat as before; the heading Footnote semibold grey, a hair of letter-spacing, not in capitals, no tick and no count; the editor stays flat; the count, ticks, skips and Ready to go unchanged. No count on a heading, the editor flat and "Other" always last decided by the build (0.84) | On a picture of "Outdoor bike" open on the Mac, "0 of 17 in hand" in one flat run: "a bit more visual with some grouping … only for visuals but important to me" — "small headings in the list … maybe another colour, grey or something like that". Spec 02 §6. |
 | 15 Oct 2026 | A grab list's Share leaves its header (Edit and Done stay) for the bottom right, on the line of the words under Ready to go: a quiet ROUND button, the share mark in the list's colour on its 10 % fill with a ring, 38 across on the iPhone, 30 on the Mac, never grey; same id, same sheet (0.84) | Same picture: "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can we make the share button more rounded?" Spec 02 §6 item 6. |
+| 15 Oct 2026 | The Mobility kind is called **"Mobility & breath"** (was "Mobility & breath work") on the review's rows and in Counts as | His words: "Adjust: “Mobility & Breath work” to “Mobility & Breath”". His template was renamed the same day in his app; a template's Counts as is stored as the kind (`mobility`), not its label, and "Mobility & Breath" already meets the kind by its name, so nothing of his changes. |
 
 ## Open questions
 

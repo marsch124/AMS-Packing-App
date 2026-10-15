@@ -25,7 +25,7 @@ public enum WorkoutKind: String, CaseIterable, Sendable {
         case .bike: return "Bike"
         case .run: return "Run"
         case .strength: return "Strength"
-        case .mobility: return "Mobility & breath work"
+        case .mobility: return "Mobility & breath"
         case .hiking: return "Hiking"
         case .golf: return "Golf"
         case .climbing: return "Climbing"
@@ -146,7 +146,7 @@ public struct MetWorkout: Equatable, Sendable {
 
 /// The workouts the review uses, each with its context (the table in chapter 07):
 /// Swim — pool → Indoor, open water → Outdoor, unknown → either; Bike, Run, Climbing —
-/// indoor workout → Indoor, otherwise Outdoor; Strength → Indoor; Mobility & breath work →
+/// indoor workout → Indoor, otherwise Outdoor; Strength → Indoor; Mobility & breath →
 /// either; Hiking, Golf, Diving → Outdoor. A multisport workout counts as its parts (a
 /// triathlon = a swim, a ride and a run; the change-overs are nothing). Any other type is
 /// left out.
