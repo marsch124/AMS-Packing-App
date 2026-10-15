@@ -7888,6 +7888,70 @@ final class AMSPackingUITests: XCTestCase {
                       "the tick did not change")
     }
 
+    /// The table's Battery column (0.86, his "Battery column: yes", 15 Oct 2026): it ARRIVES once
+    /// among the columns he chose before it existed (after his last column about the thing
+    /// itself); a thing with a battery shows the drawn mark in its row's cell, one without an
+    /// empty cell; a tap gives it one; it filters as every column does; hidden, it stays hidden.
+    /// (`-uiTestingBattery`: the Power bank and the Toothbrush have a battery, the Headlamp none;
+    /// `-tableChosenBefore`: he had chosen Weight, Liquid and How many.)
+    func testTheTableShowsWhichThingsHaveABattery() {
+        let app = launch("-uiTestingBattery", ["-tableChosenBefore"])
+        tab(app, "care")
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "no table")
+
+        // It arrived, between Liquid (his last column about the thing) and How many.
+        let head = app.buttons["table-head-battery"]
+        XCTAssertTrue(head.waitForExistence(timeout: 5), "the Battery column did not arrive among his columns")
+        let liquid = app.buttons["table-head-liquid"].frame, quantity = app.buttons["table-head-listQty"].frame
+        XCTAssertTrue(liquid.minX < head.frame.minX && head.frame.minX < quantity.minX,
+                      "Battery is not between Liquid and How many: \(liquid.minX) · \(head.frame.minX) · \(quantity.minX)")
+        shot(app, "battery-table-column")
+
+        // The Power bank shows the mark; the Headlamp an empty cell.
+        type("Power bank", into: app.textFields["table-search"])
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-count"]) == "1" }, "the search did not find the Power bank")
+        let cell = app.buttons["table-0-battery"]
+        XCTAssertTrue(cell.waitForExistence(timeout: 5), "the Power bank's row has no battery cell")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["table-0-battery"]) },
+                      "the Power bank's row shows no battery: '\(app.buttons["table-0-battery"].value ?? "")'")
+        XCTAssertEqual(app.buttons["table-0-battery"].value as? String, "yes")
+        replace("Headlamp", in: app.textFields["table-search"])
+        XCTAssertTrue(waitUntil { self.words(app.buttons["table-0-name"]) == "Headlamp" || self.words(app.staticTexts["table-0-name"]) == "Headlamp" },
+                      "the search did not find the Headlamp")
+        XCTAssertFalse(isOn(app.buttons["table-0-battery"]), "the Headlamp's row shows a battery it does not have")
+        XCTAssertEqual(app.buttons["table-0-battery"].value as? String, "no")
+
+        // A tap gives the Headlamp one, where it stands.
+        tapVisible(app, app.buttons["table-0-battery"])
+        XCTAssertTrue(waitUntil(timeout: 5) { self.isOn(app.buttons["table-0-battery"]) }, "a tap did not give the Headlamp a battery")
+
+        // It filters as every column does: Yes keeps the three.
+        tap(app, id: "table-search-clear")
+        tap(app, id: "table-filter")
+        XCTAssertTrue(appears(app, "filter-sheet", timeout: 5), "the filter did not open")
+        tap(app, id: "filter-col-battery")
+        tap(app, id: "filter-battery-0")
+        tap(app, id: "filter-done")
+        XCTAssertTrue(disappears(app, "filter-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["table-count"]) == "3" },
+                      "Battery: Yes does not keep the three: '\(self.words(app.staticTexts["table-count"]))'")
+        tap(app, id: "table-filters-clear")
+
+        // Hidden, it stays hidden: it arrives once.
+        tap(app, id: "table-columns")
+        XCTAssertTrue(appears(app, "columns-detail", timeout: 5), "the columns sheet did not open")
+        tap(app, id: "columns-battery-hide")
+        tap(app, id: "columns-done")
+        XCTAssertTrue(disappears(app, "columns-detail", timeout: 5))
+        tap(app, id: "table-done")
+        XCTAssertTrue(disappears(app, "table-detail", timeout: 5))
+        tap(app, id: "care-table")
+        XCTAssertTrue(appears(app, "table-detail", timeout: 5), "the table did not open again")
+        XCTAssertTrue(app.buttons["table-head-liquid"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["table-head-battery"].exists, "the Battery column came back after he hid it")
+    }
+
     /// One search that reaches everything, from whichever screen he is on: a thing
     /// opens the THING, a list opens the list, and a word nothing answers to says so.
     func testOneSearchReachesEverything() {
@@ -8924,7 +8988,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "table-columns")
         XCTAssertTrue(appears(app, "columns-detail", timeout: 5))
         tap(app, id: "columns-list-2-show")
-        for gone in ["weight", "storage", "container", "ownedBy", "packer", "condition", "listQty"] {
+        for gone in ["weight", "storage", "container", "ownedBy", "packer", "condition", "battery", "listQty"] {
             tap(app, id: "columns-\(gone)-hide")
         }
         tap(app, id: "columns-done")

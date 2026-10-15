@@ -1537,6 +1537,9 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
   that has a battery, the ones inside a kit on the trip too ("In the Camp pouch"), each with a CHARGE tick of its
   own. Ticking charged does not pack it; packing it does not mark it charged.
 - **Your things**: a filter **Has a battery** beside On no template — the things to charge, at a glance.
+- **The things table** (0.86, his "Battery column: yes", 15 Oct 2026): a **Battery** column — the drawn battery mark
+  in the row of each thing that has one, an empty cell for one that has none; a tap gives or takes it; it sorts,
+  filters and takes Change all like every column. Spec 05, Table columns, "Battery".
 - **Check before you go** (0.76, his yes of 13 Oct 2026; Before you go's flags since 0.77): on a PLANE trip, a thing
   with a battery in a CHECKED bag is a red line — "Battery: carry it in the cabin · in Checked luggage" — because airlines want lithium batteries and
   power banks in the cabin. Rule 8 below.
@@ -1605,6 +1608,13 @@ screen: Context and Food on the thing's page, `thing-some-own`, unknown words (t
   keeps only things with a battery; with the search and On no template, all must hold. ⌘↓ ⌘↑ on the Mac go through
   the things as so filtered. When the count and the pills do not fit on one line (an iPhone), the pills go on a line
   of their own under the count.
+- **The things table** (0.86, spec 05 "Table columns and cells", "Battery"): the column `battery`, "Battery", 68 wide,
+  among the thing's own columns right before Charges, a starting column after Condition, and put ONCE among the
+  columns he had chosen before it came (`ams.table.batteryArrived`). Its cell `table-<n>-battery`: the drawn battery
+  mark (`ToChargeCard.battery`, 20 pt on the Mac, 24 on the iPhone, orange) when the thing has a battery, nothing
+  when not; a tap turns it round (`Item.hasBattery` → `Library.setBattery`). Value "yes" / "no", selected trait when
+  yes. Filter "Yes" / "No", Sort yes first ▲, Change all "Battery: yes" / "Battery: no" with an Undo that puts the key
+  back or takes it away again.
 - **To charge, the last part of Before you go** (0.77; spec 03, "Before you go"; id `trip-beforego-part-charge`): the
   heading line — the drawn battery mark (16 pt), "To charge" (Footnote semibold muted), "·" and "1 of 3" — charged of
   all (Footnote semibold; id `trip-charge-count`, label "1 of 3 charged"); the mark and the count orange
@@ -1702,7 +1712,9 @@ Tests.
 
 ### Open questions
 
-- The table has no column for "Has a battery" (its **Charges** column is the web app's `charging`). Worth one?
+- ~~The table has no column for "Has a battery" (its **Charges** column is the web app's `charging`). Worth one?~~
+  Answered 15 Oct 2026 (0.86, his "Battery column: yes"): the table's **Battery** column (spec 05, Table columns,
+  "Battery"). Charges stays the web app's flag, beside it.
 - ~~Should a battery thing in a cabin bag on a plane trip say anything in Check before you go (spare batteries and
   power banks must travel in the cabin)? Not asked for; not built.~~ Answered 13 Oct 2026 (0.76, his yes): a thing
   with a battery in a CHECKED bag is a red line in Check before you go (rule 8); one in a cabin bag says nothing.
@@ -3567,6 +3579,7 @@ left is not under the count"). Green again without them, day and night.
 | 15 Oct 2026 | **A grab list's headings are HIS (0.85), replacing 0.84's grouping by Kind of thing.** In Edit: "A new heading" + Add (a template's "A new section") puts a heading LAST; its grip ≡ (on the Mac ▲▼ too) moves it alone, like a line; a thing belongs to the heading above it, so he groups things by moving them under a heading; tap a heading's name to change it; ✕ removes it, asking nothing — its things stay and join what is above. A heading row is clearly not a thing's: Headline in the list's colour on no box, a heading's grip, no "1 in 10". The open list shows his headings with 0.84's small grey look (Footnote semibold, muted, letter-spaced; `grab-group-<g>`); things above the first heading stand under none; a heading with nothing under it is not shown; a list without headings is flat as before. Headings are never ticked, skipped or counted (`GrabDefinition.items` = the things alone; a list changes through `lines`). STORED among the list's own names in a reserved form — U+2063, "##", a space, the name — because a field of its own survives the store but not the next save (`grabToRows` writes `GrabList`'s five fields) nor the backup (built field by field); the names already travel through store, iCloud, backup, restore and share links, and no keyboard types U+2063, so his "- " and "❄️" names stay things. Share sends headings as their own lines; this app reads them back as headings. GrabKinds, `-uiTestingGrabKinds` and their tests are gone. Spec 02 §5–7, §10 | His question before 0.84 shipped: "How do I define the small headings, and how do I group the items in the various headings? I need to be able to do that, I believe." His verdict on 0.84: "I think you have misunderstood the grab list, and you have made the sections wrong." His lists are free text ("Start fans", "Open windows"), and he already made groups by hand with prefixes in the names. Tests seen RED with planted faults first: model `GrabHeadingsTests` (12) on seven faults, e.g. "XCTAssertEqual failed: (\"7\") is not equal to (\"11\") - the link's lines: 7 things and 4 headings"; UI `testHisOwnHeadingGroupsAGrabList` and `testAGrabListOpensUnderHisHeadings` on six, e.g. "XCTAssertTrue failed - the heading was counted: '0 of 8 in hand'", "XCTAssertTrue failed - its thing went with it" (spec 02 §6 lists them all). |
 | 15 Oct 2026 | **"Heading above" (0.85):** in a grab list's Edit, each THING's name has a context menu — held on the iPhone, right-clicked on the Mac — with one entry, "Heading above", which puts a heading with no name right above that thing, the keyboard on it; a heading left unnamed is dropped on Save (nothing he can see changed, so nothing asks). On the iPhone the menu is on the name only, not the whole row: holding the grip still drags. On the Mac a right-click on a text field is the field's own (Cut, Copy, Paste), so a view behind the name catches the right-click first (`RightClickMenu`, a local event monitor; a layer over the field made it "not hittable"), and the rest of the row has the same menu. The foot's "A new heading" stays; the hint adds "Hold a thing (right-click on the Mac) for a heading above it." Spec 02 §7 | Asked before 0.85 shipped: a new heading always went last, a long drag on his 17-thing lists. Test `testAHeadingGoesAboveTheThingHeHolds`, seen RED with planted faults first ("XCTAssertTrue failed - no heading above the thing held", "XCTAssertTrue failed - the new heading does not have the keyboard", "XCTAssertTrue failed - holding a thing offers no Heading above", "XCTAssertEqual failed: (\"Heading\") is not equal to (\"In the bag\") - the unnamed heading was kept, or the named one lost"). |
 | 15 Oct 2026 | The Mobility kind is called **"Mobility & breath"** (was "Mobility & breath work") on the review's rows and in Counts as | His words: "Adjust: “Mobility & Breath work” to “Mobility & Breath”". His template was renamed the same day in his app; a template's Counts as is stored as the kind (`mobility`), not its label, and "Mobility & Breath" already meets the kind by its name, so nothing of his changes. |
+| 15 Oct 2026 | The things table gets a **Battery** column (0.86): the drawn battery mark when a thing has a battery, an empty cell when not; a tap changes it; it sorts, filters and takes Change all like Liquid, and Undo puts it back both ways. Only "Has a battery" is shown — the model knows nothing more about a battery, and how a thing charges stays the web app's Charges column. Placed before Charges among the thing's own columns; a starting column; put once among the columns he had already chosen (hidden afterwards, it stays hidden) | His words: "Battery column: yes". Part 15; spec 05, Table columns, "Battery". Tests seen RED with planted faults first: UI `testTheTableShowsWhichThingsHaveABattery` ("XCTAssertTrue failed - the Power bank's row shows no battery: 'no'"; "XCTAssertTrue failed - the Battery column did not arrive among his columns"), model `BatteriesTests.testTheTableFiltersSortsAndChangesAllByBattery` ("XCTAssertEqual failed: ("0") is not equal to ("1") - Undo of Battery: no put nothing back"). |
 
 ## Open questions
 

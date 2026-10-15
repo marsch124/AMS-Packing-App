@@ -12,9 +12,13 @@ enum TableColumns {
     #if os(macOS)
     static let rowHeight: CGFloat = 22
     static let box: CGFloat = 14
+    /// A drawn mark in a cell (0.86, Battery), on the icons' 24-point grid: a battery's body is
+    /// 15 of those wide and 9 tall, so at 20 it is about as wide as a tick box and fits the row.
+    static let mark: CGFloat = 20
     #else
     static let rowHeight: CGFloat = 28
     static let box: CGFloat = 18
+    static let mark: CGFloat = 24
     #endif
 
     /// Where a choice column gets its list of answers — his own Settings lists,
@@ -45,6 +49,9 @@ enum TableColumns {
         let kind: Kind
         /// Which heading band it sits under.
         var group = "The thing itself"
+        /// A yes/no column that shows a drawn MARK when yes and nothing when no, instead of
+        /// the filled box — Battery (0.86): the battery mark of To charge and a thing's page.
+        var mark: String? = nil
     }
 
     /// A run of neighbouring columns that share a band, so the band is drawn over
@@ -115,6 +122,10 @@ enum TableColumns {
         Column(id: "serial", title: "Serial", width: 120, kind: .words(\Item.serial)),
         Column(id: "note", title: "Note", width: 180, kind: .words(\Item.note)),
         Column(id: "liquid", title: "Liquid", width: 62, kind: .flag(\Item.liquid)),
+        // Has a battery (0.86, his "Battery column: yes", 15 Oct 2026): the drawn battery mark
+        // when it has one, an empty cell when not. Beside Charges — the web app's "needs
+        // charging or a charging cable", which a cable carries too — so the two read together.
+        Column(id: "battery", title: "Battery", width: 68, kind: .flag(\Item.hasBattery), mark: ToChargeCard.battery),
         Column(id: "charging", title: "Charges", width: 68, kind: .flag(\Item.charging)),
         Column(id: "restricted", title: "Restricted", width: 78, kind: .flag(\Item.restricted)),
         Column(id: "consumable", title: "Runs out", width: 72, kind: .flag(\Item.consumable)),
@@ -144,8 +155,24 @@ enum TableColumns {
 
     static func all(_ library: Library) -> [Column] { intrinsic + perListColumns + listColumns(library) }
 
-    /// What he sees before he has chosen anything: the gaps he actually has.
-    static let startingColumns = ["weight", "storage", "container", "ownedBy", "packer", "condition", "listQty"]
+    /// What he sees before he has chosen anything: the gaps he actually has — and, since 0.86,
+    /// which things have a battery (his "Battery column: yes"), after the thing's own columns.
+    static let startingColumns = ["weight", "storage", "container", "ownedBy", "packer", "condition", "battery", "listQty"]
+
+    /// A column that is new in this version, put among the columns he has CHOSEN once (0.86,
+    /// Battery): right after the last of his columns about the thing itself, so it sits under
+    /// that band — at the front when he shows none. Nothing when he has chosen nothing (the
+    /// starting columns hold it) or shows it already. Hidden afterwards, it stays hidden: the
+    /// table asks this once per device (`ams.table.batteryArrived`).
+    static func arriving(_ id: String, into stored: String, library: Library) -> String {
+        guard !stored.isEmpty else { return stored }
+        var order = ids(stored, library: library)
+        guard !order.contains(id) else { return stored }
+        let own = Set(intrinsic.map(\.id))
+        let at = order.lastIndex { own.contains($0) }.map { $0 + 1 } ?? 0
+        order.insert(id, at: at)
+        return order.joined(separator: ",")
+    }
 
     /// His chosen columns' ids, in his order. Ids that are no longer columns (a
     /// template he deleted) fall away HERE, before anything counts them: they kept
@@ -262,8 +289,15 @@ struct Cell: View {
                 }
             case .words(let path): box(text: thing[keyPath: path], blank: false) { commitWords($0, path) }
             case .choice(let path, let which): choice(path, which)
-            case .flag(let path): tick(thing[keyPath: path]) { on in
-                    model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = on } }
+            case .flag(let path):
+                if let mark = column.mark {
+                    marked(thing[keyPath: path], mark) { on in
+                        model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = on } }
+                    }
+                } else {
+                    tick(thing[keyPath: path]) { on in
+                        model.change { _ = $0.updateThing(id: thing.id) { it in it[keyPath: path] = on } }
+                    }
                 }
             case .onList(let listId): tick(onList(listId)) { on in
                     model.change { _ = $0.setOnTemplate(itemId: thing.id, templateId: listId, on: on) }
@@ -351,6 +385,27 @@ struct Cell: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier(id)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// A yes/no shown as a drawn mark (0.86, Battery): the mark when yes — orange, as a ticked
+    /// box is — and an EMPTY cell when no, so the things that have one stand out down the
+    /// column. Changed where it stands, as every cell is: a tap (a click) turns it round.
+    private func marked(_ on: Bool, _ mark: String, _ set: @escaping (Bool) -> Void) -> some View {
+        Button { set(!on) } label: {
+            ZStack {
+                if on {
+                    IconMark(path: mark, size: TableColumns.mark).foregroundStyle(AppSection.care.color)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .help("\(column.title): \(on ? "yes" : "no") \u{2014} click to change it")
+        .accessibilityIdentifier(id)
+        .accessibilityLabel(column.title)
+        .accessibilityValue(on ? "yes" : "no")
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 

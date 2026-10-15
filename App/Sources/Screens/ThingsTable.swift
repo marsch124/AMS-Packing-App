@@ -37,6 +37,10 @@ struct ThingsTable: View {
     @AppStorage("ams.table.columns") private var chosenColumns = ""
     /// His own column widths, "id=points;…" (0.66, `TableColumns.widths`).
     @AppStorage("ams.table.widths") private var widthsStored = ""
+    /// The Battery column has been put among his chosen columns (0.86) — once per device, so a
+    /// column he hides afterwards stays hidden (`TableColumns.arriving`).
+    @AppStorage(ThingsTable.batteryArrivedKey) private var batteryArrived = false
+    static let batteryArrivedKey = "ams.table.batteryArrived"
     /// A column whose line is being dragged: drawn at `width` while the drag lasts,
     /// and kept only when it ends — one write, not one per point moved.
     private struct Resize: Equatable { let id: String; let start: CGFloat; var width: CGFloat }
@@ -212,7 +216,7 @@ struct ThingsTable: View {
         .accessibilityIdentifier("table-detail")
         // A template deleted since (here, or on his other device) takes its filter
         // and its sort level with it.
-        .onAppear { forgetWhatIsGone() }
+        .onAppear { forgetWhatIsGone(); batteryArrives() }
         .onChange(of: model.library.templates.map(\.id)) { _, _ in forgetWhatIsGone() }
         #if os(macOS)
         .frame(minWidth: 760, minHeight: 560)
@@ -231,6 +235,16 @@ struct ThingsTable: View {
         let then = TableKeys.levels(thenStored).filter { library.tableKnows($0.key) }
         let kept = TableKeys.store(then)
         if kept != thenStored { thenStored = kept }
+    }
+
+    /// His yes of 15 Oct 2026 ("Battery column: yes"): the new column is THERE when he opens the
+    /// table, not waiting under Not showing in Columns — once, after his columns about the thing
+    /// itself. With nothing chosen the starting columns already hold it.
+    private func batteryArrives() {
+        guard !batteryArrived else { return }
+        batteryArrived = true
+        let now = TableColumns.arriving("battery", into: chosenColumns, library: model.library)
+        if now != chosenColumns { chosenColumns = now }
     }
 
     /// The heading: the band saying which group a run of columns belongs to, then

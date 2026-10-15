@@ -67,8 +67,12 @@ extension Library {
                   case .object(let was) = old.json, case .object(let wrote) = made.json,
                   case .object(var current) = now.json else { continue }
             var touched = false
-            for (key, value) in wrote where was[key] != value && current[key] == value {
-                current[key] = was[key] ?? .null
+            // Every key the change touched — one it wrote, and one it TOOK AWAY: Has a battery
+            // is a key only while it is on (Batteries.swift), so "Battery: no" removes it, and
+            // walking only what was written could not put it back (0.86). A key the change
+            // added goes again; one it removed comes back.
+            for key in Set(was.keys).union(wrote.keys) where was[key] != wrote[key] && current[key] == wrote[key] {
+                current[key] = was[key]
                 touched = true
             }
             guard touched else { continue }

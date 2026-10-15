@@ -48,6 +48,16 @@ public struct ChargeRow: Equatable, Sendable {
     public var id: String { contentId.map { "\(lineId)|\($0)" } ?? lineId }
 }
 
+extension Item {
+    /// Has a battery, read and written as a field — the things table's Battery column, its
+    /// filter, its sort and Change all (0.86, his "Battery column: yes", 15 Oct 2026) go through
+    /// the same key paths as Liquid's. Writing it is `Library.setBattery`: the key only when on.
+    public var hasBattery: Bool {
+        get { Library.hasBattery(self) }
+        set { Library.setBattery(&self, newValue) }
+    }
+}
+
 extension Library {
     // MARK: - The thing
 

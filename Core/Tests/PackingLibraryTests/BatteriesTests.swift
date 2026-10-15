@@ -218,4 +218,49 @@ final class BatteriesTests: XCTestCase {
         XCTAssertEqual(said(lib.toCharge(tripId: again.id)), ["Toothbrush in Wash bag", "Power bank in Camp pouch", "Headlamp"])
         XCTAssertEqual(said(lib.toCharge(tripId: t)), shown, "the trip itself keeps its own")
     }
+
+    // MARK: - The things table (0.86)
+
+    /// The table's Battery column (his "Battery column: yes", 15 Oct 2026) is filtered, sorted and
+    /// changed for many things at once the way Liquid is — and Undo of a Change all puts Has a
+    /// battery back BOTH ways, although "no" is no key at all.
+    func testTheTableFiltersSortsAndChangesAllByBattery() {
+        var lib = BatteriesTests.library()
+        func thing(_ name: String) -> Item { lib.items.first { $0.name == name }! }
+        // Filter: Yes, then No, each with how many — the charger's web flag is no battery.
+        let answers = lib.filterAnswers(column: "battery", among: lib.items)
+        XCTAssertEqual(answers.map(\.label), ["Yes", "No"])
+        XCTAssertEqual(answers.map(\.count), [4, 7])
+        XCTAssertEqual(lib.items.filter { lib.passes($0, ["battery": ["yes"]]) }.map(\.name).sorted(),
+                       ["GPS watch", "Headlamp", "Power bank", "Toothbrush"])
+        XCTAssertFalse(lib.passes(thing("Phone charger"), ["battery": ["yes"]]), "the web app's Charging flag counted as a battery")
+        XCTAssertEqual(lib.filterSummary(column: "battery", kept: ["yes"]), "Yes")
+        XCTAssertTrue(lib.tableKnows("battery"))
+        // Sort: ▲ the things with a battery first, A–Z among them; ▼ last.
+        let up = lib.sortThings(lib.items, by: [SortLevel(key: "battery")]).map(\.name)
+        XCTAssertEqual(Array(up.prefix(4)), ["GPS watch", "Headlamp", "Power bank", "Toothbrush"])
+        let down = lib.sortThings(lib.items, by: [SortLevel(key: "battery", descending: true)]).map(\.name)
+        XCTAssertEqual(Array(down.suffix(4)), ["GPS watch", "Headlamp", "Power bank", "Toothbrush"])
+
+        // Change all, "Battery: no" on the Headlamp and the Map (which has none), as the table does
+        // it — through the column's key path — then Undo: the Headlamp's battery comes back.
+        let two = BatteriesTests.ids(lib, "Headlamp", "Map")
+        let path: WritableKeyPath<Item, Bool> = \.hasBattery
+        var before = lib.items.filter { two.contains($0.id) }
+        for id in two { _ = lib.updateThing(id: id) { $0[keyPath: path] = false } }
+        var after = lib.items.filter { two.contains($0.id) }
+        XCTAssertNil(thing("Headlamp").extra[BATTERY_KEY], "Battery: no left the key")
+        XCTAssertEqual(lib.undoChange(before: before, after: after), 1, "Undo of Battery: no put nothing back")
+        XCTAssertEqual(thing("Headlamp").extra[BATTERY_KEY], .bool(true), "Undo did not put the Headlamp's battery back")
+        XCTAssertNil(thing("Map").extra[BATTERY_KEY])
+
+        // "Battery: yes" undone takes the key away again — no false and no null left behind.
+        before = lib.items.filter { two.contains($0.id) }
+        for id in two { _ = lib.updateThing(id: id) { $0[keyPath: path] = true } }
+        after = lib.items.filter { two.contains($0.id) }
+        XCTAssertTrue(Library.hasBattery(thing("Map")))
+        XCTAssertEqual(lib.undoChange(before: before, after: after), 1, "only the Map changed")
+        XCTAssertNil(thing("Map").extra[BATTERY_KEY], "Undo left a battery key on the Map: \(String(describing: thing("Map").extra[BATTERY_KEY]))")
+        XCTAssertTrue(Library.hasBattery(thing("Headlamp")), "Undo took the Headlamp's own battery away")
+    }
 }

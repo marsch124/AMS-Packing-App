@@ -47,8 +47,10 @@ extension Library {
         "condition": \.condition, "color": \.color, "size": \.size, "manufacturer": \.manufacturer,
         "model": \.model, "serial": \.serial, "note": \.note,
     ]
+    /// The yes/no columns. "battery" is Has a battery (0.86, Batteries.swift) — not the web
+    /// app's "charging" (the Charges column), which a charging cable carries too.
     static let flagFields: [String: KeyPath<Item, Bool>] = [
-        "liquid": \.liquid, "charging": \.charging, "restricted": \.restricted,
+        "liquid": \.liquid, "battery": \.hasBattery, "charging": \.charging, "restricted": \.restricted,
         "consumable": \.consumable, "perNight": \.perNight,
     ]
 

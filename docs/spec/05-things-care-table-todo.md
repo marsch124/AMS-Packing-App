@@ -1799,7 +1799,8 @@ is changed where it stands, he chooses which columns he sees and in which order,
 attempt (three fixed columns in a list) got: "It is not at all what it should be. You should be able to quickly
 update items — like Excel." Releases: 0.9 (23 Sep 2026) the table; 0.11 a real spreadsheet; 0.12 Change all;
 0.14 How many and Section per template; 0.58 (4 Oct 2026) filter by any column, up to three sort levels, the
-open arrow, the Mac window, 44-point arrows in Columns.
+open arrow, the Mac window, 44-point arrows in Columns; 0.86 (15 Oct 2026) the **Battery** column — his "Battery
+column: yes" (see Table columns, "Battery").
 
 **How it is reached and left.** Care → "All your things · table" (`care-table`). iPhone: a sheet; "Done"
 (`table-done`; Escape too — ⌘. on an iPhone keyboard, 0.62) or a swipe closes it. Mac: the window "All your things"
@@ -1873,6 +1874,15 @@ Its sheets (Filter, Sort, Columns, Change, a thing) do close with Escape, on the
 - **Forgetting what is gone (0.62):** on appear, and whenever the templates change (here, or on the other
   device), a stored filter or sort level naming a template that is gone (or his bag list) is dropped from
   `ams.table.filters` / `ams.table.sort` (back to "name", ▲) / `ams.table.then` (`forgetWhatIsGone`).
+- **The Battery column arrives once (0.86).** On appear, after `forgetWhatIsGone`, `batteryArrives()`: the first
+  time on this device (`@AppStorage("ams.table.batteryArrived")`, false), the flag is set and, when he HAS chosen
+  columns (`ams.table.columns` not ""), `TableColumns.arriving("battery", into:library:)` puts Battery among them —
+  right after the last of his shown columns about the thing itself (`intrinsic`), so it sits under that band; at the
+  front when he shows none of those; nothing when he shows it already. With nothing chosen the starting columns hold
+  it. Hidden afterwards in Columns, it stays hidden (the flag is never cleared). Decided by the build so that his yes
+  shows when he opens the table, instead of waiting under "Not showing" in Columns. A `-uiTesting` launch forgets the
+  flag with the other table settings; `-tableChosenBefore` then stores "weight,liquid,listQty" as columns he chose
+  before Battery came.
 - **A heading press** (`turn(key)`): the same key again turns it over; another key becomes the first level,
   ascending; the "then by" levels lose any level with that key.
 - **Ticks:** `chosen` holds ids and is kept while he searches or filters, so ticked rows that are now hidden
@@ -1890,6 +1900,7 @@ Its sheets (Filter, Sort, Columns, Change, a thing) do close with Escape, on the
   forgets it.
 - What stays while he works, on this device only (`@AppStorage`, UserDefaults, not synced):
   `ams.table.columns` (his columns as a comma-separated list of ids; "" = the starting columns),
+  `ams.table.batteryArrived` (Bool, false — the Battery column has been put among his columns, 0.86),
   `ams.table.sort` (first sort key, "name"), `ams.table.down` (Bool, false), `ams.table.then` (JSON array of
   `SortLevel {key, descending}`), `ams.table.filters` (JSON object column id → array of kept answers).
   The search, the quick chip, the ticks and the undo copy are `@State` and start fresh every time.
@@ -1915,8 +1926,10 @@ shown Colour column; Done closes); `testManyThingsAreChangedAtOnceAndCanBePutBac
 `testWhatBelongsToAListIsEditedPerList`.
 
 UI (0.62): `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight` (two ticked, a search shows one → "2 ticked ·
-1 not shown"), `testATemplateDeletedTakesItsFilterAndColumnAlong`, `testTheFirstOwnerIsMadeInsideWhoseItIs`
-(`table-pick-all` ticks all ten). Model: `ThingsAndCareFixesTests.testUndoPutsBackOnlyWhatChangeAllChanged`.
+1 not shown"), `testATemplateDeletedTakesItsFilterAndColumnAlong` (since 0.86 it hides Battery too, a starting
+column now, so the gone template's column is the last one left), `testTheFirstOwnerIsMadeInsideWhoseItIs`
+(`table-pick-all` ticks all ten). UI (0.86) `testTheTableShowsWhichThingsHaveABattery` — see Table columns,
+"Battery". Model: `ThingsAndCareFixesTests.testUndoPutsBackOnlyWhatChangeAllChanged`.
 
 **Not covered by a test.** "No place"; the empty-state texts; the band titles holding still.
 
@@ -1949,6 +1962,7 @@ its words in on the Mac).
 | `serial` | Serial | 120 | words |
 | `note` | Note | 180 | words |
 | `liquid` | Liquid | 62 | tick |
+| `battery` | Battery | 68 | mark: the drawn battery when yes, empty when no (0.86) |
 | `charging` | Charges | 68 | tick |
 | `restricted` | Restricted | 78 | tick |
 | `consumable` | Runs out | 72 | tick |
@@ -1963,7 +1977,7 @@ The template columns follow `Library.templates` order (after a load, sorted by t
 makes, roughly creation order), and are `templatesForThings()`: never his bag list (0.62 — a tick there made a
 thing a bag, and an untick dropped a bag from the bag list without `deleteBag`'s question; a bag is made and
 deleted on Your bags). The Filter and Sort sheets offer the same templates. Starting columns (`startingColumns`, when he has chosen nothing): weight,
-storage, container, ownedBy, packer, condition, listQty. `TableColumns.ids(stored, library)` drops stored ids
+storage, container, ownedBy, packer, condition, battery (0.86), listQty. `TableColumns.ids(stored, library)` drops stored ids
 that are no longer columns (a deleted template) BEFORE anything counts them (0.62), and gives the starting
 columns when none is left. Row height `TableColumns.rowHeight` (0.65: 22 on the Mac, 28 on the iPhone; 34 before);
 a tick cell's box is `TableColumns.box` (14 / 18; 20 before). Test `testTheTableRowsHaveNoAirBetweenThem`: the
@@ -1997,6 +2011,14 @@ map from a stored condition (id, or label by `normName`) to its label; every mem
   through `updateThing`. Accessibility value = what the cell shows.
 - **Tick** (liquid … per night): a 20 pt rounded box, filled orange when on (no mark); a tap flips it through
   `updateThing`; selected trait when on.
+- **Mark** (battery, 0.86 — a tick column whose `Column.mark` is set): a button filling the cell; when yes, the
+  drawn battery mark (`ToChargeCard.battery`, the one of To charge and a thing's page — no stock art) at
+  `TableColumns.mark` (20 on the Mac, 24 on the iPhone, on the icons' 24-point grid, so the battery's body is about
+  as wide as a tick box) in orange (`AppSection.care.color`, as a ticked box); when no, NOTHING — an empty cell, so
+  the things with a battery stand out down the column. A tap (a click) turns it round through `updateThing` and the
+  key path `\Item.hasBattery` (`Library.setBattery`: the `battery` key true, or gone — never false). Accessibility:
+  label "Battery", value "yes" / "no", selected trait when yes; Mac tooltip "Battery: yes — click to change it" (or
+  "no").
 - **On a template** (`list:<id>`): the same tick; a tap calls `setOnTemplate(itemId:templateId:on:)` — taking
   a thing off a template drops only that membership; the thing, its weight, care and photos stay.
 - **Per template** (How many, Section) — only answerable when the thing is on EXACTLY one template: How many is a
@@ -2005,6 +2027,37 @@ map from a stored condition (id, or label by `normName`) to its label; every mem
   the template has sections but none is chosen, "—" (muted) when it has none. With no membership the cell reads
   "—"; with several, "`N` templates" (12 medium muted, not editable; tooltip "Different on each template — open
   the thing to set it"; with none: "On no template"); accessibility value = those words.
+
+**Battery (0.86).** His yes of 15 Oct 2026 — "Battery column: yes" — to the open question of spec 07 part 15 ("The
+table has no column for Has a battery … Worth one?"). Decided by the build: it reads the thing's own "Has a battery"
+(`battery` key, spec 07 part 15) and nothing else — the model knows no more about a battery (no capacity, no
+rechargeable or spare cells); how a thing CHARGES is the web app's `charging` flag with its connector `chargeType`,
+which stays the Charges column (a cable carries it; the connector comes only from the web app and is edited
+nowhere natively), so the cell shows no connector words. Placed among the thing's own columns right before Charges,
+so the two power columns read together (Liquid, Battery, Charges, Restricted, Runs out, Per night); width 68, as
+Charges; band "The thing itself"; a starting column (after Condition, before How many); put among the columns he had
+already chosen ONCE (see the table's Behaviour). It is a yes/no column like Liquid in everything but its look:
+sorted by a heading press or the Sort sheet (`sortValue` "0" yes / "1" no — ▲ the things with a battery first), filtered
+("Yes" / "No" with how many, `Library.flagFields["battery"]` = `\Item.hasBattery`), offered by Change all ("Battery:
+yes" / "Battery: no") — and Undo puts it back both ways (`undoChange` walks the keys the change wrote AND the keys it
+took away, 0.86: "Battery: no" REMOVES the key, and walking only what was written could not put it back; a key the
+change added is removed again rather than left as null). The same column on the iPhone (the sheet) and the Mac (the
+window); the drawn mark is the only difference from a tick cell.
+Model `BatteriesTests.testTheTableFiltersSortsAndChangesAllByBattery` (Yes 4 / No 7 — the Phone charger's web
+Charging flag is no battery; the summary "Yes"; ▲ GPS watch, Headlamp, Power bank, Toothbrush first, ▼ last; "Battery:
+no" on the Headlamp and the Map undone → the Headlamp's key true again, one thing put back; "Battery: yes" undone →
+the Map with no key at all, the Headlamp keeps its own). UI `testTheTableShowsWhichThingsHaveABattery`
+(`-uiTestingBattery -tableChosenBefore`: `table-head-battery` arrived between `table-head-liquid` and
+`table-head-listQty`; searched, the Power bank's `table-0-battery` is selected with value "yes", the Headlamp's not,
+"no"; a tap gives the Headlamp one; Filter → `filter-col-battery` → `filter-battery-0` (Yes) → `table-count` "3";
+hidden in Columns, closed and opened again, no `table-head-battery`). Pictures `battery-table-column`: iPhone day
+and night, Mac day. Each seen RED with a planted fault first: the cell drawing "no" whatever the thing says →
+"XCTAssertTrue failed - the Power bank's row shows no battery: 'no'"; the arrival left out of the table's appear →
+"XCTAssertTrue failed - the Battery column did not arrive among his columns"; `undoChange` walking only the keys the
+change wrote (as before 0.86) → "XCTAssertEqual failed: ("0") is not equal to ("1") - Undo of Battery: no put
+nothing back" and "XCTAssertNil failed: "null" - Undo left a battery key on the Map". The other UI tests that open the
+table, with Battery a starting column: the 16 that run on the iPhone green there; on GitHub's Mac (a probe) the
+four the starting columns touch most.
 
 **Tests.** UI `testTheTableTakesTheColumnsHeChooses` (a Liquid tick flips), `testTheTableSortsAndSaves` (a weight
 cell saves), `testWhatBelongsToAListIsEditedPerList` (the sample's second thing reads "2 templates" and is not a
@@ -2062,7 +2115,7 @@ tick is stored at once.
 **What is on screen.** Header "Filter" (22 heavy orange), "`S` of `B`" (`filter-count`: S = things passing all
 filters, B = things after the search and the quick chip), "Done". When any filter is on: "Clear all filters"
 (`filter-clear-all`, 15 bold red). Then three groups, each under a `HeadingTitle` in orange: "The thing itself"
-(the 17 intrinsic columns), "On this template" (How many, Section), "On these templates" (one per template,
+(the 18 intrinsic columns — 17 until Battery, 0.86), "On this template" (How many, Section), "On these templates" (one per template,
 the bag list included). A column row (`filter-col-<safe key>`, min height 46): its title (17 semibold), on the
 right "Any" (muted) or the summary of its ticked answers (bold orange), and ▾/▴. One column is open at a time;
 opening one closes the other and empties the narrow field. An open column lists its answers: a "Narrow the
@@ -2091,7 +2144,7 @@ one column:
 | Column | Value(s) | Answers offered, in order, with labels |
 |---|---|---|
 | storage, container, ownedBy, packer, condition, color, size, manufacturer, model, serial, note | `normName(trim(field))` | every non-empty value A–Z (plain string order of the normalised values), labelled as FIRST WRITTEN (trimmed); for condition the condition's label when the value is a known id or label; then the blank one last: "Both have one" for Owner, "Blank" otherwise |
-| liquid, charging, restricted, consumable, perNight | "yes" / "no" | "Yes", "No" |
+| liquid, battery (0.86: `Item.hasBattery`, the `battery` key), charging, restricted, consumable, perNight | "yes" / "no" | "Yes", "No" |
 | weight | "" when ≤ 0 (or NaN); "w1" < 100 g; "w2" < 500; "w3" < 1000; "w4" otherwise | "Under 100 g", "100 – 500 g", "500 g – 1 kg", "Over 1 kg", then "No weight" |
 | listQty | on no template → "none"; on several → "several"; else the membership's trimmed qty | the quantities sorted numerically (non-numbers after, by text), "Blank", "On several templates", "On no template" |
 | listSection | "none" / "several" / the membership's section id ("" = none) | for each template, each section "`Section` (`Template`)", then "No section", "On several templates", "On no template" |
@@ -2130,7 +2183,7 @@ level only decides between things the levels above call equal; the name settles 
 title; orange border while its list is open) — pressing it opens the list of keys under it; a ▲/▼ button
 (`sort-dir-<n>`, 20 black orange, 44 × 44, accessibility value "up"/"down") turning that level round; for levels
 after the first, ✕ (`sort-remove-<n>`, label "Remove this level"). The key list, in groups (13 heavy orange
-capitals): "THE THING ITSELF" (Name + the 17 intrinsic columns), "ON THIS TEMPLATE" (How many, Section), "ON
+capitals): "THE THING ITSELF" (Name + the 18 intrinsic columns; 17 until 0.86), "ON THIS TEMPLATE" (How many, Section), "ON
 THESE TEMPLATES" (one per template), and — only when some template has sections — "BY A TEMPLATE'S SECTIONS"
 (one "`<Template>` · section" per such template); each a row (`sort-key-<safe key>`), the current one bold
 orange. "+ Then by" (`sort-add`, 17 bold white on an orange capsule, min height 44) while there are fewer than
@@ -2147,7 +2200,7 @@ otherwise the column title (or the raw key when unknown).
 blank goes LAST whichever way the level runs (the point of sorting by a column is usually to fill it in):
 - `name` → `normName(name)`;
 - the 11 text columns → `normName(field)`, nil when empty;
-- the 5 flags → "0" when yes, "1" when no (ascending = yes first);
+- the 6 flags (Battery since 0.86, `Item.hasBattery`) → "0" when yes, "1" when no (ascending = yes first);
 - `weight` → zero-padded "%012.2f" when > 0, else nil;
 - `listQty` → only when on exactly one template and its qty is a number: zero-padded; else nil;
 - `listSection` → only when on exactly one template and the section exists: the section's normalised name;
@@ -2208,7 +2261,10 @@ UI (0.62) `testChangeAllRefusesANonNumberAndCountsTicksOutOfSight` (spaces in Co
 in Weight → `bulk-needs`, the sheet stays; Cancel; the Map's weight still 60);
 `testTheTableOffersHisOwnBagsAndOwnersAndAConditionReachesToBuy` (the said line).
 
-**Not covered by a test.** Ticks (Yes/No); a weight actually set for many.
+Battery (0.86) is one of its rows ("Battery: yes" / "Battery: no"), and its Undo is pinned by the model test
+`BatteriesTests.testTheTableFiltersSortsAndChangesAllByBattery` (see Table columns, "Battery").
+
+**Not covered by a test.** Ticks (Yes/No) through the sheet; a weight actually set for many.
 
 ---
 
@@ -2472,7 +2528,8 @@ removing, ticking, finding a reminder gone); the no-access and failure messages;
 | Key | Type, default | Meaning |
 |---|---|---|
 | `ams.care.view` | String "list" | Care shows List or Calendar ("calendar"). |
-| `ams.table.columns` | String "" | The table's columns, comma-separated ids; "" = the starting seven. |
+| `ams.table.columns` | String "" | The table's columns, comma-separated ids; "" = the starting eight (seven until Battery, 0.86). |
+| `ams.table.batteryArrived` | Bool false | The Battery column has been put among his chosen columns, once (0.86). |
 | `ams.table.sort` | String "name" | The first sort level's key. |
 | `ams.table.down` | Bool false | The first level runs ▼. |
 | `ams.table.then` | String "" | JSON `[SortLevel]` — the "then by" levels (at most two). |
