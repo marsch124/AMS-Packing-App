@@ -952,7 +952,9 @@ no entry shows no marker anywhere (and fails the test).
    template links to existing things — with a name he has, a name of its own or Replace (0.62) —, grab list takes a free Home place or waits). (10 lines.)
 10. **Shortcuts and the Action button** (Home mark): three actions (Choose a grab list, Open a grab list, Open my next
    trip); the Action-button path (iPhone Settings → Action Button → Shortcut → Packing → Choose a grab list); if
-   Packing is missing, open it once; Home Screen or Siri ("Open Swim in Packing"). (4 lines.)
+   Packing is missing, open it once; Home Screen or Siri ("Open Swim in Packing"); (0.86) hold the Packing icon on
+   the Home Screen for the four grab lists opened most recently — on the Mac, right-click its Dock icon for all of
+   them. (5 lines.)
 11. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
     so; the magnifier searches everything (a thing's notes too — 0.69); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62). (3 lines.)
@@ -1413,6 +1415,11 @@ bigger it sits up and left. 0.63's Share mark, framed at 18 in a sheet's Share p
 through the pill's edge (his note "The share buttons is not aligned with the icon"); the grip ≡ (framed 20) sat
 2 pt off; the map pin (26) 1 pt. `ShareMark`, `PenMark` and `GripMark` draw through `GridShape` now; a mark still
 drawn with a bare `SVGPath.path` must be framed at exactly 24 × 24.
+
+**The pictures under the app icon** (0.86, spec 02 §13b). The iPhone's Home Screen entries can only wear a picture
+from the app's asset catalog (or an SF Symbol), so the grab lists' own drawings are written there once as template
+PDFs — `Assets.xcassets/GrabIcons`: the six doodles, a list's initial (A–Z, Å Ä Ö Ü, 0–9) and the Home tab's suitcase
+— by `tools/grab-icons.sh` from GrabDoodle's path data and `SVGPath` (§30). No SF Symbol there either.
 
 **Data emoji.** Emoji that are DATA (a phase's or template's emoji imported from the web app) are not drawn, with one
 exception: a template's `Cover` shows `list.emoji` as text when the template has no icon (his covers "are his data").
@@ -1896,10 +1903,18 @@ window instead of opening a new one for every link; the "All your things" window
 set to x = its own, top edge kept, 760 wide, 674 tall. "Set, not suggested: macOS restores a window's last size and
 ignores size limits on the content."
 
+**The app's delegates** (0.86, spec 02 §13b). `AMSPackingApp` has `@UIApplicationDelegateAdaptor(PackingAppDelegate)`
+on the iPhone and `@NSApplicationDelegateAdaptor(PackingMacDelegate)` on the Mac, both in `Store/QuickActions.swift`
+and there only for the grab lists under the app icon / in the Dock icon's menu. The iPhone's names a scene delegate
+(`PackingSceneDelegate`) in `application(_:configurationForConnecting:options:)`; SwiftUI keeps its own window and
+`onOpenURL` still receives a place's link.
+
 **`RootView`.** `VStack(spacing: 0)`: the current section's screen, at most 720 wide ("the web app's column, on the
 Mac"), centred; under it the tab bar; `Theme.bg` behind, ignoring safe areas. Starts on Home. On appear: the
-reminders' tap handler (→ Home + `tripToOpen`) and `PackingReminders.start()`. The library publisher, debounced 2 s:
-reschedule reminders and update the Shortcuts parameters. Scene becomes active: read back Reminders ticks and
+reminders' tap handler (→ Home + `tripToOpen`) and `PackingReminders.start()`; on the Mac (0.86) the window counts
+itself in for the Dock menu (and out on disappear). The library publisher, debounced 2 s:
+reschedule reminders, update the Shortcuts parameters and (0.86, iPhone) the entries under the app icon, which are
+put right again when the app goes to the background. Scene becomes active: read back Reminders ticks and
 (0.62) reschedule the packing reminders. A Shortcut asking for a grab list, the grab menu or a trip switches to
 Home; `model.tabToOpen` (0.62; Search's to-do) switches to that tab. Under the UI tests only, a return from the
 background plays the `-…OnReturn` arguments below.
@@ -1949,6 +1964,9 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-reviewAtPack` | (testing only) the trip header's Review shows at Pack too (`TripScreen.reviewAtPack`) — for the tests about the review itself on the sample trip a month ahead; the rule of when it shows (`Library.offersReview`, once the trip has started) is tested without it | 0.84 |
 | `-clockAt HH:mm:ss` | (testing only) the app's clock (`Today.now`) is today at that time when the app opened, and runs on — when a trip sets off (spec 03, The loop) | 0.75 |
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
+| `-quickAction <title>` | (testing only, iPhone) the entry under the app icon with that title — taken from the entries the app hands the system, so only one of the four — tapped to START the app: handed over through the cold-start path (`PackingAppDelegate`, as `options.shortcutItem`) | 0.86 |
+| `-quickActionOnReturn <title>` | (testing only, iPhone) played when the app returns from the background: that entry handed to the scene's delegate (`windowScene(_:performActionFor:)`), as iOS does while the app runs | 0.86 |
+| `-dockMenu <title>`, `-dockMenuWhenClosed <title>` | (testing only, Mac) the Dock icon's menu asked of the app's delegate and that entry performed — a second after the window is up / after the last main window closed | 0.86 |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |
 
 Under testing, `usesICloud` is false, the forecast is `InventedForecast`, the rescue copies are deleted at launch,
@@ -1956,7 +1974,8 @@ reminders never touch the system, grab-list state is not persisted (`GrabStore(p
 `UserDefaults` keys are removed so every test starts from the same screen: `ams.table.columns`, `ams.table.sort`,
 `ams.table.down`, `ams.table.then`, `ams.table.filters`, `ams.care.view`, `ams.view`, `ams.trip.folded`,
 `ams.template.grouping`, `ams.pick.grouping`, `ams.pick.folded`, `ams.reminders`, and (0.76) `ams.create.more` — Create
-new trip's More choices, open or closed.
+new trip's More choices, open or closed — and (0.86) `ams.grab.opened`, the iPhone's record of the grab lists opened
+(the four under the app icon, spec 02 §13b).
 
 **Tests.** `testStartsOnHomeAndNamesItsVersion` (Home, a digit in `app-version`), `testEveryTabOpensItsScreen` (each
 tab opens its screen and Home is gone; the To-do tab's words start "To do"), `testAnEmptyDeviceShowsTheTwoDoors`.
@@ -2428,6 +2447,13 @@ none), writes each to `crash-reports/<n>-<date>.txt` and always uploads the fold
   and names the tests that passed in none of the bundles (`unpassed RESULT.xcresult… -- test…`) (§28a stage 5);
   **`tools/ExportOptions.plist`** — how it exports and uploads (method app-store-connect, destination upload, team,
   automatic signing, symbols, the build number left alone).
+- **`tools/grab-icons.sh`** (0.86) — draws the pictures the grab lists wear under the app icon (spec 02 §13b) into
+  `App/Resources/Assets.xcassets/GrabIcons` (rewritten whole): GrabDoodle is copied out of `Screens/GrabScreen.swift`
+  (from its `struct` line to the brace that closes it at the start of a line) and compiled with `SVGPath.swift` and
+  `tools/grab-icons/main.swift`; each picture is a 35 × 35-point PDF, template rendering — the six doodles stroked
+  4.5 of 64 units with round ends inside a 2-point margin, `grab-initial-<hex>` for A–Z, Å Ä Ö Ü and 0–9 in the
+  system font, heavy, 23 points, centred, and `grab-list`, the Home tab's suitcase (stroke 1.9 of 24 units). Run it
+  after a doodle changes, and commit the pictures.
 - `private/` and `*backup*.json` are git-ignored: real data never enters the public repository.
 
 ## 31. The parity check against the web app (`Core/Sources/parity`, `tools/parity/`)

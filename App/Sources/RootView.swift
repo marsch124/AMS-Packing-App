@@ -8,6 +8,10 @@ struct RootView: View {
     @State private var section: AppSection = .home
     @EnvironmentObject var model: LibraryModel
     @Environment(\.scenePhase) private var scenePhase
+    #if os(macOS)
+    /// For a Dock menu choice made while no window is open (0.86, `GrabQuickActions`).
+    @Environment(\.openWindow) private var openWindow
+    #endif
     /// The app went to the background since it was last in front (the UI tests play
     /// "something happened while he was away" on its return).
     @State private var wasAway = false
@@ -63,13 +67,27 @@ struct RootView: View {
                 RootView.playTappedDoorCheck(model)
                 RootView.playTappedTripMessage(model)
             }
+            #if os(macOS)
+            // The Dock icon's menu (0.86) opens a window first when none is open.
+            GrabQuickActions.mainWindows += 1
+            GrabQuickActions.openMainWindow = { openWindow(id: AMSPackingApp.mainWindowId) }
+            GrabQuickActions.playDockMenu("-dockMenu")
+            #endif
         }
+        #if os(macOS)
+        .onDisappear {
+            GrabQuickActions.mainWindows -= 1
+            if GrabQuickActions.mainWindows == 0 { GrabQuickActions.playDockMenu("-dockMenuWhenClosed") }
+        }
+        #endif
         .onReceive(model.$library.debounce(for: .seconds(2), scheduler: RunLoop.main)) { library in
             Task { await PackingReminders.shared.reschedule(library) }
             Task { await DoorChecks.shared.reschedule(library) }
             Task { await TripMessages.shared.reschedule(library) }
-            // The grab lists Shortcuts offers by name follow his.
+            // The grab lists Shortcuts offers by name follow his — and so do the four under
+            // the app icon (0.86): a list added, renamed, removed or moved on Home.
             PackingShortcuts.updateAppShortcutParameters()
+            GrabQuickActions.refresh(library)
         }
         // Back from the shop: what was ticked in Reminders is ticked here (field test 8.4).
         .onChange(of: scenePhase) { _, phase in
@@ -80,7 +98,11 @@ struct RootView: View {
             if phase == .active { Task { await PackingReminders.shared.reschedule(model.library) } }
             if phase == .active { Task { await DoorChecks.shared.reschedule(model.library) } }
             if phase == .active { Task { await TripMessages.shared.reschedule(model.library) } }
-            if phase == .background { wasAway = true }
+            if phase == .background {
+                wasAway = true
+                // What he finds under the icon on the Home Screen is right as he gets there.
+                GrabQuickActions.refresh(model.library)
+            }
             if phase == .active, wasAway {
                 wasAway = false
                 if AMSPackingApp.testing { RootView.playWhatHappenedWhileAway(model) }
@@ -124,8 +146,9 @@ struct RootView: View {
     /// UI tests only: what reaches the app from outside while it is in the
     /// background, played when it comes back to the front — as a Shortcut or the
     /// Action button would (`-openGrabOnReturn <word>`), a tapped packing reminder
-    /// (`-openNextTripOnReturn`), or the other device's later write that no longer
-    /// holds his own grab lists (`-dropOwnGrabListsOnReturn`).
+    /// (`-openNextTripOnReturn`), the other device's later write that no longer
+    /// holds his own grab lists (`-dropOwnGrabListsOnReturn`), or (iPhone, 0.86) an entry
+    /// under the app icon (`-quickActionOnReturn <title>`).
     private static func playWhatHappenedWhileAway(_ model: LibraryModel) {
         let args = ProcessInfo.processInfo.arguments
         if let n = args.firstIndex(of: "-openGrabOnReturn"), n + 1 < args.count {
@@ -137,6 +160,12 @@ struct RootView: View {
         if args.contains("-dropOwnGrabListsOnReturn") {
             model.change { $0.meta[GRAB_OWN_META] = nil }
         }
+        #if os(iOS)
+        // An entry under the app icon tapped while the app waited in the background (0.86).
+        if let n = args.firstIndex(of: "-quickActionOnReturn"), n + 1 < args.count {
+            GrabQuickActions.playWhileRunning(title: args[n + 1])
+        }
+        #endif
     }
 }
 

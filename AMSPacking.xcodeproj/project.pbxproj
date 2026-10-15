@@ -77,6 +77,7 @@
 		B7EFE44328F09E5EB47E6485 /* ScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */; };
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
 		BA0412EFC474F7660997C615 /* TakeABreak.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186841C4B47BDD39836B3D9D /* TakeABreak.swift */; };
+		BBF3A1F2A58A269D39B48BFD /* QuickActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61946E344209EE542B58B829 /* QuickActions.swift */; };
 		BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5604CA6875D255BD93251 /* CareScreen.swift */; };
 		C02FC3669DC004D8B6C4BBC7 /* BulkChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0A839566CDE77B068F47C5 /* BulkChange.swift */; };
 		C4BFCE654B0D6E38EFE8E24F /* Words.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A986BF2DF0FA5E39E42559C /* Words.swift */; };
@@ -165,6 +166,7 @@
 		5844FD1A40A106FF0878B093 /* TableColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumns.swift; sourceTree = "<group>"; };
 		5A986BF2DF0FA5E39E42559C /* Words.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Words.swift; sourceTree = "<group>"; };
 		5D88FA9EA0BC448F857072B9 /* WorldMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldMap.swift; sourceTree = "<group>"; };
+		61946E344209EE542B58B829 /* QuickActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActions.swift; sourceTree = "<group>"; };
 		6C33289BF160D459176D7669 /* SmallDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallDelete.swift; sourceTree = "<group>"; };
 		6CC01537D593379C8EF1B84F /* RefineScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineScreen.swift; sourceTree = "<group>"; };
 		710DC970E7CB3720856D7F76 /* LostBag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LostBag.swift; sourceTree = "<group>"; };
@@ -283,6 +285,7 @@
 				39A697D32B44D323BED24711 /* DoorChecks.swift */,
 				09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */,
 				E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */,
+				61946E344209EE542B58B829 /* QuickActions.swift */,
 				3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */,
 				F7D04BC7E8B4F98109CE6770 /* RescueCopies.swift */,
 				47B0D4E3ECA5F83EFE0C91C0 /* SampleLibrary.swift */,
@@ -583,6 +586,7 @@
 				E2B76A8A26AB8A0D50EEA5C3 /* PickThings.swift in Sources */,
 				2E4E6528354833C443D3DDC4 /* PlaceScreen.swift in Sources */,
 				18BBB6F1544022B6A9540909 /* Pockets.swift in Sources */,
+				BBF3A1F2A58A269D39B48BFD /* QuickActions.swift in Sources */,
 				DAD37A1F2CA15C56CC068B58 /* RefineScreen.swift in Sources */,
 				80E3669131BEA0D1C726A660 /* Releases.swift in Sources */,
 				7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */,

@@ -3616,6 +3616,139 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     #if os(iOS)
+    /// Grab lists by holding the app icon (0.86, his yes of 15 Oct 2026): an entry under the
+    /// icon on the Home Screen opens its grab list — at a cold start, and while the app waits
+    /// in the background. The entries are the four opened most recently, so Outdoor bike (the
+    /// fifth on Home) is there only once he has opened it. `-quickAction <title>` hands the
+    /// entry with that title — taken from the ones the app gave the system — with the app's
+    /// start, as iOS does; `-quickActionOnReturn <title>` hands it to the scene's delegate as
+    /// the app comes back to the front, as iOS does while it runs.
+    func testAnEntryUnderTheAppIconOpensItsGrabList() {
+        let cold = XCUIApplication()
+        cold.launchArguments += ["-uiTesting", "-quickAction", "Outdoor swim"]
+        cold.launch()
+        XCTAssertTrue(appears(cold, "grab-detail", timeout: 20), "the entry under the icon opened nothing at a cold start")
+        XCTAssertTrue(waitUntil { self.words(cold.staticTexts["grab-title"]) == "Outdoor swim" },
+                      "a cold start opened another list: '\(words(cold.staticTexts["grab-title"]))'")
+        cold.terminate()
+
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-quickActionOnReturn", "Outdoor bike"]
+        app.launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-4")                                       // Outdoor bike, opened once
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 10))
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 15),
+                      "Outdoor bike, opened just before, is not under the icon — or its entry opened nothing while the app ran")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["grab-title"]) == "Outdoor bike" },
+                      "the entry opened another list: '\(words(app.staticTexts["grab-title"]))'")
+    }
+    #endif
+
+    #if os(iOS)
+    /// The same, the way he does it: the Packing icon HELD on the Home Screen shows four of his
+    /// grab lists — Outdoor bike among them once he has opened it, in the place Outdoor swim had
+    /// — and tapping that entry opens Outdoor bike in the running app. SpringBoard's own
+    /// elements: the icon's identifier is the app's name (it has no other); each entry's is its
+    /// kind, "com.schabbauer.AMSPacking.grab.<list id>".
+    ///
+    /// OPT-IN (`TEST_RUNNER_SPRINGBOARD=1`), for looking at the real menu, day and night: the
+    /// Home Screen never reports itself idle while the menu is open, so the hold and the tap
+    /// each wait out XCUITest's full minute — two minutes of nothing on every run (CI time is
+    /// his). `testAnEntryUnderTheAppIconOpensItsGrabList` guards the same in CI, by the hooks.
+    /// An icon on no page of the simulator's Home Screen skips it too: that is the simulator.
+    func testHoldingTheAppIconShowsHisGrabLists() throws {
+        guard ProcessInfo.processInfo.environment["SPRINGBOARD"] == "1" else {
+            throw XCTSkip("the real Home Screen menu: run with TEST_RUNNER_SPRINGBOARD=1")
+        }
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let board = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let entry = { (id: String) in board.buttons["com.schabbauer.AMSPacking.grab.\(id)"] }
+        tap(app, id: "grab-4")                                           // Outdoor bike
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 10))
+        XCUIDevice.shared.press(.home)
+        try holdTheAppIcon(board)
+        XCTAssertTrue(entry("bike-out").waitForExistence(timeout: 10), "Outdoor bike, just opened, is not under the icon")
+        let shown = board.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'com.schabbauer.AMSPacking.grab.'"))
+        XCTAssertEqual(Set(shown.allElementsBoundByIndex.map(\.identifier)),
+                       Set(["swim", "bike", "run", "bike-out"].map { "com.schabbauer.AMSPacking.grab.\($0)" }),
+                       "not the three first on Home and the one he opened")
+        shot(app, "icon-menu")
+        entry("bike-out").tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 15), "tapping Outdoor bike under the icon opened nothing")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["grab-title"]) == "Outdoor bike" },
+                      "it opened another list: '\(words(app.staticTexts["grab-title"]))'")
+    }
+
+    /// Hold the Packing icon on the Home Screen, looking on up to four pages for it — once the
+    /// Home Screen has settled: until the app has shrunk into its icon, the icon is not hittable.
+    private func holdTheAppIcon(_ board: XCUIApplication) throws {
+        let icon = board.icons["Packing"]
+        _ = icon.waitForExistence(timeout: 10)
+        _ = waitUntil(timeout: 5) { icon.exists && icon.isHittable }
+        var pages = 0
+        while !(icon.exists && icon.isHittable) && pages < 4 {
+            board.swipeLeft()
+            pages += 1
+            sleep(1)
+        }
+        guard icon.exists && icon.isHittable else {
+            print("HOME SCREEN: \(board.icons.allElementsBoundByIndex.map { "\($0.identifier) \($0.isHittable)" })")
+            throw XCTSkip("the Packing icon is on no Home Screen page of this simulator")
+        }
+        icon.press(forDuration: 1.5)
+    }
+    #endif
+
+    #if os(macOS)
+    /// The Mac's share of the same yes (0.86): the Dock icon's menu lists every grab list, and
+    /// choosing one opens it — with the window up, and with no window open (it opens one).
+    /// `-dockMenu <title>` / `-dockMenuWhenClosed <title>`: the menu asked of the app's
+    /// delegate and its entry performed, as the Dock does.
+    func testTheDockMenuOpensAGrabList() {
+        let app = launch("-uiTesting", ["-dockMenu", "Outdoor bike"])
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 20), "choosing a grab list in the Dock icon's menu opened nothing")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["grab-title"]) == "Outdoor bike" },
+                      "the Dock menu opened another list: '\(words(app.staticTexts["grab-title"]))'")
+        dockMenuPicture("dock-menu")
+        app.terminate()
+
+        let closed = launch("-uiTesting", ["-dockMenuWhenClosed", "Outdoor run"])
+        XCTAssertTrue(appears(closed, "screen-home", timeout: 20))
+        closed.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(appears(closed, "grab-detail", timeout: 20),
+                      "with no window open, choosing in the Dock menu brought no window with the list")
+        XCTAssertTrue(waitUntil { self.words(closed.staticTexts["grab-title"]) == "Outdoor run" },
+                      "it opened another list: '\(words(closed.staticTexts["grab-title"]))'")
+    }
+
+    /// A picture of the real Dock menu, for looking at only (asks nothing, fails nothing): the
+    /// Dock's icon of the app has no identifier, so it is found by the app's name.
+    private func dockMenuPicture(_ name: String) {
+        guard let dir = ProcessInfo.processInfo.environment["SHOTS_DIR"], !dir.isEmpty else { return }
+        let dock = XCUIApplication(bundleIdentifier: "com.apple.dock")
+        let icon = dock.icons.matching(NSPredicate(format: "label == 'Packing' OR label == 'AMS Packing'")).firstMatch
+        guard icon.waitForExistence(timeout: 5) else { print("SHOT \(name): no Dock icon found"); return }
+        icon.rightClick()
+        sleep(2)
+        let image = XCUIScreen.main.screenshot()
+        for folder in [URL(fileURLWithPath: dir), FileManager.default.temporaryDirectory] {
+            let file = folder.appendingPathComponent("\(name).png")
+            if (try? image.pngRepresentation.write(to: file)) != nil { print("SHOT \(file.path)"); break }
+        }
+        dock.typeKey(.escape, modifierFlags: [])
+    }
+    #endif
+
+    #if os(iOS)
     /// Field test 8.4 (3 Oct 2026): what was ticked in Reminders in the shop is ticked here
     /// as soon as the app is back in front — no switching tabs. ("-pretendShopTicks": a
     /// shop where everything sent was ticked.)

@@ -3,6 +3,13 @@ import SwiftUI
 @main
 struct AMSPackingApp: App {
     @StateObject private var model = LibraryModel.shared
+    // Grab lists by holding the app icon (0.86): the iPhone's quick actions reach the app
+    // through its delegate; the Mac's Dock icon menu comes from its own (Store/QuickActions.swift).
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(PackingAppDelegate.self) private var appDelegate
+    #else
+    @NSApplicationDelegateAdaptor(PackingMacDelegate.self) private var appDelegate
+    #endif
 
     var body: some Scene {
         WindowGroup(id: AMSPackingApp.mainWindowId) {

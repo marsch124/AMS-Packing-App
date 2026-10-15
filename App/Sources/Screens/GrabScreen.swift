@@ -215,6 +215,7 @@ struct GrabScreen: View {
                 GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
                 Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
+                    .accessibilityIdentifier("grab-title")
                 Spacer(minLength: 4)
                 Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: editing)).focusEffectDisabled()
@@ -326,6 +327,8 @@ struct GrabScreen: View {
             // the count — unless a session is already under way.
             state = model.library.openingState(listId: listId, held: GrabStore.shared.held(listId))
             GrabStore.shared.save(listId, state)
+            // The four under the app icon are the four opened most recently (0.86).
+            GrabQuickActions.didOpen(listId)
         }
         // Gone while open (the other device deleted it, or wrote over it): close,
         // still showing it, rather than become another list.
