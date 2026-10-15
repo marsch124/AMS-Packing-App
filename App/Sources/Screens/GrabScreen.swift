@@ -805,6 +805,9 @@ struct GrabScreen: View {
         // changed); only what the edit changed is applied to them.
         state = model.library.stateAfterEdit(listId: listId, held: state, markedBefore: markedBefore)
         GrabStore.shared.save(listId, state)
+        // The folds as the edited list stands (0.87): its headings and its ticks may have changed.
+        openedByHand = []
+        refoldAtOnce()
     }
 
     /// The list as it opens: what he takes only sometimes already set aside.
