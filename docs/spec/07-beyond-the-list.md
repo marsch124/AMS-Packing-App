@@ -2056,7 +2056,26 @@ at 20:00 the evening before a trip, while something on it is still to charge."
   evening before ("("Optional("2026-10-17 20:00")") is not equal to ("Optional("2026-10-16 20:00")") - not the evening
   before the first day at 20:00"); outside the six ("("10") is not equal to ("6")"); a message with nothing to charge
   ("XCTAssertNil failed: "TripMessage(… body: "")""). Then green: the model 635 + 451 of 635 + 451; parity 211 of 211.
-- UI (iPhone and the Mac): UI_TESTS_PLACEHOLDER
+- UI (iPhone and the Mac; `-uiTestingBattery`, the kits sample with its first trip starting tomorrow and To charge
+  "Toothbrush" (`trip-charge-0`) and "Power bank" (`trip-charge-1`)): `testChargeTonightNamesWhatIsLeftAndGoesOnceAllIsCharged`
+  (`-showTripMessages -clockAt 14:00:00`: `trip-message-charge` "charge-… · <today> 20:00 · Charge tonight Toothbrush,
+  Power bank"; the power bank charged → "… Charge tonight Toothbrush"; both charged → no `trip-message-charge`, the
+  set-off message still there; the card's chevron `trip-beforego-fold` opened and the toothbrush unticked → back) and
+  `testATappedChargeTonightOpensTheTripAtToCharge` (`-tapTripMessage charge`: `trip-detail`, `trip-beforego-part-charge`,
+  `trip-charge-0` hittable, no `trip-unticked-only`, no review). **Seen red first** on the iPhone simulator ("Packing CI
+  charge", iOS 27), one planted build: charged things still named — "the power bank is charged, still: 'charge-… ·
+  <today> 20:00 · Charge tonight Toothbrush, Power bank'"; the tap's focus not handled (it fell to a door check's view)
+  — "XCTAssertFalse failed - Charge tonight opened on just the unticked lines". Then green: by day the two with seven
+  neighbours (`testATappedTripMessageOpensItsTrip`, `testATripSaysWhenItMovesOn`, `testToChargeIsTickedApartFromPacking`,
+  `testABatterySwitchOnAThingPutsItOnTheTripsToCharge`, `testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked`,
+  `testTakeABreakSaysHowFarHeHasCome`, `testHowItWorksExplainsThePackingDayStations`) — 9 of 9; by night the two with
+  `testATripSaysWhenItMovesOn` and `testToChargeIsTickedApartFromPacking` — 4 of 4 (pictures `charge-tonight-waiting`,
+  `charge-tonight-tapped`, `moves-on-settings` with the switch's new words). On GitHub's Mac (a probe branch running the two with `testATappedTripMessageOpensItsTrip`,
+  `testATripSaysWhenItMovesOn` and `testToChargeIsTickedApartFromPacking`, deleted after): all five green, by day
+  (pictures of the Mac look) — its first run found the test, not the app, wrong: the card's chevron was looked for
+  among groups (`appears`) where it is a button; it is tapped as a button now, and "Only what is still unticked" is
+  looked for as the text it is. The Release build
+  compiles for the iPhone and the Mac.
 
 ### Open questions
 
