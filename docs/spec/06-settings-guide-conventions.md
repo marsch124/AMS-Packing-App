@@ -676,11 +676,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (86 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (87 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.87 | 15 Oct 2026 | Charge tonight, and done headings fold | N2 | Charge tonight trip message (ChargeTonight.swift, CHARGE_TONIGHT_AT 20:00, `charge-<trip>`, kind .charge, follows the moves-on switch); grab-list heading rings + fold when all in hand (GrabFolds.swift, `grab-group-<g>-progress`, GroupProgressMark word) |
 | 0.86 | 15 Oct 2026 | Battery, tags, and your lists at a hold | N2 C1 | Battery column in the things table (TableColumns/ThingsTable, batteryArrivedKey, Undo restores removed keys); Tags leaves out a bag inside another (TagsInside.swift, `day-tags-inside`); grab lists as Home Screen quick actions + Mac Dock menu (QuickActions.swift, GrabQuickActions, GrabIcons assets); fast lane shuts its simulators down |
 | 0.85 | 15 Oct 2026 | Your own headings | N2 C1 R1 | his own grab-list headings (GrabHeadings.swift, GRAB_HEADING_MARK U+2063 "## " inside `items`, GrabDefinition.lines/GrabLine; `grab-group-<g>`); Heading above (context menu on a thing in Edit); GrabKinds removed; WorkoutKind.mobility label "Mobility & breath"; fast lane drops emoji from What to Test |
 | 0.84 | 15 Oct 2026 | Calmer, and in groups | N1 C6 | grab list grouped by Kind of thing (GrabKinds.grabGroups, small grey headings `grab-group-<n>`; replaced in 0.85 by his own headings, spec 02 §6–7); Take a break a round cup / time capsule; Add to Calendar filled amber once chosen; 🎒 BREAK_TITLE; short station chips (`chip`); header Review only from On site (`Loop.offersReview`, test switch -reviewAtPack); grab Share round at the bottom right (ShareDoor round:) |

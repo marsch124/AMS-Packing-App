@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.87", date: "15 Oct 2026", title: "Charge tonight, and done headings fold",
+                new: ["Charge tonight: at 20:00 the evening before you leave, the iPhone names what still needs charging \u{2014} only while something is left. Tap it to open the trip at To charge.",
+                      "In a grab list, each of your headings has a small ring that fills as you take its things. When all are in hand it turns green and folds to one line; tap it to open it again."]),
         Release(version: "0.86", date: "15 Oct 2026", title: "Battery, tags, and your lists at a hold",
                 new: ["The table of things has a Battery column: the battery mark for things that have one. Tap the cell to change it; sort and filter by it.",
                       "Hold the Packing icon on your iPhone for the four grab lists you opened last \u{2014} tap one and it opens, ready to tick. On the Mac, right-click Packing in the Dock for all of them."],
