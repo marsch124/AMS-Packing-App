@@ -10175,6 +10175,54 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThanOrEqual(ready.frame.height, tightTile + 0.5, "Ready to go is \(ready.frame.height) points tall; at most \(tightTile)")
     }
 
+    /// His words (15 Oct 2026, "Outdoor bike" open on the Mac, seventeen things in one run):
+    /// "a bit more visual with some grouping … only for visuals but important to me" —
+    /// "small headings in the list … maybe another colour, grey". An open grab list falls
+    /// under its things' kinds, in HIS order of kinds (Electronics moved first), "Other"
+    /// last, each line under its own heading, the list's order within; the count is the
+    /// list's as before. A list whose things are all of one kind has no heading at all.
+    func testAnOpenGrabListIsGroupedByKindOfThing() {
+        let app = launch("-uiTestingGrabKinds")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail"), "the grab list did not open")
+        let kinds = ["Electronics", "Sport gear", "Comfort & misc", "Other"]
+        let headings = kinds.indices.map { app.staticTexts["grab-group-\($0)"] }
+        XCTAssertTrue(headings[0].waitForExistence(timeout: 5), "no heading over the first kind")
+        XCTAssertEqual(headings.map { words($0) }, kinds, "the headings, in his order of kinds")
+        XCTAssertFalse(app.staticTexts["grab-group-4"].exists, "a fifth heading")
+        // Top to bottom: each heading, then the list's lines of that kind (their places on
+        // the list: Swim trunks 0, Goggles 1, Swim cap 2, Towel 3, Drink 4, watch 5, Flip-flops 6).
+        let under = [[5], [1, 2], [3], [0, 4, 6]]
+        var above = -CGFloat.infinity
+        for (g, lines) in under.enumerated() {
+            XCTAssertGreaterThanOrEqual(headings[g].frame.minY, above - 0.5, "'\(kinds[g])' is not under what comes before it")
+            above = headings[g].frame.maxY
+            for n in lines {
+                let line = app.buttons["grab-item-\(n)"]
+                XCTAssertTrue(line.exists, "no line \(n)")
+                XCTAssertGreaterThanOrEqual(line.frame.minY, above - 0.5, "line \(n) is not under '\(kinds[g])'")
+                above = line.frame.maxY
+            }
+        }
+        shot(app, "grab-kinds")
+        // Only the look: the count and a tick are the list's, as before.
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 7") }, "the count changed: '\(words(count))'")
+        tap(app, id: "grab-item-5")
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 7") }, "the tick under Electronics did not count: '\(words(count))'")
+        XCTAssertTrue(isOn(app.buttons["grab-item-5"]), "the watch is not ticked")
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+
+        // Outdoor bike: the watch is the one thing of his on it — one kind, no heading.
+        tap(app, id: "grab-4")
+        XCTAssertTrue(appears(app, "grab-detail"), "Outdoor bike did not open")
+        XCTAssertTrue(app.buttons["grab-item-0"].waitForExistence(timeout: 5), "no lines on Outdoor bike")
+        XCTAssertFalse(app.staticTexts["grab-group-0"].exists, "a list of one kind has a heading")
+        shot(app, "grab-kinds-flat")
+    }
+
     // MARK: Headers on one line (0.67 — his notes on 0.63)
 
     /// Where a tab's page begins for the eye: under the status bar on the iPhone; on
@@ -10334,8 +10382,11 @@ final class AMSPackingUITests: XCTestCase {
 
     /// His note on 0.63, "The share button is not aligned with the icon": a template's
     /// Share pill sits on the centre line of its icon and name, as Done does — and a
-    /// grab list's Share on the line of its Edit and Done. (The share mark inside the
-    /// pill is drawn on that line too; that is seen in the pictures.)
+    /// grab list's Edit on the line of its Done. (The share mark inside the pill is drawn
+    /// on that line too; that is seen in the pictures.) A grab list's Share left its header
+    /// in 0.84 — his words, 15 Oct 2026: "Please move the share button down to the bottom
+    /// right. I almost never use it. … can we make the share button more rounded?" — so it
+    /// sits UNDER Ready to go, at the right edge of the list, and is round.
     func testShareSitsOnItsHeadersCentreLine() {
         let app = launch()
         tab(app, "templates")
@@ -10359,11 +10410,23 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
         let gShare = app.buttons["grab-share"], gDone = app.buttons["grab-done"], gEdit = app.buttons["grab-edit"]
         XCTAssertTrue(gShare.waitForExistence(timeout: 5) && gDone.exists && gEdit.exists, "no Share, Edit or Done on the grab list")
-        for (id, e) in [("grab-share", gShare), ("grab-edit", gEdit)] {
-            let off = e.frame.midY - gDone.frame.midY
-            XCTAssertLessThanOrEqual(abs(off), 1.5, "\(id) sits \(off) pt off Done's centre line (\(e.frame) vs \(gDone.frame))")
-        }
+        let off = gEdit.frame.midY - gDone.frame.midY
+        XCTAssertLessThanOrEqual(abs(off), 1.5, "grab-edit sits \(off) pt off Done's centre line (\(gEdit.frame) vs \(gDone.frame))")
         shot(app, "share-grab-header")
+        // Share at the bottom right, under Ready to go, round (0.84).
+        let ready = app.buttons["grab-ready"]
+        XCTAssertTrue(ready.waitForExistence(timeout: 5), "no Ready to go")
+        bringIntoView(app, gShare)
+        XCTAssertGreaterThan(gShare.frame.minY, ready.frame.maxY - 0.5,
+                             "Share is not under Ready to go (\(gShare.frame) vs \(ready.frame))")
+        XCTAssertLessThanOrEqual(abs(gShare.frame.maxX - ready.frame.maxX), 1.5,
+                                 "Share is not at the right edge (\(gShare.frame) vs \(ready.frame))")
+        XCTAssertLessThanOrEqual(abs(gShare.frame.width - gShare.frame.height), 1, "Share is not round: \(gShare.frame)")
+        shot(app, "share-grab-foot")
+        tap(app, id: "grab-share")
+        XCTAssertTrue(appears(app, "share-screen", timeout: 5), "Share at the foot does not open")
+        tap(app, id: "share-done")
+        XCTAssertTrue(disappears(app, "share-screen", timeout: 5))
     }
 
     // MARK: - A thing's page from the keys (Mac, 0.68)

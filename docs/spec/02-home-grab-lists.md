@@ -31,7 +31,7 @@ Source files: `App/Sources/RootView.swift`, `AMSPackingApp.swift`, `Sections.swi
 `Screens/GrabMenu.swift`, `Screens/SearchScreen.swift`, `Screens/Share.swift` (the grab-list parts),
 `Store/LibraryModel.swift` (the open-requests and test launch modes), `Store/Shortcuts.swift`,
 `Store/Reminders.swift`, `Store/Today.swift`, `Store/ShopReminders.swift` (only its read-back on return);
-model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `Countdown.swift`,
+model: `PackingLibrary/GrabLists.swift`, `GrabCollection.swift`, `GrabSometimes.swift`, `GrabKinds.swift` (0.84), `Countdown.swift`,
 `Sharing.swift` (grab parts), `Backup.swift` / `Importer.swift` (grab parts); `PackingCore/GrabSharing.swift`,
 `PackingCore/SharedRows.swift` (grab rows).
 
@@ -644,6 +644,13 @@ device's own working state.
 - Test B.4: "Not yet" is a red card in the middle of the screen ("even more distinctive — maybe a pop-up
   window at the center of the screen").
 - Both shipped in release 0.40 (28 Sep 2026).
+- **0.84 (15 Oct 2026), grouped by Kind of thing.** His words, on a picture of "Outdoor bike" open on the Mac —
+  "0 of 17 in hand" over seventeen things in one flat run: "a bit more visual with some grouping … only for
+  visuals but important to me"; on the look: "small headings in the list … maybe another colour, grey or something
+  like that" (not the big headings of a trip). See "Grouped by Kind of thing" below.
+- **0.84, Share at the bottom right.** His words, the same day and the same picture (header: Edit · Share ·
+  Done): "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can
+  we make the share button more rounded?"
 
 **How it is reached and left.**
 - **In:**
@@ -675,10 +682,10 @@ device's own working state.
    - `title`, 22 pt heavy `ink`, one line, scaling to 70 %;
    - a spacer;
    - **"Edit"** (`grab-edit`): an outlined capsule in the tone;
-   - **Share** (`grab-share`): the drawn share mark only (`ShareMark`, 22 × 22, centred — 0.67; it was
-     framed at 18 and, drawn on its 24-pt grid, hung 3 pt low and right), outlined in the tone,
-     accessibility label "Share";
    - **"Done"** (`grab-done`): a capsule filled with the tone, white text.
+   - Until 0.84 **Share** (`grab-share`) stood between them — the drawn share mark only (`ShareMark`, 22 × 22,
+     centred — 0.67; it was framed at 18 and, drawn on its 24-pt grid, hung 3 pt low and right), in an outlined
+     capsule. Since 0.84 it is at the bottom right (item 6).
    - The buttons use `HeaderButtonStyle`: 17 pt bold (16 until 0.62, which overrode the `.font(17 bold)`
      written on them — spec 06 §20), minimum 36 tall, 14 pt side padding, 70 % opacity while pressed, words
      never cut.
@@ -712,6 +719,14 @@ device's own working state.
      with a slash); when skipped, the ↻ (an arrow round). Accessibility label "Leave <name> behind, just
      this once" or "Take <name> along after all".
    - Rows are keyed by their position (`id: \.offset`).
+   - **Grouped by Kind of thing (0.84)** when the list's things are of two kinds or more (the rule under
+     "Grouped by Kind of thing" below): each group starts with a **small grey heading** (`grab-group-<g>`, `g` = 0, 1, …
+     top to bottom), then its lines in the list's own order. The heading: the kind's name as his list of kinds
+     spells it (or "Other"), **Footnote semibold in `muted`, letter-spacing 0.4**, one line (cut at the end), left;
+     **12 pt above it, 4 above the first, 2 below**; no tick, no count, no line of its own (the line under the row
+     above stays); the `.isHeader` trait. Not in capitals: 0.62 took capitals with letter-spacing out of every
+     heading (spec 06 §21). A line keeps its id by its place on the LIST (`grab-item-<n>`, `grab-skip-<n>`),
+     whichever group shows it.
 4. **"Ready to go"** (`grab-ready`), 12 pt above (14 until 0.67): full width, **`Metrics.tap` tall — 36
    on the iPhone, 26 on the Mac** (`Metrics.row`, 40 / 30, until 0.67), a radius-12 rounded rectangle
    filled with the tone, Body semibold white. **Never grey.**
@@ -719,9 +734,17 @@ device's own working state.
    the skipped names not exactly the "only sometimes" ones (0.62; before, whenever anything was ticked or
    skipped). Callout semibold `muted`, **`Metrics.compact` tall (32 / 24)**, 4 pt under Ready to go
    (`Metrics.tap` tall, nothing between, until 0.67).
-6. A footer, **15 pt** medium `muted`, 8 pt above: "Tap each thing as you pick it up — or tap ⊘ to leave
-   something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap."
-   (0.62: it said "after 6 hours", 14 pt.)
+6. A footer, 8 pt above, in one row (`HStack`, top-aligned, 12 apart):
+   - the words, **Subheadline** (15 pt before 0.62) `muted`, filling the row: "Tap each thing as you pick it up — or
+     tap ⊘ to leave something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap."
+     (0.62: it said "after 6 hours", 14 pt.)
+   - at the right, **Share** (`grab-share`, 0.84; accessibility label "Share"): a ROUND button,
+     **`ShareDoor.roundSize` across — 38 on the iPhone, 30 on the Mac** — the drawn share mark (`ShareMark`, 55 % of
+     the circle, in the tone) on the tone at 10 % with a 1.4-pt ring in the tone, as Edit is outlined. Never grey.
+     So its right edge is the list's (Ready to go's) right edge and its top is under Ready to go (and Start over).
+     It is shown with or without things on the list, hidden while editing (the editor has no footer), and opens the
+     share sheet as before (section 10). His words, 15 Oct 2026: "Please move the share button down to the bottom
+     right. I almost never use it. Now that we are on it, can we make the share button more rounded?"
 
 The whole screen is the container `grab-detail` on a `bg` background.
 
@@ -769,12 +792,62 @@ The whole screen is the container `grab-detail` on a `bg` background.
 - **The list goes while open** (0.62): the screen closes, still showing the list as last seen (see "How
   it is reached and left"). Nothing is saved under another list's key.
 
-**Data.** Reads the list definition and `sometimes(listId:)`. Reads and writes `UserDefaults
+**Grouped by Kind of thing** (0.84; `Library.grabGroups(_:)` and `grabKind(of:)` in `PackingLibrary/GrabKinds.swift`).
+Only the LOOK changes: the list is still a run of names in his order — nothing is stored, ticked, skipped or
+counted differently, and Edit shows it flat, as he made it.
+- **A name's kind** is the Kind of thing (`category`) of his THING of that name, matched by `normName` (trimmed,
+  lower-case, spaces collapsed) — the first such thing with a kind. A name that is none of his things (a grab list's
+  names are free text: "GPS course", "Bar | Dried fruit"), or a thing whose kind is blank, has no kind. Only the name
+  is matched (not a thing's Swedish name). The index is built in one pass over his things each time the screen is
+  drawn (a tick redraws it).
+- **When:** the list's names have **two kinds or more**. "Other" does not count — it sorts nothing — so a list all of
+  one kind, of one kind plus names the app does not know, or of nothing known, stays **flat with no heading at all**,
+  exactly as before 0.84. An empty list has none.
+- **Order of the groups:** his kinds of thing in HIS order (`categories()` — his own list once he has changed it,
+  otherwise the app's twelve); then a kind a thing still carries that is no longer on his list (from the web app or
+  an older device), in the order the list first meets it, under the thing's own spelling; **"Other" always last**.
+  The heading is the kind as his list spells it ("sport gear" on a thing reads "Sport gear" when his list says so).
+- **"Other"** holds the names with no kind — and the things of a kind he himself called "Other", which is shown
+  last too, not where his list puts it (decided by the build: one "Other", always at the foot).
+- **Within a group** the lines keep the list's own order.
+- "Still missing: A, B, C." under Not yet names them in the LIST's order, which can differ from the grouped
+  order on screen (decided by the build: the message is about what is missing, not where).
+- **Where:** wherever a grab list is open for picking — `GrabScreen`, from a Home tile, Grab Lists, the Action
+  button's menu or a Shortcut. The **editor stays flat** in his order (decided by the build: the order he edits is
+  the order that decides the order within each group, and a row moved by its grip must move where he sees it).
+
+**Data.** Reads the list definition and `sometimes(listId:)`; for the groups (0.84) his things' names and kinds and
+his list of kinds (`categories()`) — read only. Reads and writes `UserDefaults
 ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 
-**iPhone vs Mac.** The Mac sheet is at least **480 × 600**. Everything else is the same.
+**iPhone vs Mac.** The Mac sheet is at least **480 × 600**. Share at the foot is 38 across on the iPhone, 30 on
+the Mac (0.84); the headings are Footnote on both (13 pt on the iPhone, the Mac's own Footnote there). Everything
+else is the same.
 
 **Tests.**
+- UI `testAnOpenGrabListIsGroupedByKindOfThing` (0.84, `-uiTestingGrabKinds`, spec 06 §25): Indoor swim (`grab-0`)
+  shows exactly `grab-group-0…3` reading "Electronics", "Sport gear", "Comfort & misc", "Other" (his order, with
+  Electronics moved first — not the app's) and no `grab-group-4`; top to bottom each heading and then its lines —
+  item 5 (Sports watch); 1, 2 (Goggles, Swim cap); 3 (Towel); 0, 4, 6 (Swim trunks, Drink / water bottle,
+  Flip-flops) — each line under its heading; the count reads "0 of 7", a tick on item 5 → "1 of 7" and item 5
+  selected; Done; Outdoor bike (`grab-4`, the watch its one thing of his) has lines and no `grab-group-0`. Pictures
+  `grab-kinds`, `grab-kinds-flat`. Seen RED twice with a planted fault: the groups in the order the list meets them
+  — `XCTAssertEqual failed: ("["Sport gear", "Comfort & misc", "Electronics", "Other"]") is not equal to
+  ("["Electronics", "Sport gear", "Comfort & misc", "Other"]") - the headings, in his order of kinds`; one kind
+  enough for headings — `XCTAssertFalse failed - a list of one kind has a heading`. Green on the iPhone (iOS 27,
+  day and night) with the other 20 grab-list tests, and on GitHub's Mac in a probe (light; the runner's Mac stayed
+  light with dark asked for).
+- Model `GrabKindsTests` (0.84): `testThingsGoUnderTheirKindInHisOrderAndTheRestUnderOtherLast` (the app's twelve
+  in order, the list's order within, every place under exactly one heading),
+  `testHisOwnOrderOfKindsDecidesAndHisSpellingIsTheHeading`, `testAListOfOneKindStaysFlat` (one kind; one kind and
+  unknown names; nothing known; empty), `testNamesMatchHisThingsLooselyAndAThingWithNoKindIsOther`,
+  `testAKindNoLongerOnHisListComesAfterHisAndBeforeOther`, `testHisOwnKindCalledOtherIsTheOtherHeadingLast`. Red on
+  the same two planted faults (four and three of the six).
+- UI `testShareSitsOnItsHeadersCentreLine` (grab half changed in 0.84): `grab-edit` on `grab-done`'s centre line;
+  `grab-share` under `grab-ready` (its top below Ready to go's foot), its right edge within 1.5 pt of Ready to go's,
+  round (width = height within 1), and it opens `share-screen`. Pictures `share-grab-header`, `share-grab-foot`.
+  Seen RED with Share planted back in the header: "Share is not under Ready to go". Green on the iPhone and on
+  GitHub's Mac (the probe, with `testAnEmptyGrabListSaysHowToFillIt`, whose Share is now at the foot).
 - UI `testAGrabListCountsRefusesAndClears`:
   - `grab-0` opens `grab-detail`; the count starts "0 of";
   - `grab-item-0` → "1 of"; `grab-skip-1` → the count contains "skipped";
@@ -811,7 +884,10 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
   - tapping the dim to close "Not yet";
   - ticks surviving close and reopen on a FACTORY list (only an own list is reopened in a UI test);
   - the 6-hour expiry in the app (the model test pins it);
-  - "8 of 7" on screen (it needs an edit from another device; the model test pins the counting).
+  - "8 of 7" on screen (it needs an edit from another device; the model test pins the counting);
+  - the grouping following a change of a thing's kind or of his list of kinds while the list is open (the model
+    pins the answer; the screen reads it on every redraw);
+  - a heading cut at the end on a narrow screen.
 
 ---
 
@@ -839,7 +915,8 @@ ams.grab.<listId>`. Nothing about ticking is synced or backed up.
 - While editing, the counter, Share and Done are hidden. The button's identifier stays `grab-edit`
   whether it reads "Edit" or "Save".
 
-**What is on screen** (editing):
+**What is on screen** (editing) — **flat**, in the list's own order, never grouped by kind (0.84; the order he sets
+here is the order within each group of the open list):
 1. The header with **"Save"** (a capsule filled with the tone). Under the header, after a refused Save
    (0.62): **"Put at least one thing on the list first."** (`grab-save-needs`, 15 pt bold red — the
    shared `NeedsLine`). It goes as soon as the draft changes (a name typed, a thing added or removed) and
@@ -1250,7 +1327,8 @@ a grab list travels as a compact code inside a link `<web app address>#/g/<code>
 web app for anyone, and in this app under Settings → Open a shared link.
 
 **Sending.**
-- Share (`grab-share`) on an open grab list builds a `ShareOffer`:
+- Share (`grab-share`) on an open grab list — since 0.84 the round button at its bottom right (section 6, item 6) —
+  builds a `ShareOffer`:
   - title "Share “<label>”";
   - link `library.shareLink(grabId:)` = `SHARE_WEB_BASE + "#/g/" + encodeGrabShare(name: label, icon:,
     tone:, items:)`.
@@ -1310,8 +1388,9 @@ web app for anyone, and in this app under Settings → Open a shared link.
 - Model `SharingTests.testAReceivedGrabListGetsTheStandardLookForWhatIsUnknown` (0.62): a known drawing and
   colour are kept; "kite" and "magenta" become "" and "blue".
 - UI `testAnEmptyGrabListSaysHowToFillIt`: Share on an empty list shows `share-empty`, not `share-toolong`.
-- UI `testShareSitsOnItsHeadersCentreLine` (0.67): on `grab-0`, `grab-share` and `grab-edit` sit on the
-  centre line of `grab-done` (within 1.5 pt); the template half is in spec 04.
+- UI `testShareSitsOnItsHeadersCentreLine` (0.67; 0.84): on `grab-0`, `grab-edit` sits on the centre line of
+  `grab-done` (within 1.5 pt) and `grab-share` under `grab-ready`, at its right edge, round (section 6); until 0.84
+  `grab-share` sat on Done's line too. The template half is in spec 04.
 - PackingCore `GrabSharingTests`:
   - `testRoundTripOfNameLookAndItems`
   - `testAcceptsAWholeLinkOrTextWithTheLinkPastedInsideIt`
@@ -1728,8 +1807,9 @@ nothing on GitHub's slower runner, and would have on the phone too.
 - Home: `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none` (0.62), `home-countdown`,
   `home-create-heading`, `device-heading`, `count-trips`, `count-things`, `count-templates`.
 - Grab list:
-  - `grab-detail`, `grab-edit`, `grab-share`, `grab-done`, `grab-count`, `grab-allthere`;
-  - `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`, `grab-reset`, `grab-empty` (0.62);
+  - `grab-detail`, `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
+  - `grab-group-<g>` (0.84, a kind's heading, top to bottom), `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`,
+    `grab-reset`, `grab-empty` (0.62), `grab-share` (at the foot since 0.84);
   - `grab-notyet`, `grab-message`, `grab-message-ok`;
   - editing: `grab-rename-<n>`, `grab-grip-<n>` (0.72), `grab-up-<n>`, `grab-down-<n>` (Mac), `grab-sometimes-<n>`, `grab-remove-<n>`,
     `grab-add-name`, `grab-add`, `grab-add-needs`, `grab-save-needs` (0.62);

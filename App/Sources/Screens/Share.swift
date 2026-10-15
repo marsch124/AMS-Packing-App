@@ -60,16 +60,37 @@ struct ShareDoor: View {
     /// Wide = the big framed button at the foot of a trip, beside Save as Excel
     /// (his test D.22); otherwise the outlined button in a sheet's top bar.
     var wide = false
-    /// Only the drawn mark — for a top bar with no room for the word (a grab list).
-    var markOnly = false
+    /// A quiet ROUND button with the mark alone (0.84) — a grab list's, at the bottom right
+    /// of the open list. His words, 15 Oct 2026: "Please move the share button down to the
+    /// bottom right. I almost never use it. … can we make the share button more rounded?"
+    var round = false
     let make: () -> ShareOffer
     @State private var offer: ShareOffer?
+
+    /// The round button's width and height: about a finger on the iPhone, a Mac button's
+    /// size on the Mac.
+    #if os(macOS)
+    static let roundSize: CGFloat = 30
+    #else
+    static let roundSize: CGFloat = 38
+    #endif
 
     var body: some View {
         Group {
             if wide {
                 Button { offer = make() } label: {
                     WideButtonLabel(title: "Share", tint: tint) { ShareMark() }
+                }
+                .buttonStyle(.plain)
+            } else if round {
+                // Outlined in the list's colour on its 10 % fill, as Edit is — never grey.
+                Button { offer = make() } label: {
+                    ShareMark().foregroundStyle(tint)
+                        .frame(width: ShareDoor.roundSize * 0.55, height: ShareDoor.roundSize * 0.55)
+                        .frame(width: ShareDoor.roundSize, height: ShareDoor.roundSize)
+                        .background(Circle().fill(tint.opacity(0.10)))
+                        .overlay(Circle().stroke(tint, lineWidth: 1.4))
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
             } else {
@@ -79,7 +100,7 @@ struct ShareDoor: View {
                         // little more (0.67: framed at 18 it hung 3 pt low — his note
                         // "The share button is not aligned with the icon").
                         ShareMark().frame(width: 22, height: 22)
-                        if !markOnly { Text("Share") }
+                        Text("Share")
                     }
                 }
                 .buttonStyle(HeaderButtonStyle(tint: tint, filled: false))
