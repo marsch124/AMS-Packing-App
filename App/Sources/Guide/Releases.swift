@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.85", date: "15 Oct 2026", title: "Your own headings",
+                new: ["Grab lists take your own headings: in Edit, add a heading, name it, and put things under it \u{2014} the way a template\u{2019}s headings work. The open list shows them small and grey.",
+                      "Heading above: hold a thing in a grab list\u{2019}s Edit (right-click on the Mac) for a new heading right above it."],
+                changed: ["Counts as calls the kind Mobility & breath."],
+                removed: ["0.84\u{2019}s automatic groups by Kind of thing \u{2014} your headings replace them."]),
         Release(version: "0.84", date: "15 Oct 2026", title: "Calmer, and in groups",
                 new: ["An open grab list falls into small grey headings by Kind of thing, in the order of your kinds. A list of one kind stays as it is."],
                 changed: ["Take a break is just the cup. While a break waits, the cup shows its time.",
