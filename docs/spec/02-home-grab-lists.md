@@ -944,7 +944,8 @@ else is the same.
   Pictures `grabhead-open`, `grabhead-edit` (day and night). RED with planted faults: the open list drawing no heading — `XCTAssertTrue failed - no heading on the open list`; the
   headings counted — `XCTAssertTrue failed - the headings were counted: '0 of 13 in hand'`; Edit drawing a heading as a
   thing's row — `XCTAssertTrue failed - no heading row 1`. Green on the iPhone (iOS 27, "Packing CI head", day and
-  night).
+  night, with 21 other grab-list tests) and on GitHub's Mac in a probe (8 of 8 light with six grab-list
+  neighbours; the dark step green too, though the runner's Mac stayed light).
 - UI `testHisOwnHeadingGroupsAGrabList` (0.85, the sample): Indoor swim has no `grab-group-0` and "0 of 7"; Edit →
   "In the bag" into `grab-add-heading-name`, `grab-add-heading` → `grab-heading-7` holds it, with no
   `grab-rename-7` and no `grab-sometimes-7` (`grab-sometimes-6` still there); its grip dragged onto row 6's (the
@@ -956,7 +957,8 @@ else is the same.
   counted — `XCTAssertTrue failed - the heading was counted: '0 of 8 in hand'`; A new heading adding a thing —
   `XCTAssertTrue failed - the new heading is not last in the list`; removing a heading taking the thing under it —
   `XCTAssertTrue failed - its thing went with it`; a heading over a list without his — `XCTAssertFalse failed - a list
-  without headings of his has a heading`. Green on the iPhone (day and night).
+  without headings of his has a heading`. Green on the iPhone (day and night) and on GitHub's Mac (the probe; there
+  ▲ moves the heading).
 - (0.84, gone in 0.85) UI `testAnOpenGrabListIsGroupedByKindOfThing` (`-uiTestingGrabKinds`): Indoor swim (`grab-0`)
   shows exactly `grab-group-0…3` reading "Electronics", "Sport gear", "Comfort & misc", "Other" (his order, with
   Electronics moved first — not the app's) and no `grab-group-4`; top to bottom each heading and then its lines —
