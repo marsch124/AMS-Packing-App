@@ -262,5 +262,13 @@ final class PackingStationsTests: XCTestCase {
                 XCTAssertGreaterThanOrEqual(ratio, tone.filled ? 3.0 : 4.5, "\(tone) on the \(name): \(ratio)")
             }
         }
+        // Add to Calendar, filled once a time is chosen (0.84): the break's amber, white words on
+        // it at 4.5 : 1, by day and by night (its Body semibold is not large text).
+        for (when, fill) in [("day", TripHeaderTone.breakFilled.day), ("night", TripHeaderTone.breakFilled.night)] {
+            let v = UInt32(fill.dropFirst(), radix: 16)!
+            XCTAssertTrue((v >> 16) & 0xff > (v >> 8) & 0xff && (v >> 8) & 0xff > v & 0xff, "\(fill) is not an amber")
+            let ratio = contrastRatio("#ffffff", fill)
+            XCTAssertGreaterThanOrEqual(ratio, 4.5, "white on the filled amber by \(when): \(ratio)")
+        }
     }
 }

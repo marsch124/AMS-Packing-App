@@ -16,15 +16,18 @@ import PackingLibrary
 // On a trip at Pack, a quiet "Take a break" on the count's line in the trip's header opens a
 // sheet: how far he has come (the trip's count, its groups in his Sorting, To charge and To do
 // left), then "Continue when?" — In an hour · This evening · Tomorrow (a time, 18:00 to start)
-// · Just pause. A time puts "Back to packing <trip>: 22 things left" in the iPhone's list, and
+// · Just pause. A time puts "🎒 Back to packing <trip>: 22 things left" in the iPhone's list (the
+// backpack since 0.84, his ask of 15 Oct 2026), and
 // Add to Calendar puts it in his calendar too: the system's own New Event window on the
 // iPhone (no calendar permission is asked — iOS 17 and later lets an app hand it an event),
 // a calendar file handed to Calendar on the Mac (no permission either).
 
-/// The trip header's door to the break: a small outlined pill in the trip's green, never a
-/// grey or a filled main button — the calm end of the count's line. While a break is waiting
-/// it says when he comes back: "Back at 19:00". Shown only while the trip is at Pack with
-/// something left (the trip screen decides).
+/// The trip header's door to the break. Since 0.84 (his ask of 15 Oct 2026, from a Mac trip
+/// at Pack) a round button that is ONLY the drawn cup, as big as the trip's pen beside the name
+/// (`RoundIconLabel`, `Metrics.tap` across), in the break's warm amber (0.81) — label "Take a
+/// break". While a break is waiting it grows into a compact capsule: the cup and, small, the
+/// time he comes back — "19:00" today, "Fri 18:00" on another day (`short`). Shown only while
+/// the trip is at Pack with something left (the trip screen decides).
 struct TakeABreakButton: View {
     let tripId: String
     @EnvironmentObject var model: LibraryModel
@@ -36,26 +39,47 @@ struct TakeABreakButton: View {
 
     var body: some View {
         let until = model.library.trips.first { $0.id == tripId }.map(Library.breakUntil) ?? ""
-        let says = TakeABreakButton.words(until, now: Today.stamp(Today.now))
+        let now = Today.stamp(Today.now)
+        let says = TakeABreakButton.words(until, now: now)
+        let time = TakeABreakButton.short(until, now: now)
         Button { open = true } label: {
-            HStack(spacing: 5) {
-                CupMark().frame(width: 16, height: 16)
-                Text(says).font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
+            if time.isEmpty {
+                RoundIconLabel(tint: tint) { CupMark() }
+            } else {
+                HStack(spacing: 4) {
+                    CupMark().frame(width: Metrics.glyph, height: Metrics.glyph).foregroundStyle(tint)
+                    Text(time).font(.system(.footnote, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(TripHeaderTone.takeABreak.wordsColour)
+                        .lineLimit(1).fixedSize()
+                }
+                .padding(.leading, (Metrics.tap - Metrics.glyph) / 2).padding(.trailing, 10)
+                .frame(height: Metrics.tap)
+                .background(Capsule().fill(tint.opacity(0.10)))
+                .overlay(Capsule().stroke(tint, lineWidth: 1.4))
+                .contentShape(Capsule())
             }
-            .foregroundStyle(TripHeaderTone.takeABreak.wordsColour)
-            .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
-            .background(Capsule().fill(tint.opacity(0.10)))
-            .overlay(Capsule().stroke(tint, lineWidth: 1.2))
-            .contentShape(Capsule())
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-break")
         .accessibilityLabel("Take a break")
-        // Its words as its value: the Mac folds a button's texts into the button.
-        .accessibilityValue(says)
+        // With a break waiting, when he comes back ("Back at 19:00") as its value; none without.
+        .accessibilityValue(says == "Take a break" ? "" : says)
         .sheet(isPresented: $open) { TakeABreakSheet(tripId: tripId).environmentObject(model) }
         // The iPhone's one question, the first time a trip at Pack is opened (TripMessages).
         .task { await TripMessages.shared.askOnce(model.library) }
+    }
+
+    /// The capsule's time while a break waits (0.84): "19:00" today, "Fri 18:00" on another day
+    /// (a break is at most tomorrow when it is taken); "" with none waiting — the round cup.
+    static func short(_ until: String, now: String) -> String {
+        guard !until.isEmpty, jsStringLess(now, until) else { return "" }
+        let day = String(until.prefix(10)), time = String(until.suffix(5))
+        if day == String(now.prefix(10)) { return time }
+        let p = day.split(separator: "-").compactMap { Int($0) }
+        let cal = Calendar(identifier: .gregorian)
+        guard p.count == 3, let date = cal.date(from: DateComponents(year: p[0], month: p[1], day: p[2])) else { return time }
+        let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        return "\(names[(cal.component(.weekday, from: date) + 6) % 7]) \(time)"
     }
 
     /// "Take a break"; with a break still ahead, "Back at 19:00", "Back tomorrow 18:00",
@@ -141,12 +165,18 @@ struct TakeABreakSheet: View {
                             .accessibilityIdentifier("break-refused")
                     }
                     if waiting {
-                        Button { addToCalendar() } label: {
-                            WideButtonLabel(title: "Add to Calendar", tint: tint) { CalendarMark() }
-                        }
+                        // Filled once a time is chosen (0.84, his ask of 15 Oct 2026: it pops) — the
+                        // break's amber, white words; outlined in that amber while no time shows as
+                        // chosen (a break waiting from before that is none of the choices: In an hour).
+                        let pops = chosen != nil && chosen != .pause
+                        Button { addToCalendar() } label: { calendarLabel(filled: pops) }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .padding(.top, 4)
                         .accessibilityIdentifier("break-calendar")
+                        #if DEBUG
+                        // The tests' only way to see its look.
+                        .accessibilityValue(pops ? "filled" : "outlined")
+                        #endif
                     }
                     #if DEBUG
                     if !calendarSaid.isEmpty {
@@ -353,6 +383,23 @@ struct TakeABreakSheet: View {
     }
 
     // MARK: Add to Calendar
+
+    /// Add to Calendar (0.84): a wide button with the drawn calendar, in the break's amber —
+    /// outlined (its words on the amber at 10 %, `TripHeaderTone.takeABreak`) or, once a time is
+    /// chosen, FILLED (`TripHeaderTone.breakFilled`, white words and mark), day and night.
+    private func calendarLabel(filled: Bool) -> some View {
+        let tone = TripHeaderTone.takeABreak
+        let fill = TripHeaderTone.breakFilledColour
+        return HStack(spacing: 10) {
+            CalendarMark().frame(width: 22, height: 22)
+            Text("Add to Calendar").font(.system(.body, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .foregroundStyle(filled ? Color.white : tone.wordsColour)
+        .frame(maxWidth: .infinity, minHeight: Metrics.tap)
+        .background(RoundedRectangle(cornerRadius: 12).fill(filled ? fill : tone.ringColour.opacity(0.10)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(filled ? fill : tone.ringColour, lineWidth: 1.4))
+        .contentShape(Rectangle())
+    }
 
     private func addToCalendar() {
         let lib = model.library

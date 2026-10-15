@@ -36,6 +36,8 @@ final class PackingDayTests: XCTestCase {
     func testEachStationWearsHisPick() {
         // His picks of 13 Oct 2026 (the station sheet): day B, Bags out A, Pack C, Weigh A, Tags A, Photos C, Ready A.
         XCTAssertEqual(PackingDayStation.allCases.map(\.name), ["Bags out", "Pack", "Weigh", "Tags", "Photos", "Ready"])
+        // His shorter chips (0.84, 15 Oct 2026): the chip's word; the full name stays where there is room.
+        XCTAssertEqual(PackingDayStation.allCases.map(\.chip), ["Bags", "Pack", "Weigh", "Tag", "Photo", "Ready"])
         XCTAssertEqual(PackingDayStation.allCases.map(\.rawValue), ["bags", "pack", "weigh", "tags", "photos", "ready"])
         XCTAssertEqual(PackingDayStation.allCases.map(\.mark.key),
                        ["bagsOnFloor", "listIntoCase", "luggageScale", "tagAndAirTag", "photoPrint", "bagByDoor"])

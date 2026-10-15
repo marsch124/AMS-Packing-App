@@ -29,6 +29,10 @@ public let BREAK_TOMORROW_AT = "18:00"
 public let BREAK_EVENING_LEAD_MINUTES = 30
 /// A calendar entry for a break lasts this long.
 public let BREAK_CALENDAR_MINUTES = 30
+/// How the break's reminder and its calendar entry begin (0.84, his ask of 15 Oct 2026: the
+/// reminder's text starts with the backpack, 🎒) — "🎒 Back to packing <trip>". The emoji is
+/// his explicit wish, here and nowhere else in the app (his rule: no stock art in the app).
+public let BREAK_TITLE = "\u{1F392} Back to packing"
 /// Pack → On site with no time he leaves: the first day at 08:00 (never at midnight, when
 /// the loop itself turns).
 public let SET_OFF_MESSAGE_AT = "08:00"
@@ -241,7 +245,7 @@ extension Library {
     ///
     /// Back to packing (a break): at the trip's `breakUntil`, while that is still ahead, the
     /// trip is at Pack now and not set off by then, is not reviewed, and something is left —
-    /// "Back to packing Weekend in the hills" / "22 things left".
+    /// "🎒 Back to packing Weekend in the hills" / "22 things left" (`BREAK_TITLE`, 0.84).
     ///
     /// With `movesOn` (the device's switch), for every trip not reviewed, dated, with lines:
     /// Pack → On site, "Have a good trip — <trip>", on its first day at the time he leaves
@@ -263,7 +267,7 @@ extension Library {
                let o = breakOverview(tripId: trip.id, sorting: "when", today: today) {
                 breaks.append(TripMessage(id: "break-\(trip.id)", tripId: trip.id, kind: .breakOver,
                                           day: String(until.prefix(10)), time: String(until.suffix(5)),
-                                          title: "Back to packing \(name)", body: o.leftWords))
+                                          title: "\(BREAK_TITLE) \(name)", body: o.leftWords))
             }
             guard movesOn, !trip.entries.isEmpty, isYMD(trip.startDate) else { continue }
             // Pack → On site: when he sets off.
@@ -293,7 +297,7 @@ extension Library {
 
     // MARK: - In the calendar
 
-    /// The break as a calendar entry: "Back to packing <trip>", at `breakUntil`, 30 minutes,
+    /// The break as a calendar entry: "🎒 Back to packing <trip>" (0.84), at `breakUntil`, 30 minutes,
     /// what is left as its note. Nil when no break is waiting.
     public func breakEvent(tripId: String) -> (title: String, notes: String, start: String, end: String)? {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return nil }
@@ -301,7 +305,7 @@ extension Library {
         guard !at.isEmpty, let end = Library.moment(at, plusMinutes: BREAK_CALENDAR_MINUTES) else { return nil }
         let o = breakOverview(tripId: tripId, sorting: "when", today: String(at.prefix(10)))
         let notes = o.map { [$0.packedWords, $0.leftWords].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ") } ?? ""
-        return ("Back to packing \(Library.messageName(trip))", notes, at, end)
+        return ("\(BREAK_TITLE) \(Library.messageName(trip))", notes, at, end)
     }
 
     /// The break as a calendar file (.ics, RFC 5545) — what the Mac hands to Calendar. Its

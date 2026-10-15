@@ -19,7 +19,8 @@ struct StationMark: View {
     var body: some View { IconMark(path: mark.path, size: size, weight: 1.9).accessibilityHidden(true) }
 }
 
-/// One station chip: its mark and its short name — Pack with its count. Done: green, white
+/// One station chip: its mark and its chip word (`PackingDayStation.chip`, 0.84 — his ask of 15
+/// Oct 2026: "Bags", "Tag", "Photo", and Pack without its count, which the header shows). Done: green, white
 /// words; the one highlighted (the next to do on the trip, the one shown in the sheet): a light
 /// green with a stronger ring — done and highlighted, green with a white ring inside; open: the
 /// card with a green line; cannot (no bags): muted, dashed.
@@ -27,8 +28,6 @@ struct StationChip: View {
     enum Look { case done, doneHere, here, open, cannot }
     let station: PackingDayStation
     let look: Look
-    /// "12/40" after Pack's name; "" for the others.
-    var count = ""
     @Environment(\.colorScheme) private var scheme
 
     #if os(macOS)
@@ -54,11 +53,7 @@ struct StationChip: View {
         }
         HStack(spacing: 5) {
             StationMark(mark: station.mark, size: StationChip.markSize)
-            Text(station.name).font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
-            if !count.isEmpty {
-                Text(count).font(.system(.footnote, weight: .semibold).monospacedDigit()).lineLimit(1).fixedSize()
-                    .opacity(look == .done || look == .doneHere ? 1 : 0.85)
-            }
+            Text(station.chip).font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
         }
         .foregroundStyle(words)
         .padding(.horizontal, 9).frame(height: StationChip.height)
@@ -101,20 +96,20 @@ struct StationChips: View {
         ForEach(PackingDayStation.allCases) { s in
             let look: StationChip.Look = !day.usable(s) ? .cannot : s == highlight ? .here : day.done(s) ? .done : .open
             Button { tap(s) } label: {
-                StationChip(station: s, look: s == highlight && day.done(s) ? .doneHere : look,
-                            count: s == .pack && day.total > 0 ? "\(day.packed)/\(day.total)" : "")
+                StationChip(station: s, look: s == highlight && day.done(s) ? .doneHere : look)
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .id(s.rawValue)
             .accessibilityIdentifier("\(idPrefix)-\(s.rawValue)")
-            .accessibilityLabel(s.name)
+            .accessibilityLabel(s.chip)
             .accessibilityValue(day.state(s))
             .accessibilityAddTraits(s == highlight ? .isSelected : [])
         }
     }
 }
 
-/// The trip screen's row: the day's mark and "Packing Stations", then the chips — the next station
+/// The trip screen's row: the day's mark and "Stations" (0.84 — "Packing Stations" until then; the
+/// full name stays on the sheet's heading, in How it works and in Words), then the chips — the next station
 /// to do highlighted. ONE line where it fits (a wide Mac window); else, on the iPhone, the whole
 /// line scrolls sideways, from one edge of the screen to the other, and keeps the next station
 /// (and the one after it) in view; on a narrow Mac window the chips wrap onto a second line.
@@ -171,12 +166,12 @@ struct PackingDayRow: View {
     private var title: some View {
         HStack(spacing: 5) {
             StationMark(mark: PackingDayStation.dayMark, size: 17)
-            Text("Packing Stations").font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
+            Text("Stations").font(.system(.footnote, weight: .semibold)).lineLimit(1).fixedSize()
         }
         .foregroundStyle(Library.LoopStep.pack.words(scheme))
         .frame(minHeight: StationChip.height + 2 * StationChip.reach)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Packing Stations")
+        .accessibilityLabel("Stations")
         .accessibilityAddTraits(.isHeader)
         .accessibilityIdentifier("day-title")
     }
@@ -775,7 +770,7 @@ struct PackingDayGuideCard: View {
         case .bagsOut:
             return "Lay every bag out where you pack, and tick it as it comes out. The bags are the ones your list packs into \u{2014} \u{201C}Not in a bag\u{201D} is not one. Green when every bag is out. At the foot, + Add a bag: one of your bags not on the trip yet, or a new one (its name, whether it goes in the cabin, its max weight if you like). It joins the trip empty, and Weigh, Tags, Photos and Bags ask about it too; to fill it, pick it as Usually packed in on its things\u{2019} pages. The \u{2715} beside an empty one takes it off again."
         case .pack:
-            return "The trip\u{2019}s own list. Its station shows how far you are \u{2014} 12/40 \u{2014} and a tap takes you straight to the list. Green when everything is packed; a thing set aside \u{2298} counts as done."
+            return "The trip\u{2019}s own list \u{2014} how far you are is the count under the trip\u{2019}s name \u{2014} and a tap takes you straight to the list. Green when everything is packed; a thing set aside \u{2298} counts as done."
         case .weigh:
             return "The luggage scale, one bag after another: hang it on the scale, type what it says, Save \u{2014} the next bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself \u{2014} once per trip. Green when every bag is weighed."
         case .tags:
@@ -797,7 +792,7 @@ struct PackingDayGuideCard: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("guide-day-title")
-            Text("On a trip you are packing, a row sits right under the loop: Packing Stations, then six stations in the order you go through them. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways.")
+            Text("On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go through them, each with a short word on its chip \u{2014} Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways.")
                 .font(.system(.callout)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(Array(PackingDayStation.allCases.enumerated()), id: \.element) { n, s in

@@ -48,6 +48,21 @@ public enum PackingDayStation: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
+    /// The word on its chip, in the trip's row and at the top of the sheet (0.84, his ask of 15
+    /// Oct 2026: shorter chips) — "Bags", "Pack", "Weigh", "Tag", "Photo", "Ready". `name` stays
+    /// the full name where there is room to read it: the sheet's "Next: Bags out", Ready's list
+    /// of stations, How it works and Words.
+    public var chip: String {
+        switch self {
+        case .bagsOut: return "Bags"
+        case .pack: return "Pack"
+        case .weigh: return "Weigh"
+        case .tags: return "Tag"
+        case .photos: return "Photo"
+        case .ready: return "Ready"
+        }
+    }
+
     /// Bags out, Weigh, Tags and Photos ask about the trip's bags: with none, they cannot be done.
     public var needsBags: Bool { self == .bagsOut || self == .weigh || self == .tags || self == .photos }
 

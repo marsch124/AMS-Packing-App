@@ -155,7 +155,7 @@ final class TakeABreakTests: XCTestCase {
         XCTAssertEqual(m.first?.kind, .breakOver)
         XCTAssertEqual(m.first?.day, "2026-10-13")
         XCTAssertEqual(m.first?.time, "19:00")
-        XCTAssertEqual(m.first?.title, "Back to packing Sun week")
+        XCTAssertEqual(m.first?.title, "\u{1F392} Back to packing Sun week", "the reminder does not start with the backpack (0.84)")
         XCTAssertEqual(m.first?.body, "7 things left")
         // The count is the one at the last change.
         tick(&lib, trip, "Pump", "Clubs", "Balls", "Tees", "Toothbrush", "Charger")
@@ -254,7 +254,7 @@ final class TakeABreakTests: XCTestCase {
         lib.trips[0].name = "Sun week, Seaside; 2"
         XCTAssertTrue(lib.setBreak(until: "2026-10-13 23:45", tripId: trip))
         let e = lib.breakEvent(tripId: trip)!
-        XCTAssertEqual(e.title, "Back to packing Sun week, Seaside; 2")
+        XCTAssertEqual(e.title, "\u{1F392} Back to packing Sun week, Seaside; 2")
         XCTAssertEqual(e.notes, "1 of 9 packed \u{00B7} 8 things left")
         XCTAssertEqual(e.start, "2026-10-13 23:45")
         XCTAssertEqual(e.end, "2026-10-14 00:15", "half an hour, over midnight")
@@ -263,9 +263,9 @@ final class TakeABreakTests: XCTestCase {
             "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//AMS Packing//Take a break//EN", "CALSCALE:GREGORIAN",
             "BEGIN:VEVENT", "UID:break-\(trip)-20261013T234500@ams-packing", "DTSTAMP:20261013T120000Z",
             "DTSTART:20261013T234500", "DTEND:20261014T001500",
-            "SUMMARY:Back to packing Sun week\\, Seaside\\; 2",
+            "SUMMARY:\u{1F392} Back to packing Sun week\\, Seaside\\; 2",
             "DESCRIPTION:1 of 9 packed \u{00B7} 8 things left",
-            "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Back to packing Sun week\\, Seaside\\; 2", "TRIGGER:PT0M", "END:VALARM",
+            "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:\u{1F392} Back to packing Sun week\\, Seaside\\; 2", "TRIGGER:PT0M", "END:VALARM",
             "END:VEVENT", "END:VCALENDAR",
         ].joined(separator: "\r\n") + "\r\n")
     }

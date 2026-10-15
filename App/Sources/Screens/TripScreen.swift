@@ -206,7 +206,11 @@ struct TripScreen: View {
                     if Library.isReviewed(trip) {
                         TripStateBadge(state: .reviewed).fixedSize()
                             .accessibilityIdentifier("trip-reviewed")
-                    } else if !trip.entries.isEmpty {
+                    } else if model.library.offersReview(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock))
+                                || (TripScreen.reviewAtPack && !trip.entries.isEmpty) {
+                        // Only once the trip has started — On site or later; a trip with no dates as
+                        // before (0.84, his yes of 15 Oct 2026: "is that really necessary?" beside Done
+                        // while he packed). The loop strip's Review step is unchanged.
                         // In the Templates (Refine) violet — what a review teaches goes to the templates
                         // (0.81, his pick of variant A, 14 Oct 2026); Done stays the trip's green.
                         Button("Review") { reviewing = true }
@@ -680,6 +684,11 @@ struct TripScreen: View {
         let now = Today.stamp(clock)
         return Library.clockTurns(trip).first { $0 > now } ?? ""
     }
+
+    /// UI tests only (`-reviewAtPack`): the header's Review on a trip still at Pack, for the tests
+    /// about the review itself on the sample trip (a month ahead). The rule of when it shows
+    /// (`Library.offersReview`) is tested without it.
+    static let reviewAtPack = AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-reviewAtPack")
 
     /// A tapped door check opened this trip (0.69): on just its unticked lines — or, for
     /// the way home, On site opens and in it Pack to go home, on what is not in a bag yet.

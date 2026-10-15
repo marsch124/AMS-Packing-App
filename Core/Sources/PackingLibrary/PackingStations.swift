@@ -210,6 +210,11 @@ public enum TripHeaderTone: CaseIterable, Sendable {
 
     /// Filled (white words on the ring colour) or outlined (its words on a 10 % fill).
     public var filled: Bool { self == .done }
+
+    /// The break's amber FILLED, white words and mark on it — Add to Calendar once a time is
+    /// chosen (0.84, his ask of 15 Oct 2026: it pops). The day ring's amber, day and night: the
+    /// night ring (#e0a458) is too light for white words.
+    public static let breakFilled: (day: String, night: String) = ("#a8651a", "#a8651a")
 }
 
 /// The WCAG contrast ratio of two colours, 1 … 21.

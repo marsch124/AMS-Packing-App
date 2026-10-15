@@ -1076,8 +1076,14 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
   only a review time, from the web app, offered Review again here) — since 0.73 the Trips row's own badge,
   `TripStateBadge(state: .reviewed)` (Footnote semibold muted on a `Theme.line` capsule, padding 10 sideways,
   min height 22 — see `TripRow`), never squeezed (`fixedSize`), id `trip-reviewed` (a text); until 0.73
-  "Reviewed" in Subheadline semibold muted words. Otherwise, if the trip has lines, **Review** (outlined, id
-  `trip-review`) — offered at ANY time, before the trip too. Since 0.81 (his pick of variant A, 14 Oct 2026) in the
+  "Reviewed" in Subheadline semibold muted words. Otherwise **Review** (outlined, id `trip-review`) — since 0.84
+  only once the trip has STARTED (`Library.offersReview`: not reviewed, with lines, and `loopStep` On site or later —
+  on the first day from the time he leaves, or once something was bought on site; a trip with no start date keeps it
+  at any time, as it never starts by the clock and could otherwise never be reviewed). His yes of 15 Oct 2026, on a
+  Mac trip at Pack: "is that really necessary?" → "only once the trip has started". Until 0.84 offered at ANY time,
+  before the trip too (with lines). The loop strip's Review step is unchanged. Under the UI tests `-reviewAtPack`
+  shows it at Pack too, for the tests about the review itself on the sample trip a month ahead
+  (`TripScreen.reviewAtPack`). Since 0.81 (his pick of variant A, 14 Oct 2026) in the
   Templates / Refine violet — ring and 10 % fill `#7c5cd6`, words `#6548c0` by day, `#a58ce6` at night
   (`TripHeaderTone.review`; `HeaderButtonStyle(words:)`); green until then. Spec 07 part 17, "0.81" item 5.
   Then **Done** (filled green, id `trip-done`; **Escape** presses it — `.keyboardShortcut(.cancelAction)`,
@@ -1088,10 +1094,14 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
 - Under the line, 2 pt away, at the left: the progress "done/total" or "done/total · N set aside" (Callout
   semibold mono; green when all packed, else muted; id `trip-progress`; accessibility value "all packed" when
   all packed, else "").
-- At the right end of that count line (0.77, his yes of 13 Oct 2026): **Take a break** — a small outlined pill,
-  since 0.81 in a warm coffee amber (ring and 10 % fill `#a8651a` by day, `#e0a458` at night; the cup and words
-  `#8a5215` / `#e0a458` — `TripHeaderTone.takeABreak`; green until then), the drawn cup and "Take a break" (or, with
-  a break waiting, "Back at 19:00", "Back tomorrow 18:00"), id `trip-break` — only while
+- At the right end of that count line (0.77, his yes of 13 Oct 2026): **Take a break** — since 0.84 (his ask of
+  15 Oct 2026) a ROUND button that is only the drawn cup, the size of the trip's pen (`RoundIconLabel`,
+  `Metrics.tap` across: 36 / 26; the cup at `Metrics.glyph`, 20 / 16), label "Take a break", no value; with a break
+  waiting a compact capsule as tall — the cup and the time small (Footnote semibold, monospaced digits): "19:00"
+  today, "Fri 18:00" on another day (`TakeABreakButton.short`), value "Back at 19:00" / "Back tomorrow 18:00".
+  Until 0.84 a pill with the cup and "Take a break" / "Back at 19:00". Since 0.81 in a warm coffee amber (ring and
+  10 % fill `#a8651a` by day, `#e0a458` at night; the cup and words `#8a5215` / `#e0a458` —
+  `TripHeaderTone.takeABreak`; green until then), id `trip-break` — only while
   the trip is at Pack (the loop strip's own reading) with something left. It opens the break sheet: how far he has
   come, and "Continue when?". Everything about it: spec 07 part 16.
 - **What's left** (0.82, his yes of 14 Oct 2026; spec 07 part 20), under the count, 1 pt away, in the count's
@@ -1110,10 +1120,12 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
 trip is at Pack (the strip's own reading) and not opened from a place's code: right under the strip, fixed above the
 scroll area, ONE slim row (container `day-row`) — the day's mark and "Packing Stations" (`day-title`), then six
 station chips (since 0.81 slimmer than a pill: 22 pt on the iPhone, 18 on the Mac, 2 / 1 more above and below taking
-the tap), **Bags out · Pack ·
-Weigh · Tags · Photos · Ready** (`day-station-<key>`: `bags`, `pack`, `weigh`, `tags`, `photos`, `ready`; value =
-"done", "no bags yet" or the station's words; the next one to do selected). Done = green with white words; the next
-one lit; Pack carries "12/40". A tap on Pack scrolls to the list (the Sorting row); any other opens the Packing
+the tap), **Bags · Pack · Weigh · Tag · Photo · Ready** — the chip words since 0.84 (`PackingDayStation.chip`; the
+full names Bags out, Tags and Photos until then) — (`day-station-<key>`: `bags`, `pack`, `weigh`, `tags`, `photos`,
+`ready`; label = the chip word; value = "done", "no bags yet" or the station's words; the next one to do selected).
+Done = green with white words; the next one lit; since 0.84 Pack carries no count (the header's count says it;
+"12/40" until then). The row's title says **"Stations"** since 0.84 ("Packing Stations" until then; the sheet keeps the
+full name — spec 07 part 17, "0.84"). A tap on Pack scrolls to the list (the Sorting row); any other opens the Packing
 Stations sheet on that station. Too wide for the iPhone it scrolls sideways, keeping the next station in view. When the trip
 turns all packed while open here, Weigh opens by itself once per trip, 1.5 s later (part 17, rule 9).
 
@@ -2745,8 +2757,9 @@ Since the web app's v162 only what went in the bag counts as packed. The order o
 test F.3, 0.41); WHERE a thing went, and fixing a thing mid-review (his asks). Apple Health fills it in on the
 iPhone since 0.70 (his choice of 7 Oct 2026; the whole design, the table and every edge case: chapter 07 part 7).
 
-**How it is reached and left.** The trip's **Review** button (while not reviewed and with lines; at any
-date). Sheet; **Cancel** (outlined muted, `review-cancel`; Escape too, 0.62) closes without saving;
+**How it is reached and left.** The trip's **Review** button (while not reviewed and with lines; since 0.84 only
+once the trip has started — On site or later — or at any time on a trip with no start date; at any date until then),
+or a tapped "Welcome home — review …" (spec 07 part 16). Sheet; **Cancel** (outlined muted, `review-cancel`; Escape too, 0.62) closes without saving;
 **Save review** saves and closes. A swipe down on the iPhone closes it only while nothing is marked,
 added or typed (0.62: marks made in an unsaved review were lost to a swipe). Screen id `review-detail`;
 Mac minimum 520 × 600.

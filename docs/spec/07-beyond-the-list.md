@@ -1711,6 +1711,10 @@ Tests.
 
 ## 16. Take a break and messages when a trip moves on
 
+> **0.84** (his asks of 15 Oct 2026): the header's door is a round cup (a compact capsule with the time while a break
+> waits), Add to Calendar is filled once a time is chosen, and the reminder starts with 🎒 — see "0.84" at the end of
+> this part. The sections below keep the words of 0.77 / 0.81 where they describe what was built then.
+
 > His words (13 Oct 2026), from his own packing walk-through: "then I get tired and just want to relax… if it is the
 > day after I would like a reminder or a calendar event so that I feel calm. In this state I would like an overview
 > of how far I have come"; and "I would like a message from the app when the Phase changes". He said yes to both the
@@ -1903,6 +1907,59 @@ Mac (a probe running these five with `testTheTripsPenSitsBesideItsNameAndReviewe
 `testSettingsTurnsOnPackingReminders`): all seven green — the sheet says "your iPhone will remind you", the Settings
 card has no Messages switch (pictures of the Mac look, day; the runner's night setting did not reach the app).
 
+### 0.84 — the cup, Add to Calendar that pops, and the backpack: his asks of 15 Oct 2026
+
+> From his screenshots of a Mac trip at Pack ("Torren 2026 Rev 1", 15 Oct 2026), numbered as he gave them (2, 3, 4;
+> his 5 is part 17 "0.84"). Built on branch `work/trims084`, written from the code: the button and the sheet
+> `App/Sources/Screens/TakeABreak.swift`; the title `Core/Sources/PackingLibrary/TakeABreak.swift`
+> (`BREAK_TITLE`); the filled amber `Core/Sources/PackingLibrary/PackingStations.swift`
+> (`TripHeaderTone.breakFilled`). Where this section and the ones above differ, this one is the newer.
+
+**2. Take a break → icon only.** The trip header's door to the break is a ROUND button that is only the drawn cup
+(`CupMark`) — the same round button as the trip's pen beside its name (`RoundIconLabel`: `Metrics.tap` across, 36 on
+the iPhone and 26 on the Mac; the cup at `Metrics.glyph`, 20 / 16; the amber at 10 % with a 1.4-pt amber ring,
+`TripHeaderTone.takeABreak` as since 0.81). Label "Take a break", no value (VoiceOver says it once). **While a break
+waits** it is a compact capsule just as tall: the cup (the same size), 4 apart, and the time **small** — Footnote
+semibold, monospaced digits, the amber's words colour — "19:00" when the break is today, "Fri 18:00" (the day's
+three letters, English) on another day (`TakeABreakButton.short`; a break is at most tomorrow when it is taken);
+padding 8 / 5 before the cup (so the cup sits where it sat in the circle) and 10 after the time, the same fill and
+ring. Its value then says it whole: "Back at 19:00", "Back tomorrow 18:00" (`TakeABreakButton.words`, rule 7) — the
+words the pill showed until 0.84. The id `trip-break` is kept; it opens the same sheet. Decided by the build: the
+weekday rather than "Tomorrow" keeps the capsule compact (his word "the time small"), and the value carries the
+full words for VoiceOver.
+
+**3. Add to Calendar pops once a time is chosen.** In the sheet, Add to Calendar (`break-calendar`, shown while a
+break is waiting, rule 13) is **FILLED** — the break's amber `#a8651a`, day and night (`TripHeaderTone.breakFilled`:
+white on it reads 4.6 : 1; the night ring `#e0a458` would be 2.2 : 1), the calendar mark and "Add to Calendar" white
+— whenever one of the TIMES shows as chosen: picked on this visit (In an hour, This evening, Tomorrow), or the
+waiting break recalled as This evening or Tomorrow when the sheet opens (rule 8). **Outlined** otherwise: the amber
+at 10 % with a 1.4-pt amber ring, its words and mark in the amber's words colour (`#8a5215` by day, `#e0a458` at
+night) — a break waiting from before that is none of the choices (In an hour, taken earlier: nothing shows as
+chosen). Wide as before (`Metrics.tap` tall, corner 12, Body semibold, the 22-pt mark 10 before the words). Decided
+by the build: it is in the break's amber in both looks (it was in the sheet's green until 0.84, as `WideButtonLabel`)
+so filling it is the only change he sees; Just pause shows no Add to Calendar (no break waits). Under the UI tests
+(DEBUG builds only) its value says "filled" / "outlined" — the tests' only way to see the look.
+
+**4. The reminder starts with 🎒.** The break's notification title is **"🎒 Back to packing <trip>"**
+(`BREAK_TITLE` = "\u{1F392} Back to packing"; body unchanged, "22 things left"), and the calendar entry's title the
+same (`Library.breakEvent`; in the Mac's calendar file `SUMMARY` and the alert's `DESCRIPTION`, UTF-8 as RFC 5545
+allows). His explicit ask, and the ONLY emoji in the app (his rule otherwise: no stock art) — not in the sheet's "Back
+to packing at 19:00 — …" line, not in the moves-on messages, not in the calendar file's name (`Back to packing.ics`).
+
+#### Tests (0.84)
+
+- Model (`tools/test-core.sh`): `TakeABreakTests.testTheBreakSaysWhatIsLeftAndGoesWhenEverythingIsPacked` (the title
+  "🎒 Back to packing Sun week") and `testTheBreakGoesInTheCalendarAsAFile` (the entry's title, `SUMMARY` and the
+  alarm's `DESCRIPTION` with the backpack); `PackingStationsTests.testTheHeaderButtonsWearTheirOwnColoursAndReadDayAndNight`
+  (the filled amber is an amber, white on it ≥ 4.5 : 1 by day and by night).
+- UI (iPhone and the Mac): `testTheBreakIsACupAndTheStationChipsAreShort` (new; also part 17 "0.84") — the cup's
+  label "Take a break", no value, its frame the pen's (± 1 pt) both ways; after This evening `break-calendar` is
+  "filled" and would hand over "🎒 Back to packing …"; back on the trip the value "Back at 19:00", as tall as the pen,
+  wider than it by more than 10 and narrower than 3.2 pens; `trip-message-break` "… 19:00 · 🎒 Back to packing …"; In
+  an hour taken, the sheet opened again: "outlined", nothing selected. `testTakeABreakSaysHowFarHeHasCome`,
+  `testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked` and `testABreakIsOnlyWhileTheTripIsBeingPacked` now expect
+  no value without a break (was "Take a break") and the backpack in the calendar entry and the message.
+
 ### Open questions
 
 - The break is on the trip, so a break taken on one device shows on the other; two devices choosing at the same
@@ -1914,6 +1971,10 @@ card has no Messages switch (pictures of the Mac look, day; the runner's night s
   per-device switch for the Mac would be the way.
 
 ## 17. Packing Stations (the Packing day until 0.81)
+
+> **0.84** (his ask of 15 Oct 2026): the row says "Stations" and its chips the short words — Bags, Pack, Weigh, Tag,
+> Photo, Ready — Pack without its count; the header's Review only once the trip has started. See "0.84" at the end of
+> this part.
 
 > **Renamed in 0.81** — his decision of 14 Oct 2026: "Packing day" became **"Packing Stations"** everywhere he reads
 > it (see "0.81" at the end of this part). The sections below keep the words of 0.79 where they describe what was
@@ -2410,6 +2471,58 @@ tomorrow 18:00" and green Done), `stations-tags`, `stations-tags-beforego`, `sta
   ignored) carrying the value "done" / "open": the iPhone read it, GitHub's Mac read '' (the first Mac probe, "the Day
   pack is ''"). The name is now a plain text with the header trait, and "done" a text of its own that the tests look
   for — a plain text is a text on both.
+
+### 0.84 — shorter chips, "Stations", and Review once the trip has started: his asks of 15 Oct 2026
+
+> From the same screenshots of a Mac trip at Pack (15 Oct 2026; his 2–4 are part 16 "0.84"). Built on branch
+> `work/trims084`, written from the code: the chip words `Core/Sources/PackingLibrary/PackingDay.swift`
+> (`PackingDayStation.chip`); the row and the sheet `App/Sources/Screens/PackingDay.swift`; the header's Review
+> `Core/Sources/PackingLibrary/Loop.swift` (`Library.offersReview`) and `App/Sources/Screens/TripScreen.swift`.
+
+**5. Shorter station chips.** Each chip — on the trip's row and at the top of the sheet — says its **chip word**
+(`PackingDayStation.chip`): **Bags · Pack · Weigh · Tag · Photo · Ready** (Bags out, Tags and Photos until 0.84); the
+chip's accessibility label is the same word (what is seen is what Voice Control hears). **Pack carries no count**
+("13/289" until 0.84 — the header's count under the trip's name says it; `StationChip` has no `count` any more). The
+row's title says **"Stations"** (`day-title`, label "Stations"; "Packing Stations" until 0.84), with the day's mark as
+before. Unchanged: every id, the chips' look and height (0.81), the values ("done", "no bags yet", the station's words).
+
+**Where the long names stay** (decided by the build, calmly): where there is room to read them and they name the
+thing rather than label a chip — the sheet's heading **"Packing Stations"** (`day-heading`), its foot button "Next:
+Bags out" / "Next: Tags" / "Next: Photos" (`PackingDayStation.name`), Ready's list of the stations ("Bags out",
+"Tags", "Photos" with their state), How it works' part — its title "Packing Stations" and the numbered stations "1 ·
+Bags out" … "5 · Photos", its opening words now "a row sits right under the loop: Stations, then six stations in the
+order you go through them, each with a short word on its chip — Bags, Pack, Weigh, Tag, Photo, Ready." and Pack's
+words "The trip's own list — how far you are is the count under the trip's name — and a tap takes you straight to
+the list." (spec 06 §7) — and Words: the term stays "Packing Stations", its meaning gains "The row itself says
+Stations, its chips the short words: Bags, Pack, Weigh, Tag, Photo, Ready." (spec 06 §10). 0.81's What's new, the
+code's names and the keys are unchanged.
+
+**The header's Review — only once the trip has started** (his yes, the same day: on a Review button beside Done at
+Pack he asked "is that really necessary?", and said yes to "only once the trip has started"). `Library.offersReview`
+(model, `Loop.swift`): not reviewed, with lines, and the trip's `loopStep` **On site or later** — so on the first day
+from the time he leaves (0.75), or once something was bought on site, and every day after; never at Plan or Pack. A
+trip with **no start date** never starts by the clock, so it keeps Review at any time (otherwise it could never be
+reviewed) — decided by the build. The loop strip's Review step (`trip-loop`) is unchanged, and a tapped "Welcome home
+— review …" still opens the review (it comes the day after the last day, when the trip is at Review anyway). Under
+the UI tests `-reviewAtPack` shows it at Pack too, for the tests about the review itself on the sample trip a month
+ahead (`TripScreen.reviewAtPack`; spec 03).
+
+#### Tests (0.84)
+
+- Model: `PackingDayTests.testEachStationWearsHisPick` (the chip words; the names unchanged);
+  `LoopTests.testTheHeaderOffersReviewOnlyOnceTheTripHasStarted` (a trip ahead no, under way and over yes, reviewed or
+  without lines no, undated yes, the first day before / from 08:00 when he leaves at 08:00, a trip ahead with
+  something bought on site yes).
+- UI: `testTheBreakIsACupAndTheStationChipsAreShort` (new) — `day-title` "Stations", each chip's label its word, Pack
+  no wider than Weigh (no count), no `trip-review` on the trip at Pack, then the break (part 16 "0.84");
+  `testPackingStationsIsNamedSoWithSlimChips` now expects "Stations" on the row (the sheet still "Packing Stations")
+  and NO Review at Pack (it expected one); `testATripUnderWayStandsAtOnSite` now expects `trip-review` on the trip
+  under way. The tests that open the review on the `-uiTesting` sample (a month ahead) or `-uiTestingKits` launch with
+  `-reviewAtPack`: `testTheLoopShowsWhereATripStands`, `testEscapeClosesTheTripsWindows` (Mac),
+  `testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen`, `testASwipeDownKeepsWhatIsNotSavedYet`,
+  `testATripReviewIsSavedAndTheMissedThingIsFiled`, `testTheReviewSaysWhereAThingWentAndLetsHimFixIt`,
+  `testTheEditorsLeadWithTheirHeadings`, `testAReviewedTripShowsWhatWasInsideItsKitThen`,
+  `testASavedReviewAsksForTheTripsPage`; `-uiTestingHealth`'s trip is over already.
 
 ### Open questions
 
@@ -3425,6 +3538,11 @@ left is not under the count"). Green again without them, day and night.
 | 14 Oct 2026 | **Before you start**: on a trip at Plan, or at Pack until the first thing is packed (a reminder, a trip To do, a Preparations line, ⊘ and a charge tick are not packing), ONE door first in the scroll area to a sheet with To buy (on To buy, needs replacing, Before you go's date rule, used up the last time it went and not bought since), To prepare (reminders and Preparations lines due before the day he leaves — lead days 1 or more — with their When and day; the To dos written on the trip) and To charge (names only; ticked in Before you go); each part only when it has something; and "Before you start: 2 to buy, 3 to prepare" on Home's countdown. A door with a sheet rather than a card, the end at the first tick, a consumable alone not listed, and To charge left off Home — decided by the build | "Think if there is anything I need to buy or prepare well in advance." His yes (0.82). Part 19. |
 | 13 Oct 2026 | Lost luggage, part C: a Lost bag page per bag of a trip — his details (name, phone, e-mail, home address, kept once for the library in Settings), the trip's flights, stay and the bag-tag number, the bag's details, AirTag, photos and a few things in it; "not filled in" opens what fills it; Share as PDF and Copy as text; reached from the Bags card and the Packing day's Photos and Ready. The bag-tag number is typed on the page itself; a trip by car or train still has a page (decided by the build) | His yes to the lost-luggage information (A bag details, B flights and stay, C the page). Part 18 C. |
 | 14 Oct 2026 | Each group heading of a trip gets a small ring beside its count that fills green as its lines are ticked; done, a filled green check, the heading green on a soft green band, a short spring (a fade with Reduce Motion); the heading's round tick stays at the right, unchanged. Under the trip's count, while it is at Pack: "23 left · 2 to charge · about 25 min" — the time from HIS pace (the median seconds per tick of his newest 200 timed ticks across trips, gaps over 10 minutes ignored as breaks; 45 s per thing until 20 are timed), rounded to 5 min (to the minute under 10); "All packed" when nothing is left | "Once a WET, GA, Template is finished I would like to enjoy a green checkbox or green colour somewhere showing me a good progress — but also indicating how much is left. Both in items, charging, actual packing time etc." Part 20. |
+| 15 Oct 2026 | (2) Take a break becomes a round icon-only button — the drawn cup, amber, the size of the trip's pen — and, while a break waits, a compact capsule with the cup and the time small ("19:00"; "Fri 18:00" on another day); label "Take a break", the full "Back at 19:00" as its value | His ask, from his screenshots of a Mac trip at Pack: "Take a break → icon only", "the time small". The weekday for another day decided by the build (compact). Part 16, "0.84" item 2. |
+| 15 Oct 2026 | (3) Add to Calendar pops once a time is chosen: FILLED in the break's amber (#a8651a day and night, white words, 4.6 : 1) while In an hour / This evening / Tomorrow shows as chosen; outlined in the amber otherwise (a break from before that is none of the choices) | His ask: "Add to Calendar pops once a time is chosen". Amber for both looks (it was the sheet's green) decided by the build. Part 16, "0.84" item 3. |
+| 15 Oct 2026 | (4) The break's reminder and its calendar entry start with the backpack: "🎒 Back to packing <trip>" — the only emoji in the app | His explicit ask: the reminder's text starts with 🎒. Part 16, "0.84" item 4. |
+| 15 Oct 2026 | (5) Shorter station chips: Bags, Pack (no count — the header shows it), Weigh, Tag, Photo, Ready; the row's title "Stations". The long names stay where there is room: the sheet's heading "Packing Stations", "Next: Bags out", Ready's list, How it works' numbered stations, the Words term | His ask: "Bags out → Bags, Pack 13/289 → Pack, Tags → Tag, Photos → Photo", "Packing Stations → Stations". Where the long name stays decided by the build. Part 17, "0.84". |
+| 15 Oct 2026 | The trip header's Review only once the trip has started — On site or later (on the first day from the time he leaves); never at Plan or Pack; a trip with no start date keeps it at any time; the loop strip's Review step unchanged | His words on the Review button beside Done at Pack: "is that really necessary?" — then his yes to "only once the trip has started". The undated trip decided by the build (else it could never be reviewed). Part 17, "0.84"; spec 03. |
 
 ## Open questions
 

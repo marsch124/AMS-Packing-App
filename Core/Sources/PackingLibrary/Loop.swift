@@ -46,6 +46,19 @@ extension Library {
         if trip.entries.contains(where: Library.isBoughtOnSite) { return .onSite }
         return .pack
     }
+
+    /// The trip header's **Review** button (0.84, his yes of 15 Oct 2026 — "is that really
+    /// necessary?" on a Review button beside Done while he was still packing): only once the trip
+    /// has started — On site or later by `loopStep` (On site already follows the time he leaves
+    /// on the first day) — and while it is not reviewed and has lines. A trip with no start
+    /// date never starts by the clock, so it keeps the button as before (else it could never
+    /// be reviewed). The loop strip's Review step is not this button and does not change.
+    public func offersReview(tripId: String, today: String, time: String = END_OF_DAY) -> Bool {
+        guard let trip = trips.first(where: { $0.id == tripId }),
+              !Library.isReviewed(trip), !trip.entries.isEmpty else { return false }
+        guard isYMD(trip.startDate) else { return true }
+        return loopStep(tripId: tripId, today: today, time: time).rawValue >= LoopStep.onSite.rawValue
+    }
 }
 
 // When a trip sets off (0.75) — his report of 13 Oct 2026: "at 07:30 on the first day, with

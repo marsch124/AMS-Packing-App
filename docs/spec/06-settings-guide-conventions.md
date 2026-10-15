@@ -797,9 +797,11 @@ no entry shows no marker anywhere (and fails the test).
    green at 70 % (the topics' is the hairline). Top to bottom, 12 apart:
    - the day's mark (`StationMark`, 24 pt, a sun rising out of an open case, the Pack step's readable green) and
      "Packing Stations" (Body semibold ink), one element `guide-day-title`;
-   - "On a trip you are packing, a row sits right under the loop: Packing Stations, then six stations in the order you go
-     through them. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides
-     sideways." (Callout ink);
+   - "On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go
+     through them, each with a short word on its chip — Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green
+     when it is done; the next one to do is lit. On the iPhone the row slides sideways." (Callout ink; until 0.84 "…
+     under the loop: Packing Stations, then six stations in the order you go through them. A station …"). The
+     numbered stations below keep their full names (Bags out, Tags, Photos);
    - the six stations, in the row's order, each a row: the station's mark (20 pt, white) in a 34-pt green disc — the
      look of a station that is done; its own element `guide-day-<key>-mark`, label = what it shows ("Two bags on the
      floor" …) — then "<n> · <name>" (Body semibold, readable green) + " — <what the mark shows>" (Footnote muted), and
@@ -810,8 +812,9 @@ no entry shows no marker anywhere (and fails the test).
         one of your bags not on the trip yet, or a new one (its name, whether it goes in the cabin, its max weight if
         you like). It joins the trip empty, and Weigh, Tags, Photos and Bags ask about it too; to fill it, pick it as
         Usually packed in on its things' pages. The ✕ beside an empty one takes it off again."
-     2. **Pack** — "The trip's own list. Its station shows how far you are — 12/40 — and a tap takes you straight to
-        the list. Green when everything is packed; a thing set aside ⊘ counts as done."
+     2. **Pack** — "The trip's own list — how far you are is the count under the trip's name — and a tap takes you
+        straight to the list. Green when everything is packed; a thing set aside ⊘ counts as done." (Until 0.84 "Its
+        station shows how far you are — 12/40 — and a tap …".)
      3. **Weigh** — "The luggage scale, one bag after another: hang it on the scale, type what it says, Save — the next
         bag comes up. It is the same weight as in Bags. When you tick the last thing on the list, Weigh opens by itself
         — once per trip. Green when every bag is weighed."
@@ -876,11 +879,13 @@ no entry shows no marker anywhere (and fails the test).
    colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); (0.83) + Add a bag at its foot, as in Bags out, "nothing in it yet" and its ✕ for a bag added empty; Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
    under Sorting shows every line again; typing a thing adds it
    to this trip only, Bought on site adds it ticked; Delete trip at the very end asks first (things and
-   templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62); (0.77) Take a break at
-   the end of the count's line while packing — how far you have come (41 of 63, your Sorting's groups ✓ or N left, To
-   charge, To do), Continue when? In an hour / This evening 19:00 / Tomorrow 18:00 or your time / Just pause, the
-   iPhone's "Back to packing" and the button's "Back at 19:00", Add to Calendar (nothing added until you say), one
-   break per trip, gone when the last thing is ticked, from the Mac your iPhone reminds you. (25 lines.)
+   templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62); (0.77) Take a break —
+   since 0.84 "the round cup" — at the end of the count's line while packing — how far you have come (41 of 63, your
+   Sorting's groups ✓ or N left, To charge, To do), Continue when? In an hour / This evening 19:00 / Tomorrow 18:00 or
+   your time / Just pause, the iPhone's "🎒 Back to packing" (the backpack since 0.84) and since 0.84 "the cup shows
+   when, small beside it (19:00; on another day, Fri 18:00)" (the button's "Back at 19:00" until then), Add to
+   Calendar "— filled once a time is chosen —" (0.84) (nothing added until you say), one break per trip, gone when
+   the last thing is ticked, from the Mac your iPhone reminds you. (25 lines.)
 2. **Pack by voice (iPhone, a test)** (Trips mark, 0.71 — spec 07 part 10): the button at the end of a trip's
    Sorting row walks what is still to pack, place by place as From where sorts them — the place, then the thing
    ("Garage. Goggles.") — and listens for five words; Packed ticks, Skip sets aside (as ⊘), Later moves on
@@ -896,7 +901,9 @@ no entry shows no marker anywhere (and fails the test).
    ("2 bought · 1 left · 3 notes · home 4/9"); Bought on site; Left on site with Undo; Maintenance notes (also
    dated onto the thing); Pack to go home with its own ticks; Used up / Undo; search with ✕ (Tick everything until 0.79);
    notes and Open on the way home; the packed-bag photos at the top, Next steps through them. (10 lines.)
-4. **After a trip** (Trips mark): Review (tap unused, type missed, pick its template, Add, Save); the loop strip
+4. **After a trip** (Trips mark): Review (since 0.84 its first line says where: "the violet button beside Done at the
+   top of a trip, there once the trip has started — On site, or after it (a trip with no dates has it all along)";
+   then tap unused, type missed, pick its template, Add, Save); the loop strip
    under a trip's name (Plan · Pack · On site · Review · Refine) with the step's own mark — a map, a suitcase with
    a tick, a pin on a map, a magnifier, a sprout (0.77; the tab's mark until then); nothing is removed — "Didn't
    use" adds to history, missed things go onto a template. (4 lines.)
@@ -1047,7 +1054,7 @@ Shipped in 0.41.
 | 16 | Set aside ⊘ | Trips | Not this time: the thing stays on the list but is not packed, and leaves the count. ↻ brings it back. |
 | 17 | The loop | Trips | Plan (Home) › Pack (Trips) › On site (the trip, while away) › Review (the trip, afterwards) › Refine (Templates) — and round again. |
 | 18 | Loop strip | Trips | The five steps under a trip's name, each with a mark of its own: a map with a route for Plan, a suitcase with a tick for Pack, a pin on a map for On site, a magnifier over a list for Review, a sprout for Refine. The filled one is where this trip stands, with its mark (on a wide screen every step has its mark). (Until 0.77: "with the mark of the tab where that step is done".) |
-| 19 | Packing Stations | Trips | The stations of a trip’s Pack step, in a row under its loop strip: Bags out, Pack, Weigh, Tags, Photos, Ready. Each turns green when it is done; Ready to go when all are. (Packing day until 0.81.) — "Packing day" until 0.81 (spec 07 part 17 "0.81"). |
+| 19 | Packing Stations | Trips | The stations of a trip’s Pack step, in a row under its loop strip: Bags out, Pack, Weigh, Tags, Photos, Ready. Each turns green when it is done; Ready to go when all are. The row itself says Stations, its chips the short words: Bags, Pack, Weigh, Tag, Photo, Ready. (Packing day until 0.81.) — "Packing day" until 0.81 (spec 07 part 17 "0.81"); the sentence on "Stations" and the chip words since 0.84 (part 17 "0.84"). |
 | 20 | Review | Trips | Looking back at ONE trip: what you did not use, and what you missed. |
 | 21 | Refine | Templates | Making your templates better from SEVERAL reviews: what a template carries for nothing. On the Templates tab. |
 | 22 | Keep · Drop | Templates | In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays. |
@@ -1931,6 +1938,7 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-showTripMessages` | (DEBUG, testing only) the trip lists the break and moves-on messages that would be scheduled (`trip-message-break/onsite/review/none`) | 0.77 |
 | `-breakRealCalendar` | (testing only) Add to Calendar hands the break over for real — the system's New Event window on the iPhone, Calendar on the Mac — instead of only saying what it would; for looking by hand, no test uses it | 0.77 |
 | `-tapTripMessage break\|onsite\|review` | (testing only) a trip message tapped at launch, for the first trip with lines (`review` opens its Review) | 0.77 |
+| `-reviewAtPack` | (testing only) the trip header's Review shows at Pack too (`TripScreen.reviewAtPack`) — for the tests about the review itself on the sample trip a month ahead; the rule of when it shows (`Library.offersReview`, once the trip has started) is tested without it | 0.84 |
 | `-clockAt HH:mm:ss` | (testing only) the app's clock (`Today.now`) is today at that time when the app opened, and runs on — when a trip sets off (spec 03, The loop) | 0.75 |
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |

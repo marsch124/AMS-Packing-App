@@ -45,6 +45,37 @@ final class LoopTests: XCTestCase {
         XCTAssertEqual(lib.loopStep(tripId: "nope", today: "2026-09-27"), .plan)
     }
 
+    /// The trip header's Review button (0.84, his yes of 15 Oct 2026 — "is that really
+    /// necessary?" while he was packing): only once the trip has started — On site, Review —
+    /// never at Plan or Pack; on its first day from the time he leaves; never on a reviewed trip
+    /// or one with no lines; a trip with no dates keeps it (it never starts by the clock).
+    func testTheHeaderOffersReviewOnlyOnceTheTripHasStarted() {
+        var lib = Library()
+        let coming = trip("2026-10-03", "2026-10-05")
+        let underWay = trip("2026-09-26", "2026-09-28")
+        let over = trip("2026-09-20", "2026-09-21")
+        var reviewed = trip("2026-09-10", "2026-09-12"); reviewed.reviewedAt = "2026-09-13T08:00:00.000Z"
+        let empty = trip("2026-09-20", "2026-09-21", lines: 0)
+        let undated = trip("", "")
+        var leaving = trip("2026-09-27", "2026-09-29")
+        XCTAssertTrue(Library.setLeaveTime(&leaving, "08:00", home: false))
+        let boughtAhead = trip("2026-10-10", "2026-10-12")
+        lib.trips = [coming, underWay, over, reviewed, empty, undated, leaving, boughtAhead]
+        let offers = { (t: TripEvent, time: String) -> Bool in lib.offersReview(tripId: t.id, today: "2026-09-27", time: time) }
+        XCTAssertFalse(offers(coming, "12:00"), "Review on a trip still being packed")
+        XCTAssertTrue(offers(underWay, "12:00"), "no Review on a trip under way (On site)")
+        XCTAssertTrue(offers(over, "12:00"), "no Review on a trip that is over (Review)")
+        XCTAssertFalse(offers(reviewed, "12:00"), "Review on a trip reviewed already")
+        XCTAssertFalse(offers(empty, "12:00"), "Review on a trip with no lines")
+        XCTAssertTrue(offers(undated, "12:00"), "a trip with no dates can never be reviewed")
+        XCTAssertFalse(offers(leaving, "07:30"), "Review before he leaves on the first day")
+        XCTAssertTrue(offers(leaving, "08:00"), "no Review from the minute he leaves")
+        XCTAssertFalse(offers(boughtAhead, "12:00"))
+        _ = lib.addBoughtOnSite(tripId: boughtAhead.id, name: "Sun hat")
+        XCTAssertTrue(offers(boughtAhead, "12:00"), "bought on site is On site — and so Review")
+        XCTAssertFalse(lib.offersReview(tripId: "nope", today: "2026-09-27"))
+    }
+
     /// A trip without dates has no first day to say it has begun — something bought on
     /// site says so instead; and on a dated trip still ahead, a bought line says it too.
     func testSomethingBoughtOnSiteBeginsATripWithoutDates() {

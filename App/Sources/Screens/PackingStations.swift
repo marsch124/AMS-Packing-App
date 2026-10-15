@@ -470,4 +470,6 @@ extension TripHeaderTone {
     var ringColour: Color { TripHeaderTone.colour(ring) }
     /// The words on the outlined button.
     var wordsColour: Color { TripHeaderTone.colour(words) }
+    /// The break's amber, filled — white words on it (Add to Calendar once a time is chosen, 0.84).
+    static var breakFilledColour: Color { colour(breakFilled) }
 }

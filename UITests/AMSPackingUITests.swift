@@ -1253,7 +1253,8 @@ final class AMSPackingUITests: XCTestCase {
     /// a trip, its review and Refine each show the step they are at, and a tap opens
     /// the whole picture with "You are here" on that step.
     func testTheLoopShowsWhereATripStands() {
-        let app = launch()
+        // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
+        let app = launch("-uiTesting", ["-reviewAtPack"])
         tab(app, "settings")
         tap(app, id: "settings-howitworks")
         XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
@@ -1473,7 +1474,8 @@ final class AMSPackingUITests: XCTestCase {
         // the Mac run checks this window by window.
         throw XCTSkip("Escape is checked on the Mac")
         #else
-        let app = launch()
+        // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
+        let app = launch("-uiTesting", ["-reviewAtPack"])
         tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
         app.buttons["trip-row-0"].tap()
@@ -1885,7 +1887,8 @@ final class AMSPackingUITests: XCTestCase {
     /// with nothing typed. Both are there to press, and say what is missing. And in the
     /// review, "No template" can really be chosen — it fell back to the first template.
     func testSetPlaceAndTheReviewSayWhatIsMissingAndNoTemplateIsChosen() {
-        let app = launch()
+        // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
+        let app = launch("-uiTesting", ["-reviewAtPack"])
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -2143,7 +2146,8 @@ final class AMSPackingUITests: XCTestCase {
     /// the swipe no longer closes the sheet — Cancel or Save does. With nothing
     /// changed, the swipe closes it as before.
     func testASwipeDownKeepsWhatIsNotSavedYet() {
-        let app = launch()
+        // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
+        let app = launch("-uiTesting", ["-reviewAtPack"])
         tab(app, "events")
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -3192,6 +3196,8 @@ final class AMSPackingUITests: XCTestCase {
         let strip = app.buttons["trip-loop"]
         XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
         XCTAssertTrue(waitUntil { (strip.value as? String) == "On site" }, "a trip under way is at '\(strip.value as? String ?? "")'")
+        // The header's Review: once the trip has started (0.84, his yes of 15 Oct 2026).
+        XCTAssertTrue(app.buttons["trip-review"].waitForExistence(timeout: 5), "no Review on a trip under way")
         let window = app.windows.firstMatch.frame
         XCTAssertLessThanOrEqual(strip.frame.maxX, window.maxX + 1, "the five steps run off the screen: \(strip.frame) in \(window)")
         XCTAssertGreaterThanOrEqual(strip.frame.minX, window.minX - 1, "the five steps run off the screen: \(strip.frame) in \(window)")
@@ -3262,7 +3268,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "1/7" }, "'\(words(app.staticTexts["trip-progress"]))'")
         let door = app.buttons["trip-break"]
         XCTAssertTrue(door.waitForExistence(timeout: 5), "a trip at Pack has no Take a break")
-        XCTAssertEqual(door.value as? String, "Take a break")
+        XCTAssertEqual(door.label, "Take a break")
+        XCTAssertEqual(door.value as? String ?? "", "", "a break waiting on a fresh trip")
         shot(app, "break-trip-door")
         tap(app, id: "trip-break")
         XCTAssertTrue(appears(app, "break-sheet", timeout: 5), "Take a break did not open")
@@ -3306,7 +3313,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["break-evening"].isSelected }, "This evening is not shown as chosen")
         tap(app, id: "break-calendar")
         let calendar = app.staticTexts["break-calendar-said"]
-        XCTAssertTrue(waitUntil { self.words(calendar).contains("Back to packing Weekend in the hills \u{00B7} \(self.sampleDay(0)) 19:00\u{2013}19:30 \u{00B7} 1 of 7 packed \u{00B7} 6 things left") },
+        XCTAssertTrue(waitUntil { self.words(calendar).contains("\u{1F392} Back to packing Weekend in the hills \u{00B7} \(self.sampleDay(0)) 19:00\u{2013}19:30 \u{00B7} 1 of 7 packed \u{00B7} 6 things left") },
                       "Add to Calendar would hand over '\(words(calendar))'")
         shot(app, "break-chosen")
         tap(app, id: "break-done")
@@ -3314,7 +3321,7 @@ final class AMSPackingUITests: XCTestCase {
         let door = app.buttons["trip-break"]
         XCTAssertTrue(waitUntil { (door.value as? String) == "Back at 19:00" }, "the trip's button says '\(door.value as? String ?? "")'")
         let message = app.staticTexts["trip-message-break"]
-        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).contains("\(self.sampleDay(0)) 19:00 \u{00B7} Back to packing Weekend in the hills 6 things left") },
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).contains("\(self.sampleDay(0)) 19:00 \u{00B7} \u{1F392} Back to packing Weekend in the hills 6 things left") },
                       "the break's message: '\(words(message))'")
         shot(app, "break-trip-waiting")
         // A new choice replaces it: tomorrow at 18:00.
@@ -3334,7 +3341,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(said).hasPrefix("Paused") }, "the sheet says '\(words(said))'")
         tap(app, id: "break-done")
         XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
-        XCTAssertTrue(waitUntil { (door.value as? String) == "Take a break" }, "'\(door.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil { (door.value as? String ?? "") == "" }, "'\(door.value as? String ?? "")'")
         XCTAssertTrue(waitUntil(timeout: 8) { !message.exists }, "Just pause left a message: '\(words(message))'")
         // A break again, then everything ticked: it goes — and stays gone when a line is unticked.
         tap(app, id: "trip-break")
@@ -3347,7 +3354,7 @@ final class AMSPackingUITests: XCTestCase {
         tickEveryLine(app)
         XCTAssertTrue(waitUntil(timeout: 8) { !message.exists }, "a break waiting with everything packed")
         tap(app, id: "trip-line-0")
-        XCTAssertTrue(waitUntil { (door.value as? String) == "Take a break" }, "the break came back with a line unticked: '\(door.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil { (door.value as? String ?? "") == "" }, "the break came back with a line unticked: '\(door.value as? String ?? "")'")
     }
 
     /// A break is refused when he leaves before it (the trip leaving today at 08:00, the app's
@@ -3368,7 +3375,7 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "break-refused")
         tap(app, id: "break-done")
         XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
-        XCTAssertEqual(app.buttons["trip-break"].value as? String, "Take a break")
+        XCTAssertEqual(app.buttons["trip-break"].value as? String ?? "", "", "a break was kept")
         app.terminate()
         let later = launch("-uiTestingLeaving", ["-clockAt", "08:30:00"])
         tab(later, "events")
@@ -6139,7 +6146,8 @@ final class AMSPackingUITests: XCTestCase {
     /// After a trip: mark what went unused, add what was missed, save — the trip
     /// says it is reviewed, and the missed thing is on a list for next time.
     func testATripReviewIsSavedAndTheMissedThingIsFiled() {
-        let app = launch()
+        // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
+        let app = launch("-uiTesting", ["-reviewAtPack"])
         tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
         app.buttons["trip-row-0"].tap()
@@ -7032,7 +7040,8 @@ final class AMSPackingUITests: XCTestCase {
     /// The review says WHERE each thing was packed, and a thing can be put right
     /// without losing the review — his two asks for this screen.
     func testTheReviewSaysWhereAThingWentAndLetsHimFixIt() {
-        let app = launch()
+        // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
+        let app = launch("-uiTesting", ["-reviewAtPack"])
         tab(app, "events")
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
@@ -8676,7 +8685,8 @@ final class AMSPackingUITests: XCTestCase {
     /// test can read a size or a colour, so this one keeps every heading THERE, by its
     /// id, on the screens he named, and photographs each one (SHOTS_DIR) to be looked at.
     func testTheEditorsLeadWithTheirHeadings() {
-        let app = launch()
+        // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
+        let app = launch("-uiTesting", ["-reviewAtPack"])
         // The thing editor (Care, Your things, a thing).
         tab(app, "care")
         tap(app, id: "care-things")
@@ -11957,7 +11967,7 @@ final class AMSPackingUITests: XCTestCase {
     /// still holds what was inside it then after the pouch changes — its fold says so and
     /// offers no Take out; the trip still ahead (`trip-row-1`) follows the pouch.
     func testAReviewedTripShowsWhatWasInsideItsKitThen() {
-        let app = launch("-uiTestingKits")
+        let app = launch("-uiTestingKits", ["-reviewAtPack"])     // its trip is a month ahead (0.84: Review once started)
         openKitTrip(app)
         tap(app, id: "trip-review")
         XCTAssertTrue(appears(app, "review-detail", timeout: 5))
@@ -12200,9 +12210,9 @@ final class AMSPackingUITests: XCTestCase {
     /// the Mac; the Mac, with its folder chosen, writes it at once.
     func testASavedReviewAsksForTheTripsPage() {
         #if os(macOS)
-        let app = launch("-uiTesting", ["-uiTestingVault", "vault-auto", "-uiTestingVaultChosen"])
+        let app = launch("-uiTesting", ["-uiTestingVault", "vault-auto", "-uiTestingVaultChosen", "-reviewAtPack"])
         #else
-        let app = launch()
+        let app = launch("-uiTesting", ["-reviewAtPack"])     // Review on the sample trip a month ahead (0.84)
         #endif
         tab(app, "events")
         XCTAssertTrue(appears(app, "screen-events"))
@@ -13028,16 +13038,17 @@ final class AMSPackingUITests: XCTestCase {
 
     // MARK: - Packing Stations (0.81, his decisions of 14 Oct 2026; spec 07 part 17 "0.81")
 
-    /// The row is "Packing Stations" now, on the trip and in its sheet, and its chips are slimmer
-    /// than a pill (`Metrics.chip`: 28 on the iPhone, 22 on the Mac) — the marks and words as they
-    /// were. The trip header's three buttons are there: Review, Take a break (here "Back tomorrow
-    /// 18:00"), Done — their colours are the model's `TripHeaderTone`, checked there.
+    /// The row is "Packing Stations" now ("Stations" on the row since 0.84; the sheet keeps the
+    /// full name), and its chips are slimmer than a pill (`Metrics.chip`: 28 on the iPhone, 22 on
+    /// the Mac) — the marks and words as they were. The trip header: Take a break (here "Back
+    /// tomorrow 18:00") and Done; Review only once the trip has started (0.84) — their colours are
+    /// the model's `TripHeaderTone`, checked there.
     func testPackingStationsIsNamedSoWithSlimChips() {
         let app = launch("-uiTestingPackingDay")
         openPackingDayTrip(app)
         let title = element(app, "day-title")
         XCTAssertTrue(waitUntil { title.exists }, "no title on the row")
-        XCTAssertEqual(title.label, "Packing Stations", "the row is still called '\(title.label)'")
+        XCTAssertEqual(title.label, "Stations", "the row is still called '\(title.label)'")       // 0.84: "Stations"
         #if os(macOS)
         let pill: CGFloat = 22
         #else
@@ -13049,8 +13060,9 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertLessThan(chip.frame.height, pill, "the \(key) chip is as tall as a pill: \(chip.frame.height)")
             XCTAssertGreaterThan(chip.frame.height, pill - 12, "the \(key) chip is squashed: \(chip.frame.height)")
         }
-        // The header: Review (violet), Take a break (amber) — a break set for tomorrow — and Done.
-        XCTAssertTrue(app.buttons["trip-review"].exists, "no Review on the trip")
+        // The header: Take a break (amber) — a break set for tomorrow — and Done; Review (violet)
+        // only once the trip has started (0.84), so not on this trip being packed.
+        XCTAssertFalse(app.buttons["trip-review"].exists, "Review on a trip still being packed")
         tap(app, id: "trip-break")
         XCTAssertTrue(appears(app, "break-sheet", timeout: 5), "Take a break did not open")
         tap(app, id: "break-tomorrow")
@@ -13063,6 +13075,76 @@ final class AMSPackingUITests: XCTestCase {
         station(app, "bags")
         let heading = element(app, "day-heading")
         XCTAssertTrue(waitUntil { self.words(heading).contains("Packing Stations") }, "the sheet says '\(words(heading))'")
+    }
+
+    // MARK: - 0.84: the trip header and the stations, trimmed (his asks of 15 Oct 2026; spec 07 parts 16, 17)
+
+    /// From his screenshots of a Mac trip at Pack: the stations row says "Stations" and its chips
+    /// the short words — Pack without its count (no wider than Weigh); no Review in the header
+    /// while the trip is being packed; Take a break is a round cup, the size of the trip's pen,
+    /// and with a break waiting a compact capsule — the cup and the time — as tall as the pen;
+    /// Add to Calendar is FILLED once a time is chosen, outlined for a break that is none of the
+    /// choices (In an hour, from before); the reminder and the calendar entry start with 🎒.
+    func testTheBreakIsACupAndTheStationChipsAreShort() {
+        let app = launch("-uiTestingPackingDay", ["-showTripMessages", "-clockAt", "14:00:00"])
+        openPackingDayTrip(app)
+        let title = element(app, "day-title")
+        XCTAssertTrue(waitUntil { title.exists }, "no title on the row")
+        XCTAssertEqual(title.label, "Stations", "the row is called '\(title.label)'")
+        let chipWords = ["bags": "Bags", "pack": "Pack", "weigh": "Weigh", "tags": "Tag", "photos": "Photo", "ready": "Ready"]
+        for key in ["bags", "pack", "weigh", "tags", "photos", "ready"] {
+            let chip = app.buttons["day-station-\(key)"]
+            XCTAssertTrue(chip.waitForExistence(timeout: 5), "no \(key) station")
+            XCTAssertEqual(chip.label, chipWords[key], "the \(key) chip says '\(chip.label)'")
+        }
+        let pack = app.buttons["day-station-pack"].frame, weigh = app.buttons["day-station-weigh"].frame
+        XCTAssertLessThanOrEqual(pack.width, weigh.width + 1, "Pack still carries its count: \(pack.width) against Weigh's \(weigh.width)")
+        // The header while packing: no Review; Take a break is the round cup, the pen's size.
+        XCTAssertTrue(app.buttons["trip-done"].exists)
+        XCTAssertFalse(app.buttons["trip-review"].exists, "Review on a trip still being packed")
+        let door = app.buttons["trip-break"], pen = app.buttons["trip-settings"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "no Take a break on a trip being packed")
+        XCTAssertEqual(door.label, "Take a break")
+        XCTAssertEqual(door.value as? String ?? "", "", "a break waiting on a fresh trip")
+        XCTAssertEqual(door.frame.width, pen.frame.width, accuracy: 1, "Take a break is not round like the pen: \(door.frame) against \(pen.frame)")
+        XCTAssertEqual(door.frame.height, pen.frame.height, accuracy: 1, "Take a break is not the pen's size: \(door.frame) against \(pen.frame)")
+        shot(app, "trims-header")
+        // A time chosen: Add to Calendar pops — filled.
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5), "Take a break did not open")
+        XCTAssertFalse(app.buttons["break-calendar"].exists, "Add to Calendar with no break chosen")
+        tap(app, id: "break-evening")
+        let calendar = app.buttons["break-calendar"]
+        XCTAssertTrue(waitUntil { (calendar.value as? String) == "filled" }, "Add to Calendar after a choice is '\(calendar.value as? String ?? "")'")
+        tap(app, id: "break-calendar")
+        let handed = app.staticTexts["break-calendar-said"]
+        XCTAssertTrue(waitUntil { self.words(handed).hasPrefix("\u{1F392} Back to packing ") }, "the calendar entry is '\(words(handed))'")
+        shot(app, "trims-sheet-chosen")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        // Waiting: the cup and 19:00, a compact capsule as tall as the pen; the reminder starts with 🎒.
+        XCTAssertTrue(waitUntil { (door.value as? String) == "Back at 19:00" }, "the trip's button says '\(door.value as? String ?? "")'")
+        XCTAssertEqual(door.frame.height, pen.frame.height, accuracy: 1, "the capsule is not the pen's height: \(door.frame)")
+        XCTAssertGreaterThan(door.frame.width, pen.frame.width + 10, "no time beside the cup: \(door.frame)")
+        XCTAssertLessThan(door.frame.width, pen.frame.width * 3.2, "the capsule is not compact: \(door.frame) against the pen's \(pen.frame)")
+        let message = app.staticTexts["trip-message-break"]
+        XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).contains("19:00 \u{00B7} \u{1F392} Back to packing ") },
+                      "the break's reminder: '\(words(message))'")
+        shot(app, "trims-header-break")
+        // A break from before that is none of the choices (In an hour): outlined, until a time is picked.
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5))
+        tap(app, id: "break-hour")
+        XCTAssertTrue(waitUntil { (calendar.value as? String) == "filled" }, "In an hour: '\(calendar.value as? String ?? "")'")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { (calendar.value as? String) == "outlined" }, "a break from before, no choice lit: '\(calendar.value as? String ?? "")'")
+        XCTAssertFalse(app.buttons["break-hour"].isSelected)
+        shot(app, "trims-sheet-outlined")
+        tap(app, id: "break-done")
+        XCTAssertTrue(disappears(app, "break-sheet", timeout: 5))
     }
 
     /// Tags: a bag whose ticks are all on is done (its card light green, Remind me gone); Remind
