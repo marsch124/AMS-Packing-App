@@ -10249,6 +10249,85 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 7") }, "the count after the heading went: '\(words(count))'")
     }
 
+    /// A control's context menu — held on the iPhone, right-clicked on the Mac — and in it the
+    /// entry `item` (by its identifier; the iPhone shows it as a button, the Mac as a menu item).
+    private func contextMenu(_ app: XCUIApplication, on e: XCUIElement, item: String) -> XCUIElement {
+        #if os(macOS)
+        e.rightClick()
+        #else
+        e.press(forDuration: 1.2)
+        #endif
+        let entry = app.descendants(matching: .any).matching(identifier: item).firstMatch
+        _ = entry.waitForExistence(timeout: 5)
+        return entry
+    }
+
+    /// Does this field have the keyboard?
+    private func hasFocus(_ e: XCUIElement) -> Bool {
+        e.exists && ((e.value(forKey: "hasKeyboardFocus") as? Bool) ?? false)
+    }
+
+    /// "Heading above" (0.85) — a heading exactly where he wants it, on a long list too (a new
+    /// heading from the foot goes last). In Edit, hold a thing's name (right-click on the Mac),
+    /// Heading above: a heading goes in right above that thing, the keyboard on its name, so
+    /// typing names it. A second one, above the first thing, is left unnamed — and dropped on
+    /// Save. The open list: "In the bag" over the Towel and what follows; the count unchanged.
+    func testAHeadingGoesAboveTheThingHeHolds() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail"), "the grab list did not open")
+        tap(app, id: "grab-edit")
+        let towel = app.textFields["grab-rename-3"]
+        XCTAssertTrue(towel.waitForExistence(timeout: 5), "Edit did not open")
+        XCTAssertEqual(towel.value as? String, "Towel")
+        let above = contextMenu(app, on: towel, item: "grab-heading-above-3")
+        XCTAssertTrue(above.exists, "holding a thing offers no Heading above")
+        shot(app, "grabhead-above-menu")
+        #if os(macOS)
+        above.click()
+        #else
+        above.tap()
+        #endif
+        let heading = app.textFields["grab-heading-3"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "no heading above the thing held")
+        XCTAssertTrue(app.textFields["grab-rename-4"].exists, "no thing under the new heading")
+        XCTAssertEqual(app.textFields["grab-rename-4"].value as? String, "Towel", "the Towel is not right under the new heading")
+        XCTAssertEqual(app.textFields["grab-rename-2"].value as? String, "Swim cap", "the heading is not right above the Towel")
+        // Ready to be named: the keyboard is on it, so what is typed — with no tap — names it.
+        XCTAssertTrue(waitUntil { self.hasFocus(heading) }, "the new heading does not have the keyboard")
+        app.typeText("In the bag")
+        XCTAssertTrue(waitUntil { (heading.value as? String) == "In the bag" },
+                      "the typing did not name the new heading: '\(heading.value as? String ?? "")'")
+        shot(app, "grabhead-above-named")
+
+        // A second one above the first thing, left unnamed: dropped on Save.
+        let first = app.textFields["grab-rename-0"]
+        let again = contextMenu(app, on: first, item: "grab-heading-above-0")
+        XCTAssertTrue(again.exists, "the first thing offers no Heading above")
+        #if os(macOS)
+        again.click()
+        #else
+        again.tap()
+        #endif
+        XCTAssertTrue(app.textFields["grab-heading-0"].waitForExistence(timeout: 5), "no heading above the first thing")
+        XCTAssertTrue(app.textFields["grab-heading-4"].exists, "the named heading moved")
+        tap(app, id: "grab-edit")                                    // Save
+
+        let group = app.staticTexts["grab-group-0"]
+        XCTAssertTrue(group.waitForExistence(timeout: 5), "no heading on the open list")
+        XCTAssertEqual(words(group), "In the bag", "the unnamed heading was kept, or the named one lost")
+        XCTAssertFalse(app.staticTexts["grab-group-1"].exists, "a second heading on the open list")
+        let cap = app.buttons["grab-item-2"], towelLine = app.buttons["grab-item-3"]
+        XCTAssertTrue(towelLine.waitForExistence(timeout: 5), "no fourth line")
+        XCTAssertLessThanOrEqual(cap.frame.maxY, group.frame.minY + 0.5, "Swim cap is not above the heading")
+        XCTAssertGreaterThanOrEqual(towelLine.frame.minY, group.frame.maxY - 0.5, "the Towel is not under the heading")
+        XCTAssertTrue(towelLine.label.contains("Towel"), "the line under the heading: '\(towelLine.label)'")
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count).hasPrefix("0 of 7") }, "the count: '\(words(count))'")
+        shot(app, "grabhead-above-open")
+    }
+
     /// An open list under three headings of his (`-uiTestingGrabHeadings`): Outdoor bike
     /// (`grab-4`) — "Check the tyres" above them all, under no heading; then "On me", "On the
     /// bike" and "After", small and grey, top to bottom, each over its own things in his order;

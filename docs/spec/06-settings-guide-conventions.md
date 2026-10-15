@@ -846,8 +846,9 @@ no entry shows no marker anywhere (and fails the test).
 **The topics and their lines** (summarised; the code holds the exact sentences):
 
 0. **Home** (Home mark): (1) eight grab lists, four in a row; tap one, tick what is in your hand; (0.85, replacing
-   0.84's grouping by Kind of thing) HIS OWN small grey headings group it: in Edit, A new heading + Add puts one last,
-   its grip ≡ (on the Mac ▲▼ too) moves it, a thing belongs to the heading above it, tap a heading's name to change
+   0.84's grouping by Kind of thing) HIS OWN small grey headings group it: in Edit, holding a thing (right-click on the
+   Mac) → Heading above puts one right above it, ready to name (unnamed, dropped on Save), A new heading + Add puts
+   one last, its grip ≡ (on the Mac ▲▼ too) moves it, a thing belongs to the heading above it, tap a heading's name to change
    it, ✕ removes it and its things stay, joining what is above; headings are never ticked or counted; a list without
    them stays one plain list; the count stays at
    the top; Ready to go too early says Not yet in the middle with what is missing; ticks clear themselves 6 hours after

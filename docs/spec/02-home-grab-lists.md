@@ -1048,6 +1048,9 @@ else is the same.
   remove it with its things staying ("Its things stay, under no heading" on a template). Unlike a template's, a
   grab list's heading moves ALONE, like a line: a thing belongs to the heading above it, so he groups things by
   moving them (or the heading) — a grab list has no Section field per thing.
+- **"Heading above"** (0.85, the same day, before it shipped): a new heading from the foot goes last, a long drag
+  away on his 17-thing lists — so holding a thing (right-click on the Mac) offers "Heading above", which puts a
+  heading exactly there, ready to be named. The foot's "A new heading" stays.
 
 **How it is reached and left.**
 - **In:** "Edit" (`grab-edit`) on an open list.
@@ -1065,16 +1068,35 @@ line of its own (0.84 showed it flat while the open list was grouped by kind):
    when editing starts again.
 2. A scroll (4 pt spacing, 16 pt side padding):
    - The hint — Mac: "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. A thing goes under the heading above
-     it. Saved for both your devices."; iPhone (0.72): "Tap a name to change it · hold ≡ and drag to move · ✕ remove.
-     A thing goes under the heading above it. Saved for both your devices." (Footnote `muted`, wrapping; the
-     sentence about the heading since 0.85).
+     it. Hold a thing (right-click on the Mac) for a heading above it. Saved for both your devices."; iPhone (0.72):
+     "Tap a name to change it · hold ≡ and drag to move · ✕ remove. A thing goes under the heading above it. Hold a
+     thing (right-click on the Mac) for a heading above it. Saved for both your devices." (Footnote `muted`,
+     wrapping; the two sentences about headings since 0.85 — the second word for word on both devices).
    - One row per draft line (since 0.72 followed by a key that moves with it, `rowKeys`, not by its place; `n` = the
      line's place among ALL lines, things and headings — on a list with no headings, exactly as before). A THING's
      row:
      - with two or more, a **grip ≡** first (0.72, both devices; `grab-grip-<n>`, `ReorderGrip`, spec 06 §21): hold
        and drag, each place passed (a row and its 4-pt gap) one swap, as ▲ ▼ make — in the draft, kept on Save;
      - a text field (`grab-rename-<n>`, placeholder "Name", 17 pt medium `ink`, a radius-8 `card`
-       background with no border, minimum 44 tall);
+       background with no border, minimum 44 tall). **Its context menu** (0.85) — held on the iPhone,
+       right-clicked (or control-clicked) on the Mac — holds one entry, **"Heading above"**
+       (`grab-heading-above-<n>`, words only, no mark): a heading goes in right above this thing (Behaviour).
+       - **iPhone:** a SwiftUI `.contextMenu` on the NAME only, not the whole row: holding the grip must drag (the
+         grip's own hold starts at 0.2 s, the menu's at about 0.5 s).
+       - **Mac:** a right-click on a text field opens the FIELD's own editing menu (Search With Google, Cut, Copy,
+         Paste, Spelling…), and a `.contextMenu` put on the field never shows — seen on GitHub's Mac, 15 Oct 2026
+         (a diagnostic probe: the field's right-click found no entry, the grip's and the "1 in 10"'s found the
+         row's). So BEHIND the name, its size, lies **`RightClickMenu`** (GrabScreen.swift, an `NSViewRepresentable`):
+         an `NSView` that, while in a window, watches that window's right-clicks and control-clicks
+         (`NSEvent.addLocalMonitorForEvents`, removed when it leaves the window or goes); one that lands inside
+         its own `bounds` AND inside `visibleRect` (so not a row scrolled out of the list) pops up one `NSMenuItem`
+         "Heading above", identifier `grab-heading-above-<n>`, and is swallowed — the field never hears of it.
+         Every other click and the typing are the field's. It is no accessibility element. (A see-through layer
+         OVER the name, tried first, let left clicks through but made the field "Not hittable" to the UI tests
+         — and to VoiceOver's pointer: GitHub's Mac, the same day.) The rest of the row (grip, ▲▼, "1 in 10", ✕, the gaps) carries
+         the same entry as a SwiftUI `.contextMenu` (on the Mac a drag starts only on a move, so a menu on the
+         row does not get in its way). A right-click on a name therefore no longer offers Cut / Copy / Paste —
+         the keys ⌘X ⌘C ⌘V still work in it.
      - **up** (`grab-up-<n>`, accessibility label "Move up"), disabled on the first row — the Mac only since 0.72
        (his "Drag and drop on the phone as well");
      - **down** (`grab-down-<n>`, "Move down"), disabled on the last row — the Mac only too;
@@ -1150,6 +1172,13 @@ line of its own (0.84 showed it flat while the open list was grouped by kind):
     field is still cleared;
   - otherwise it is appended at the end (0.85: matched against the draft's THINGS only — a thing may share a
     heading's name).
+- **Heading above** (0.85; a thing's context menu, `insertHeading(above:)`): a heading with NO name yet goes into
+  the draft right above that thing — found by the thing's row key, so where it stands now — and 0.4 s later (once
+  the menu has closed: its closing takes the focus back) the keyboard is on the heading's field
+  (`@FocusState namingHeading`, by row key), so what he types names it; Return lets go of it. **A heading left
+  without a name is dropped on Save** (`GrabLine.cleaned` drops every blank name — decided by the build: it changed
+  nothing he can see, so nothing is lost and nothing asks), and its things stand under the heading above, as
+  before it was put in. On the open list nothing shows of it.
 - **Add a heading** (0.85; button or Return in its field): trims the field; empty → "Type the heading’s name
   first."; otherwise appended at the END as a heading (whatever he adds after it goes under it; ≡ takes it where he
   wants it), and the field is cleared. A heading of a name already used is added all the same.
@@ -1220,11 +1249,31 @@ line of its own (0.84 showed it flat while the open list was grouped by kind):
 - `UserDefaults ams.grab.<id>` for the session after a Save (kept, 0.62), removed by Delete.
 
 **iPhone vs Mac.** The same. The add fields' Return submits on both. On the Mac a heading has ▲▼ as a thing has.
+"Heading above" is the same entry on both: held on the iPhone (the system lifts the name over a dimmed screen,
+the entry under it), right-clicked on the Mac (a menu at the pointer; on the name through `RightClickMenu`, see the
+row's description).
 
 **Tests.**
 - UI `testHisOwnHeadingGroupsAGrabList` (0.85; section 6): A new heading → Add → the heading row last, no "1 in
   10"; its grip (the Mac: ▲) one place up over Flip-flops; Save, the open list; Remove heading keeps Flip-flops;
   `testAGrabListOpensUnderHisHeadings`: Edit shows each heading as `grab-heading-<n>` at its place.
+- UI `testAHeadingGoesAboveTheThingHeHolds` (0.85, the sample): Indoor swim, Edit; the Towel's name
+  (`grab-rename-3`) held (`press(forDuration: 1.2)`; the Mac: `rightClick()`) → `grab-heading-above-3` (picture
+  `grabhead-above-menu`, the menu open) → `grab-heading-3`, with `grab-rename-2` Swim cap above and
+  `grab-rename-4` Towel under it; the heading has the keyboard (`hasKeyboardFocus`) and `typeText("In the bag")`,
+  with no tap, names it (picture `grabhead-above-named`); then Heading above the first thing, left unnamed
+  (`grab-heading-0`; the named one now `grab-heading-4`); Save → `grab-group-0` "In the bag" and no `grab-group-1`,
+  Swim cap (item 2) above it and the Towel (item 3) under it, "0 of 7" (picture `grabhead-above-open`). On the Mac
+  it was RED for real, not planted, twice, with the same line — `XCTAssertTrue failed - holding a thing offers no
+  Heading above`: with the `.contextMenu` on the field alone (the field's own menu opened), and with every row
+  claiming the click (the menu that opened was row 0's, `grab-heading-above-0`). Green with `RightClickMenu` as
+  described: GitHub's Mac in a probe, 6 of 6 light with five grab-list neighbours (`testAGrabListIsEditedAndStaysEdited`
+  among them — the one the layer OVER the field turned red) and the dark step 1 of 1; the iPhone day and night with
+  nine neighbours. Pictures for him: `grabhead-above-menu` (the menu open), iPhone light and Mac light. RED on the iPhone with planted faults: the heading put BELOW the thing — `XCTAssertTrue failed - no heading above the thing held`; no
+  focus — `XCTAssertTrue failed - the new heading does not have the keyboard`; no entry in the menu — `XCTAssertTrue
+  failed - holding a thing offers no Heading above`; an unnamed heading kept on Save (named "Heading") —
+  `XCTAssertEqual failed: ("Heading") is not equal to ("In the bag") - the unnamed heading was kept, or the named one
+  lost`.
 - UI `testAGrabListIsEditedAndStaysEdited`: rename row 0 to "Swim shorts", remove row 1, add "Nose clip"
   (appears as `grab-rename-6`), Save; then the count is exactly "0 of 7 in hand", item 0 says "Swim
   shorts" and item 6 says "Nose clip"; after Done and reopening, item 0 still says "Swim shorts".
@@ -1287,6 +1336,15 @@ line of its own (0.84 showed it flat while the open list was grouped by kind):
   it.
 - 🪤 Delete keeps the deleted list on screen (`leaving`) while the sheet closes, "so the screen does not
   turn into another list on the way out" (the fallback is Indoor swim).
+- 🪤 (0.85) On the Mac a right-click on a TextField is the FIELD's: a SwiftUI `.contextMenu` on it never shows (the
+  field opens Cut / Copy / Paste and selects a word). Found by a diagnostic probe that dumped the menus a
+  right-click on the field, the grip and the "1 in 10" opened — not by a guess. And a layer OVER a field, even one
+  that lets left clicks through, makes the field "Not hittable" to XCUITest (`testAGrabListIsEditedAndStaysEdited`
+  went red with it). `RightClickMenu` therefore lies BEHIND the name and catches the right-click with a local
+  event monitor. And inside SwiftUI's host an `NSView`'s `visibleRect` is the whole visible LIST, not the view's
+  part of it: checked alone, every row claimed every right-click, the first row won, and the heading went over the
+  top thing whichever was right-clicked (a geometry probe printed each row's frame, `visibleRect` and the click).
+  Both `bounds` and `visibleRect` are checked.
 
 ---
 
@@ -1996,7 +2054,8 @@ nothing on GitHub's slower runner, and would have on the phone too.
   - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom), `grab-item-<n>`, `grab-skip-<n>`, `grab-ready`,
     `grab-reset`, `grab-empty` (0.62), `grab-share` (at the foot since 0.84);
   - `grab-notyet`, `grab-message`, `grab-message-ok`;
-  - editing: `grab-rename-<n>`, `grab-heading-<n>` (0.85, a heading's field), `grab-grip-<n>` (0.72), `grab-up-<n>`,
+  - editing: `grab-rename-<n>`, `grab-heading-above-<n>` (0.85, the entry in a thing's context menu),
+    `grab-heading-<n>` (0.85, a heading's field), `grab-grip-<n>` (0.72), `grab-up-<n>`,
     `grab-down-<n>` (Mac), `grab-sometimes-<n>`, `grab-remove-<n>`, `grab-add-name`, `grab-add`, `grab-add-needs`,
     `grab-add-heading-name`, `grab-add-heading`, `grab-add-heading-needs` (0.85), `grab-save-needs` (0.62);
   - deleting one of his own (0.61): `grab-delete`, `grab-delete-question`, `grab-delete-no`,
@@ -2179,6 +2238,6 @@ keep their tag and say why they were left.
 39. [untested] (0.85) **Two headings of one name** are kept in the app and in a backup, but a share link drops the
     second (its case-insensitive repeat rule, PackingCore, the web app's own) — its things then stand under the
     first. Left: PackingCore is the web app's model.
-40. [idea] (0.85) **Moving a heading far** on the iPhone is a long drag (one place per row passed; the list does not
-    scroll under a carried row) — as it is for a thing. A new heading always goes last, so on a long list made before
-    0.85 each heading is carried up to its place (or its things down to it). Worth watching in his field test.
+40. **Resolved in 0.85, before it shipped** — ~~Moving a heading far on the iPhone is a long drag; a new heading
+    always goes last.~~ "Heading above" in a thing's context menu puts a heading right above it (section 7). Moving
+    a heading or a thing far is still one place per row passed (the list does not scroll under a carried row).

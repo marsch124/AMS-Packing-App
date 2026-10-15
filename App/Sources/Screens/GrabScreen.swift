@@ -181,6 +181,9 @@ struct GrabScreen: View {
     /// "A new heading" (0.85), and what its Add was missing.
     @State private var newHeading = ""
     @State private var headingNeeds = ""
+    /// The heading row (by its key) being named — one just put above a thing by "Heading
+    /// above" (0.85) has the keyboard at once.
+    @FocusState private var namingHeading: Int?
     /// While editing: which names are marked "only sometimes", by their plain form.
     @State private var draftSometimes: Set<String> = []
     /// "Delete <name>?" is up, at the foot of the editor.
@@ -396,8 +399,8 @@ struct GrabScreen: View {
         VStack(spacing: 0) {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(ReorderArrows.shown ? "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. A thing goes under the heading above it. Saved for both your devices."
-                                             : "Tap a name to change it · hold ≡ and drag to move · ✕ remove. A thing goes under the heading above it. Saved for both your devices.")
+                    Text(ReorderArrows.shown ? "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. A thing goes under the heading above it. Hold a thing (right-click on the Mac) for a heading above it. Saved for both your devices."
+                                             : "Tap a name to change it · hold ≡ and drag to move · ✕ remove. A thing goes under the heading above it. Hold a thing (right-click on the Mac) for a heading above it. Saved for both your devices.")
                         .font(.system(.footnote)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                     ForEach(Array(rowKeys.prefix(draft.count).enumerated()), id: \.element) { n, key in
@@ -418,7 +421,25 @@ struct GrabScreen: View {
                                     .font(.system(.body)).foregroundStyle(Theme.ink)
                                     .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
                                     .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+                                    // "Heading above" (0.85): hold the thing's name (right-click on the
+                                    // Mac) and a heading goes in right above it, ready to be named — a
+                                    // new heading from the foot goes last, a long drag away on a long
+                                    // list. On the name, not the whole row: holding the grip drags.
                                     .accessibilityIdentifier("grab-rename-\(n)")
+                                    #if os(iOS)
+                                    .contextMenu {
+                                        Button("Heading above") { insertHeading(above: key) }
+                                            .accessibilityIdentifier("grab-heading-above-\(n)")
+                                    }
+                                    #else
+                                    // 🪤 On the Mac a right-click on a text field opens the FIELD's
+                                    // own menu (Cut, Copy, Paste… — GitHub's Mac, 15 Oct 2026) and a
+                                    // context menu put on it never shows: a layer BEHIND the name
+                                    // catches the right-click first (`RightClickMenu`).
+                                    .background {
+                                        RightClickMenu(title: "Heading above", id: "grab-heading-above-\(n)") { insertHeading(above: key) }
+                                    }
+                                    #endif
                                 if ReorderArrows.shown {
                                     mark("M6 14l6-6 6 6", id: "grab-up-\(n)", enabled: n > 0, label: "Move up") { swapRow(key, -1) }
                                     mark("M6 10l6 6 6-6", id: "grab-down-\(n)", enabled: n < draft.count - 1, label: "Move down") { swapRow(key, 1) }
@@ -443,6 +464,13 @@ struct GrabScreen: View {
                                 // The last THING stays (a heading or two does not make a list).
                                 mark("M7 7L17 17M17 7L7 17", id: "grab-remove-\(n)", enabled: draftThings > 1, label: "Remove") { removeRow(n) }
                             }
+                            #if os(macOS)
+                            // …and the rest of the row (grip, 1 in 10, ✕, the gaps) the same menu.
+                            .contextMenu {
+                                Button("Heading above") { insertHeading(above: key) }
+                                    .accessibilityIdentifier("grab-heading-above-\(n)")
+                            }
+                            #endif
                             .reorderStep("\(key)", into: $heights)
                             .reorderLift(carried, key: "\(key)", tint: tint)
                         }
@@ -593,6 +621,20 @@ struct GrabScreen: View {
         newHeading = ""
     }
 
+    /// "Heading above" a thing (0.85): a heading with no name yet, right above it, the keyboard
+    /// on its name. One left unnamed is dropped on Save (`GrabLine.cleaned`), as a blank name
+    /// always is — so it changes nothing until he names it.
+    private func insertHeading(above thing: Int) {
+        // By the thing's key: where it stands now, whatever moved since the menu was drawn.
+        guard let n = rowKeys.firstIndex(of: thing), n < draft.count else { return }
+        let key = nextKey
+        nextKey += 1
+        draft.insert(.heading(""), at: n)
+        rowKeys.insert(key, at: n)
+        // Once the menu has closed: its closing takes the focus back to where it was.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { namingHeading = key }
+    }
+
     /// How many THINGS the draft holds — the last one cannot be removed.
     private var draftThings: Int { draft.filter { !$0.isHeading }.count }
 
@@ -621,6 +663,8 @@ struct GrabScreen: View {
                 .font(.system(.headline)).foregroundStyle(tint)
                 .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
                 .overlay(alignment: .bottom) { tint.opacity(0.45).frame(height: 1.5).padding(.horizontal, 10) }
+                .focused($namingHeading, equals: key)
+                .onSubmit { namingHeading = nil }
                 .accessibilityIdentifier("grab-heading-\(n)")
                 .accessibilityHint("A heading. The things under it, down to the next heading, are its things.")
             if ReorderArrows.shown {
@@ -734,3 +778,72 @@ struct GrabScreen: View {
         }
     }
 }
+
+#if os(macOS)
+/// A thing's name in a grab list's Edit, right-clicked on the Mac (0.85): a menu of one entry,
+/// "Heading above". The text field takes a right-click for its own editing menu, so a SwiftUI
+/// context menu on it never shows (GitHub's Mac, 15 Oct 2026: Search With Google, Cut, Copy,
+/// Paste…). This view lies BEHIND the name, the name's size, and watches the window's right-clicks
+/// (and control-clicks): one that lands on the part of it that can be seen opens the menu, and the
+/// field never hears of it. Every other click and the typing are the field's.
+///
+/// 🪤 Not a layer OVER the name: one that let left clicks through still made the field "not
+/// hittable" to the UI tests (and to VoiceOver's pointer) — GitHub's Mac, the same day.
+struct RightClickMenu: NSViewRepresentable {
+    let title: String
+    let id: String
+    let action: () -> Void
+
+    func makeNSView(context: Context) -> RightClickView { RightClickView() }
+    func updateNSView(_ view: RightClickView, context: Context) {
+        view.title = title; view.itemId = id; view.action = action
+    }
+    static func dismantleNSView(_ view: RightClickView, coordinator: ()) { view.stopWatching() }
+
+    final class RightClickView: NSView {
+        var title = ""
+        var itemId = ""
+        var action: () -> Void = {}
+        private var monitor: Any?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            stopWatching()
+            guard window != nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) { [weak self] event in
+                guard let self, self.claims(event) else { return event }
+                let menu = NSMenu()
+                let item = NSMenuItem(title: self.title, action: #selector(self.choose), keyEquivalent: "")
+                item.target = self
+                item.identifier = NSUserInterfaceItemIdentifier(self.itemId)
+                menu.addItem(item)
+                NSMenu.popUpContextMenu(menu, with: event, for: self)
+                return nil
+            }
+        }
+
+        /// A right-click (or control-click) in this window, on the part of the name that shows.
+        private func claims(_ event: NSEvent) -> Bool {
+            let right = event.type == .rightMouseDown
+                || (event.type == .leftMouseDown && event.modifierFlags.contains(.control))
+            guard right, let window, event.window === window, !isHiddenOrHasHiddenAncestor else { return false }
+            let p = convert(event.locationInWindow, from: nil)
+            // 🪤 BOTH: inside SwiftUI's host `visibleRect` is the whole visible list, not this view's
+            // part of it (GitHub's Mac, 15 Oct 2026: every row claimed the click, the first one won,
+            // and "Heading above" went over the top thing whichever was right-clicked).
+            return bounds.contains(p) && visibleRect.contains(p)
+        }
+
+        func stopWatching() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+        }
+
+        deinit { if let monitor { NSEvent.removeMonitor(monitor) } }
+
+        @objc private func choose() { action() }
+
+        override func isAccessibilityElement() -> Bool { false }
+    }
+}
+#endif
