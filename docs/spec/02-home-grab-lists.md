@@ -1858,6 +1858,11 @@ Packing is not in the list there: open Packing once, then look again."
 - UI `testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp` (section 3).
 - **Not covered:** the intents themselves (no test runs Shortcuts); entity titles, synonyms and order;
   Siri phrases; a next trip that does not exist.
+- 🪤 (found 15 Oct 2026 by the 0.86 Mac probes) Run on GitHub's Mac with only the warm-up before it,
+  `testAShortcutOpensAGrabListOrTheNextTrip` fails: the app launched with `-openGrab Bike` shows NO window at all
+  for 12 s (`app.windows.count` 0) — the same at 0.85 (`b9812b5`), so not 0.86's app delegate. In the full suite's
+  Mac group it passes. The test launches with a bare `XCUIApplication().launch()`, without `launch()`'s ⌘N
+  fallback for a Mac that comes up with no window.
 
 ## 13b. Grab lists by holding the app icon (iPhone) and in the Dock icon's menu (Mac) — 0.86
 
@@ -1950,9 +1955,12 @@ window open (RootView counts them, `mainWindows`) one is opened first (`openMain
   🪤 On the simulator a software keyboard comes up under the menu (the simulator's, no hardware keyboard
   connected); not seen on an iPhone.
 - UI `testTheDockMenuOpensAGrabList` (Mac): `-dockMenu "Outdoor bike"` → `grab-detail` "Outdoor bike"; then
-  `-dockMenuWhenClosed "Outdoor run"`, ⌘W → a window comes back with `grab-detail` "Outdoor run". With
-  `SHOTS_DIR` set it also right-clicks the real Dock icon (found by the app's name, the Dock gives no other) for the
-  picture `dock-menu`, asserting nothing.
+  `-dockMenuWhenClosed "Outdoor run"`, ⌘W → a window comes back with `grab-detail` "Outdoor run". Seen RED on
+  GitHub's Mac with two planted faults (probe run 38743228484): no window opened when none is ("XCTAssertTrue
+  failed - with no window open, choosing in the Dock menu brought no window with the list"), the menu's entry naming
+  another list ("XCTAssertTrue failed - the Dock menu opened another list: 'Indoor swim'"). With `SHOTS_DIR` set it
+  also right-clicks the real Dock icon (the Dock item whose name holds "Packing" and not "Runner" — the Dock gives
+  no other handle) for the picture `dock-menu`, asserting nothing.
 - **Not covered:** the pictures themselves (looked at: `icon-menu`, `dock-menu`); a refresh after a change on
   the other device (the same debounced path as Shortcuts); a list deleted while its entry is shown (opens nothing,
   model-tested as "passed over").
