@@ -835,7 +835,7 @@ else is the same.
   — `XCTAssertEqual failed: ("["Sport gear", "Comfort & misc", "Electronics", "Other"]") is not equal to
   ("["Electronics", "Sport gear", "Comfort & misc", "Other"]") - the headings, in his order of kinds`; one kind
   enough for headings — `XCTAssertFalse failed - a list of one kind has a heading`. Green on the iPhone (iOS 27,
-  day and night) with the other 21 grab-list tests, and on GitHub's Mac in a probe (light; the runner's Mac stayed
+  day and night) with the other 20 grab-list tests, and on GitHub's Mac in a probe (light; the runner's Mac stayed
   light with dark asked for).
 - Model `GrabKindsTests` (0.84): `testThingsGoUnderTheirKindInHisOrderAndTheRestUnderOtherLast` (the app's twelve
   in order, the list's order within, every place under exactly one heading),
