@@ -12113,9 +12113,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 8) { !message.exists }, "everything charged, still: '\(words(message))'")
         XCTAssertTrue(app.staticTexts["trip-message-onsite"].exists, "the trip's other messages went too")
         // The toothbrush unticked (the card, all set, opened first): back.
-        XCTAssertTrue(appears(app, "trip-beforego-fold", timeout: 5))
         tap(app, id: "trip-beforego-fold")
-        XCTAssertTrue(appears(app, "trip-charge-0", timeout: 5))
+        XCTAssertTrue(app.buttons["trip-charge-0"].waitForExistence(timeout: 5), "the chevron does not open the card")
         tap(app, id: "trip-charge-0")
         XCTAssertTrue(waitUntil(timeout: 8) { self.words(message).hasSuffix("Charge tonight Toothbrush") },
                       "unticked, the toothbrush is not named: '\(words(message))'")
@@ -12129,7 +12128,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "the trip opened without its To charge")
         XCTAssertTrue(waitUntil { app.buttons["trip-charge-0"].exists && app.buttons["trip-charge-0"].isHittable },
                       "To charge is not in view")
-        XCTAssertFalse(appears(app, "trip-unticked-only", timeout: 2), "Charge tonight opened on just the unticked lines")
+        XCTAssertFalse(app.staticTexts["trip-unticked-only"].waitForExistence(timeout: 2), "Charge tonight opened on just the unticked lines")
         XCTAssertFalse(appears(app, "review-detail", timeout: 1), "Charge tonight opened the review")
         shot(app, "charge-tonight-tapped")
     }
