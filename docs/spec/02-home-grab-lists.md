@@ -2201,7 +2201,7 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
      - row identifiers `search-<part>-<n>`, with part = `things`, `lists`, `trips`, `todos`;
      - (0.69) under a thing found by its NOTES and not by its name or Swedish name: the note line
        (`search-things-<n>-note`, `NoteHitLine`): Footnote, one line; muted, the words searched for in Home blue
-       and semibold; a template's note starts with its name and ": ". A text of its own outside the row's button
+       and semibold; since 0.88 a template's note starts with "Note on <template>: " and his own Notes with "Note: " (until 0.88 "<template>: " and no word). A text of its own outside the row's button
        (2 pt pulled up, 5 under it; a tap on it opens the thing too); the hairline is under the pair.
 
 **Matching.** `needle = normName(query)` (trimmed, lower-cased, whitespace runs collapsed). A hit is a

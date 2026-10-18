@@ -9371,7 +9371,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         let said = app.staticTexts["thing-row-note-0"]
         XCTAssertTrue(said.waitForExistence(timeout: 5), "the template's note is not on the thing's page")
-        XCTAssertEqual(words(said), "On the Swim template: Rinse after the sea")
+        XCTAssertEqual(words(said), "Note on the Swim template: Rinse after the sea")
         XCTAssertFalse(app.staticTexts["thing-row-note-1"].exists, "a template with no note of its own was listed")
         XCTAssertFalse((app.textFields["thing-notes"].value as? String ?? "").contains("Rinse"),
                        "the template's note was put in the thing's own note")
@@ -9792,12 +9792,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(words(app.buttons["thing-row-0"]).contains("Passport"), "'\(words(app.buttons["thing-row-0"]))'")
         let note = app.staticTexts["thing-row-0-note"]
         XCTAssertTrue(note.waitForExistence(timeout: 5), "the note line is not under the thing")
-        XCTAssertEqual(words(note), "Keep it in the blue pouch with the tickets")
+        XCTAssertEqual(words(note), "Note: Keep it in the blue pouch with the tickets")
         shot(app, "notes-things")
         replace("waterproof", in: field)
         XCTAssertTrue(waitUntil { self.words(count) == "1 thing" && self.words(app.buttons["thing-row-0"]).contains("Map") },
                       "not found by its template's note: '\(words(count))'")
-        XCTAssertEqual(words(app.staticTexts["thing-row-0-note"]), "Hiking: The waterproof one, folded in the lid")
+        XCTAssertEqual(words(app.staticTexts["thing-row-0-note"]), "Note on Hiking: The waterproof one, folded in the lid")
         // Found by its name: no note line.
         replace("Passport", in: field)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).contains("Passport") })
@@ -9811,7 +9811,7 @@ final class AMSPackingUITests: XCTestCase {
         type("pouch", into: app.textFields["search-field"])
         XCTAssertTrue(waitUntil { self.words(app.buttons["search-things-0"]).contains("Passport") },
                       "Search did not find it by its note: '\(words(app.buttons["search-things-0"]))'")
-        XCTAssertEqual(words(app.staticTexts["search-things-0-note"]), "Keep it in the blue pouch with the tickets")
+        XCTAssertEqual(words(app.staticTexts["search-things-0-note"]), "Note: Keep it in the blue pouch with the tickets")
         shot(app, "notes-search")
     }
 

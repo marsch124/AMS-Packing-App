@@ -263,7 +263,7 @@ struct SearchScreen: View {
 
 /// The line of a thing's notes a search found it by (0.69), under the thing: muted, with
 /// the words searched for in the screen's colour; a template's own note says whose it is
-/// ("Hiking: …"). One line — `noteHits` cuts a long one so the words are in it.
+/// ("Note on Hiking: …"; his own: "Note: …" — 0.88, his "make the line clearer", 18 Oct 2026). One line — `noteHits` cuts a long one so the words are in it.
 struct NoteHitLine: View {
     let hit: NoteHit
     let query: String
@@ -277,7 +277,7 @@ struct NoteHitLine: View {
     }
 
     private var said: AttributedString {
-        var s = AttributedString((hit.template.map { "\($0): " } ?? "") + hit.line)
+        var s = AttributedString((hit.template.map { "Note on \($0): " } ?? "Note: ") + hit.line)
         s.foregroundColor = Theme.muted
         // Spaces as the search counts them (`normName`): "blue  pouch" finds "blue pouch".
         let words = normName(query)

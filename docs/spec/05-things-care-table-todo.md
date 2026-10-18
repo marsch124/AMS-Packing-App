@@ -229,7 +229,7 @@ The notes a template keeps for a thing (0.62, `RowNotesTests`): `testATemplatesO
 a row without a note of its own is not listed), `testANoteTheThingAlreadySaysIsNotRepeated`,
 `testEveryTemplateIsListedInItsOrderAndOneNoteOnce` (Hiking before Swim; the thing twice on Hiking with one note →
 once; an unknown thing → []). UI `testAThingsPageShowsTheNotesItsTemplatesKeep` (a note typed on the Swim
-template's Goggles row shows on the Goggles page as "On the Swim template: Rinse after the sea", and is not put in
+template's Goggles row shows on the Goggles page as "Note on the Swim template: Rinse after the sea" (until 0.88 "On the Swim template: …"), and is not put in
 the thing's own note).
 
 **Not covered by a test.** `setOnTemplate` order placement (bottom of the template); `deleteThing` leaving
@@ -858,8 +858,9 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
      rounded (8) orange 18 % background reaching 8 pt past the text on each side.
    - Under a thing found by its NOTES and not by its name (0.69): the note line (`thing-row-N-note`, `NoteHitLine`
      in SearchScreen.swift) — Footnote, one line, cut at the end; muted, the words searched for in Care orange and
-     semibold (every place they occur, case and accents not counting); a template's note starts with its name and
-     ": " ("Hiking: The waterproof one, folded in the lid"). 3 pt pulled up under the row, 5 under it. It is a text of
+     semibold (every place they occur, case and accents not counting); since 0.88 a template's note starts with
+     "Note on <template>: " ("Note on Hiking: The waterproof one, folded in the lid") and his own Notes with "Note: " (his
+     words, 18 Oct 2026, after "Travel: work" puzzled him: "make the line clearer"; until 0.88 "Hiking: …" and no word). 3 pt pulled up under the row, 5 under it. It is a text of
      its own OUTSIDE the row's button (the Mac folds a button's texts into the button); a tap on it opens the thing too.
 5. The add row at the BOTTOM (his rule): "A new thing" field (`thing-new-name`, 17 medium, min height 44) and
    "New" (`thing-new`, `FieldButtonLabel`, orange); its needs line `thing-new-needs`.
@@ -964,7 +965,7 @@ apart; a field 6 pt under its heading):
 3. **Notes** — band "Notes" (`thing-heading-notes`); a vertically growing field (`thing-notes`), placeholder
    "Anything worth remembering", 1 to 8 lines, 18 medium, min height 46. (A note written on site lands on a line
    of its own under the old text.) Under it (0.62), one line per note a template keeps for this thing on its own
-   row: "On the <template> template: <note>" (15 medium muted, wraps, `thing-row-note-N`), from
+   row: "Note on the <template> template: <note>" (0.88; was "On the <template> template: …") (15 medium muted, wraps, `thing-row-note-N`), from
    `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
    twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.

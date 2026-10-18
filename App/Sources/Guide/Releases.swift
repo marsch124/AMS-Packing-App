@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.88", date: "18 Oct 2026", title: "Clearer notes",
+                changed: ["A thing found by its notes says whose note it is: \u{201C}Note on Travel: work” for a template\u{2019}s note, \u{201C}Note: \u{2026}\u{201D} for its own. Its page says \u{201C}Note on the Travel template: \u{2026}\u{201D}."]),
         Release(version: "0.87", date: "15 Oct 2026", title: "Charge tonight, and done headings fold",
                 new: ["Charge tonight: at 20:00 the evening before you leave, the iPhone names what still needs charging \u{2014} only while something is left. Tap it to open the trip at To charge.",
                       "In a grab list, each of your headings has a small ring that fills as you take its things. When all are in hand it turns green and folds to one line; tap it to open it again."]),

@@ -1024,7 +1024,7 @@ struct ThingEditor: View {
         if !notes.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(notes.enumerated()), id: \.offset) { n, said in
-                    Text("On the \(said.template) template: \(said.note)")
+                    Text("Note on the \(said.template) template: \(said.note)")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("thing-row-note-\(n)")
