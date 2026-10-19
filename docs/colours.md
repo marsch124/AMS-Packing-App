@@ -100,6 +100,14 @@ icon picker; Automatic keeps the cover pick above (the web app's ten, teal and c
 day and night; the icon on it is white on the deep ones and the workout pills' dark words on the light ones; drawn on
 its own (a trip line's mark) it is made readable as text on each card (`readableHex`).
 
+**0.91 — fifteen, in two rows.** His words (19 Oct 2026): "Please add some more colors, but keep them on two
+lines. This was very nice." Plum, Navy, Olive and Sand came in the gaps the eleven left (purple-red, a dark blue, a
+yellow-green, a pale warm one — no teal, no cyan, no mint), so Automatic and fifteen are two rows of eight. Every
+colour is at least ΔE 20 (CIE 1976) from every other — Violet and Indigo, 23.7, are the closest pair; the new ones are
+31 or more from all — and none has a teal or cyan hue (160°–200°). Navy is the darkest fill: 2.2 : 1 against the dark
+card, its white icon 7.8 : 1 on it. The eleven keep their keys and fills (a template stores the fill). Pinned by
+`TemplateColourTests.testMoreColoursStillFillTwoRowsAndTheOldOnesStayAsTheyWere`.
+
 | Word     | Fill      | Icon on it | Ink on fill | Mark on light card | Mark on dark card |
 |----------|-----------|------------|-------------|--------------------|-------------------|
 | Blue     | `#0a84ff` | white      | 3.7 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
@@ -109,8 +117,12 @@ its own (a trip line's mark) it is made readable as text on each card (`readable
 | Lavender | `#bf9cff` | `#2e1a5c`  | 6.6 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Pink     | `#ff6fa8` | `#5a0f2e`  | 5.3 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Red      | `#dc3d43` | white      | 4.4 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Plum     | `#9c3d8c` | white      | 6.1 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Violet   | `#7c5cd6` | white      | 4.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Indigo   | `#4f46e5` | white      | 6.3 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Navy     | `#2a5194` | white      | 7.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Olive    | `#6e7b1f` | white      | 4.7 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Sand     | `#d9b98c` | `#3d2a10`  | 7.3 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Brown    | `#8b5e3c` | white      | 5.6 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Grey     | `#64748b` | white      | 4.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 

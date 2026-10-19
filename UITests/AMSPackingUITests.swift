@@ -6412,7 +6412,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["template-colour-auto"].waitForExistence(timeout: 5), "no colours on the picker")
         XCTAssertTrue(app.buttons["template-colour-auto"].isSelected, "Automatic is not ringed before any choice")
         let swatches = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'template-colour-'"))
-        XCTAssertEqual(swatches.count, 12, "Automatic and eleven colours")
+        XCTAssertEqual(swatches.count, 16, "Automatic and fifteen colours (eleven until 0.91)")
         shot(app, "tmpl-colours-picker")
         tap(app, id: "template-colour-blue")
         XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "a colour did not close the picker")
@@ -6614,6 +6614,146 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["icon-lounger"].isSelected }, "the chosen lounger is not ringed in the picker")
         tap(app, id: "icon-cancel")
         XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+    }
+
+    /// 0.91 — his words (19 Oct 2026): "Please move the activity pill button to the bottom of the
+    /// page." The Activity areas pill stands at the foot of the Templates tab: under the last
+    /// area's heading and its last template, under every other heading — and it still opens the
+    /// Activity areas page.
+    func testTheActivityAreasPillIsAtTheFootOfTheTemplatesTab() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let pill = app.buttons["templates-areas"]
+        XCTAssertTrue(pill.waitForExistence(timeout: 5), "no Activity areas pill on the Templates tab")
+        bringIntoView(app, pill)
+        // The sample's areas: Always Packed (Common base), GA (Hiking), WET (Swim) — WET is the last.
+        let last = app.staticTexts["templates-area-WET"]
+        let swim = app.buttons["template-row-2"]
+        XCTAssertTrue(last.waitForExistence(timeout: 5) && swim.waitForExistence(timeout: 5), "no last area to measure by")
+        XCTAssertGreaterThan(pill.frame.minY, last.frame.maxY,
+                             "the pill is not under the last area's heading: pill \(pill.frame.minY), heading \(last.frame.maxY)")
+        XCTAssertGreaterThanOrEqual(pill.frame.minY, swim.frame.maxY,
+                                    "the pill is not after the last template: pill \(pill.frame.minY), card \(swim.frame.maxY)")
+        for heading in ["templates-area-base", "templates-area-GA"] where app.staticTexts[heading].exists {
+            XCTAssertGreaterThan(pill.frame.minY, app.staticTexts[heading].frame.maxY, "the pill is above \(heading)")
+        }
+        shot(app, "tmpl91-pill-templates")
+        tap(app, id: "templates-areas")
+        XCTAssertTrue(appears(app, "areas-detail", timeout: 5), "the pill at the foot did not open Activity areas")
+        tap(app, id: "areas-cancel")
+        XCTAssertTrue(disappears(app, "areas-detail", timeout: 5))
+    }
+
+    /// 0.91 — his words (19 Oct 2026): "Please add some more colors, but keep them on two lines.
+    /// This was very nice." Automatic and fifteen colours, in exactly two rows of eight (counted by
+    /// where each swatch stands), each wide enough to tap (44 points on the iPhone); a new colour,
+    /// Navy, paints Hiking's cover on the Templates tab and is ringed when the picker opens again.
+    func testTheColoursSitInTwoRowsAndANewOneApplies() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let card = app.buttons["template-row-1"]                    // Hiking
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        card.tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the picker")
+        let query = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'template-colour-'"))
+        XCTAssertTrue(waitUntil { query.count == 16 }, "not Automatic and fifteen colours: \(query.count)")
+        // The rows, by where the swatches stand: a swatch more than 8 points lower starts a new one.
+        let swatches = query.allElementsBoundByIndex.map { ($0.identifier, $0.frame) }
+        var rows: [[(String, CGRect)]] = []
+        for s in swatches.sorted(by: { ($0.1.midY, $0.1.midX) < ($1.1.midY, $1.1.midX) }) {
+            if let first = rows.last?.first, abs(first.1.midY - s.1.midY) < 8 { rows[rows.count - 1].append(s) } else { rows.append([s]) }
+        }
+        XCTAssertEqual(rows.map(\.count), [8, 8], "the colours are not on two lines of eight: \(rows.map { $0.map(\.0) })")
+        XCTAssertEqual(rows.first?.first?.0, "template-colour-auto", "Automatic does not lead")
+        let window = app.windows.firstMatch.frame
+        for (id, frame) in swatches {
+            XCTAssertTrue(frame.minX >= window.minX - 0.5 && frame.maxX <= window.maxX + 0.5, "\(id) runs off the screen: \(frame)")
+            #if os(iOS)
+            XCTAssertGreaterThanOrEqual(frame.width, 44, "\(id) is \(frame.width) points wide — too small to tap")
+            #endif
+        }
+        shot(app, "tmpl91-colours-picker")
+        tap(app, id: "template-colour-navy")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "Navy did not close the picker")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (card.value as? String) == "#2a5194" },
+                      "Hiking's cover is not navy: '\(card.value as? String ?? "")'")
+        shot(app, "tmpl91-colours-navy")
+        card.tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["template-colour-navy"].isSelected }, "the chosen Navy is not ringed")
+        tap(app, id: "icon-cancel")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+    }
+
+    /// 0.91 — his words (19 Oct 2026): "Also add the possibility to search for icons, and also add
+    /// alternative names so that the search is easier to perform." The picker's search finds an
+    /// icon by words that are not written under it: "flyg" (Swedish) shows the Plane alone, under
+    /// Travel, with Suggested and Letter stepped aside; "zzz" says nothing is called that; the ✕
+    /// brings all 91 back; a found icon ("fahrrad" → Bike) is chosen like any other. On the Mac ⌘F
+    /// puts the cursor in the field, Escape empties it, a second Escape closes the picker.
+    func testTheIconSearchFindsAnIconByItsOtherNames() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                        // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the icons")
+        let field = app.textFields["iconsearch"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the picker has no icon search")
+        let notIcons = ["icon-suggested", "icon-letter", "icon-cancel"]
+        let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND NOT (identifier IN %@)", "icon-", notIcons))
+        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the picker shows \(tiles.count) icons before a search, not 91")
+
+        type("flyg", into: field)
+        XCTAssertTrue(waitUntil { tiles.count == 1 && app.buttons["icon-plane"].exists },
+                      "flyg shows \(tiles.count) icons, not the Plane alone")
+        XCTAssertTrue(app.staticTexts["icon-group-travel"].exists, "the Plane is not under Travel")
+        XCTAssertFalse(app.staticTexts["icon-group-sport"].exists, "a heading with nothing found still shows")
+        XCTAssertFalse(app.buttons["icon-suggested"].exists, "Suggested shows under a search")
+        XCTAssertFalse(app.staticTexts["iconsearch-none"].exists, "the nothing line shows beside a find")
+        shot(app, "tmpl91-iconsearch-flyg")
+
+        replace("zzz", in: field)
+        XCTAssertTrue(app.staticTexts["iconsearch-none"].waitForExistence(timeout: 5), "nothing found, and nothing says so")
+        XCTAssertEqual(tiles.count, 0, "zzz shows icons")
+        shot(app, "tmpl91-iconsearch-none")
+
+        tap(app, id: "iconsearch-clear")
+        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the ✕ did not bring all the icons back: \(tiles.count)")
+        XCTAssertTrue(app.buttons["icon-suggested"].exists, "the ✕ did not bring Suggested back")
+        XCTAssertFalse(app.staticTexts["iconsearch-none"].exists, "the nothing line stayed after the ✕")
+        XCTAssertFalse(((field.value as? String) ?? "").contains("zzz"), "the typed words are still in the field")
+
+        // A found icon is chosen like any other.
+        type("fahrrad", into: field)
+        XCTAssertTrue(waitUntil { tiles.count == 1 && app.buttons["icon-bike"].exists }, "fahrrad did not find the Bike alone")
+        tap(app, id: "icon-bike")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "a found icon did not close the picker")
+        let cover = app.buttons["template-cover"]
+        XCTAssertTrue(waitUntil { (cover.value as? String) == "bike" }, "the found Bike was not taken: '\(cover.value as? String ?? "")'")
+
+        #if os(macOS)
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5))
+        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the picker did not open with every icon")
+        app.typeKey("f", modifierFlags: .command)
+        app.typeText("flyg")
+        XCTAssertTrue(waitUntil { tiles.count == 1 }, "⌘F did not put the cursor in the icon search")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { tiles.count == 91 }, "Escape did not empty the search")
+        XCTAssertNotNil(find(app, "icon-picker"), "Escape closed the picker instead of emptying the search")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "a second Escape did not close the picker")
+        #endif
     }
 
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.

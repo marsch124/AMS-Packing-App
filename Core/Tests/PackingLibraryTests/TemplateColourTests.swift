@@ -37,6 +37,78 @@ final class TemplateColourTests: XCTestCase {
         for teal in ["#14b8a6", "#06b6d4", "#17969b"] { XCTAssertNil(TemplateColour.of(hex: teal), "teal in the palette") }
     }
 
+    /// 0.91 — his words (19 Oct 2026): "Please add some more colors, but keep them on two lines.
+    /// This was very nice." Automatic and the palette fill exactly two full rows; the colours of
+    /// 0.90 keep their keys and fills (a template stores the fill); the four new ones are far
+    /// from every other colour, none of them teal or cyan, and read day and night as the rest do.
+    func testMoreColoursStillFillTwoRowsAndTheOldOnesStayAsTheyWere() {
+        let palette = TemplateColour.palette
+        XCTAssertEqual(palette.count, 15, "Automatic and fifteen: two rows of eight")
+        XCTAssertEqual(TemplateColour.pickerRows, 2)
+        XCTAssertEqual(TemplateColour.pickerColumns, 8)
+        XCTAssertEqual((palette.count + 1) % TemplateColour.pickerRows, 0, "a short second row")
+        XCTAssertEqual(TemplateColour.pickerColumns * TemplateColour.pickerRows, palette.count + 1, "not two full rows")
+        // The eleven of 0.90, as a template may have stored them.
+        let before: [String: String] = ["blue": "#0a84ff", "yellow": "#ffd60a", "green": "#30d158", "orange": "#ff8c1a",
+                                        "lavender": "#bf9cff", "pink": "#ff6fa8", "red": "#dc3d43", "violet": "#7c5cd6",
+                                        "indigo": "#4f46e5", "brown": "#8b5e3c", "slate": "#64748b"]
+        for (key, hex) in before {
+            XCTAssertEqual(palette.first { $0.key == key }?.hex, hex, "\(key) changed or went: a stored colour would ring nothing")
+        }
+        for key in ["plum", "navy", "olive", "sand"] {
+            XCTAssertNotNil(palette.first { $0.key == key }, "no \(key) in the palette")
+        }
+        // Well apart: no two swatches closer than ΔE 20 (CIE 1976 — Violet and Indigo, the closest
+        // pair of 0.90, are 23.7 apart).
+        for (n, a) in palette.enumerated() {
+            for b in palette[(n + 1)...] {
+                XCTAssertGreaterThanOrEqual(deltaE(a.hex, b.hex), 20, "\(a.key) and \(b.key) look alike")
+            }
+            // No teal or cyan by its hue either — not only the three hexes above.
+            let (hue, saturation) = hueAndSaturation(a.hex)
+            XCTAssertFalse((160...200).contains(hue) && saturation > 0.2, "\(a.key) is teal or cyan (hue \(Int(hue)))")
+        }
+    }
+
+    // MARK: - Colour arithmetic for the separation check
+
+    private func channels(_ hex: String) -> (Double, Double, Double) {
+        let v = UInt32(hex.dropFirst(), radix: 16) ?? 0
+        return (Double((v >> 16) & 0xff) / 255, Double((v >> 8) & 0xff) / 255, Double(v & 0xff) / 255)
+    }
+
+    /// CIE 1976 ΔE between two sRGB colours (D65).
+    private func deltaE(_ a: String, _ b: String) -> Double {
+        func lab(_ hex: String) -> (Double, Double, Double) {
+            func lin(_ c: Double) -> Double { c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+            let (r, g, b) = channels(hex)
+            let (lr, lg, lb) = (lin(r), lin(g), lin(b))
+            let x = (0.4124 * lr + 0.3576 * lg + 0.1805 * lb) / 0.95047
+            let y = 0.2126 * lr + 0.7152 * lg + 0.0722 * lb
+            let z = (0.0193 * lr + 0.1192 * lg + 0.9505 * lb) / 1.08883
+            func f(_ t: Double) -> Double { t > 0.008856 ? cbrt(t) : 7.787 * t + 16.0 / 116.0 }
+            return (116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z)))
+        }
+        let (l1, a1, b1) = lab(a), (l2, a2, b2) = lab(b)
+        return ((l1 - l2) * (l1 - l2) + (a1 - a2) * (a1 - a2) + (b1 - b2) * (b1 - b2)).squareRoot()
+    }
+
+    /// Hue in degrees and HSL saturation.
+    private func hueAndSaturation(_ hex: String) -> (Double, Double) {
+        let (r, g, b) = channels(hex)
+        let hi = max(r, g, b), lo = min(r, g, b), d = hi - lo
+        let light = (hi + lo) / 2
+        guard d > 0 else { return (0, 0) }
+        let s = d / (1 - abs(2 * light - 1))
+        var h: Double
+        if hi == r { h = ((g - b) / d).truncatingRemainder(dividingBy: 6) }
+        else if hi == g { h = (b - r) / d + 2 }
+        else { h = (r - g) / d + 4 }
+        h *= 60
+        if h < 0 { h += 360 }
+        return (h, s)
+    }
+
     func testHisColourIsKeptThroughEditsRecordsBackupsAndAShareAndAutomaticGivesTheOldOneBack() throws {
         var lib = Library()
         var hiking = newList(name: "Hiking", group: "GA"); hiking.items = [newItem(name: "Map")]

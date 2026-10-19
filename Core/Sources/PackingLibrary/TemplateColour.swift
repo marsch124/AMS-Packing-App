@@ -28,8 +28,15 @@ public struct TemplateColour: Equatable, Sendable, Identifiable {
 
     /// The palette, in the picker's order: first his six workout colours (decided 28 Sep
     /// 2026, the same as AMS Workout Sync and the Create new trip pills, with their dark
-    /// words), then five calm deep ones. No teal (his colour notes: "Do not use teal for
+    /// words), then the calm deep ones, round the colour wheel: Red, Plum, Violet, Indigo,
+    /// Navy, Olive, Sand, Brown and Grey. No teal (his colour notes: "Do not use teal for
     /// anything new"). Every ink reads on its fill at 3.6 : 1 or better.
+    ///
+    /// 0.91 — his words (19 Oct 2026): "Please add some more colors, but keep them on two
+    /// lines. This was very nice." Four more — Plum, Navy, Olive and Sand, each where the
+    /// eleven of 0.90 left a gap (purple-red, dark blue, yellow-green, a pale warm one) — so
+    /// Automatic and fifteen fill two rows of eight. A key and its hex never change (a
+    /// template stores the hex); a new colour is added, none renamed or taken away.
     public static let palette: [TemplateColour] = [
         TemplateColour(key: "blue", name: "Blue", hex: "#0a84ff", ink: "#ffffff"),            // Swim
         TemplateColour(key: "yellow", name: "Yellow", hex: "#ffd60a", ink: "#3d3000"),        // Bike
@@ -38,11 +45,23 @@ public struct TemplateColour: Equatable, Sendable, Identifiable {
         TemplateColour(key: "lavender", name: "Lavender", hex: "#bf9cff", ink: "#2e1a5c"),    // Breath work
         TemplateColour(key: "pink", name: "Pink", hex: "#ff6fa8", ink: "#5a0f2e"),            // Mobility
         TemplateColour(key: "red", name: "Red", hex: "#dc3d43", ink: "#ffffff"),
+        TemplateColour(key: "plum", name: "Plum", hex: "#9c3d8c", ink: "#ffffff"),            // 0.91
         TemplateColour(key: "violet", name: "Violet", hex: "#7c5cd6", ink: "#ffffff"),
         TemplateColour(key: "indigo", name: "Indigo", hex: "#4f46e5", ink: "#ffffff"),
+        TemplateColour(key: "navy", name: "Navy", hex: "#2a5194", ink: "#ffffff"),            // 0.91
+        TemplateColour(key: "olive", name: "Olive", hex: "#6e7b1f", ink: "#ffffff"),          // 0.91
+        TemplateColour(key: "sand", name: "Sand", hex: "#d9b98c", ink: "#3d2a10"),            // 0.91
         TemplateColour(key: "brown", name: "Brown", hex: "#8b5e3c", ink: "#ffffff"),
         TemplateColour(key: "slate", name: "Grey", hex: "#64748b", ink: "#ffffff"),
     ]
+
+    /// The picker shows Automatic and the palette in exactly this many rows (0.91, his "keep
+    /// them on two lines") …
+    public static let pickerRows = 2
+
+    /// … so this many swatches to a row: Automatic and fifteen = eight. The palette is kept
+    /// at a size that fills both rows (`TemplateColourTests`).
+    public static var pickerColumns: Int { (palette.count + 1 + pickerRows - 1) / pickerRows }
 
     /// The palette colour of a stored hex (capitals ignored), if it is one.
     public static func of(hex: String?) -> TemplateColour? {

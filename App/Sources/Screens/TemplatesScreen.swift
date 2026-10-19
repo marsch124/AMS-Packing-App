@@ -90,41 +90,47 @@ struct TemplatesScreen: View {
         let flat = areas.flatMap(\.lists)
         let use = model.library.templateUse(today: Today.local)
         KeyboardAwayScroll {
-            LazyVStack(alignment: .leading, spacing: 8) {
-                // On the Mac the header is pinned in the window's title bar strip
-                // instead (`headerOnTheMac`, below).
-                #if !os(macOS)
-                header(flat)
-                #endif
-                // What his trip reviews say a list carries for nothing (roadmap stop E).
-                RefineDoor().environmentObject(model)
-                    .padding(.bottom, 4)
-                if let said = news { newsCard(said) }
-                // His activity areas, made and changed here (0.89).
-                areasDoor
-                ForEach(areas) { area in
-                    // A built-in under its own name keeps its code beside it, as the web app
-                    // has it: "GA · Goal Activity" (not in capitals since 0.78); one of his,
-                    // or a built-in he renamed, is his words alone (0.89).
-                    Text(area.title)
-                        .font(.headline)
-                        .foregroundStyle(Theme.ink)
-                        .padding(.top, 16)
-                        .accessibilityIdentifier("templates-area-\(area.testId)")
-                    // Two across: more of his lists at a glance, as the web app shows them.
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-                              spacing: 8) {
-                        ForEach(area.lists, id: \.id) { list in
-                            Button { opened = .template(list.id) } label: { TemplateCard(list: list, use: use[list.id]) }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
-                                #if DEBUG
-                                // The tests' only way to see the colour its cover is drawn in (0.90).
-                                .accessibilityValue(Cover.fill(list))
-                                #endif
+            VStack(alignment: .leading, spacing: 0) {
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    // On the Mac the header is pinned in the window's title bar strip
+                    // instead (`headerOnTheMac`, below).
+                    #if !os(macOS)
+                    header(flat)
+                    #endif
+                    // What his trip reviews say a list carries for nothing (roadmap stop E).
+                    RefineDoor().environmentObject(model)
+                        .padding(.bottom, 4)
+                    if let said = news { newsCard(said) }
+                    ForEach(areas) { area in
+                        // A built-in under its own name keeps its code beside it, as the web app
+                        // has it: "GA · Goal Activity" (not in capitals since 0.78); one of his,
+                        // or a built-in he renamed, is his words alone (0.89).
+                        Text(area.title)
+                            .font(.headline)
+                            .foregroundStyle(Theme.ink)
+                            .padding(.top, 16)
+                            .accessibilityIdentifier("templates-area-\(area.testId)")
+                        // Two across: more of his lists at a glance, as the web app shows them.
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                                  spacing: 8) {
+                            ForEach(area.lists, id: \.id) { list in
+                                Button { opened = .template(list.id) } label: { TemplateCard(list: list, use: use[list.id]) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
+                                    #if DEBUG
+                                    // The tests' only way to see the colour its cover is drawn in (0.90).
+                                    .accessibilityValue(Cover.fill(list))
+                                    #endif
+                            }
                         }
                     }
                 }
+                // His activity areas, made and changed here (0.89) — at the foot of the tab, after
+                // the last area (0.91, his words: "Please move the activity pill button to the bottom
+                // of the page."). Outside the lazy stack, so it is always built: the Mac builds only
+                // what is on screen, and the pill is often below the window's edge.
+                areasDoor
+                    .padding(.top, 20)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
@@ -150,8 +156,10 @@ struct TemplatesScreen: View {
 }
 
 extension TemplatesScreen {
-    /// "Activity areas" — a quiet violet pill with the pen, at the head of the headings it
-    /// changes (0.89): his areas made, renamed, moved and removed on their own page.
+    /// "Activity areas" — a quiet violet pill with the pen (0.89): his areas made, renamed, moved
+    /// and removed on their own page. At the foot of the tab, after the last area, since 0.91 (his
+    /// words, 19 Oct 2026: "Please move the activity pill button to the bottom of the page.");
+    /// at the head of the headings until then.
     var areasDoor: some View {
         let tint = AppSection.templates.color
         return Button { opened = .areas } label: {
@@ -290,16 +298,21 @@ struct CoverDoor: View {
 }
 
 /// Choose a template's colour and its icon. The colour first (0.90): Automatic and the
-/// palette's eleven, each a small cover in that colour, the one it has now ringed. Then the
-/// 90 drawn icons in rows under their headings (Travel, Outdoors, Sport, Beach and summer,
-/// City, food and fun, Everyday — 0.74), the one it has now ringed; "Suggested" goes back to
-/// the icon its name suggests, "Letter" shows the first letter instead. A tap on either
-/// chooses and closes.
+/// palette's fifteen (eleven until 0.91) in two rows, each a small cover in that colour, the one
+/// it has now ringed. Then a search field (0.91) and the 91 drawn icons in rows under their
+/// headings (Travel, Outdoors, Sport, Beach and summer, City, food and fun, Everyday — 0.74),
+/// the one it has now ringed; "Suggested" goes back to the icon its name suggests, "Letter"
+/// shows the first letter instead. A tap on either chooses and closes.
 struct IconPickerScreen: View {
     let templateId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     private let columns = 5
+    /// What is typed in the icon search (0.91, his words, 19 Oct 2026: "Also add the possibility
+    /// to search for icons, and also add alternative names so that the search is easier to
+    /// perform."). Found by the label and by hidden other words (`TemplateIconCatalog.keywords`).
+    @State private var query = ""
+    @FocusState private var finding: Bool
 
     var body: some View {
         let list = model.library.resolvedTemplate(id: templateId) ?? newList()
@@ -330,18 +343,32 @@ struct IconPickerScreen: View {
                         dismiss()
                     }
                     SectionTitle(title: "Icon", id: "template-icon-title")
-                    HStack(spacing: 10) {
-                        choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint, ink: ink) {
-                            if let s = Library.suggestedIcon(for: list), let icon = TemplateIcons.icon(s) {
-                                IconMark(path: icon.path, size: 30)
-                            } else { Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold)) }
-                        } pick: { pick(nil) }
-                        choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint, ink: ink) {
-                            Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold))
-                        } pick: { pick(Library.letterIcon) }
+                    searchField
+                    // Suggested and Letter are not drawn icons: they step aside while a search is on.
+                    if !searching {
+                        HStack(spacing: 10) {
+                            choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint, ink: ink) {
+                                if let s = Library.suggestedIcon(for: list), let icon = TemplateIcons.icon(s) {
+                                    IconMark(path: icon.path, size: 30)
+                                } else { Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold)) }
+                            } pick: { pick(nil) }
+                            choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint, ink: ink) {
+                                Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold))
+                            } pick: { pick(Library.letterIcon) }
+                        }
                     }
-                    // One heading per group (0.74: 90 icons are too many for one block).
-                    ForEach(TemplateIcons.grouped, id: \.group) { section in
+                    let groups = TemplateIcons.grouped(matching: query)
+                    // A search that finds nothing says so, quietly, where the icons were.
+                    if groups.isEmpty {
+                        Text("No icon is called that.")
+                            .font(.system(.callout)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 8)
+                            .accessibilityIdentifier("iconsearch-none")
+                    }
+                    // One heading per group (0.74: 90 icons are too many for one block); under a
+                    // search only the icons it finds, each under its own heading (0.91).
+                    ForEach(groups, id: \.group) { section in
                         SectionTitle(title: section.group.title, id: "icon-group-\(section.group.rawValue)")
                         // Plain rows, not a lazy grid (the Mac builds only what is on screen).
                         let rows = stride(from: 0, to: section.icons.count, by: columns).map {
@@ -373,6 +400,39 @@ struct IconPickerScreen: View {
         #endif
     }
 
+    /// Words typed — spaces alone are no search.
+    private var searching: Bool { !GuideSearch.needle(query).isEmpty }
+
+    /// The icon search (0.91): the app's search-field look, its ✕ (`iconsearch-clear`) shows every
+    /// icon again. On the Mac ⌘F puts the cursor in it, and Escape — which a text field keeps for
+    /// itself — empties it, then closes the picker as Cancel does (as How it works' search, 0.90).
+    /// No autocorrection: "flyg" or "cykel" typed on an English keyboard must stay as typed.
+    private var searchField: some View {
+        TextField("Find an icon", text: $query)
+            .textFieldStyle(.plain)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
+            .focused($finding)
+            .autocorrectionDisabled()
+            #if os(iOS)
+            .textInputAutocapitalization(.never)
+            .submitLabel(.search)
+            #endif
+            #if os(macOS)
+            .onExitCommand { if query.isEmpty { dismiss() } else { query = "" } }
+            #endif
+            .clearButton($query, id: "iconsearch")
+            .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            #if os(macOS)
+            .background {
+                Button("Find an icon") { finding = true }
+                    .keyboardShortcut("f", modifiers: .command)
+                    .opacity(0).accessibilityHidden(true)
+            }
+            #endif
+    }
+
     private func choice<Mark: View>(title: String, on: Bool, id: String, tint: Color, ink: Color,
                                     @ViewBuilder mark: () -> Mark, pick: @escaping () -> Void) -> some View {
         Button(action: pick) {
@@ -401,9 +461,12 @@ struct IconPickerScreen: View {
 /// A template's colour (0.90 — his words, 19 Oct 2026: "I would like the ability to change
 /// the color of the table template icons. That way, I can more easily find the templates if
 /// they have the color that I connect to a specific template."): Automatic, then the palette
-/// (`TemplateColour.palette` — his six workout colours, then five calm deep ones), in plain
-/// rows of six. Each swatch is the template's own cover in that colour — its icon or letter
-/// on it — with the colour's word under it; the one in force is ringed. Ids
+/// (`TemplateColour.palette` — his six workout colours, then the calm deep ones), in exactly
+/// TWO plain rows (0.91, his words: "Please add some more colors, but keep them on two lines.
+/// This was very nice." — two rows of six until then, two of eight since). Each swatch is the
+/// template's own cover in that colour — its icon or letter on it — with the colour's word under
+/// it; the one in force is ringed. The swatches stand edge to edge, so each one's whole share of
+/// the row takes the tap (46 points on a 402-point iPhone, Apple's 44 or more). Ids
 /// `template-colour-auto` and `template-colour-<key>`, the one in force `.isSelected`.
 struct TemplateColourSwatches: View {
     let list: PackList
@@ -411,7 +474,10 @@ struct TemplateColourSwatches: View {
     let chosen: String?
     /// nil = Automatic.
     let pick: (String?) -> Void
-    private let columns = 6
+    /// Automatic and the palette in `TemplateColour.pickerRows` (two) rows: eight to a row.
+    private let columns = TemplateColour.pickerColumns
+    /// A swatch's cover (34 until 0.91, when eight came to a row).
+    private let size: Double = 32
 
     private struct Swatch { let key: String; let name: String; let hex: String? }
 
@@ -423,14 +489,14 @@ struct TemplateColourSwatches: View {
         let rows = stride(from: 0, to: swatches.count, by: columns).map {
             Array(swatches[$0..<min($0 + columns, swatches.count)])
         }
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             ForEach(rows.indices, id: \.self) { r in
-                HStack(spacing: 6) {
+                HStack(spacing: 0) {
                     ForEach(rows[r], id: \.key) { s in
                         // A colour from the web app that is none of these rings none.
                         swatch(s, on: s.hex == mine)
                     }
-                    ForEach(0..<(columns - rows[r].count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, minHeight: 64) }
+                    ForEach(0..<(columns - rows[r].count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, minHeight: 60) }
                 }
             }
         }
@@ -442,15 +508,16 @@ struct TemplateColourSwatches: View {
         look.color = s.hex ?? ""
         return Button { pick(s.hex) } label: {
             VStack(spacing: 4) {
-                Cover(list: look, size: 34)
+                Cover(list: look, size: size)
                     .padding(3)
-                    .overlay(RoundedRectangle(cornerRadius: 34 * 0.28 + 3).stroke(on ? Theme.ink : Color.clear, lineWidth: 2))
+                    .overlay(RoundedRectangle(cornerRadius: size * 0.28 + 3).stroke(on ? Theme.ink : Color.clear, lineWidth: 2))
                 Text(s.name)
                     .font(.system(.caption2, weight: on ? .bold : .regular))
                     .foregroundStyle(on ? Theme.ink : Theme.muted)
                     .lineLimit(1).minimumScaleFactor(0.7)
+                    .padding(.horizontal, 1)
             }
-            .frame(maxWidth: .infinity, minHeight: 64)
+            .frame(maxWidth: .infinity, minHeight: 60)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()

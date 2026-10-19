@@ -5,8 +5,8 @@ import PackingLibrary
 // His activity areas, made and changed on their own page (0.89). His words, 18 Oct 2026: "I
 // would like the ability to add and adjust activity areas so that I can organize templates."
 //
-// Reached from the Templates tab's "Activity areas" pill, at the head of the headings it
-// changes. The way his other lists are changed (Your choices, a drop-down's tools): each area
+// Reached from the Templates tab's "Activity areas" pill, at the foot of the headings it
+// changes (after the last area since 0.91; at their head until then). The way his other lists are changed (Your choices, a drop-down's tools): each area
 // a grip ≡ (on the Mac also ↑ ↓), a pen that turns its name into a field, and a quiet red
 // Remove at the right that asks first — or, while templates are in it, names them and keeps
 // it; the workout area is never removed. A new one is typed at the foot. Everything is held
