@@ -34,12 +34,13 @@ own functions (§13a, `applySectionEdits`).
   next-trip intents; no `onOpenURL` exists — a `#/l/` link opens the web app; in-app only by pasting).
 
 **Files covered.** `App/Sources/Screens/TemplatesScreen.swift` (Templates tab, `TemplateCard`, `Cover`, `IconMark`,
-`CoverDoor`, `IconPickerScreen`, `TemplateDetail`, `RowEditor`, `Color(hexString:)`), `App/Sources/TemplateIcons.swift`,
-`App/Sources/Screens/NewList.swift`, `App/Sources/Screens/PickThings.swift`, `App/Sources/Screens/ListsScreen.swift`;
+`CoverDoor`, `IconPickerScreen`, `TemplateColourSwatches` (0.90), `TemplateDetail`, `RowEditor`, `Color(hexString:)`),
+`App/Sources/TemplateIcons.swift`, `App/Sources/Screens/NewList.swift` (and, 0.90, `NewTemplateDoor` — a thing's page's
+door to it, spec 05 item 6b), `App/Sources/Screens/PickThings.swift`, `App/Sources/Screens/ListsScreen.swift`;
 model: `PackingCore/Lists.swift`, `Memberships.swift`, `Resolve.swift`, `Grouping.swift`, `Kits.swift`,
 `ListSharing.swift`; `PackingLibrary/Library.swift` (template parts, and arranging a template's headings and
 rows — §13a), `EditLists.swift`, `Bags.swift` (list role and
-`shownName`), `TemplateIcon.swift`, `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
+`shownName`), `TemplateIcon.swift`, `TemplateColour.swift` (0.90, §3a), `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
 `Sharing.swift` (template parts), `TemplateRows.swift` (a row's own answers, the row editor's Save, covers'
 letter and colours, which templates are shown and what they add up to, free names — the spec pass). Storage and
 sync are in `docs/store.md`; colours in `docs/colours.md` (both linked, not repeated).
