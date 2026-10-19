@@ -1194,7 +1194,8 @@ else is the same.
 - **Out:** "Save" (the same button, now filled; ⌘S since 0.92) — unless nothing is left on the list, when the
   editor stays open and says so (0.62). **"Cancel"** (0.92, Cancel everywhere — his words, 19 Oct 2026: "the cancel
   function should be existing throughout the whole app right?"): at the header's left while editing, outlined
-  muted, id `grab-cancel`, Escape too (`cancelEdits`) — the draft is thrown away (nothing was written while
+  muted, id `grab-cancel`, Escape too (`cancelEdits`; on the Mac the editor's `onExitCommand`, and the sheet holds still
+while editing so Escape does not close it — spec 06 §20a) — the draft is thrown away (nothing was written while
   editing) and the list shows as it was, still open. Until 0.92 an edit had no Cancel and no Escape. Swiping the
   iPhone sheet down while editing throws the draft away too (nothing is saved). On one of his own lists, "Delete
   the grab list" closes the sheet and the list is gone.

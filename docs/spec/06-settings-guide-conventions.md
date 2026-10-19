@@ -1674,7 +1674,11 @@ on an iPhone keyboard), never Save (§20); **⌘S = Save/Done** (`.keyboardShort
 thing page's ⌘S is the Mac's Thing menu, the button's own on the iPhone). **A swipe down never saves**: on the iPhone
 it is Cancel, as on a thing's page (spec 05: "(iPhone) a swipe down = Cancel") — except on the three pages that hold
 still while something is changed (Trip settings, the trip review, the lost-luggage desk: `interactiveDismissDisabled`,
-the spec pass of 5 Oct 2026 — there only Cancel or Save closes it; left as they were). What ONE tap does and closes —
+the spec pass of 5 Oct 2026 — there only Cancel or Save closes it; left as they were). **On the Mac, Escape closes a sheet by itself** (the 0.92 probe: with Cancel planted to SAVE, Escape on a template's
+page and on Your choices still saved nothing — the sheet closed without its Cancel being pressed). The outcome is
+Cancel's, since Cancel saves nothing; where Escape must NOT close the sheet — a grab list being edited, whose Cancel
+keeps the list open — the sheet holds still on the Mac while editing (`interactiveDismissDisabled(editing)`, Mac only)
+and the editor's `onExitCommand` is the Cancel, also while a field is being typed in. What ONE tap does and closes —
 an icon or colour picked, a tick, Done today, a pill on a working list — is an action, not a form: it applies at once
 and stays as it is (inside a page on a copy, the page's Cancel still throws it away).
 
