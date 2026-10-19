@@ -649,8 +649,13 @@ default would drop a result after a month). The index is `CSSearchableIndex(name
 Chest of drawers" is nobody's business), and a hand-over tried then fails and is tried again later.
 
 **A tapped result** (`ThingSpotlight.open(_:)`): the system hands the app an `NSUserActivity` of type
-`CSSearchableItemActionType` with the identifier in `userInfo[CSSearchableItemActivityIdentifier]` — at a cold start
-and while the app runs, on both devices; `RootView`'s `onContinueUserActivity(CSSearchableItemActionType)` takes it.
+`CSSearchableItemActionType` (`com.apple.corespotlightitem`, declared in `NSUserActivityTypes`) with the identifier in
+`userInfo[CSSearchableItemActivityIdentifier]` — at a cold start and while the app runs. On the iPhone `RootView`'s
+`onContinueUserActivity(CSSearchableItemActionType)` takes it. On the Mac the app's delegate takes it
+(`PackingMacDelegate.application(_:continue:restorationHandler:)`, Store/QuickActions.swift): an activity handed to
+the app's delegate never reached SwiftUI's `onContinueUserActivity` there (GitHub's Mac, 19 Oct 2026 — "the tapped
+result opened no page as the app opened"). Should one tap reach the app twice (both ways), the same thing within 2
+seconds opens once (`lastOpened`) — a second request would close the page and open it again.
 An identifier that is not a thing's, or a thing gone since (its result goes at the next hand-over), opens nothing.
 Otherwise `model.thingToOpen = id`: the frame switches to Home, and Home opens `ThingEditor(itemId:)` as a sheet
 through `whenFree` — closing any of Home's own windows first (Search, a trip, a grab list …), as for a Shortcut (spec
@@ -663,8 +668,8 @@ device's index is), never to the device's Spotlight — the tests run on his Mac
 uses the real one, to look at results on a simulator. The switch's key is reset at launch. Hooks (`ThingSpotlight.playTapped`),
 each taking the result titled so from what the app handed over (so a thing not handed over cannot be opened this
 way), once it has been, and handing it to the app **as the system does** — the scene's delegate
-(`scene(_:continue:)`) on the iPhone, the app's delegate (`application(_:continue:restorationHandler:)`) on the Mac,
-both of which reach SwiftUI's `onContinueUserActivity`: `-spotlightTap <name>` as the app opens;
+(`scene(_:continue:)`, which reaches SwiftUI's `onContinueUserActivity`) on the iPhone, `NSApp.delegate`'s
+`application(_:continue:restorationHandler:)` on the Mac: `-spotlightTap <name>` as the app opens;
 `-spotlightTapOnReturn <name>` (iPhone) as it comes back to the front; `-spotlightTapWhenClosed <name>` (Mac) once
 its last main window has closed.
 
@@ -2356,7 +2361,9 @@ so a change to `project.yml` is committed together with the regenerated files. "
   [Portrait] — "portrait by design, like the web app on the phone"; (0.69) CFBundleURLTypes: one type, name
   `com.schabbauer.AMSPacking.place`, role Viewer, scheme `amspacking` — a place's printed label
   (`AMSPACKING://P/<code>`, spec 05) opens the app, on the iPhone and the Mac. No new entitlement: a link
-  scheme needs none (the NFC stickers first planned for this would have; he dropped them on 7 Oct 2026).
+  scheme needs none (the NFC stickers first planned for this would have; he dropped them on 7 Oct 2026); (0.92)
+  NSUserActivityTypes [`com.apple.corespotlightitem`] — `CSSearchableItemActionType`, the activity a tapped
+  Spotlight result brings (§3d). Core Spotlight needs no entitlement and no usage text.
 - **Target `AMSPackingUITests`** (UI-testing bundle, iOS and macOS), `TEST_TARGET_NAME` AMSPacking, generated
   Info.plist. **Scheme `AMSPacking`**: builds the app; tests `AMSPackingUITests` and the package's
   `PackingCoreTests` AND (0.62) `PackingLibraryTests`. So the two UI jobs of CI and `tools/build.sh test` run both
