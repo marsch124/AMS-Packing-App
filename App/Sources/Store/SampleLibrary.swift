@@ -729,6 +729,49 @@ enum SampleLibrary {
         return lib
     }
 
+    /// An invented library at the size of a real one (`-uiTestingBigLibrary`, 0.91 — for measuring how
+    /// an edit feels, `EditTiming`): the `bags()` sample + 400 invented things on eight templates of 80,
+    /// sixteen more bags, 24 trips built from three templates each (about 4,000 lines in all) and 20
+    /// photos the size a camera's are after the app's squeeze. Nothing of his is in it.
+    static func big() -> Library {
+        var lib = bags()
+        let groups = ["GA", "WET", "SNO", "BIK", "RUN", "TRV", "WRK", "HOM"]
+        var names: [String] = []
+        for n in 1...400 { names.append(String(format: "Invented thing %03d", n)) }
+        var lists: [String] = []
+        for k in 0..<8 {
+            var l = newList(name: "Invented list \(k + 1)", group: groups[k])
+            // 80 each, overlapping by 30 with the next: a thing on two or three templates, as his are.
+            l.items = (0..<80).map { i in newItem(name: names[(k * 50 + i) % names.count]) }
+            lib.saveTemplate(l)
+            lists.append(l.name)
+        }
+        for n in 1...16 { lib.addBag(name: String(format: "Invented bag %02d", n)) }
+        let bagNames = lib.bags().map(\.name)
+        for n in lib.items.indices where lib.items[n].name.hasPrefix("Invented thing") {
+            lib.items[n].weight = Double(20 + (n * 37) % 900)
+            lib.items[n].container = bagNames[n % bagNames.count]
+            lib.items[n].storage = ["Hall closet", "Garage", "Chest of drawers", "Bathroom cabinet"][n % 4]
+        }
+        let ids = lists.compactMap { name in lib.templates.first { $0.name == name }?.id }
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        for t in 0..<24 {
+            var trip = newEvent(name: "Invented trip \(t + 1)", startDate: day(-400 + t * 17), endDate: day(-397 + t * 17))
+            trip.activities = [ids[t % 8], ids[(t + 3) % 8], ids[(t + 5) % 8]]
+            trip.entries = buildTotalEntries(trip, lib.resolvedTemplates())
+            lib.trips.append(trip)
+        }
+        let things = lib.items.filter { $0.name.hasPrefix("Invented thing") }
+        for k in 0..<20 {
+            if let jpeg = JPEG.measuring(seed: k) { lib.addThingPhoto(id: things[k * 7].id, jpeg: jpeg) }
+        }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that

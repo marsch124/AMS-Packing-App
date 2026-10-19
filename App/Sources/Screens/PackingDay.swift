@@ -743,6 +743,7 @@ struct GroupPhotoRow: View {
                 PhotoTakers(id: "day-group-photo", testTitle: "Photo of all the bags") { keep($0) }
             }
         }
+        .takesDroppedPhoto(room: photo == nil, tint: AppSection.events.color) { keep($0) }
     }
 
     private func keep(_ jpeg: Data?) {
