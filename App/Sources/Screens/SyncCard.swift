@@ -292,30 +292,37 @@ struct SyncLight: View {
         let light = SyncCheck.light(usesICloud: true, check: seen.check, now: seen.now, awake: SyncWatch.awake)
         let tone = SyncLight.color(light.colour)
         let line = SyncCheck.line(light, check: seen.check, now: seen.now, awake: SyncWatch.awake)
-        return Button { bubble = true } label: {
-            Circle().fill(tone)
-                .frame(width: SyncLight.dot, height: SyncLight.dot)
-                // 44 points to tap, drawn nowhere: the column stays 16 wide and the block as tall.
-                .contentShape(Rectangle().inset(by: -SyncLight.reach))
-        }
-        .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityLabel("iCloud sync")
-        #if DEBUG
-        // The tests' only way to see the dot's colour: the colour it is drawn in, then the words.
-        .accessibilityValue("\(light.colour.rawValue) \u{00B7} \(line)")
-        #else
-        .accessibilityValue(line)
-        #endif
-        .accessibilityHint("Shows how the sync is going.")
-        .accessibilityIdentifier("home-sync-light")
-        // To the dot's right, over the tiles: the dot is at the page's left edge. The iPhone (iOS 26) puts
-        // the bubble on the side away from `arrowEdge` — `.trailing` there put it off the screen to the
-        // left; the Mac reads it as the dot's edge the arrow points from.
-        #if os(macOS)
-        .popover(isPresented: $bubble, arrowEdge: .trailing) { bubbleView(light, line: line, tone: tone) }
-        #else
-        .popover(isPresented: $bubble, arrowEdge: .leading) { bubbleView(light, line: line, tone: tone) }
-        #endif
+        // The dot is drawn 8 points across; the button over it is 44 × 44 and invisible — an overlay, so the
+        // column stays 16 wide and the block as tall. (A tap shape drawn wider than the dot worked on the
+        // iPhone and not on the Mac: GitHub's Mac, 19 Oct 2026, a click 16 points above it opened nothing.)
+        return Circle().fill(tone)
+            .frame(width: SyncLight.dot, height: SyncLight.dot)
+            .accessibilityHidden(true)
+            .overlay {
+                Button { bubble = true } label: {
+                    Color.clear
+                        .frame(width: SyncLight.dot + 2 * SyncLight.reach, height: SyncLight.dot + 2 * SyncLight.reach)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityLabel("iCloud sync")
+                #if DEBUG
+                // The tests' only way to see the dot's colour: the colour it is drawn in, then the words.
+                .accessibilityValue("\(light.colour.rawValue) \u{00B7} \(line)")
+                #else
+                .accessibilityValue(line)
+                #endif
+                .accessibilityHint("Shows how the sync is going.")
+                .accessibilityIdentifier("home-sync-light")
+            }
+            // To the dot's right, over the tiles: the dot is at the page's left edge. The iPhone (iOS 26) puts
+            // the bubble on the side away from `arrowEdge` — `.trailing` there put it off the screen to the
+            // left; the Mac reads it as the dot's edge the arrow points from.
+            #if os(macOS)
+            .popover(isPresented: $bubble, arrowEdge: .trailing) { bubbleView(light, line: line, tone: tone) }
+            #else
+            .popover(isPresented: $bubble, arrowEdge: .leading) { bubbleView(light, line: line, tone: tone) }
+            #endif
     }
 
     /// The bubble: the dot again, the one line, and Details.

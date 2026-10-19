@@ -1950,8 +1950,11 @@ style smaller (section 12). Nothing on Home moves.
 Before its first look the dot's place is kept empty (8 × 8), so nothing shifts when it appears.
 
 **Behaviour.**
-- A tap within **44 pt** of it (an invisible `contentShape` 18 pt round the dot on every side — the column and the
-  block keep their size) opens a **bubble**: a popover (`presentationCompactAdaptation(.popover)` — a bubble on the
+- A tap within **44 pt** of it opens a **bubble**: the button is an invisible 44 × 44 laid OVER the dot (`.overlay`, so
+  the column and the block keep their size; the dot itself is drawn 8 pt and hidden from VoiceOver). 🪤 A tap shape
+  drawn wider than the dot (`contentShape(Rectangle().inset(by: -18))`) worked on the iPhone and NOT on the Mac:
+  GitHub's Mac, 19 Oct 2026, a click 16 pt above the dot opened nothing — the run's video showed the red dot, the
+  pointer on it, no bubble. The bubble is a popover (`presentationCompactAdaptation(.popover)` — a bubble on the
   iPhone too, not a sheet), 270 pt wide, `card` background, padding 14 × 10, to the dot's RIGHT, over the tiles
   (🪤 iOS 26 puts the bubble on the side away from `arrowEdge`: `.trailing` put it off the screen to the left, so
   the iPhone passes `.leading` and the Mac `.trailing`; and without a width of its own a bubble at the screen's edge
@@ -1995,7 +1998,7 @@ whose `sync-state` says "Stuck" and `sync-running` "…has hung since … — qu
 `sync-problem`; Done closes it. Pictures `synclight2-insync`, `-sending`, `-hung`, `-hung-bubble`, `-hung-details`.
 Seen red (iPhone): the dot in a row of its own under the label — `("17.666666666666686") is not equal to ("10.0")
 +/- ("1.0") - This Device pushed Create new trip down`; a dot without its 44 pt — `XCTAssertTrue failed - a tap beside
-the dot did not open its bubble`; Details doing nothing — `XCTAssertTrue failed - Details did not open Sync details`;
+the dot did not open its bubble` (iPhone: the button 8 × 8; the Mac: the old wider tap shape); Details doing nothing — `XCTAssertTrue failed - Details did not open Sync details`;
 and, with the first build's line, `a sync light while iCloud is off`. Model: spec 01 §8 (`SyncCheck.line` in
 `testTheLightsWordsAndColours`, red with the older time shown — `("In sync · today 11:55") is not equal to ("In sync ·
 today 11:56")` — and without the singular — `("Sending 1 changes…") is not equal to ("Sending 1 change…")`).
