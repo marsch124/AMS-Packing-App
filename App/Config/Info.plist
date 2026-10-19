@@ -53,6 +53,10 @@
 	<string>Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Pack by voice understands your five words on this iPhone itself, without the internet. Nothing you say leaves it.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.apple.corespotlightitem</string>
+	</array>
 	<key>PackingUsesICloud</key>
 	<string>$(PACKING_USES_ICLOUD)</string>
 	<key>UIBackgroundModes</key>

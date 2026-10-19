@@ -46,6 +46,7 @@ points apart** (0.67; 10 until then, 14 before 0.62) — padded 16 left/right an
 |---|---|---|---|
 | 1 | *For the lost-luggage desk* (0.80, spec 07 part 18 C: his name, phone, e-mail and home address, `DeskDoor`, its own sheet) above the *Your choices* door (§2) — a card of two rows since 0.80 | always; `Metrics.screenTop` (4 pt) above it — where every tab's first line starts (0.67; 14 before); on the Mac under the empty title bar strip | `settings-desk`, `settings-lists` |
 | 2 | *Remind me to pack* card (§3) — on the iPhone also *Messages when a trip moves on* (0.77, §3c) | always | `settings-reminders-card` (`settings-moves-on`) |
+| 2a | *Show my things in Spotlight* card (0.92, §3d) — the switch and how many things this device's Spotlight holds | always | `settings-spotlight-card` (`settings-spotlight`, `settings-spotlight-count`) |
 | 3 | *iCloud sync* card (§4) | always | `sync-card` |
 | 4 | ONE card of four door rows (0.67; four cards 10 apart until then): *What's new*, *How it works*, *Your first real trip* (§5) and *Open a shared link* (§11), a `CardHairline` between them | always | `settings-whatsnew`, `settings-howitworks`, `settings-firsttrip`, `settings-openshared` |
 | 5 | *Worth a look* card (§12) | only when `library.worries()` is not empty; 6 pt extra above it (14 until 0.67) | `health-heading`, `health-<n>` … |
@@ -598,6 +599,99 @@ Siri): the words come from `Library.whereIs`, covered by `PocketsTests.testWhere
 `testWhereIsAThingInsideAKit…` tests, and the same answer shows first in Search
 (`testSearchShowsWhereAThingIsOnTheTripUnderWay`, `testWhereIsAThingInsideAKitNamesTheKitAndWhereTheKitIs`).
 
+## 3d. Find your things in Spotlight (`Store/Spotlight.swift`, `Screens/SpotlightCard.swift`; the words: `PackingLibrary/SpotlightThings.swift`, spec 05; 0.92)
+
+His yes of 19 Oct 2026 (spec 07 §11): "Find your things in Spotlight: type 'headlamp' in Spotlight on the iPhone or
+Mac and see the thing and where it is, without opening the app." Every thing of his is one result in the device's
+own Spotlight (Core Spotlight): its name, the line saying where it is now, its first photo (else the app's icon);
+tapping it opens the app on the thing's page. What is shown, what it is found by and what never is: spec 05 "Your
+things in Spotlight".
+
+**The card** (`SpotlightCard`, id `settings-spotlight-card`), between *Remind me to pack* and *iCloud sync*, built as
+that card is (12 / 10 padding, `Theme.card`, a 1-pt `line` border, radius 12):
+- A `Toggle` (`settings-spotlight`, tinted `AppSection.events.color` — green when on): "Show my things in Spotlight"
+  (Body semibold ink) over "Type a thing's name in Spotlight on this iPhone|Mac to see where it is — tap it and its
+  page opens." (Footnote muted).
+- Under it, always (`settings-spotlight-count`, Subheadline semibold; `AppSection.settings.color` while on, muted
+  while off or unavailable) — `SpotlightCard.says(on:count:unavailable:)`: on → "10 things in Spotlight on this
+  iPhone" ("1 thing"); on with none yet → "Putting your things in Spotlight…"; off and empty → "None of your things are
+  in Spotlight on this iPhone."; off, still being taken out → "Taking your things out of Spotlight…"; on but the
+  device's Spotlight takes nothing (`isIndexingAvailable` false) → "This iPhone's Spotlight cannot take them." The
+  number is what the index holds — the fingerprints handed over and not taken out (the tests' shelf counts itself) —
+  so "None" is said only once they are really out.
+
+**Per device, on unless he switches it off** (`ams.spotlight.on`, default true; never synced, not in a backup): each
+device has its own Spotlight, as it has its own reminders switch. Off (`ThingSpotlight.set(on:library:)`) takes every
+thing out of this device's Spotlight at once (`deleteSearchableItems(withDomainIdentifiers: ["things"])`) and forgets
+the fingerprints; on hands them all over again.
+
+**Kept current** (`ThingSpotlight.sync(_:)`), from `RootView`: whenever the library settles after a change (the
+2-second wait that also puts the reminders right — a thing added, renamed, deleted, moved to another bag, packed,
+given a photo, here or on the other device) and whenever the app comes to the front (the day alone moves a trip
+under way on). The words are worked out off the main thread (`Task.detached`, utility); only the things whose
+fingerprint differs from the one handed over last are handed over (`SpotlightWords.changes`), in batches of 100, each
+remembered as it lands (`ams.spotlight.indexed`, thing id → fingerprint) — a hand-over cut short resumes where it
+stopped; things that went are taken out. A failed hand-over leaves the fingerprints as they were, so the next one
+tries again. One job at a time, in order (`enqueue`: a chain of tasks on the main actor): a hand-over and the switch's
+clearing never overlap; only the newest library waiting is handed over; a hand-over stops between batches when the
+switch goes off (the clearing follows it).
+
+**The index remembers its hand-over.** Every change is made in a batch that marks the index with the current
+hand-over (`beginBatch` … `endBatch(withClientState:)`; `ams.spotlight.generation`, a UUID). Once a launch, before the
+first hand-over, the app asks the index for its mark (`fetchLastClientState`): another mark, or none — an index lost,
+rebuilt by the system, or not brought along to an iPhone restored from a backup — means what it holds is unknown, so
+everything is taken out and handed over again under a new mark. If the index cannot answer (the iPhone locked), it is
+asked again next time. The system's own requests while the app runs (`CSSearchableIndexDelegate`: reindex all, or
+these identifiers) forget those fingerprints and hand them over again.
+
+**Each result** (`DeviceSpotlight.put`): `CSSearchableItem(uniqueIdentifier: "thing:<id>", domainIdentifier:
+"things")` with a `CSSearchableItemAttributeSet(contentType: .content)` — `title` and `displayName` the name,
+`contentDescription` the line, `keywords`, `thumbnailData` the first photo at most 240 pixels on its long side
+(`JPEG.make(from:maxSide:)`, from the photo's data URL) or nothing; `expirationDate = .distantFuture` (Spotlight's
+default would drop a result after a month). The index is `CSSearchableIndex(name: "things")` — on the iPhone with
+`protectionClass: .complete`: while the iPhone is locked his things are not searchable (a Passport's "Kept at home:
+Chest of drawers" is nobody's business), and a hand-over tried then fails and is tried again later.
+
+**A tapped result** (`ThingSpotlight.open(_:)`): the system hands the app an `NSUserActivity` of type
+`CSSearchableItemActionType` (`com.apple.corespotlightitem`, declared in `NSUserActivityTypes`) with the identifier in
+`userInfo[CSSearchableItemActivityIdentifier]` — at a cold start and while the app runs. On the iPhone `RootView`'s
+`onContinueUserActivity(CSSearchableItemActionType)` takes it. On the Mac the app's delegate takes it
+(`PackingMacDelegate.application(_:continue:restorationHandler:)`, Store/QuickActions.swift): an activity handed to
+the app's delegate never reached SwiftUI's `onContinueUserActivity` there (GitHub's Mac, 19 Oct 2026 — "the tapped
+result opened no page as the app opened"). Should one tap reach the app twice (both ways), the same thing within 2
+seconds opens once (`lastOpened`) — a second request would close the page and open it again.
+An identifier that is not a thing's, or a thing gone since (its result goes at the next hand-over), opens nothing.
+Otherwise `model.thingToOpen = id`: the frame switches to Home, and Home opens `ThingEditor(itemId:)` as a sheet
+through `whenFree` — closing any of Home's own windows first (Search, a trip, a grab list …), as for a Shortcut (spec
+02 section 3). Save and Cancel bring him back to Home. On the Mac the app comes to the front, and with no window
+open one opens for the page (`GrabQuickActions.openMainWindow`, as the Dock menu does). A thing set to Not in use
+after its result was handed over still opens (its result goes at the next hand-over).
+
+**Under the UI tests** the results go to a list in memory (`MemorySpotlight`, empty at every launch as a new
+device's index is), never to the device's Spotlight — the tests run on his Mac too; `-spotlightForReal` (debug builds)
+uses the real one, to look at results on a simulator. The switch's key is reset at launch. Hooks (`ThingSpotlight.playTapped`),
+each taking the result titled so from what the app handed over (so a thing not handed over cannot be opened this
+way), once it has been, and handing it to the app **as the system does** — the scene's delegate
+(`scene(_:continue:)`, which reaches SwiftUI's `onContinueUserActivity`) on the iPhone, `NSApp.delegate`'s
+`application(_:continue:restorationHandler:)` on the Mac: `-spotlightTap <name>` as the app opens;
+`-spotlightTapOnReturn <name>` (iPhone) as it comes back to the front; `-spotlightTapWhenClosed <name>` (Mac) once
+its last main window has closed.
+
+**Tests.** `testASpotlightResultOpensItsThingsPage` — `-spotlightTap Headlamp`: the page opens (`thing-detail`,
+`thing-name` "Headlamp"; picture `spotlight-opened`); iPhone: `-spotlightTapOnReturn "Rain jacket"` with Search up,
+Home button, back: Rain jacket's page, Search gone, Cancel → Home; Mac: `-spotlightTapWhenClosed "Rain jacket"`, ⌘W:
+a window with Rain jacket's page. `testSettingsTakesHisThingsOutOfSpotlightAndPutsThemBack` — on to begin with, "10
+things in Spotlight" (picture `settings-spotlight`); a thing deleted in Your things → "9 things"; off → "None of your
+things…"; on → "9 things" again. Seen red with planted faults (0.92): no `onContinueUserActivity` — "the tapped result
+opened no page as the app opened"; Home opening the page without `whenFree` — "a result tapped while the app ran opened
+no page over Search"; off not taking them out — "off, his things are still in Spotlight: 'Taking your things out of
+Spotlight…'"; gone things not taken out — "a deleted thing is still in Spotlight: '10 things in Spotlight on this
+iPhone'". Looked at for real on an iPhone 17 Pro simulator (iOS 26.5, 19 Oct 2026, an invented library brought in
+with `-importFile`): Spotlight's Search showed "Headlamp — Usually in the Backpack · Front pocket · Kept at home:
+Garage" with its photo as the Top Hit, under the app's heading "Packing"; tapped with the app not running, the app
+started on the Headlamp's page; tapped while it ran in the background, Rain jacket's page opened. Not looked at for
+real on the Mac (the Mac's tests go through the hooks above).
+
 ---
 
 ## 4. *iCloud sync* card (`SyncCard.swift`) — briefly
@@ -970,7 +1064,10 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    notifications, switch on or off, and where to allow them — 0.62); (0.77) Messages when a trip moves on (iPhone, on
    until switched off: Have a good trip when it sets off, else at 8; Welcome home at 10 the morning after, tap → the
    review; (0.87) the same switch holds Charge tonight, at 20:00 the evening before, while something is still to
-   charge; nothing without lines or dates, or once reviewed); iCloud sync
+   charge; nothing without lines or dates, or once reviewed); (0.92) Show my things in Spotlight (on unless switched
+   off, per device: a thing's name in Spotlight shows where it is — packed in which bag and pocket on a trip under way,
+   else where it usually goes and is kept at home — with its photo; a tap opens its page; found by kind, owner,
+   templates and brand, never its notes; nothing while the iPhone is locked; off takes them out at once); iCloud sync
    (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62); Save a backup / restore (a copy is kept
    first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, the grip drags (0.70), owners stay A–Z,
    no duplicates, the reason for a refused remove right under it, Owners from his things when he has no list — 0.62);
@@ -2225,6 +2322,8 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-quickAction <title>` | (testing only, iPhone) the entry under the app icon with that title — taken from the entries the app hands the system, so only one of the four — tapped to START the app: handed over through the cold-start path (`PackingAppDelegate`, as `options.shortcutItem`) | 0.86 |
 | `-quickActionOnReturn <title>` | (testing only, iPhone) played when the app returns from the background: that entry handed to the scene's delegate (`windowScene(_:performActionFor:)`), as iOS does while the app runs | 0.86 |
 | `-dockMenu <title>`, `-dockMenuWhenClosed <title>` | (testing only, Mac) the Dock icon's menu asked of the app's delegate and that entry performed — a second after the window is up / after the last main window closed | 0.86 |
+| `-spotlightTap <name>`, `-spotlightTapOnReturn <name>` (iPhone), `-spotlightTapWhenClosed <name>` (Mac) | (testing only) that thing's Spotlight result tapped — taken from what the app handed over and handed to the app as the system does: as it opens / as it comes back to the front / once its last window has closed (§3d) | 0.92 |
+| `-spotlightForReal` | (DEBUG, testing only) the device's own Spotlight instead of the memory one, to look at real results on a simulator (§3d) | 0.92 |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |
 
 Under testing, `usesICloud` is false, the forecast is `InventedForecast`, the rescue copies are deleted at launch,
@@ -2365,7 +2464,9 @@ so a change to `project.yml` is committed together with the regenerated files. "
   [Portrait] — "portrait by design, like the web app on the phone"; (0.69) CFBundleURLTypes: one type, name
   `com.schabbauer.AMSPacking.place`, role Viewer, scheme `amspacking` — a place's printed label
   (`AMSPACKING://P/<code>`, spec 05) opens the app, on the iPhone and the Mac. No new entitlement: a link
-  scheme needs none (the NFC stickers first planned for this would have; he dropped them on 7 Oct 2026).
+  scheme needs none (the NFC stickers first planned for this would have; he dropped them on 7 Oct 2026); (0.92)
+  NSUserActivityTypes [`com.apple.corespotlightitem`] — `CSSearchableItemActionType`, the activity a tapped
+  Spotlight result brings (§3d). Core Spotlight needs no entitlement and no usage text.
 - **Target `AMSPackingUITests`** (UI-testing bundle, iOS and macOS), `TEST_TARGET_NAME` AMSPacking, generated
   Info.plist. **Scheme `AMSPacking`**: builds the app; tests `AMSPackingUITests` and the package's
   `PackingCoreTests` AND (0.62) `PackingLibraryTests`. So the two UI jobs of CI and `tools/build.sh test` run both
@@ -2818,10 +2919,12 @@ too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndThe
 (36 / 26) and `doorPitch` (52 / 46), measured top to top by the helpers `rowFrames` and `pitch` (the rows on screen,
 by `shownRow`) and `airAbove` (a heading to the bottom of the row above it). 0.79:
 `testHowItWorksExplainsThePackingDayStations` (§7, the Packing day's part; the Packing day's own tests are in spec 07
-part 17). 0.90: `testHowItWorksSearchShowsOnlyWhatSaysTheWords` (§7a).
+part 17). 0.90: `testHowItWorksSearchShowsOnlyWhatSaysTheWords` (§7a). 0.92: `testASpotlightResultOpensItsThingsPage`,
+`testSettingsTakesHisThingsOutOfSpotlightAndPutsThemBack` (§3d).
 
 Model: `SettingsListsTests` (14 since 0.62), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
 `ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (4 since 0.62), `BackupTests` (library, 5),
+(0.92) `SpotlightThingsTests` (10, spec 05 "Your things in Spotlight"),
 `RestoreTests` (3), `SyncCheckInTests` (1), `CountdownTests` (4), `ContrastTests` (3), (0.90) `GuideSearchTests` (5,
 §7a); and (0.62)
 `tools/release-to-testers.py --self-check`. Not unit-tested at all (the app
