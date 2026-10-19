@@ -2807,7 +2807,15 @@ the station at once (a rename everywhere, a max on Weigh's bar, Has an AirTag on
 Tests: UI `testABagIsEditedFromTheTripWhilePacking` (`-uiTestingPackingDay`): the Bags card's `bag-1-edit` (the Day
 pack), none for the carry-on; it opens the Day pack's page; 9 typed as its max shows "/ 9 kg" on the card after Done,
 on the trip; Bags out's `day-bag-1-edit` (none for `day-bag-0`), Weigh's opens the page and Done comes back to Weigh,
-Tags' and Photos' pens are there.
+Tags' and Photos' pens are there. Seen RED with the pen planted out of `EditBagPen`: "no pen beside the Day pack on the
+trip's Bags card".
+**The 0.90 bag work, run (19 Oct 2026):** the four new UI tests seen RED together with one planted fault each (Notes
+never written, no pen, the copy's name focused but not selected, the sort kept in the screen's own state), then green
+without them on an iPhone 17 Pro simulator (iOS 26.5) with 17 neighbours (the bag's page, Your bags, the Bags card,
+Bags out, Weigh, Tags, Photos, Usually packed in's list, the Packing Stations' How it works): 21 of 21, and the four
+again at night: 4 of 4. On GitHub's Mac (a probe branch, deleted after): the four with four neighbours, 8 of 8. Model
+658 + 451 (BagSortingTests 6, each seen red with a planted fault), parity 211/211; the Release build compiles for the
+iPhone and the Mac.
 
 ## 18. Lost luggage
 

@@ -1684,7 +1684,8 @@ UI `testYourBagsShowsANumberChangedOnTheBagsPage` (7 typed as max kg on the bag'
 records and a backup keep both orders). UI `testYourBagsSortByNameUseAddedAndEditedAndRememberIt` (`-uiTestingBags`:
 four bags made 40/30/20/10 days ago and arranged by him; each of the five orders read from `bag-0…3-name`; 12 typed as
 the Sports bag's max under Last edited leaves the row where it is, and closed and opened again it is first and the
-sort still says Last edited).
+sort still says Last edited) — seen RED with the choice kept in the screen's own state instead of the device's
+(`@State`): "the sort was not remembered: 'Own order'".
 
 **Not covered by a test.** The duplicate-bag message; negative or comma numbers; the glance line; the empty state.
 
@@ -1875,12 +1876,11 @@ a bag of his with no pockets"); model `ChoiceEditsTests.testABagWithNoPocketsTak
 
 **0.90.** UI `testABagHasNotesRightUnderItsName` (`-uiTestingChecks`, the carry-on: Notes between the name and MAX KG;
 typed, closed and opened again they are kept; Its details' `thing-notes` says the same) — seen RED with the write planted
-out of `writeNote`: "the bag's notes were not kept: ''"; `testABagIsDuplicatedAndOpensReadyToBeNamed` (`-uiTestingBags`,
+out of `writeNote`: "the bag's notes were not kept: 'Anything worth remembering'" (an empty field reads its prompt); `testABagIsDuplicatedAndOpensReadyToBeNamed` (`-uiTestingBags`,
 the Wheeled duffel: Duplicate turns the page to "Wheeled duffel 2"; "Blue duffel" typed at once replaces the name; 23 kg,
 90 litres, its Notes, its brand and 1 pocket came along, 0 trips; Done names it, and on Your bags it is `bag-1`, right
-after the original, with 23 as its max; 5 bags) — seen RED with the selection planted out: "the copy's name was not
-selected for typing: 'Wheeled duffel 2Blue duffel'" (see the commit for the exact words), and with the copy placed last:
-"the copy is not right after its original". Model `BagSortingTests.testADuplicateTakesEverythingThatDescribesTheBagButNotItsPhotosTripsOrContents`,
+after the original, with 23 as its max; 5 bags) — seen RED with the selection planted out (focused, nothing selected):
+"the copy's name was not selected for typing: 'Wheeled duffel 2Blue duffel'". Model `BagSortingTests.testADuplicateTakesEverythingThatDescribesTheBagButNotItsPhotosTripsOrContents`,
 `testACopysNameIsTheNextFreeNumberAmongAllHisThings`, `testABagsNotesAreItsThingsOwnAndSearchFindsThem`.
 
 **Not covered by a test.** The rename refusal texts; "Show all"; the trips list beyond the first; "Heaviest:"; Done
