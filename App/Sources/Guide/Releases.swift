@@ -18,6 +18,14 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.90", date: "19 Oct 2026", title: "Search, colours, bags and photos",
+                new: ["How it works has a search field: type a word and only what says it shows, the word marked. On the Mac, \u{2318}F.",
+                      "A template\u{2019}s icon takes the colour you choose: tap the icon, then Colour. Automatic gives it its own colour back.",
+                      "New template\u{2026} at the foot of On these templates on a thing\u{2019}s page: the template is made and the thing is on it.",
+                      "A photo or two for each thing, on its page under Notes, with a small picture in Your things and Search.",
+                      "A bag\u{2019}s page has Notes right under its name, and Duplicate this bag: the copy opens named \u{201C}\u{2026} 2\u{201D}, ready for its new name.",
+                      "The pen beside a bag on the trip\u{2019}s Bags card and in Bags out, Weigh, Tags and Photos opens the bag\u{2019}s page while you pack.",
+                      "Care \u{2192} Bags sorts: Own order, A\u{2013}Z, Last used, Last added or Last edited."]),
         Release(version: "0.89", date: "19 Oct 2026", title: "Your own activity areas",
                 new: ["Activity areas, on the Templates tab: add your own, rename them with the pen, move them with the grip, and Remove one that holds no template. Your areas show on the Templates tab, on Create new trip and in Trip settings, in your order.",
                       "A template\u{2019}s page has Activity area as a drop-down: pick any area, or make a new one at its foot."]),
