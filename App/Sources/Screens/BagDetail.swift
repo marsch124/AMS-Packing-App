@@ -43,8 +43,17 @@ struct BagDetail: View {
 /// data, there is a delay if I would like to scroll or move to the next data field"): every field on
 /// the page keeps what is typed to itself (`DraftedField`, EditDraft.swift) and the page writes it all
 /// in ONE change when it is left — Done, a swipe down, Escape — or the app goes away, and before
-/// Duplicate, Its details or a pill. Moving from field to field and scrolling write nothing; a key
+/// Duplicate or Its details. Moving from field to field and scrolling write nothing; a key
 /// draws its field and nothing else (the name is typed in `BagHeader`, its own view, for the same reason).
+///
+/// 0.92 — Cancel (his question of 19 Oct 2026: "I open an item and change some property. How do I
+/// cancel that? There is only a Done button, right?"): Cancel, top left as on a thing's page, closes
+/// the page and writes NOTHING it holds. So everything changed on the page waits on its ledger — the
+/// typed fields (0.91) and now the desk's pills, Goes in the cabin, Has an AirTag and a name taken
+/// with Rename — and the pockets, written as they change (a rename reaches things and trips), are
+/// put back as the page found them (`putBackPockets`). Photos are kept the moment they are taken, as
+/// on a thing's page. Its details and Duplicate write the page first (they show or copy what it
+/// says): Cancel after them takes back only what changed since. Escape is Cancel; Done and ⌘S write.
 struct BagPage: View {
     let bagId: String
     /// Open with the name selected, ready to be typed over (a copy just made).
@@ -62,6 +71,12 @@ struct BagPage: View {
     /// What Delete was missing when pressed too early, said under it.
     @State private var deleteNeeds = ""
     @State private var opened: Opened?
+    /// The desk's pills and the two switches as picked on the page and not written yet (0.92), by
+    /// their key on the ledger: a type's or size's raw value ("" = none), "1"/"0" for a switch.
+    @State private var held: [String: String] = [:]
+    /// The pockets as the page found them (or last wrote itself), and whether they were changed here.
+    @State private var pocketsAt: PocketsKept?
+    @State private var pocketsTouched = false
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
     enum Opened: Identifiable {
@@ -74,7 +89,7 @@ struct BagPage: View {
         VStack(spacing: 0) {
             if let bag {
                 let facts = model.library.bagFacts(name: bag.name)
-                BagHeader(bag: bag, selectName: selectName, draft: draft) { dismiss() }
+                BagHeader(bag: bag, selectName: selectName, draft: draft, done: { dismiss() }, cancel: { cancel() })
                     .environmentObject(model)
                 KeyboardAwayScroll {
                     VStack(alignment: .leading, spacing: 12) {
@@ -87,7 +102,7 @@ struct BagPage: View {
                         // For the lost-luggage desk (0.80, spec 07 part 18 A): said once, every trip uses it.
                         lostDesk(bag)
                         // Its pockets (0.69): named once, offered when a thing is ticked.
-                        BagPockets(bagId: bag.id).environmentObject(model)
+                        BagPockets(bagId: bag.id, touched: { pocketsTouched = true }).environmentObject(model)
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)
@@ -108,7 +123,9 @@ struct BagPage: View {
             case .thing(let id): ThingEditor(itemId: id).environmentObject(model)
             }
         }
-        // Left — Done, a swipe down, Escape, a turn to the copy: everything typed is written, at once.
+        .onAppear { if pocketsAt == nil { pocketsAt = model.library.keepPockets(bagId: bagId) } }
+        // Left — Done, a swipe down, a turn to the copy: everything held is written, at once. (Cancel
+        // and Escape forget it first.)
         .onDisappear { draft.flush(model) }
         .writesDraftWhenAway(draft, model)
         .accessibilityElement(children: .contain)
@@ -154,14 +171,17 @@ struct BagPage: View {
     /// "Duplicate this bag": a copy of everything that describes it — not its photos, its trips
     /// or what is in it (BagDuplicate.swift) — right after it on Your bags; its page opens at once,
     /// the name ("Duffel 2") selected for typing. Calm, outlined, like Start a new trip from this one.
-    /// What is typed is written first, in the same change: a typed name renamed if it can be.
+    /// What the page holds is written first, in the same change — then a name typed and not taken
+    /// is renamed if it can be (the newest word on the name wins over one taken before it).
     private func duplicateBag(_ bag: Item) -> some View {
         Button {
             var copy: Item?
             let id = bag.id, name = draft.typedName
             model.change { lib in
-                if let name, jsTrim(name) != bag.name { _ = lib.renameThing(id: id, to: name) }
                 draft.apply(to: &lib)
+                if let name, let now = lib.items.first(where: { $0.id == id })?.name, jsTrim(name) != now {
+                    _ = lib.renameThing(id: id, to: name)
+                }
                 copy = lib.duplicateBag(id: id)
             }
             if let copy { duplicated(copy.id) }
@@ -217,8 +237,9 @@ struct BagPage: View {
 
     private func cabinSwitch(_ bag: Item) -> some View {
         let thing = model.library.items.first { $0.id == bag.id } ?? bag
-        return Toggle(isOn: Binding(get: { Library.isCabinBag(thing) },
-                                    set: { on in model.change { _ = $0.setBagCabin(id: bag.id, on) } })) {
+        let kept = Library.isCabinBag(thing), id = bag.id
+        return Toggle(isOn: Binding(get: { held["cabin"].map { $0 == "1" } ?? kept },
+                                    set: { on in hold("cabin", on ? "1" : "0", kept: kept ? "1" : "0") { v, lib in _ = lib.setBagCabin(id: id, v == "1") } })) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Goes in the cabin").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text("Carry-on. On a plane trip, the trip checks it for liquids and things not allowed on board.")
@@ -234,8 +255,9 @@ struct BagPage: View {
 
     private func airTagSwitch(_ bag: Item) -> some View {
         let thing = model.library.items.first { $0.id == bag.id } ?? bag
-        return Toggle(isOn: Binding(get: { Library.hasAirTag(thing) },
-                                    set: { on in model.change { _ = $0.setBagAirTag(id: bag.id, on) } })) {
+        let kept = Library.hasAirTag(thing), id = bag.id
+        return Toggle(isOn: Binding(get: { held["airTag"].map { $0 == "1" } ?? kept },
+                                    set: { on in hold("airTag", on ? "1" : "0", kept: kept ? "1" : "0") { v, lib in _ = lib.setBagAirTag(id: id, v == "1") } })) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Has an AirTag").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 Text("In Packing Stations, Tags asks you to check it is in the bag.")
@@ -252,7 +274,7 @@ struct BagPage: View {
     /// What an airline's desk asks about a missing bag: brand, colour, type, size and what makes
     /// it stand out. Said once, here; every trip reads it (`Library.bagDetails(bag:)`). Brand and
     /// colour are the thing's own — "Its details" shows the same values. Its words kept as typed
-    /// and written when the page is left (0.91); a pill writes at once, with everything typed.
+    /// and written when the page is left (0.91); since 0.92 its pills too (Cancel forgets them).
     private func lostDesk(_ bag: Item) -> some View {
         let kept = model.library.bagDetails(id: bag.id) ?? BagDetails()
         let id = bag.id
@@ -269,26 +291,30 @@ struct BagPage: View {
                 lostField("brand", kept.brand, "e.g. Samsonite", id: "bag-detail-brand") { $0.brand = $1 }
             }
             lostPart("Colour") {
-                BagColourPart(kept: kept.colour, draft: draft,
-                              write: BagPage.detail(id) { $0.colour = $1 },
-                              pill: { colour in writeNow { lib in BagPage.detail(id) { $0.colour = $1 }(colour, &lib) } })
+                BagColourPart(kept: kept.colour, draft: draft, write: BagPage.detail(id) { $0.colour = $1 })
             }
             lostPart("Type") {
                 FlowRow(spacing: 6) {
+                    let now = held["type"] ?? kept.type?.rawValue ?? ""
                     ForEach(BagType.allCases) { type in
-                        let on = kept.type == type
+                        let on = now == type.rawValue
                         bagChoice(type.name, on: on, id: "bag-detail-type-\(type.rawValue)") {
-                            writeNow { lib in BagPage.details(id, &lib) { $0.type = on ? nil : type } }
+                            hold("type", on ? "" : type.rawValue, kept: kept.type?.rawValue ?? "") { v, lib in
+                                BagPage.details(id, &lib) { $0.type = BagType(rawValue: v) }
+                            }
                         }
                     }
                 }
             }
             lostPart("Size") {
                 FlowRow(spacing: 6) {
+                    let now = held["size"] ?? kept.size?.rawValue ?? ""
                     ForEach(BagSize.allCases) { size in
-                        let on = kept.size == size
+                        let on = now == size.rawValue
                         bagChoice(size.name, on: on, id: "bag-detail-size-\(size.rawValue)") {
-                            writeNow { lib in BagPage.details(id, &lib) { $0.size = on ? nil : size } }
+                            hold("size", on ? "" : size.rawValue, kept: kept.size?.rawValue ?? "") { v, lib in
+                                BagPage.details(id, &lib) { $0.size = BagSize(rawValue: v) }
+                            }
                         }
                     }
                 }
@@ -335,12 +361,28 @@ struct BagPage: View {
         { words, lib in details(id, &lib) { set(&$0, words) } }
     }
 
-    /// A pill: written at once, together with everything typed on the page.
-    private func writeNow(_ edit: @escaping (inout Library) -> Void) {
-        model.change { lib in
-            draft.apply(to: &lib)
-            edit(&lib)
+    /// A pill or a switch (0.92): shown at once and held on the page's ledger with everything typed —
+    /// written when the page is left by Done or a swipe, forgotten by Cancel.
+    private func hold(_ key: String, _ value: String, kept: String, write: @escaping (String, inout Library) -> Void) {
+        held[key] = value
+        draft.typed(key, value, differs: value != kept, write: write)
+    }
+
+    // MARK: Cancel (0.92) — his "How do I cancel that?"
+
+    /// Close and write nothing the page holds; the pockets as the page found them.
+    private func cancel() {
+        draft.discard()
+        if pocketsTouched, let kept = pocketsAt {
+            model.change(stamping: false) { _ = $0.putBackPockets(kept) }
         }
+        dismiss()
+    }
+
+    /// The page has written what it holds (Its details, Duplicate): Cancel goes back to here.
+    private func savedHere() {
+        pocketsAt = model.library.keepPockets(bagId: bagId)
+        pocketsTouched = false
     }
     // MARK: What goes in it
 
@@ -409,7 +451,7 @@ struct BagPage: View {
 
     private func detailsDoor(_ bag: Item) -> some View {
         // What is typed is written first: Its details shows the same notes, brand and colour.
-        Button { draft.flush(model); opened = .thing(bag.id) } label: {
+        Button { draft.flush(model); savedHere(); opened = .thing(bag.id) } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Its details").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -563,27 +605,49 @@ struct BagPage: View {
     }
 }
 
-/// A bag page's header: the name, which IS the field — press it, type, Rename — and Done (0.91: its
-/// own view, so a key typed in the name draws the name and not the whole page). Done takes a name
-/// typed and not yet renamed (0.90: a copy is named and closed in one go); a name refused keeps the
-/// page open and says why. What is typed and not renamed is on the page's ledger for Duplicate.
+/// A bag page's header: Cancel and Done (0.92: Cancel top left, as on a thing's page), and under
+/// them the name, which IS the field — press it, type, Rename (0.91: its own view, so a key typed in
+/// the name draws the name and not the whole page). A name taken — Rename, Return, or Done with a
+/// name typed (0.90: a copy is named and closed in one go) — is checked at once (a name refused keeps
+/// the page open and says why) and held on the page's ledger since 0.92: written with everything else
+/// when the page is left by Done or a swipe; Cancel forgets it. What is typed and not taken is on the
+/// ledger for Duplicate.
 struct BagHeader: View {
     let bag: Item
     /// Open with the name selected, ready to be typed over (a copy just made).
     let selectName: Bool
     let draft: EditDraft
+    /// Done: the page closes and writes what it holds.
     let done: () -> Void
+    /// Cancel (0.92): the page closes and writes nothing it holds.
+    let cancel: () -> Void
     @EnvironmentObject var model: LibraryModel
     @State private var renaming: String?
+    /// A name taken and not written yet (0.92) — what the field shows when nothing is typed.
+    @State private var heldName: String?
     /// The name's selection, and whether it has the keys — for a copy just made (0.90).
     @State private var nameSelection: TextSelection?
     @FocusState private var naming: Bool
     @State private var problem = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let shown = heldName ?? bag.name
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Button("Cancel") { cancel() }
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, as on a thing's page (0.92)
+                    .accessibilityIdentifier("bag-cancel")
+                Spacer()
+                Button("Done") { if rename() { done() } }
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                    .keyboardShortcut("s")                       // ⌘S = Done (0.92)
+                    .accessibilityIdentifier("bag-done")
+            }
             HStack(spacing: 10) {
-                TextField("", text: Binding(get: { renaming ?? bag.name },
+                TextField("", text: Binding(get: { renaming ?? shown },
                                             set: { renaming = $0; draft.typedName = $0; problem = "" }),
                           selection: $nameSelection)
                     .textFieldStyle(.plain)
@@ -591,7 +655,7 @@ struct BagHeader: View {
                     .font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .onSubmit { rename() }
                     .accessibilityIdentifier("bag-name")
-                if let wanted = renaming, jsTrim(wanted) != bag.name {
+                if let wanted = renaming, jsTrim(wanted) != shown {
                     Button { rename() } label: {
                         Text("Rename").font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
                             .padding(.horizontal, 12).frame(minHeight: 34)
@@ -601,12 +665,6 @@ struct BagHeader: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("bag-rename")
                 }
-                Spacer(minLength: 4)
-                Button("Done") { if rename() { done() } }
-                    .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
-                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
-                    .accessibilityIdentifier("bag-done")
             }
             if !problem.isEmpty {
                 Text(problem).font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
@@ -617,15 +675,21 @@ struct BagHeader: View {
         .onAppear { if selectName { selectTheName(bag.name) } }
     }
 
+    /// Take the name typed: checked now, held on the page's ledger (0.92) — `renameThing` when the
+    /// page writes. False, and why under it, for no name or one another thing has.
     @discardableResult private func rename() -> Bool {
         guard let wanted = renaming else { return true }
-        guard jsTrim(wanted) != bag.name else { renaming = nil; draft.typedName = nil; return true }
-        var ok = false
-        let id = bag.id
-        model.change { ok = $0.renameThing(id: id, to: wanted) }
-        if ok { renaming = nil; draft.typedName = nil; problem = "" }
-        else { problem = jsTrim(wanted).isEmpty ? "A bag needs a name." : "You already have something called that." }
-        return ok
+        let clean = jsTrim(wanted), id = bag.id
+        guard clean != (heldName ?? bag.name) else { renaming = nil; draft.typedName = nil; return true }
+        if clean.isEmpty { problem = "A bag needs a name."; return false }
+        if model.library.items.contains(where: { $0.id != id && normName($0.name) == normName(clean) }) {
+            problem = "You already have something called that."
+            return false
+        }
+        draft.typed("name", clean, differs: clean != bag.name) { words, lib in _ = lib.renameThing(id: id, to: words) }
+        heldName = clean == bag.name ? nil : clean
+        renaming = nil; draft.typedName = nil; problem = ""
+        return true
     }
 
     /// The copy's name, selected and holding the keys, so what he types replaces it — once the
@@ -641,13 +705,12 @@ struct BagHeader: View {
 }
 
 /// The desk's Colour: the field and its seven pills, which light up by what is TYPED (0.91: its own
-/// view, so a key draws only this). Typed words wait on the page's ledger; a pill writes at once.
+/// view, so a key draws only this). Typed words wait on the page's ledger — and since 0.92 a pill's
+/// colour too: it writes its word into the field ("" = the lit one taken off), and Cancel forgets it.
 struct BagColourPart: View {
     let kept: String
     let draft: EditDraft
     let write: (String, inout Library) -> Void
-    /// A pill's colour ("" = the lit one taken off), written now with everything typed.
-    let pill: (String) -> Void
     @State private var typed: String?
 
     var body: some View {
@@ -663,9 +726,9 @@ struct BagColourPart: View {
                 ForEach(BagDetails.colourPills) { p in
                     let on = lit.lit(p)
                     bagChoice(p.label, on: on, id: "bag-detail-colour-\(p.label.lowercased())") {
-                        draft.drop("colour")
-                        typed = nil
-                        pill(on ? "" : p.value)
+                        let words = on ? "" : p.value
+                        typed = words
+                        draft.typed("colour", words, differs: jsTrim(words) != kept, write: write)
                     }
                 }
             }

@@ -315,6 +315,13 @@ struct ThingEditor: View {
     @State private var choiceLists: [String: ChoiceEdits] = [:]
     /// A bag whose page was asked for from Usually packed in ("Open the bag", 0.69).
     @State private var bagPage: String?
+    /// Duplicate this thing (0.92): the page has turned to the copy — its name brought into sight
+    /// and selected (the iPhone's selection; the Mac's keys select it as ⌘↓ does).
+    @State private var turned = 0
+    @State private var nameSelection: TextSelection?
+    @FocusState private var naming: Bool
+    /// The Name block's scroll id — on the Mac the keys' own (`scrollKey(.name)`).
+    static let nameKey = "key-name"
 
     // The Mac's keys (0.68) — see ThingKeys.swift. Unused on the iPhone.
     /// The field in focus, as the page sees it: ringed, and named at the page's foot.
@@ -403,8 +410,11 @@ struct ThingEditor: View {
                 // headings (his screenshot, 2026-09-28: "put the Bike field much nearer
                 // its heading, the same goes for everything").
                 VStack(alignment: .leading, spacing: 12) {
-                    labelled("Name") { field($draft.name, "Name", "thing-name", .name) }
+                    labelled("Name") { nameField }
                         .keyed(.name)
+                        #if os(iOS)
+                        .id(ThingEditor.nameKey)                // Duplicate brings the copy's name into sight (0.92)
+                        #endif
                     // Notes right under the name — his ask (4 Oct 2026): "please put the
                     // notes field immediately under the name".
                     labelled("Notes") {
@@ -581,9 +591,15 @@ struct ThingEditor: View {
                     }
                     Text("A change here reaches every template it is on. Past trips keep what they were packed with.")
                         .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    // Duplicate (0.92, his yes of 19 Oct 2026): near the end, calm, before Delete — as on a bag's page.
+                    duplicateThing
                     deleteThing
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+            // The copy's page (0.92): from Duplicate at the foot back up to its name.
+            .onChange(of: turned) { _, _ in
+                withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(ThingEditor.nameKey, anchor: .top) }
             }
             #if os(macOS)
             // The field the keys reach is brought into sight.
@@ -718,6 +734,78 @@ struct ThingEditor: View {
     /// The ring of a drop-down in focus (Mac): the page's orange.
     private func ring(_ f: ThingField) -> Color? {
         at == f ? AppSection.care.color : nil
+    }
+
+    // MARK: Duplicate (0.92) — his yes of 19 Oct 2026
+
+    /// "Duplicate this thing" — "the same as Duplicate bag, for any thing — handy for near-copies like a
+    /// second charger or a spare cable": calm and outlined, as on a bag's page. Not on a bag's own thing
+    /// page (a bag is duplicated on its page, onto Your bags) nor on a thing being made (⌘N).
+    @ViewBuilder private var duplicateThing: some View {
+        if shown != nil, !model.library.bags().contains(where: { $0.id == current }) {
+            Button { duplicate() } label: {
+                VStack(spacing: 2) {
+                    Text("Duplicate this thing")
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                    Text("Its details and templates \u{2014} not its photos or trips")
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.care.color, lineWidth: 1.4))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("thing-duplicate")
+        }
+    }
+
+    /// The page is saved first, as Save saves it (a weight, date or name it refuses keeps the page
+    /// and says why); then the copy (`Library.duplicateThing`: "<name> 2", its details and its rows
+    /// on every template it is on, right after the original's — ThingDuplicate.swift); and the page
+    /// turns to the copy at once, its name selected, so what he types replaces it. The list the page
+    /// came from shows it under Just added, as a thing made with ⌘N.
+    private func duplicate() {
+        guard commit(), let id = shown else { return }
+        var copy: Item?
+        model.change { copy = $0.duplicateThing(id: id) }
+        guard let copy else { return }
+        made?(copy.id)
+        shown = copy.id
+        load(copy.id)
+        turned += 1
+        let name = copy.name
+        #if os(macOS)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+            land(.name)
+        }
+        #else
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            naming = true
+            try? await Task.sleep(for: .milliseconds(100))
+            nameSelection = TextSelection(range: name.startIndex..<name.endIndex)
+        }
+        #endif
+    }
+
+    /// The Name field: on the iPhone it holds a selection (a copy's name, selected), on the Mac the
+    /// keys' focus does (`land`).
+    @ViewBuilder private var nameField: some View {
+        #if os(macOS)
+        field($draft.name, "Name", "thing-name", .name)
+        #else
+        TextField("Name", text: $draft.name, selection: $nameSelection)
+            .textFieldStyle(.plain)
+            .focused($naming)
+            .font(.system(.body)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+            .accessibilityIdentifier("thing-name")
+        #endif
     }
 
     /// A heading in the editor — as large as the pill headings (his ask, 2026-09-27).

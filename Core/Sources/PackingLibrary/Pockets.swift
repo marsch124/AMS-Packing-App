@@ -436,3 +436,76 @@ extension Library {
                            pocket: suggestedPocket(for: line), tripName: trip.name)
     }
 }
+
+// MARK: - A bag's pockets put back (0.92 — a bag page's Cancel)
+
+/// A bag's pockets as they were when its page opened (or last saved) — its list, every thing's
+/// usual pocket in it and every trip line's pocket in it, and the bag's Last edited — so the page's
+/// Cancel can put them back: a pocket added, renamed, moved or taken away on the page is written at
+/// once (a rename and a removal reach things and lines), and Cancel undoes it (his question of
+/// 19 Oct 2026, "How do I cancel that?"; spec 05, a bag's page).
+public struct PocketsKept: Equatable, Sendable {
+    public let bagId: String
+    let pockets: [String]
+    /// Thing id → its usual pocket ("" = none), for every thing usually in the bag.
+    let usual: [String: String]
+    /// Trip id → line id → [the pocket on the way out, on the way home] ("" = none).
+    let lines: [String: [String: [String]]]
+    let edited: JSONValue?
+}
+
+extension Library {
+    /// The bag's pockets now, for `putBackPockets`. nil for an id that is no bag of his.
+    public func keepPockets(bagId: String) -> PocketsKept? {
+        guard let bag = bags().first(where: { $0.id == bagId }),
+              let thing = items.first(where: { $0.id == bagId }) else { return nil }
+        let b = normName(bag.name)
+        var usual: [String: String] = [:]
+        for it in items where it.id != bagId && normName(it.container) == b { usual[it.id] = Library.usualPocket(it) }
+        var lines: [String: [String: [String]]] = [:]
+        for t in trips {
+            for e in t.entries where normName(e.container) == b {
+                lines[t.id, default: [:]][e.id] = [Library.pocket(e), jsTrim(e.extra[HOME_POCKET_KEY]?.stringValue ?? "")]
+            }
+        }
+        return PocketsKept(bagId: bagId, pockets: Library.pockets(of: thing), usual: usual, lines: lines,
+                           edited: thing.extra[BAG_EDITED_KEY])
+    }
+
+    /// Put a bag's pockets back as kept: its list and Last edited, the usual pocket of every thing
+    /// that was in it, the pockets of every line that was in it — and a thing or line in the bag
+    /// now that names a pocket the bag no longer has is simply in the bag (never in a pocket that is
+    /// not there). Nothing else of a thing or a line is touched. Returns whether anything changed.
+    @discardableResult
+    public mutating func putBackPockets(_ kept: PocketsKept) -> Bool {
+        guard let n = items.firstIndex(where: { $0.id == kept.bagId }) else { return false }
+        let before = (items, trips)
+        _ = storePockets(bagId: kept.bagId, kept.pockets)
+        items[n].extra[BAG_EDITED_KEY] = kept.edited
+        let b = normName(items[n].name)
+        let has = Set(kept.pockets.map(normName))
+        func pocket(_ v: String) -> JSONValue? { v.isEmpty ? nil : .string(v) }
+        for k in items.indices where k != n {
+            if let was = kept.usual[items[k].id] {
+                items[k].extra[USUAL_POCKET_KEY] = pocket(was)
+            } else if normName(items[k].container) == b, !has.contains(normName(Library.usualPocket(items[k]))) {
+                items[k].extra[USUAL_POCKET_KEY] = nil
+            }
+        }
+        for t in trips.indices {
+            let was = kept.lines[trips[t].id] ?? [:]
+            for e in trips[t].entries.indices {
+                if let two = was[trips[t].entries[e].id], two.count == 2 {
+                    trips[t].entries[e].extra[POCKET_KEY] = pocket(two[0])
+                    trips[t].entries[e].extra[HOME_POCKET_KEY] = pocket(two[1])
+                } else if normName(trips[t].entries[e].container) == b {
+                    for key in [POCKET_KEY, HOME_POCKET_KEY]
+                    where !has.contains(normName(trips[t].entries[e].extra[key]?.stringValue ?? "")) {
+                        trips[t].entries[e].extra[key] = nil
+                    }
+                }
+            }
+        }
+        return before.0 != items || before.1 != trips
+    }
+}

@@ -952,7 +952,7 @@ page ("Its details" and each thing "Usually in it"), the global search (a thing)
 go" (`TripScreen`), the trip review (`ReviewScreen`) and Pack to go home (`WayHomeScreen`, its "Open"). Left with
 "Cancel" (`thing-cancel`: nothing is saved; Escape presses it too, 0.62 — never Save, so a name typed is not kept),
 "Save" (`thing-save`: saves and closes, unless the name is refused), "Delete the thing" (closes, then deletes), or
-(iPhone) a swipe down = Cancel. Only the thing's page closes, not the screen it was opened from. The screen behind is not
+(iPhone) a swipe down = Cancel. "Duplicate this thing" (0.92, item 18b) saves and turns the same page to the copy. Only the thing's page closes, not the screen it was opened from. The screen behind is not
 rebuilt, so it is exactly where it was (the table keeps its scroll position). On the Mac (0.68) the page can also stay
 open and go on: ⌘N saves and turns it into a NEW thing's page, ⌘↓ ⌘↑ save and show the next or previous thing of the
 list it was opened from (Your things, the table) — see **Keyboard (Mac)** below. `ThingEditor(itemId:order:made:)`:
@@ -1260,6 +1260,49 @@ apart; a field 6 pt under its heading):
 moved up, When with Usually packed in, Condition under Colour, On a plane and Valid until at the foot — Battery
 between them since 0.75.
 UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's place.)
+18b. **Duplicate this thing** (0.92 — his yes of 19 Oct 2026 to "Duplicate a thing: the same as Duplicate bag, for any
+    thing — handy for near-copies like a second charger or a spare cable"): after the footnote of item 18, before
+    Delete — calm and outlined exactly as a bag's page's Duplicate (A bag's page, 6b): a full-width button at least 56
+    tall, a 1.4-pt Care orange ring, corner 12, "Duplicate this thing" (Body semibold orange) over "Its details and
+    templates — not its photos or trips" (Footnote muted, centred); id `thing-duplicate`. Absent on a bag's own thing
+    page (Its details — a bag is duplicated on its page, onto Your bags) and on a thing being made (⌘N, Mac).
+    - **A tap**: the page is SAVED first, exactly as Save saves it (`commit`; a weight, date or name it refuses keeps the
+      page and says why, as Save does — nothing is copied); then `Library.duplicateThing(id:)` in one change; the list
+      the page came from is told (`made` — Your things shows the copy under Just added, as a thing made with ⌘N); and
+      the page turns to the copy at once (`shown`, `load`): scrolled back up to Name (`ThingEditor.nameKey`, "key-name"
+      — the Mac keys' own scroll id) with the name ("Headlamp 2") **selected and holding the keys** — the iPhone 0.35 s
+      after the turn focuses the field and 0.1 s later selects the whole name (`TextField(text:selection:)`, its own
+      `naming` focus); the Mac lands the keys' focus on Name (`land(.name)`, which selects the words, 0.25 s after) —
+      so what he types replaces it. Then Save or Cancel as on any thing's page (Cancel leaves the copy as made); ⌘↓ ⌘↑
+      go on from it as from a thing made with ⌘N.
+    - **The copy** (PackingLibrary/ThingDuplicate.swift — ONE copy for things and bags; `duplicateBag` is the same
+      record with its own place): a NEW thing, `duplicateName(of:)` ("<name> 2", or the next number no thing of his has;
+      a copy of a copy counts on from the original), **copied** (`copyRecord`): kind of thing, whose it is, kept at
+      home, usually packed in and its pocket, When, its own Only on some trips (`onlySeasons`… keys), weight, brand,
+      colour, condition, care (what to do, how often), Liquid, Not allowed in the cabin, Has a battery, Valid until,
+      Notes, how many, when bought, price, link, warranty — and any key a later version adds; **not copied**: its photos
+      (`photos`, `thumb`), its trips (a trip's lines carry the original's name), its review counts (`stats`), Refine's
+      Keep it, its serial number, the care log (last done, the log), retired, the kit it is in (`kit` — a thing is in one
+      kit at most) and, for a kit, what is inside it (`COPY_LEAVES`: `kitContents`, `kitOut`, `kitCheck`, and a bag's
+      `bagEditedAt`).
+    - **Its templates** (decided by the build: a near-copy — a second charger — is packed where the first is): on EVERY
+      template the original is on (not the bag list), each of the original's rows copied (`copyRow`) with the row's own
+      answers — its section, its bag, When and how many there, its note, its conditions and its own Only on some trips
+      (`onlyAnyHere`) — with an id of its own and in no kit (`kit` ""), right after the original's row under the same
+      heading (`moveRow`, which renumbers the template's rows); a thing on a template twice is copied twice. A trip
+      already made is never joined (`followThing` only rebuilds lines a thing already has); the next trip built from
+      those templates packs both.
+    - Tests: model `ThingDuplicateTests` (4: what is and is not copied, the rows right after the original's with their
+      answers, no trip joined, records and a backup keep it; the names counting on and a thing twice on a template; a
+      kit's copy holds nothing and a thing in a kit is copied outside it; a bag goes the bag's way) — seen RED with the
+      photos copied ("the photos were copied"), the rows not copied ("the copy is not on the original's templates"), a
+      row's kit kept ("the copy joined the original's kit"), the rows at the end of the template, the kit's contents kept,
+      and a bag copied as a thing ("a bag's copy joined its templates as a thing"). UI
+      `testAThingIsDuplicatedOnItsTemplatesAndOpensReadyToBeNamed` (`-uiTesting`, the Headlamp: a photo taken and Notes
+      typed, Duplicate — "Headlamp 2" opens, "Spare headlamp" typed at once replaces the name; the typed Notes, the kind
+      and the Garage came along, no photo; on Common base and Hiking, not Swim, Lights on Hiking; saved, it stands right
+      after the Headlamp under Lights on Hiking's page) — seen RED with the selection planted out: "the copy's name was not
+      selected for typing: 'Headlamp 2Spare headlamp'".
 19. **Delete** — absent for a bag (a bag is deleted on its own page). Otherwise the small "Delete thing"
     (`thing-delete`); pressed, it becomes a card (card colour, red 1 pt border, radius 12): "Delete
     “`<name being edited>`”?" (16 heavy) and "It is on none of your templates. Trips you already packed keep it."
@@ -1841,19 +1884,24 @@ goes completely (27 Sep, "I thought it would just be a deleted bag"). "Goes in t
 
 **How it is reached and left.** Your bags → a bag's name; since 0.90 also a bag's round pen on a trip (spec 03, the
 Bags card; spec 07 part 17, the stations) and Duplicate on another bag's page (below). A sheet; "Done" (`bag-done`;
-Escape too, 0.62) or a swipe. If the bag no longer exists the page closes itself on appear. "Delete …" closes it.
-**Done keeps a typed name (0.90):** a name typed and not yet renamed is renamed first (as Rename would); refused, the
-page stays and says why under the name — so a copy is named and closed in one go. Escape is Done too. A swipe still
-leaves a typed name unrenamed.
+⌘S too since 0.92) writes what the page holds and closes; "Cancel" (`bag-cancel`, 0.92; Escape too — Escape was Done
+from 0.62 to 0.91) closes and writes nothing (**0.92 — Cancel**, below); a swipe down writes and closes (0.91). If the
+bag no longer exists the page closes itself on appear. "Delete …" closes it.
+**Done keeps a typed name (0.90):** a name typed and not yet taken is taken first (as Rename would); refused, the
+page stays and says why under the name — so a copy is named and closed in one go. A swipe still leaves a typed name
+that was not taken (Rename, Return) unrenamed.
 **Which bag (0.90):** `BagDetail` holds the bag SHOWN and draws `BagPage` for it with `.id(shown)` — Duplicate turns the
 same sheet to the copy, and each bag gets a fresh page (nothing typed on the original's, nor its delete question,
 follows onto the copy's).
 
 **What is on screen** (container `bag-detail`, 18 pt between blocks):
-1. **Header:** the name IS the field (`bag-name`, 22 heavy orange). When the typed name differs from the stored
-   one (trimmed), "Rename" appears beside it (`bag-rename`, 15 bold white on orange). "Done" (filled) right. A
-   refusal shows under it in red (`bag-problem`, 14 semibold): "A bag needs a name." or "You already have
-   something called that."
+1. **Header:** (0.92) a row of its own with "Cancel" left (`bag-cancel` — the thing page's Cancel: `HeaderButtonStyle`
+   muted, outlined) and "Done" right (filled orange); under it, 10 apart, the name, which IS the field (`bag-name`,
+   Title 3 bold orange). When the typed name differs from the name shown (trimmed), "Rename" appears beside it
+   (`bag-rename`, 15 bold white on orange). Rename or Return TAKES the name (0.92): checked at once — a refusal shows
+   under it in red (`bag-problem`, 14 semibold): "A bag needs a name." or "You already have something called that."
+   — and held on the page's ledger (key "name", `renameThing` when the page writes; the field shows it, Rename goes
+   away); until 0.91 it renamed at once. (Until 0.91 the name and Done shared one row, Done at its right.)
 1b. **Notes** (0.90 — his words, 19 Oct 2026: "Add Notes under Bag Name", his screenshot with an arrow at the empty
    space under the name): the first block under the header — "NOTES" (Caption 2 semibold capitals, kerning 0.4, muted,
    as MAX KG; `bag-detail-notes-label`) over a field that grows downwards, 1 to 8 lines (`bag-detail-notes`, "Anything
@@ -1869,7 +1917,8 @@ follows onto the copy's).
    `bag-detail-litres`, `bag-detail-empty` (17 semibold monospaced, height 40) — kept as typed, written when the page
    is left (0.91, below), read by the same rules as Your bags (`TypedNumber`). (0.90 wrote at every key.)
 3. **Goes in the cabin** switch (`bag-detail-cabin`, orange): "Goes in the cabin" / "Carry-on. On a plane trip,
-   the trip checks it for liquids and things not allowed on board."
+   the trip checks it for liquids and things not allowed on board." Since 0.92 this switch and Has an AirTag (3b) are
+   held on the page's ledger (`held["cabin"]`/`["airTag"]`, "1"/"0") until the page writes — Cancel forgets them.
 3b. **Has an AirTag** switch (0.79, `bag-detail-airtag`, orange; spec 07 part 17): "Has an AirTag" / "In Packing
    Stations, Tags asks you to check it is in the bag." ("On a Packing day, …" until 0.81, when the day was renamed.) Kept on the bag's thing as `extra["airTag"]` = true (absent when
    off — never written false; `Library.setBagAirTag(id:_:)`, read by `Library.hasAirTag(container:)`). The same
@@ -1886,8 +1935,10 @@ follows onto the copy's).
    PhotoTakers `bag-detail-photo` — since 0.91 also Choose a file… `bag-detail-photo-file`, and a picture dropped on
    the block — at two `bag-detail-photo-full`). One choice per pill row; the lit one tapped again is
    taken off. The words (brand, colour, measures, marks) kept as typed and written when the page is left (0.91, below);
-   a pill writes at once, with everything typed on the page in the same change. (0.90: 0.4 s after the last key, and at
-   once on Return, a pill, "Its details" and leaving the page.) The Colour field and its pills are one view of their
+   since 0.92 the pills too: a colour pill writes its word into the field and onto the ledger (as typing it would),
+   a type or size pill is held (`held["type"]`/`["size"]`, the raw value, "" = none — lit from it) and on the ledger
+   — so Cancel forgets them. (0.91: a pill wrote at once, with everything typed; 0.90: 0.4 s after the last key, and
+   at once on Return, a pill, "Its details" and leaving the page.) The Colour field and its pills are one view of their
    own (`BagColourPart`): the pills light by what is TYPED, as before.
    Brand and colour ARE the thing's `manufacturer` and `color` (the same values as "Its details" shows), the note
    its `size`; type, size class and marks are `extra` keys `bagType`, `bagSize`, `bagMarks`
@@ -1908,7 +1959,9 @@ follows onto the copy's).
    (`bag-pocket-new`, Body, `Metrics.tap` tall) and **Add** (`FieldButtonLabel`, orange, `bag-pocket-add`; Return
    too) — always in colour; with nothing typed it says "Type a pocket first." under the field
    (`bag-pocket-add-needs`), with a name the bag has, "The bag already has a pocket called that.". Model:
-   `addPocket` / `renamePocket` (carried to things and trip lines) / `movePocket` / `removePocket` (spec 03).
+   `addPocket` / `renamePocket` (carried to things and trip lines) / `movePocket` / `removePocket` (spec 03). Each is
+   still written as it is made; since 0.92 each tells the page (`touched`), and Cancel puts the pockets back as the
+   page found them (**0.92 — Cancel**, below).
 4. **Usually in it** `N` (`bag-things-count`): "Nothing yet. A thing goes here when its “Usually packed in” is
    this bag." or up to 12 things (`bag-thing-i`: name 16 medium, weight when > 0), each opening its thing's page;
    "Show all `N`" / "Show fewer" (`bag-things-all`) when more than 12.
@@ -1925,7 +1978,9 @@ follows onto the copy's).
    it can be, the lost-luggage fields and Notes written), then `Library.duplicateBag(id:)` in one change, and the sheet
    turns to the copy at once: its name ("Wheeled duffel 2") **selected and holding the keys** (`selectName`: 0.45 s
    after the page turns the field is focused, 0.1 s later its whole name selected — `TextField(text:selection:)`,
-   iOS 18 / macOS 15), so what he types replaces it; Done takes the typed name (above). The copy (BagDuplicate.swift):
+   iOS 18 / macOS 15), so what he types replaces it; Done takes the typed name (above). The copy (BagDuplicate.swift;
+   since 0.92 the record and its row are made by the one copy of any thing, ThingDuplicate.swift — `copyRecord`,
+   `copyRow` — see a thing's page 18b):
    - **Its name**: `duplicateName(of:)` — "<name> 2", or the next number no thing of his has (bags are things; two
      things never share a name); a copy of a copy counts on from the original ("Duffel 2" → "Duffel 3" when "Duffel"
      is one of his things; "Size 40" alone → "Size 40 2").
@@ -1936,7 +1991,7 @@ follows onto the copy's).
      version adds, unless listed next. The colour is copied too (decided by the build: he changes it).
    - **Not copied**: its photos (`photos`, `thumb`); its trips — kept on the trips under the bag's name, which the copy
      does not have; what is in it — things whose Usually packed in is the original stay there, and a kit's contents
-     (`kitContents`, `kitOut`, `kitCheck`, `BAG_COPY_LEAVES`) are the original's; its review counts (`stats`), Refine's
+     (`kitContents`, `kitOut`, `kitCheck`, `COPY_LEAVES` — `BAG_COPY_LEAVES` until 0.92) are the original's; its review counts (`stats`), Refine's
      Keep it, its serial number, the care log (last done, the log), retired; the templates it is ALSO packed on as a
      thing (a copy never joins a trip by itself); the kit it is part of; the edit stamp (`bagEditedAt`).
    - **Where**: a new thing and a new row on Your bags (the original's row copied, with an id of its own — so its own
@@ -1960,6 +2015,44 @@ follows onto the copy's).
      (unused), "Delete, no bag" (No bag chosen) or "Move and delete". Ready and also on templates: a second row
      with "Keep it on `<template>`" / "Keep it on my templates" (`bag-delete-yes`, red outlined) and "Delete
      completely" (`bag-delete-all`, red filled).
+
+**0.92 — Cancel.** His question of 19 Oct 2026: "I open an item and change some property. How do I cancel that? There
+is only a Done button, right?" A thing's page had Cancel and Save; a bag's page only Done (and since 0.91 kept what is
+typed on a ledger, written on leaving).
+- **Cancel** (`bag-cancel`, header item 1, top left as on a thing's page; Escape): `draft.discard()` — nothing the
+  page holds is written, a name typed too — then, when a pocket was changed on the page, `putBackPockets` in a change
+  that does not stamp Last edited (`LibraryModel.change(stamping: false)`: the bag reads as it did, its Last edited
+  too); then the page closes (its `onDisappear` write finds the ledger empty).
+- **What the page holds** (so Cancel forgets it): every typed field (0.91); the desk's pills — colour, type, size
+  (item 3c); Goes in the cabin and Has an AirTag (items 3, 3b); a name taken with Rename or Return (item 1). Each is
+  shown at once from the page's own state and put on the ledger (`hold`): written in ONE change when the page is left
+  by Done, ⌘S or a swipe down, or the app goes away, and first for Duplicate and Its details.
+- **Put back**: the pockets — each Add, rename, ✕ and drag is written as it is made (a rename or a removal reaches the
+  things in the bag and the trip lines packed in it), so the page keeps the pockets as it found them
+  (`Library.keepPockets(bagId:)` on appear: the bag's list and Last edited, the usual pocket of every thing in it, both
+  pockets of every trip line in it) and Cancel puts all of it back (`putBackPockets`: nothing else of a thing or a line
+  is touched; a thing or line in the bag now naming a pocket the bag no longer has is simply in the bag).
+- **Kept the moment they are made** (Cancel does not take them back, as on a thing's page): photos of the bag; what is
+  saved on a page opened from this one (Its details, a thing in it — each has its own Save and Cancel); the copy
+  Duplicate makes; a delete.
+- **Save points**: Its details and Duplicate write the page first (they show or copy what it says) — Its details then
+  keeps the pockets anew (`savedHere`), so Cancel after it takes back only what changed since; Duplicate turns the page
+  to the copy (a fresh page). Duplicate writes the ledger first and then a name typed and not taken (the newest word on
+  the name wins over one taken before it). The app put in the background writes the ledger (0.91) — Cancel after that
+  has nothing to forget.
+- **The swipe** (iPhone): still writes (0.91 — his test sheet asked that nothing typed be lost, and
+  `testABagsPageKeepsEverythingTypedFieldAfterField` guards it). A thing's page's swipe is a Cancel and stays so: the two
+  differ on purpose; changing either is his call.
+- Tests: model `PocketsTests.testABagsPocketsArePutBackAsThePageFoundThem` (renamed, moved, one removed, one added, a
+  thing put in the new one, a line's pocket out and home — all put back, the library exactly as before, Last edited
+  too) — seen RED with the line's pocket left out of the put-back ("the line's pocket was not put back"). UI
+  `testABagsPageCancelsWhatWasChangedAndDoneKeepsIt` (`-uiTestingBags`, the Wheeled duffel: Cancel left of Done; max 31,
+  Notes, the Blue pill, Hard case, Has an AirTag and a pocket "Side 1" — Cancel — opened again: 23, "Wheels squeak a
+  little", Black, a duffel, no AirTag, 1 pocket; on the Mac Escape the same; the same changes and Done — all kept, Your
+  bags' row 32) — seen RED with Cancel writing the ledger ("after Cancel: the max is '31', not 23"), with a pill or
+  switch written at once ("after Cancel: Has an AirTag"), and with the pockets not put back ("after Cancel: the
+  pockets"). `testABagIsRenamedAndDeletedFromItsPage` (Rename then Done) and `testABagKeepsWhatTheLostLuggageDeskAsks`
+  (pills then Done) still green.
 
 **0.91 — typing without a wait.** His test sheet on 0.90 (19 Oct 2026): "There is a delay. Once I have entered data,
 there is a delay if I would like to scroll or move to the next data field."
@@ -1993,7 +2086,8 @@ there is a delay if I would like to scroll or move to the next data field."
   is read; anything else (iCloud bringing the other device's, no new change, a history that cannot be read) reloads
   exactly as before (spec 01 §4). That one is for every screen: each tick, each change anywhere was followed by the
   same reload. (4) Your bags' rows keep their numbers the same way (Care → Bags).
-- **Never lost.** Done, a swipe down, Escape, the app put away — all write. Not covered: the app killed while the page
+- **Never lost.** Done, a swipe down, Escape (until 0.92 — since then Escape is Cancel, which writes nothing on
+  purpose), the app put away — all write. Not covered: the app killed while the page
   is open and in front (iPhone: only from the app switcher, which puts it in the background first — written then).
 - **Tests.** UI `testABagsPageKeepsEverythingTypedFieldAfterField` (`-uiTestingBags`, the Wheeled duffel: max kg,
   litres, empty g, Notes, brand, measures and marks typed one after another with no pause, Done — Your bags' row says

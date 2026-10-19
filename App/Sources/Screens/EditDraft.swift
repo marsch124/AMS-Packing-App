@@ -16,7 +16,9 @@ import PackingLibrary
 // field and nothing else) and puts it in the page's `EditDraft`, which writes everything typed on
 // the page in ONE change when the page is left — Done, a swipe down, Escape — or the app goes to
 // the background (or, on the Mac, quits), and before anything that needs it written first
-// (Duplicate, Its details, a pill). Moving from field to field and scrolling write nothing.
+// (Duplicate, Its details). Moving from field to field and scrolling write nothing. Since 0.92 the
+// ledger holds a bag page's pills, switches and a name taken with Rename too, and Cancel (`discard`)
+// forgets all of it.
 
 /// What is typed on a page and not written yet: per field, the words and how to write them. Not
 /// observed (no screen redraws when it changes) — it is a ledger, read when the page writes.
@@ -45,14 +47,14 @@ final class EditDraft {
         order.removeAll { $0 == key }
     }
 
-    /// Forget everything typed (the bag is being deleted).
-    func discard() { pending = [:]; order = [] }
+    /// Forget everything held — Cancel (0.92), or the bag is being deleted. A name typed too.
+    func discard() { pending = [:]; order = []; typedName = nil }
 
     /// Apply everything typed to a library being changed — inside a change that does more
-    /// (Duplicate, a pill). The ledger is empty afterwards.
+    /// (Duplicate). The ledger is empty afterwards (a name typed and not taken stays, for Done).
     func apply(to lib: inout Library) {
         let todo = order.compactMap { pending[$0] }
-        discard()
+        pending = [:]; order = []
         for (text, write) in todo { write(text, &lib) }
     }
 
