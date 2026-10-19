@@ -81,21 +81,22 @@ struct HomeScreen: View {
                 // headings … dominant"); they were small and grey, smaller than the
                 // headings inside Create new trip.
                 //
-                // Grab and go is Home's FIRST line, its search and Grab Lists beside it on
-                // one centre line, and the grab lists right under it (his note on 0.63,
-                // 6 Oct 2026: "The area above Grab and go is underused" — the row was
-                // lined up on the heading's baseline, so the search button stood up above
-                // it and left an empty band at the top).
-                VStack(alignment: .leading, spacing: 6) {
-                    // On the Mac the header is pinned in the window's title bar strip
-                    // instead (`headerOnTheMac`, below).
-                    #if !os(macOS)
-                    grabHeader
-                    #endif
+                // Grab and go is Home's FIRST block, its Grab Lists (and on the iPhone its
+                // search) beside it on one centre line, and the grab lists right under it (his
+                // note on 0.63, 6 Oct 2026: "The area above Grab and go is underused").
+                //
+                // Since 0.91 ONE frame holds the heading and the grab lists, as Create new trip's
+                // card holds its own — his words (19 Oct 2026): "I would like to have all
+                // grab-and-go bags and grab bags within one frame, as the "Create New Trip" is in
+                // a frame. I would like the "Grab and Go" heading to be inside this frame." Until
+                // 0.91 the heading was Home's header line (on the Mac in the title bar strip) and
+                // the tiles sat loose under it.
+                VStack(alignment: .leading, spacing: 8) {
+                    grabHeading
                     // Home holds eight (4 × 2) — HIS, in his order; a free place takes only a
                     // list new since he last arranged Home (GrabCollection.swift).
                     let onHome = model.library.homeGrabLists()
-                    GrabButtons(lists: onHome) { grab = $0 }
+                    GrabButtons(lists: onHome, fill: Theme.bg) { grab = $0 }
                     if onHome.isEmpty {
                         // Every list taken off Home: the heading is not left over nothing —
                         // it says where they are, and the line itself leads there (5 Oct 2026).
@@ -106,7 +107,7 @@ struct HomeScreen: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .padding(14)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.bg))
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.home.color.opacity(0.5), lineWidth: 1.5))
                                 .contentShape(Rectangle())
                         }
@@ -114,17 +115,27 @@ struct HomeScreen: View {
                         .accessibilityIdentifier("home-grab-none")
                     }
                 }
+                .homeCard(id: "home-grab-frame")
+                // The first block starts where every tab's first line does (as Settings' first card).
+                .padding(.top, Metrics.screenTop)
 
                 // The trip he leaves on next, counted down (his idea 6) — under the grab
                 // lists, which keep their place at the top.
                 if let next = model.library.nextTrip(today: Today.local, time: Today.time) {
                     CountdownCard(next: next) { openedPlace = nil; opened = next.id }
-                        .padding(.top, 4)
                 }
 
-                Text("Create new trip").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink).padding(.top, 8)
-                    .accessibilityIdentifier("home-create-heading")
+                // This Device, right under the trip (0.91 — his words, 19 Oct 2026: "I would also
+                // like the "This device" area to move up directly under the trip list."): under the
+                // countdown card, or under Grab and go when no trip is ahead; until 0.91 it was
+                // Home's last line, under Create new trip.
+                thisDevice
+
                 VStack(alignment: .leading, spacing: 10) {
+                    // The heading inside its card, above the name (0.91 — his words: "I would also
+                    // like to have the text "Create New Trip" within the "Name your trip" frame.").
+                    Text("Create new trip").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("home-create-heading")
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
                         .font(.system(.title3, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -221,9 +232,7 @@ struct HomeScreen: View {
                             .accessibilityIdentifier("trip-create-needs")
                     }
                 }
-                .padding(14)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line, lineWidth: 1))
+                .homeCard(id: "home-create-card")
                 // Full trip | Quick, and the answers that rule things in or out, decide
                 // whether Always packed alone has something to pack (0.73): the line follows.
                 .onChange(of: [quick ? "quick" : "trip", transport, season, catering]) { _, _ in
@@ -234,28 +243,12 @@ struct HomeScreen: View {
                 .onChange(of: hasDates) { _, _ in seasonFromDates() }
                 .onChange(of: start) { _, _ in seasonFromDates() }
 
-                // His marks on the Mac: the heading struck out and written down the
-                // SIDE instead, and Trips and Templates swapped over.
-                HStack(spacing: 10) {
-                    Text("This Device")
-                        .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .kerning(0.5)
-                        .fixedSize()
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 16)
-                        .accessibilityIdentifier("device-heading")
-                    CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
-                    CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
-                    // The templates Your templates shows — not the hidden bags list or the
-                    // web app's old bin, which made this number the higher one (5 Oct 2026).
-                    CountTile(number: TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count },
-                              label: "Templates", id: "count-templates", color: AppSection.templates.color)
-                }
-                .padding(.top, 8)
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .headerOnTheMac { grabHeader }
+        // The Mac keeps Home's search in the window's title bar strip, where every tab's search
+        // is; the strip holds nothing else on Home since 0.91 (Grab and go is in its frame).
+        .headerOnTheMac { searchStrip }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id; if $0 == nil { openedPlace = nil; voiceAsked = nil } })) { o in
             TripScreen(tripId: o.id, place: openedPlace).environmentObject(model)
@@ -302,12 +295,19 @@ struct HomeScreen: View {
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
 
-    /// Grab and go, with the search and Grab Lists beside it: Home's first line on the
-    /// iPhone, pinned in the window's title bar strip on the Mac.
-    private var grabHeader: some View {
-        ScreenHeader(title: "Grab and go", tint: Theme.ink, id: "home-grab-heading",
-                     font: .system(.title3, weight: .bold)) {
+    /// Grab and go's line, the first inside its frame (0.91): the heading, then — on one
+    /// centre line with it — the search (iPhone; the Mac's is in the title bar strip) and
+    /// Grab Lists. Until 0.91 this line was Home's header (`ScreenHeader`), on the Mac pinned
+    /// in the title bar strip.
+    private var grabHeading: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Text("Grab and go").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .accessibilityIdentifier("home-grab-heading")
+            Spacer(minLength: 8)
+            #if !os(macOS)
             SearchButton { searching = true }
+            #endif
             // This door opens the grab lists — not the templates (whose screen
             // is "Your templates"). His note on the Mac: "Your Grab Lists".
             Button { showingGrabLists = true } label: {
@@ -317,6 +317,38 @@ struct HomeScreen: View {
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("grab-lists")
+        }
+        .frame(minHeight: Metrics.tap)
+    }
+
+    /// The Mac's title bar strip on Home: the search at its right, on the traffic lights'
+    /// line (`headerOnTheMac`); nothing at all on the iPhone, where the search is in Grab
+    /// and go's line.
+    private var searchStrip: some View {
+        HStack(spacing: 8) {
+            Spacer(minLength: 0)
+            SearchButton { searching = true }
+        }
+        .headerLine()
+    }
+
+    /// This Device: how many trips, things and templates. His marks on the Mac: the heading
+    /// struck out and written down the SIDE instead, and Trips and Templates swapped over.
+    private var thisDevice: some View {
+        HStack(spacing: 10) {
+            Text("This Device")
+                .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
+                .kerning(0.5)
+                .fixedSize()
+                .rotationEffect(.degrees(-90))
+                .frame(width: 16)
+                .accessibilityIdentifier("device-heading")
+            CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
+            CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
+            // The templates Your templates shows — not the hidden bags list or the
+            // web app's old bin, which made this number the higher one (5 Oct 2026).
+            CountTile(number: TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count },
+                      label: "Templates", id: "count-templates", color: AppSection.templates.color)
         }
     }
 
@@ -628,6 +660,20 @@ struct FlowRow: Layout {
     }
 }
 
+extension View {
+    /// One of Home's frames (0.91): Grab and go and Create new trip, the same card — padding 14,
+    /// corner 14, `Theme.card`, a 1-pt `Theme.line` border — a container of its own named `id`,
+    /// every line in it keeping its own name.
+    func homeCard(id: String) -> some View {
+        padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line, lineWidth: 1))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(id)
+    }
+}
+
 struct CountTile: View {
     let number: Int
     let label: String
@@ -667,7 +713,11 @@ struct TripKindChoice: View {
             .padding(2)
             .background(Capsule().fill(Theme.bg))
             .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
-            .frame(maxWidth: 360)
+            // As wide as the name field above it (0.91 — his words, 19 Oct 2026: "Could you also
+            // please broaden the two pills "Full trip" and "Quick" so that they are in line with
+            // the name field above."); until 0.91 at most 360 wide.
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("\(id)-track")
             // Field test 5.1/6.1 (3 Oct 2026): words that made Transport look switched
             // off left the trip on "Car" and the plane's cabin check never ran — so the
             // line says it still counts (0.76: Plane and RV, under Travelling by). Plain words

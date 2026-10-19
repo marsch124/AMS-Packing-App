@@ -110,6 +110,9 @@ final class GrabStore {
 struct GrabButtons: View {
     let lists: [GrabDefinition]
     var prefix = "grab"
+    /// The tiles' fill: the card's, or (0.91, Home's Grab and go frame) the page's — the
+    /// controls inside a card are `Theme.bg`, as on Create new trip.
+    var fill: Color = Theme.card
     let open: (GrabDefinition) -> Void
     private let perRow = 4
     /// The doodle beside the name, and the tile: a standard button's height
@@ -139,7 +142,7 @@ struct GrabButtons: View {
                             }
                             .padding(.horizontal, 4)
                             .frame(maxWidth: .infinity, minHeight: GrabButtons.height)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                            .background(RoundedRectangle(cornerRadius: 10).fill(fill))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(GrabTone.color(d.tone).opacity(0.5), lineWidth: 1.2))
                             .contentShape(Rectangle())
                         }

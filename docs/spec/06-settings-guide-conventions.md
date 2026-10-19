@@ -1732,18 +1732,21 @@ stays in the middle, then scaled — framed smaller, a 24-grid drawing hangs off
 for a line set aside or skipped), filled with a white tick (stroke a tenth of its width) when on.
 
 **The tab header** — **`ScreenHeader(title:, tint:, id:, font = Title 2 bold, line:, lineId:, trailing:)`**
-(ScreenHeader.swift, 0.67): the first line of Home, Trips, Templates and Care. `Metrics.screenTop` above it; one row,
+(ScreenHeader.swift, 0.67): the first line of Trips, Templates and Care (and of Home until 0.91). `Metrics.screenTop` above it; one row,
 at least `Metrics.tap` tall, `HStack(alignment: .center, spacing: 8)`: the title (one line, scales to 80 %, id `id`), a
 spacer (≥ 8), then the tab's buttons (`trailing`) — all on ONE centre line. Under the row, when given, the `line`
-(Subheadline, muted, id `lineId`). Used as: Home — "Grab and go", Title 3 bold, ink, with the magnifier and Grab
-Lists; Trips — "Trips", green, map pin, magnifier, the to-do chip, line = the trips summary; Templates — "Your
+(Subheadline, muted, id `lineId`). Used as: Home until 0.91 — "Grab and go", Title 3 bold, ink, with the magnifier
+and Grab Lists (since 0.91 that line is the first line INSIDE Grab and go's frame, `grabHeading`, without
+`headerLine()` — his "I would like the "Grab and Go" heading to be inside this frame"; on the Mac Home's strip
+holds only the magnifier, `searchStrip`; spec 02 "What is on screen"); Trips — "Trips", green, map pin, magnifier, the to-do chip, line = the trips summary; Templates — "Your
 templates", violet, magnifier, + New, line = the templates summary; Care — "Care", orange, magnifier, line = the kit
 line. To do's first line (To do · To buy · magnifier) is its own `HStack` (centred, `Metrics.screenTop` above);
 Settings has no header line. History: his note on 0.63 (6 Oct 2026), "Overall, icons are not aligned", with a
 picture of Trips — every tab built this row itself, aligned on the title's first text baseline with 14 pt above it,
 so a 36-pt icon button stood up from the baseline about 10 pt higher than the title, and left an empty band at the
 top of every tab ("The area above Grab and go is underused"). UI `testEveryTabsHeaderIsOnOneCentreLine` checks on
-Home, Trips, Templates, Care and To do that every button of the line sits within 1.5 pt of the title's centre line
+Home (since 0.91 Grab and go's line in its frame: Grab Lists, and on the iPhone the magnifier, on the heading's
+centre line; on the Mac the magnifier on the window buttons' line), Trips, Templates, Care and To do that every button of the line sits within 1.5 pt of the title's centre line
 and nothing reaches above the top of the screen (the iPhone's status bar, the Mac's title bar; 2 pt allowed), and
 that Settings' first card (`settings-lists`) does not either; it keeps a picture of each tab ("header-<tab>"). The
 top of the screen is the screen's own frame, but at least the foot of the iPhone's status bar (the scroll view
@@ -1762,8 +1765,10 @@ macOS 26) — and how far a header must step in so its title starts just after t
 - `headerOnTheMac { header }` (View extension): on the Mac the page becomes `VStack(spacing: 0) { header (16 side
   padding); page }` with the top safe area ignored, so the header is PINNED in the strip and the page scrolls under
   it — nothing ever slides beneath the window buttons. On the iPhone it does nothing: there the page puts the header
-  in itself as its first line (`#if !os(macOS)`). Home, Trips, Templates and Care build their header once
-  (`grabHeader`, `header(…)`) and use it both ways. On the Mac 6 pt follow the header (below).
+  in itself as its first line (`#if !os(macOS)`). Trips, Templates and Care build their header once
+  (`header(…)`) and use it both ways; Home (0.91) pins `searchStrip` (a spacer and the magnifier, `headerLine()`)
+  on the Mac and has no header line on the iPhone — its first block is Grab and go's frame (`Metrics.screenTop`
+  above it, as Settings' first card), whose own line holds the magnifier there. On the Mac 6 pt follow the header (below).
 - `headerLine()` (View extension, used by `ScreenHeader`'s row and To do's first line): on the Mac the line steps
   in by `lead` and is at least the strip's height tall, so it is centred on the traffic lights' line; on the
   iPhone it is `Metrics.tap` tall with `Metrics.screenTop` above. To do's whole screen ignores the top safe area on
@@ -1825,7 +1830,9 @@ then one line per ticked workout — its name in its pill's colour made readable
 his colour for it when he chose one — `WorkoutTone.words` is gone), in a
 `Metrics.contextName` column (72 / Mac 64) — and its own Indoor, Outdoor, Race pills in the Settings slate
 (padding 10). **`TripKindChoice`** (0.67): two answers in one capsule track — Full trip | Quick — the picked one
-filled with the tint, `.isSelected`; a muted Footnote line under it.
+filled with the tint, `.isSelected`; a muted Footnote line under it. The track is as wide as its column — the name
+field above it on Create new trip and in Trip settings (0.91, his "in line with the name field above"; at most 360
+until then) — and a container `<id>-track`.
 
 **`DropDown` (0.64, `Screens/DropDown.swift`)** — ONE pick-one list: a heading band over a field-like button that
 opens its choices as a list beside it. His word, 6 Oct 2026, after Kept at home became the first: "I like the

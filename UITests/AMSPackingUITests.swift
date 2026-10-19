@@ -6507,6 +6507,64 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
     }
 
+    /// 0.91, his four asks for Home (19 Oct 2026): "all grab-and-go bags and grab bags within
+    /// one frame, as the "Create New Trip" is in a frame … the "Grab and Go" heading … inside
+    /// this frame"; "the text "Create New Trip" within the "Name your trip" frame"; "the "This
+    /// device" area … directly under the trip list"; and "broaden the two pills "Full trip" and
+    /// "Quick" so that they are in line with the name field above". (`-uiTestingChecks`: a trip
+    /// 20 days out, so Home counts down to it.)
+    func testHomeHoldsGrabAndGoAndCreateNewTripInFrames() {
+        let app = launch("-uiTestingChecks")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        // Grab and go: one frame round its heading, Grab Lists and the tiles.
+        XCTAssertTrue(appears(app, "home-grab-frame", timeout: 5), "no frame round Grab and go")
+        let heading = app.staticTexts["home-grab-heading"], first = app.buttons["grab-0"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5) && first.waitForExistence(timeout: 5), "no Grab and go or no grab list")
+        if let frame = find(app, "home-grab-frame")?.frame {
+            let box = frame.insetBy(dx: -1, dy: -1)
+            var parts = [heading, app.buttons["grab-lists"], first]
+            #if os(iOS)
+            parts.append(app.buttons["search-open"])          // the Mac's is in the title bar strip
+            #endif
+            for part in parts {
+                XCTAssertTrue(part.exists, "Grab and go lost \(part)")
+                XCTAssertTrue(box.contains(part.frame), "\(part.identifier) at \(part.frame) is outside Grab and go's frame \(frame)")
+            }
+            XCTAssertLessThan(heading.frame.minY - frame.minY, 24, "Grab and go does not lead its frame (\(heading.frame) in \(frame))")
+            XCTAssertLessThanOrEqual(heading.frame.maxY, first.frame.minY + 1, "a grab list stands above Grab and go")
+            #if os(macOS)
+            XCTAssertLessThan(app.buttons["search-open"].frame.maxY, frame.minY, "the Mac's search left the title bar strip")
+            #endif
+        }
+
+        // This Device, right under the trip: the countdown card, the counts, then Create new trip.
+        let countdown = app.buttons["home-countdown"], trips = app.staticTexts["count-trips"]
+        XCTAssertTrue(countdown.waitForExistence(timeout: 10) && trips.exists, "no countdown or no This Device")
+        XCTAssertTrue(appears(app, "home-create-card", timeout: 5), "no card round Create new trip")
+        let card = find(app, "home-create-card")?.frame ?? .zero
+        let under = trips.frame.minY - countdown.frame.maxY
+        XCTAssertTrue(under > 0 && under < 40, "This Device is not right under the trip: \(under) pt (\(trips.frame) vs \(countdown.frame))")
+        XCTAssertLessThan(trips.frame.maxY, card.minY, "This Device is not above Create new trip (\(trips.frame) vs \(card))")
+
+        // Create new trip: its heading inside its card, above the name.
+        let createHeading = app.staticTexts["home-create-heading"], name = app.textFields["trip-name"]
+        XCTAssertTrue(createHeading.exists && name.exists, "Create new trip lost its heading or its name")
+        let box = card.insetBy(dx: -1, dy: -1)
+        XCTAssertTrue(box.contains(createHeading.frame), "Create new trip at \(createHeading.frame) is outside its card \(card)")
+        XCTAssertTrue(box.contains(name.frame), "the name at \(name.frame) is outside Create new trip's card \(card)")
+        XCTAssertLessThanOrEqual(createHeading.frame.maxY, name.frame.minY + 1, "the heading is not above the name")
+
+        // Full trip | Quick: as wide as the name field, edge to edge.
+        XCTAssertTrue(appears(app, "trip-kind-track", timeout: 5), "Full trip | Quick has no track")
+        let track = find(app, "trip-kind-track")?.frame ?? .zero
+        XCTAssertEqual(track.minX, name.frame.minX, accuracy: 1, "Full trip | Quick does not start with the name (\(track) vs \(name.frame))")
+        XCTAssertEqual(track.maxX, name.frame.maxX, accuracy: 1, "Full trip | Quick does not end with the name (\(track) vs \(name.frame))")
+        shot(app, "home91-top")
+        bringIntoView(app, app.buttons["trip-kind-quick"])
+        sleep(1)
+        shot(app, "home91-create")
+    }
+
     /// A colour as "#rrggbb" is mostly red (more red than blue and green), false when not,
     /// nil when it is no colour.
     private func reddish(_ hex: String?) -> Bool? {
@@ -11219,8 +11277,27 @@ final class AMSPackingUITests: XCTestCase {
         continueAfterFailure = true
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        // Home (0.91): Grab and go leads its own frame, Grab Lists on its centre line — and on
+        // the iPhone the search too; the Mac's search stays in the strip, on the lights' line.
+        let grab = app.staticTexts["home-grab-heading"]
+        XCTAssertTrue(grab.waitForExistence(timeout: 5), "home: no Grab and go")
+        XCTAssertTrue(app.buttons["search-open"].exists, "home: no search")
+        shot(app, "header-home")
+        #if os(macOS)
+        let homeIcons = ["grab-lists"]
+        if let lights = windowButtons(app) {
+            let off = app.buttons["search-open"].frame.midY - lights.midY
+            XCTAssertLessThanOrEqual(abs(off), 2, "home: the search sits \(off) pt off the window buttons' line")
+        }
+        #else
+        let homeIcons = ["search-open", "grab-lists"]
+        #endif
+        XCTAssertGreaterThanOrEqual(grab.frame.minY, screenTop(app, "home") - 2, "home: Grab and go reaches above the screen's top")
+        for id in homeIcons {
+            let off = app.buttons[id].frame.midY - grab.frame.midY
+            XCTAssertLessThanOrEqual(abs(off), 1.5, "home: \(id) sits \(off) pt off Grab and go's centre line")
+        }
         let tabs: [(name: String, title: String, icons: [String])] = [
-            ("home", "home-grab-heading", ["search-open", "grab-lists"]),
             ("events", "events-heading", ["events-map", "search-open", "events-todos"]),
             ("templates", "templates-heading", ["search-open", "templates-new"]),
             ("care", "care-heading", ["search-open"]),
@@ -11261,7 +11338,7 @@ final class AMSPackingUITests: XCTestCase {
     #if os(macOS)
     /// The Mac's main window has no title bar (0.67): it still moves when the empty part
     /// of the strip where the title bar was is dragged — here halfway across Home's
-    /// strip, between Grab and go and the search — and goes back the same way.
+    /// strip, left of the search (since 0.91 the strip's only button) — and goes back the same way.
     func testTheWindowMovesByItsEmptyStrip() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
@@ -11283,7 +11360,8 @@ final class AMSPackingUITests: XCTestCase {
 
     /// His note on 0.63, "The area above Grab and go is underused": Grab and go is
     /// Home's first line, with its search and Grab Lists beside it, and the grab lists
-    /// start right under it — no empty band above the heading.
+    /// start right under it — no empty band above the heading. Since 0.91 the heading leads
+    /// its own frame (his ask, 19 Oct 2026), the frame Home's first block.
     func testHomeLeadsWithGrabAndGoAtTheTop() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
@@ -11292,27 +11370,32 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(first.waitForExistence(timeout: 5), "Home has no grab list")
         shot(app, "home-top")
         #if os(macOS)
-        // The Mac (0.67): no title bar — Grab and go is ON the traffic lights' line, clear
-        // of the buttons, and the tiles start right under that strip. (0.66: the first tile
-        // 64 pt under the title bar's foot, ~96 under the window's top; now ~38.)
-        checkOnTheLightsLine(app, "Home", heading.frame)
-        let top = app.windows.firstMatch.frame.minY
+        // The Mac (0.91): the strip holds the search alone; Grab and go's frame starts right
+        // under it, the heading at the frame's top and the tiles right under that. (0.67–0.90:
+        // the heading ON the lights' line, the first tile ~38 pt under the window's top.)
+        let top = screenTop(app, "home")
+        let band = heading.frame.minY - top
+        XCTAssertGreaterThanOrEqual(band, -2, "Grab and go reaches up into the strip (\(heading.frame.minY) < \(top))")
+        XCTAssertLessThan(band, 40, "an empty band of \(band) pt above Grab and go")
         let under = first.frame.minY - heading.frame.maxY
         XCTAssertLessThan(under, 16, "the grab lists start \(under) pt under Grab and go")
-        let gap = first.frame.minY - top
-        XCTAssertLessThan(gap, 50, "the grab lists start \(gap) pt under the top of the window")
+        let gap = first.frame.minY - app.windows.firstMatch.frame.minY
+        print("HOME-TOP band=\(band) under=\(under) gap=\(gap)")
+        XCTAssertLessThan(gap, 110, "the grab lists start \(gap) pt under the top of the window")
         #else
         let top = screenTop(app, "home")
         let band = heading.frame.minY - top
         XCTAssertGreaterThanOrEqual(band, -2, "Grab and go reaches above the top of Home (\(heading.frame.minY) < \(top))")
-        // On the iPhone the screen begins 8 pt under the status bar (its safe area),
-        // so the band is that plus the header's own top: 18 pt in 0.67, 39 in 0.66.
-        XCTAssertLessThan(band, 24, "an empty band of \(band) pt above Grab and go")
+        // On the iPhone the screen begins 8 pt under the status bar (its safe area), so the
+        // band is that plus the header's own top: 18 pt in 0.67, 39 in 0.66 — and since 0.91
+        // (the heading inside its frame: 4 to the frame, 14 of padding) 32.
+        XCTAssertLessThan(band, 38, "an empty band of \(band) pt above Grab and go")
         let under = first.frame.minY - heading.frame.maxY
-        XCTAssertLessThan(under, 14, "the grab lists start \(under) pt under Grab and go")
+        XCTAssertLessThan(under, 16, "the grab lists start \(under) pt under Grab and go")
         // 0.66: 73 pt; 0.67: 54.
         let gap = first.frame.minY - top
-        XCTAssertLessThan(gap, 60, "the grab lists start \(gap) pt under the top of Home")
+        print("HOME-TOP band=\(band) under=\(under) gap=\(gap)")
+        XCTAssertLessThan(gap, 80, "the grab lists start \(gap) pt under the top of Home")
         #endif
     }
 

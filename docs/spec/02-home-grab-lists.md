@@ -275,37 +275,49 @@ real headings: "the headings … dominant". They had been small and grey.
 (`KeyboardAwayScroll`: dragging the scroll puts the keyboard away). Content is in a stack with 10 pt
 spacing, 16 pt side padding and 24 pt bottom padding.
 
-**What is on screen** (top to bottom):
-1. **Grab and go, its first line** — the shared tab header `ScreenHeader` (spec 06, "The tab header"):
-   `Metrics.screenTop` (4 pt) under the top of the screen (the status bar's safe area on the iPhone, the
-   title bar on the Mac), one row at least `Metrics.tap` tall with everything on ONE centre line:
-   - "Grab and go": **Title 3 bold** (22 heavy before 0.62), `ink`, one line (scales down to 80 %); id
-     `home-grab-heading`.
-   - A spacer (at least 8), then, 8 pt apart:
-   - The magnifier `SearchButton` (`search-open`; section 15).
-   - "Grab Lists": a plain button, Footnote semibold, Home blue, no focus ring, `Metrics.tap` tall so the
-     whole height takes the tap; id `grab-lists`. It opens the Grab Lists sheet (section 8). The code
-     comment notes that this door opens the grab lists, not the templates ("Your templates"), and that the
-     owner's note on the Mac asked for "Your Grab Lists".
+**What is on screen** (top to bottom). **0.91** (his four asks of 19 Oct 2026, with pictures of the Mac's Home):
+"I would like to have all grab-and-go bags and grab bags within one frame, as the "Create New Trip" is in a frame. I
+would like the "Grab and Go" heading to be inside this frame." · "I would also like to have the text "Create New Trip"
+within the "Name your trip" frame." · "I would also like the "This device" area to move up directly under the trip
+list." · "Could you also please broaden the two pills "Full trip" and "Quick" so that they are in line with the name
+field above." (The fourth is the Create new trip file's, spec 03.)
+1. **Grab and go, one frame** (`homeCard(id: "home-grab-frame")` — the SAME card as Create new trip's: padding 14,
+   corner radius 14, `Theme.card` fill, a 1-pt `Theme.line` border, full width; an accessibility container named
+   `home-grab-frame` whose lines keep their own ids), `Metrics.screenTop` (4 pt) under the top of the page (as
+   Settings' first card). Inside, 8 pt apart:
+   - **Its line** (`grabHeading`), at least `Metrics.tap` tall, everything on ONE centre line:
+     - "Grab and go": **Title 3 bold**, `ink`, one line (scales down to 80 %); id `home-grab-heading`.
+     - A spacer (at least 8), then, 8 pt apart:
+     - **On the iPhone** the magnifier `SearchButton` (`search-open`; section 15).
+     - "Grab Lists": a plain button, Footnote semibold, Home blue, no focus ring, `Metrics.tap` tall so the
+       whole height takes the tap; id `grab-lists`. It opens the Grab Lists sheet (section 8). The code
+       comment notes that this door opens the grab lists, not the templates ("Your templates"), and that the
+       owner's note on the Mac asked for "Your Grab Lists".
+   - The grab tiles (`GrabButtons(lists:, fill: Theme.bg)`, section 4) for `library.homeGrabLists()` — on the
+     page's `Theme.bg` inside the card, as every control in Create new trip's card is (`fill`, 0.91; the card fill
+     elsewhere). When that is empty (every list taken off Home), a button in their place instead (0.62,
+     `home-grab-none`): "No grab lists on Home. They wait in Grab Lists — tap here to put one back." (16 pt
+     semibold Home blue, 14 pt padding, `Theme.bg` fill since 0.91 (`card` before), radius 12, a 1.5-pt Home-blue
+     stroke at 50 %). It opens Grab Lists.
 
-   **On the Mac** this line is pinned in the window's title bar strip (0.67; the window has no title bar): "Grab and
-   go" starts just after the three window buttons, on their line, and the tiles start 6 pt under the strip — 38 pt
-   under the window's top (about 96 before). The page scrolls under it.
+   **The search.** On the iPhone it stays on Grab and go's line (where it always was — a line of its own holding
+   only the magnifier would bring back the empty band of his note on 0.63, "The area above Grab and go is
+   underused"). **On the Mac** it stays in the window's title bar strip (`headerOnTheMac { searchStrip }`: a
+   spacer, then the magnifier, on the traffic lights' line, where every tab's search is), the strip holding nothing
+   else on Home; the page — the frame first — starts 6 + 4 pt under the strip and scrolls under it.
 
-   0.67 (his note on 0.63: "The area above Grab and go is underused"): until then the row was aligned on
-   the heading's first text baseline with 14 pt above it, so the 36-pt magnifier stood up from the baseline,
-   sat 11 pt higher than the words, and left an empty band at the top — the heading's words began 39 pt
-   under the iPhone's status bar (18 now) and the first tile 73 pt (54 now).
-2. The grab tiles (`GrabButtons`, section 4) for `library.homeGrabLists()`, **6 pt** under the header (header
-   and tiles share their own stack, 0.67; 10 before). When that is empty (every list
-   taken off Home), a button in their place instead (0.62, `home-grab-none`): "No grab lists on Home. They
-   wait in Grab Lists — tap here to put one back." (16 pt semibold Home blue, 14 pt padding, `card` fill,
-   radius 12, a 1.5-pt Home-blue stroke at 50 %). It opens Grab Lists.
-3. The countdown card (section 11), only when `library.nextTrip(today: Today.local)` is not nil;
-   4 pt extra top padding.
-4. "Create new trip" (`home-create-heading`, 22 pt heavy, 8 pt top padding) and its card. See the Create
-   new trip file.
-5. The **This Device** row (section 12), 8 pt top padding.
+   Until 0.91 Grab and go's line was Home's header (`ScreenHeader`): on the iPhone the page's first line, on the
+   Mac pinned in the title bar strip with "Grab and go" just after the window buttons (0.67), the tiles loose under
+   it 6 pt apart. 0.67 (his note on 0.63): until then the row was aligned on the heading's first text baseline with
+   14 pt above it, so the 36-pt magnifier stood up from the baseline and left an empty band at the top.
+2. The countdown card (section 11), only when `library.nextTrip(today: Today.local)` is not nil (4 pt extra top
+   padding until 0.91; now the stack's 10).
+3. **The This Device row** (section 12, `thisDevice`) — right under the countdown card, or right under Grab and
+   go's frame when no trip is ahead (0.91, his "directly under the trip list" — the trip on Home is the countdown
+   card). Until 0.91 it was Home's last line, under Create new trip, with 8 pt top padding.
+4. **Create new trip's card** (`homeCard(id: "home-create-card")`), its heading "Create new trip" (Title 3 bold,
+   ink, `home-create-heading`) now its FIRST line, above the name (0.91; until then above the card, 8 pt top
+   padding). See the Create new trip file.
 
 **Sheets attached to Home** (all on the one `HomeScreen` view):
 
@@ -343,14 +355,28 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
 **Tests.**
 - UI `testTheEditorsLeadWithTheirHeadings` checks that `home-grab-heading` and `home-create-heading`
   exist.
-- UI `testHomeLeadsWithGrabAndGoAtTheTop` (0.67): on the iPhone, measured from the foot of the status bar,
-  Grab and go's words begin less than 24 pt down and not above it (−2 pt allowed), the first tile is less than
-  14 pt under the heading and begins less than 60 pt down. On the Mac Grab and go is on the window buttons'
-  line (within 2 pt) and starts 6 pt or more after them; the first tile is less than 16 pt under it and less than
-  50 pt under the window's top. Seen red with the old 14-pt top planted:
+- UI `testHomeHoldsGrabAndGoAndCreateNewTripInFrames` (0.91, `-uiTestingChecks`): `home-grab-frame` holds
+  `home-grab-heading`, `grab-lists`, `grab-0` (and on the iPhone `search-open`), each frame inside it (±1 pt);
+  the heading less than 24 pt under the frame's top and above the first tile; on the Mac `search-open` above the
+  frame (in the strip). `count-trips` 0–40 pt under `home-countdown` and above `home-create-card`;
+  `home-create-card` holds `home-create-heading` and `trip-name`, the heading above the name; `trip-kind-track`
+  starts and ends with `trip-name` (±1 pt). Pictures `home91-top`, `home91-create`. Seen red four ways (iPhone):
+  the track capped at 300 — `XCTAssertEqualWithAccuracy failed: ("330.5") is not equal to ("372.0") +/- ("1.0")
+  - Full trip | Quick does not end with the name` (the old cap of 360 is wider than the iPhone's card, so it bites
+  only on the Mac); This Device back at the foot — `This Device is not right under the trip: 843.67 pt`; Grab and
+  go's line outside its frame — `home-grab-heading at (16.0, 68.0, 114.0, 24.0) is outside Grab and go's frame
+  (15.5, 111.5, 371.0, 107.0)`; Create new trip above its card — `Create new trip at (16.0, 432.3, 144.3, 24.0) is
+  outside its card (15.5, 465.8, 371.0, 778.3)`.
+- UI `testHomeLeadsWithGrabAndGoAtTheTop` (0.67; 0.91): on the iPhone, measured from the foot of the status bar,
+  Grab and go's words begin less than 38 pt down (32 since 0.91: 4 to the frame and its 14 of padding; 18 in
+  0.67–0.90) and not above it (−2 pt allowed), the first tile is less than 16 pt under the heading (14) and begins
+  less than 80 pt down (70; 54 before). On the Mac (0.91) Grab and go is not above the strip's foot and less than
+  40 pt under it; the first tile is less than 16 pt under it and less than 110 pt under the window's top (until
+  0.91: on the window buttons' line, the first tile under 50 pt). Seen red in 0.67 with the old 14-pt top planted:
   "an empty band of 28.0 pt above Grab and go"; on 0.66 it said 39.0.
-- UI `testEveryTabsHeaderIsOnOneCentreLine` (0.67, spec 06): `search-open` and `grab-lists` on the centre
-  line of `home-grab-heading`, within 1.5 pt.
+- UI `testEveryTabsHeaderIsOnOneCentreLine` (0.67, spec 06; 0.91): `grab-lists` (and on the iPhone
+  `search-open`) on the centre line of `home-grab-heading`, within 1.5 pt, the heading not above the screen's top;
+  on the Mac `search-open` on the window buttons' line (within 2 pt).
 - UI `testAShortcutOrReminderOpensItsPlaceWhileAnotherWindowIsUp` (iPhone only): with Grab Lists open, a
   Shortcut for Bike arriving on return opens `grab-detail` and Grab Lists is gone; with Search open, a
   tapped reminder for the next trip opens `trip-detail` "Sunny weeks".
@@ -1854,6 +1880,10 @@ summer); the web app's countdown lags exactly that way. The app always passes `T
 marked the heading to be struck out and written **down the side** instead (and Trips and Templates
 swapped over).
 
+**Where.** Right under the countdown card — or under Grab and go's frame when no trip is ahead — and above
+Create new trip (0.91, his words: "I would also like the "This device" area to move up directly under the trip
+list."); until 0.91 Home's last line.
+
 **What is on screen.** A row with 10 pt spacing:
 - **"This Device"**: 12 pt heavy `muted`, kerning 0.5, rotated −90° in a 16-pt-wide column
   (`device-heading`).
@@ -2271,8 +2301,9 @@ nothing on GitHub's slower runner, and would have on the phone too.
 - Frame: `tab-home`, `tab-events`, `tab-templates`, `tab-care`, `tab-actions`, `tab-settings`;
   `screen-<section>`; `screen-title`; `app-version`; `library-problem`.
 - First run: `first-run-wait`, `first-run-import`, `first-run-problem`.
-- Home: `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none` (0.62), `home-countdown`,
-  `home-create-heading`, `device-heading`, `count-trips`, `count-things`, `count-templates`.
+- Home: `home-grab-frame` (0.91), `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none`
+  (0.62), `home-countdown`, `device-heading`, `count-trips`, `count-things`, `count-templates`, `home-create-card`
+  (0.91), `home-create-heading`, `trip-kind-track` (0.91).
 - Grab list:
   - `grab-detail`, `grab-title` (0.86), `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
   - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom; since 0.87

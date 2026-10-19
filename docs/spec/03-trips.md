@@ -192,13 +192,23 @@ sheet; *Create trip* makes the trip and opens it at once as a sheet (`opened = m
 
 ### What is on screen (top to bottom, inside one card: padding 14, corner 14, `Theme.card`, 1 pt `Theme.line` stroke)
 
-Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy before 0.62), id `home-create-heading`.
+The card is `homeCard(id: "home-create-card")` (0.91) — the same card as Grab and go's frame (spec 02), an
+accessibility container named `home-create-card` whose lines keep their own ids. It sits under This Device (0.91).
+
+0. **The heading "Create new trip"** (Title 3 bold, ink — 22 heavy before 0.62), id `home-create-heading` — the
+   card's FIRST line, above the name, since 0.91 (his words, 19 Oct 2026: "I would also like to have the text
+   "Create New Trip" within the "Name your trip" frame."); until then above the card, 8 pt over it.
 
 1. **Name field** — placeholder "Name your trip", 20 semibold ink, min height 48, `Theme.bg` fill,
    corner 10; a 2 pt red border only while the "still needed" message mentions "name". Id `trip-name`.
    Gets keyboard focus when Create is pressed without a name.
 2. **Full trip | Quick** (`TripKindChoice`, 0.67) — a two-way choice in one capsule track (`Theme.bg`
-   fill, 1 pt `Theme.line` stroke, 2 pt inner padding, at most 360 wide): two equal segments "Full
+   fill, 1 pt `Theme.line` stroke, 2 pt inner padding) **as wide as the name field above it** — the card's
+   full width, its left and right edges the name's (0.91, his words: "Could you also please broaden the two pills
+   "Full trip" and "Quick" so that they are in line with the name field above."; at most 360 wide until then, which
+   on the Mac left it far short of the name; the iPhone's card is narrower than 360, so there it already was). The
+   track is an accessibility container `<id>-track` (`trip-kind-track`, `tripset-kind-track`) — Trip settings'
+   Full trip | Quick (the same view) is as wide as its name field too. Two equal segments "Full
    trip" (id `trip-kind-full`) and "Quick" (id `trip-kind-quick`), Subheadline — semibold white on a
    blue capsule when picked, regular ink on nothing when not; min height `Metrics.chip` (28 / Mac 22);
    the picked one carries `.isSelected`. Full trip is picked to begin with. Under it, always (whichever
@@ -356,9 +366,9 @@ the release build says nothing there). Min height 36, horizontal padding
 12, they wrap (`FlowRow`, spacing 6). A picked pill carries the `.isSelected` trait. Identifier =
 `<id>-<position>`, never words.
 
-Below the card: "This Device" (written so, not upper-cased; 12 heavy muted, kerning 0.5, rotated −90°,
-id `device-heading`) and three count tiles — Trips, Things, Templates (ids `count-trips`,
-`count-things`, `count-templates`) — belong to the Home spec.
+ABOVE the card since 0.91 (below it until then): "This Device" (written so, not upper-cased; 12 heavy muted,
+kerning 0.5, rotated −90°, id `device-heading`) and three count tiles — Trips, Things, Templates (ids `count-trips`,
+`count-things`, `count-templates`) — right under the countdown card; they belong to the Home spec (spec 02 §12).
 
 ### Behaviour
 
