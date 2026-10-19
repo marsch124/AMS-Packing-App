@@ -43,7 +43,7 @@ door to it, spec 05 item 6b), `App/Sources/Screens/PickThings.swift`, `App/Sourc
 model: `PackingCore/Lists.swift`, `Memberships.swift`, `Resolve.swift`, `Grouping.swift`, `Kits.swift`,
 `ListSharing.swift`; `PackingLibrary/Library.swift` (template parts, and arranging a template's headings and
 rows — §13a), `EditLists.swift`, `Bags.swift` (list role and
-`shownName`), `TemplateIcon.swift`, `TemplateColour.swift` (0.90, §3a), `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
+`shownName`), `TemplateIcon.swift`, `TemplateIconCatalog.swift`, `TemplateIconKeywords.swift` (the icon search's other words, 0.91, §3), `TemplateColour.swift` (0.90, §3a), `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
 `Sharing.swift` (template parts), `ActivityAreas.swift` (his activity areas, 0.89), `TemplateRows.swift` (a row's own answers, the row editor's Save, covers'
 letter and colours, which templates are shown and what they add up to, free names — the spec pass). Storage and
 sync are in `docs/store.md`; colours in `docs/colours.md` (both linked, not repeated).
@@ -117,8 +117,6 @@ magnifier.
      `templates-new` → opens `NewList` (§5) as a sheet.
 2. **Refine door** (`RefineDoor`, id `refine-open`, bottom padding 4): violet card "Refine your templates" with a
    count of waiting suggestions; owns its own sheet (`RefineScreen`). Documented in the Refine spec.
-2a. **Activity areas** (0.89, `areasDoor`, id `templates-areas`): the quiet violet pill with the pen that opens his
-   areas (§1a), under the small-core news card when it shows.
 3. For each **activity area** (see Behaviour) in order:
    - Heading — `AreaBlock.title`: `Library.areaWords` (0.89; `areaHeading`/`groupHeading` until then) =
      `"<CODE> · <Name>"` for a built-in under its own name, otherwise his words alone ("Mountains", or a built-in he
@@ -133,8 +131,15 @@ magnifier.
    - A `LazyVGrid` of two flexible columns (spacing 8 both ways) of **cards** (§2). Each card is a plain Button;
      id `template-row-<n>` where n = the template's index in the flattened list of all areas, top to bottom
      (so with the sample library: 0 = Common base, 1 = Hiking, 2 = Swim). Tap → opens `TemplateDetail` (§6).
-- No empty-state text: a ready library with no templates shows the header, the summary "0 templates · …" and the
-  Refine door only.
+4. **Activity areas** (0.89, `areasDoor`, id `templates-areas`): the quiet violet pill with the pen that opens his
+   areas (§1a) — **at the foot of the tab, after the last area's cards** (0.91), 20 above it, left-aligned. It sits
+   OUTSIDE the lazy stack of headings and cards (a plain `VStack` holds the `LazyVStack` and then the pill, the side
+   padding 16 and bottom 24 moved onto it), so it is always built: the Mac builds only what is on screen, and the pill is
+   often below the window's edge. Until 0.91 it stood at the head of the headings, under the Refine card and the
+   small-core news card (2a). His words (19 Oct 2026, the test sheet of 0.89): **"Please move the activity pill button
+   to the bottom of the page."**
+- No empty-state text: a ready library with no templates shows the header, the summary "0 templates · …", the
+  Refine door and the Activity areas pill.
 
 ### Behaviour
 - **One sheet with a destination** (`opened: Opened?` — `.template(id)`, `.search`, `.new`): a card, the
@@ -187,6 +192,11 @@ sheet here can be swiped down, except a template's page while arranging (`intera
   on them counted once; a trip packed from none of them not counted).
 - 0.89: `testHeMakesAnActivityAreaAndFilesATemplateInIt` (the pill, his area's heading `templates-area-own-0` above
   WET), `testAnAreaIsRenamedAndOnlyAnEmptyOneIsRemoved` (a renamed WET heading) — §1a.
+- 0.91: `testTheActivityAreasPillIsAtTheFootOfTheTemplatesTab` — `templates-areas` stands below the last area's
+  heading (`templates-area-WET` in the sample), below its last card (`template-row-2`, Swim) and below every other
+  heading, and still opens `areas-detail` (pictures `tmpl91-pill-templates`, day and night). Seen RED with the pill
+  planted back at the head: `XCTAssertGreaterThan failed: ("224.0") is not greater than ("608.9999999999999") - the pill
+  is not under the last area's heading: pill 224.0, heading 608.9999999999999`.
 - **Not covered:** the "By Transport" and "Other Templates" areas, the exact summary wording on screen.
 
 ---
@@ -203,13 +213,15 @@ Remove asks — or, while templates are in it, says which and keeps it; nothing 
 moved into any of his areas from its own page (§6, Activity area, a drop-down since 0.89).
 
 ### How it is reached and left
-- **Activity areas** — a quiet pill on the Templates tab, at the head of the headings it changes (under the Refine
-  card and the small-core news card, above "Always Packed"): the hand-drawn pen (16) and "Activity areas"
+- **Activity areas** — a quiet pill on the Templates tab, at the foot of the headings it changes, after the last
+  area's cards (0.91, his "Please move the activity pill button to the bottom of the page."; until then at their head,
+  under the Refine card and the small-core news card, above "Always Packed"): the hand-drawn pen (16) and "Activity areas"
   (Subheadline semibold) in violet, on a 10 % violet capsule with a 1-pt violet ring, `Metrics.chip` tall, side
   padding 12; id `templates-areas`, label "Activity areas", hint "Make, rename, move or remove your activity
   areas". It opens the page as the tab's one sheet (`Opened.areas`). Why there: the areas are the Templates tab's
   headings, so the control that changes them sits with them — the same place on both devices; Settings → Your
-  choices holds the lists a THING uses.
+  choices holds the lists a THING uses. At the foot (0.91) it no longer stands between the Refine card and his
+  templates: the cards come first, the tool to rearrange their headings after them.
 - Left by **Cancel** (`areas-cancel`, outlined muted; Escape too) — nothing changes — or **Save** (`areas-save`,
   violet, filled, always in colour: with nothing changed it simply closes), or a swipe down on the iPhone (= Cancel).
 
@@ -500,6 +512,30 @@ In the picker's order, under its six headings (`TemplateIconGroup`, 0.74); ✱ =
 `TemplateIconCatalog.firstFifty` lists the 50 keys of 0.46, which must never go. `TemplateIconCatalog.icon(key)` /
 `TemplateIcons.icon(key)` → the icon or nil (unknown key → nil → the cover falls back to the letter).
 `TemplateIconCatalog.grouped` → the headings in order with their icons (a heading with none is left out).
+
+**Other words for each icon (0.91, `PackingLibrary/TemplateIconKeywords.swift`).** His words (19 Oct 2026, the test
+sheet of 0.90): **"Also add the possibility to search for icons, and also add alternative names so that the search is
+easier to perform. But I don't know if the alternative names need to be visible, but it would be good to get more hits
+when searching."** `TemplateIconCatalog.keywords: [String: [String]]`, by icon key: for every one of the 91, three or
+more other words in English, Swedish and German, written lower-case as they are matched — e.g. plane: flight, fly,
+airport, air travel, flyg, flyga, flygplan, flygplats, flug, flugzeug, fliegen, flughafen; car: auto, drive, road trip,
+rental car, bil, hyrbil, köra, autofahrt, mietwagen, pkw; rv (Camper): motorhome, campervan, caravan, van, husbil,
+husvagn, wohnmobil, wohnwagen; bike: cycling, bicycle, mtb, cykel, cykla, fahrrad, radfahren; swim: swimming, pool,
+open water, simma, simning, bad, simhall, schwimmen, schwimmbad; hiking: hike, trek, trail, vandring, vandra,
+fjällvandring, wandern; lounger (On the beach): beach, sunbathing, sunbed, strand, sola, solstol, liegestuhl; the rest
+in the file. **Decided: not visible** — he did not know whether they need to be; they are there to be found by, so the
+picker stays as he liked it (a tile says only its label). They are stored nowhere (a key never changes; these words
+may). Matching (`TemplateIconCatalog.matches(icon, query)`): the query as How it works reads it
+(`GuideSearch.needle` — `normName`: trimmed, lower-case, runs of spaces one; curly quotes straight), found as ONE
+phrase anywhere in the label or in any of the words (as the app's other searches: "sim" finds "simma", "bad" "bad",
+"badring", "badminton" …), case never counting; **accents: one LEFT OUT does not count, one TYPED does** — "fjall"
+finds "fjäll", "schlussel" "Schlüssel", but "båt" finds only the Ferry and Sailing, not "bath" (Swim) or "sunbathing"
+(On the beach) as How it works' rule (accents never count) would: in Swedish å, ä and ö are letters of their own.
+(`plain` = the needle unchanged by `folding(.diacriticInsensitive)` → `[.caseInsensitive, .diacriticInsensitive]`, else
+`[.caseInsensitive]`.) The headings (Travel, Sport …) are NOT searched: "food" would otherwise bring all thirteen of
+City, food and fun. `find(query)` → the icons found, in the picker's order (all for a blank query);
+`grouped(matching: query)` → the headings with the icons found under each, a heading with none left out (as Find a
+thing on a template leaves a heading out); the app reads it through `TemplateIcons.grouped(matching:)`.
 `IconMark` is also used by `TripChecks.swift` — and (0.74) by every trip line, which shows the icon of each template
 it comes from, small and violet, before its bag (`TemplateMarks`; spec 03, "A line" → "Where it comes from"); a
 template showing its letter is its name's first word there.
@@ -518,6 +554,16 @@ icons. That way, I can more easily find the templates if they have the color tha
 ("Table" is how the dictation heard "template"/the Templates tab; the things table shows no template icons.) Until
 0.90 a template's colour was the app's stable pick only (`color` was kept from the web app but nothing here set it).
 
+**0.91: fifteen colours, still two rows.** His words (19 Oct 2026, the test sheet of 0.90): **"Please add some more
+colors, but keep them on two lines. This was very nice."** Four more — Plum, Navy, Olive, Sand — so Automatic and the
+palette are 16 = two rows of eight (§4). Each sits in a gap the eleven left on the colour wheel (purple-red, a dark
+blue, a yellow-green, a pale warm one); no teal, no cyan, no mint (his colour notes, "Do not use teal for anything
+new"). The eleven of 0.90 keep their keys and fills — a template stores the FILL, so a changed hex would ring nothing
+— and keep their places but for Violet, Indigo, Brown and Grey, which moved one to four places on to let the new ones
+in among them (Red, Plum, Violet, Indigo, Navy, Olive, Sand, Brown, Grey: round the wheel, the greys last).
+`TemplateColour.pickerRows` = 2 and `pickerColumns` = (palette + 1) / 2 rounded up = 8: the picker's rows come from
+the model, and the model's test holds the palette to a size that fills both.
+
 **Storage.** The template's own **`color`** field (§10) — not a new `extra` key and not a new shared-row kind (a new
 kind is blanked by PackingCore, spec 02 🪤). `color` is a field of the web app's model, so it already travels with
 every template: the store's `templates` record and iCloud, the backup file and Restore, a shared link (the web app's
@@ -525,7 +571,7 @@ key `c`, ≤ 9 characters — a template "Add as a new template" from a link arr
 keeps HIS colour, because `replaceTemplate` keeps his template whole, §19) and the web app, whose cover reads the same
 field. The parity check is untouched (no model.js change). Blank = **Automatic**. Stored lower-case.
 
-**The palette** (`TemplateColour.palette`, 11, in the picker's order; key → word, fill, ink):
+**The palette** (`TemplateColour.palette`, 15 since 0.91 (11 in 0.90), in the picker's order; key → word, fill, ink):
 
 | Key | Word | Fill | Ink (the icon on it) | Why |
 |---|---|---|---|---|
@@ -536,8 +582,12 @@ field. The parity check is untouched (no model.js change). Blank = **Automatic**
 | `lavender` | Lavender | `#bf9cff` | `#2e1a5c` | Breath work's |
 | `pink` | Pink | `#ff6fa8` | `#5a0f2e` | Mobility's |
 | `red` | Red | `#dc3d43` | white | the To do red |
+| `plum` | Plum | `#9c3d8c` | white | 0.91 — the purple-red between Red and Violet |
 | `violet` | Violet | `#7c5cd6` | white | the Templates violet |
 | `indigo` | Indigo | `#4f46e5` | white | the cover pick that replaced teal |
+| `navy` | Navy | `#2a5194` | white | 0.91 — a dark blue, far darker than Blue (2.2 : 1 on the dark card, its icon 7.8 : 1) |
+| `olive` | Olive | `#6e7b1f` | white | 0.91 — the yellow-green no colour had |
+| `sand` | Sand | `#d9b98c` | `#3d2a10` | 0.91 — a pale warm one (dark words, as on Yellow) |
 | `brown` | Brown | `#8b5e3c` | white | a calm earth tone |
 | `slate` | Grey | `#64748b` | white | the Settings slate |
 
@@ -545,6 +595,8 @@ The first six are his workout colours (`docs/colours.md`, decided 28 Sep 2026) w
 "the color that I connect to a specific template". No teal. Every ink reads on its fill at 3.6 : 1 or better (Swim's
 blue with white is the lowest, 3.65); every fill made readable as a mark (`readableHex`, text mode) reads at 4.5 : 1
 or better on the light card and on the dark one. A fill is one shade for day and night, as the section colours are.
+Every two colours are at least ΔE 20 apart (CIE 1976, D65; Violet–Indigo 23.7 is the closest pair, the 0.91 four are
+31 or more from all) and none has a teal or cyan hue (160°–200° at saturation above 0.2) — both in the model's test.
 
 **Where the colour shows** — everywhere a template's icon is drawn (found by grepping `Cover(` and `IconMark` with a
 template icon):
@@ -601,6 +653,21 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   `testEveryIconHasADrawingALabelAndItsOwnKey` counts 91. His own template's icon is his to pick in the picker —
   the app's Suggested offers the weekend bag; his data is not changed.
 - **Not covered:** an unknown stored key.
+- Model (0.91, `TemplateIconSearchTests`): `testHisWordsFindTheIconInEnglishSwedishAndGerman` (48 words → their
+  icons: flyg/Flug/airport/flight → plane, bil/Auto → car, husbil/Wohnmobil/camper → rv, cykel/Fahrrad/cycling → bike,
+  simma/schwimmen/pool/bad → swim, vandring/wandern/trek → hiking, strand → lounger and beach, tåg, Zug, färja, tält,
+  Zelt, skidor, löpning, styrka, gym, bastu, isbad, solkräm, Sonnencreme, kaffe, fika, hund, dog, barn, laddare,
+  charger, medicin, tvätt, jobb, work, helg, weekend; "FLYG" and "  flyg  " as "flyg"; "flyg" finds the plane ALONE;
+  "fjall" → mountain, "schlussel" → keys; "båt" and "Båt" → exactly ferry and sail; labels still found ("on the beach",
+  "Racket"); "zzz" → nothing; "" and spaces → all 91 in order; "food" does not bring the Camera);
+  `testTheResultsKeepTheirHeadingsInThePickersOrder` ("strand" → Beach and summer only: lounger, beach, towel,
+  beachball; "båt" → Travel then Beach and summer: ferry, sail; "zzz" → no heading; "" → every heading);
+  `testEveryIconHasItsOtherWordsAndNoneIsLost` (every list belongs to an icon, every icon has ≥ 3 words, none twice,
+  none blank, each written as it is matched (`normName`), no emoji, and each word finds its own icon). Seen red with
+  the other words planted out of the search: `XCTAssertTrue failed - 'flyg' does not find plane: []`, `… - backpack:
+  its word 'daypack' does not find it`; and with accents typed planted not to count: `XCTAssertEqual failed:
+  ("["ferry", "swim", "icebath", "lounger", "sail"]") is not equal to ("["ferry", "sail"]") - båt found a bath or
+  sunbathing`.
 - Model (0.90, `TemplateColourTests`): `testThePaletteReadsDayAndNightAndHasNoTeal` (≥ 10 colours, keys and hexes
   unique, none keyed "auto", the six workout colours first, Bike's ink `#3d3000`, every ink ≥ 3.5 : 1 on its fill,
   every mark ≥ 4.5 : 1 on the light and the dark card, no teal or cyan) — seen red with Bike's ink planted as white:
@@ -614,13 +681,22 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   not equal to ("#0a84ff") - the cover does not wear his colour`, `… - the stored records lost the colour`, `… - a
   backup lost the colour`, `… - Restore lost the colour`; `testAWebAppColourIsKeptAsItIs` (`#123456` kept, white ink).
 - UI (0.90): `testATemplatesColourIsChosenAndAutomaticGivesItsOwnBack` — see §4.
+- Model (0.91, `TemplateColourTests`): `testMoreColoursStillFillTwoRowsAndTheOldOnesStayAsTheyWere` (15 colours,
+  `pickerRows` 2, `pickerColumns` 8, two FULL rows; the eleven of 0.90 with their keys and fills; plum, navy, olive,
+  sand there; every pair ΔE ≥ 20; no teal or cyan hue) — seen red with Sand left out, Navy planted teal and Blue's fill
+  changed: `("14") is not equal to ("15") - Automatic and fifteen: two rows of eight`, `("1") is not equal to ("0") - a
+  short second row`, `XCTAssertNotNil failed - no sand in the palette`, `XCTAssertFalse failed - navy is teal or cyan
+  (hue 184)`, `("Optional("#0a7aff")") is not equal to ("Optional("#0a84ff")") - blue changed or went: a stored colour
+  would ring nothing`.
+- UI (0.91): `testTheColoursSitInTwoRowsAndANewOneApplies` — see §4.
 
 ---
 
 ## 4. The icon picker (`IconPickerScreen`)
 
 ### How it is reached and left
-Tap the cover on a template's page (`template-cover`). Left by: "Cancel" (`icon-cancel`; Escape too, 0.62), by any
+Tap the cover on a template's page (`template-cover`). Left by: "Cancel" (`icon-cancel`; Escape too, 0.62 — on the
+Mac, while the icon search holds words, the first Escape empties it and the second closes, 0.91), by any
 pick — an icon or (0.90) a colour; each pick saves and closes — or a swipe down on the iPhone.
 
 ### What is on screen
@@ -628,16 +704,32 @@ pick — an icon or (0.90) a colour; each pick saves and closes — or a swipe d
   "Cancel" (outlined `HeaderButtonStyle`, muted tint).
 - Scroll (side 16, bottom 24), spacing 10:
   - (0.90) **"Colour"** (`SectionTitle`, id `template-colour-title`), then `TemplateColourSwatches`: **Automatic** and
-    the palette's 11 (§3a) in plain rows of **6** (12 swatches = two full rows; a short row would be filled with
-    empty cells), 6 apart, rows 8 apart. Each swatch: the template's OWN cover drawn in that colour at 34 (its icon or
-    letter in that colour's ink — a preview of the Templates tab) with 3 pt of air, and under it the colour's word
-    (Caption 2, 1 line, shrinks to 70 %; muted, or bold ink when in force); min height 64, full width share. Automatic
-    shows the colour the app picks for this template. The swatch in force has a 2-pt `Theme.ink` ring round its
-    square (radius 34 × 0.28 + 3) and the trait `isSelected`: Automatic when no colour is stored, else the palette
+    the palette's 15 (§3a) in exactly **two** plain rows of **`TemplateColour.pickerColumns` = 8** (16 swatches = two
+    full rows; a short row would be filled with empty cells, min 60 high) — his "keep them on two lines" (0.91; until
+    then the eleven in two rows of 6, 6 apart, covers 34, min height 64). The swatches stand **edge to edge** (row
+    spacing 0), rows 6 apart, so each swatch's whole share of the row takes the tap: 370 / 8 = 46 points on a 402-point
+    iPhone (iPhone 17 Pro) — Apple's 44 or more; on the Mac (sheet ≥ 520) about 61. Each swatch: the template's OWN cover
+    drawn in that colour at **32** (its icon or letter in that colour's ink — a preview of the Templates tab) with 3 pt
+    of air, and under it the colour's word (Caption 2, 1 line, shrinks to 70 %, 1 pt of air each side; muted, or bold
+    ink when in force — "Automatic" and "Lavender" shrink a little at eight to a row); min height 60, full width share.
+    Automatic shows the colour the app picks for this template. The swatch in force has a 2-pt `Theme.ink` ring round
+    its square (radius 32 × 0.28 + 3) and the trait `isSelected`: Automatic when no colour is stored, else the palette
     colour stored (a web-app colour outside the palette rings none). Ids `template-colour-auto`,
     `template-colour-<key>` — deliberately not `icon-…`, which the 91-icon count reads; accessibility label = the word.
   - (0.90) **"Icon"** (`SectionTitle`, id `template-icon-title`) over the rest — until 0.90 the tiles had no heading.
-  - Two tiles side by side: **"Suggested"** (id `icon-suggested`; shows the suggested icon at 30, or the letter
+  - (0.91) **Find an icon** — the app's search-field look (as Find a thing on a template and How it works' search):
+    `TextField("Find an icon")`, Body ink, `Metrics.compact` tall, side padding 12, card fill, 1-pt line ring, radius
+    10, the shared ✕ (`clearButton`, id `iconsearch`, the ✕ `iconsearch-clear` — ids deliberately not `icon-…`, which
+    the 91-icon count reads). No autocorrection ("flyg" or "cykel" typed on an English keyboard must stay as typed); on
+    the iPhone no capitals and the keyboard's key says Search. On the Mac ⌘F puts the cursor in it (a hidden button
+    with the shortcut, as How it works, 0.90) and Escape — which a text field keeps for itself — empties it, then
+    closes the picker as Cancel does (`onExitCommand`). On every key press the icons below are
+    `TemplateIcons.grouped(matching: query)` (§3, Other words): only those found, each under its own heading, a
+    heading with none left out. **While words are typed** (spaces alone are no search) Suggested and Letter step aside
+    (they are no drawn icons), and when nothing is found the line **"No icon is called that."** (Callout muted, 8 above,
+    wraps; `iconsearch-none`) stands where the icons were. The ✕ (or the words deleted) gives every heading, every icon,
+    Suggested and Letter back. A found icon is chosen as any other (it saves and closes); the words are not kept.
+  - Two tiles side by side (not while searching, 0.91): **"Suggested"** (id `icon-suggested`; shows the suggested icon at 30, or the letter
     (`coverLetter`) 22 heavy when there is no suggestion; selected when no choice is stored) and **"Letter"** (id
     `icon-letter`; the letter 22 heavy; selected when the stored choice is "letter").
   - Since 0.74 one `SectionTitle` per heading of `TemplateIcons.grouped` — "Travel", "Outdoors", "Sport", "Beach and
@@ -659,7 +751,9 @@ pick — an icon or (0.90) a colour; each pick saves and closes — or a swipe d
 - `pick(key)` → `model.change { setTemplateIcon(id:, key:) }` then dismiss. Suggested = nil (removes the key),
   Letter = "letter", an icon = its key. Picking the very icon that is suggested **stores** it, so it no longer
   follows later renames.
-- When the stored key is not one of the 90 (e.g. from a newer build), no tile is ringed and the cover shows the
+- The icon search (0.91) filters what is shown, nothing more: it changes no choice, and a choice made from its results
+  is the same `pick(key)`. The colour swatches above it stay as they are while it is used.
+- When the stored key is not one of the 91 (e.g. from a newer build), no tile is ringed and the cover shows the
   letter. A build before 0.74 that meets a 0.74 key (a template's icon synced from a newer device) shows the letter
   the same way; its own 50 keys are all still drawn by 0.74.
 
@@ -682,10 +776,25 @@ tests' only way to see the colour its cover is drawn in"; the release build has 
 function the cover is filled by — a hex, not Blue; the picker shows `template-colour-auto` ringed and 12
 `template-colour-` buttons (picture `tmpl-colours-picker`); `template-colour-blue` closes the picker and the card says
 `#0a84ff`; reopened, Blue is ringed and Automatic is not; `template-colour-auto` gives back the colour the card said
-first. Seen red three ways: `Cover.fill` planted to ignore the chosen colour — `Hiking's cover is not blue:
+first (16 `template-colour-` buttons since 0.91 — "Automatic and fifteen colours"). Seen red three ways: `Cover.fill` planted to ignore the chosen colour — `Hiking's cover is not blue:
 '#22c55e'`; the Automatic swatch planted to keep the chosen colour — `Automatic did not give back #f97316:
 '#0a84ff'` (the automatic colour differs per launch: the sample's ids are fresh each time). Day and night on the
 iPhone 17 Pro simulator (iOS 26.5), and on the Mac (the probe workflow).
+
+UI `testTheColoursSitInTwoRowsAndANewOneApplies` (0.91): Hiking's picker has 16 `template-colour-` buttons; grouped by
+where they stand (a swatch more than 8 points lower starts a new row) they are exactly two rows of 8, Automatic first;
+none runs off the window; on the iPhone each is 44 points wide or more; `template-colour-navy` closes the picker and the
+Hiking card says `#2a5194`; reopened, Navy is ringed (pictures `tmpl91-colours-picker`, `tmpl91-colours-navy`, day and
+night). Seen RED with the rows planted back to six: `XCTAssertEqual failed: ("[6, 6, 4]") is not equal to ("[8, 8]") -
+the colours are not on two lines of eight`.
+
+UI `testTheIconSearchFindsAnIconByItsOtherNames` (0.91): Hiking's picker has the field `iconsearch` and 91 tiles;
+"flyg" leaves exactly one tile, `icon-plane`, under `icon-group-travel`, no `icon-group-sport`, no `icon-suggested`,
+no nothing line (picture `tmpl91-iconsearch-flyg`); "zzz" shows `iconsearch-none` and no tile (picture
+`tmpl91-iconsearch-none`); `iconsearch-clear` brings 91 tiles and Suggested back, the line gone, the field empty;
+"fahrrad" leaves the Bike alone, a tap takes it (cover value "bike"). On the Mac: reopened, ⌘F and "flyg" leave one
+tile, Escape brings all 91 back with the picker still open, a second Escape closes it. Seen RED with the picker
+planted to search the labels only: `XCTAssertTrue failed - flyg shows 0 icons, not the Plane alone`.
 ---
 
 ## 5. A new template (`NewList`)

@@ -19,5 +19,11 @@ enum TemplateIcons {
     /// The picker's headings with their icons.
     static var grouped: [(group: TemplateIconGroup, icons: [Icon])] { TemplateIconCatalog.grouped }
 
+    /// The headings with the icons a search finds — by label or by hidden other words (0.91);
+    /// every icon for an empty search.
+    static func grouped(matching query: String) -> [(group: TemplateIconGroup, icons: [Icon])] {
+        TemplateIconCatalog.grouped(matching: query)
+    }
+
     static func icon(_ key: String?) -> Icon? { TemplateIconCatalog.icon(key) }
 }
