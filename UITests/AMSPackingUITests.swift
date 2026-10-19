@@ -6557,8 +6557,15 @@ final class AMSPackingUITests: XCTestCase {
         // Full trip | Quick: as wide as the name field, edge to edge.
         XCTAssertTrue(appears(app, "trip-kind-track", timeout: 5), "Full trip | Quick has no track")
         let track = find(app, "trip-kind-track")?.frame ?? .zero
-        XCTAssertEqual(track.minX, name.frame.minX, accuracy: 1, "Full trip | Quick does not start with the name (\(track) vs \(name.frame))")
-        XCTAssertEqual(track.maxX, name.frame.maxX, accuracy: 1, "Full trip | Quick does not end with the name (\(track) vs \(name.frame))")
+        #if os(macOS)
+        // The Mac reports the field itself, inside the 12 pt its box has at each side (GitHub's Mac:
+        // the field 193…814, the box and the track 181…826); the iPhone reports the whole box.
+        let nameBox = name.frame.insetBy(dx: -12, dy: 0)
+        #else
+        let nameBox = name.frame
+        #endif
+        XCTAssertEqual(track.minX, nameBox.minX, accuracy: 1, "Full trip | Quick does not start with the name (\(track) vs \(nameBox))")
+        XCTAssertEqual(track.maxX, nameBox.maxX, accuracy: 1, "Full trip | Quick does not end with the name (\(track) vs \(nameBox))")
         shot(app, "home91-top")
         bringIntoView(app, app.buttons["trip-kind-quick"])
         sleep(1)
