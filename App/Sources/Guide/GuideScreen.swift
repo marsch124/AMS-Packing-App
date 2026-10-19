@@ -1,4 +1,6 @@
 import SwiftUI
+import PackingCore
+import PackingLibrary
 
 /// The doors in Settings: What's new and How it works — his standing rule from the
 /// web apps, missing here until 0.23 — and the first real trip in six steps, which
@@ -265,6 +267,7 @@ struct HowItWorksScreen: View {
             "iCloud sync: when this device last sent and received, and what is not in iCloud yet. Sync now checks in from here; the other device shows it within a minute or so \u{2014} if it does not, the card says why. Copy details for Claude gives me the full story. \u{201C}Can't tell\u{201D} means this device cannot check right now \u{2014} not that something is wrong.",
             "Save a backup to a file, or restore from one. Before a restore, a copy of what was here is kept, and you can go back to it. A backup holds every thing exactly as it is on this device, so Restore puts back exactly that \u{2014} cabin answers and notes included. Under Save a backup: when you last saved one on this device; This device holds says when your library came from a backup file.",
             "Your first real trip in 6 steps has its own door in Settings, to read again any time.",
+            "How it works has a search field at its top: type a word and only what says it shows \u{2014} each paragraph under its part, with the word marked, and at the top how many places say it (\u{201C}4 places\u{201D}). Capitals and accents do not count; a part whose heading alone says it shows whole. The \u{2715} brings the whole guide back, where you were reading. On the Mac \u{2318}F puts the cursor in the field, and Escape empties it.",
             "Your choices: storage places, owners, packers, conditions and the \u{201C}When\u{201D} steps. The pen beside an entry renames it \u{2014} everything that said the old name follows \u{2014} hold the grip \u{2261} at its left and drag it to its place (on the Mac the pen\u{2019}s arrows also move it up or down); owners always stay A to Z \u{2014} and if you never made an Owners list, it shows the names your things already carry. A name you already have is not added again, and something still in use cannot be removed: the reason appears right under it.",
             "Each storage place has a square code. Tap the square beside a place: its label for the P-touch (12 mm tape) \u{2014} on the iPhone Share, then Save Image, and Brother\u{2019}s app takes it from Photos; on the Mac it is saved as a picture. Labels for P-touch, all places, makes them all at once. Stick the label where the things are kept.",
             "Point the iPhone\u{2019}s Camera at a place\u{2019}s label and tap the link: packing for a trip, the trip opens with only what to take from there; back from a trip, what goes back there; otherwise, everything kept there. On the Mac, Open on the place\u{2019}s page shows the same.",
@@ -282,40 +285,45 @@ struct HowItWorksScreen: View {
             "On the Mac, Escape closes the window you are in, as its Cancel (or Done) does \u{2014} it never saves. The All your things window closes with Done or \u{2318}W."]),
     ]
 
+    /// What is typed in the search field at the top (0.90).
+    @State private var query = ""
+    @FocusState private var writing: Bool
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
+        let searching = !GuideSearch.needle(query).isEmpty
         VStack(spacing: 0) {
             GuideHeader(title: "How it works")
-            KeyboardAwayScroll {
-                VStack(alignment: .leading, spacing: 12) {
-                    FirstTripCard()
-                    LoopGuideCard()
-                    WordsCard()
-                    ForEach(Array(HowItWorksScreen.topics.enumerated()), id: \.offset) { n, t in
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(spacing: 10) {
-                                SectionMark(section: t.section, size: 24, weight: 1.9).foregroundStyle(t.section.color)
-                                Text(t.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                            }
-                            ForEach(t.lines, id: \.self) { line in
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Circle().fill(t.section.color).frame(width: 6, height: 6).offset(y: -2)
-                                    Text(line).font(.system(.callout)).foregroundStyle(Theme.ink)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                        }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                        .accessibilityElement(children: .contain)
-                        .accessibilityIdentifier("guide-topic-\(n)")
-                        // The Packing day's own part, right after packing a trip (0.79, his ask of 13 Oct
-                        // 2026: "write about the Packing-Day-Stations in the How-this-works").
-                        if t.title == "Packing a trip" { PackingDayGuideCard() }
-                    }
+            // Search (0.90, his ask of 19 Oct 2026): the app's search-field look, its ✕ empties it;
+            // on the Mac ⌘F puts the cursor in it, and Escape — which a text field keeps for
+            // itself — empties it, then closes How it works as Done does.
+            TextField("Search How it works", text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(.body)).foregroundStyle(Theme.ink)
+                .focused($writing)
+                #if os(macOS)
+                .onExitCommand { if query.isEmpty { dismiss() } else { query = "" } }
+                #endif
+                .clearButton($query, id: "guide-search")
+                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                #if os(macOS)
+                .background {
+                    Button("Search How it works") { writing = true }
+                        .keyboardShortcut("f", modifiers: .command)
+                        .opacity(0).accessibilityHidden(true)
                 }
-                .padding(.horizontal, 16).padding(.bottom, 24)
+                #endif
+                .padding(.horizontal, 16).padding(.top, -4).padding(.bottom, 12)
+            ZStack(alignment: .top) {
+                // The whole guide stays built under a search, only out of sight: emptied, the
+                // field gives it back exactly as it was — scrolled to where it was.
+                HowItWorksGuide()
+                    .opacity(searching ? 0 : 1)
+                    .allowsHitTesting(!searching)
+                    .accessibilityHidden(searching)
+                if searching { GuideSearchResults(query: query) }
             }
         }
         .background(Theme.bg)
@@ -325,6 +333,268 @@ struct HowItWorksScreen: View {
         .frame(minWidth: 520, minHeight: 620)
         #endif
     }
+}
+
+/// How it works itself, every card — a view of its own with nothing to watch, so a key
+/// pressed in the search field never builds it again.
+private struct HowItWorksGuide: View {
+    var body: some View {
+        KeyboardAwayScroll {
+            VStack(alignment: .leading, spacing: 12) {
+                FirstTripCard()
+                LoopGuideCard()
+                WordsCard()
+                ForEach(Array(HowItWorksScreen.topics.enumerated()), id: \.offset) { n, t in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 10) {
+                            SectionMark(section: t.section, size: 24, weight: 1.9).foregroundStyle(t.section.color)
+                            Text(t.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                        }
+                        ForEach(t.lines, id: \.self) { line in
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Circle().fill(t.section.color).frame(width: 6, height: 6).offset(y: -2)
+                                Text(line).font(.system(.callout)).foregroundStyle(Theme.ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("guide-topic-\(n)")
+                    // The Packing day's own part, right after packing a trip (0.79, his ask of 13 Oct
+                    // 2026: "write about the Packing-Day-Stations in the How-this-works").
+                    if t.title == HowItWorksScreen.stationsAfter { PackingDayGuideCard() }
+                }
+            }
+            .padding(.horizontal, 16).padding(.bottom, 24)
+        }
+    }
+}
+
+// MARK: - Search in How it works (0.90)
+
+/// One paragraph of How it works as its search reads and shows it: a lead — a step's, a word's
+/// or a station's name, set semibold — and the words after it.
+struct GuideParagraph {
+    let lead: String?
+    let text: String
+    /// As it is searched and shown: "Kit — All your things together …".
+    var said: String { lead.map { "\($0) \u{2014} \(text)" } ?? text }
+}
+
+/// One part of How it works — a card — as its search reads it: the heading the card shows, and
+/// everything it says, in order.
+struct GuidePart {
+    enum Kind { case quickstart, loop, words, stations, topic(AppSection) }
+    /// The ids' part: "quickstart", "loop", "words", "stations", "topic-<n>" (the topic's
+    /// `guide-topic-<n>`).
+    let key: String
+    let kind: Kind
+    let title: String
+    let paragraphs: [GuideParagraph]
+
+    /// The dot before each paragraph, and the card's own colour where it has one.
+    var tint: Color {
+        switch kind {
+        case .quickstart: return AppSection.home.color
+        case .loop: return AppSection.templates.color
+        case .words: return AppSection.settings.color
+        case .stations: return Library.LoopStep.pack.tint
+        case .topic(let s): return s.color
+        }
+    }
+}
+
+extension HowItWorksScreen {
+    /// The Packing Stations card comes right after this topic, in the guide and in its search.
+    static let stationsAfter = "Packing a trip"
+
+    /// Everything How it works says, card by card, in the order it says it — read from the
+    /// same words the cards show (`FirstTripCard`, `LoopGuideCard`, `LoopWords`, `Words`,
+    /// `PackingDayGuideCard`, `topics`), so the search can never miss a sentence the guide has.
+    /// Not searched: the loop's picture (its boxes repeat the five steps' words) and the
+    /// stations' drawn marks. A new card in How it works joins this list.
+    static let parts: [GuidePart] = {
+        var out = [
+            GuidePart(key: "quickstart", kind: .quickstart, title: FirstTripCard.title,
+                      paragraphs: FirstTripCard.steps.enumerated().map {
+                          GuideParagraph(lead: "\($0.offset + 1) \u{00B7} \($0.element.title)", text: $0.element.says)
+                      }),
+            GuidePart(key: "loop", kind: .loop, title: LoopGuideCard.title,
+                      paragraphs: [GuideParagraph(lead: nil, text: LoopGuideCard.intro)]
+                        + Library.LoopStep.allCases.map { GuideParagraph(lead: $0.name, text: $0.explained) }
+                        + [GuideParagraph(lead: nil, text: LoopWords.footer)]),
+            GuidePart(key: "words", kind: .words, title: WordsCard.title,
+                      paragraphs: Words.all.map { GuideParagraph(lead: $0.term, text: $0.meaning) }),
+        ]
+        for (n, t) in topics.enumerated() {
+            out.append(GuidePart(key: "topic-\(n)", kind: .topic(t.section), title: t.title,
+                                 paragraphs: t.lines.map { GuideParagraph(lead: nil, text: $0) }))
+            if t.title == stationsAfter {
+                out.append(GuidePart(key: "stations", kind: .stations, title: PackingDayGuideCard.title,
+                                     paragraphs: [GuideParagraph(lead: nil, text: PackingDayGuideCard.intro)]
+                                        + PackingDayStation.allCases.enumerated().map {
+                                            GuideParagraph(lead: "\($0.offset + 1) \u{00B7} \($0.element.name)",
+                                                           text: PackingDayGuideCard.says($0.element))
+                                        }
+                                        + PackingDayGuideCard.more.map { GuideParagraph(lead: nil, text: $0) }))
+            }
+        }
+        return out
+    }()
+
+    /// The same, as the model's search takes it.
+    static let searchParts = parts.map { GuideSearch.Part(title: $0.title, paragraphs: $0.paragraphs.map(\.said)) }
+}
+
+/// What How it works says about the words typed (0.90): each card that says them under its own
+/// heading, with only its paragraphs that do (a card whose heading alone says them shows whole:
+/// it is about them); the words marked. A count line on top ("4 places"); nothing found, one
+/// calm line. Container `guide-search-results`.
+private struct GuideSearchResults: View {
+    let query: String
+
+    var body: some View {
+        let found = GuideSearch.find(query, in: HowItWorksScreen.searchParts)
+        let needle = GuideSearch.needle(query)
+        KeyboardAwayScroll {
+            // Lazy: one letter typed can find most of the guide, and only the cards in sight
+            // are built — the next key press is not kept waiting.
+            LazyVStack(alignment: .leading, spacing: 12) {
+                if found.isEmpty {
+                    Text("Nothing in How it works says that.")
+                        .font(.system(.callout)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("guide-search-none")
+                } else {
+                    Text(GuideSearch.placesWords(found))
+                        .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("guide-search-count")
+                    ForEach(found, id: \.part) { f in
+                        GuideHitCard(part: HowItWorksScreen.parts[f.part], found: f, needle: needle)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.bottom, 24)
+        }
+        .background(Theme.bg)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("guide-search-results")
+    }
+}
+
+/// One card the words were found in: its heading as the guide shows it (the topic's mark, the
+/// Words' "Aa", the stations' own mark), then the paragraphs, each after a dot in the card's
+/// colour. Container `guide-hit-<key>`; heading `guide-hit-<key>-title`; paragraph
+/// `guide-hit-<key>-<n>` (n = its place in the card), its value how many places are marked.
+private struct GuideHitCard: View {
+    let part: GuidePart
+    let found: GuideSearch.Found
+    let needle: String
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let dark = scheme == .dark
+        let heading = GuideMarks.text(part.title, lead: nil, needle: needle, style: .body, weight: .semibold, dark: dark)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                mark
+                Text(heading.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("guide-hit-\(part.key)-title")
+                    .accessibilityValue(GuideMarks.value(heading.marks))
+            }
+            ForEach(found.paragraphs, id: \.self) { n in
+                let said = GuideMarks.text(part.paragraphs[n].said, lead: part.paragraphs[n].lead, needle: needle,
+                                           style: .callout, weight: .regular, dark: dark)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Circle().fill(part.tint).frame(width: 6, height: 6).offset(y: -2)
+                    Text(said.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("guide-hit-\(part.key)-\(n)")
+                        .accessibilityValue(GuideMarks.value(said.marks))
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(fill))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(ring, lineWidth: ringWidth))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("guide-hit-\(part.key)")
+    }
+
+    /// The heading's mark, as the card in the guide wears it (the first-trip and loop cards wear none).
+    @ViewBuilder private var mark: some View {
+        switch part.kind {
+        case .topic(let s):
+            SectionMark(section: s, size: 24, weight: 1.9).foregroundStyle(s.color)
+        case .words:
+            Text("Aa").font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                .frame(width: 24, height: 24)
+                .accessibilityHidden(true)
+        case .stations:
+            StationMark(mark: PackingDayStation.dayMark, size: 24).foregroundStyle(Library.LoopStep.pack.words(scheme))
+        case .quickstart, .loop:
+            EmptyView()
+        }
+    }
+
+    // The card's look, as in the guide: the first trip's blue, the stations' green ring.
+    private var fill: Color {
+        if case .quickstart = part.kind { return AppSection.home.color.opacity(0.08) }
+        return Theme.card
+    }
+    private var ring: Color {
+        switch part.kind {
+        case .quickstart: return AppSection.home.color
+        case .stations: return Library.LoopStep.pack.tint.opacity(0.7)
+        default: return Theme.line
+        }
+    }
+    private var ringWidth: CGFloat {
+        switch part.kind {
+        case .quickstart, .stations: return 1.2
+        default: return 1
+        }
+    }
+}
+
+/// The words searched for, marked where they stand — semibold, in How it works' own colour (its
+/// title's slate), as a found note's line marks them in Search (`NoteHitLine`), on a band of the
+/// same slate: on the guide's ink a slate word alone reads lighter, not marked. At night the word
+/// keeps the text's own colour on a stronger band — slate words on the dark card read dimmer than
+/// the words around them (seen on the first night picture, 19 Oct 2026).
+enum GuideMarks {
+    static let tint = AppSection.settings.color
+
+    /// `said` in ink, its lead semibold, and every place of `needle` marked; with how many.
+    static func text(_ said: String, lead: String?, needle: String, style: Font.TextStyle,
+                     weight: Font.Weight, dark: Bool) -> (text: AttributedString, marks: Int) {
+        var s = AttributedString(said)
+        s.font = .system(style, weight: weight)
+        s.foregroundColor = Theme.ink
+        if let lead, said.hasPrefix(lead),
+           let r = Range(said.startIndex..<said.index(said.startIndex, offsetBy: lead.count), in: s) {
+            s[r].font = .system(style, weight: .semibold)
+        }
+        var marks = 0
+        for place in GuideSearch.ranges(of: needle, in: said) {
+            guard let r = Range(place, in: s) else { continue }
+            s[r].foregroundColor = dark ? Theme.ink : tint
+            s[r].font = .system(style, weight: .semibold)
+            s[r].backgroundColor = tint.opacity(dark ? 0.55 : 0.16)
+            marks += 1
+        }
+        return (s, marks)
+    }
+
+    /// What VoiceOver (and a test) hears after the words: "2 places marked".
+    static func value(_ marks: Int) -> String { marks == 1 ? "1 place marked" : "\(marks) places marked" }
 }
 
 /// The six steps on a page of their own, opened from Settings — the same card as at
@@ -350,6 +620,7 @@ struct FirstTripScreen: View {
 /// "Your first real trip in 6 steps" — his idea 13 (2 Oct 2026), before his first real trip:
 /// the whole app as one path, numbered, at the top of How it works.
 struct FirstTripCard: View {
+    static let title = "Your first real trip in 6 steps"
     static let steps: [(title: String, says: String)] = [
         ("Save a backup", "Settings → Save a backup. Do it again once the trip is set up — your safety net."),
         ("Tidy your things", "Care → All your things · table: the No weight and No place chips find what is missing. Weights make the bag bars honest; places make From where one walk through the house."),
@@ -361,7 +632,7 @@ struct FirstTripCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Your first real trip in 6 steps").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+            Text(FirstTripCard.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 .accessibilityIdentifier("quickstart-title")
             ForEach(Array(FirstTripCard.steps.enumerated()), id: \.offset) { n, step in
                 HStack(alignment: .top, spacing: 12) {

@@ -792,17 +792,28 @@ struct PackingDayGuideCard: View {
         }
     }
 
+    /// The card's heading, first paragraph and closing lines — statics, so How it works' search
+    /// (0.90) reads the same words the card shows.
+    static let title = "Packing Stations"
+    static let intro = "On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go through them, each with a short word on its chip \u{2014} Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways."
+    static let more = [
+        "Getting around: tap a station in the row to open it \u{2014} Pack goes straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the stations are at the top too. Done closes it.",
+        "A trip with no bags yet has nothing to lay out, weigh, tag or photograph: those four stations are faded with a dashed edge and say \u{201C}no bags yet\u{201D}; opened, they say how to give things a bag (Usually packed in, on a thing\u{2019}s page). Ready then waits only for the packing.",
+        "A To do written here (Remind me, Add a reminder) is a line of the trip\u{2019}s own, under To do: due at once, so it is in Before you go at the top of the trip straight away \u{2014} tick it there or on the list. Like every reminder it counts on the list: Pack waits for it.",
+        "Once the trip sets off, the row is gone \u{2014} the weights and photos stay in Bags. A trip you share, or start again from this one, begins its stations afresh.",
+    ]
+
     var body: some View {
         let tint = Library.LoopStep.pack.tint
         let words = Library.LoopStep.pack.words(scheme)
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 StationMark(mark: PackingDayStation.dayMark, size: 24).foregroundStyle(words)
-                Text("Packing Stations").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text(PackingDayGuideCard.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
             }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("guide-day-title")
-            Text("On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go through them, each with a short word on its chip \u{2014} Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways.")
+            Text(PackingDayGuideCard.intro)
                 .font(.system(.callout)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(Array(PackingDayStation.allCases.enumerated()), id: \.element) { n, s in
@@ -828,10 +839,7 @@ struct PackingDayGuideCard: View {
                 }
             }
             VStack(alignment: .leading, spacing: 6) {
-                line("Getting around: tap a station in the row to open it \u{2014} Pack goes straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the stations are at the top too. Done closes it.")
-                line("A trip with no bags yet has nothing to lay out, weigh, tag or photograph: those four stations are faded with a dashed edge and say \u{201C}no bags yet\u{201D}; opened, they say how to give things a bag (Usually packed in, on a thing\u{2019}s page). Ready then waits only for the packing.")
-                line("A To do written here (Remind me, Add a reminder) is a line of the trip\u{2019}s own, under To do: due at once, so it is in Before you go at the top of the trip straight away \u{2014} tick it there or on the list. Like every reminder it counts on the list: Pack waits for it.")
-                line("Once the trip sets off, the row is gone \u{2014} the weights and photos stay in Bags. A trip you share, or start again from this one, begins its stations afresh.")
+                ForEach(PackingDayGuideCard.more, id: \.self) { line($0) }
             }
             .padding(.top, 2)
         }

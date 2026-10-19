@@ -13640,6 +13640,99 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "day-howitworks-2")
     }
 
+    // MARK: - Search in How it works (0.90, his ask of 19 Oct 2026; spec 06 §7a)
+
+    /// What a found heading or paragraph says, and how many places in it are marked ("2 places
+    /// marked"). The iPhone gives the words as the label and the marks as the value; a Mac text may
+    /// give its words as the value — so both are read, and each told apart by what it says.
+    private func guideHit(_ app: XCUIApplication, _ id: String) -> (said: String, marked: Int) {
+        let e = app.staticTexts[id]
+        guard e.exists else { return ("", -1) }
+        let both = [e.label, e.value as? String ?? ""]
+        let marks = both.first { $0.hasSuffix(" marked") }
+        let said = both.first { !$0.isEmpty && !$0.hasSuffix(" marked") } ?? ""
+        return (said, marks.flatMap { Int($0.split(separator: " ").first ?? "") } ?? -1)
+    }
+
+    /// Search in How it works (his ask, 19 Oct 2026: "Search function in How-it-works … The search
+    /// function will make it even better"). "siri" is said in two places, in two parts — Packing a
+    /// trip (Where is my …?) and Shortcuts and the Action button: only those two paragraphs show,
+    /// each under its part's heading, the word marked, "2 places" on top; nonsense says so calmly;
+    /// the ✕ gives the whole guide back, scrolled where it was. On the Mac ⌘F puts the cursor in
+    /// the field, Escape empties it, and a second Escape closes How it works.
+    func testHowItWorksSearchShowsOnlyWhatSaysTheWords() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-howitworks")
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
+        let field = app.textFields["guide-search"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "How it works has no search field")
+        // Read on a little first: the ✕ must bring the guide back right where it was.
+        let mark = guidePart(app, "guide-topic-1")
+        XCTAssertTrue(waitUntil { mark.exists }, "How it works has no second topic")
+        let top = mark.frame.minY
+        if let list = listHolding(app, mark) {
+            for _ in 0..<2 {
+                #if os(macOS)
+                list.scroll(byDeltaX: 0, deltaY: -500)
+                #else
+                list.swipeUp()
+                #endif
+            }
+        }
+        var before = mark.frame.minY
+        for _ in 0..<10 {                                   // until the swipe has come to rest
+            usleep(400_000)
+            if abs(mark.frame.minY - before) < 1 { break }
+            before = mark.frame.minY
+        }
+        XCTAssertLessThan(before, top - 200, "the guide did not scroll: \(top) → \(before)")
+        shot(app, "guide-search-0-before")
+
+        type("siri", into: field)
+        XCTAssertTrue(appears(app, "guide-search-results", timeout: 5), "typing in the field showed no search")
+        let count = app.staticTexts["guide-search-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "2 places" }, "the count says '\(words(count))', not 2 places")
+        XCTAssertFalse(app.staticTexts["guide-hit-topic-1-0"].exists, "a paragraph that does not say it shows")
+        for (part, n) in [("topic-1", 7), ("topic-11", 3)] {
+            XCTAssertNotNil(find(app, "guide-hit-\(part)"), "the part \(part) is not shown")
+            XCTAssertFalse(guideHit(app, "guide-hit-\(part)-title").said.isEmpty, "the part \(part) shows no heading")
+            let hit = guideHit(app, "guide-hit-\(part)-\(n)")
+            XCTAssertTrue(hit.said.localizedCaseInsensitiveContains("siri"), "paragraph \(n) of \(part) says '\(hit.said)'")
+            XCTAssertEqual(hit.marked, 1, "Siri is not marked in paragraph \(n) of \(part): '\(hit.said)'")
+        }
+        XCTAssertNil(find(app, "guide-hit-words"), "a part that does not say it shows")
+        XCTAssertNil(find(app, "guide-topic-1"), "the whole guide still shows under the search")
+        shot(app, "guide-search-1-found")
+
+        replace("qxzqxz", in: field)
+        XCTAssertTrue(app.staticTexts["guide-search-none"].waitForExistence(timeout: 5), "nothing found, and nothing says so")
+        XCTAssertFalse(app.staticTexts["guide-search-count"].exists, "a count with nothing found")
+        XCTAssertNil(find(app, "guide-hit-topic-1"), "a part shows with nothing found")
+        shot(app, "guide-search-2-none")
+
+        tap(app, id: "guide-search-clear")
+        XCTAssertTrue(waitUntil { self.find(app, "guide-search-results") == nil }, "the ✕ did not end the search")
+        XCTAssertFalse(((field.value as? String) ?? "").contains("qxz"), "the typed words are still in the field")
+        XCTAssertTrue(waitUntil { mark.exists }, "the ✕ did not bring the whole guide back")
+        XCTAssertEqual(mark.frame.minY, before, accuracy: 4, "the guide came back somewhere else, not where it was")
+
+        #if os(macOS)
+        app.typeKey("f", modifierFlags: .command)
+        app.typeText("siri")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["guide-search-count"]) == "2 places" },
+                      "⌘F did not put the cursor in the search field")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.find(app, "guide-search-results") == nil }, "Escape did not empty the search")
+        XCTAssertNotNil(find(app, "guide-howitworks"), "Escape closed How it works instead of emptying the search")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5), "a second Escape did not close How it works")
+        #else
+        tap(app, id: "guide-done")
+        XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
+        #endif
+    }
+
     // MARK: - Packing Stations (0.81, his decisions of 14 Oct 2026; spec 07 part 17 "0.81")
 
     /// The row is "Packing Stations" now ("Stations" on the row since 0.84; the sheet keeps the
