@@ -12,6 +12,13 @@
 // no fill, nothing under ~2 points apart so a mark still reads at 14 points on a
 // trip line. No stock art, no emoji (his rule). Only M L H V C S Q A Z.
 //
+// 41 more came with 0.92, his words (19 Oct 2026): "Could we add some icons again. Love the
+// one we have." — the same hand again, chosen for his life (Sweden: midsummer, the stuga,
+// skates, the pulka, cross-country; triathlon: a wetsuit, the bike pump and helmet, a
+// stopwatch, heart rate; the erg, the scuba tank, a paddleboard; the beach, city and business
+// trips). Each stands at the END of its heading, so every icon he knows keeps its place
+// (`firstNinetyOne`), and each has its hidden other words (`TemplateIconKeywords.swift`).
+//
 // A key is stored on a template (`extra["iconKey"]`) and must never change; a
 // label may. The picker shows the groups in this order, each in the order below.
 
@@ -72,6 +79,11 @@ public enum TemplateIconCatalog {
         i("ticket", "Tickets", .travel, "M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4Z M15 7.5v1 M15 11.5v1 M15 15.5v1"),
         i("map", "Map", .travel, "M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z M9 4.5v13 M15 6.5v13"),
         i("hotel", "Hotel", .travel, "M3 20.5h18 M5 20.5V5c0-.6.4-1 1-1h12c.6 0 1 .4 1 1v15.5 M10 20.5v-3.5h4v3.5 M8.5 17h7 M8.5 8h1 M14.5 8h1 M8.5 12h1 M14.5 12h1"),
+        // 0.92 — new, at the end of the heading so the ones he knows keep their places.
+        i("cottage", "Cottage", .travel, "M2.5 11.5 12 4l9.5 7.5 M5 9.5v11h14v-11 M10 20.5v-5.5h4v5.5 M16 7.2V4.5h2.5v4.6"),
+        i("globe", "Abroad", .travel, "M3.5 12a8.5 8.5 0 1 0 17 0a8.5 8.5 0 1 0 -17 0 M12 3.5c-2.4 2.3-3.6 5.1-3.6 8.5s1.2 6.2 3.6 8.5 M12 3.5c2.4 2.3 3.6 5.1 3.6 8.5s-1.2 6.2-3.6 8.5 M3.5 12h17 M5 7.5h14 M5 16.5h14"),
+        i("pillow", "Neck pillow", .travel, "M8.5 7.5V11a3.5 3.5 0 0 0 7 0V7.5a2.25 2.25 0 0 1 4.5 0V11a8 8 0 0 1-16 0V7.5a2.25 2.25 0 0 1 4.5 0Z"),
+        i("scooter", "E-scooter", .travel, "M3 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M17 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M7 18h10 M19 18 16.2 4.5 M14 4.5h4.5"),
 
         // MARK: Outdoors
         i("hiking", "Hiking", .outdoors, "M2.5 19.5 9.2 7.8l3.4 5.8 2.6-3.6 6.3 9.5Z M7.4 10.9l1.8 1.2 1.6-1.3"),
@@ -85,6 +97,16 @@ public enum TemplateIconCatalog {
         i("snow", "Winter", .outdoors, "M12 3v18 M4.2 7.5l15.6 9 M4.2 16.5l15.6-9 M9.8 4.4 12 6l2.2-1.6 M9.8 19.6 12 18l2.2 1.6"),
         i("rain", "Rain", .outdoors, "M7 15.5a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.3 3.4 3.4 0 0 1 .4 6.7Z M8 18.5l-1 2 M12 18.5l-1 2 M16 18.5l-1 2"),
         i("fishing", "Fishing", .outdoors, "M15 3.5v11a4.5 4.5 0 0 1-9 0v-2.8 M6 11.7l-1.6 1.6 M15 3.5h-2.5"),
+        // 0.92 — new, at the end of the heading so the ones he knows keep their places.
+        i("xcski", "Cross-country", .outdoors, "M13.4 4.5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0 M14.2 8 11.5 13.5 M11.5 13.5 7.5 19.5 M11.5 13.5l2.5 2.8-.8 3.2 M13.6 9.2l3.9 1.3 M13.6 9.2 9.5 11.3 M17.5 10.5l-1 7 M9.5 11.3 4.5 16.5 M3 19.5h16c1 0 1.8-.5 2.3-1.3"),
+        i("skate", "Ice skating", .outdoors, "M6.5 3.5h5v6l5.5 2c1.7.6 2.5 1.7 2.5 3.2V16H6.5Z M4 19.5h15c1.2 0 2-.7 2.5-1.8 M8.5 16v3.5 M16.5 16v3.5 M11.5 7H9"),
+        i("sled", "Sled", .outdoors, "M3.5 9.5h13.5 M6.5 9.5v8 M14 9.5v8 M2.5 17.5h15a3.5 3.5 0 0 0 3.5-3.5v-1.5"),
+        i("sleepingbag", "Sleeping bag", .outdoors, "M12 3.5c3 0 5.5 2.3 5.5 5.3 0 4.2-1 8.2-2 11-.2.5-.6.7-1.1.7H9.6c-.5 0-.9-.2-1.1-.7-1-2.8-2-6.8-2-11C6.5 5.8 9 3.5 12 3.5Z M9.6 8.6a2.4 2.2 0 1 0 4.8 0a2.4 2.2 0 1 0 -4.8 0 M7 13.5c3.3.8 6.7.8 10 0 M7.8 17c2.8.7 5.6.7 8.4 0"),
+        i("binoculars", "Binoculars", .outdoors, "M3 16.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0 M14 16.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0 M3 16.5 4.5 6.5c.1-.9.8-1.5 1.7-1.5h1.6c.9 0 1.6.6 1.7 1.5L10 16.5 M21 16.5 19.5 6.5c-.1-.9-.8-1.5-1.7-1.5h-1.6c-.9 0-1.6.6-1.7 1.5L14 16.5 M9.7 10.5h4.6"),
+        i("thermos", "Thermos", .outdoors, "M5 8.5h6.5v11c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1Z M5.5 8.5V5.5c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1v3 M5 12h6.5 M14 14h6l-.6 5.6c-.1.5-.5.9-1 .9h-2.8c-.5 0-.9-.4-1-.9Z M16 9.5c-.6.8.6 1.6 0 2.5 M18.2 9.5c-.6.8.6 1.6 0 2.5"),
+        i("mittens", "Mittens", .outdoors, "M7 17.5v-3L4.4 11.9a1.6 1.6 0 0 1 2.5-2l1.6 2.1V8.5a4.25 4.25 0 0 1 8.5 0v9 M6 17.5h12v3.5H6Z"),
+        i("jacket", "Jacket", .outdoors, "M12 8.5 8.5 4.5 5.2 6c-1 .5-1.7 1.5-1.7 2.6v9.9h3 M12 8.5l3.5-4 3.3 1.5c1 .5 1.7 1.5 1.7 2.6v9.9h-3 M6.5 10v10.5h11V10 M12 8.5v12 M8.5 4.5c1-.9 2.2-1.3 3.5-1.3s2.5.4 3.5 1.3"),
+        i("mushroom", "Mushrooms", .outdoors, "M3.5 11.5a8.5 7.5 0 0 1 17 0Z M9.5 11.5 9 18.5c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2l-.5-7"),
 
         // MARK: Sport
         i("run", "Run", .sport, "M3 18v-4.2c0-.6.5-1 1.1-1 2 0 3.6-1.2 4.5-3.1l.5-1.2 3.1 1.6.9 2.1 5.1 1.5c1.6.5 2.8 1.9 2.8 3.5v.8Z M3 18h18 M12.3 11.8l-1.4 1.4 M14.2 13.2l-1.4 1.4"),
@@ -107,6 +129,20 @@ public enum TemplateIconCatalog {
         i("icebath", "Ice bath", .sport, "M2.5 12h19 M4 12v2.5a5 5 0 0 0 5 5h6a5 5 0 0 0 5-5V12 M7.5 19 6.5 21 M16.5 19l1 2 M10 8.5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M4.5 6h3.2v3.2H4.5Z M16.5 5.8l3.1.7-.7 3.1-3.1-.7Z"),
         i("watch", "Watch", .sport, "M8 7h8c.6 0 1 .4 1 1v8c0 .6-.4 1-1 1H8c-.6 0-1-.4-1-1V8c0-.6.4-1 1-1Z M9 7l.5-3.5h5L15 7 M9 17l.5 3.5h5L15 17 M12 9.5V12l1.8 1"),
         i("bottle", "Water bottle", .sport, "M7.5 10.5a2.5 2.5 0 0 1 2.5-2.5h4a2.5 2.5 0 0 1 2.5 2.5v9c0 .6-.4 1-1 1h-7c-.6 0-1-.4-1-1Z M9.5 8V5.5h5V8 M11 5.5V3.5h2 M7.5 13.5h9"),
+        // 0.92 — new, at the end of the heading so the ones he knows keep their places.
+        // The rowing machine he named at sight in AMS Workout Sync's blind test (E7, 30 Sep 2026; the
+        // crossed oars got "no idea") — the same drawing: fan, monorail, seat, front foot, floor, monitor arm.
+        i("rowing", "Rowing", .sport, "M2 8.4a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0 M7.9 10.9c4.4 2.2 8.8 4.5 13.1 6.8 M12.4 13c.9.5 1.8.9 2.7 1.4 M4.6 11.6c-.5 2.7-1 5.4-1.4 8.1 M6.6 5.7c.7-1.2 1.6-2.2 2.7-3 M9.1 1.6c1 .5 1.9 1.1 2.7 1.9 M2.2 20.2c6.5-.2 13-.2 19.5 0"),
+        i("stopwatch", "Stopwatch", .sport, "M4.5 13.5a7.5 7.5 0 1 0 15 0a7.5 7.5 0 1 0 -15 0 M12 13.5 14.3 10 M12 6V3.5 M9.8 3.5h4.4 M17.6 7.9l1.4-1.4"),
+        i("pulse", "Heart rate", .sport, "M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.7C19.5 15.4 12 20 12 20Z M7.5 12.5h2.5l1.2-2 1.8 4 1.3-2h2.2"),
+        i("trophy", "Trophy", .sport, "M7.5 3.5h9v5a4.5 4.5 0 0 1-9 0Z M7.5 5H4.5v1.5a3 3 0 0 0 3.3 3 M16.5 5h3v1.5a3 3 0 0 1-3.3 3 M12 13v3.5 M9.5 16.5h5l1 4h-7Z"),
+        i("helmet", "Bike helmet", .sport, "M3.5 15.5C3.5 10 7.3 6.5 12.5 6.5c4.5 0 8 3 8 7.2v1.8Z M8.5 8.4l2 3.6 M12.8 7l.4 4.3 M17 8.2l-1.2 3.6 M7.5 15.5l3.5 4.5 3-4.5"),
+        i("pump", "Bike pump", .sport, "M9.5 8h5v10h-5Z M12 8V4 M8.5 4h7 M6.5 20.5h11 M12 18v2.5 M14.5 15.5h2a2 2 0 0 0 2-2V10.5 M17.3 10.5h2.4"),
+        i("wetsuit", "Wetsuit", .sport, "M10 3.5c.4 1 1.1 1.5 2 1.5s1.6-.5 2-1.5L17.6 5 21 12.6l-2.2 1L16.3 8.6 16 21h-3l-1-7.5-1 7.5H8L7.7 8.6l-2.5 5L3 12.6 6.4 5Z M12 5v4.5"),
+        i("tank", "Scuba tank", .sport, "M9 9.5a3 3 0 0 1 6 0v10a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z M12 6.5V4 M10 4h4 M12 5h4a2.5 2.5 0 0 1 2.5 2.5v7 M17 15.5h3v2.5h-3Z"),
+        i("yogamat", "Yoga mat", .sport, "M11 12.5a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M16 14.5a2 2 0 1 1 2-2 M16 17.5H3.5V15h8.2"),
+        i("sup", "Paddleboard", .sport, "M9.5 2.5c2.2 1.8 3.5 5 3.5 9.5 0 5-1 8-1.5 9.2-.2.4-.6.8-1.1.8H8.6c-.5 0-.9-.4-1.1-.8C7 20 6 17 6 12c0-4.5 1.3-7.7 3.5-9.5Z M17 3.5v9.5 M15.5 3.5h3 M17 13c1.2 0 1.8 1 1.8 2.5v3c0 1.5-.8 2.5-1.8 2.5s-1.8-1-1.8-2.5v-3c0-1.5.6-2.5 1.8-2.5Z"),
+        i("lifejacket", "Life jacket", .sport, "M8.5 3.5C8.5 6 9.5 8 12 9c2.5-1 3.5-3 3.5-5.5 M8.5 3.5 4.5 5.5V19c0 .8.7 1.5 1.5 1.5h12c.8 0 1.5-.7 1.5-1.5V5.5l-4-2 M12 9v11.5 M4.5 13h15 M4.5 16.5h15"),
 
         // MARK: Beach and summer
         i("sun", "Summer", .beach, "M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M12 2.8v2.4 M12 18.8v2.4 M2.8 12h2.4 M18.8 12h2.4 M5.5 5.5l1.7 1.7 M16.8 16.8l1.7 1.7 M5.5 18.5l1.7-1.7 M16.8 7.2l1.7-1.7"),
@@ -124,6 +160,11 @@ public enum TemplateIconCatalog {
         i("surf", "Surfing", .beach, "M2.5 18c3.5 0 5.5-2.2 6.5-5.5 1.3-4.3 4.6-7 8.5-7 2.4 0 4 1.6 4 3.6 0 1.7-1.3 3-3 3-1.3 0-2.2-.9-2.2-2 M2.5 20.8c1.6 0 1.6-.9 3.2-.9s1.6.9 3.2.9 1.6-.9 3.2-.9 1.6.9 3.2.9 1.6-.9 3.2-.9 1.6.9 2 .9"),
         i("sail", "Sailing", .beach, "M3.5 16h17l-2.5 4H6Z M12 16V3.5 M12 4.5l6.5 9.5H12 M10 6.5 5 14h5Z"),
         i("kite", "Kite", .beach, "M13.5 2.5 19 8l-5.5 7.5L8 8Z M8 8h11 M13.5 2.5v13 M13.5 15.5c-.5 2-2 3-4 2.5S6 17 5 20"),
+        // 0.92 — new, at the end of the heading so the ones he knows keep their places.
+        i("icecream", "Ice cream", .beach, "M6.5 11h11 M7.5 11l4.5 10.5 4.5-10.5 M7 11c-.8-3.6 1.5-7 5-7s5.8 3.4 5 7 M9.6 14.5h4.8"),
+        i("bucket", "Sand toys", .beach, "M3 10h10l-1.2 10.5H4.2Z M3.8 10c0-2.9 1.8-5 4.2-5s4.2 2.1 4.2 5 M18.5 3.5v9 M17 3.5h3 M16 12.5h5v3.5a2.5 2.5 0 0 1-5 0Z"),
+        i("anchor", "Anchor", .beach, "M10.2 4.8a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0 M12 6.6v13.9 M8.5 9.5h7 M4.5 13.5c0 4 3.4 7 7.5 7s7.5-3 7.5-7 M3 15.2 4.5 13.5 6.2 15 M17.8 15l1.7-1.5 1.5 1.7"),
+        i("midsummer", "Midsummer", .beach, "M12 2.5v18 M4.5 7h15 M1.5 10.5a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M16.5 10.5a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M12 10.5l2.2-1.6 M12 10.5 9.8 8.9 M12 14.5l2.2-1.6 M12 14.5l-2.2-1.6 M9 20.5h6"),
 
         // MARK: City, food and fun
         i("city", "City", .city, "M3 20.5h18 M4.5 20.5v-9H9v9 M9 20.5v-16h6v16 M15 20.5v-7h4.5v7 M11.5 8h1 M11.5 11.5h1 M11.5 15h1"),
@@ -139,6 +180,14 @@ public enum TemplateIconCatalog {
         i("music", "Music", .city, "M9 17.5V6l10-2.5v12 M9 9.5l10-2.5 M5 17.5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M15 15.5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"),
         i("camera", "Camera", .city, "M3.5 8h4l1.5-2.5h6L16.5 8h4v11h-17Z M8.6 13.3a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0"),
         i("book", "Reading", .city, "M12 6.5c-2-1.5-4.8-2-8-1.5v13c3.2-.5 6 0 8 1.5 2-1.5 4.8-2 8-1.5v-13c-3.2-.5-6 0-8 1.5Z M12 6.5v13"),
+        // 0.92 — new, at the end of the heading so the ones he knows keep their places.
+        i("pizza", "Pizza", .city, "M4 6.5c5.3-3 10.7-3 16 0L12 21Z M5.3 9.2c4.4-2.2 9-2.2 13.4 0 M8.8 12a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0 M12.6 14.5a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0"),
+        i("museum", "Museum", .city, "M3 9.5 12 4l9 5.5Z M3 20.5h18 M4.5 18h15 M6 9.5V18 M10 9.5V18 M14 9.5V18 M18 9.5V18"),
+        i("cake", "Birthday", .city, "M4.5 12.5h15v8h-15Z M4.5 15.5c1.25 1 2.5 1 3.75 0s2.5-1 3.75 0 2.5 1 3.75 0 2.5-1 3.75 0 M8.5 12.5v-3 M12 12.5v-3 M15.5 12.5v-3 M8.5 5.5v.5 M12 5.5v.5 M15.5 5.5v.5"),
+        i("rings", "Wedding", .city, "M3 14a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M11 14a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"),
+        i("xmastree", "Christmas", .city, "M12 3 7.5 8.5H10l-4 5.5h3L5 18.5h14L15 14h3l-4-5.5h2.5Z M12 18.5v3"),
+        i("cinema", "Cinema", .city, "M3.5 10h17v10.5h-17Z M3.5 10V6h17v4 M7 6l2 4 M11.5 6l2 4 M16 6l2 4"),
+        i("ferriswheel", "Fun fair", .city, "M5.5 9.5a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0 M12 3v13 M6.37 6.25l11.26 6.5 M6.37 12.75l11.26-6.5 M12 9.5 7.5 20.5 M12 9.5l4.5 11 M5 20.5h14"),
 
         // MARK: Everyday
         i("laptop", "Work", .everyday, "M5 5.5h14v10H5Z M3 18.5h18"),
@@ -158,6 +207,14 @@ public enum TemplateIconCatalog {
         i("sleep", "Sleeping", .everyday, "M3 18.5v-8 M3 14.5h18v4 M21 14.5v-1.5c0-1.4-1.1-2.5-2.5-2.5H11v4 M5.3 12a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0 -3.4 0"),
         i("kids", "Kids", .everyday, "M5.9 6.5a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0 M3.5 20.5V18a5 5 0 0 1 10 0v2.5 M15.7 12a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0 M14.5 20.5v-1.3a3 3 0 0 1 6 0v1.3"),
         i("paw", "Dog", .everyday, "M12 20.5c-2.6 0-5-1.4-5-3.4 0-2.6 2.4-5 5-5s5 2.4 5 5c0 2-2.4 3.4-5 3.4Z M3.4 10.5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0 M7.4 6.5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0 M13.4 6.5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0 M17.4 10.5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0"),
+        // 0.92 — new, at the end of the heading so the ones he knows keep their places.
+        i("toothbrush", "Toothbrush", .everyday, "M3.5 20.5 20 4 M14.2 9.8l-1.8-1.8 M15.8 8.2 14 6.4 M17.4 6.6l-1.8-1.8 M19 5l-1.8-1.8"),
+        // The app's own battery (`ToChargeCard.battery`, To charge) — one battery in the whole app.
+        i("battery", "Battery", .everyday, "M5 7.5h11.5c.8 0 1.5.7 1.5 1.5v6c0 .8-.7 1.5-1.5 1.5H5c-.8 0-1.5-.7-1.5-1.5V9c0-.8.7-1.5 1.5-1.5Z M21 10.5v3 M11.6 9.3L9.2 12.4h3.4L10.2 15.1"),
+        i("badge", "Name badge", .everyday, "M6.5 10h11v10.5h-11Z M9 10 7.5 3.5 M15 10l1.5-6.5 M10.7 13.3a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0 M9.5 17.5h5"),
+        i("notebook", "Notes", .everyday, "M6 3.5h11.5c.6 0 1 .4 1 1v15c0 .6-.4 1-1 1H6Z M4.5 7h3 M4.5 12h3 M4.5 17h3 M10 8h5.5 M10 12h5.5"),
+        i("suit", "Suit", .everyday, "M8 3l1.5 5 2-2 M16 3l-1.5 5-2-2 M10.8 5.5h2.4l-.5 2.2h-1.4Z M11.3 7.7 10 17l2 2.5 2-2.5-1.3-9.3"),
+        i("pram", "Pram", .everyday, "M3.5 11h13c0 2.8-2.5 5-5.5 5h-2c-3 0-5.5-2.2-5.5-5Z M3.5 11a6.5 6.5 0 0 1 6.5-6.5V11 M16.5 11 18.5 6.5h2 M5 20a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0 M12.4 20a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0"),
     ]
 
     /// The 50 keys every build since 0.46 knows — never renamed, never dropped.
@@ -167,6 +224,22 @@ public enum TemplateIconCatalog {
         "yoga", "tent", "fire", "ski", "snow", "sun", "beach", "rain", "compass", "kayak",
         "fishing", "climb", "racket", "passport", "firstaid", "pill", "toiletry", "plug", "laptop", "camera",
         "coffee", "food", "sleep", "sauna", "paw", "book", "gift", "glasses", "headlamp", "heart",
+    ]
+
+    /// The 91 icons of 0.78–0.91 in the picker's order then — 0.92 adds its 41 at the end of each
+    /// heading, so these keep their order (his eye knows where they stand).
+    public static let firstNinetyOne: [String] = [
+        "car", "plane", "rv", "train", "bus", "motorbike", "ferry", "suitcase", "weekendbag", "backpack",
+        "box", "passport", "ticket", "map", "hotel",
+        "hiking", "walk", "mountain", "compass", "tent", "fire", "headlamp", "ski", "snow", "rain", "fishing",
+        "run", "bike", "swim", "triathlon", "diving", "fin", "kayak", "climb", "golf", "racket", "strength",
+        "kettlebell", "mobility", "yoga", "lotus", "breath", "sauna", "icebath", "watch", "bottle",
+        "sun", "lounger", "beach", "palm", "glasses", "sunhat", "suncream", "flipflops", "towel", "beachball",
+        "swimring", "shell", "surf", "sail", "kite",
+        "city", "restaurant", "food", "coffee", "wine", "picnic", "bbq", "shopping", "party", "gift", "music",
+        "camera", "book",
+        "laptop", "briefcase", "phone", "plug", "headphones", "wallet", "keys", "clothes", "shoes", "laundry",
+        "toiletry", "pill", "firstaid", "heart", "sleep", "kids", "paw",
     ]
 
     private static let byKey: [String: TemplateIcon] = Dictionary(all.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })

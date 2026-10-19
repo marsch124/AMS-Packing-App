@@ -373,6 +373,23 @@ His test H.1. 50 icons "of my own, drawn in the app's style (one stroke, round e
 on a sample sheet in day and night mode and said (2 Oct 2026): "Your suggestions are fine. Please implement."
 Released in 0.46. No stock art, no emoji in the icon set.
 
+**0.92: 41 more (132 icons).** His words (19 Oct 2026): **"Could we add some icons again. Love the one we have."**
+41 new drawings in the same hand as the 91 (one stroke 1.9 wide on the 24-point grid, round caps and joins, no fill,
+nothing closer than about 2 points; checked at 30, 20 and 14 points, day and night, beside old ones — the contact
+sheets of the build), none a near-copy of an old one (a cross-country skier beside the Skiing skis, a stopwatch beside
+the Watch, a heart with its pulse beside Health, a trophy beside the Triathlon medal), chosen for his life: Sweden
+(the stuga, midsummer's pole, skates, the pulka, cross-country, mushrooms, mittens), training (the erg, a stopwatch,
+heart rate, a trophy, the bike helmet and pump, a wetsuit, a yoga mat), the water (scuba tank, paddleboard, life
+jacket, anchor), the beach (ice cream, sand toys), city and business trips (pizza, museum, cinema, fun fair, name
+badge, notes, suit), family days (birthday, wedding, Christmas, pram) and the bag (neck pillow, toothbrush, battery).
+No alcohol among them (the Wine of 0.74 stays; nothing new to drink). **The Rowing icon is the rowing machine he named
+at sight in AMS Workout Sync's blind test (E7, 30 Sep 2026)** — the same drawing (fan, monorail, seat, front foot,
+floor, monitor arm; without the arm he could not name it there). **The Battery is the app's own** (`ToChargeCard.battery`,
+the To charge card), so the app has one battery. Each new icon stands at the **END of its heading**, so every icon he
+knows keeps its place (`TemplateIconCatalog.firstNinetyOne`, pinned by a test); each has its hidden other words (§ Other
+words); and a few have words to be suggested by — at the very end, so no template that had a suggestion is given
+another (§ Which icon, rule 49b). No new heading: all 41 fit the six (decided by the build). Nothing is chosen for him.
+
 **0.78: the weekend bag (91 icons).** His ask (13 Oct 2026, the picker on the iPhone): his small always-packed
 template showed the same suitcase as his big Travel one — "a nice unique icon — not the same as Travel". One new
 drawing in the same hand, `weekendbag` "Weekend bag", right after Travel, suggested by a short trip's words (§ Which
@@ -487,45 +504,86 @@ changes; a label may** — 0.74 relabelled `gift` from "Party" to "Gift", "Party
   49. ✱ has "mountain", "summit" or "fjäll" → `mountain` (after "vandr": "Fjällvandring" is a hike)
   49a. ✚ (0.78) any SHORT word of rule 45a → `weekendbag` ("Weekend", "Short trip", "Small core", "Helg",
       "Weekendresa"; "Summer weekend" stays `sun`, "Weekend hike" `hiking`; "Shorts" is no short trip).
+  49b. ◆ (0.92) the new icons' words, last of all — they reach only a name that suggested nothing until now, so no
+      icon he sees changes ("Längdskidor" keeps the skis, "Sommarstuga", "Midsommar" and "Midsummer" the sun, "Wedding"
+      the balloons, "Christmas" and "Birthday" the gift, "Paddleboard" the paddle, "Weekend cabin" the weekend bag):
+      has "rowing", "rodd" or word "erg"/"row" → `rowing`; has "skating"/"skridsko" → `skate`; has "sled", "pulka",
+      "kälk", "toboggan" → `sled`; has "cross-country", "langlauf", "längdåkning" → `xcski`; has "wetsuit"/"våtdräkt"
+      → `wetsuit`; word "sup" → `sup`; word "race", has "tävling", "competition", "wettkampf" → `trophy`; has
+      "mushroom"/"svamp" → `mushroom`; has "cottage", "cabin", "stuga" → `cottage`; has "abroad"/"utomlands" →
+      `globe`; has "museum"/"museer" → `museum`; has "cinema", "movie", "kino", word "bio" → `cinema`; has "tivoli",
+      "theme park", "amusement park", "nöjespark", "liseberg", "gröna lund" → `ferriswheel`; has "pram", "stroller",
+      "barnvagn" → `pram`.
   50. none matched: role `base` → `suitcase`, else nil (the letter).
 
-### The 91 icons (`TemplateIconCatalog.all`, read by `TemplateIcons.all`; key → label shown in the picker; path data in the file, a 24-pt box, only the SVG commands M L H V C S Q A Z that `SVGPath` draws)
-In the picker's order, under its six headings (`TemplateIconGroup`, 0.74); ✱ = new in 0.74, ✚ = new in 0.78.
+### The 132 icons (`TemplateIconCatalog.all`, read by `TemplateIcons.all`; key → label shown in the picker; path data in the file, a 24-pt box, only the SVG commands M L H V C S Q A Z that `SVGPath` draws)
+In the picker's order, under its six headings (`TemplateIconGroup`, 0.74); ✱ = new in 0.74, ✚ = new in 0.78, ◆ = new
+in 0.92 (always the last of their heading, in this order).
 - **Travel** (`travel`): car Car · plane Plane · rv Camper · train Train · ✱bus Bus · ✱motorbike Motorbike · ferry
   Ferry · suitcase Travel · ✚weekendbag Weekend bag (a soft holdall: a round-ended body, a zip along the top with
   its pull, two handles — the back one over the front one) · backpack Backpack · box Boxes · passport Passport · ✱ticket Tickets · ✱map Map · ✱hotel
-  Hotel (a building with a door and its awning).
+  Hotel (a building with a door and its awning) · ◆cottage Cottage (a house with a pitched roof, a door and a
+  chimney — the stuga) · ◆globe Abroad (a globe: equator, two latitudes, one meridian) · ◆pillow Neck pillow (a U with
+  round ends) · ◆scooter E-scooter (two small wheels, a deck, the stem and handlebar).
 - **Outdoors** (`outdoors`): hiking Hiking · ✱walk Walking · mountain Summit · compass Orienteering · tent Camping ·
-  fire Campfire · headlamp Headlamp · ski Skiing · snow Winter · rain Rain · fishing Fishing.
+  fire Campfire · headlamp Headlamp · ski Skiing · snow Winter · rain Rain · fishing Fishing · ◆xcski Cross-country
+  (a skier striding, two poles, the ski's tip turned up) · ◆skate Ice skating (a skate boot on its blade) · ◆sled Sled
+  (a seat on two posts, the runner curling up in front) · ◆sleepingbag Sleeping bag (a mummy bag, the face's opening,
+  two quilted seams) · ◆binoculars Binoculars · ◆thermos Thermos (a flask with its cup-lid, a cup with steam) ·
+  ◆mittens Mittens (a mitten with its thumb, the cuff) · ◆jacket Jacket (hood, zip, long sleeves) · ◆mushroom
+  Mushrooms.
 - **Sport** (`sport`): run Run · bike Bike · swim Swim · ✱triathlon Triathlon (a medal on its ribbon) · diving
   Diving · fin Freediving · kayak Paddling · climb Climbing · golf Golf · racket Racket sports · strength Strength ·
   kettlebell Kettlebell · mobility Mobility · yoga Stretch · ✱lotus Yoga (seated, legs crossed) · breath Breath work ·
-  sauna Sauna · ✱icebath Ice bath (a head in a tub, two ice cubes) · ✱watch Watch · ✱bottle Water bottle.
+  sauna Sauna · ✱icebath Ice bath (a head in a tub, two ice cubes) · ✱watch Watch · ✱bottle Water bottle · ◆rowing
+  Rowing (the rowing machine of AMS Workout Sync, E7) · ◆stopwatch Stopwatch · ◆pulse Heart rate (the Health heart with
+  a pulse line in it) · ◆trophy Trophy (a cup with handles on its foot) · ◆helmet Bike helmet (side view, three vents,
+  the chin strap) · ◆pump Bike pump (a floor pump: T handle, barrel, foot, hose) · ◆wetsuit Wetsuit (a full suit, arms
+  out, the zip) · ◆tank Scuba tank (the bottle, its valve, the hose to a regulator) · ◆yogamat Yoga mat (rolled, the
+  end lying flat) · ◆sup Paddleboard (the board upright, a single paddle beside it) · ◆lifejacket Life jacket (a vest
+  with two straps).
 - **Beach and summer** (`beach`): sun Summer · ✱lounger On the beach (a lounger under a parasol, a line of sand) ·
   beach Beach (the umbrella) · ✱palm Palm tree · glasses Sunglasses · ✱sunhat Sun hat · ✱suncream Sun cream ·
   ✱flipflops Flip-flops · ✱towel Towel (two folded) · ✱beachball Beach ball · ✱swimring Swim ring · ✱shell Shell
-  (a scallop) · ✱surf Surfing (a curling wave) · ✱sail Sailing · ✱kite Kite.
+  (a scallop) · ✱surf Surfing (a curling wave) · ✱sail Sailing · ✱kite Kite · ◆icecream Ice cream (a cone, one
+  scoop) · ◆bucket Sand toys (a bucket and a spade) · ◆anchor Anchor · ◆midsummer Midsummer (the midsommarstång: the
+  pole with its leaves, the cross-bar, a ring at each end).
 - **City, food and fun** (`city`): ✱city City · ✱restaurant Restaurant (fork, plate, knife) · food Food · coffee
   Coffee · ✱wine Wine · ✱picnic Picnic · ✱bbq Barbecue · ✱shopping Shopping · ✱party Party (two balloons) · gift
-  Gift (was labelled "Party" until 0.74) · ✱music Music · camera Camera · book Reading.
+  Gift (was labelled "Party" until 0.74) · ✱music Music · camera Camera · book Reading · ◆pizza Pizza (a slice) ·
+  ◆museum Museum (a pediment on four columns) · ◆cake Birthday (a cake, three candles) · ◆rings Wedding (two rings) ·
+  ◆xmastree Christmas (a fir on its trunk) · ◆cinema Cinema (a clapperboard) · ◆ferriswheel Fun fair (a Ferris wheel
+  on its legs).
 - **Everyday** (`everyday`): laptop Work · ✱briefcase Business · ✱phone Phone · plug Electronics · ✱headphones
   Headphones · ✱wallet Money · ✱keys Keys · ✱clothes Clothes · ✱shoes Shoes · ✱laundry Laundry · toiletry Toiletries ·
-  pill Medicine · firstaid First aid · heart Health · sleep Sleeping · ✱kids Kids · paw Dog.
-`TemplateIconCatalog.firstFifty` lists the 50 keys of 0.46, which must never go. `TemplateIconCatalog.icon(key)` /
+  pill Medicine · firstaid First aid · heart Health · sleep Sleeping · ✱kids Kids · paw Dog · ◆toothbrush Toothbrush ·
+  ◆battery Battery (the To charge card's own battery) · ◆badge Name badge (a card on its lanyard) · ◆notebook Notes (a
+  ring-bound notebook) · ◆suit Suit (a collar and a tie) · ◆pram Pram.
+`TemplateIconCatalog.firstFifty` lists the 50 keys of 0.46, which must never go; `TemplateIconCatalog.firstNinetyOne`
+(0.92) the 91 keys of 0.78–0.91 in their picker order, which the 41 new ones never break into. `TemplateIconCatalog.icon(key)` /
 `TemplateIcons.icon(key)` → the icon or nil (unknown key → nil → the cover falls back to the letter).
 `TemplateIconCatalog.grouped` → the headings in order with their icons (a heading with none is left out).
 
 **Other words for each icon (0.91, `PackingLibrary/TemplateIconKeywords.swift`).** His words (19 Oct 2026, the test
 sheet of 0.90): **"Also add the possibility to search for icons, and also add alternative names so that the search is
 easier to perform. But I don't know if the alternative names need to be visible, but it would be good to get more hits
-when searching."** `TemplateIconCatalog.keywords: [String: [String]]`, by icon key: for every one of the 91, three or
+when searching."** `TemplateIconCatalog.keywords: [String: [String]]`, by icon key: for every one of the 132, three or
 more other words in English, Swedish and German, written lower-case as they are matched — e.g. plane: flight, fly,
 airport, air travel, flyg, flyga, flygplan, flygplats, flug, flugzeug, fliegen, flughafen; car: auto, drive, road trip,
 rental car, bil, hyrbil, köra, autofahrt, mietwagen, pkw; rv (Camper): motorhome, campervan, caravan, van, husbil,
 husvagn, wohnmobil, wohnwagen; bike: cycling, bicycle, mtb, cykel, cykla, fahrrad, radfahren; swim: swimming, pool,
 open water, simma, simning, bad, simhall, schwimmen, schwimmbad; hiking: hike, trek, trail, vandring, vandra,
 fjällvandring, wandern; lounger (On the beach): beach, sunbathing, sunbed, strand, sola, solstol, liegestuhl; the rest
-in the file. **Decided: not visible** — he did not know whether they need to be; they are there to be found by, so the
+in the file. **The 41 of 0.92 have theirs too** (under "// 0.92" in each heading of the file) — e.g. skate: skates,
+skridskor, skridsko, långfärdsskridsko, Schlittschuh; sled: sledge, toboggan, kälke, pulka, Schlitten; xcski:
+längdskidor, längdåkning, Vasaloppet, Langlauf; rowing: erg, rowing machine, Concept2, rodd, roddmaskin, rudern;
+midsummer: maypole, midsommar, midsommarstång, majstång, Maibaum; cottage: cabin, stuga, sommarstuga, Ferienhaus;
+pram: stroller, buggy, barnvagn, Kinderwagen; ferriswheel: theme park, tivoli, Liseberg, Gröna Lund, Riesenrad.
+**None widens a search he relies on** (decided by the build): "flyg" still finds the Plane alone, "båt" the Ferry and
+Sailing, "strand" the four beach icons, "fahrrad" the Bike alone — so the bike helmet's German is "radhelm" and the
+pump's "luftpumpe", and no "strand…" or "…båt" word was added; a word several icons share is fine where it means
+each ("cykel" finds the Bike and, since 0.92, the e-scooter's "elsparkcykel", the bike pump's "cykelpump", the helmet's
+"cykelhjälm"). **Decided: not visible** — he did not know whether they need to be; they are there to be found by, so the
 picker stays as he liked it (a tile says only its label). They are stored nowhere (a key never changes; these words
 may). Matching (`TemplateIconCatalog.matches(icon, query)`): the query as How it works reads it
 (`GuideSearch.needle` — `normName`: trimmed, lower-case, runs of spaces one; curly quotes straight), found as ONE
@@ -668,8 +726,32 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   resa", "Helg", "Helgresa", "Weekendresa" → `weekendbag`; "Travel" (base), "Common base" (base), "Resa" → `suitcase`;
   "Shorts" → nil; "Summer weekend" → `sun`; "Weekend hike" → `hiking`) — seen red with rule 45a planted out:
   `("Optional("suitcase")") is not equal to ("Optional("weekendbag")") - Short travel kit` (and "Kort resa");
-  `testEveryIconHasADrawingALabelAndItsOwnKey` counts 91. His own template's icon is his to pick in the picker —
-  the app's Suggested offers the weekend bag; his data is not changed.
+  `testEveryIconHasADrawingALabelAndItsOwnKey` counts 91 (132 since 0.92). His own template's icon is his to pick in
+  the picker — the app's Suggested offers the weekend bag; his data is not changed.
+- Model (0.92): `testTheFortyOneIconsOf092CloseTheirHeadingsAndTheOldOnesKeepTheirPlaces` (`firstNinetyOne` is 91 keys
+  and `all` holds them in that order; the 41 new keys with their labels and headings, none an old key; 91 + 41 = 132;
+  under each heading the old ones first in their order, then the new ones in the catalog's order; no two icons share a
+  drawing; each new drawing passes `drawingFault`); `testTheNewIconsOf092OnlyReachANameThatSuggestedNothing` (28 names
+  → their new icon — Rowing, Rodd, Erg, Ice skating, Skridskor, Långfärdsskridsko, Pulka, Sledding, Cross-country,
+  Langlauf, Wetsuit, SUP, Race day, Tävling, Svampplockning, Mushroom picking, Stuga, Cottage, Utomlands, Abroad,
+  Museum, Cinema, Bio, Tivoli, Liseberg, Gröna Lund, Barnvagn, Stroller; and 17 that keep what they had: Längdskidor
+  and Cross-country skiing → ski, Sommarstuga, Midsommar, Midsummer → sun, Wedding → party, Christmas and Birthday →
+  gift, Bike race → bike, Paddleboard → kayak, Ice bath → icebath, Weekend cabin → weekendbag, Electronics, Snowshoe,
+  Brunch, Carry-on things, Shorts, Program and Brain training → nil); `TemplateIconSearchTests
+  .testTheNewIconsAreFoundByTheirOtherNamesAndNoOldSearchGrows` (50 words → their new icon, 43 of them Swedish:
+  skridskor, pulka, längdskidor, vasaloppet, sovsäck, kikare, termos, vantar, regnjacka, svamp, stuga, utomlands,
+  nackkudde, elsparkcykel, roddmaskin, erg, stoppur, puls, tävling, cykelhjälm, cykelpump, våtdräkt, dykflaska,
+  yogamatta, sup, flytväst, glass, hink, skärgård, midsommar, pizzeria, utställning, tårta, bröllop, julgran, bio,
+  tivoli, tandborste, powerbank, namnbricka, anteckningar, slips, barnvagn; Schlittschuh, Riesenrad, Kinderwagen,
+  Neoprenanzug, rowing machine, heart rate, maypole, lanyard; "skridskor", "midsommar", "barnvagn" each find their
+  icon ALONE; "flyg" → the plane alone, "båt" → ferry and sail, "fahrrad" → the bike alone, "strand" → lounger, beach,
+  towel, beachball). The 0.91 coverage test holds the 41 to its rules (≥ 3 words, none twice, written as matched,
+  each finding its icon). Seen RED with faults planted: "skridskor" taken out of the skate's words — `XCTAssertTrue
+  failed - 'skridskor' does not find skate: []`; a "strandhink" added to the sand toys — `("["lounger", "beach",
+  "towel", "beachball", "bucket"]") is not equal to ("["lounger", "beach", "towel", "beachball"]") - strand`; the
+  Rowing moved to the head of Sport — `("["bottle", "stopwatch", …]") is not equal to …` and `("["rowing", "run", "bike",
+  …]") is not equal to …` (an old icon moved); the rowing rule taken out — `("nil") is not equal to
+  ("Optional("rowing")") - Rowing` (and Rodd, Erg).
 - **Not covered:** an unknown stored key.
 - Model (0.91, `TemplateIconSearchTests`): `testHisWordsFindTheIconInEnglishSwedishAndGerman` (48 words → their
   icons: flyg/Flug/airport/flight → plane, bil/Auto → car, husbil/Wohnmobil/camper → rv, cykel/Fahrrad/cycling → bike,
@@ -677,7 +759,7 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   Zelt, skidor, löpning, styrka, gym, bastu, isbad, solkräm, Sonnencreme, kaffe, fika, hund, dog, barn, laddare,
   charger, medicin, tvätt, jobb, work, helg, weekend; "FLYG" and "  flyg  " as "flyg"; "flyg" finds the plane ALONE;
   "fjall" → mountain, "schlussel" → keys; "båt" and "Båt" → exactly ferry and sail; labels still found ("on the beach",
-  "Racket"); "zzz" → nothing; "" and spaces → all 91 in order; "food" does not bring the Camera);
+  "Racket"); "zzz" → nothing; "" and spaces → all 91 (132 since 0.92) in order; "food" does not bring the Camera);
   `testTheResultsKeepTheirHeadingsInThePickersOrder` ("strand" → Beach and summer only: lounger, beach, towel,
   beachball; "båt" → Travel then Beach and summer: ferry, sail; "zzz" → no heading; "" → every heading);
   `testEveryIconHasItsOtherWordsAndNoneIsLost` (every list belongs to an icon, every icon has ≥ 3 words, none twice,
@@ -754,12 +836,12 @@ pick — an icon or (0.90) a colour; each pick saves and closes — or a swipe d
     Automatic shows the colour the app picks for this template. The swatch in force has a 2-pt `Theme.ink` ring round
     its square (radius 32 × 0.28 + 3) and the trait `isSelected`: Automatic when no colour is stored, else the palette
     colour stored (a web-app colour outside the palette rings none). Ids `template-colour-auto`,
-    `template-colour-<key>` — deliberately not `icon-…`, which the 91-icon count reads; accessibility label = the word.
+    `template-colour-<key>` — deliberately not `icon-…`, which the icon count (132 since 0.92) reads; accessibility label = the word.
   - (0.90) **"Icon"** (`SectionTitle`, id `template-icon-title`) over the rest — until 0.90 the tiles had no heading.
   - (0.91) **Find an icon** — the app's search-field look (as Find a thing on a template and How it works' search):
     `TextField("Find an icon")`, Body ink, `Metrics.compact` tall, side padding 12, card fill, 1-pt line ring, radius
     10, the shared ✕ (`clearButton`, id `iconsearch`, the ✕ `iconsearch-clear` — ids deliberately not `icon-…`, which
-    the 91-icon count reads). No autocorrection ("flyg" or "cykel" typed on an English keyboard must stay as typed); on
+    the icon count reads — 132 since 0.92). No autocorrection ("flyg" or "cykel" typed on an English keyboard must stay as typed); on
     the iPhone no capitals and the keyboard's key says Search. On the Mac ⌘F puts the cursor in it (a hidden button
     with the shortcut, as How it works, 0.90) and Escape — which a text field keeps for itself — empties it, then
     closes the picker as Cancel does (`onExitCommand`). On every key press the icons below are
@@ -827,13 +909,23 @@ Hiking card says `#2a5194`; reopened, Navy is ringed (pictures `tmpl91-colours-p
 night). Seen RED with the rows planted back to six: `XCTAssertEqual failed: ("[6, 6, 4]") is not equal to ("[8, 8]") -
 the colours are not on two lines of eight`.
 
-UI `testTheIconSearchFindsAnIconByItsOtherNames` (0.91): Hiking's picker has the field `iconsearch` and 91 tiles;
+UI `testTheIconSearchFindsAnIconByItsOtherNames` (0.91): Hiking's picker has the field `iconsearch` and 91 tiles (132
+since 0.92);
 "flyg" leaves exactly one tile, `icon-plane`, under `icon-group-travel`, no `icon-group-sport`, no `icon-suggested`,
 no nothing line (picture `tmpl91-iconsearch-flyg`); "zzz" shows `iconsearch-none` and no tile (picture
-`tmpl91-iconsearch-none`); `iconsearch-clear` brings 91 tiles and Suggested back, the line gone, the field empty;
+`tmpl91-iconsearch-none`); `iconsearch-clear` brings every tile (91; 132 since 0.92) and Suggested back, the line gone, the field empty;
 "fahrrad" leaves the Bike alone, a tap takes it (cover value "bike"). On the Mac: reopened, ⌘F and "flyg" leave one
-tile, Escape brings all 91 back with the picker still open, a second Escape closes it. Seen RED with the picker
+tile, Escape brings all of them back with the picker still open, a second Escape closes it. Seen RED with the picker
 planted to search the labels only: `XCTAssertTrue failed - flyg shows 0 icons, not the Plane alone`.
+
+UI `testTheNewIconsCloseTheirHeadingsAndAreFoundInSwedish` (0.92): Hiking's picker holds 132 tiles; read in ONE
+accessibility snapshot of `icon-picker` (132 element queries are slow on GitHub's machines), `icon-skate` stands two
+after `icon-fishing` (Cross-country between), `icon-rowing` right after `icon-bottle`, and `icon-pram` is the last
+tile; `icon-cottage`, `icon-xcski`, `icon-midsummer`, `icon-ferriswheel`, `icon-toothbrush` are there (pictures
+`icons92-outdoors`, `icons92-sport`, `icons92-everyday`, scrolled to the new tiles); "skridskor" (Swedish, typed in
+`iconsearch`) leaves exactly one tile, `icon-skate`, under `icon-group-outdoors`, no `icon-group-travel` (picture
+`icons92-search-skridskor`); a tap takes it (cover value "skate"), kept after Done and reopening Hiking. The count of
+`testThePickerHoldsNinetyIconsAndKeepsANewOne` (name kept for its known timing) is 132.
 ---
 
 ## 5. A new template (`NewList`)

@@ -1,11 +1,13 @@
 import SwiftUI
 import PackingLibrary
 
-/// The template icons — 90 of my own, drawn in the app's style (one stroke, round
+/// The template icons — 132 of my own, drawn in the app's style (one stroke, round
 /// ends, a 24-point box). The first 50: he saw them on a sample sheet in day and
 /// night mode and said (2 Oct 2026): "Your suggestions are fine. Please implement."
 /// 40 more in 0.74 (his "Add approximately 40 new icons, specifically one that is
-/// related to 'On the beach'", 12 Oct 2026). No stock art, no emoji (his rule).
+/// related to 'On the beach'", 12 Oct 2026), the weekend bag in 0.78, and 41 more in 0.92
+/// (his "Could we add some icons again. Love the one we have.", 19 Oct 2026). No stock
+/// art, no emoji (his rule).
 ///
 /// The drawings live with the model (`PackingLibrary/TemplateIconCatalog.swift`) so
 /// its tests can hold every one to the rules; this is the app's door to them — the

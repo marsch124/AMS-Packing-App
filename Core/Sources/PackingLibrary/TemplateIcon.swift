@@ -2,10 +2,11 @@ import PackingCore
 
 // A template's icon (his test H.1; the 50 icons and these suggestions approved
 // 2 Oct 2026: "Your suggestions are fine. Please implement."; 40 more icons and
-// their suggestions in 0.74 — the drawings are in TemplateIconCatalog.swift). The icon he picks
-// is kept in the template's own extra keys, so it travels with backups and
-// iCloud and the web app's model is untouched. Until he picks one, the icon is
-// suggested from the template's role and name; "letter" keeps the first letter.
+// their suggestions in 0.74; 41 more in 0.92 — the drawings are in
+// TemplateIconCatalog.swift). The icon he picks is kept in the template's own extra
+// keys, so it travels with backups and iCloud and the web app's model is untouched.
+// Until he picks one, the icon is suggested from the template's role and name;
+// "letter" keeps the first letter.
 
 extension Library {
     /// The template key the choice is stored under.
@@ -53,6 +54,9 @@ extension Library {
     /// the 40 new icons have their words — English, and Swedish where he might name a
     /// template so. Rules that are new for an OLD icon stand at the end, so a template
     /// that had a suggestion keeps it unless a new icon fits it better.
+    ///
+    /// 0.92's 41 icons have words of their own at the very end: they only reach a name that
+    /// suggested nothing until now ("Rowing", "Pulka", "Stuga", "Tivoli"), so no icon he sees changes.
     public static func suggestedIcon(for list: PackList) -> String? {
         if list.role == CONTAINER_ROLE { return "box" }
         let name = normName(list.name)
@@ -145,6 +149,24 @@ extension Library {
             (has("mountain") || has("summit") || has("fjäll"), "mountain"),
             // The weekend bag's own words (0.78) — last, so nothing above changes.
             (short, "weekendbag"),
+            // The new icons of 0.92 — after everything, so no name that had a suggestion is given
+            // another ("Längdskidor" keeps the skis, "Sommarstuga" and "Midsommar" the sun, "Wedding"
+            // the balloons); only a name that suggested nothing gets one of them.
+            (has("rowing") || has("rodd") || word("erg") || word("row"), "rowing"),
+            (has("skating") || has("skridsko"), "skate"),
+            (has("sled") || has("pulka") || has("kälk") || has("toboggan"), "sled"),
+            (has("cross-country") || has("langlauf") || has("längdåkning"), "xcski"),
+            (has("wetsuit") || has("våtdräkt"), "wetsuit"),
+            (word("sup"), "sup"),
+            (word("race") || has("tävling") || has("competition") || has("wettkampf"), "trophy"),
+            (has("mushroom") || has("svamp"), "mushroom"),
+            (has("cottage") || has("cabin") || has("stuga"), "cottage"),
+            (has("abroad") || has("utomlands"), "globe"),
+            (has("museum") || has("museer"), "museum"),
+            (has("cinema") || has("movie") || word("bio") || has("kino"), "cinema"),
+            (has("tivoli") || has("theme park") || has("amusement park") || has("nöjespark") || has("liseberg")
+                || has("gröna lund"), "ferriswheel"),
+            (has("pram") || has("stroller") || has("barnvagn"), "pram"),
         ]
         if let hit = rules.first(where: { $0.0 }) { return hit.1 }
         return list.role == "base" ? "suitcase" : nil

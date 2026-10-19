@@ -60,6 +60,40 @@ final class TemplateIconSearchTests: XCTestCase {
         XCTAssertEqual(TemplateIconCatalog.grouped(matching: "").map(\.group), TemplateIconCatalog.grouped.map(\.group))
     }
 
+    /// 0.92 (his "Could we add some icons again. Love the one we have."): the 41 new icons are found
+    /// by their own other words — Swedish as he types them, English and German too — and no search
+    /// he relies on grows: "flyg", "båt", "strand" and "fahrrad" find what they found before.
+    func testTheNewIconsAreFoundByTheirOtherNamesAndNoOldSearchGrows() {
+        let wanted: [(String, String)] = [
+            ("skridskor", "skate"), ("pulka", "sled"), ("längdskidor", "xcski"), ("vasaloppet", "xcski"),
+            ("sovsäck", "sleepingbag"), ("kikare", "binoculars"), ("termos", "thermos"), ("vantar", "mittens"),
+            ("regnjacka", "jacket"), ("svamp", "mushroom"), ("stuga", "cottage"), ("utomlands", "globe"),
+            ("nackkudde", "pillow"), ("elsparkcykel", "scooter"), ("roddmaskin", "rowing"), ("erg", "rowing"),
+            ("stoppur", "stopwatch"), ("puls", "pulse"), ("tävling", "trophy"), ("cykelhjälm", "helmet"),
+            ("cykelpump", "pump"), ("våtdräkt", "wetsuit"), ("dykflaska", "tank"), ("yogamatta", "yogamat"),
+            ("sup", "sup"), ("flytväst", "lifejacket"), ("glass", "icecream"), ("hink", "bucket"),
+            ("skärgård", "anchor"), ("midsommar", "midsummer"), ("pizzeria", "pizza"), ("utställning", "museum"),
+            ("tårta", "cake"), ("bröllop", "rings"), ("julgran", "xmastree"), ("bio", "cinema"),
+            ("tivoli", "ferriswheel"), ("tandborste", "toothbrush"), ("powerbank", "battery"), ("namnbricka", "badge"),
+            ("anteckningar", "notebook"), ("slips", "suit"), ("barnvagn", "pram"),
+            ("Schlittschuh", "skate"), ("Riesenrad", "ferriswheel"), ("Kinderwagen", "pram"), ("Neoprenanzug", "wetsuit"),
+            ("rowing machine", "rowing"), ("heart rate", "pulse"), ("maypole", "midsummer"), ("lanyard", "badge"),
+        ]
+        for (typed, key) in wanted {
+            XCTAssertTrue(keys(typed).contains(key), "'\(typed)' does not find \(key): \(keys(typed))")
+        }
+        // A word that is only theirs finds them alone.
+        XCTAssertEqual(keys("skridskor"), ["skate"])
+        XCTAssertEqual(keys("midsommar"), ["midsummer"])
+        XCTAssertEqual(keys("barnvagn"), ["pram"])
+        // The searches he relies on are as they were.
+        XCTAssertEqual(keys("flyg"), ["plane"], "flyg finds more than the plane")
+        XCTAssertEqual(keys("båt"), ["ferry", "sail"], "båt finds more than the ferry and the sail")
+        XCTAssertEqual(keys("fahrrad"), ["bike"], "fahrrad finds more than the bike")
+        XCTAssertEqual(TemplateIconCatalog.grouped(matching: "strand").flatMap(\.icons).map(\.key),
+                       ["lounger", "beach", "towel", "beachball"], "strand finds more than the four beach icons")
+    }
+
     /// Every icon has other words to be found by, and every list of them belongs to an icon.
     func testEveryIconHasItsOtherWordsAndNoneIsLost() {
         let known = Set(TemplateIconCatalog.all.map(\.key))

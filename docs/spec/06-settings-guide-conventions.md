@@ -946,7 +946,7 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
 6. **Your templates** (Templates mark): templates are the building blocks, in activity areas (GA, WET…); the areas are
    his — the Activity areas pill, at the foot of the tab after the last area (0.91; under the Refine card until then): + Add (a name only), pen, grip ≡ (Mac arrows), Remove (asks; one holding templates
    stays and says which; Workout, Exercise & Training always stays), nothing until Save, both devices the same (0.89); each has
-   an icon (the one its name suggests — a beach template gets the lounger under its parasol — or one of 91 drawn ones under six headings, or Letter; 50 until 0.74; 0.91: Find an icon finds one by its name or other words for it in English, Swedish or German — flyg, cykel, Fahrrad — the ✕ shows all, ⌘F on the Mac); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
+   an icon (the one its name suggests — a beach template gets the lounger under its parasol — or one of 132 drawn ones under six headings, or Letter; 50 until 0.74, 91 until 0.92, whose 41 close each heading so the ones he knows keep their places; 0.91: Find an icon finds one by its name or other words for it in English, Swedish or German — flyg, cykel, Fahrrad — the ✕ shows all, ⌘F on the Mac); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
    stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
    Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
    folding in the picker (Fold all / Unfold all, counts, search opens

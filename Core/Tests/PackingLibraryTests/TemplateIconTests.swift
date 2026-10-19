@@ -98,11 +98,82 @@ final class TemplateIconTests: XCTestCase {
         for (l, want) in cases { XCTAssertEqual(Library.suggestedIcon(for: l), want, l.name) }
     }
 
+    /// 0.92 — his words (19 Oct 2026): "Could we add some icons again. Love the one we have." 41 new
+    /// drawings in the same hand, each at the END of its heading: every icon he knows keeps its key,
+    /// its heading and its order, and the new ones are where the picker shows them.
+    func testTheFortyOneIconsOf092CloseTheirHeadingsAndTheOldOnesKeepTheirPlaces() {
+        let all = TemplateIconCatalog.all
+        let old = TemplateIconCatalog.firstNinetyOne
+        XCTAssertEqual(old.count, 91)
+        XCTAssertEqual(all.map(\.key).filter(old.contains), old, "an icon he knows moved or went")
+        let added: [(key: String, label: String, group: TemplateIconGroup)] = [
+            ("cottage", "Cottage", .travel), ("globe", "Abroad", .travel), ("pillow", "Neck pillow", .travel),
+            ("scooter", "E-scooter", .travel),
+            ("xcski", "Cross-country", .outdoors), ("skate", "Ice skating", .outdoors), ("sled", "Sled", .outdoors),
+            ("sleepingbag", "Sleeping bag", .outdoors), ("binoculars", "Binoculars", .outdoors),
+            ("thermos", "Thermos", .outdoors), ("mittens", "Mittens", .outdoors), ("jacket", "Jacket", .outdoors),
+            ("mushroom", "Mushrooms", .outdoors),
+            ("rowing", "Rowing", .sport), ("stopwatch", "Stopwatch", .sport), ("pulse", "Heart rate", .sport),
+            ("trophy", "Trophy", .sport), ("helmet", "Bike helmet", .sport), ("pump", "Bike pump", .sport),
+            ("wetsuit", "Wetsuit", .sport), ("tank", "Scuba tank", .sport), ("yogamat", "Yoga mat", .sport),
+            ("sup", "Paddleboard", .sport), ("lifejacket", "Life jacket", .sport),
+            ("icecream", "Ice cream", .beach), ("bucket", "Sand toys", .beach), ("anchor", "Anchor", .beach),
+            ("midsummer", "Midsummer", .beach),
+            ("pizza", "Pizza", .city), ("museum", "Museum", .city), ("cake", "Birthday", .city),
+            ("rings", "Wedding", .city), ("xmastree", "Christmas", .city), ("cinema", "Cinema", .city),
+            ("ferriswheel", "Fun fair", .city),
+            ("toothbrush", "Toothbrush", .everyday), ("battery", "Battery", .everyday), ("badge", "Name badge", .everyday),
+            ("notebook", "Notes", .everyday), ("suit", "Suit", .everyday), ("pram", "Pram", .everyday),
+        ]
+        XCTAssertEqual(added.count, 41)
+        XCTAssertEqual(all.count, old.count + added.count, "not the 91 and the 41: \(all.count)")
+        for a in added {
+            let icon = TemplateIconCatalog.icon(a.key)
+            XCTAssertNotNil(icon, "no \(a.key) in the catalog")
+            XCTAssertEqual(icon?.label, a.label, a.key)
+            XCTAssertEqual(icon?.group, a.group, a.key)
+            XCTAssertFalse(old.contains(a.key), "\(a.key) is an old key")
+        }
+        // Under each heading the old ones first, in their order, then the new ones, in this order.
+        for section in TemplateIconCatalog.grouped {
+            let keys = section.icons.map(\.key)
+            let newHere = added.filter { $0.group == section.group }.map(\.key)
+            XCTAssertEqual(Array(keys.suffix(newHere.count)), newHere, "\(section.group): the new ones do not close the heading")
+            XCTAssertEqual(Array(keys.prefix(keys.count - newHere.count)),
+                           old.filter { TemplateIconCatalog.icon($0)?.group == section.group },
+                           "\(section.group): an old icon moved")
+        }
+        // Each a drawing of its own, the app can draw it, and it keeps to the 24 box.
+        XCTAssertEqual(Set(all.map(\.path)).count, all.count, "two icons share a drawing")
+        for a in added { XCTAssertNil(TemplateIconCatalog.icon(a.key).flatMap { Self.drawingFault($0.path) }, a.key) }
+    }
+
+    /// 0.92's icons have words of their own — at the very end, so they only reach a name that
+    /// suggested nothing until now; every name that had a suggestion keeps it.
+    func testTheNewIconsOf092OnlyReachANameThatSuggestedNothing() {
+        let cases: [(String, String?)] = [
+            ("Rowing", "rowing"), ("Rodd", "rowing"), ("Erg", "rowing"), ("Ice skating", "skate"),
+            ("Skridskor", "skate"), ("Långfärdsskridsko", "skate"), ("Pulka", "sled"), ("Sledding", "sled"),
+            ("Cross-country", "xcski"), ("Langlauf", "xcski"), ("Wetsuit", "wetsuit"), ("SUP", "sup"),
+            ("Race day", "trophy"), ("Tävling", "trophy"), ("Svampplockning", "mushroom"),
+            ("Mushroom picking", "mushroom"), ("Stuga", "cottage"), ("Cottage", "cottage"), ("Utomlands", "globe"),
+            ("Abroad", "globe"), ("Museum", "museum"), ("Cinema", "cinema"), ("Bio", "cinema"), ("Tivoli", "ferriswheel"),
+            ("Liseberg", "ferriswheel"), ("Gröna Lund", "ferriswheel"), ("Barnvagn", "pram"), ("Stroller", "pram"),
+            // Unchanged: a name that had a suggestion keeps it.
+            ("Längdskidor", "ski"), ("Cross-country skiing", "ski"), ("Sommarstuga", "sun"), ("Midsommar", "sun"),
+            ("Midsummer", "sun"), ("Wedding", "party"), ("Christmas", "gift"), ("Birthday", "gift"), ("Bike race", "bike"),
+            ("Paddleboard", "kayak"), ("Ice bath", "icebath"), ("Weekend cabin", "weekendbag"),
+            ("Electronics", nil), ("Snowshoe", nil), ("Brunch", nil), ("Carry-on things", nil), ("Shorts", nil),
+            ("Program", nil), ("Brain training", nil),
+        ]
+        for (name, want) in cases { XCTAssertEqual(Library.suggestedIcon(for: list(name)), want, name) }
+    }
+
     /// Every icon: a drawing the app can draw, a label, a key of its own — and every
     /// key a template may have stored since 0.46 still there.
     func testEveryIconHasADrawingALabelAndItsOwnKey() {
         let all = TemplateIconCatalog.all
-        XCTAssertEqual(all.count, 91, "the picker's count")
+        XCTAssertEqual(all.count, 132, "the picker's count (91 until 0.92)")
         XCTAssertEqual(Set(all.map(\.key)).count, all.count, "a key used twice: \(Dictionary(grouping: all.map(\.key), by: { $0 }).filter { $0.value.count > 1 }.keys.sorted())")
         XCTAssertEqual(Set(all.map(\.label)).count, all.count, "two icons with the same label")
         for key in TemplateIconCatalog.firstFifty {
