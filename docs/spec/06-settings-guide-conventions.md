@@ -1638,7 +1638,7 @@ template's page and Your choices, whose Done carried Escape until then, too. The
 (`ThingsTable(inWindow: true)`) has none either — a window closes with ⌘W, and Escape in its search field would close
 the whole table; its sheets (Filter, Sort, Columns, Change, a thing) do have it. On the iPhone a sheet that may be
 swiped away also closes on ⌘. by itself (the system's own, shortcut or not), so there the tests pin that the right
-window closes and nothing is saved; on the Mac nothing closes without the shortcut. There is no `onExitCommand`.
+window closes and nothing is saved; on the Mac nothing closes without the shortcut (so it was believed until 0.92 — the 0.92 probe saw a sheet close on Escape without its Cancel being pressed, §20a). There is no `onExitCommand`.
 A mode inside a sheet takes Escape first: on a template's page while **arranging** (0.63, spec 04 §6a), the Arrange
 pill carries the shortcut and Done gives it up, so Escape ends Arrange (a heading's name typed and not saved is
 dropped) and a second Escape closes the page; meanwhile the page cannot be swiped away (`interactiveDismissDisabled`),
