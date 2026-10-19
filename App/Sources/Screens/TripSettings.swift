@@ -107,7 +107,7 @@ struct TripSettingsScreen: View {
                         LeaveTimes(out: $leaveOut, home: $leaveHome, id: "tripset-leave", tint: AppSection.events.color)
                     }
                     ForEach(choices, id: \.group.id) { choice in
-                        Pills(title: groupHeading(choice.group.id, choice.group.label),
+                        Pills(title: Library.areaWords(ActivityArea(id: choice.group.id, name: choice.group.label)),
                               options: choice.lists.map { ($0.id, $0.name) },
                               selected: activities, id: "tripset-activity", tint: AppSection.templates.color,
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,

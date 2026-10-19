@@ -77,12 +77,8 @@ struct SectionMark: View {
     }
 }
 
-/// "GA · Goal Activity" — his own code for a group, then the words as written.
-/// The trip builder and the activity areas on Your templates both say it this way, from here,
-/// so the two can never drift apart. Not in capitals (0.78) — his words on the iPhone
-/// (13 Oct 2026): "GA · Goal Activity — not all caps", "Other Templates — not all caps".
-/// The code (GA, WET, OE) is his own and stays in capitals.
-func groupHeading(_ id: String, _ label: String) -> String {
-    let code = jsTrim(id)
-    return code.isEmpty ? label : "\(code) · \(label)"
-}
+// An activity area's heading — "GA · Goal Activity", or his own words — is
+// `Library.areaWords` (PackingLibrary/ActivityAreas.swift, 0.89): the trip builder, Trip
+// settings, the Templates tab and a template's Activity area all say it from there, so they
+// can never drift apart. Not in capitals (0.78) — his words on the iPhone (13 Oct 2026):
+// "GA · Goal Activity — not all caps", "Other Templates — not all caps".

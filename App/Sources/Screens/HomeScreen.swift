@@ -155,7 +155,8 @@ struct HomeScreen: View {
 
                     ForEach(choices, id: \.group.id) { choice in
                         // Numbered across ALL groups, so "trip-activity-0" names one pill.
-                        Pills(title: groupHeading(choice.group.id, choice.group.label),
+                        // His area's heading (0.89): "GA · Goal Activity", or his own words.
+                        Pills(title: Library.areaWords(ActivityArea(id: choice.group.id, name: choice.group.label)),
                               options: choice.lists.map { ($0.id, $0.name) },
                               selected: activities, id: "trip-activity", tint: AppSection.templates.color,
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
@@ -246,7 +247,7 @@ struct HomeScreen: View {
                     CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
                     // The templates Your templates shows — not the hidden bags list or the
                     // web app's old bin, which made this number the higher one (5 Oct 2026).
-                    CountTile(number: TemplatesScreen.activityAreas(model.library.templates).reduce(0) { $0 + $1.lists.count },
+                    CountTile(number: TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count },
                               label: "Templates", id: "count-templates", color: AppSection.templates.color)
                 }
                 .padding(.top, 8)

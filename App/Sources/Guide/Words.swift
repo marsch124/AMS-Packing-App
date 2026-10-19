@@ -12,7 +12,7 @@ enum Words {
         Entry(term: "Template", meaning: "A building block: the things for one activity or need — Hiking, Swim, RV. A trip is made from templates. The Templates tab.", section: .templates),
         // "Activity area", not "shelf" — their word from the field test (Oct 2026):
         // "We understand that word much better."
-        Entry(term: "Activity area", meaning: "The group a template lives in, with its code: GA · Goal Activity, WET · Workout, Exercise & Training, and so on.", section: .templates),
+        Entry(term: "Activity area", meaning: "The group a template lives in. Yours to make, rename, order and remove (Templates \u{2192} Activity areas): the three the app starts with show their code (GA \u{00B7} Goal Activity, WET \u{00B7} Workout, Exercise & Training, OE \u{00B7} Other Events) until you rename them; your own show just your name.", section: .templates),
         Entry(term: "List", meaning: "The one list you pack from for a trip, made from its templates. (A grab list is a list too.)", section: .events),
         Entry(term: "Grab list", meaning: "A short list for a quick outing — Swim, Bike, Run — ticked as each thing is in your hand. Up to eight are on Home; the rest wait in Grab Lists.", section: .home),
         Entry(term: "Common base", meaning: "The template that comes along on every trip: passport, phone charger and the like.", section: .templates),

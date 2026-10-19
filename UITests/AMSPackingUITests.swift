@@ -5785,8 +5785,9 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// New asks for the activity area; the template page puts a wrong answer right
-    /// (the spec pass, 5 Oct 2026). Since 0.71 an always-packed template has the door
-    /// too (see testATemplateMovesOutOfAndIntoAlwaysPacked).
+    /// (the spec pass, 5 Oct 2026). Since 0.71 an always-packed template has the field
+    /// too (see testATemplateMovesOutOfAndIntoAlwaysPacked); since 0.89 it is a drop-down
+    /// of HIS areas: 0 Always packed, 1 GA, 2 WET, 3 OE, 4 No activity area.
     func testATemplateMovesToAnotherActivityArea() {
         let app = launch()
         tab(app, "templates")
@@ -5796,16 +5797,15 @@ final class AMSPackingUITests: XCTestCase {
 
         tap(app, id: "template-row-1")                            // Hiking, in GA
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        let door = app.buttons["template-area"]
-        XCTAssertTrue(door.waitForExistence(timeout: 5), "no way to change the activity area")
-        XCTAssertEqual(door.value as? String, "GA")
+        let field = app.buttons["template-area"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no way to change the activity area")
+        XCTAssertEqual(chosen(app, "template-area"), "GA \u{00B7} Goal Activity")
         shot(app, "template-area-door")
-        tap(app, id: "template-area")
-        XCTAssertTrue(isOn(app.buttons["template-area-GA"]) || waitUntil { self.isOn(app.buttons["template-area-GA"]) },
-                      "the area it lives in is not marked")
+        XCTAssertTrue(isChosen(app, "template-area", 1), "the area it lives in is not marked")
+        openDropDown(app, "template-area")
         shot(app, "template-area")
-        tap(app, id: "template-area-OE")
-        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "OE" }, "the area did not change")
+        closeDropDown(app, "template-area")
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events", "the area did not change")
         tap(app, id: "template-detail-done")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["templates-area-OE"].waitForExistence(timeout: 5), "Hiking is not under OE")
@@ -5821,15 +5821,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["templates-area-base"].waitForExistence(timeout: 5))
         tap(app, id: "template-row-0")                            // Common base: always packed
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        let door = app.buttons["template-area"]
-        XCTAssertTrue(door.waitForExistence(timeout: 5), "an always-packed template cannot be moved")
-        XCTAssertEqual(door.value as? String, "base")
-        tap(app, id: "template-area")
-        XCTAssertTrue(waitUntil { self.isOn(app.buttons["template-area-base"]) }, "Always packed is not marked")
-        XCTAssertFalse(isOn(app.buttons["template-area-none"]), "No activity area is marked too")
+        let field = app.buttons["template-area"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "an always-packed template cannot be moved")
+        XCTAssertEqual(chosen(app, "template-area"), "Always packed")
+        openDropDown(app, "template-area")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["template-area-0"]) }, "Always packed is not marked")
+        XCTAssertFalse(isOn(app.buttons["template-area-4"]), "No activity area is marked too")
         shot(app, "template-area-always")
-        tap(app, id: "template-area-none")
-        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "none" }, "it did not move")
+        tapInList(app, "template-area-4")
+        XCTAssertTrue(waitUntil { self.chosen(app, "template-area") == "No activity area" }, "it did not move")
         tap(app, id: "template-detail-done")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["templates-area-other"].waitForExistence(timeout: 5), "it is not under Other templates")
@@ -5846,15 +5846,111 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         tap(app, id: "template-row-2")
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "none" }, "row 2 is not the moved one")
-        tap(app, id: "template-area")
-        tap(app, id: "template-area-base")
-        XCTAssertTrue(waitUntil { (app.buttons["template-area"].value as? String) == "base" }, "it did not move back")
+        XCTAssertTrue(waitUntil { self.chosen(app, "template-area") == "No activity area" }, "row 2 is not the moved one")
+        XCTAssertEqual(choose(app, "template-area", 0), "Always packed", "it did not move back")
         tap(app, id: "template-detail-done")
         XCTAssertTrue(app.staticTexts["templates-area-base"].waitForExistence(timeout: 5))
         tab(app, "home")
         XCTAssertTrue(scrollUntil(app, "trip-activity-1"))
         XCTAssertFalse(app.buttons["trip-activity-2"].exists, "an always-packed template is offered to tick")
+    }
+
+    /// His own activity areas (0.89) — his words, 18 Oct 2026: "I would like the ability to
+    /// add and adjust activity areas so that I can organize templates." A new one is made on
+    /// the Activity areas page and moved first; nothing changes until Save; a template is
+    /// moved into it from its page; the Templates tab and Create new trip then show it under
+    /// his name, in his order.
+    func testHeMakesAnActivityAreaAndFilesATemplateInIt() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "templates-areas")
+        XCTAssertTrue(appears(app, "areas-detail", timeout: 5), "the Activity areas page did not open")
+        XCTAssertEqual(words(app.staticTexts["areas-row-0-label"]), "GA \u{00B7} Goal Activity")
+        XCTAssertEqual(words(app.staticTexts["areas-row-2-label"]), "OE \u{00B7} Other Events")
+        XCTAssertEqual(words(app.staticTexts["areas-row-0-count"]), "1 template", "GA does not say it holds Hiking")
+        // Add with nothing typed says so (never a grey button).
+        tap(app, id: "areas-add")
+        XCTAssertTrue(app.staticTexts["areas-add-needs"].waitForExistence(timeout: 5), "an empty Add said nothing")
+        type("Mountains", into: app.textFields["areas-add-name"])
+        tap(app, id: "areas-add")
+        let fourth = app.staticTexts["areas-row-3-label"]
+        XCTAssertTrue(waitUntil { self.words(fourth) == "Mountains" }, "the new area is not last: '\(words(fourth))'")
+        for n in stride(from: 3, to: 0, by: -1) { moveInList(app, "areas-row", n, by: -1) }
+        let first = app.staticTexts["areas-row-0-label"]
+        XCTAssertTrue(waitUntil { self.words(first) == "Mountains" }, "the new area did not move first: '\(words(first))'")
+        shot(app, "areas-page")
+        tap(app, id: "areas-save")
+        XCTAssertTrue(disappears(app, "areas-detail", timeout: 5))
+        // No template in it yet: no heading of its own.
+        XCTAssertFalse(app.staticTexts["templates-area-own-0"].exists, "an empty area has a heading")
+
+        // Hiking's page: the drop-down offers it, first after Always packed.
+        tap(app, id: "template-row-1")                            // Hiking, in GA
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        openDropDown(app, "template-area")
+        shot(app, "template-area-list")
+        closeDropDown(app, "template-area")
+        XCTAssertEqual(choose(app, "template-area", 1), "Mountains", "the new area is not offered first")
+        shot(app, "template-area-mountains")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        let heading = app.staticTexts["templates-area-own-0"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "Hiking is not under his new area")
+        XCTAssertEqual(words(heading), "Mountains", "the heading is not his name")
+        XCTAssertFalse(app.staticTexts["templates-area-GA"].exists, "GA still shows with nothing in it")
+        let wet = app.staticTexts["templates-area-WET"]
+        XCTAssertTrue(wet.exists)
+        XCTAssertLessThan(heading.frame.minY, wet.frame.minY, "his area is not in his order (first)")
+        shot(app, "templates-own-area")
+
+        // Create new trip: his area first, under his name.
+        tab(app, "home")
+        XCTAssertTrue(scrollUntil(app, "trip-activity-0"))
+        let groups = app.staticTexts.matching(identifier: "trip-activity-title").allElementsBoundByIndex.map { words($0) }
+        XCTAssertEqual(groups.first, "Mountains", "Create new trip does not lead with his area: \(groups)")
+    }
+
+    /// An area renamed on the page: its heading follows. Remove on an area a template is in
+    /// is refused, naming the template; on an empty one it asks, and the area goes on Save.
+    func testAnAreaIsRenamedAndOnlyAnEmptyOneIsRemoved() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "templates-areas")
+        XCTAssertTrue(appears(app, "areas-detail", timeout: 5))
+        // The pen: WET becomes "Training".
+        tap(app, id: "areas-row-1-rename")
+        let name = app.textFields["areas-row-1-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5), "the pen did not open the name")
+        replace("Training", in: name)
+        tap(app, id: "areas-row-1-rename-ok")
+        let second = app.staticTexts["areas-row-1-label"]
+        XCTAssertTrue(waitUntil { self.words(second) == "Training" }, "the name did not change: '\(words(second))'")
+        // GA holds Hiking: it stays, and says so.
+        tap(app, id: "areas-row-0-remove")
+        let refused = app.staticTexts["areas-row-0-refused"]
+        XCTAssertTrue(refused.waitForExistence(timeout: 5), "Remove on an area in use asked instead of refusing")
+        XCTAssertEqual(words(refused), "GA \u{00B7} Goal Activity still holds Hiking, so it stays. Move it to another area on its page first.")
+        shot(app, "areas-refused")
+        tap(app, id: "areas-row-0-remove-no")
+        XCTAssertTrue(disappears(app, "areas-row-0-refused", timeout: 5))
+        // OE is empty: it asks, and goes.
+        tap(app, id: "areas-row-2-remove")
+        XCTAssertTrue(app.staticTexts["areas-row-2-ask"].waitForExistence(timeout: 5), "Remove on an empty area did not ask")
+        tap(app, id: "areas-row-2-remove-yes")
+        XCTAssertTrue(app.buttons["areas-row-2-putback"].waitForExistence(timeout: 5), "the removed area is not struck out")
+        tap(app, id: "areas-save")
+        XCTAssertTrue(disappears(app, "areas-detail", timeout: 5))
+        let heading = app.staticTexts["templates-area-WET"]
+        XCTAssertTrue(waitUntil { self.words(heading) == "Training" }, "the heading did not follow: '\(words(heading))'")
+        // On the page again: two areas left.
+        tap(app, id: "templates-areas")
+        XCTAssertTrue(appears(app, "areas-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["areas-row-1-label"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["areas-row-2-label"].exists, "the empty area was not removed")
+        tap(app, id: "areas-cancel")
+        XCTAssertTrue(disappears(app, "areas-detail", timeout: 5))
     }
 
     /// Opens "Make a small core from this…" on the big always-packed "Long trips".
@@ -5907,7 +6003,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-row-1")
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         XCTAssertEqual(app.textFields["template-name"].value as? String, "Long trips short")
-        XCTAssertEqual(app.buttons["template-area"].value as? String, "base")
+        XCTAssertEqual(chosen(app, "template-area"), "Always packed")
         tap(app, id: "template-detail-done")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
         // A copy of the library from before was kept, under Settings.

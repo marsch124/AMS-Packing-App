@@ -11,7 +11,9 @@ Create new trip (Quick mode: only the ticked ones). The word "template" is used 
 list you pack from, and grab lists"). The group a template lives in is its **activity area** (GA · Goal Activity,
 WET · Workout, Exercise & Training, OE · Other Events) — the word replaced "shelf" in 0.56 (3 Oct 2026, field
 test: "Please change the word 'shelf' throughout the app and call it 'Activity area.' We understand that word
-much better.").
+much better."). **Since 0.89 the areas are HIS** (§1a; 18 Oct 2026: "I would like the ability to add and adjust
+activity areas so that I can organize templates"): made, renamed, moved and removed on the Templates tab's
+Activity areas page; the three above are where every library starts.
 
 A template holds **rows**. A row is a **membership**: the link between ONE *thing* (a catalogue item, shown in
 Care → Your things) and ONE template, carrying what *this template* says about the thing (its bag here, its "When"
@@ -35,12 +37,13 @@ own functions (§13a, `applySectionEdits`).
 
 **Files covered.** `App/Sources/Screens/TemplatesScreen.swift` (Templates tab, `TemplateCard`, `Cover`, `IconMark`,
 `CoverDoor`, `IconPickerScreen`, `TemplateDetail`, `RowEditor`, `Color(hexString:)`), `App/Sources/TemplateIcons.swift`,
-`App/Sources/Screens/NewList.swift`, `App/Sources/Screens/PickThings.swift`, `App/Sources/Screens/ListsScreen.swift`;
+`App/Sources/Screens/NewList.swift`, `App/Sources/Screens/PickThings.swift`, `App/Sources/Screens/ListsScreen.swift`,
+`App/Sources/Screens/AreasScreen.swift` (his activity areas and a template's Activity area, 0.89);
 model: `PackingCore/Lists.swift`, `Memberships.swift`, `Resolve.swift`, `Grouping.swift`, `Kits.swift`,
 `ListSharing.swift`; `PackingLibrary/Library.swift` (template parts, and arranging a template's headings and
 rows — §13a), `EditLists.swift`, `Bags.swift` (list role and
 `shownName`), `TemplateIcon.swift`, `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
-`Sharing.swift` (template parts), `TemplateRows.swift` (a row's own answers, the row editor's Save, covers'
+`Sharing.swift` (template parts), `ActivityAreas.swift` (his activity areas, 0.89), `TemplateRows.swift` (a row's own answers, the row editor's Save, covers'
 letter and colours, which templates are shown and what they add up to, free names — the spec pass). Storage and
 sync are in `docs/store.md`; colours in `docs/colours.md` (both linked, not repeated).
 
@@ -111,15 +114,19 @@ magnifier.
      `templates-new` → opens `NewList` (§5) as a sheet.
 2. **Refine door** (`RefineDoor`, id `refine-open`, bottom padding 4): violet card "Refine your templates" with a
    count of waiting suggestions; owns its own sheet (`RefineScreen`). Documented in the Refine spec.
+2a. **Activity areas** (0.89, `areasDoor`, id `templates-areas`): the quiet violet pill with the pen that opens his
+   areas (§1a), under the small-core news card when it shows.
 3. For each **activity area** (see Behaviour) in order:
-   - Heading — `areaHeading`: `groupHeading(code, title)` = `"<CODE> · <Title>"` for a GROUP, otherwise just the
-     title — **as he writes them, not in capitals** (0.78): "Always Packed", "By Transport", "GA · Goal Activity",
+   - Heading — `AreaBlock.title`: `Library.areaWords` (0.89; `areaHeading`/`groupHeading` until then) =
+     `"<CODE> · <Name>"` for a built-in under its own name, otherwise his words alone ("Mountains", or a built-in he
+     renamed); the fixed headings just their title — **as he writes them, not in capitals** (0.78): "Always Packed", "By Transport", "GA · Goal Activity",
      "WET · Workout, Exercise & Training", "OE · Other Events", "Other Templates" (his code GA / WET / OE stays in
      capitals). His words on the iPhone (13 Oct 2026): "GA · Goal Activity — not all caps", "WET · Workout,
      Exercise & Training — not all caps", "Other Templates — not all caps". Until 0.78 `groupHeading` upper-cased
      the words ("GA · GOAL ACTIVITY", "ALWAYS PACKED"). Headline, `Theme.ink`, top padding 16 (until 0.62: 18
-     heavy, kerning 0.8, "Much larger headings", his H.13). id `templates-area-<id>` where id is `base`,
-     `transport`, `GA`, `WET`, `OE` or `other`.
+     heavy, kerning 0.8, "Much larger headings", his H.13). id `templates-area-<testId>` where testId is `base`,
+     `transport`, a built-in's code `GA`, `WET`, `OE` (renamed or not), `own-<n>` for an area he made (n = its
+     place in HIS list of areas, 0.89 — his ids are random) or `other`.
    - A `LazyVGrid` of two flexible columns (spacing 8 both ways) of **cards** (§2). Each card is a plain Button;
      id `template-row-<n>` where n = the template's index in the flattened list of all areas, top to bottom
      (so with the sample library: 0 = Common base, 1 = Hiking, 2 = Swim). Tap → opens `TemplateDetail` (§6).
@@ -131,18 +138,20 @@ magnifier.
   magnifier and "+ New" each set it. Not three `.sheet` modifiers: "SwiftUI does not reliably present a second
   sheet on a view while the first is still closing" — the trap met in Search (0.17), tidied here by the spec pass
   (5 Oct 2026).
-- `activityAreas(all)` takes `library.shownTemplates()` (every template but the bag list and the loose bin,
+- `activityAreas(all, library)` takes `library.shownTemplates()` (every template but the bag list and the loose bin,
   resolved, sorted A–Z with `jsLocaleCompare` default sensitivity) and builds, **omitting empty areas**:
   1. `base` "Always Packed" — templates with `role == "base"` (A–Z).
   2. `transport` "By Transport" — `role == "transport"` (A–Z). (The area titles in his casing since 0.78.)
-  3. For each GROUP in `GROUPS` order (GA, WET, OE): templates with `role == ""` and `group == id`, ordered by
-     `orderActivities(groupId, …)` — only WET has a fixed order (`ACTIVITY_ORDER["WET"]` = Swim, Bike, Run,
-     Strength, Mobility, Breath work, matched by `normName`); unknown names follow A–Z; GA/OE keep the A–Z input.
-  4. `other` "Other Templates" — `role == ""` and `group == ""`.
+  3. For each of HIS areas in his order (0.89, `Library.listsByArea`, §1a; until 0.89 the `GROUPS` order GA, WET,
+     OE): templates with `role == ""` whose `areaOf` is that area, ordered by `orderActivities(areaId, …)` — only
+     WET has a fixed order (`ACTIVITY_ORDER["WET"]` = Swim, Bike, Run, Strength, Mobility, Breath work, matched by
+     `normName`); unknown names follow A–Z; every other area keeps the A–Z input.
+  4. `other` "Other Templates" — `role == ""` and in no area of his (`areaOf` "": no area, or one that is gone).
   - Templates with role `container` (the bag list, "Containers"/"Bags") and `loose` (the web app's retired "Loose
     items" bin) appear in **no** area: "Bags are not an activity: they have their own screen, on Care".
   - A base or transport template that also has a group is shown only under Always packed / By transport.
-- The template's stored field is still `group`; only the shown word changed ("activity area").
+- The template's stored field is still `group` for a built-in area; one he made rides in `extra["area"]` (§1a).
+- Home's Templates count tile uses the same `activityAreas(templates, library)` sum.
 - Every render recomputes `shownTemplates()` and `templateUse(today: Today.local)` (§16).
 - `NewList` hands back the new template → `model.change { saveTemplate(list) }` and its id is kept; when New's
   sheet has closed (`onDismiss`) the new template's page opens straight away ("a list he cannot see the inside of
@@ -173,7 +182,136 @@ sheet here can be swiped down, except a template's page while arranging (`intera
 - Model: `ListsTests.testOrderActivities*` (4 tests); `CreateTripTests.testTheChoicesAreHisGroupsInHisOrder`;
   `TemplateFacesTests.testTheTemplatesLineCountsWhatItSays` (the bag list and the loose bin are not shown; things
   on them counted once; a trip packed from none of them not counted).
+- 0.89: `testHeMakesAnActivityAreaAndFilesATemplateInIt` (the pill, his area's heading `templates-area-own-0` above
+  WET), `testAnAreaIsRenamedAndOnlyAnEmptyOneIsRemoved` (a renamed WET heading) — §1a.
 - **Not covered:** the "By Transport" and "Other Templates" areas, the exact summary wording on screen.
+
+---
+
+## 1a. His own activity areas (0.89, `AreasScreen`, `TemplateAreaField`; model `PackingLibrary/ActivityAreas.swift`)
+
+### Purpose and origin
+His words, 18 Oct 2026: **"I would like the ability to add and adjust activity areas so that I can organize
+templates."** Until 0.89 an area was one of three codes fixed in the web app's model (`GROUPS`: GA · Goal
+Activity, WET · Workout, Exercise & Training, OE · Other Events), stored in a template's `group`. Since 0.89 they
+are his list, changed the way his other lists are (Your choices, a drop-down's tools, 0.69/0.70): a pen renames
+an area and everything in it follows, the grip ≡ (on the Mac also ↑ ↓) moves it, a new one is typed at the foot,
+Remove asks — or, while templates are in it, says which and keeps it; nothing changes until Save. A template is
+moved into any of his areas from its own page (§6, Activity area, a drop-down since 0.89).
+
+### How it is reached and left
+- **Activity areas** — a quiet pill on the Templates tab, at the head of the headings it changes (under the Refine
+  card and the small-core news card, above "Always Packed"): the hand-drawn pen (16) and "Activity areas"
+  (Subheadline semibold) in violet, on a 10 % violet capsule with a 1-pt violet ring, `Metrics.chip` tall, side
+  padding 12; id `templates-areas`, label "Activity areas", hint "Make, rename, move or remove your activity
+  areas". It opens the page as the tab's one sheet (`Opened.areas`). Why there: the areas are the Templates tab's
+  headings, so the control that changes them sits with them — the same place on both devices; Settings → Your
+  choices holds the lists a THING uses.
+- Left by **Cancel** (`areas-cancel`, outlined muted; Escape too) — nothing changes — or **Save** (`areas-save`,
+  violet, filled, always in colour: with nothing changed it simply closes), or a swipe down on the iPhone (= Cancel).
+
+### What is on screen (container `areas-detail`; Mac min 480 × 520)
+- Top row (padding 16): Cancel · "Activity areas" (Title 3 bold violet, one line, scales to 80 %, `areas-title`) ·
+  Save.
+- In a `KeyboardAwayScroll` (side 16, bottom 24):
+  - The intro (Subheadline muted, `areas-intro`): "Your templates are grouped under these areas on Templates and on
+    Create new trip, in this order. Hold the grip ≡ and drag an area to its place; the pen renames it. A template
+    moves to another area on its own page (Activity area). Nothing changes until Save." On the Mac "…to its place,
+    or use the arrows; the pen renames it…".
+  - One row per area, in his order as the page holds it (n = its place on the page): row `areas-row-<n>` (min
+    height `Metrics.tap`, hairline under): the grip ≡ (`areas-row-<n>-grip`, `ReorderGrip`, not on a struck-out
+    row), the area's words (Body ink, wraps; `areas-row-<n>-label`) — a built-in under its own name with its code
+    ("GA · Goal Activity"), otherwise his words — then, when templates are in it, their number (Footnote semibold
+    monospaced muted, label "1 template" / "N templates", `areas-row-<n>-count`); at the right the pen
+    (`areas-row-<n>-rename`, label "Rename …", muted), on the Mac ↑ ↓ (`-up`, `-down`; violet, faint where there is
+    no place to go) and **Remove** (Subheadline semibold red, `-remove`). A row taken away on the page is struck
+    out and muted, with **Put back** (`-putback`) instead of its tools.
+  - The pen: the row becomes a field (`areas-row-<n>-name`, his words without the code, violet ring) with **OK**
+    (`-rename-ok`); Return takes the name too, Escape (Mac) leaves it. What is wrong is said under it
+    (`-name-needs`, Subheadline semibold red): "Type a name first.", "You already have <name>." (as the page
+    shows the list, struck-out rows aside), "<Heading> is a heading of its own on Templates. Pick another name."
+    for Always Packed, By Transport and Other Templates.
+  - Remove: inside the list, a card (red 1-pt ring, card fill, radius 10): for an empty area "Remove <area> from
+    your activity areas? No template is in it." (`-ask`) with **Remove** (white on red, `-remove-yes`) and
+    **Keep** (`-remove-no`); for an area that holds templates the reason instead (`-refused`) with **OK**
+    (`-remove-no`): "<area> still holds Hiking, so it stays. Move it to another area on its page first." (two or
+    three names "A and B" / "A, B and C"; more: "A, B, C and N more"; "them … their page" for more than one); for
+    the workout area always "<area> is where your workouts live — each gets its own Context on a trip — so it
+    stays." (`Library.areaRemoveProblem`).
+  - The foot (12 above): field "A new area" (`areas-add-name`; Return = Add) and **Add** (violet,
+    `areas-add`); pressed with nothing typed, or with a name he has or a reserved one, the line under it says
+    so (`areas-add-needs`, the shared `needsLine`). An added area is the last row, movable, renamable and
+    removable like the rest, made on Save.
+  - The footer (Footnote muted, `areas-footer`): "Your areas belong to your account, so both your devices show the
+    same. Always Packed and By Transport stay where they are: those templates are filed by what they do."
+
+### Behaviour
+- The page holds a `ChoiceEdits(kind: "areas")` (ChoiceEdits.swift, the drop-downs' own mechanism): names by
+  key, the order, the removed, the added. Rows are `choicesAsEdited`. Save writes them with
+  `applyChoiceEditsNow` — names (a swap parks each first), then the added (each made by `addChoice("areas")` →
+  `addArea`: id `"area-" + PackingEnv.makeId()`), then the order (one step at a time by `moveChoice("areas")`),
+  then the removals (`removeChoice` — an area that gained a template meanwhile on the other device stays).
+- **An area is pointed at by its id**, never its name: a rename changes the list only, and every template in it
+  follows by itself (as a "When" step's).
+- **Which areas exist** (`Library.activityAreas()`): his list from `meta["activityAreas"]` (`[{id, name}]`), or
+  the three the app ships with when there is none (never seeded). Read cleanly: trimmed, names cut to 60 UTF-16
+  units, rows without id or name and repeated ids skipped, and the workout area ("WET") always there (put last
+  should a list ever lack it). Written only while it differs from the three as shipped (`setActivityAreas`; the
+  list back as shipped removes the record).
+- **The built-ins** keep their ids "GA", "WET", "OE" and their roles. Renamed, they show his name alone; back
+  under their own name they show their code again (`Library.areaWords`). **GA and OE can be removed once no
+  template is in them; WET never** — it is the workout area: each workout's own Context on a trip
+  (`contextApplies`, PackingCore), the workout colours on Create new trip, Swim/Bike/Run order
+  (`ACTIVITY_ORDER`). Moving a template OUT of WET makes it no workout (no own Context); Counts as (Apple Health)
+  is the template's own and does not change.
+- **Which area a template is in** (`areaOf`): "" for an always-packed or transport template (filed by what it
+  does); else its `group` when that is a built-in area of his; else its `extra["area"]` when that names an area
+  of his; else "" — **Other Templates**. So a template whose area went (removed on the other device while this
+  one moved it in) is never lost: it falls under Other Templates.
+- **Where it is stored, and why** (parity with the web app's data, 211/211): the list is ONE `meta` record —
+  like his kinds of thing (0.69) — not shared rows, because a NEW shared-row kind is blanked by PackingCore
+  (`coerceSharedRow`). A built-in area stays the template's `group` (what the web app and PackingCore read); one
+  of his goes in `extra["area"]` with `group` "" (`coerceList` would blank any other `group`; the web app shows
+  such a template under its "Other lists"). Both ride through the store (iCloud), a backup (`prefs.activityAreas`
+  and the template's own row) and a restore exactly — `ActivityAreasTests.testTheAreasSurviveTheStoreABackupAndARestore`.
+  One record for the list means the later of two offline edits of the LIST wins (spec 01 §1.11).
+- **Headings** (Templates tab §1, Create new trip and Trip settings spec 03): his areas in his order, each only
+  while a template is in it (as before 0.89 — an empty area has no heading; the page lists it with no number),
+  then Other Templates. Inside an area: `orderActivities` (Swim/Bike/Run in WET, stored order elsewhere).
+- **A template's page** (`TemplateAreaField`, §6): picking an area files the template at once
+  (`setTemplateArea`). "A new area" at the foot of that drop-down makes the area at the end of his list and files
+  the template in it in ONE change (one he already has, compared as names, is simply chosen; a reserved name is
+  refused under the field, `template-area-needs`) — at once, because a template's page saves as it goes (as a
+  reminder's When does, 0.73).
+- **New** (§5) and **Make a small core** (§14b) offer his areas in his order too.
+
+### iPhone vs Mac
+Same page. The Mac has ↑ ↓ on each row (Tab reaches them) besides the grip; the iPhone moves a row by its grip
+only (0.72) and VoiceOver by the grip's "Move up" / "Move down". Escape = Cancel; in a name field it leaves the name.
+
+### Tests
+- UI `testHeMakesAnActivityAreaAndFilesATemplateInIt` (0.89): the page lists GA, WET, OE with GA's "1 template";
+  Add with nothing typed says so; "Mountains" added last, moved first (the iPhone drags its grip, the Mac its ↑),
+  Save; no heading while empty; Hiking's drop-down offers it as row 1 and files Hiking there; the tab shows
+  `templates-area-own-0` "Mountains" above WET and GA gone; Create new trip's first group heading is "Mountains".
+  Seen RED with the template page's list planted as the factory three: `XCTAssertEqual failed: ("GA · Goal
+  Activity") is not equal to ("Mountains") - the new area is not offered first`.
+- UI `testAnAreaIsRenamedAndOnlyAnEmptyOneIsRemoved` (0.89): WET renamed "Training" with the pen and OK; GA's
+  Remove refused, exactly "GA · Goal Activity still holds Hiking, so it stays. Move it to another area on its page
+  first."; OE's asks and is struck out; Save: `templates-area-WET` reads "Training"; reopened, two rows. Seen RED
+  with the refusal planted away: `XCTAssertTrue failed - Remove on an area in use asked instead of refusing`.
+- Model `ActivityAreasTests` (8): the three as shipped, nothing stored, headings as before; a new area in his order
+  and a template filed in it (`group` "", `extra["area"]`), back to a built-in, unknown area and transport refused,
+  Always packed clears it; a rename followed, a built-in keeps its role (WET still `contextApplies`, Swim/Bike/Run
+  order), a swap of names, the list back as shipped stores nothing; names refused (one he has, the three reserved
+  headings, blank); an area in use stays naming its templates, WET always stays, an empty built-in goes, held
+  removals on Save, a template whose area went falls under Other Templates, WET always read back; moving;
+  **the store, a backup and a restore bring both the list and each template's area back exactly** (the web model
+  reads `group` "" and keeps the key) — seen RED with the backup's `prefs.activityAreas` planted away: `… is not
+  equal to … - a backup lost his areas`, `- a restore did not bring his areas back exactly`; and with his own area
+  planted into `group`: `XCTAssertEqual failed: ("area-id-7") is not equal to ("") - his own area went into the web
+  app's field`; a shared template replacing his keeps his area, a new template made in one.
+- Parity: `tools/parity/run.sh --invented` 211 of 211 identical (PackingCore unchanged).
 
 ---
 
@@ -477,10 +615,12 @@ made, a typed name included), swipe down (iPhone), or
     id `newlist-name`.
   - While taken: "You already have a template called that." — 14 semibold red, id `newlist-taken`.
   - `SectionTitle` "In which activity area should it live?" (rendered in capitals), id `newlist-area-title`.
-  - One row per GROUP: "GA · Goal Activity", "WET · Workout, Exercise & Training", "OE · Other Events", then
+  - One row per area of HIS, in his order under his words (0.89, `Library.areaWords`; until 0.89 the three
+    GROUPS): "GA · Goal Activity", "WET · Workout, Exercise & Training", "OE · Other Events" as shipped, then
     "No activity area". Rows are full-width buttons, min height 44, a hairline under each; the chosen one is 16
-    heavy violet with trait `isSelected`, the others 16 medium ink. ids `newlist-area-GA`, `-WET`, `-OE`,
-    `-none`. Default: "No activity area".
+    heavy violet with trait `isSelected`, the others 16 medium ink. ids `newlist-area-<code>` for a built-in
+    (`-GA`, `-WET`, `-OE`), `newlist-area-own-<n>` for one he made (n = its place in his list), `-none`.
+    Default: "No activity area".
   - "Make the template" — 17 heavy white on a violet rounded rectangle (radius 12), full width, min height 50,
     24 above; id `newlist-make`. **Always in colour and always pressable** (his rule, 2026-09-26).
   - When pressed too early, a line under it (the shared `needsLine`): 15 bold red, at the left, id
@@ -493,9 +633,9 @@ made, a typed name included), swipe down (iPhone), or
   "Containers" is never shown ("Bags"), so it is not taken (the spec pass, 5 Oct 2026); Worth a look counts the bag
   list apart, so a template he calls "Containers" is not read as two libraries meeting.
 - `make()`: blank (after `jsTrim`) → needs "Give the template a name."; taken → "Pick a name you do not have
-  yet."; else clears needs, calls `made(newList(name: jsTrim(name), group: chosen))` and dismisses. The new list:
-  role "", no items, no sections, no cover, fresh id, `createdAt`/`updatedAt` now; `coerceList` keeps the group only
-  if it is a GROUP id.
+  yet."; else clears needs, calls `made(Library.filed(newList(name: jsTrim(name)), in: chosen))` and dismisses
+  (0.89: a built-in in `group`, one of his in `extra["area"]`). The new list: role "", no items, no sections, no
+  cover, fresh id, `createdAt`/`updatedAt` now; `coerceList` keeps the group only if it is a GROUP id.
 - The caller saves it (`saveTemplate`) and opens it.
 - The needs line is the shared `needsLine`: it clears as soon as the name changes (until the spec pass it stayed
   until the next press).
@@ -618,7 +758,7 @@ fill, hairline border; id `template-add-name`; Return = Add) and **"Add"** (`Fie
 violet, radius 10, min height 44; id `template-add`). `needsLine` id `template-add-needs`.
 
 **Counts as** (0.70, chapter 07 part 7 — Apple Health in the trip review; `CountsAsField` in
-`ReviewHealth.swift`). Only on an activity template (role ""), on both devices, above the Activity area row, side
+`ReviewHealth.swift`). Only on an activity template (role ""), on both devices, above the Activity area field, side
 16, bottom 6, left-aligned: a drop-down (`DropDown`, heading `.beside`, violet) — "Counts as" (15 semibold muted,
 id `template-counts-as-title`) then the field (id `template-counts-as`) showing the kind it meets now: his pick
 (`extra["countsAs"]`), else the one its NAME meets (`WorkoutKind.named`, compared as `WorkoutTone` compares:
@@ -629,31 +769,33 @@ Mobility & breath, Hiking, Golf, Climbing, Diving, and `template-counts-as-9` = 
 The common base and transport templates have no field and never meet a workout.
 
 **While the iPhone's keyboard is up** (`keyboardUp`, from the keyboard's show/hide notices; iPhone only) Counts as and
-the Activity area / Delete row are not shown, so the list keeps room for the field being typed in — a reminder's
+Activity area and the Delete row are not shown, so the list keeps room for the field being typed in — a reminder's
 Add field at the list's top was hidden under them once Counts as joined the foot (`testATemplateKeepsItsReminders`,
-the 0.68–0.71 merge). The Delete question and the area card, once open, stay.
+the 0.68–0.71 merge). The Delete question, once open, stays.
 
-**Activity area and Delete** (one row, side 16, bottom 8):
-- On an activity template (role "") and, since 0.71, on an always-packed one (role "base"): at the left,
-  **"Activity area: <Always packed / GA / WET / OE / none>"** — 15 semibold violet plain text button, min height 36,
-  id `template-area`, accessibility value "base", the area id or "none". Tap → in place of the row, a card (padding
-  14, card fill, violet 1-pt border, radius 12, side 16, bottom 10): "In which activity area should it live?" (16
-  heavy ink) with "Cancel" (outlined muted, `template-area-cancel`), then the rows (`TemplateDetail.areaChoices`):
-  **"Always packed — comes on every full trip"** (0.71, id `template-area-base`), "GA · Goal Activity", "WET ·
-  Workout, Exercise & Training", "OE · Other Events", "No activity area" (min height 44, hairline under; the current
-  one 16 heavy violet with `isSelected`, else 16 medium ink; ids `template-area-GA`, `-WET`, `-OE`, `-none`), and
-  under them a footnote (13 muted, id `template-area-hint`): "Always packed comes on every full trip by itself
-  (Quick leaves it out); the others come when you tick them." A press files it (`setTemplateArea`, §14) and the
-  card goes. The spec pass (5 Oct 2026): New asked for the area and nothing could put a wrong answer right. 0.71
-  (8 Oct 2026): his always-packed template had grown too big for a weekend; the agreed way out is a small
-  always-packed core and the big one a template he ticks for longer trips — so a template moves into and out of
-  Always packed here. Transport templates still have no door.
+**Activity area** (0.89, `TemplateAreaField` in `AreasScreen.swift`; until 0.89 a text button "Activity area:
+<code>" beside Delete that opened a card of five rows). On an activity template (role "") and, since 0.71, on an
+always-packed one (role "base"), on both devices, under Counts as, side 16, bottom 6, left-aligned: a drop-down
+(`DropDown`, heading `.beside`, violet) — "Activity area" (15 semibold muted, id `template-area-title`) then the
+field (id `template-area`; its value the words shown) showing where it is: "Always packed", his area's words
+(`Library.areaWords`: "GA · Goal Activity", "Mountains"…) or "No activity area" (grey, the drop-down's "nothing
+said" look). Its list (`template-area-list`): row 0 **Always packed**, then HIS areas in his order, then **No
+activity area** (with the three as shipped: 1 GA, 2 WET, 3 OE, 4 No activity area; ids `template-area-<n>`), the
+current one ticked; at its foot **"A new area"** (`template-area-new`) + Add (`template-area-add`; nothing typed →
+"Type the new area's name first.", `template-area-add-needs`) — made at the end of his list and the template filed
+in it at once (one he has is chosen; a reserved heading name is refused under the field, `template-area-needs`;
+§1a). A choice files it at once (`setTemplateArea`, §14). Renaming, moving and removing areas is the Activity areas
+page's (§1a), not this list's. The spec pass (5 Oct 2026): New asked for the area and nothing could put a wrong
+answer right. 0.71 (8 Oct 2026): his always-packed template had grown too big for a weekend; the agreed way out is
+a small always-packed core and the big one a template he ticks for longer trips — so a template moves into and out
+of Always packed here. Transport templates still have no field. (The card's footnote "Always packed comes on every
+full trip by itself…" went with the card; How it works says it.)
 - **"Make a small core from this…"** (0.71, `SmallCoreDoor`, id `template-smallcore`): a line of its own above the
-  area/Delete row (15 semibold violet plain text, min height 28), only on an always-packed template with more than
+  Delete row (0.89; above the area/Delete row until then) (15 semibold violet plain text, min height 28), only on an always-packed template with more than
   20 things (`offersSmallCore`, `SMALL_CORE_FROM` = 20; reminders do not count), and only where the page was opened
   from the Templates tab (Search opens it without). Opens the small core sheet (§14b). The sheet hangs on the
   page's header, not on the door: once made, the big template is no longer always packed and the door goes.
-- At the right, when not asking: `SmallDeleteButton` "Delete template" (13 semibold red text in a red 60 %
+- **Delete** (side 16, bottom 8; a row of its own since 0.89), at the right, when not asking: `SmallDeleteButton` "Delete template" (13 semibold red text in a red 60 %
   outlined capsule, min height 30; id `template-delete`). When asking, in place of the row a card
 (padding 14, card fill, red 1-pt border, radius 12, side 16, bottom 10):
 - `Delete “<name>”?` — 16 heavy ink.
@@ -739,10 +881,11 @@ both.
   1.5 pt of the centre line of `template-cover`; seen red with the header row planted as `.top`-aligned: "template-share
   sits -5.0 pt off the icon's centre line"; the mark inside the pill is checked in the pictures);
   `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
-  row); `testATemplateMovesToAnotherActivityArea` (until 0.71: Common base offered no `template-area`; Hiking's reads "GA",
-  `template-area-OE` → "OE", and on the tab OE appears and GA goes); `testATemplateMovesOutOfAndIntoAlwaysPacked` (0.71: Common
-  base's door reads "base", `template-area-base` marked; → none: under Other Templates, Always Packed gone, offered
-  as `trip-activity-2` on Create new trip; back to base: no longer offered); `testATemplateCountsAsWhatHeLinksItTo` (0.70,
+  row); `testATemplateMovesToAnotherActivityArea` (Hiking's field reads "GA · Goal Activity", row 1 ticked; row 3 →
+  "OE · Other Events", and on the tab OE appears and GA goes — a drop-down since 0.89); `testATemplateMovesOutOfAndIntoAlwaysPacked`
+  (0.71: Common base's field reads "Always packed", row 0 ticked and not row 4; row 4 → "No activity area": under
+  Other Templates, Always Packed gone, offered as `trip-activity-2` on Create new trip; row 0 back: no longer
+  offered); 0.89 `testHeMakesAnActivityAreaAndFilesATemplateInIt` (his new area is row 1 of Hiking's list — §1a); `testATemplateCountsAsWhatHeLinksItTo` (0.70,
   `-uiTestingHealth`: the Common base has no `template-counts-as`; Bike reads "Bike" by its name, `template-counts-as-9`
   → "Nothing", kept after Done and reopening; on the iPhone the review then has no "No bike" row and "Use these"
   leaves the Bike helmet alone); Arrange — §6a.
@@ -752,7 +895,8 @@ both.
   `TemplateRowsTests.testTypingAThingAlreadyOnTheTemplateDoesNotAddItTwice`,
   `testOnlyOnSaysWhatATripReadsOnThisTemplate`; `TemplateFacesTests.testATemplateMovesToAnotherActivityArea`.
 - **Not covered:** the device-wide grouping memory; When's colours; Delete's "Keep it"; a rename discarded by Done;
-  Return in the name field; the area card's Cancel.
+  Return in the name field; "A new area" at the foot of the Activity area list (its model is pinned:
+  `ActivityAreasTests.testANewAreaHoldsATemplateInHisOrder`).
 
 ### Traps and history
 - 🪤 **Row identity.** "A row whose number changes is built afresh: kept, it kept its OLD number — the Map, the only
@@ -1252,7 +1396,7 @@ inside, labels list); `GroupingTests` — `testEntriesByPhaseOnlyReturnsNonEmpty
 | `emoji` | Cover glyph; trimmed, cut to 4 UTF-16 units; non-string → "". The web app shows it (📋 `TEMPLATE_DEFAULT_EMOJI` when ""); this app never does — its cover shows the first letter (§3). Kept for round trips; no UI sets it here. |
 | `color` | Cover colour; kept only if a hex colour, else "" (= hashed pick from `COVER_COLOURS`, §3). No UI sets it here. |
 | `sections` | Ordered `[TemplateSection {id, name}]`; `normalizeSections`: unnamed (after trim) dropped, a missing id invented, a repeated id dropped, names trimmed. |
-| `group` | "GA" / "WET" / "OE" or "" (any other value → ""). The activity area. Set when the template is made, and changed on its page (`setTemplateArea`, §14). |
+| `group` | "GA" / "WET" / "OE" or "" (any other value → ""). A built-in activity area. Set when the template is made, and changed on its page (`setTemplateArea`, §14). An area HE made (0.89) is not here — `coerceList` would blank it — but in `extra["area"]`, with `group` ""; `Library.areaOf` reads the two together (§1a). |
 | `role` | "base" (always on every trip), "transport" (only when the trip's transport equals `transport`), "loose" (retired bin, never fed to a trip), "container" (the bag list, never fed to a trip), "" (an activity template the user ticks). Unknown → "". |
 | `transport` | "Car" / "Plane" / "RV" or "" (only meaningful for role transport). |
 | `defaultContainer` | One bag for everything on this template ("" = none); sits between the thing's own bag and the row's exception. No UI sets it here (imported data only). |
@@ -1523,11 +1667,13 @@ rename the existing."
 - `renameTemplate(id:to:) -> Bool`: trims; refuses blank, an unknown id, or a name another template has by
   `normName` (`templateNameTaken(except:)` — any role but the bag list, whose stored "Containers" he never sees);
   sets the name and `updatedAt`. The icon choice (in `extra`) is kept.
-- `setTemplateArea(id:area:) -> Bool` (the spec pass, 5 Oct 2026): moves an ACTIVITY template (role "") to "GA",
-  "WET", "OE" or "" (none) and sets `updatedAt` (not when the area is already that one). Refused (false) for an
-  unknown id, an always-packed or transport template (filed by what they do) and an area that is not one of his.
+- `setTemplateArea(id:area:) -> Bool` (the spec pass, 5 Oct 2026): moves an ACTIVITY template (role "") to any of
+  HIS areas (0.89; "GA", "WET", "OE" until then) or "" (none) and sets `updatedAt` (not when nothing changes). A
+  built-in goes in `group` (and `extra["area"]` is removed); one he made in `extra["area"]` with `group` ""
+  (`Library.filed`, §1a). Refused (false) for an unknown id, a transport template (filed by what it does) and an
+  area that is not one of his — a built-in he removed included.
   **0.71:** also moves a template INTO Always packed (`area == Library.ALWAYS_PACKED_AREA`, "base": role "base",
-  group cleared) and an always-packed one OUT (role "", group = the area picked). Only role and group change —
+  group cleared — and since 0.89 his own area too) and an always-packed one OUT (role "", group = the area picked). Only role and group change —
   its things, sections, notes, reminders and every row's own answers stay (memberships are untouched). Several
   always-packed templates are allowed (every Full trip brings each, in template order, the first winning a name+bag
   clash — `listsForEvent` already did this); so is none (Create new trip then needs a ticked template, as it always
@@ -1542,6 +1688,7 @@ rename the existing."
   (`docs/store.md` rule 9, `Library.regenerated`).
 
 Tests: `TemplateFacesTests.testATemplateMovesToAnotherActivityArea` (0.71: transport refused),
+`ActivityAreasTests.testANewAreaHoldsATemplateInHisOrder` (0.89: his own area, back to a built-in, unknown refused),
 `testATemplateMovesIntoAndOutOfAlwaysPacked` (0.71: rows, own answers and sections kept; out → offered to tick,
 comes only when ticked, a trip made before keeps its lines until its settings are saved; two always packed → both
 on a Full trip, neither on Quick; asking for where it is changes nothing), `testANameIsTakenOnlyByATemplateHeCanSee`;
@@ -1576,8 +1723,10 @@ footnote: Tick what comes on EVERY full trip…; then:
    N counted top to bottom, `isSelected` when ticked; min height `Metrics.compact`). Ticked at first
    (`smallCoreSuggestion`): every row under a heading whose name holds clothing, clothes, underwear, toiletries,
    hygiene, wash, bathroom, kläder, hygien or toalett (case and accents aside), and every thing packed per night.
-4. **Where should "<template>" go?** — GA / WET / OE / "No activity area (Other Templates)" (his casing since 0.78) (`smallcore-area-…`,
-   default none).
+4. **Where should "<template>" go?** — his areas in his order under his words (0.89; GA / WET / OE until then), then
+   "No activity area (Other Templates)" (his casing since 0.78) (`smallcore-area-<code>` for a built-in,
+   `smallcore-area-own-<n>` for one he made, `smallcore-area-none`; default none). `makeSmallCore` accepts any area
+   of his (`bigArea`).
 Pinned under the scroll: **Make the small core** (full colour, height 50, `smallcore-make`); pressed too early the
 line under it (`smallcore-needs`) says "Give the small core a name." / "You already have a template called that." /
 "Tick at least one thing for the small core." The rows sit in a plain VStack (a lazy one dropped the paste answers
@@ -1750,8 +1899,8 @@ becomes a QR code; it opens in the web app for anyone, and in this app via Setti
   template" of a shared always-packed template gives him a second base template, which every new trip then packs —
   the preview and the "Added" line say so.
 - "Replace" is offered only against a template of role "" (`templateNamed`), so a base, transport or bag list
-  is never replaced. `importTemplate(shared, replacing:)` keeps HIS template's role, activity area and transport,
-  so it stays where it was (the spec pass: replacing his activity template with a shared always-packed one turned
+  is never replaced. `importTemplate(shared, replacing:)` keeps HIS template's role, activity area (`group`, and
+  since 0.89 his own area in `extra["area"]`) and transport, so it stays where it was (the spec pass: replacing his activity template with a shared always-packed one turned
   his into one that every trip packs). Colour, emoji and default bag are the shared one's.
 - `importTemplate(_:replacing:named:)`: as a NEW template it refuses (nil, nothing changes) a name he has
   (`templateNameTaken`) — `named` gives it another (trimmed; ignored on Replace). Each row whose name matches a
@@ -1780,6 +1929,8 @@ base, a new trip packs its Fins; Replace: his Swim stays role "" in WET with the
 the account, so both devices show the same; an entry still in use cannot be removed by accident." Renamed from "Your
 lists" in 0.34 so it never clashes with Your templates; the explanations are his test K.3 (1 Oct 2026: "a line or
 two of explanations for each choice … so that this is totally clear to the user").
+His activity areas (0.89) are not here: they are the Templates tab's headings and are changed there, on the
+Activity areas page (§1a), with the same tools.
 
 ### How it is reached and left
 Settings → "Your choices" card ("Storage places, owners, packers, conditions, \"When\" steps"; id `settings-lists`).
@@ -1836,7 +1987,8 @@ added as place row 12, used on a thing, then refused with `lists-problem`); `tes
 |---|---|---|
 | Template page: type a name / Choose from your things / ✕ | `addToTemplate`, `putOnTemplate`, `removeFromTemplate` | here |
 | Row editor (Save) | `saveRow` → `updateMembership`, `addSection`, `followThing` | here |
-| Template page: activity area | `setTemplateArea` | here |
+| Template page: activity area (a drop-down, 0.89) | `setTemplateArea`; "A new area" → `addChoice("areas")` then `setTemplateArea` | §1a, §6 |
+| Templates tab → Activity areas (rename, move, remove, add areas; no template changes) | `applyChoiceEditsNow` (kind "areas") | §1a |
 | Template page: Arrange (a heading moved, renamed or removed; a thing moved) | `dropLine` → `moveSection` / `moveRow`, `renameSection`, `removeSection` | §6a, §13a |
 | Every load of the library | `letCopiedAnswersFollowTheirThings` (`LibraryModel.reload`) | §13 |
 | Thing editor "On these templates" (all templates but the bag list) | `setOnTemplate` on save | Things spec |
@@ -1965,6 +2117,13 @@ deciding before a rewrite.
     choices counts and footer 14.
 33. **Resolved in 0.62** — ~~`DEFAULT_PEOPLE` holds two real first names in a public repository.~~ They are the
     invented Kim and Robin (spec 06, item 29).
+34. [idea] **An empty activity area has no heading** (0.89, §1a). An area he made shows on the Templates tab and on
+    Create new trip only once a template is in it (as the built-ins always did); the Activity areas page lists it
+    with no number. Showing his empty areas as headings would show a new one at once, but also the built-ins he
+    never uses. Kept as before; decide if he asks.
+35. [idea] **His areas are ONE record** (0.89, spec 01 §1.11): two devices changing the LIST while both offline —
+    the later write wins for the whole list (as for his kinds of thing). Which area a template is in is the
+    template's own record and settles per template.
 
 ## Reminders on a template (0.70)
 

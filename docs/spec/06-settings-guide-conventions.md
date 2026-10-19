@@ -933,13 +933,16 @@ no entry shows no marker anywhere (and fails the test).
 5. **Trips** (Trips mark): Now, Coming up and Done — Now always there; Planned / Packing / Ready; reviewed trips fold
    away; Your year; All your trips with the map; the pin opens Where you have been (pins with counts, line oldest
    first, card per place; a trip joins as soon as it has a place). (3 lines.)
-6. **Your templates** (Templates mark): templates are the building blocks, in activity areas (GA, WET…); each has
+6. **Your templates** (Templates mark): templates are the building blocks, in activity areas (GA, WET…); the areas are
+   his — the Activity areas pill: + Add (a name only), pen, grip ≡ (Mac arrows), Remove (asks; one holding templates
+   stays and says which; Workout, Exercise & Training always stays), nothing until Save, both devices the same (0.89); each has
    an icon (the one its name suggests — a beach template gets the lounger under its parasol — or one of 90 drawn ones under six headings, or Letter; 50 until 0.74); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
    stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
    Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
    folding in the picker (Fold all / Unfold all, counts, search opens
-   all); Group: sections, When, Into, From where, Kind, A–Z; Delete template asks first, with Activity area beside it (0.62); Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (a grab
-   list's at its bottom right, round, under Ready to go — 0.84); Refine (violet card) after two or more reviews — Keep / Drop. (13 lines.)
+   all); Group: sections, When, Into, From where, Kind, A–Z; Activity area is a drop-down above Delete template — Always packed, his areas, No activity area, a new area at
+   its foot; a template moved out of WET loses its own Context (0.89; a door beside Delete since 0.62); Delete template asks first; Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (a grab
+   list's at its bottom right, round, under Ready to go — 0.84); Refine (violet card) after two or more reviews — Keep / Drop. (17 lines since 0.89, counted from the code.)
 7. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
    again — 0.62); Just added at the top until you
    leave; ✕ in search; (0.69) the search finds words in a thing's notes and its templates' notes, the matching line
@@ -1063,7 +1066,7 @@ Shipped in 0.41.
 |---|---|---|---|
 | 0 | Trip | Trips | One journey: its dates, place and templates, and the list you pack from. The Trips tab. |
 | 1 | Template | Templates | A building block: the things for one activity or need — Hiking, Swim, RV. A trip is made from templates. The Templates tab. (Until 0.76 "…Hiking, Swim, Car.") |
-| 2 | Activity area | Templates | The group a template lives in, with its code: GA · Goal Activity, WET · Workout, Exercise & Training, and so on (his casing since 0.78). ("Activity area", not "shelf": "We understand that word much better.") |
+| 2 | Activity area | Templates | The group a template lives in. Yours to make, rename, order and remove (Templates → Activity areas): the three the app starts with show their code (GA · Goal Activity, WET · Workout, Exercise & Training, OE · Other Events) until you rename them; your own show just your name. (His casing since 0.78; his own areas since 0.89.) ("Activity area", not "shelf": "We understand that word much better.") |
 | 3 | List | Trips | The one list you pack from for a trip, made from its templates. (A grab list is a list too.) |
 | 4 | Grab list | Home | A short list for a quick outing — Swim, Bike, Run — ticked as each thing is in your hand. Up to eight are on Home; the rest wait in Grab Lists. |
 | 5 | Common base | Templates | The template that comes along on every trip: passport, phone charger and the like. |
@@ -1678,7 +1681,8 @@ macOS 26) — and how far a header must step in so its title starts just after t
 - **`SectionTitle(title:, tint = ink, id:)`** — a heading that starts a part of a screen: Headline in the tint, 12 pt
   above. Not in capitals (0.62). The template's section headings, the Care parts, the picker's groups and Your
   things' list headings are Headlines the same way; the activity areas say his code in capitals and the words as he
-  writes them ("GA · Goal Activity", "Always Packed", "Other Templates", `groupHeading`) at Headline — until 0.78
+  writes them ("GA · Goal Activity", "Always Packed", "Other Templates"; since 0.89 `Library.areaWords`, and an area
+  he made or renamed is his words alone) at Headline — until 0.78
   the words were upper-cased too ("GA · GOAL ACTIVITY"); his "not all caps", 13 Oct 2026.
 - Small capitals stay where Apple uses them: column titles over a table or the bag numbers, the kind of a shared
   thing ("A TEMPLATE"), What's new's part names — Caption or Caption 2, semibold.

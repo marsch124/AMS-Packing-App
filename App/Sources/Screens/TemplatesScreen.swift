@@ -17,37 +17,41 @@ struct TemplatesScreen: View {
     @State private var news: String?
 
     enum Opened: Identifiable, Equatable {
-        case template(String), search, new
+        case template(String), search, new, areas
         var id: String {
             switch self {
             case .template(let id): return "template:" + id
             case .search: return "search"
             case .new: return "new"
+            case .areas: return "areas"
             }
         }
     }
 
-    /// One activity area (GA, WET…, or Always Packed, By Transport, Other Templates) and its
-    /// templates. The template's stored field is still called `group`, as the web app
-    /// reads it; only the word he sees changed (field test, Oct 2026).
-    struct ActivityArea: Identifiable { let id: String; let title: String; let lists: [PackList] }
+    /// One heading of the tab and its templates: Always Packed, By Transport, each of HIS
+    /// activity areas in his order (0.89), Other Templates. `testId` names the heading:
+    /// `base`, `transport`, a built-in's code (`GA`, `WET`, `OE`), `own-<n>` for an area he
+    /// made (n = its place in his list), `other`. A built-in keeps its code in `group`, as
+    /// the web app reads it; an area of his rides in the template's `extra`.
+    struct AreaBlock: Identifiable { let id: String; let title: String; let testId: String; let lists: [PackList] }
 
-    static func activityAreas(_ all: [PackList]) -> [ActivityArea] {
-        var out: [ActivityArea] = []
-        func add(_ id: String, _ title: String, _ lists: [PackList]) { if !lists.isEmpty { out.append(ActivityArea(id: id, title: title, lists: lists)) } }
-        add("base", "Always Packed", all.filter { $0.role == "base" })
-        add("transport", "By Transport", all.filter { $0.role == "transport" })
-        for g in GROUPS { add(g.id, g.label, orderActivities(g.id, all.filter { $0.role.isEmpty && $0.group == g.id })) }
-        add("other", "Other Templates", all.filter { $0.role.isEmpty && $0.group.isEmpty })
+    static func activityAreas(_ all: [PackList], _ library: Library) -> [AreaBlock] {
+        var out: [AreaBlock] = []
+        func add(_ id: String, _ title: String, _ testId: String, _ lists: [PackList]) {
+            if !lists.isEmpty { out.append(AreaBlock(id: id, title: title, testId: testId, lists: lists)) }
+        }
+        add("base", "Always Packed", "base", all.filter { $0.role == "base" })
+        add("transport", "By Transport", "transport", all.filter { $0.role == "transport" })
+        let mine = library.activityAreas()
+        for block in library.listsByArea(all) {
+            let a = block.area
+            if a.id.isEmpty { add("other", Library.otherTemplates, "other", block.lists); continue }
+            let n = mine.firstIndex { $0.id == a.id } ?? 0
+            add(a.id, Library.areaWords(a), Library.isBuiltInArea(a.id) ? a.id : "own-\(n)", block.lists)
+        }
         // Bags are not an activity: they have their own screen, on Care (as in the
         // web app), where each gets a weight limit.
         return out
-    }
-
-    /// "GA · Goal Activity" — his code, then the words, as he wrote them (not in capitals, 0.78).
-    static func areaHeading(_ area: ActivityArea) -> String {
-        let code = GROUPS.first { $0.id == area.id }?.id ?? ""
-        return groupHeading(code, area.title)
     }
 
     /// "15 templates · 431 things · 4 trips packed from them" — the things ON them
@@ -82,7 +86,7 @@ struct TemplatesScreen: View {
     }
 
     var body: some View {
-        let areas = TemplatesScreen.activityAreas(model.library.shownTemplates())
+        let areas = TemplatesScreen.activityAreas(model.library.shownTemplates(), model.library)
         let flat = areas.flatMap(\.lists)
         let use = model.library.templateUse(today: Today.local)
         KeyboardAwayScroll {
@@ -96,14 +100,17 @@ struct TemplatesScreen: View {
                 RefineDoor().environmentObject(model)
                     .padding(.bottom, 4)
                 if let said = news { newsCard(said) }
+                // His activity areas, made and changed here (0.89).
+                areasDoor
                 ForEach(areas) { area in
-                    // His own code beside the name, as the web app has it:
-                    // "GA · Goal Activity" (not in capitals since 0.78).
-                    Text(TemplatesScreen.areaHeading(area))
+                    // A built-in under its own name keeps its code beside it, as the web app
+                    // has it: "GA · Goal Activity" (not in capitals since 0.78); one of his,
+                    // or a built-in he renamed, is his words alone (0.89).
+                    Text(area.title)
                         .font(.headline)
                         .foregroundStyle(Theme.ink)
                         .padding(.top, 16)
-                        .accessibilityIdentifier("templates-area-\(area.id)")
+                        .accessibilityIdentifier("templates-area-\(area.testId)")
                     // Two across: more of his lists at a glance, as the web app shows them.
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
                               spacing: 8) {
@@ -127,6 +134,7 @@ struct TemplatesScreen: View {
             switch destination {
             case .template(let id): TemplateDetail(listId: id, onSmallCore: { news = $0 }).environmentObject(model)
             case .search: SearchScreen().environmentObject(model)
+            case .areas: AreasScreen().environmentObject(model)
             case .new:
                 NewList(made: { list in
                     model.change { $0.saveTemplate(list) }
@@ -138,6 +146,27 @@ struct TemplatesScreen: View {
 }
 
 extension TemplatesScreen {
+    /// "Activity areas" — a quiet violet pill with the pen, at the head of the headings it
+    /// changes (0.89): his areas made, renamed, moved and removed on their own page.
+    var areasDoor: some View {
+        let tint = AppSection.templates.color
+        return Button { opened = .areas } label: {
+            HStack(spacing: 6) {
+                PenMark().frame(width: 16, height: 16)
+                Text("Activity areas").font(.system(.subheadline, weight: .semibold))
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+            .background(Capsule().fill(tint.opacity(0.10)))
+            .overlay(Capsule().stroke(tint, lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityLabel("Activity areas")
+        .accessibilityHint("Make, rename, move or remove your activity areas")
+        .accessibilityIdentifier("templates-areas")
+    }
+
     /// "Short is always packed now; Big is ticked when you need it." — after a small
     /// core is made (0.71), until OK.
     func newsCard(_ said: String) -> some View {
@@ -375,9 +404,6 @@ struct TemplateDetail: View {
     /// list keeps room for the field being typed in (a reminder's, at the list's top, was
     /// hidden under them once Counts as joined the foot — the 0.68–0.71 merge).
     @State private var keyboardUp = false
-    /// Choosing the template's activity area again (the spec pass, 5 Oct 2026: New
-    /// asks for it, and nothing could put a wrong answer right).
-    @State private var choosingArea = false
     /// The row whose ✕ was pressed — it asks first (his test H.5).
     @State private var takingOff: TakingOff?
     /// How the things are grouped (his test H.3: "group and sort the items in a
@@ -661,12 +687,18 @@ struct TemplateDetail: View {
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
                     .padding(.horizontal, 16).padding(.bottom, 10)
-                } else if choosingArea {
-                    areaCard(list)
                 } else if !keyboardUp {
                     // Which Apple Health workout it meets in the trip review (0.70).
                     if list.role.isEmpty {
                         CountsAsField(list: list).environmentObject(model)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16).padding(.bottom, 6)
+                    }
+                    // The area it lives in (0.89: a drop-down of HIS areas). An activity
+                    // template lives in an area, and since 0.71 one can be moved into Always
+                    // packed and back. Transport templates are filed by what they do.
+                    if list.role.isEmpty || list.role == Library.ALWAYS_PACKED_AREA {
+                        TemplateAreaField(list: list).environmentObject(model)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16).padding(.bottom, 6)
                     }
@@ -676,14 +708,8 @@ struct TemplateDetail: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16).padding(.bottom, 2)
                     }
-                    HStack(spacing: 8) {
-                        // An activity template lives in an area, and since 0.71 one can be
-                        // moved into Always packed and back. Transport templates are filed
-                        // by what they do.
-                        if list.role.isEmpty || list.role == Library.ALWAYS_PACKED_AREA { areaDoor(list) }
-                        SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
-                    }
-                    .padding(.horizontal, 16).padding(.bottom, 8)
+                    SmallDeleteButton(title: "Delete template", id: "template-delete") { askingToDelete = true }
+                        .padding(.horizontal, 16).padding(.bottom, 8)
                 }
             }
         }
@@ -926,78 +952,6 @@ struct TemplateDetail: View {
         model.change { _ = $0.renameTemplate(id: listId, to: wanted) }
         renaming = nil
         writingName = false
-    }
-
-    /// The area it lives in, as a quiet button beside Delete — rarely wanted, never
-    /// in the way of the rows.
-    private func areaDoor(_ list: PackList) -> some View {
-        let always = list.role == Library.ALWAYS_PACKED_AREA
-        let said = always ? "Always packed" : (list.group.isEmpty ? "none" : list.group)
-        return Button { withAnimation(.easeOut(duration: 0.15)) { choosingArea = true } } label: {
-            Text("Activity area: \(said)")
-                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.templates.color)
-                .lineLimit(1)
-                .frame(minHeight: Metrics.chip).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityIdentifier("template-area")
-        .accessibilityValue(always ? "base" : (list.group.isEmpty ? "none" : list.group))
-    }
-
-    /// The answers of the area card, in order: Always packed first (0.71), his areas,
-    /// then none.
-    static let areaChoices: [(String, String)] = {
-        var out: [(String, String)] = [(Library.ALWAYS_PACKED_AREA, "Always packed \u{2014} comes on every full trip")]
-        out += GROUPS.map { ($0.id, "\($0.id) \u{00B7} \($0.label)") }
-        out.append(("", "No activity area"))
-        return out
-    }()
-
-    /// The question New asks, asked again: one press files it, and the card goes.
-    private func areaCard(_ list: PackList) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("In which activity area should it live?")
-                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                Button("Cancel") { choosingArea = false }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .accessibilityIdentifier("template-area-cancel")
-            }
-            .padding(.bottom, 6)
-            // Always packed first (0.71): every full trip brings it, unticked. The others
-            // come on a trip when ticked.
-            ForEach(TemplateDetail.areaChoices, id: \.0) { id, label in
-                let always = list.role == Library.ALWAYS_PACKED_AREA
-                let on = id == Library.ALWAYS_PACKED_AREA ? always : (!always && list.group == id)
-                Button {
-                    model.change { _ = $0.setTemplateArea(id: listId, area: id) }
-                    choosingArea = false
-                } label: {
-                    HStack {
-                        Text(label)
-                            .font(.system(.callout, weight: on ? .semibold : .regular))
-                            .foregroundStyle(on ? AppSection.templates.color : Theme.ink)
-                        Spacer()
-                    }
-                    .frame(minHeight: Metrics.tap).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-                .accessibilityIdentifier("template-area-\(id.isEmpty ? "none" : id)")
-                .accessibilityAddTraits(on ? .isSelected : [])
-            }
-            Text("Always packed comes on every full trip by itself (Quick leaves it out); the others come when you tick them.")
-                .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 8)
-                .accessibilityIdentifier("template-area-hint")
-        }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.templates.color, lineWidth: 1))
-        .padding(.horizontal, 16).padding(.bottom, 10)
     }
 
     /// "Take it off?" — in the middle of the screen, the rest dimmed: his ask (test

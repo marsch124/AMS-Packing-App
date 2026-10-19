@@ -114,9 +114,12 @@ struct SmallCoreSheet: View {
 
                     SectionTitle(title: "Where should \u{201C}\(bigName)\u{201D} go?", id: "smallcore-area-title")
                         .padding(.top, 16).padding(.bottom, 6)
-                    ForEach(GROUPS.map { ($0.id, "\($0.id) \u{00B7} \($0.label)") } + [("", "No activity area (Other Templates)")], id: \.0) { id, label in
-                        areaRow(id, label)
+                    // HIS areas, in his order and under his names (0.89).
+                    let areas = lib.activityAreas()
+                    ForEach(Array(areas.enumerated()), id: \.element.id) { n, area in
+                        areaRow(area.id, Library.areaWords(area), testId: Library.isBuiltInArea(area.id) ? area.id : "own-\(n)")
                     }
+                    areaRow("", "No activity area (Other Templates)", testId: "none")
                 }
                 .padding(.horizontal, 16).padding(.bottom, 16)
             }
@@ -254,7 +257,8 @@ struct SmallCoreSheet: View {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    private func areaRow(_ id: String, _ label: String) -> some View {
+    /// `testId`: a built-in's code, `own-<n>` for an area he made, `none` (0.89).
+    private func areaRow(_ id: String, _ label: String, testId: String) -> some View {
         Button { area = id } label: {
             HStack {
                 Text(label)
@@ -266,7 +270,7 @@ struct SmallCoreSheet: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-        .accessibilityIdentifier("smallcore-area-\(id.isEmpty ? "none" : id)")
+        .accessibilityIdentifier("smallcore-area-\(testId)")
         .accessibilityAddTraits(area == id ? .isSelected : [])
     }
 

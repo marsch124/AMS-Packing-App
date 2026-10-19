@@ -73,10 +73,13 @@ struct NewList: View {
                     // 'Activity area.' We understand that word much better."
                     SectionTitle(title: "In which activity area should it live?", id: "newlist-area-title")
                         .padding(.top, 4).padding(.bottom, 6)
-                    ForEach(GROUPS, id: \.id) { area in
-                        areaRow(area.id, "\(area.id) · \(area.label)")
+                    // HIS areas, in his order and under his names (0.89).
+                    let areas = library.activityAreas()
+                    ForEach(Array(areas.enumerated()), id: \.element.id) { n, area in
+                        areaRow(area.id, Library.areaWords(area),
+                                testId: Library.isBuiltInArea(area.id) ? area.id : "own-\(n)")
                     }
-                    areaRow("", "No activity area")
+                    areaRow("", "No activity area", testId: "none")
 
                     // Always ready, always in colour — his rule for a main button
                     // (2026-09-26); pressed too early, it says what is missing.
@@ -107,7 +110,9 @@ struct NewList: View {
         #endif
     }
 
-    private func areaRow(_ id: String, _ label: String) -> some View {
+    /// `testId`: a built-in's code, `own-<n>` for an area he made (its place in his list),
+    /// `none` — the row is `newlist-area-<testId>`.
+    private func areaRow(_ id: String, _ label: String, testId: String) -> some View {
         Button { group = id } label: {
             HStack {
                 Text(label)
@@ -120,7 +125,7 @@ struct NewList: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
-        .accessibilityIdentifier("newlist-area-\(id.isEmpty ? "none" : id)")
+        .accessibilityIdentifier("newlist-area-\(testId)")
         .accessibilityAddTraits(group == id ? .isSelected : [])
     }
 
@@ -128,7 +133,8 @@ struct NewList: View {
         if jsTrim(name).isEmpty { needs = "Give the template a name."; return }
         if taken { needs = "Pick a name you do not have yet."; return }
         needs = ""
-        made(newList(name: jsTrim(name), group: group))
+        // A built-in in `group`, one of his in `extra` (0.89, ActivityAreas.swift).
+        made(Library.filed(newList(name: jsTrim(name)), in: group))
         dismiss()
     }
 }

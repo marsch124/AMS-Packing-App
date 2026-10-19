@@ -225,12 +225,15 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    settings' grid keeps `range-*`; the two would otherwise share names while Trip settings is open over
    Home). Until 0.67: a "Dates" switch (`trip-dates`) showing the field and its grid. See the next
    section.
-5. **One block of pills per activity group** that has templates, in `GROUPS` order (GA, WET, OE) — and,
-   last, **"Other Templates"** for templates with no activity area (0.62; see "Templates offered").
-   Heading: `groupHeading(id, label)` = "GA · Goal Activity", "WET · Workout, Exercise & Training",
-   "OE · Other Events" (code, " · ", the label as written — **not in capitals since 0.78**, his "GA · Goal
-   Activity — not all caps", 13 Oct 2026; until then the label was upper-cased) as `HeadingTitle` (20 heavy violet with a
-   4×18 violet capsule mark). Every group heading has the SAME id `trip-activity-title`.
+5. **One block of pills per activity area of his** that has templates, in HIS order (0.89 — his own areas, spec 04
+   §1a; until 0.89 the fixed `GROUPS` order GA, WET, OE) — and, last, **"Other Templates"** for templates in no area
+   of his (0.62; see "Templates offered").
+   Heading: `Library.areaWords` (0.89; `groupHeading(id, label)` until then) = a built-in under its own name with its
+   code: "GA · Goal Activity", "WET · Workout, Exercise & Training", "OE · Other Events" (code, " · ", the label as
+   written — **not in capitals since 0.78**, his "GA · Goal Activity — not all caps", 13 Oct 2026; until then the
+   label was upper-cased); a built-in he renamed, or an area he made, just his words ("Mountains"). As `HeadingTitle`
+   (20 heavy violet with a 4×18 violet capsule mark). Every group heading has the SAME id `trip-activity-title`.
+   The workout colours and each workout's own Context (below) belong to the area with id "WET", whatever he calls it.
    Pills: one per template, label = template name; ids `trip-activity-<n>` where n counts across ALL
    groups in the order offered (so "trip-activity-0" names one pill). Order inside a group:
    `orderActivities` — for WET the names Swim, Bike, Run, Strength, Mobility, Breath work first (in
@@ -409,9 +412,10 @@ no ticked template still gets the base and transport templates. Since 0.73 the s
 a template only when the trip would have nothing to pack at all (`templateMissing`, above); until then it
 always required one.
 
-**Templates offered** (`Library.activityChoices()`): resolved templates with `role == ""` whose
-`group` is one of GA, WET, OE, grouped and ordered as above — then, last, every `role == ""` template
-whose group is empty or unknown, A–Z, as a group with id "" and label "Other Templates" (heading
+**Templates offered** (`Library.activityChoices()`, since 0.89 built on `listsByArea`, spec 04 §1a): resolved
+templates with `role == ""` in one of HIS areas (`areaOf`: a built-in `group` while that area is his, else his own
+area in `extra["area"]` while it exists), grouped by area in his order, `label` = his name for it — then, last,
+every `role == ""` template in none, A–Z, as a group with id "" and label "Other Templates" (heading
 "Other Templates", violet — his casing, 0.78; pills numbered on from the others). The web app offers such lists last
 ("Other lists"); until 0.62 they were never offered here although A new template offers "No activity
 area" (the spec pass, 5 Oct 2026). The base, transport, container ("Bags") and loose roles are never

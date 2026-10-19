@@ -47,6 +47,7 @@
 		65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534AF493408BF588BA9222FF /* AMSPackingApp.swift */; };
 		6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 403A4735005582B356D67F55 /* HomeScreen.swift */; };
 		6A4E3AE89B7E1FF756858C13 /* PackingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 70431786B7003CDABC1162E4 /* PackingCore */; };
+		6ECECAF4ED81E81C8454B15B /* AreasScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0096D418FB0463E578A19AD2 /* AreasScreen.swift */; };
 		7489E41014894218A0EC730E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */; };
 		7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */; };
 		80E3669131BEA0D1C726A660 /* Releases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6B09947C62AF9C62758EFD /* Releases.swift */; };
@@ -123,6 +124,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0096D418FB0463E578A19AD2 /* AreasScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreasScreen.swift; sourceTree = "<group>"; };
 		01F66AF282FB2C3C22DC9F76 /* PickThings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickThings.swift; sourceTree = "<group>"; };
 		029AD64D1791D9D681EA7DDF /* ShopReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopReminders.swift; sourceTree = "<group>"; };
 		09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Forecast.swift; sourceTree = "<group>"; };
@@ -361,6 +363,7 @@
 			isa = PBXGroup;
 			children = (
 				9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */,
+				0096D418FB0463E578A19AD2 /* AreasScreen.swift */,
 				95CE795CC801DFFE3FD39642 /* BagCabin.swift */,
 				B81D1DC40B7BE148110F1C91 /* BagDetail.swift */,
 				DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */,
@@ -544,6 +547,7 @@
 				65370F8A541FE81A854B9DB4 /* AMSPackingApp.swift in Sources */,
 				AF85EC370F9D809E983BE0AF /* ActionsScreen.swift in Sources */,
 				5856BAC0D9BF67F1B2E6780E /* AppleHealth.swift in Sources */,
+				6ECECAF4ED81E81C8454B15B /* AreasScreen.swift in Sources */,
 				1A611EFAD56B0A1A1AF93E20 /* BagCabin.swift in Sources */,
 				F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */,
 				06244CC7FE9451C6DA719388 /* BagPhoto.swift in Sources */,
