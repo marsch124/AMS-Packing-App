@@ -360,7 +360,10 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
   the heading less than 24 pt under the frame's top and above the first tile; on the Mac `search-open` above the
   frame (in the strip). `count-trips` 0–40 pt under `home-countdown` and above `home-create-card`;
   `home-create-card` holds `home-create-heading` and `trip-name`, the heading above the name; `trip-kind-track`
-  starts and ends with `trip-name` (±1 pt). Pictures `home91-top`, `home91-create`. Seen red four ways (iPhone):
+  starts and ends with the name's box (±1 pt) — on the iPhone `trip-name`'s frame; 🪤 the Mac reports the text field
+  itself, INSIDE the 12 pt of side padding its box has, so there the box is that frame widened by 12 at each side
+  (GitHub's Mac, 19 Oct 2026: field 193…814, box and track 181…826 — the first Mac probe went red on it with the
+  layout right: "("181.5") is not equal to ("193.0") +/- ("1.0") - Full trip | Quick does not start with the name"). Pictures `home91-top`, `home91-create`. Seen red four ways (iPhone):
   the track capped at 300 — `XCTAssertEqualWithAccuracy failed: ("330.5") is not equal to ("372.0") +/- ("1.0")
   - Full trip | Quick does not end with the name` (the old cap of 360 is wider than the iPhone's card, so it bites
   only on the Mac); This Device back at the foot — `This Device is not right under the trip: 843.67 pt`; Grab and
@@ -371,8 +374,8 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
   Grab and go's words begin less than 38 pt down (32 since 0.91: 4 to the frame and its 14 of padding; 18 in
   0.67–0.90) and not above it (−2 pt allowed), the first tile is less than 16 pt under the heading (14) and begins
   less than 80 pt down (70; 54 before). On the Mac (0.91) Grab and go is not above the strip's foot and less than
-  40 pt under it; the first tile is less than 16 pt under it and less than 110 pt under the window's top (until
-  0.91: on the window buttons' line, the first tile under 50 pt). Seen red in 0.67 with the old 14-pt top planted:
+  40 pt under it (27.5 on GitHub's Mac); the first tile is less than 16 pt under it (11.5) and less than 110 pt under
+  the window's top (90; until 0.91: on the window buttons' line, the first tile under 50 pt). Seen red in 0.67 with the old 14-pt top planted:
   "an empty band of 28.0 pt above Grab and go"; on 0.66 it said 39.0.
 - UI `testEveryTabsHeaderIsOnOneCentreLine` (0.67, spec 06; 0.91): `grab-lists` (and on the iPhone
   `search-open`) on the centre line of `home-grab-heading`, within 1.5 pt, the heading not above the screen's top;

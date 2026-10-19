@@ -716,7 +716,8 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   `pills091-create`, `pills091-tripset`. Seen red with `TemplateTone.of` planted to skip his colour: `XCTAssertTrue
   failed - Hiking's pill does not wear its yellow: ''`. Green on the iPhone 17 Pro simulator (iOS 26.5) day and
   night, with its neighbours (the 0.90 colour test, Context, Trip settings, Other Templates, Always packed alone,
-  laundry, the editors' headings — 12 tests), and on the Mac (the probe workflow).
+  laundry, the editors' headings — 12 tests), and on GitHub's Mac (the probe workflow, 19 Oct 2026: green day and
+  night with the 0.90 colour test, Context, Trip settings and the Mac's arrow keys on template pills).
 - Model (0.91, `TemplateColourTests`): `testMoreColoursStillFillTwoRowsAndTheOldOnesStayAsTheyWere` (15 colours,
   `pickerRows` 2, `pickerColumns` 8, two FULL rows; the eleven of 0.90 with their keys and fills; plum, navy, olive,
   sand there; every pair ΔE ≥ 20; no teal or cyan hue) — seen red with Sand left out, Navy planted teal and Blue's fill
