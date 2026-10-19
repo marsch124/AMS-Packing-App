@@ -6794,8 +6794,9 @@ final class AMSPackingUITests: XCTestCase {
         // Every tile is a button called icon-<key>; Suggested, Letter and Cancel are not icons.
         let notIcons = ["icon-suggested", "icon-letter", "icon-cancel"]
         let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND NOT (identifier IN %@)", "icon-", notIcons))
-        // 91 since 0.78 (the weekend bag; the name keeps its 0.74 count so its timing stays known).
-        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the picker shows \(tiles.count) icons, not 91")
+        // 91 since 0.78 (the weekend bag), 132 since 0.92 (41 more); the name keeps its 0.74 count
+        // so its timing stays known.
+        XCTAssertTrue(waitUntil { tiles.count == 132 }, "the picker shows \(tiles.count) icons, not 132")
         for group in ["travel", "outdoors", "sport", "beach", "city", "everyday"] {
             XCTAssertTrue(app.staticTexts["icon-group-\(group)"].exists, "no heading icon-group-\(group)")
         }
@@ -6901,7 +6902,7 @@ final class AMSPackingUITests: XCTestCase {
     /// alternative names so that the search is easier to perform." The picker's search finds an
     /// icon by words that are not written under it: "flyg" (Swedish) shows the Plane alone, under
     /// Travel, with Suggested and Letter stepped aside; "zzz" says nothing is called that; the ✕
-    /// brings all 91 back; a found icon ("fahrrad" → Bike) is chosen like any other. On the Mac ⌘F
+    /// brings all 132 back (91 until 0.92); a found icon ("fahrrad" → Bike) is chosen like any other. On the Mac ⌘F
     /// puts the cursor in the field, Escape empties it, a second Escape closes the picker.
     func testTheIconSearchFindsAnIconByItsOtherNames() {
         let app = launch()
@@ -6915,7 +6916,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5), "the picker has no icon search")
         let notIcons = ["icon-suggested", "icon-letter", "icon-cancel"]
         let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND NOT (identifier IN %@)", "icon-", notIcons))
-        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the picker shows \(tiles.count) icons before a search, not 91")
+        XCTAssertTrue(waitUntil { tiles.count == 132 }, "the picker shows \(tiles.count) icons before a search, not 132")
 
         type("flyg", into: field)
         XCTAssertTrue(waitUntil { tiles.count == 1 && app.buttons["icon-plane"].exists },
@@ -6932,7 +6933,7 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "tmpl91-iconsearch-none")
 
         tap(app, id: "iconsearch-clear")
-        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the ✕ did not bring all the icons back: \(tiles.count)")
+        XCTAssertTrue(waitUntil { tiles.count == 132 }, "the ✕ did not bring all the icons back: \(tiles.count)")
         XCTAssertTrue(app.buttons["icon-suggested"].exists, "the ✕ did not bring Suggested back")
         XCTAssertFalse(app.staticTexts["iconsearch-none"].exists, "the nothing line stayed after the ✕")
         XCTAssertFalse(((field.value as? String) ?? "").contains("zzz"), "the typed words are still in the field")
@@ -6948,16 +6949,76 @@ final class AMSPackingUITests: XCTestCase {
         #if os(macOS)
         tap(app, id: "template-cover")
         XCTAssertTrue(appears(app, "icon-picker", timeout: 5))
-        XCTAssertTrue(waitUntil { tiles.count == 91 }, "the picker did not open with every icon")
+        XCTAssertTrue(waitUntil { tiles.count == 132 }, "the picker did not open with every icon")
         app.typeKey("f", modifierFlags: .command)
         app.typeText("flyg")
         XCTAssertTrue(waitUntil { tiles.count == 1 }, "⌘F did not put the cursor in the icon search")
         app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(waitUntil { tiles.count == 91 }, "Escape did not empty the search")
+        XCTAssertTrue(waitUntil { tiles.count == 132 }, "Escape did not empty the search")
         XCTAssertNotNil(find(app, "icon-picker"), "Escape closed the picker instead of emptying the search")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "a second Escape did not close the picker")
         #endif
+    }
+
+    /// 0.92 — his words (19 Oct 2026): "Could we add some icons again. Love the one we have." 41 new
+    /// icons close their headings: the picker holds 132, the new ones stand after the old ones of their
+    /// heading (Ice skating after Fishing under Outdoors, the Pram last of Everyday), and the search
+    /// finds a new one by its Swedish name — "skridskor" shows Ice skating alone, under Outdoors —
+    /// which is then chosen like any other and kept.
+    func testTheNewIconsCloseTheirHeadingsAndAreFoundInSwedish() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.buttons["template-row-1"].tap()                        // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the icons")
+        let notIcons = ["icon-suggested", "icon-letter", "icon-cancel"]
+        let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND NOT (identifier IN %@)", "icon-", notIcons))
+        XCTAssertTrue(waitUntil { tiles.count == 132 }, "the picker shows \(tiles.count) icons, not 132")
+        // The tiles in the picker's order, read in ONE snapshot (132 element queries are slow on CI).
+        var order: [String] = []
+        func walk(_ e: XCUIElementSnapshot) {
+            if e.elementType == .button, e.identifier.hasPrefix("icon-"), !notIcons.contains(e.identifier) { order.append(e.identifier) }
+            e.children.forEach(walk)
+        }
+        if let snap = try? app.descendants(matching: .any)["icon-picker"].firstMatch.snapshot() { walk(snap) }
+        XCTAssertEqual(order.count, 132, "the snapshot holds \(order.count) tiles")
+        func at(_ key: String) -> Int { order.firstIndex(of: "icon-\(key)") ?? -1 }
+        XCTAssertEqual(at("skate"), at("fishing") + 2, "the new Outdoors icons do not follow Fishing: \(order)")
+        XCTAssertEqual(at("rowing"), at("bottle") + 1, "the new Sport icons do not follow the Water bottle")
+        XCTAssertEqual(order.last, "icon-pram", "the Pram does not close Everyday: \(order.suffix(3))")
+        for key in ["cottage", "xcski", "midsummer", "ferriswheel", "toothbrush"] {
+            XCTAssertTrue(app.buttons["icon-\(key)"].exists, "no icon-\(key) in the picker")
+        }
+        // Pictures of the new tiles where they stand — only when pictures are asked for: the
+        // scrolling costs half a minute and proves nothing the order above does not.
+        if !(ProcessInfo.processInfo.environment["SHOTS_DIR"] ?? "").isEmpty {
+            for (key, name) in [("skate", "icons92-outdoors"), ("rowing", "icons92-sport"), ("pram", "icons92-everyday")] {
+                bringIntoView(app, app.buttons["icon-\(key)"])
+                shot(app, name)
+            }
+        }
+
+        let field = app.textFields["iconsearch"]
+        bringIntoView(app, field)
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the picker has no icon search")
+        type("skridskor", into: field)
+        XCTAssertTrue(waitUntil { tiles.count == 1 && app.buttons["icon-skate"].exists },
+                      "skridskor shows \(tiles.count) icons, not Ice skating alone")
+        XCTAssertTrue(app.staticTexts["icon-group-outdoors"].exists, "Ice skating is not under Outdoors")
+        XCTAssertFalse(app.staticTexts["icon-group-travel"].exists, "a heading with nothing found still shows")
+        shot(app, "icons92-search-skridskor")
+        tap(app, id: "icon-skate")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "the found Ice skating did not close the picker")
+        let cover = app.buttons["template-cover"]
+        XCTAssertTrue(waitUntil { (cover.value as? String) == "skate" }, "Ice skating was not taken: '\(cover.value as? String ?? "")'")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        app.buttons["template-row-1"].tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.buttons["template-cover"].value as? String) == "skate" }, "Ice skating was lost on the way out and back")
     }
 
     /// Care shows what is overdue; "Done today" moves it on — and it stays done.

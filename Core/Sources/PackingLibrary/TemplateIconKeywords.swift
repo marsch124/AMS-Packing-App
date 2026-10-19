@@ -17,6 +17,11 @@ import PackingCore
 // not find "bath" or "sunbathing" as the guide's rule would). The
 // headings (Travel, Sport …) are not searched: "food" would bring all thirteen of City, food and
 // fun. A key never changes; these words may — they are stored nowhere.
+//
+// 0.92 (his "Could we add some icons again. Love the one we have.", 19 Oct 2026): the 41 new icons
+// have theirs too, under "// 0.92" in each heading — never a word that would widen an old search
+// he relies on ("flyg" still finds the Plane alone, "båt" the Ferry and Sailing, "strand" the four
+// beach icons, "fahrrad" the Bike alone: the bike helmet is "radhelm", its pump "luftpumpe").
 
 extension TemplateIconCatalog {
     /// The other words each icon is found by, by its key — hidden, never shown in the picker.
@@ -43,6 +48,14 @@ extension TemplateIconCatalog {
         "map": ["route", "navigation", "karta", "karte", "landkarte"],
         "hotel": ["accommodation", "stay", "lodging", "hostel", "b&b", "hotell", "boende", "unterkunft", "übernachtung"],
 
+        // 0.92
+        "cottage": ["cabin", "holiday home", "summer house", "house", "stuga", "sommarstuga", "fritidshus", "hus",
+                    "ferienhaus", "hütte", "haus"],
+        "globe": ["globe", "world", "international", "overseas", "utomlands", "utlandet", "världen", "ausland", "welt",
+                  "weltreise"],
+        "pillow": ["travel pillow", "cushion", "nap", "nackkudde", "resekudde", "kudde", "nackenkissen", "reisekissen"],
+        "scooter": ["electric scooter", "kick scooter", "elsparkcykel", "sparkcykel", "elscooter", "e-roller", "tretroller"],
+
         // MARK: Outdoors
         "hiking": ["hike", "trek", "trekking", "trail", "mountains", "vandring", "vandra", "fjällvandring",
                    "wandern", "wanderung", "bergwandern"],
@@ -58,6 +71,19 @@ extension TemplateIconCatalog {
         "snow": ["snow", "cold", "snö", "vinter", "kyla", "schnee", "kälte"],
         "rain": ["rainy", "wet", "weather", "regn", "regnig", "väder", "regen", "wetter"],
         "fishing": ["fish", "angling", "fiske", "fiska", "angeln", "fischen"],
+
+        // 0.92
+        "xcski": ["cross-country skiing", "nordic skiing", "xc", "längdskidor", "längdåkning", "vasaloppet", "langlauf",
+                  "skilanglauf", "loipe"],
+        "skate": ["skates", "ice skates", "skridskor", "skridsko", "långfärdsskridsko", "schlittschuh", "eislaufen"],
+        "sled": ["sledge", "toboggan", "sledding", "kälke", "pulka", "åka pulka", "schlitten", "rodeln"],
+        "sleepingbag": ["mummy bag", "bivouac", "sovsäck", "sovpåse", "schlafsack", "biwak"],
+        "binoculars": ["field glasses", "birdwatching", "safari", "kikare", "fågelskådning", "fernglas", "vogelbeobachtung"],
+        "thermos": ["flask", "vacuum flask", "hot drink", "termos", "termosflaska", "thermosflasche", "thermoskanne"],
+        "mittens": ["gloves", "mitts", "winter gloves", "vantar", "vante", "handskar", "fäustlinge", "handschuhe"],
+        "jacket": ["coat", "rain jacket", "raincoat", "down jacket", "jacka", "regnjacka", "dunjacka", "jacke", "regenjacke"],
+        "mushroom": ["mushroom picking", "forest", "chanterelles", "svamp", "svampplockning", "kantareller", "skog",
+                     "pilze", "pilze sammeln", "wald"],
 
         // MARK: Sport
         "run": ["running", "jog", "jogging", "race", "marathon", "löpning", "springa", "jogga", "laufen", "joggen"],
@@ -86,6 +112,21 @@ extension TemplateIconCatalog {
         "bottle": ["water", "drink", "hydration", "vattenflaska", "flaska", "vatten", "wasserflasche", "flasche",
                    "wasser", "trinken"],
 
+        // 0.92
+        "rowing": ["row", "rower", "erg", "ergometer", "rowing machine", "concept2", "rodd", "roddmaskin", "rudern",
+                   "rudergerät"],
+        "stopwatch": ["timer", "lap", "split", "pace", "stoppur", "tidtagning", "stoppuhr", "zeitmessung"],
+        "pulse": ["pulse", "heart rate monitor", "chest strap", "puls", "pulsband", "pulsmätare", "herzfrequenz", "pulsgurt"],
+        "trophy": ["cup", "race", "competition", "winner", "podium", "pokal", "tävling", "lopp", "vinnare", "wettkampf",
+                   "siegerpokal"],
+        "helmet": ["helmet", "cycling helmet", "cykelhjälm", "hjälm", "helm", "radhelm"],
+        "pump": ["pump", "tyre", "tire", "puncture", "cykelpump", "pumpa", "punktering", "luftpumpe", "pumpe", "reifen"],
+        "wetsuit": ["neoprene", "open water", "dry suit", "våtdräkt", "torrdräkt", "neoprenanzug", "taucheranzug"],
+        "tank": ["air tank", "cylinder", "regulator", "dykflaska", "luftflaska", "tauchflasche", "pressluftflasche"],
+        "yogamat": ["mat", "exercise mat", "training mat", "yogamatta", "träningsmatta", "matta", "yogamatte", "matte"],
+        "sup": ["sup", "stand up paddle", "paddle board", "board", "brädpaddling", "paddelbräda", "stehpaddeln"],
+        "lifejacket": ["life vest", "buoyancy aid", "pfd", "flytväst", "räddningsväst", "schwimmweste", "rettungsweste"],
+
         // MARK: Beach and summer
         "sun": ["sun", "sunny", "heat", "sol", "sommar", "värme", "sonne", "sommer", "hitze"],
         "lounger": ["beach", "sunbathing", "sunbed", "deckchair", "strand", "sola", "solstol", "liegestuhl",
@@ -104,6 +145,14 @@ extension TemplateIconCatalog {
         "sail": ["sail", "boat", "yacht", "segla", "segling", "segelbåt", "båt", "segeln", "segelboot", "boot"],
         "kite": ["kitesurfing", "drake", "drachen", "kitesurfen"],
 
+        // 0.92
+        "icecream": ["gelato", "cone", "dessert", "glass", "glassstrut", "eis", "eiscreme", "eiswaffel"],
+        "bucket": ["bucket", "spade", "sandcastle", "sandpit", "hink", "sandslott", "sandlåda", "eimer", "schaufel",
+                   "sandburg", "sandkasten"],
+        "anchor": ["boat", "boating", "harbour", "marina", "archipelago", "ankare", "hamn", "skärgård", "gästhamn",
+                   "anker", "hafen"],
+        "midsummer": ["maypole", "midsommar", "midsommarstång", "majstång", "midsommarafton", "mittsommer", "maibaum"],
+
         // MARK: City, food and fun
         "city": ["town", "city break", "sightseeing", "stad", "storstad", "stadsresa", "stadt", "städtereise"],
         "restaurant": ["dinner", "eating out", "dining", "restaurang", "middag", "äta ute", "abendessen", "essen gehen"],
@@ -118,6 +167,20 @@ extension TemplateIconCatalog {
         "music": ["concert", "festival", "musik", "konsert", "konzert"],
         "camera": ["photo", "photography", "pictures", "kamera", "foto", "fotografera", "fotografie"],
         "book": ["book", "read", "novel", "bok", "läsa", "läsning", "buch", "lesen", "roman"],
+
+        // 0.92
+        "pizza": ["pizzeria", "slice", "italian", "fast food", "italiensk mat", "snabbmat", "italienisch", "imbiss"],
+        "museum": ["gallery", "art", "exhibition", "museer", "konst", "utställning", "galleri", "ausstellung", "kunst",
+                   "galerie"],
+        "cake": ["cake", "birthday cake", "candles", "tårta", "födelsedagstårta", "födelsedag", "kalas", "kuchen",
+                 "torte", "geburtstag"],
+        "rings": ["rings", "wedding rings", "marriage", "engagement", "anniversary", "bröllop", "vigselringar", "ringar",
+                  "förlovning", "hochzeit", "eheringe"],
+        "xmastree": ["christmas tree", "xmas", "advent", "jul", "julgran", "julafton", "weihnachten", "weihnachtsbaum",
+                     "tannenbaum"],
+        "cinema": ["movie", "movies", "film", "bio", "biograf", "kino"],
+        "ferriswheel": ["theme park", "amusement park", "ferris wheel", "funfair", "nöjespark", "tivoli", "pariserhjul",
+                        "liseberg", "gröna lund", "freizeitpark", "riesenrad", "kirmes"],
 
         // MARK: Everyday
         "laptop": ["laptop", "computer", "office", "dator", "jobb", "arbete", "kontor", "arbeit", "büro"],
@@ -139,6 +202,18 @@ extension TemplateIconCatalog {
         "sleep": ["sleep", "bed", "night", "sova", "säng", "natt", "schlafen", "bett", "nacht"],
         "kids": ["children", "family", "baby", "barn", "familj", "kinder", "familie"],
         "paw": ["pet", "puppy", "cat", "hund", "husdjur", "katt", "haustier", "katze"],
+
+        // 0.92
+        "toothbrush": ["teeth", "dental", "toothpaste", "tandborste", "tandkräm", "tänder", "zahnbürste", "zahnpasta",
+                       "zähne"],
+        "battery": ["power bank", "powerbank", "charging", "batteri", "laddning", "ladda", "akku", "batterie", "aufladen"],
+        "badge": ["lanyard", "id badge", "conference badge", "access card", "namnbricka", "passerkort", "konferens",
+                  "namensschild", "tagung", "messe"],
+        "notebook": ["notebook", "notepad", "journal", "diary", "anteckningar", "anteckningsbok", "dagbok", "notizbuch",
+                     "notizen", "tagebuch"],
+        "suit": ["tie", "necktie", "formal", "dress code", "business attire", "kostym", "slips", "finkläder", "anzug",
+                 "krawatte"],
+        "pram": ["stroller", "pushchair", "buggy", "baby", "barnvagn", "sittvagn", "kinderwagen"],
     ]
 
     /// Does this icon answer the search — its label or one of its other words holding the words

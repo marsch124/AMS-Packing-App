@@ -299,7 +299,7 @@ struct CoverDoor: View {
 
 /// Choose a template's colour and its icon. The colour first (0.90): Automatic and the
 /// palette's fifteen (eleven until 0.91) in two rows, each a small cover in that colour, the one
-/// it has now ringed. Then a search field (0.91) and the 91 drawn icons in rows under their
+/// it has now ringed. Then a search field (0.91) and the 132 drawn icons (91 until 0.92) in rows under their
 /// headings (Travel, Outdoors, Sport, Beach and summer, City, food and fun, Everyday — 0.74),
 /// the one it has now ringed; "Suggested" goes back to the icon its name suggests, "Letter"
 /// shows the first letter instead. A tap on either chooses and closes.
