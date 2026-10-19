@@ -2782,6 +2782,9 @@ too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndThe
 `testARestoreSwipedAwaySaysNothingWasReplaced` (iPhone), and Escape everywhere:
 `testEscapeClosesSettingsWindowsAndNeverReplaces`, `testEscapeCancelsAThingAndClosesCaresWindows`,
 `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (with the trips' `testEscapeClosesTheTripsWindows`, spec 03);
+0.92, Cancel everywhere (§20a): `testCancelOnATemplatePutsItBackAndDoneKeepsIt`,
+`testCancelOnYourChoicesPutsItBackAndDoneKeepsIt`, `testCancelWhileEditingAGrabListPutsItBack`,
+`testCancelOnTheDeskAndTripSettingsPutsItBackAndSaveKeepsIt`; model `PageChangesTests`;
 0.67: `testSettingsDoorsAreRowsOfOneCard` (§1), and the lines without air of §21 — `testATripsLinesSitTightUnderTheirHeadings`
 (spec 03), `testATemplatesRowsSitTight` (spec 04), `testToDoAndToBuyLinesSitTight` (spec 05),
 `testAGrabListAndItsTilesAreSmall` (spec 02) — whose limits are the test file's `tightLine` (30 / 22), `tightTile`
