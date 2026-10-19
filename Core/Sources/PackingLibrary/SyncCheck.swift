@@ -224,24 +224,33 @@ public struct SyncCheck: Equatable {
         return "Waiting since \(SyncCheck.since(waitingSince, now: now, calendar: calendar)) \u{2014} nothing has reached iCloud for half an hour."
     }
 
-    /// The light in words, for VoiceOver: its word, and what it means.
-    public static func spoken(_ light: Light, check: SyncCheck?, now: Date, awake: Date = .distantPast,
-                              calendar: Calendar = .current) -> String {
+    /// The light in one line (0.92): what the dot's bubble says, and VoiceOver's value for the dot.
+    /// "In sync · today 18:20", "Sending 3 changes…", "Receiving…", "Stuck — Receiving has hung since 07:57".
+    public static func line(_ light: Light, check: SyncCheck?, now: Date, awake: Date = .distantPast,
+                            calendar: Calendar = .current) -> String {
+        func changes(_ n: Int) -> String { n == 1 ? "1 change" : "\(n) changes" }
         switch light {
-        case .off: return "iCloud off \u{2014} this copy keeps its library on this device only"
+        case .off: return "iCloud off"
         case .unknown: return "Can\u{2019}t tell how the sync is going"
-        case .inSync: return "In sync"
-        case .receiving: return "Receiving from iCloud"
+        case .inSync:
+            let last = [check?.lastSent, check?.lastReceived].compactMap { $0 }.max()
+            return last.map { "In sync \u{00B7} \(when($0, now: now, calendar: calendar))" } ?? "In sync"
         case .sending:
-            guard let c = check, c.notSentTotal > 0 else { return "Sending to iCloud" }
-            return "Sending to iCloud: \(c.notSentWords)"
+            guard let n = check?.notSentTotal, n > 0 else { return "Sending\u{2026}" }
+            return "Sending \(changes(n))\u{2026}"
+        case .receiving: return "Receiving\u{2026}"
         case .stuck:
             guard let c = check else { return "Stuck" }
             if let p = c.problem {
-                return "Stuck: the last \(p.sending ? "send" : "receive") failed \(when(p.at, now: now, calendar: calendar)): \(plain(domain: p.domain, code: p.code))"
+                return "Stuck \u{2014} the last \(p.sending ? "send" : "receive") failed: \(plain(domain: p.domain, code: p.code))"
             }
-            if let r = c.runningWords(now: now, awake: awake, calendar: calendar), r.hung { return "Stuck: " + r.words }
-            return "Stuck: " + (c.waitedWords(now: now, calendar: calendar) ?? "")
+            if let h = c.hung(now: now, awake: awake) {
+                return "Stuck \u{2014} \(h.sending ? "Sending" : "Receiving") has hung since \(since(h.since, now: now, calendar: calendar))"
+            }
+            if let w = c.waitingSince, c.waitedTooLong(now: now) {
+                return "Stuck \u{2014} \(changes(c.notSentTotal)) waiting since \(since(w, now: now, calendar: calendar))"
+            }
+            return "Stuck"
         }
     }
 

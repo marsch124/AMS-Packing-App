@@ -607,8 +607,8 @@ until then).
   tell, In sync (green), Sending… / Receiving… (orange), Stuck (red — failed, hung ten minutes, or waited half an hour);
   new lines `sync-running` (a send or receive running; loud once hung: "Receiving from iCloud has hung since 07:57 —
   quit Packing and open it again.") and `sync-waited`; "Not in iCloud yet" orange until it has waited too long; a
-  receive with no end is never "failed" again. The card also opens from Home, as Sync details. What follows is the
-  card before 0.92.
+  receive with no end is never "failed" again. The card also opens from Home — the sync dot at the foot of "This
+  Device", its bubble, Details — as Sync details (spec 02 §12b). What follows is the card before 0.92.
 - Header: **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
   (muted fill) when this build keeps its library on the device only (`model.usesICloud == false`, always so under
   tests); **"Can’t tell"** (muted, 0.62) when iCloud is on but the store file could not be read — then no

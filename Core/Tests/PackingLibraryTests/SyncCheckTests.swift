@@ -181,8 +181,7 @@ final class SyncCheckTests: XCTestCase {
         XCTAssertEqual(c.runningWords(now: ten, calendar: his)?.words,
                        "Receiving from iCloud has hung since 07:57 \u{2014} quit Packing and open it again.")
         XCTAssertEqual(c.runningWords(now: ten, calendar: his)?.hung, true)
-        XCTAssertEqual(SyncCheck.spoken(.stuck, check: c, now: ten, calendar: his),
-                       "Stuck: Receiving from iCloud has hung since 07:57 \u{2014} quit Packing and open it again.")
+        XCTAssertEqual(SyncCheck.line(.stuck, check: c, now: ten, calendar: his), "Stuck \u{2014} Receiving has hung since 07:57")
         // Back in front at 08:05: its ten minutes start again there.
         let back = started.addingTimeInterval(8 * 60)
         XCTAssertEqual(SyncCheck.light(usesICloud: true, check: c, now: ten, awake: back), .receiving)
@@ -215,7 +214,9 @@ final class SyncCheckTests: XCTestCase {
         let moving = SyncCheck(events: [SyncCheck.Event(type: 2, ok: true, at: half.addingTimeInterval(-600))],
                                notSent: ["items": 2], waitingSince: waited)
         XCTAssertEqual(SyncCheck.light(usesICloud: true, check: moving, now: half), .sending)
-        XCTAssertEqual(SyncCheck.spoken(.sending, check: moving, now: half), "Sending to iCloud: 2 things")
+        XCTAssertEqual(SyncCheck.line(.sending, check: moving, now: half), "Sending 2 changes\u{2026}")
+        XCTAssertEqual(SyncCheck.line(.stuck, check: c, now: half, calendar: his).hasPrefix("Stuck \u{2014} 2 changes waiting since "), true,
+                       SyncCheck.line(.stuck, check: c, now: half, calendar: his))
         // Nothing waiting: no waiting time, whatever is handed in.
         XCTAssertNil(SyncCheck(events: [], notSent: [:], waitingSince: waited).waitingSince)
     }
@@ -229,12 +230,18 @@ final class SyncCheckTests: XCTestCase {
         let good = [SyncCheck.Event(type: 2, ok: true, at: now.addingTimeInterval(-300)),
                     SyncCheck.Event(type: 1, ok: true, at: now.addingTimeInterval(-200))]
         XCTAssertEqual(SyncCheck.light(usesICloud: true, check: SyncCheck(events: good), now: now), .inSync)
+        // The bubble's line (0.92): In sync with the newest good exchange's time; one change or several.
+        XCTAssertEqual(SyncCheck.line(.inSync, check: SyncCheck(events: good), now: now, calendar: his), "In sync \u{00B7} today 11:56")
+        XCTAssertEqual(SyncCheck.line(.sending, check: SyncCheck(events: good, notSent: ["trips": 1]), now: now), "Sending 1 change\u{2026}")
+        XCTAssertEqual(SyncCheck.line(.sending, check: SyncCheck(events: good), now: now), "Sending\u{2026}")
+        XCTAssertEqual(SyncCheck.line(.receiving, check: nil, now: now), "Receiving\u{2026}")
+        XCTAssertEqual(SyncCheck.line(.unknown, check: nil, now: now), "Can\u{2019}t tell how the sync is going")
         // A failure after the last good one beats a receive running.
         let failed = SyncCheck(events: [SyncCheck.Event(type: 1, ok: false, at: now.addingTimeInterval(-30), unfinished: true),
                                         SyncCheck.Event(type: 2, ok: false, at: now.addingTimeInterval(-60), domain: "CKErrorDomain", code: 3)] + good)
         XCTAssertEqual(SyncCheck.light(usesICloud: true, check: failed, now: now), .stuck)
-        XCTAssertEqual(SyncCheck.spoken(.stuck, check: failed, now: now, calendar: his),
-                       "Stuck: the last send failed today 11:59: iCloud could not be reached \u{2014} it tries again by itself")
+        XCTAssertEqual(SyncCheck.line(.stuck, check: failed, now: now, calendar: his),
+                       "Stuck \u{2014} the last send failed: iCloud could not be reached \u{2014} it tries again by itself")
         // Changes waiting beat a receive running: both orange, the words say Sending.
         let both = SyncCheck(events: [SyncCheck.Event(type: 1, ok: false, at: now.addingTimeInterval(-30), unfinished: true)] + good,
                              notSent: ["trips": 1], waitingSince: now.addingTimeInterval(-20))

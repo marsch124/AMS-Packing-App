@@ -34,6 +34,10 @@ enum Theme {
     static let card  = Color(light: 0xffffff, dark: 0x161f22)
     static let ink   = Color(light: 0x16232a, dark: 0xe7edee)
     static let muted = Color(light: 0x5f7078, dark: 0x94a6ac)
+    /// Ink a tad grey (0.92) — between `ink` and `muted`, for a heading that should not be "so super
+    /// black" (his words on Create new trip, 19 Oct 2026). 10 : 1 on the light card, 10.6 : 1 on the dark.
+    static let inkGreyPair: (light: UInt32, dark: UInt32) = (0x34444c, 0xc4cfd2)
+    static let inkGrey = Color(light: inkGreyPair.light, dark: inkGreyPair.dark)
     static let line  = Color(light: 0xe2e8ea, dark: 0x26343a)
     /// Quieter than `muted`: a mark that is there to be found, not read — a thing's
     /// grip ≡ while arranging (his note on 0.63, 6 Oct 2026: the things' grips in

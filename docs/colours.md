@@ -41,6 +41,7 @@ Each is a light / dark pair, never a single hex.
 | card  | `#ffffff` | `#161f22` | cards and sheets          |
 | ink   | `#16232a` | `#e7edee` | text                      |
 | muted | `#5f7078` | `#94a6ac` | secondary text            |
+| inkGrey | `#34444c` | `#c4cfd2` | (0.92) ink a tad grey — the "Create new trip" heading ("not so super black"); 10 : 1 on its card |
 | line  | `#e2e8ea` | `#26343a` | hairlines                 |
 
 ## Grab list tones — `App/Sources/Screens/GrabScreen.swift`

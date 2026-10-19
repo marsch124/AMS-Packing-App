@@ -241,15 +241,29 @@ enum SyncWatch {
 
 /// The sync light on Home (0.92) — his yes of 19 Oct 2026 to "a small dot — green when both devices
 /// are in step, orange while changes are waiting. A tap opens Sync details, so you see problems like
-/// last week's without digging." Under This Device's numbers: a dot and a word or two
-/// (`SyncCheck.light`): green In sync, orange Sending… or Receiving…, red Stuck, grey Can't tell.
-/// Not there at all when this copy keeps its library on the device only (nothing to sync). A tap
-/// opens Sync details — the sync card of Settings, in a sheet. It looks again every 30 s while Home
-/// is shown, when the app comes back, and a second after the store changed.
+/// last week's without digging." Then, from four drawings, his pick B: "put the sync dot under the
+/// This Device label" — his words before it: "it shall take up absolutely minimal space in the app
+/// and not push anything downwards … Maybe just a small dot, and when you press it, you can get more
+/// information." (The first 0.92 build had a line of its own under the three numbers.)
+///
+/// So: an 8-point dot at the foot of "This Device", in its narrow column, no words beside it —
+/// green in sync, orange on its way, red stuck, grey can't tell (`SyncCheck.light`); none at all when
+/// this copy keeps its library on the device. A tap — anywhere in 44 points round it — opens a small
+/// bubble with one line (`SyncCheck.line`) and Details, which opens Sync details. It looks again
+/// every 30 s while Home is shown, when the app comes back, and a second after the store changed.
 struct SyncLight: View {
     @EnvironmentObject var model: LibraryModel
     @State private var seen: SyncWatch.Seen? = SyncWatch.last
+    @State private var bubble = false
+    /// Details was pressed in the bubble: Sync details opens once the bubble has gone.
+    @State private var detailsNext = false
     @State private var details = false
+
+    /// The dot's size, and the points a tap may land away from it on every side (8 + 2 × 18 = 44).
+    static let dot: CGFloat = 8
+    static let reach: CGFloat = 18
+    /// The bubble's width: its line wraps inside it.
+    static let bubbleWidth: CGFloat = 270
 
     /// The dot's colour — the section colours the app already uses for good (Trips green), on its
     /// way (Care orange) and wrong (To do red); grey in `muted`.
@@ -265,7 +279,8 @@ struct SyncLight: View {
     var body: some View {
         if SyncWatch.on(model) {
             Group {
-                if let seen, seen.on { light(seen) } else { Color.clear.frame(width: 0, height: 0) }
+                if let seen, seen.on { dot(seen) }
+                else { Color.clear.frame(width: SyncLight.dot, height: SyncLight.dot) }   // its place, before the first look
             }
             .task { await SyncWatch.keepLooking(model) { seen = $0 } }
             .onReceive(SyncWatch.storeChanged) { _ in Task { seen = await SyncWatch.look(model) } }
@@ -273,37 +288,73 @@ struct SyncLight: View {
         }
     }
 
-    private func light(_ seen: SyncWatch.Seen) -> some View {
+    private func dot(_ seen: SyncWatch.Seen) -> some View {
         let light = SyncCheck.light(usesICloud: true, check: seen.check, now: seen.now, awake: SyncWatch.awake)
         let tone = SyncLight.color(light.colour)
-        let spoken = SyncCheck.spoken(light, check: seen.check, now: seen.now, awake: SyncWatch.awake)
-        return Button { details = true } label: {
-            HStack(spacing: 6) {
-                Circle().fill(tone).frame(width: 9, height: 9)
-                // Calm: the words grey — red only when it is stuck.
-                Text(light.word)
-                    .font(.system(.footnote, weight: .semibold))
-                    .foregroundStyle(light == .stuck ? tone : Theme.muted)
-                    .lineLimit(1)
-                SVGPath.path("M9 6l6 6-6 6")
-                    .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                    .onGrid(10)
-                    .foregroundStyle(Theme.faint)
-            }
-            .frame(minHeight: Metrics.chip)
-            .contentShape(Rectangle())
+        let line = SyncCheck.line(light, check: seen.check, now: seen.now, awake: SyncWatch.awake)
+        return Button { bubble = true } label: {
+            Circle().fill(tone)
+                .frame(width: SyncLight.dot, height: SyncLight.dot)
+                // 44 points to tap, drawn nowhere: the column stays 16 wide and the block as tall.
+                .contentShape(Rectangle().inset(by: -SyncLight.reach))
         }
         .buttonStyle(.plain).focusEffectDisabled()
-        .padding(.top, 4)
         .accessibilityLabel("iCloud sync")
         #if DEBUG
         // The tests' only way to see the dot's colour: the colour it is drawn in, then the words.
-        .accessibilityValue("\(light.colour.rawValue) \u{00B7} \(spoken)")
+        .accessibilityValue("\(light.colour.rawValue) \u{00B7} \(line)")
         #else
-        .accessibilityValue(spoken)
+        .accessibilityValue(line)
         #endif
-        .accessibilityHint("Opens the sync details.")
+        .accessibilityHint("Shows how the sync is going.")
         .accessibilityIdentifier("home-sync-light")
+        // To the dot's right, over the tiles: the dot is at the page's left edge. The iPhone (iOS 26) puts
+        // the bubble on the side away from `arrowEdge` — `.trailing` there put it off the screen to the
+        // left; the Mac reads it as the dot's edge the arrow points from.
+        #if os(macOS)
+        .popover(isPresented: $bubble, arrowEdge: .trailing) { bubbleView(light, line: line, tone: tone) }
+        #else
+        .popover(isPresented: $bubble, arrowEdge: .leading) { bubbleView(light, line: line, tone: tone) }
+        #endif
+    }
+
+    /// The bubble: the dot again, the one line, and Details.
+    private func bubbleView(_ light: SyncCheck.Light, line: String, tone: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Circle().fill(tone).frame(width: SyncLight.dot, height: SyncLight.dot)
+                Text(line)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(light == .stuck ? tone : Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("home-sync-line")
+            }
+            Button {
+                detailsNext = true
+                bubble = false
+            } label: {
+                Text("Details").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                    .frame(minHeight: Metrics.compact).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .padding(.leading, SyncLight.dot + 8)
+            .accessibilityIdentifier("home-sync-details")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        // A width of its own: a bubble takes its content's ideal width, and wrapping words have
+        // none — at the screen's edge it shrank to a sliver (seen on the iPhone).
+        .frame(width: SyncLight.bubbleWidth, alignment: .leading)
+        .presentationCompactAdaptation(.popover)           // a bubble on the iPhone too, not a sheet
+        .presentationBackground(Theme.card)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home-sync-popover")
+        // Sync details opens once the bubble has gone (two windows at once, SwiftUI shows neither),
+        // a beat later: the bubble says it is gone while it is still fading.
+        .onDisappear {
+            guard detailsNext else { return }
+            detailsNext = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { details = true }
+        }
     }
 }
 
