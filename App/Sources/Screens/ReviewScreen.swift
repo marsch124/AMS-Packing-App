@@ -191,8 +191,8 @@ struct ReviewScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         // A swipe down must not throw marks away without a word (the spec pass, 5 Oct
-        // 2026): once something is marked, added or typed, only Cancel or Save closes it.
-        .interactiveDismissDisabled(!unused.isEmpty || !missed.isEmpty || !jsTrim(missName).isEmpty)
+        // 2026): once something is marked, added or typed, it asks first (0.92, the app's rule).
+        .asksBeforeDiscarding(!unused.isEmpty || !missed.isEmpty || !jsTrim(missName).isEmpty) { dismiss() }
         .accessibilityElement(children: .contain)
         .sheet(item: Binding(get: { fixing.map { Fixing(id: $0) } }, set: { fixing = $0?.id })) { it in
             ThingEditor(itemId: it.id).environmentObject(model)

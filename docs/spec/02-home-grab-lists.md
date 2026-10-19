@@ -814,8 +814,8 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
   - a tile in the Which grab list? menu, where the list replaces the menu inside the same sheet.
 - **Out:**
   - "Done" (`grab-done`) → `dismiss()` — Escape too (0.62; ⌘. on an iPhone keyboard). While the list is
-    being edited Done is hidden and there is no Cancel, so no key closes it on the Mac (the iPhone's ⌘.
-    closes it as a swipe does, the draft thrown away);
+    being edited Done is hidden; since 0.92 the edit has Cancel (`grab-cancel`), which Escape presses, and the
+    list stays open; a swipe down with something changed in the edit asks first (spec 06 §20a);
   - "Ready to go" on a complete list (it closes itself after 0.35 s);
   - "Delete the grab list" in the editor of one of his own lists (section 7);
   - the list going while it is open (0.62): deleted on the other device, or lost to a later write from
@@ -1196,8 +1196,10 @@ else is the same.
   function should be existing throughout the whole app right?"): at the header's left while editing, outlined
   muted, id `grab-cancel`, Escape too (`cancelEdits`; on the Mac the editor's `onExitCommand`, and the sheet holds still
 while editing so Escape does not close it — spec 06 §20a) — the draft is thrown away (nothing was written while
-  editing) and the list shows as it was, still open. Until 0.92 an edit had no Cancel and no Escape. Swiping the
-  iPhone sheet down while editing throws the draft away too (nothing is saved). On one of his own lists, "Delete
+  editing) and the list shows as it was, still open. Until 0.92 an edit had no Cancel and no Escape. A swipe down
+  while editing: with nothing changed it closes the list; with something changed it asks "Discard changes?" first —
+  Discard closes the list without the edit, Keep editing stays (0.92, the app's rule, spec 06 §20a; until then the
+  swipe threw the draft away without a word). On one of his own lists, "Delete
   the grab list" closes the sheet and the list is gone.
 - While editing, the counter, Share and Done are hidden. The button's identifier stays `grab-edit`
   whether it reads "Edit" or "Save".

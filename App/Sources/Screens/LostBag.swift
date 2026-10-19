@@ -572,7 +572,8 @@ struct DeskDetailsScreen: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
-        .interactiveDismissDisabled(changed)
+        // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a).
+        .asksBeforeDiscarding(changed) { dismiss() }
         .onAppear {
             guard !loaded else { return }
             let d = model.library.deskDetails()

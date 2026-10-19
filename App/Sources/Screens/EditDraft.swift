@@ -30,7 +30,18 @@ final class EditDraft {
 
     /// A bag's name typed and not renamed yet — renamed by Duplicate first, never by leaving
     /// (a swipe leaves a typed name unrenamed, as before).
-    var typedName: String?
+    var typedName: String? {
+        didSet { if typedName != nil { heldSomething() } }
+    }
+
+    /// Told once, the first time the page holds something (0.92): the page then knows a swipe down
+    /// must ask first — without a redraw on every key, which the ledger exists to avoid.
+    var onFirstHold: (() -> Void)?
+    private func heldSomething() {
+        guard let told = onFirstHold else { return }
+        onFirstHold = nil
+        told()
+    }
 
     /// Cancel (0.92): the page is closing and writes nothing — a field that hands its words in as
     /// it gives up the keys on the way out (the Mac's do) is not taken any more.
@@ -45,6 +56,7 @@ final class EditDraft {
         guard differs else { drop(key); return }
         if pending[key] == nil { order.append(key) }
         pending[key] = (text, write)
+        heldSomething()
     }
 
     func drop(_ key: String) {
@@ -205,3 +217,150 @@ struct DraftedPage<Content: View>: View {
             .onDisappear { draft.left() }
     }
 }
+
+// MARK: - A swipe down with something changed asks first (0.92, the whole app's rule)
+//
+// The coordinator's decision for the whole app, per his "the cancel function should be existing
+// throughout the whole app": on the iPhone a page that changes something closes on a swipe down while
+// nothing is changed; with something changed it holds still and asks — "Discard changes?", Discard
+// (red: what Cancel does, nothing kept) or Keep editing — as Notes and Calendar do. Cancel itself
+// never asks (it was pressed on purpose); Save, Done and ⌘S keep. Nothing of this on the Mac: its
+// sheets are not swiped, and Escape is Cancel. The question is the app's own card (the look of "Take it
+// off?"), so the tests find its buttons by their identifiers (spec 06 §20a).
+
+extension View {
+    /// `changed`: something on the page is not saved — a swipe down then asks. `holds`: the page holds
+    /// still for another reason (a template being arranged) without asking. `discard`: what Discard
+    /// does — the page's Cancel.
+    func asksBeforeDiscarding(_ changed: Bool, holds: Bool = false, discard: @escaping () -> Void) -> some View {
+        modifier(DiscardAsk(changed: changed, holds: holds, discard: discard))
+    }
+}
+
+private struct DiscardAsk: ViewModifier {
+    let changed: Bool
+    let holds: Bool
+    let discard: () -> Void
+    @State private var asking = false
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .interactiveDismissDisabled(changed || holds)
+            .background(SwipeAttempt { if changed { withAnimation(.easeOut(duration: 0.15)) { asking = true } } }
+                .frame(width: 0, height: 0).accessibilityHidden(true))
+            .overlay { if asking { DiscardCard(keep: { withAnimation(.easeOut(duration: 0.15)) { asking = false } },
+                                               discard: { asking = false; discard() }) } }
+        #else
+        content.interactiveDismissDisabled(holds)
+        #endif
+    }
+}
+
+/// "Discard changes?" in the middle of the page, the rest dimmed — the look of a template's "Take it
+/// off?" card: Keep editing (outlined) and Discard (red, filled).
+private struct DiscardCard: View {
+    let keep: () -> Void
+    let discard: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea()
+                .onTapGesture { keep() }
+            VStack(spacing: 14) {
+                Text("Discard changes?")
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.center)
+                    .accessibilityIdentifier("discard-question")
+                Text("What you changed on this page is not kept.")
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 12) {
+                    Button { keep() } label: { Text("Keep editing") }
+                        .buttonStyle(HeaderButtonStyle(tint: Theme.ink, filled: false, stretch: true)).focusEffectDisabled()
+                        .accessibilityIdentifier("discard-keep")
+                    Button { discard() } label: { Text("Discard") }
+                        .buttonStyle(HeaderButtonStyle(tint: AppSection.actions.color, filled: true, stretch: true)).focusEffectDisabled()
+                        .accessibilityIdentifier("discard-yes")
+                }
+                .padding(.top, 4)
+            }
+            .padding(22)
+            .frame(maxWidth: 360)
+            .background(RoundedRectangle(cornerRadius: 18).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.line, lineWidth: 1))
+            .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
+            .padding(24)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("discard-ask")
+        }
+        .transition(.opacity)
+    }
+}
+
+#if os(iOS)
+/// Hears a swipe down that the sheet held still for (`interactiveDismissDisabled`): UIKit tells the
+/// sheet's presentation controller's delegate (`presentationControllerDidAttemptToDismiss`). SwiftUI
+/// keeps its own delegate there; this one stands in front of it and passes everything else on.
+private struct SwipeAttempt: UIViewControllerRepresentable {
+    let onAttempt: () -> Void
+
+    func makeUIViewController(context: Context) -> Probe { Probe(onAttempt) }
+    func updateUIViewController(_ probe: Probe, context: Context) {
+        probe.onAttempt = onAttempt
+        probe.install()
+    }
+
+    final class Probe: UIViewController {
+        var onAttempt: () -> Void
+        private var relay: Relay?
+
+        init(_ onAttempt: @escaping () -> Void) {
+            self.onAttempt = onAttempt
+            super.init(nibName: nil, bundle: nil)
+        }
+        required init?(coder: NSCoder) { nil }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            install()
+        }
+
+        /// In front of the delegate of the sheet this page is on — again whenever SwiftUI put its own back.
+        func install() {
+            var top: UIViewController = self
+            while let up = top.parent { top = up }
+            guard top.presentingViewController != nil, let sheet = top.presentationController else { return }
+            if let mine = sheet.delegate as? Relay, mine === relay { return }
+            let r = Relay(passOn: sheet.delegate) { [weak self] in self?.onAttempt() }
+            relay = r
+            sheet.delegate = r
+        }
+    }
+
+    final class Relay: NSObject, UIAdaptivePresentationControllerDelegate {
+        weak var passOn: UIAdaptivePresentationControllerDelegate?
+        let attempted: () -> Void
+
+        init(passOn: UIAdaptivePresentationControllerDelegate?, attempted: @escaping () -> Void) {
+            self.passOn = passOn
+            self.attempted = attempted
+        }
+
+        func presentationControllerDidAttemptToDismiss(_ controller: UIPresentationController) {
+            passOn?.presentationControllerDidAttemptToDismiss?(controller)
+            attempted()
+        }
+
+        override func responds(to selector: Selector!) -> Bool {
+            super.responds(to: selector) || (passOn?.responds(to: selector) ?? false)
+        }
+
+        override func forwardingTarget(for selector: Selector!) -> Any? {
+            if passOn?.responds(to: selector) == true { return passOn }
+            return super.forwardingTarget(for: selector)
+        }
+    }
+}
+#endif

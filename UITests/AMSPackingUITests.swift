@@ -2151,8 +2151,9 @@ final class AMSPackingUITests: XCTestCase {
     #if os(iOS)
     /// A swipe down must not throw unsaved work away without a word (the spec pass,
     /// 5 Oct 2026): with something marked in the review, or changed in Trip settings,
-    /// the swipe no longer closes the sheet — Cancel or Save does. With nothing
-    /// changed, the swipe closes it as before.
+    /// the swipe no longer closes the sheet — since 0.92 it asks, "Discard changes?"
+    /// (the app's rule, spec 06 §20a): Keep editing stays with the marks, Discard closes
+    /// and keeps nothing. With nothing changed, the swipe closes it as before.
     func testASwipeDownKeepsWhatIsNotSavedYet() {
         // The header's Review on the sample trip a month ahead (0.84: only once a trip has started).
         let app = launch("-uiTesting", ["-reviewAtPack"])
@@ -2177,6 +2178,9 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "review-line-0")
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["review-line-0"]) }, "the mark did not take")
         swipeDown("review-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a swipe with a mark did not ask first")
+        tap(app, id: "discard-keep")
+        XCTAssertTrue(disappears(app, "discard-ask", timeout: 5), "Keep editing did not take the question away")
         XCTAssertNotNil(find(app, "review-detail"), "a swipe threw the review's marks away")
         XCTAssertTrue(isOn(app.buttons["review-line-0"]), "the mark was lost")
         tap(app, id: "review-cancel")
@@ -2187,10 +2191,11 @@ final class AMSPackingUITests: XCTestCase {
         tapVisible(app, app.buttons["tripset-season-1"])
         XCTAssertTrue(waitUntil { self.isOn(app.buttons["tripset-season-1"]) })
         swipeDown("tripset-screen")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a swipe with a change did not ask first")
         XCTAssertNotNil(find(app, "tripset-screen"), "a swipe threw Trip settings' change away")
-        tap(app, id: "tripset-cancel")
-        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Cancel did not close Trip settings")
-        XCTAssertEqual(words(app.staticTexts["trip-progress"]), "1/7", "Cancel changed the trip")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Discard did not close Trip settings")
+        XCTAssertEqual(words(app.staticTexts["trip-progress"]), "1/7", "Discard changed the trip")
     }
     #endif
 
@@ -2829,14 +2834,24 @@ final class AMSPackingUITests: XCTestCase {
         kept(first, "closed by Done")
         #if os(iOS)
         guard !measure else { return tap(app, id: "bag-done") }
-        let second = fill(2)
-        // Closed by a swipe down, the last field still being typed in.
-        if let sheet = find(app, "bag-detail") {
-            sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02))
-                .press(forDuration: 0.05, thenDragTo: sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
-        }
-        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "a swipe down did not close the bag's page")
-        kept(second, "closed by a swipe down")
+        _ = fill(2)
+        // A swipe down with something typed asks first (0.92, the app's rule — until then it wrote
+        // everything): Discard closes and keeps nothing…
+        pullDown(app, "bag-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a swipe down with typed fields did not ask first")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Discard did not close the bag's page")
+        kept(first, "a swipe down, then Discard")
+        // …Keep editing stays on the page, and Done keeps what was typed.
+        let third = fill(3)
+        pullDown(app, "bag-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a swipe down with typed fields did not ask first")
+        tap(app, id: "discard-keep")
+        XCTAssertTrue(disappears(app, "discard-ask", timeout: 5), "Keep editing did not take the question away")
+        XCTAssertNotNil(find(app, "bag-detail"), "Keep editing closed the bag's page")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Done did not close the bag's page")
+        kept(third, "Keep editing, then Done")
         #endif
         tap(app, id: "bag-done")
     }
@@ -6421,6 +6436,136 @@ final class AMSPackingUITests: XCTestCase {
     // is only a Done button, right?" — and "the cancel function should be existing throughout the
     // whole app right?" Every page where he changes something has Cancel (top left) and Save or Done
     // (top right): Cancel throws away everything changed there since the page opened.
+
+    /// A swipe down on a sheet, from its top edge (the iPhone).
+    private func pullDown(_ app: XCUIApplication, _ screen: String) {
+        guard let sheet = find(app, screen) else { return XCTFail("no \(screen) to swipe down") }
+        sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02))
+            .press(forDuration: 0.05, thenDragTo: sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)))
+        sleep(1)
+    }
+
+    /// The whole app's rule for a swipe down (0.92, spec 06 §20a): nothing changed — the page closes;
+    /// something changed — it holds still and asks "Discard changes?": Keep editing stays, Discard
+    /// closes and keeps nothing. A template's page, a thing's page, a row, Your choices, a grab list's
+    /// edit and the lost-luggage desk.
+    func testASwipeDownWithAChangeAsksFirst() throws {
+        #if os(macOS)
+        throw XCTSkip("A sheet is swiped down on the iPhone")
+        #else
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        // A template: untouched, the swipe closes it; with the area changed it asks.
+        tap(app, id: "template-row-1")                            // Hiking, in GA
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        pullDown(app, "template-detail")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "an untouched template did not close on a swipe")
+        XCTAssertNil(find(app, "discard-ask"), "an untouched template asked")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events")
+        pullDown(app, "template-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a changed template did not ask on a swipe")
+        shot(app, "cancel-discard-ask")
+        tap(app, id: "discard-keep")
+        XCTAssertTrue(disappears(app, "discard-ask", timeout: 5))
+        XCTAssertEqual(chosen(app, "template-area"), "OE \u{00B7} Other Events", "Keep editing lost the change")
+        // A row of it: a changed How many asks too, and Discard keeps nothing of it.
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        let qty = app.textFields["row-qty"]
+        let had = value(qty)
+        replace("7", in: qty)
+        pullDown(app, "row-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a changed row did not ask on a swipe")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5), "Discard did not close the row")
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        XCTAssertEqual(value(app.textFields["row-qty"]), had, "Discard kept the row's How many")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        pullDown(app, "template-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5))
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Discard did not close the template")
+        XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5), "Discard kept the move out of GA")
+        XCTAssertFalse(app.staticTexts["templates-area-OE"].exists, "Discard kept the move to OE")
+
+        // A thing: untouched, the swipe closes it; with its notes changed it asks.
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        pullDown(app, "thing-detail")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "an untouched thing did not close on a swipe")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let notes = value(anyField(app, "thing-notes"))
+        replace("Swiped notes", in: anyField(app, "thing-notes"))
+        pullDown(app, "thing-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a changed thing did not ask on a swipe")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Discard did not close the thing")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(value(anyField(app, "thing-notes")), notes, "Discard kept the notes")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        // Your choices and the desk, from Settings.
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        type("Attic shelf", into: app.textFields["list-places-add-name"])
+        tap(app, id: "list-places-add")
+        XCTAssertTrue(app.staticTexts["list-places-name-12"].waitForExistence(timeout: 5))
+        hideKeyboard(app)
+        pullDown(app, "lists-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a changed Your choices did not ask on a swipe")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Discard kept the place")
+        tap(app, id: "lists-cancel")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        tap(app, id: "settings-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5))
+        let phone = value(app.textFields["desk-phone"])
+        replace("+46 70 333 33 33", in: app.textFields["desk-phone"])
+        pullDown(app, "desk-screen")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a changed desk did not ask on a swipe")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5))
+        tap(app, id: "settings-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5))
+        XCTAssertEqual(value(app.textFields["desk-phone"]), phone, "Discard kept the phone")
+        tap(app, id: "desk-cancel")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5))
+
+        // A grab list being edited: renamed, swiped — asks; Discard closes it as it was.
+        tab(app, "home")
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        let first = app.buttons["grab-item-0"].label
+        tap(app, id: "grab-edit")
+        replace("Swim shorts", in: app.textFields["grab-rename-0"])
+        pullDown(app, "grab-detail")
+        XCTAssertTrue(appears(app, "discard-ask", timeout: 5), "a changed grab list did not ask on a swipe")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5), "Discard did not close the grab list")
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        XCTAssertEqual(app.buttons["grab-item-0"].label, first, "Discard kept the new name")
+        tap(app, id: "grab-done")
+        #endif
+    }
 
     /// Done (on the Mac ⌘S) or Cancel: on the Mac by the key, on the iPhone by the button.
     private func pressSave(_ app: XCUIApplication, _ id: String) {

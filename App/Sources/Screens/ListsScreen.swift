@@ -213,6 +213,8 @@ struct ListsPage: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: $coding) { PlaceCodeSheet(place: $0.id).environmentObject(model) }
+        // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a).
+        .asksBeforeDiscarding(page.changed) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("lists-detail")
         #if os(macOS)

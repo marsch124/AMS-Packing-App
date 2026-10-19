@@ -77,6 +77,9 @@ struct BagPage: View {
     /// The pockets as the page found them (or last wrote itself), and whether they were changed here.
     @State private var pocketsAt: PocketsKept?
     @State private var pocketsTouched = false
+    /// Something is held on the page and not written (0.92): a swipe down then asks first. Set once,
+    /// by the ledger, when it first holds something (`EditDraft.onFirstHold`).
+    @State private var touched = false
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
     enum Opened: Identifiable {
@@ -124,13 +127,14 @@ struct BagPage: View {
             case .thing(let id): ThingEditor(itemId: id).environmentObject(model)
             }
         }
-        .onAppear { if pocketsAt == nil { pocketsAt = model.library.keepPockets(bagId: bagId) } }
-        // Left by a swipe down (the iPhone): everything held is written, at once — Done writes it itself,
-        // Cancel and Escape forget it. Not on the Mac (0.92): its sheet also closes ITSELF on Escape, and
-        // Escape is Cancel — so there only Done (and the app going away) writes.
-        #if os(iOS)
-        .onDisappear { draft.flush(model) }
-        #endif
+        .onAppear {
+            if pocketsAt == nil { pocketsAt = model.library.keepPockets(bagId: bagId) }
+            if !touched && draft.onFirstHold == nil { armTouched() }     // once: not again after a sheet on top
+        }
+        // A swipe down (the iPhone): with nothing held it closes; with something held it asks first —
+        // Discard is Cancel (0.92, the app's rule; spec 06 §20a). Until then a swipe wrote everything.
+        // Only Done (and the app going away) writes.
+        .asksBeforeDiscarding(touched || pocketsTouched) { cancel() }
         .writesDraftWhenAway(draft, model)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("bag-detail")
@@ -387,6 +391,13 @@ struct BagPage: View {
     private func savedHere() {
         pocketsAt = model.library.keepPockets(bagId: bagId)
         pocketsTouched = false
+        armTouched()
+    }
+
+    /// Nothing held: the ledger says when it first holds something (0.92).
+    private func armTouched() {
+        touched = false
+        draft.onFirstHold = { touched = true }
     }
     // MARK: What goes in it
 

@@ -175,7 +175,8 @@ appear as Mac sheets with the minimum sizes given per screen below. Escape (⌘.
 sheet's Cancel — or its Done where it has none — and never a Save, a Make or an Add (`.keyboardShortcut(.cancelAction)`,
 0.62; spec 06 §20) — on a template's page while arranging, Escape ends Arrange first (§6a, 0.63); Return has no
 app-defined meaning beyond a text field's `onSubmit` (no `.defaultAction`, no `.onExitCommand`). On the iPhone every
-sheet here can be swiped down, except a template's page while arranging (`interactiveDismissDisabled`, §6a, 0.63).
+sheet here can be swiped down, except a template's page while arranging (`interactiveDismissDisabled`, §6a, 0.63); since
+0.92 a page with something changed asks "Discard changes?" first (spec 06 §20a).
 
 ### Tests
 - UI: `testEveryTabOpensItsScreen`; `testEveryDoorOfTheTemplatesTabOpens` (twice in a row: a card, Done, the
@@ -223,7 +224,8 @@ moved into any of his areas from its own page (§6, Activity area, a drop-down s
   choices holds the lists a THING uses. At the foot (0.91) it no longer stands between the Refine card and his
   templates: the cards come first, the tool to rearrange their headings after them.
 - Left by **Cancel** (`areas-cancel`, outlined muted; Escape too) — nothing changes — or **Save** (`areas-save`,
-  violet, filled, always in colour: with nothing changed it simply closes), or a swipe down on the iPhone (= Cancel).
+  violet, filled, always in colour: with nothing changed it simply closes), or a swipe down on the iPhone (closes while
+  nothing is changed; with something changed asks "Discard changes?" first — 0.92, spec 06 §20a; until then = Cancel).
 
 ### What is on screen (container `areas-detail`; Mac min 480 × 520)
 - Top row (padding 16): Cancel · "Activity areas" (Title 3 bold violet, one line, scales to 80 %, `areas-title`) ·
@@ -926,7 +928,9 @@ pick "C" of three pictured layouts, 5 Oct 2026).
   deleted goes, every other record keeps what the real library holds now, so the other device's changes while the
   page was open stay). **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
   Escape ends Arrange first, §6a, and a second Escape is Cancel) throws the copy away: nothing on the page was
-  kept. A swipe down on the iPhone (not while arranging) = Cancel, as on a thing's page. "Delete the template"
+  kept. A swipe down on the iPhone (not while arranging): with nothing changed it closes; with something changed it
+  asks "Discard changes?" — Discard = Cancel, Keep editing stays (`asksBeforeDiscarding(page.changed, holds: arranging)`,
+  spec 06 §20a). "Delete the template"
   deletes it from the real library at once (asked first) and closes — what else the page changed goes with it.
   A small core made from the page (§14b) is handed over with the rest of the page as its sheet closes, then the page
   closes as before. A rename typed but not confirmed (Rename / Return) is **discarded** by Done and Cancel alike.
@@ -1330,7 +1334,8 @@ what this editor's Save stores for it, and the trips still ahead follow the same
 ### How it is reached and left
 Tap a row on a template page. Left by "Cancel" (`row-cancel`, nothing saved; Escape too, 0.62 — the template's page
 behind it stays open), "Save" (`row-save`, saves then closes; ⌘S since 0.92 — until then no key pressed it), swipe
-down (= Cancel). Container id `row-detail`. Mac: min 520 × 600. Since 0.92 the row editor works on the template
+down (closes while nothing is changed; with something changed asks "Discard changes?" first — `RowKept`, 0.92, spec 06
+§20a; until then = Cancel). Container id `row-detail`. Mac: min 520 × 600. Since 0.92 the row editor works on the template
 page's copy of the library (§6): its Save is kept by the template's Done and thrown away by the template's Cancel.
 
 ### What is on screen
@@ -2205,7 +2210,8 @@ Activity areas page (§1a), with the same tools.
 ### How it is reached and left
 Settings → "Your choices" card ("Storage places, owners, packers, conditions, \"When\" steps"; id `settings-lists`).
 Since 0.92 on a copy of the library until Done (spec 06 §2.3, §20a): left by "Done" (`lists-done`, filled slate,
-⌘S) — what was changed is kept — or "Cancel" (`lists-cancel`, top left, outlined muted; Escape too) or a swipe
+⌘S) — what was changed is kept — or "Cancel" (`lists-cancel`, top left, outlined muted; Escape too) or a swipe (with
+something changed it asks "Discard changes?" first, spec 06 §20a)
 down — nothing changed here is kept. Container `lists-detail`. Mac: min 520 × 600.
 
 ### What is on screen

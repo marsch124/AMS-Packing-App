@@ -315,6 +315,8 @@ struct ThingEditor: View {
     @State private var choiceLists: [String: ChoiceEdits] = [:]
     /// A bag whose page was asked for from Usually packed in ("Open the bag", 0.69).
     @State private var bagPage: String?
+    /// The page as it was loaded (0.92, `ThingKept`).
+    @State private var atLoad: ThingKept?
     /// Duplicate this thing (0.92): the page has turned to the copy — its name brought into sight
     /// and selected (the iPhone's selection; the Mac's keys select it as ⌘↓ does).
     @State private var turned = 0
@@ -640,6 +642,9 @@ struct ThingEditor: View {
         .onChange(of: typing) { old, now in typed(from: old, to: now) }
         .onChange(of: draft.expiry) { _, now in expiryText = now; expiryProblem = "" }
         #endif
+        // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a) — until
+        // then a swipe was Cancel without a word.
+        .asksBeforeDiscarding(thingChanged) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-detail")
         #if os(macOS)
@@ -672,6 +677,34 @@ struct ThingEditor: View {
         askingToDelete = false
         expiryText = draft.expiry
         expiryProblem = ""
+        // The page as it opened (0.92): with anything on it changed, a swipe down asks first.
+        if let it = model.library.items.first(where: { $0.id == id }) {
+            atLoad = ThingKept(draft: it, onLists: Set(model.library.memberships.filter { $0.itemId == id }.map(\.templateId)), weightText: amountText(it.weight),
+                               careEvery: it.maintenance?.intervalDays ?? 0, careNotes: it.maintenance?.notes ?? "",
+                               sections: now, kit: KitDraft(model.library, thingId: id),
+                               limits: Library.thingLimits(it))
+        }
+    }
+
+    /// What the page showed as it was loaded, to tell whether anything on it is changed (0.92).
+    struct ThingKept: Equatable {
+        var draft: Item
+        var onLists: Set<String>
+        var weightText: String
+        var careEvery: Int
+        var careNotes: String
+        var sections: [String: String]
+        var kit: KitDraft
+        var limits: TripLimits
+    }
+
+    /// Is anything on the page changed and not saved (0.92)? A swipe down then asks first.
+    private var thingChanged: Bool {
+        guard let atLoad else { return false }
+        let now = ThingKept(draft: draft, onLists: onLists, weightText: weightText, careEvery: careEvery,
+                            careNotes: careNotes, sections: sections, kit: kit, limits: limits)
+        return now != atLoad || !newSections.isEmpty || !newTemplates.isEmpty
+            || sectionEdits.values.contains { !$0.isEmpty } || choiceLists.values.contains { !$0.isEmpty }
     }
 
     /// The thing's own "Only on some trips", in the Templates violet as the template pills and

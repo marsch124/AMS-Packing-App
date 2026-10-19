@@ -909,9 +909,9 @@ struct TemplatePage: View {
         .onChange(of: canArrange) { _, offered in if !offered { endArranging() } }
         // While arranging, the page is not swiped away — a drag that strays to its top
         // would close it mid-move — and the iPhone's own ⌘. (which closes an untouched
-        // sheet by itself) leaves Escape to Arrange. Done and Cancel still close it. Otherwise
-        // a swipe down is Cancel (0.92), as on a thing's page.
-        .interactiveDismissDisabled(arranging)
+        // sheet by itself) leaves Escape to Arrange. Done and Cancel still close it. With
+        // something changed, a swipe down asks first (0.92, the app's rule; spec 06 §20a).
+        .asksBeforeDiscarding(page.changed, holds: arranging) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("template-detail")
         #if os(macOS)
@@ -1232,6 +1232,14 @@ struct RowEditor: View {
     @State private var choiceLists: [String: ChoiceEdits] = [:]
     @State private var sectionEdits = SectionEdits()
     @State private var bagPage: String?
+    /// The row's answers as the editor opened (0.92): with any of them changed, a swipe down asks first.
+    @State private var atOpen: RowKept?
+    private struct RowKept: Equatable { var bag, when, qty, note, section: String; var limits: TripLimits }
+    private var rowChanged: Bool {
+        guard let atOpen else { return false }
+        return RowKept(bag: bag, when: when, qty: qty, note: note, section: section, limits: limits) != atOpen
+            || !pendingSection.isEmpty || choiceLists.values.contains { !$0.isEmpty } || !sectionEdits.isEmpty
+    }
 
     /// The row of a section typed here and not made yet.
     static let newSectionKey = "\u{0}new-section"
@@ -1343,7 +1351,10 @@ struct RowEditor: View {
             bag = f.membership.container; when = f.membership.phase
             qty = f.membership.qty; note = f.membership.note; section = f.membership.section
             limits = Library.effectiveLimits(f.membership, thing: f.thing)
+            if atOpen == nil { atOpen = RowKept(bag: bag, when: when, qty: qty, note: note, section: section, limits: limits) }
         }
+        // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a).
+        .asksBeforeDiscarding(rowChanged) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("row-detail")
         #if os(macOS)

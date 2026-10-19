@@ -201,7 +201,8 @@ struct TripSettingsScreen: View {
         .onChange(of: [quick ? "quick" : "trip", transport, season, catering, weatherOn.sorted().joined(separator: ",")]) { _, _ in
             if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
         }
-        .interactiveDismissDisabled(loaded && snapshot() != opened)
+        // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a).
+        .asksBeforeDiscarding(loaded && snapshot() != opened) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("tripset-screen")
         #if os(macOS)

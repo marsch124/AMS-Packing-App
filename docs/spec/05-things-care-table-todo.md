@@ -953,7 +953,8 @@ go" (`TripScreen`), the trip review (`ReviewScreen`) and Pack to go home (`WayHo
 "Cancel" (`thing-cancel`: nothing is saved; Escape presses it too, 0.62 — never Save, so a name typed is not kept),
 "Save" (`thing-save`: saves and closes, unless the name is refused; ⌘S — the Mac's Thing menu, and since 0.92 the
 button's own on an iPhone keyboard), "Delete the thing" (closes, then deletes), or
-(iPhone) a swipe down = Cancel. "Duplicate this thing" (0.92, item 18b) saves and turns the same page to the copy. Only the thing's page closes, not the screen it was opened from. The screen behind is not
+(iPhone) a swipe down — closes while nothing is changed, and with something changed asks "Discard changes?" first
+(Discard = Cancel, Keep editing stays; `ThingKept`, (0.92, the app's rule, spec 06 §20a); until 0.92 the swipe was Cancel without a word). "Duplicate this thing" (0.92, item 18b) saves and turns the same page to the copy. Only the thing's page closes, not the screen it was opened from. The screen behind is not
 rebuilt, so it is exactly where it was (the table keeps its scroll position). On the Mac (0.68) the page can also stay
 open and go on: ⌘N saves and turns it into a NEW thing's page, ⌘↓ ⌘↑ save and show the next or previous thing of the
 list it was opened from (Your things, the table) — see **Keyboard (Mac)** below. `ThingEditor(itemId:order:made:)`:
@@ -1886,11 +1887,13 @@ goes completely (27 Sep, "I thought it would just be a deleted bag"). "Goes in t
 **How it is reached and left.** Your bags → a bag's name; since 0.90 also a bag's round pen on a trip (spec 03, the
 Bags card; spec 07 part 17, the stations) and Duplicate on another bag's page (below). A sheet; "Done" (`bag-done`;
 ⌘S too since 0.92) writes what the page holds and closes; "Cancel" (`bag-cancel`, 0.92; Escape too — Escape was Done
-from 0.62 to 0.91) closes and writes nothing (**0.92 — Cancel**, below); a swipe down writes and closes (0.91). If the
+from 0.62 to 0.91) closes and writes nothing (**0.92 — Cancel**, below); a swipe down closes while nothing is held, and with something
+held asks "Discard changes?" first — Discard = Cancel, Keep editing stays (0.92, the app's rule, spec 06 §20a) (from 0.91 until then a
+swipe wrote everything and closed). If the
 bag no longer exists the page closes itself on appear. "Delete …" closes it.
 **Done keeps a typed name (0.90):** a name typed and not yet taken is taken first (as Rename would); refused, the
-page stays and says why under the name — so a copy is named and closed in one go. A swipe still leaves a typed name
-that was not taken (Rename, Return) unrenamed.
+page stays and says why under the name — so a copy is named and closed in one go. A typed name counts as held: a swipe
+asks first, and Discard leaves it unrenamed.
 **Which bag (0.90):** `BagDetail` holds the bag SHOWN and draws `BagPage` for it with `.id(shown)` — Duplicate turns the
 same sheet to the copy, and each bag gets a fresh page (nothing typed on the original's, nor its delete question,
 follows onto the copy's).
@@ -2025,12 +2028,15 @@ typed on a ledger, written on leaving).
   again as it gives up the keys on the way out) — then, when a pocket was changed on the page, `putBackPockets` in a
   change that does not stamp Last edited (`LibraryModel.change(stamping: false)`: the bag reads as it did, its Last
   edited too); then the page closes. **Done** writes the ledger itself (`flush`) and closes. The page's own write on
-  leaving (`onDisappear`) is the iPhone's only — it is how a swipe writes; on the Mac the sheet ALSO closes itself on
-  Escape, so a write there turned Escape into Done (the Mac probe of 19 Oct 2026: "Escape kept the max typed").
+  leaving (`onDisappear`, the iPhone's, how a swipe wrote) is gone since the merge with Cancel everywhere: a swipe with
+  something held asks first and Discard is this Cancel (0.92, the app's rule, spec 06 §20a); on the Mac the sheet ALSO closes itself on Escape,
+  so a write there had turned Escape into Done (the Mac probe of 19 Oct 2026: "Escape kept the max typed").
 - **What the page holds** (so Cancel forgets it): every typed field (0.91); the desk's pills — colour, type, size
   (item 3c); Goes in the cabin and Has an AirTag (items 3, 3b); a name taken with Rename or Return (item 1). Each is
   shown at once from the page's own state and put on the ledger (`hold`): written in ONE change when the page is left
-  by Done, ⌘S or a swipe down, or the app goes away, and first for Duplicate and Its details.
+  by Done or ⌘S, or the app goes away, and first for Duplicate and Its details. The ledger tells the page once, the
+  first time it holds something (`EditDraft.onFirstHold` → `touched`; again after Its details writes it), so a swipe
+  knows to ask without a redraw on every key.
 - **Put back**: the pockets — each Add, rename, ✕ and drag is written as it is made (a rename or a removal reaches the
   things in the bag and the trip lines packed in it), so the page keeps the pockets as it found them
   (`Library.keepPockets(bagId:)` on appear: the bag's list and Last edited, the usual pocket of every thing in it, both
@@ -2044,9 +2050,12 @@ typed on a ledger, written on leaving).
   to the copy (a fresh page). Duplicate writes the ledger first and then a name typed and not taken (the newest word on
   the name wins over one taken before it). The app put in the background writes the ledger (0.91) — Cancel after that
   has nothing to forget.
-- **The swipe** (iPhone): still writes (0.91 — his test sheet asked that nothing typed be lost, and
-  `testABagsPageKeepsEverythingTypedFieldAfterField` guards it). A thing's page's swipe is a Cancel and stays so: the two
-  differ on purpose; changing either is his call.
+- **The swipe** (iPhone): since the merge with Cancel everywhere (0.92) it follows the app's one rule (spec 06 §20a):
+  nothing held — it closes; something held (`touched`, or the pockets touched) — it asks "Discard changes?": Discard is
+  this Cancel, Keep editing stays. Until then it wrote everything (0.91 — his test sheet asked that nothing typed be
+  lost; nothing is lost without a word now either) while a thing's page's swipe was a Cancel without a word.
+  `testABagsPageKeepsEverythingTypedFieldAfterField` guards it: a swipe asks, Discard keeps nothing, Keep editing then
+  Done keeps all seven.
 - Tests: model `PocketsTests.testABagsPocketsArePutBackAsThePageFoundThem` (renamed, moved, one removed, one added, a
   thing put in the new one, a line's pocket out and home — all put back, the library exactly as before, Last edited
   too) — seen RED with the line's pocket left out of the put-back ("the line's pocket was not put back"). UI

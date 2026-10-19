@@ -1719,7 +1719,8 @@ beside the count until then) opens it as a sheet
 **Cancel** (no change; **Escape** too, ⌘. on an iPhone keyboard — 0.62), **Save changes** (when nothing
 is missing), **Start it** (Start again), **Clear the ticks** (0.79, Clear every tick — below), or a swipe down on the iPhone (= Cancel) — but only while
 nothing has been changed: once anything differs from what the sheet opened with, the swipe no longer
-closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be pressed. Screen id
+closes it (`interactiveDismissDisabled`, 0.62) — since 0.92 it asks "Discard changes?": Discard = Cancel, Keep editing
+stays (the app's rule, spec 06 §20a; until then it held still without a word and Cancel or Save had to be pressed). Screen id
 `tripset-screen`; Mac minimum 540 × 600.
 
 ### What is on screen
@@ -2813,7 +2814,8 @@ once the trip has started — On site or later — or at any time on a trip with
 or a tapped "Welcome home — review …" (spec 07 part 16). Sheet; **Cancel** (outlined muted, `review-cancel`; Escape too, 0.62; top LEFT since 0.92 — it stood at the
 right of the title until then) closes without saving; **Save review** (at the foot, always in sight; ⌘S since 0.92)
 saves and closes. A swipe down on the iPhone closes it only while nothing is marked,
-added or typed (0.62: marks made in an unsaved review were lost to a swipe). Screen id `review-detail`;
+added or typed (0.62: marks made in an unsaved review were lost to a swipe); otherwise, since 0.92, it asks "Discard
+changes?" — Discard = Cancel, Keep editing stays (spec 06 §20a). Screen id `review-detail`;
 Mac minimum 520 × 600.
 
 ### What is on screen

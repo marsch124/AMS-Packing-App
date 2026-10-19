@@ -387,11 +387,14 @@ struct GrabScreen: View {
             if let now { lastSeen = now }
             else if leaving == nil, let lastSeen { leaving = lastSeen; dismiss() }
         }
-        #if os(macOS)
-        // While editing, Escape is the edit's Cancel and the list stays open (0.92): the Mac's own
-        // Escape would close the whole sheet (seen in the 0.92 probe).
-        .interactiveDismissDisabled(editing)
-        #endif
+        // An edit with something changed: a swipe down asks first, and Discard closes the list
+        // without it (0.92, the app's rule; spec 06 §20a). On the Mac the sheet holds still while
+        // editing, so Escape is the edit's Cancel and the list stays open: the Mac's own Escape would
+        // close the whole sheet (seen in the 0.92 probe).
+        .asksBeforeDiscarding(editing && (draft != list.lines || draftSometimes != onlySometimes),
+                              holds: GrabScreen.holdsWhileEditing && editing) {
+            cancelEdits(); dismiss()
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("grab-detail")
         #if os(macOS)
@@ -816,6 +819,12 @@ struct GrabScreen: View {
         .reorderStep("\(key)", into: $heights)
         .reorderLift(carried, key: "\(key)", tint: tint)
     }
+
+    #if os(macOS)
+    static let holdsWhileEditing = true
+    #else
+    static let holdsWhileEditing = false
+    #endif
 
     /// Cancel while editing (0.92): the edit is thrown away — nothing was written while it lasted —
     /// and the list is shown as it was.

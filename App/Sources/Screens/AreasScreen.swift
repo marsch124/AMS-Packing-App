@@ -92,6 +92,8 @@ struct AreasScreen: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
+        // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a).
+        .asksBeforeDiscarding(!edits.isEmpty) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("areas-detail")
         #if os(macOS)
@@ -353,7 +355,7 @@ struct AreasScreen: View {
 /// A template's Activity area on its page (0.89): a pick-one drop-down — "Activity area" to
 /// the left of the field, as Counts as above it — of Always packed, HIS areas in his order
 /// under his names, and No activity area. A choice files the template at once
-/// (`setTemplateArea`), as everything on a template's page is saved as it goes. At the foot of
+/// (`setTemplateArea`) — on the template page's copy since 0.92, kept by its Done. At the foot of
 /// the list "A new area" makes one at the end of his list and files the template in it — one
 /// he already has is simply chosen. Renaming, moving and removing areas is the Activity areas
 /// page's (Templates tab), not this list's.
