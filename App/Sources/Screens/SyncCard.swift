@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 #if os(iOS)
 import UIKit
 #else
@@ -14,7 +15,8 @@ import PackingLibrary
 /// direct test of each road.
 struct SyncCard: View {
     @EnvironmentObject var model: LibraryModel
-    @State private var check: SyncCheck?
+    /// What the store's record said at the last look (0.92: shared with Home's sync light).
+    @State private var seen: SyncWatch.Seen? = SyncWatch.last
     @State private var said = ""
 
     static var device: String {
@@ -27,8 +29,11 @@ struct SyncCard: View {
     static var other: String { device == "Mac" ? "iPhone" : "Mac" }
 
     var body: some View {
-        let c = check
-        let state = SyncCheck.state(usesICloud: model.usesICloud, check: c)
+        let on = seen?.on ?? SyncWatch.on(model)
+        let c = seen?.check
+        let now = seen?.now ?? Date()
+        // The pill says what Home's light says (0.92): the same rules, words and colours.
+        let state = SyncCheck.light(usesICloud: on, check: c, now: now, awake: SyncWatch.awake)
         let stuck = state == .stuck
         // Compact, as Settings' cards are (8 points between its lines, 14 inside, until 0.67).
         VStack(alignment: .leading, spacing: 4) {
@@ -38,20 +43,28 @@ struct SyncCard: View {
                 Text(state.word)
                     .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 10).padding(.vertical, 3)
-                    .background(Capsule().fill(state == .working ? AppSection.events.color
-                                               : stuck ? AppSection.actions.color : Theme.muted))
+                    .background(Capsule().fill(SyncLight.color(state.colour)))
                     .accessibilityIdentifier("sync-state")
             }
-            if !model.usesICloud {
+            if !on {
                 quiet("This copy of the app keeps its library on this device only.", id: "sync-off")
             } else if let c {
                 quiet("Sent: \(SyncCard.when(c.lastSent)) \u{00B7} received: \(SyncCard.when(c.lastReceived))", id: "sync-times")
                 if c.notSentTotal > 0 {
-                    loud("Not in iCloud yet: \(c.notSentWords).", id: "sync-notsent")
+                    // Orange while it is on its way; red once it has waited too long (0.92).
+                    let late = c.waitedTooLong(now: now)
+                    line("Not in iCloud yet: \(c.notSentWords).", id: "sync-notsent",
+                         tone: late ? AppSection.actions.color : AppSection.care.color)
+                    if let w = c.waitedWords(now: now) { loud(w, id: "sync-waited") }
                 }
                 if let p = c.problem {
                     loud("The last \(p.sending ? "send" : "receive") failed \(SyncCard.when(p.at)): \(SyncCheck.plain(domain: p.domain, code: p.code)).",
                          id: "sync-problem")
+                }
+                // A send or receive with no end (0.92): running is quiet; hung (ten minutes) is loud and
+                // says what to do. Until 0.92 a receive that never ended said "failed".
+                if let r = c.runningWords(now: now, awake: SyncWatch.awake) {
+                    if r.hung { loud(r.words, id: "sync-running") } else { quiet(r.words, id: "sync-running") }
                 }
             } else {
                 // iCloud is on, but this device cannot read its own record of it: say
@@ -84,8 +97,17 @@ struct SyncCard: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(stuck ? AppSection.actions.color : Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sync-card")
-        .onAppear(perform: refresh)
+        // A fresh look now and every 30 s while the card is shown (0.92), after a change of the
+        // library and when the store says it changed — as Home's light.
+        .task { await SyncWatch.keepLooking(model) { seen = $0 } }
         .onReceive(model.$library.debounce(for: .seconds(1), scheduler: RunLoop.main)) { _ in refresh() }
+        .onReceive(SyncWatch.storeChanged) { _ in refresh() }
+    }
+
+    private func line(_ text: String, id: String, tone: Color) -> some View {
+        Text(text).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tone)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier(id)
     }
 
     private func quiet(_ text: String, id: String) -> some View {
@@ -101,8 +123,7 @@ struct SyncCard: View {
     }
 
     private func refresh() {
-        guard model.usesICloud else { return }
-        check = SyncCheck.read()
+        Task { seen = await SyncWatch.look(model) }
     }
 
     /// Check in: a small note that travels like everything else. Then look again.
@@ -116,7 +137,7 @@ struct SyncCard: View {
     }
 
     private func copyDetails() {
-        var text = check?.details(device: SyncCard.device, version: AppInfo.version)
+        var text = seen?.check?.details(device: SyncCard.device, version: AppInfo.version)
             ?? "Sync details · \(SyncCard.device) · \(AppInfo.version)\nNo iCloud record on this device."
         text += "\nThis device holds: " + model.library.records().reduce(into: [String: Int]()) { $0[$1.table.rawValue, default: 0] += 1 }
             .sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }.joined(separator: ", ")
@@ -133,4 +154,189 @@ struct SyncCard: View {
     static func when(_ date: Date?) -> String { SyncCheck.when(date) }
 
     static func when(iso: String) -> String { SyncCheck.when(iso: iso) }
+}
+
+/// What the store's own record of iCloud says, looked at for the sync card and Home's sync light
+/// (0.92). Read-only, off the main thread — about 8 ms on a library of his size (measured on a copy
+/// of his Mac's store, 19 Oct 2026).
+enum SyncWatch {
+    /// One look: iCloud on or not, the record (nil = it could not be read), and when.
+    struct Seen: Equatable {
+        var on: Bool
+        var check: SyncCheck?
+        var now: Date
+    }
+
+    /// The last look, app-wide: a screen that comes back shows it at once, and looks again.
+    static var last: Seen?
+
+    /// When the app last came to the front. The iPhone pauses the app in the background, and a
+    /// receive it was in the middle of waits with it: its ten minutes before "hung" count from
+    /// here (`SyncCheck.hung`). The Mac's app is never paused, so there it is its first look.
+    /// The UI tests' invented record is judged as it is (`-syncLight`).
+    static var awake: Date = {
+        #if os(iOS)
+        NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification,
+                                               object: nil, queue: .main) { _ in awake = Date() }
+        #endif
+        return invented != nil ? .distantPast : Date()
+    }()
+
+    /// The store says it changed — a save, iCloud sending or bringing something (a second's calm first).
+    static let storeChanged = NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
+        .debounce(for: .seconds(1), scheduler: RunLoop.main)
+
+    /// Does this copy of the app sync through iCloud?
+    static func on(_ model: LibraryModel) -> Bool { invented?.on ?? model.usesICloud }
+
+    /// A look, the reading done off the main thread.
+    @MainActor
+    static func look(_ model: LibraryModel) async -> Seen {
+        let on = on(model)
+        _ = awake
+        let check = on ? await Task.detached(priority: .utility) { SyncWatch.read() }.value : nil
+        let seen = Seen(on: on, check: check, now: Date())
+        last = seen
+        return seen
+    }
+
+    /// A look now, and every 30 s until the screen goes (the task is cancelled with it).
+    @MainActor
+    static func keepLooking(_ model: LibraryModel, _ show: @escaping (Seen) -> Void) async {
+        while !Task.isCancelled {
+            show(await look(model))
+            try? await Task.sleep(for: .seconds(30))
+        }
+    }
+
+    private static func read() -> SyncCheck? { invented.map { $0.check } ?? SyncCheck.read() }
+
+    /// UI tests only (`-syncLight insync|sending|receiving|hung|failed|waited|unknown|off`, with a
+    /// `-uiTesting…` library): an invented record, its times counted back from the launch. The tests'
+    /// libraries keep everything on the device, so without it the light never shows there.
+    static let invented: (on: Bool, check: SyncCheck?)? = {
+        let args = ProcessInfo.processInfo.arguments
+        guard AMSPackingApp.testing, let n = args.firstIndex(of: "-syncLight"), n + 1 < args.count else { return nil }
+        let now = Date()
+        func ago(_ minutes: Double) -> Date { now.addingTimeInterval(-minutes * 60) }
+        let good = [SyncCheck.Event(type: 2, ok: true, at: ago(3)), SyncCheck.Event(type: 1, ok: true, at: ago(2))]
+        switch args[n + 1] {
+        case "insync": return (true, SyncCheck(events: good))
+        case "sending": return (true, SyncCheck(events: good, notSent: ["trips": 1, "entries": 3], waitingSince: ago(0.5)))
+        case "receiving": return (true, SyncCheck(events: [SyncCheck.Event(type: 1, ok: false, at: ago(1), unfinished: true)] + good))
+        case "hung":
+            // The last good ones came before it: a later good receive would leave this one behind.
+            return (true, SyncCheck(events: [SyncCheck.Event(type: 1, ok: false, at: ago(12), unfinished: true),
+                                             SyncCheck.Event(type: 2, ok: true, at: ago(14)), SyncCheck.Event(type: 1, ok: true, at: ago(13))]))
+        case "failed":
+            return (true, SyncCheck(events: [SyncCheck.Event(type: 2, ok: false, at: ago(1), domain: "CKErrorDomain", code: 25)] + good))
+        case "waited":
+            return (true, SyncCheck(events: [SyncCheck.Event(type: 2, ok: true, at: ago(90)), SyncCheck.Event(type: 1, ok: true, at: ago(2))],
+                                    notSent: ["items": 2], waitingSince: ago(45)))
+        case "unknown": return (true, nil)
+        default: return (false, nil)
+        }
+    }()
+}
+
+/// The sync light on Home (0.92) — his yes of 19 Oct 2026 to "a small dot — green when both devices
+/// are in step, orange while changes are waiting. A tap opens Sync details, so you see problems like
+/// last week's without digging." Under This Device's numbers: a dot and a word or two
+/// (`SyncCheck.light`): green In sync, orange Sending… or Receiving…, red Stuck, grey Can't tell.
+/// Not there at all when this copy keeps its library on the device only (nothing to sync). A tap
+/// opens Sync details — the sync card of Settings, in a sheet. It looks again every 30 s while Home
+/// is shown, when the app comes back, and a second after the store changed.
+struct SyncLight: View {
+    @EnvironmentObject var model: LibraryModel
+    @State private var seen: SyncWatch.Seen? = SyncWatch.last
+    @State private var details = false
+
+    /// The dot's colour — the section colours the app already uses for good (Trips green), on its
+    /// way (Care orange) and wrong (To do red); grey in `muted`.
+    static func color(_ c: SyncCheck.Light.Colour) -> Color {
+        switch c {
+        case .green: return AppSection.events.color
+        case .orange: return AppSection.care.color
+        case .red: return AppSection.actions.color
+        case .grey: return Theme.muted
+        }
+    }
+
+    var body: some View {
+        if SyncWatch.on(model) {
+            Group {
+                if let seen, seen.on { light(seen) } else { Color.clear.frame(width: 0, height: 0) }
+            }
+            .task { await SyncWatch.keepLooking(model) { seen = $0 } }
+            .onReceive(SyncWatch.storeChanged) { _ in Task { seen = await SyncWatch.look(model) } }
+            .sheet(isPresented: $details) { SyncDetailsSheet().environmentObject(model) }
+        }
+    }
+
+    private func light(_ seen: SyncWatch.Seen) -> some View {
+        let light = SyncCheck.light(usesICloud: true, check: seen.check, now: seen.now, awake: SyncWatch.awake)
+        let tone = SyncLight.color(light.colour)
+        let spoken = SyncCheck.spoken(light, check: seen.check, now: seen.now, awake: SyncWatch.awake)
+        return Button { details = true } label: {
+            HStack(spacing: 6) {
+                Circle().fill(tone).frame(width: 9, height: 9)
+                // Calm: the words grey — red only when it is stuck.
+                Text(light.word)
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(light == .stuck ? tone : Theme.muted)
+                    .lineLimit(1)
+                SVGPath.path("M9 6l6 6-6 6")
+                    .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                    .onGrid(10)
+                    .foregroundStyle(Theme.faint)
+            }
+            .frame(minHeight: Metrics.chip)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .padding(.top, 4)
+        .accessibilityLabel("iCloud sync")
+        #if DEBUG
+        // The tests' only way to see the dot's colour: the colour it is drawn in, then the words.
+        .accessibilityValue("\(light.colour.rawValue) \u{00B7} \(spoken)")
+        #else
+        .accessibilityValue(spoken)
+        #endif
+        .accessibilityHint("Opens the sync details.")
+        .accessibilityIdentifier("home-sync-light")
+    }
+}
+
+/// Sync details, opened from Home's sync light (0.92): the sync card of Settings — the same card,
+/// the same lines, Sync now and Copy details for Claude — in a sheet, with Done.
+struct SyncDetailsSheet: View {
+    @EnvironmentObject var model: LibraryModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sync details").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.settings.color)
+                    .accessibilityIdentifier("sync-details-title")
+                Spacer()
+                Button("Done") { dismiss() }
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
+                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does
+                    .accessibilityIdentifier("sync-details-done")
+            }
+            .padding(16)
+            ScrollView {
+                SyncCard().environmentObject(model)
+                    .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("sync-details")
+        #if os(macOS)
+        .frame(minWidth: 460, minHeight: 380)
+        #else
+        .presentationDetents([.medium, .large])
+        #endif
+    }
 }

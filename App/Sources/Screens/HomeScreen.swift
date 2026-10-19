@@ -134,7 +134,10 @@ struct HomeScreen: View {
                 VStack(alignment: .leading, spacing: 10) {
                     // The heading inside its card, above the name (0.91 — his words: "I would also
                     // like to have the text "Create New Trip" within the "Name your trip" frame.").
-                    Text("Create new trip").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                    // A tad smaller since 0.92 — his words (19 Oct 2026): "The text "Create new trip" on the
+                    // home page, could we please make it a tad smaller? Not much, but a bit smaller." One
+                    // step down Apple's text styles, Title 3 → Headline, still bold; Grab and go stays Title 3.
+                    Text("Create new trip").font(.system(.headline, weight: .bold)).foregroundStyle(Theme.ink)
                         .accessibilityIdentifier("home-create-heading")
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
@@ -334,6 +337,8 @@ struct HomeScreen: View {
 
     /// This Device: how many trips, things and templates. His marks on the Mac: the heading
     /// struck out and written down the SIDE instead, and Trips and Templates swapped over.
+    /// Under the numbers, the sync light (0.92, `SyncLight`): whether this device is in step
+    /// with the other — it is about this device, so it sits in its block.
     private var thisDevice: some View {
         HStack(spacing: 10) {
             Text("This Device")
@@ -343,12 +348,17 @@ struct HomeScreen: View {
                 .rotationEffect(.degrees(-90))
                 .frame(width: 16)
                 .accessibilityIdentifier("device-heading")
-            CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
-            CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
-            // The templates Your templates shows — not the hidden bags list or the
-            // web app's old bin, which made this number the higher one (5 Oct 2026).
-            CountTile(number: TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count },
-                      label: "Templates", id: "count-templates", color: AppSection.templates.color)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 10) {
+                    CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
+                    CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
+                    // The templates Your templates shows — not the hidden bags list or the
+                    // web app's old bin, which made this number the higher one (5 Oct 2026).
+                    CountTile(number: TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count },
+                              label: "Templates", id: "count-templates", color: AppSection.templates.color)
+                }
+                SyncLight()
+            }
         }
     }
 

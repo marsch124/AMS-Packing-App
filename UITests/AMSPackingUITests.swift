@@ -4009,6 +4009,49 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "sync-card")
     }
 
+    /// The sync light on Home (0.92) — his yes of 19 Oct 2026 to "a small dot — green when both
+    /// devices are in step, orange while changes are waiting. A tap opens Sync details, so you see
+    /// problems like last week's without digging." The tests keep the library on the device, so with
+    /// no iCloud there is no light at all; `-syncLight <case>` hands the app an invented record of
+    /// iCloud (`SyncWatch.invented`). Hung = a receive with no end for 12 minutes: red, and the
+    /// details say what to do — until 0.92 such a receive said "failed".
+    func testTheSyncLightOnHomeSaysHowICloudIsGoing() {
+        var app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertTrue(app.staticTexts["count-trips"].waitForExistence(timeout: 5), "no This Device on Home")
+        XCTAssertFalse(app.buttons["home-sync-light"].waitForExistence(timeout: 2), "a sync light while iCloud is off")
+        for (state, says) in [("insync", "green \u{00B7} In sync"), ("sending", "orange \u{00B7} Sending to iCloud")] {
+            app = launch("-uiTesting", ["-syncLight", state])
+            let light = app.buttons["home-sync-light"]
+            XCTAssertTrue(light.waitForExistence(timeout: 10), "no sync light on Home for \(state)")
+            XCTAssertTrue(waitUntil { (light.value as? String ?? "").hasPrefix(says) },
+                          "the light for \(state) does not say '\(says)': '\(light.value as? String ?? "")'")
+            // Under This Device's numbers.
+            XCTAssertGreaterThan(light.frame.minY, app.staticTexts["count-trips"].frame.maxY, "the light is not under the numbers")
+            bringIntoView(app, light)
+            shot(app, "synclight-\(state)")
+        }
+        app = launch("-uiTesting", ["-syncLight", "hung"])
+        let light = app.buttons["home-sync-light"]
+        XCTAssertTrue(light.waitForExistence(timeout: 10), "no sync light on Home for a hung receive")
+        let said = light.value as? String ?? ""
+        XCTAssertTrue(said.hasPrefix("red \u{00B7} Stuck") && said.contains("has hung since"),
+                      "a receive running 12 minutes is not stuck: '\(said)'")
+        bringIntoView(app, light)
+        shot(app, "synclight-hung")
+        tap(app, id: "home-sync-light")
+        XCTAssertTrue(appears(app, "sync-details", timeout: 5), "the light did not open Sync details")
+        let state = app.staticTexts["sync-state"], running = app.staticTexts["sync-running"]
+        XCTAssertTrue(running.waitForExistence(timeout: 5), "Sync details do not say the receive has hung")
+        XCTAssertEqual(words(state), "Stuck", "the card's pill does not say what the light says")
+        XCTAssertTrue(words(running).contains("has hung since") && words(running).hasSuffix("quit Packing and open it again."),
+                      "the details do not say what to do: '\(words(running))'")
+        XCTAssertFalse(app.staticTexts["sync-problem"].exists, "a receive with no end was called a failure")
+        shot(app, "synclight-hung-details")
+        tap(app, id: "sync-details-done")
+        XCTAssertTrue(disappears(app, "sync-details", timeout: 5), "Done did not close Sync details")
+    }
+
     /// Field test 7.3/6.1 (3 Oct 2026): the trip's own bag says whether it goes in the cabin,
     /// and the cabin check follows at once. (-uiTestingChecks: a plane trip, a knife and
     /// sun cream in the carry-on.) And Quick says that Plane still turns on the airport checks
@@ -6750,6 +6793,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(box.contains(createHeading.frame), "Create new trip at \(createHeading.frame) is outside its card \(card)")
         XCTAssertTrue(box.contains(name.frame), "the name at \(name.frame) is outside Create new trip's card \(card)")
         XCTAssertLessThanOrEqual(createHeading.frame.maxY, name.frame.minY + 1, "the heading is not above the name")
+        // A tad smaller than Grab and go since 0.92 — his words (19 Oct 2026): "could we please make it a tad
+        // smaller? Not much, but a bit smaller." One text style down; Grab and go keeps its own.
+        XCTAssertLessThan(createHeading.frame.height, heading.frame.height - 1,
+                          "Create new trip is not smaller than Grab and go: \(createHeading.frame.height) vs \(heading.frame.height) pt")
+        bringIntoView(app, createHeading)
+        shot(app, "home92-create")
 
         // Full trip | Quick: as wide as the name field, edge to edge.
         XCTAssertTrue(appears(app, "trip-kind-track", timeout: 5), "Full trip | Quick has no track")

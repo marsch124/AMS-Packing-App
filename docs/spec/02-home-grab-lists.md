@@ -16,7 +16,7 @@ is covered by another file. This file covers everything else on Home and everyth
   back?"), the Action
   button's menu **"Which grab list?"**, and sharing a grab list;
 - the countdown card to the next trip;
-- the **This Device** count tiles;
+- the **This Device** count tiles, and under them (0.92) the **sync light** (section 12b);
 - the three Shortcuts actions that open a place (App Intents) — a fourth, "Where is my …?" (0.69), answers in words and opens nothing (spec 06 §3b);
 - (0.86) the grab lists under the app icon — held on the iPhone's Home Screen — and in the Mac's Dock icon menu (section 13b);
 - packing reminders (Settings → **Remind me to pack**; its code lives in `Countdown.swift` and
@@ -315,8 +315,8 @@ field above." (The fourth is the Create new trip file's, spec 03.)
 3. **The This Device row** (section 12, `thisDevice`) — right under the countdown card, or right under Grab and
    go's frame when no trip is ahead (0.91, his "directly under the trip list" — the trip on Home is the countdown
    card). Until 0.91 it was Home's last line, under Create new trip, with 8 pt top padding.
-4. **Create new trip's card** (`homeCard(id: "home-create-card")`), its heading "Create new trip" (Title 3 bold,
-   ink, `home-create-heading`) now its FIRST line, above the name (0.91; until then above the card, 8 pt top
+4. **Create new trip's card** (`homeCard(id: "home-create-card")`), its heading "Create new trip" (**Headline**
+   bold since 0.92 — Title 3 bold in 0.91, one step bigger; "Grab and go" stays Title 3 — ink, `home-create-heading`) now its FIRST line, above the name (0.91; until then above the card, 8 pt top
    padding). See the Create new trip file.
 
 **Sheets attached to Home** (all on the one `HomeScreen` view):
@@ -329,6 +329,7 @@ field above." (The fourth is the Create new trip file's, spec 03.)
 | Grab Lists | "Grab Lists" | `GrabCollectionScreen()` |
 | Which grab list? | `model.grabMenuOpen` set (the request, cleared at once) → the local `menuShown` | `GrabMenuScreen()` |
 | One grab list | a tile tap; `model.grabToOpen` | `GrabScreen(listId:)` |
+| Sync details (0.92) | a tap on the sync light (section 12b) | `SyncDetailsSheet()` — attached to the light itself (`SyncLight`), not to `HomeScreen`, and not part of `whenFree` |
 
 Open-requests from outside are handled in `HomeScreen` with `onChange(…, initial: true)`:
 - `grabToOpen`: it is set back to `nil` at once. If `library.allGrabLists()` holds that id, the list
@@ -359,7 +360,10 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
   `home-grab-heading`, `grab-lists`, `grab-0` (and on the iPhone `search-open`), each frame inside it (±1 pt);
   the heading less than 24 pt under the frame's top and above the first tile; on the Mac `search-open` above the
   frame (in the strip). `count-trips` 0–40 pt under `home-countdown` and above `home-create-card`;
-  `home-create-card` holds `home-create-heading` and `trip-name`, the heading above the name; `trip-kind-track`
+  `home-create-card` holds `home-create-heading` and `trip-name`, the heading above the name; (0.92) `home-create-heading`
+  more than 1 pt LOWER than `home-grab-heading` — a tad smaller (iPhone: Headline 21 pt against Title 3's 24), picture
+  `home92-create`; seen red with the heading back at Title 3: `XCTAssertLessThan failed: ("24.0") is not less than
+  ("23.0") - Create new trip is not smaller than Grab and go: 24.0 vs 24.0 pt`; `trip-kind-track`
   starts and ends with the name's box (±1 pt) — on the iPhone `trip-name`'s frame; 🪤 the Mac reports the text field
   itself, INSIDE the 12 pt of side padding its box has, so there the box is that frame widened by 12 at each side
   (GitHub's Mac, 19 Oct 2026: field 193…814, box and track 181…826 — the first Mac probe went red on it with the
@@ -1911,6 +1915,64 @@ device (Home is not shown at all there). UI `testHomeCountsTheTemplatesYourTempl
 **Not covered:** the Trips and Things numbers. Settings has its own per-table counts (`device-count-*`),
 tested elsewhere.
 
+## 12b. The sync light (`SyncLight`, 0.92)
+
+**Purpose and origin.** His yes (19 Oct 2026) to the idea: "Sync light on Home: a small dot — green when both
+devices are in step, orange while changes are waiting. A tap opens Sync details, so you see problems like last
+week's without digging." Last week's: on 16 Oct a receive on the Mac never ended, and only Settings' card — read
+by hand, and then wrongly as "failed" — showed anything (spec 01 §8, 0.92).
+
+**Where.** In the This Device block, under the three count tiles, starting where the first tile starts (the
+tiles and the light are one column, `VStack(spacing: 0)`; the side heading "This Device" centres on both). It is
+about THIS device being in step with the other, so it sits in that block — not beside Grab and go, which is
+about grab lists. 4 pt above it.
+
+**What is on screen.** One button, one line: a dot 9 pt across in the light's colour, 6 pt, the light's word
+(Footnote semibold, one line — `muted`, but red when Stuck), 6 pt, a small chevron (10 pt, `faint`), at least
+`Metrics.chip` tall (28 iPhone, 22 Mac). The words and colours are the model's (`SyncCheck.Light`, spec 01 §8):
+
+| Light | Dot | Word | When |
+|---|---|---|---|
+| `inSync` | Trips green `#2f9e63` | In sync | nothing waiting, nothing failed, nothing hung, and a good send or receive on record |
+| `sending` | Care orange `#dd7324` | Sending… | changes not in iCloud yet (for less than half an hour, or with a good send in it), or a send running |
+| `receiving` | Care orange | Receiving… | a receive running for less than ten minutes |
+| `stuck` | To do red `#dc3d43` | Stuck | a failure after the last good one; or a send/receive running ten minutes; or changes waiting half an hour with no good send in that half hour |
+| `unknown` | `muted` | Can’t tell | iCloud on, and the store's record cannot be read, or holds no good send or receive at all |
+| `off` | — | — | **not shown at all**: this copy keeps its library on the device (`model.usesICloud == false`) — nothing to sync, so no light (decided by the build: a grey "iCloud off" dot would be on every Home of the tests and of a debug build, and his TestFlight build always syncs). Settings' card still says "iCloud off". |
+
+**Behaviour.**
+- A tap opens **Sync details** (`SyncDetailsSheet`): "Sync details" (Title 3 bold, Settings slate,
+  `sync-details-title`) and **Done** (filled slate header button, Escape too, `sync-details-done`) over
+  Settings' own `SyncCard` — the same card, lines, Sync now and Copy details for Claude (spec 01 §8). The sheet is
+  a container `sync-details`; iPhone: medium and large detents; Mac: at least 460 × 380.
+- It looks at the store's record (`SyncWatch.look`: `SyncCheck.read()` OFF the main thread, about 8 ms on a library
+  of his size, measured on a copy of his Mac's store) when Home shows it, then every 30 s while it is on screen
+  (a `.task` loop, cancelled when Home goes), and 1 s after the store says it changed
+  (`NSPersistentStoreRemoteChange`, debounced — after a save, and after iCloud sends or brings something).
+  The last look is kept app-wide (`SyncWatch.last`), so Home coming back shows it at once and then looks again;
+  the first look ever shows nothing until it is read (no grey flash).
+- Its time rules use `SyncWatch.awake`: when the app last came to the front on the iPhone
+  (`willEnterForegroundNotification`; the iPhone pauses the app, and an unfinished receive with it, in the
+  background), else the first look — so a receive left unfinished by an earlier run gets its ten minutes again.
+- VoiceOver: label "iCloud sync", value the light in words (`SyncCheck.spoken`: "In sync", "Sending to iCloud:
+  1 trip, 3 trip lines", "Receiving from iCloud", "Stuck: Receiving from iCloud has hung since 07:57 — quit
+  Packing and open it again", "Can’t tell how the sync is going"), hint "Opens the sync details.". In DEBUG builds
+  the value starts with the dot's colour, "green · In sync" — the tests' only way to see the colour.
+
+**Test hook.** `-syncLight insync|sending|receiving|hung|failed|waited|unknown|off` with a `-uiTesting…` library
+(`SyncWatch.invented`): an invented record, its times counted back from the launch (good send 3 min and receive
+2 min ago; sending: 1 trip and 3 trip lines waiting 30 s; receiving: a receive with no end since 1 min; hung: since 12
+min, the good ones 14 and 13 min ago; failed: a send failed 1 min ago, storage full; waited: 2 things waiting 45 min,
+the last good send 90 min ago; unknown: iCloud on, no record; off: iCloud off). `awake` is then the distant past.
+
+**Tests.** UI `testTheSyncLightOnHomeSaysHowICloudIsGoing`: no `home-sync-light` with iCloud off (the tests' own
+library); with `insync` "green · In sync", with `sending` "orange · Sending to iCloud…", each under `count-trips`;
+with `hung` "red · Stuck…has hung since"; a tap opens `sync-details`, whose `sync-state` says "Stuck", whose
+`sync-running` says "…has hung since … — quit Packing and open it again." and no `sync-problem`; Done closes it.
+Pictures `synclight-insync`, `-sending`, `-hung`, `-hung-details`. Seen red twice before it was right (iPhone):
+the light shown with iCloud off — `XCTAssertFalse failed - a sync light while iCloud is off`; a tap that opened
+nothing — `XCTAssertTrue failed - the light did not open Sync details`. Model: spec 01 §8.
+
 ---
 
 ## 13. Shortcuts and the Action button (App Intents)
@@ -2305,8 +2367,9 @@ nothing on GitHub's slower runner, and would have on the phone too.
   `screen-<section>`; `screen-title`; `app-version`; `library-problem`.
 - First run: `first-run-wait`, `first-run-import`, `first-run-problem`.
 - Home: `home-grab-frame` (0.91), `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none`
-  (0.62), `home-countdown`, `device-heading`, `count-trips`, `count-things`, `count-templates`, `home-create-card`
-  (0.91), `home-create-heading`, `trip-kind-track` (0.91).
+  (0.62), `home-countdown`, `device-heading`, `count-trips`, `count-things`, `count-templates`, `home-sync-light`
+  (0.92), `home-create-card` (0.91), `home-create-heading`, `trip-kind-track` (0.91).
+- Sync details (0.92): `sync-details`, `sync-details-title`, `sync-details-done`, and the card's own (spec 01 §8).
 - Grab list:
   - `grab-detail`, `grab-title` (0.86), `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
   - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom; since 0.87
