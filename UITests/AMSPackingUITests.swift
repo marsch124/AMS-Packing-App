@@ -6389,6 +6389,52 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { (app.buttons["template-cover"].value as? String) == "hiking" }, "Suggested did not go back")
     }
 
+    /// 0.90 — his words (19 Oct 2026): "I would like the ability to change the color of the
+    /// table template icons. That way, I can more easily find the templates if they have the
+    /// color that I connect to a specific template." The icon picker leads with the colours:
+    /// Blue paints Hiking's cover on the Templates tab, is kept and ringed when the picker opens
+    /// again, and Automatic gives back the colour it had. The card says its cover's colour
+    /// (a DEBUG-only value — the tests' only way to see a colour).
+    func testATemplatesColourIsChosenAndAutomaticGivesItsOwnBack() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let card = app.buttons["template-row-1"]                    // Hiking
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        let automatic = card.value as? String ?? ""
+        XCTAssertTrue(automatic.hasPrefix("#"), "the card does not say its cover's colour: '\(automatic)'")
+        XCTAssertNotEqual(automatic, "#0a84ff", "Hiking is blue before any choice")
+
+        card.tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the picker")
+        XCTAssertTrue(app.buttons["template-colour-auto"].waitForExistence(timeout: 5), "no colours on the picker")
+        XCTAssertTrue(app.buttons["template-colour-auto"].isSelected, "Automatic is not ringed before any choice")
+        let swatches = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'template-colour-'"))
+        XCTAssertEqual(swatches.count, 12, "Automatic and eleven colours")
+        shot(app, "tmpl-colours-picker")
+        tap(app, id: "template-colour-blue")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "a colour did not close the picker")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (card.value as? String) == "#0a84ff" },
+                      "Hiking's cover is not blue: '\(card.value as? String ?? "")'")
+
+        card.tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["template-colour-blue"].isSelected }, "the chosen Blue is not ringed")
+        XCTAssertFalse(app.buttons["template-colour-auto"].isSelected, "Automatic is still ringed beside Blue")
+        tap(app, id: "template-colour-auto")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (card.value as? String) == automatic },
+                      "Automatic did not give back \(automatic): '\(card.value as? String ?? "")'")
+    }
+
     /// 0.74 (his "Add approximately 40 new icons, specifically one that is related to
     /// 'On the beach'", 12 Oct 2026): the picker holds all 90, under their six headings;
     /// a new one — the lounger under its parasol — is chosen, kept, and still there after
@@ -6964,6 +7010,49 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(isChosen(app, "thing-category", 7), "the kind of thing was not kept")
         XCTAssertTrue(isOn(app.buttons["thing-lists-2"]), "the list was not kept")
     }
+    /// 0.90 — his words (19 Oct 2026): "Add New Template from within Item view". On a thing's
+    /// page, "+ New template…" under On these templates asks New's questions; the template is a
+    /// lit pill at once, and the thing's Save makes it with the thing on it — under Other
+    /// Templates, where the Templates tab shows it.
+    func testANewTemplateIsMadeFromAThingsPageWithTheThingOnIt() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let before = words(app.staticTexts["templates-summary"])
+        XCTAssertFalse(app.staticTexts["templates-area-other"].exists, "the sample has a template with no area")
+
+        openThing(app, "Headlamp")
+        let door = app.buttons["thing-lists-new"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "no + New template on the thing's page")
+        tapVisible(app, door)
+        XCTAssertTrue(appears(app, "newlist-detail", timeout: 5), "+ New template did not open New")
+        XCTAssertTrue(app.staticTexts["newlist-made-when"].waitForExistence(timeout: 5), "New does not say it waits for Save")
+        type("Beach day", into: app.textFields["newlist-name"])
+        tap(app, id: "newlist-make")
+        XCTAssertTrue(disappears(app, "newlist-detail", timeout: 5))
+        // A–Z: Beach day, Common base, Hiking, Swim — the new one first, and lit.
+        let pill = app.buttons["thing-lists-0"]
+        XCTAssertTrue(waitUntil { self.words(pill).contains("Beach day") }, "the new template is no pill: '\(words(pill))'")
+        XCTAssertTrue(waitUntil { self.isOn(pill) }, "the new template is not ticked for the thing")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].label.contains("Beach day") },
+                      "the thing is not on the new template: '\(app.buttons["thing-row-0"].label)'")
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+
+        tab(app, "templates")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["templates-summary"]) != before },
+                      "the Templates tab did not gain a template: still '\(before)'")
+        XCTAssertTrue(app.staticTexts["templates-area-other"].waitForExistence(timeout: 5), "it is not under Other Templates")
+        XCTAssertTrue(scrollUntil(app, "template-row-3", near: "template-row-2"), "the new template is not listed")
+        tap(app, id: "template-row-3")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertEqual(cellSays(app, "template-name"), "Beach day", "row 3 is not the new template")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-item-0"]).contains("Headlamp") },
+                      "the thing is not on its new template: '\(words(app.buttons["template-item-0"]))'")
+    }
+
     /// A list reads in ITS sections, and a row can be given this list's own bag,
     /// note and section without touching the thing or the other lists.
     func testARowOfAListHasItsOwnAnswers() {

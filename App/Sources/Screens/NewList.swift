@@ -17,6 +17,10 @@ struct NewList: View {
     /// What to do with the finished list: it is saved and then opened.
     let made: (PackList) -> Void
     let library: Library
+    /// The main button's words — and a line under it saying when the template is made: on a
+    /// thing's page (0.90) it is made when the thing is saved.
+    var makeWords = "Make the template"
+    var madeWhen: String? = nil
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
@@ -84,7 +88,7 @@ struct NewList: View {
                     // Always ready, always in colour — his rule for a main button
                     // (2026-09-26); pressed too early, it says what is missing.
                     Button { make() } label: {
-                        Text("Make the template")
+                        Text(makeWords)
                             .font(.system(.body, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(minHeight: 50)
@@ -97,6 +101,13 @@ struct NewList: View {
                     // under every other field (the spec pass, 5 Oct 2026).
                     .needsLine($needs, typed: name, id: "newlist-needs")
                     .padding(.top, 24)
+                    if let madeWhen {
+                        Text(madeWhen)
+                            .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 8)
+                            .accessibilityIdentifier("newlist-made-when")
+                    }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -136,5 +147,36 @@ struct NewList: View {
         // A built-in in `group`, one of his in `extra` (0.89, ActivityAreas.swift).
         made(Library.filed(newList(name: jsTrim(name)), in: group))
         dismiss()
+    }
+}
+
+/// "+ New template…" at the foot of a thing's "On these templates" (0.90 — his words, 19 Oct
+/// 2026: "Add New Template from within Item view"): A new template, as + New on the Templates
+/// tab asks for it — its name and its activity area — and the thing goes on it. Like every
+/// other new entry on a thing's page (a place, a section) it waits for the thing's Save: the
+/// page shows it as a lit template pill, Save makes it and puts the thing on it, Cancel leaves
+/// no template behind. Owns its sheet, so the page keeps the one it has.
+struct NewTemplateDoor: View {
+    /// His templates and the ones made on the page so far, so a name he has is refused.
+    let library: Library
+    let made: (PackList) -> Void
+    @State private var open = false
+
+    var body: some View {
+        let tint = AppSection.templates.color
+        Button { open = true } label: {
+            Text("+ New template\u{2026}")
+                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
+                .background(Capsule().fill(tint.opacity(0.10)))
+                .overlay(Capsule().stroke(tint, lineWidth: 1))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("thing-lists-new")
+        .sheet(isPresented: $open) {
+            NewList(made: made, library: library, makeWords: "Add the template",
+                    madeWhen: "It is made, with this thing on it, when you save the thing.")
+        }
     }
 }

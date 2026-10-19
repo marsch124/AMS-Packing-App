@@ -118,6 +118,10 @@ struct TemplatesScreen: View {
                             Button { opened = .template(list.id) } label: { TemplateCard(list: list, use: use[list.id]) }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
+                                #if DEBUG
+                                // The tests' only way to see the colour its cover is drawn in (0.90).
+                                .accessibilityValue(Cover.fill(list))
+                                #endif
                         }
                     }
                 }
@@ -223,23 +227,29 @@ struct TemplateCard: View {
     }
 }
 
-/// A template's face: ITS colour, and the icon he chose — or the one its name
-/// suggests (approved 2 Oct 2026) — drawn in the app's own hand; else its first
-/// letter. Never an emoji, even one a template brought from the web app.
+/// A template's face: ITS colour — the one he chose (0.90), else the app's stable pick —
+/// and the icon he chose — or the one its name suggests (approved 2 Oct 2026) — drawn in
+/// the app's own hand; else its first letter. Never an emoji, even one a template brought
+/// from the web app.
 struct Cover: View {
     let list: PackList
     var size: Double = 40
 
+    /// The colour the cover is filled with (a hex) — his choice, else the app's pick.
+    static func fill(_ list: PackList) -> String { Library.coverColour(list) }
+
     var body: some View {
-        // White on the template's own colour (never teal: his colour notes).
+        // White on the template's own colour (never teal: his colour notes) — on the light
+        // ones of his palette (Bike's yellow …) their dark words instead (0.90).
+        let ink = Color(hexString: Library.coverInk(list))
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28).fill(Color(hexString: Library.coverColour(list)))
+            RoundedRectangle(cornerRadius: size * 0.28).fill(Color(hexString: Cover.fill(list)))
             if let icon = TemplateIcons.icon(Library.icon(of: list)) {
-                IconMark(path: icon.path, size: size * 0.66).foregroundStyle(.white)
+                IconMark(path: icon.path, size: size * 0.66).foregroundStyle(ink)
             } else {
                 Text(Library.coverLetter(list))
                     .font(.system(size: size * 0.46, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ink)
             }
         }
         .frame(width: size, height: size)
@@ -279,10 +289,12 @@ struct CoverDoor: View {
     }
 }
 
-/// Choose a template's icon: the 90 drawn icons in rows under their headings
-/// (Travel, Outdoors, Sport, Beach and summer, City, food and fun, Everyday — 0.74),
-/// the one it has now ringed; "Suggested" goes back to the icon its name suggests,
-/// "Letter" shows the first letter instead.
+/// Choose a template's colour and its icon. The colour first (0.90): Automatic and the
+/// palette's eleven, each a small cover in that colour, the one it has now ringed. Then the
+/// 90 drawn icons in rows under their headings (Travel, Outdoors, Sport, Beach and summer,
+/// City, food and fun, Everyday — 0.74), the one it has now ringed; "Suggested" goes back to
+/// the icon its name suggests, "Letter" shows the first letter instead. A tap on either
+/// chooses and closes.
 struct IconPickerScreen: View {
     let templateId: String
     @EnvironmentObject var model: LibraryModel
@@ -294,6 +306,9 @@ struct IconPickerScreen: View {
         let now = Library.icon(of: list)
         let chosen = model.library.chosenIcon(templateId: templateId)
         let tint = Color(hexString: Library.coverColour(list))
+        // What a ringed tile's icon and words are drawn in: the cover's own (0.90 — dark on
+        // Bike's yellow, white on the deep colours).
+        let ink = Color(hexString: Library.coverInk(list))
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Cover(list: list, size: 40)
@@ -308,13 +323,20 @@ struct IconPickerScreen: View {
             .padding(16)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 10) {
+                    // His colour for it (0.90): "the color that I connect to a specific template".
+                    SectionTitle(title: "Colour", id: "template-colour-title")
+                    TemplateColourSwatches(list: list, chosen: model.library.chosenColour(templateId: templateId)) { hex in
+                        model.change { _ = $0.setTemplateColour(id: templateId, hex: hex) }
+                        dismiss()
+                    }
+                    SectionTitle(title: "Icon", id: "template-icon-title")
                     HStack(spacing: 10) {
-                        choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint) {
+                        choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint, ink: ink) {
                             if let s = Library.suggestedIcon(for: list), let icon = TemplateIcons.icon(s) {
                                 IconMark(path: icon.path, size: 30)
                             } else { Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold)) }
                         } pick: { pick(nil) }
-                        choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint) {
+                        choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint, ink: ink) {
                             Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold))
                         } pick: { pick(Library.letterIcon) }
                     }
@@ -328,7 +350,7 @@ struct IconPickerScreen: View {
                         ForEach(rows.indices, id: \.self) { r in
                             HStack(spacing: 10) {
                                 ForEach(rows[r]) { icon in
-                                    choice(title: icon.label, on: chosen != nil && now == icon.key, id: "icon-\(icon.key)", tint: tint) {
+                                    choice(title: icon.label, on: chosen != nil && now == icon.key, id: "icon-\(icon.key)", tint: tint, ink: ink) {
                                         IconMark(path: icon.path, size: 30)
                                     } pick: { pick(icon.key) }
                                 }
@@ -351,13 +373,13 @@ struct IconPickerScreen: View {
         #endif
     }
 
-    private func choice<Mark: View>(title: String, on: Bool, id: String, tint: Color,
+    private func choice<Mark: View>(title: String, on: Bool, id: String, tint: Color, ink: Color,
                                     @ViewBuilder mark: () -> Mark, pick: @escaping () -> Void) -> some View {
         Button(action: pick) {
             VStack(spacing: 6) {
-                mark().foregroundStyle(on ? Color.white : Theme.ink).frame(height: 32)
+                mark().foregroundStyle(on ? ink : Theme.ink).frame(height: 32)
                 Text(title).font(.system(.caption, weight: .semibold))
-                    .foregroundStyle(on ? Color.white : Theme.muted)
+                    .foregroundStyle(on ? ink : Theme.muted)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity, minHeight: 74)
@@ -373,6 +395,68 @@ struct IconPickerScreen: View {
     private func pick(_ key: String?) {
         model.change { _ = $0.setTemplateIcon(id: templateId, key: key) }
         dismiss()
+    }
+}
+
+/// A template's colour (0.90 — his words, 19 Oct 2026: "I would like the ability to change
+/// the color of the table template icons. That way, I can more easily find the templates if
+/// they have the color that I connect to a specific template."): Automatic, then the palette
+/// (`TemplateColour.palette` — his six workout colours, then five calm deep ones), in plain
+/// rows of six. Each swatch is the template's own cover in that colour — its icon or letter
+/// on it — with the colour's word under it; the one in force is ringed. Ids
+/// `template-colour-auto` and `template-colour-<key>`, the one in force `.isSelected`.
+struct TemplateColourSwatches: View {
+    let list: PackList
+    /// The colour he chose (a hex), nil = Automatic.
+    let chosen: String?
+    /// nil = Automatic.
+    let pick: (String?) -> Void
+    private let columns = 6
+
+    private struct Swatch { let key: String; let name: String; let hex: String? }
+
+    var body: some View {
+        let swatches = [Swatch(key: Library.automaticColourKey, name: "Automatic", hex: nil)]
+            + TemplateColour.palette.map { Swatch(key: $0.key, name: $0.name, hex: $0.hex) }
+        let mine = chosen.map { $0.lowercased() }
+        // Plain rows, not a lazy grid (the Mac builds only what is on screen).
+        let rows = stride(from: 0, to: swatches.count, by: columns).map {
+            Array(swatches[$0..<min($0 + columns, swatches.count)])
+        }
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(rows.indices, id: \.self) { r in
+                HStack(spacing: 6) {
+                    ForEach(rows[r], id: \.key) { s in
+                        // A colour from the web app that is none of these rings none.
+                        swatch(s, on: s.hex == mine)
+                    }
+                    ForEach(0..<(columns - rows[r].count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, minHeight: 64) }
+                }
+            }
+        }
+    }
+
+    private func swatch(_ s: Swatch, on: Bool) -> some View {
+        // The template's own cover, in this colour: what the Templates tab will show.
+        var look = list
+        look.color = s.hex ?? ""
+        return Button { pick(s.hex) } label: {
+            VStack(spacing: 4) {
+                Cover(list: look, size: 34)
+                    .padding(3)
+                    .overlay(RoundedRectangle(cornerRadius: 34 * 0.28 + 3).stroke(on ? Theme.ink : Color.clear, lineWidth: 2))
+                Text(s.name)
+                    .font(.system(.caption2, weight: on ? .bold : .regular))
+                    .foregroundStyle(on ? Theme.ink : Theme.muted)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityLabel(s.name)
+        .accessibilityIdentifier("template-colour-\(s.key)")
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 

@@ -1265,7 +1265,10 @@ smaller tick circles and less space between lines").
   the ICON of each template the line comes from — `Library.lineTemplates(tripId:)`, the same templates "Sorted by
   Template" puts it under (a line made from one template and brought by another shows both) — drawn by the app's own
   template icons (`TemplateIcons`, `IconMark`, the icon the template's cover shows: his pick or the suggestion;
-  never an SF Symbol or emoji), in the Templates violet made readable day and night (`ThingDetailLine.violet`),
+  never an SF Symbol or emoji), in the Templates violet made readable day and night (`ThingDetailLine.violet`) — or,
+  since 0.90, each in the colour he chose for its template, made readable the same way (`Library.markColour`,
+  `readableHex`; spec 04 §3a: a Bike in yellow is a dark mustard on the light card, Indigo a light lavender on the
+  dark one); the "+N" stays violet,
   **15 pt on the iPhone, 12 on the Mac** (about Footnote), stroke 1.9 at that scale, 3 pt apart, in the trip's
   template order. Up to THREE icons; four or more = the first two and "+N" (Footnote semibold violet). A template
   without an icon (its cover shows a letter) is its name's FIRST WORD in Footnote semibold violet instead. Never

@@ -36,13 +36,14 @@ own functions (§13a, `applySectionEdits`).
   next-trip intents; no `onOpenURL` exists — a `#/l/` link opens the web app; in-app only by pasting).
 
 **Files covered.** `App/Sources/Screens/TemplatesScreen.swift` (Templates tab, `TemplateCard`, `Cover`, `IconMark`,
-`CoverDoor`, `IconPickerScreen`, `TemplateDetail`, `RowEditor`, `Color(hexString:)`), `App/Sources/TemplateIcons.swift`,
-`App/Sources/Screens/NewList.swift`, `App/Sources/Screens/PickThings.swift`, `App/Sources/Screens/ListsScreen.swift`,
+`CoverDoor`, `IconPickerScreen`, `TemplateColourSwatches` (0.90), `TemplateDetail`, `RowEditor`, `Color(hexString:)`),
+`App/Sources/TemplateIcons.swift`, `App/Sources/Screens/NewList.swift` (and, 0.90, `NewTemplateDoor` — a thing's page's
+door to it, spec 05 item 6b), `App/Sources/Screens/PickThings.swift`, `App/Sources/Screens/ListsScreen.swift`,
 `App/Sources/Screens/AreasScreen.swift` (his activity areas and a template's Activity area, 0.89);
 model: `PackingCore/Lists.swift`, `Memberships.swift`, `Resolve.swift`, `Grouping.swift`, `Kits.swift`,
 `ListSharing.swift`; `PackingLibrary/Library.swift` (template parts, and arranging a template's headings and
 rows — §13a), `EditLists.swift`, `Bags.swift` (list role and
-`shownName`), `TemplateIcon.swift`, `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
+`shownName`), `TemplateIcon.swift`, `TemplateColour.swift` (0.90, §3a), `TemplatePicking.swift`, `TemplateUse.swift`, `ThingFollows.swift`,
 `Sharing.swift` (template parts), `ActivityAreas.swift` (his activity areas, 0.89), `TemplateRows.swift` (a row's own answers, the row editor's Save, covers'
 letter and colours, which templates are shown and what they add up to, free names — the spec pass). Storage and
 sync are in `docs/store.md`; colours in `docs/colours.md` (both linked, not repeated).
@@ -70,6 +71,8 @@ sync are in `docs/store.md`; colours in `docs/colours.md` (both linked, not repe
   `realmId` are always dropped (`extraKeys` + `RESERVED_SYNC_KEYS`; pinned by
   `ListsTests.testAListRoundTripsThroughJSONAndCarriesUnknownKeys`).
 - The template's chosen icon is stored in the template's `extra["iconKey"]` (see §3).
+- Its chosen colour (0.90) is the template's own `color` — the web app's cover-colour field, a first-class field of
+  every template record, backup and shared template — a hex from the palette, or blank = Automatic (see §3a).
 - Its "Counts as" (0.70 — which Apple Health workout it meets in the trip review) is stored in the template's
   `extra["countsAs"]` (`Library.countsAsKey`): a `WorkoutKind` raw value (`swim` … `diving`) or `"none"`; absent =
   the name decides (see §6 and chapter 07 part 7).
@@ -373,17 +376,20 @@ so the model's tests can check every one; the app's `TemplateIcons` (`all`, `ico
 changes; a label may** — 0.74 relabelled `gift` from "Party" to "Gift", "Party" being its own icon now.
 
 ### `Cover(list, size = 40)` — what is drawn
-- A rounded square (`cornerRadius = size × 0.28`) filled with **`Library.coverColour(list)`**: the template's own
-  `color` if it is a valid hex colour (his data, kept whatever it is), else a stable pick by `jsHash31(id)`
+- A rounded square (`cornerRadius = size × 0.28`) filled with **`Cover.fill(list)`** = **`Library.coverColour(list)`**:
+  the template's own `color` if it is a valid hex colour (his choice since 0.90, §3a — or a colour the web app gave
+  it, kept whatever it is), else (Automatic) a stable pick by `jsHash31(id)`
   (`h = h*31 + utf16 unit`, wrapping at 32 bits; falls back to the name when the id is empty) modulo 10 from
   **`COVER_COLOURS`** — the web app's `TEMPLATE_COLORS` (`#7c5cd6 #3b82f6 #06b6d4 #22c55e #f59e0b #ef4444 #ec4899
   #14b8a6 #8b5cf6 #64748b`, kept as they are for the parity check) with cyan `#06b6d4` → orange `#f97316` and teal
   `#14b8a6` → indigo `#4f46e5` ("Not teal … Do not use teal for anything new", `docs/colours.md`; the spec pass,
   5 Oct 2026). Every other template keeps the colour the web app gives it (`listColor`, pinned: id "fixed-id" →
   `#8b5cf6`).
-- If `TemplateIcons.icon(Library.icon(of: list))` exists → that icon drawn white at `size × 0.66`
-  (`IconMark`, stroke 1.9 × size/24, round caps and joins).
-- Otherwise its letter, white, heavy, font `size × 0.46`: `Library.coverLetter(list)` = the first character of the
+- If `TemplateIcons.icon(Library.icon(of: list))` exists → that icon drawn at `size × 0.66` (`IconMark`, stroke
+  1.9 × size/24, round caps and joins) in **`Library.coverInk(list)`**: the palette colour's own ink when the fill is
+  one of the palette (§3a — dark on Bike's yellow, Run's green, Strength's orange, Breath work's lavender,
+  Mobility's pink), else **white** (every Automatic colour, and a web-app colour; white as every cover was until 0.90).
+- Otherwise its letter, in the same ink, heavy, font `size × 0.46`: `Library.coverLetter(list)` = the first character of the
   trimmed name, upper-cased. **Never the template's `emoji`** (a web-app template may carry one): no emoji in this
   app (until the spec pass the emoji showed here).
 - `accessibilityHidden(true)`.
@@ -505,6 +511,59 @@ straps); On site — a pin on a folded map (`pinOnMap`); Review — a magnifier 
 (`sprout`). His pick of 13 Oct 2026; paths and tests in spec 03, The loop. Their model test reuses this chapter's
 drawing rules (`TemplateIconTests.drawingFault`).
 
+### 3a. A template's colour (0.90, `PackingLibrary/TemplateColour.swift`, `TemplateColourSwatches`)
+
+**Purpose and origin.** His words (19 Oct 2026): "I would like the ability to change the color of the table template
+icons. That way, I can more easily find the templates if they have the color that I connect to a specific template."
+("Table" is how the dictation heard "template"/the Templates tab; the things table shows no template icons.) Until
+0.90 a template's colour was the app's stable pick only (`color` was kept from the web app but nothing here set it).
+
+**Storage.** The template's own **`color`** field (§10) — not a new `extra` key and not a new shared-row kind (a new
+kind is blanked by PackingCore, spec 02 🪤). `color` is a field of the web app's model, so it already travels with
+every template: the store's `templates` record and iCloud, the backup file and Restore, a shared link (the web app's
+key `c`, ≤ 9 characters — a template "Add as a new template" from a link arrives in the sender's colour; **Replace**
+keeps HIS colour, because `replaceTemplate` keeps his template whole, §19) and the web app, whose cover reads the same
+field. The parity check is untouched (no model.js change). Blank = **Automatic**. Stored lower-case.
+
+**The palette** (`TemplateColour.palette`, 11, in the picker's order; key → word, fill, ink):
+
+| Key | Word | Fill | Ink (the icon on it) | Why |
+|---|---|---|---|---|
+| `blue` | Blue | `#0a84ff` | white | Swim's workout colour |
+| `yellow` | Yellow | `#ffd60a` | `#3d3000` | Bike's |
+| `green` | Green | `#30d158` | `#0b3a17` | Run's |
+| `orange` | Orange | `#ff8c1a` | `#4a2300` | Strength's |
+| `lavender` | Lavender | `#bf9cff` | `#2e1a5c` | Breath work's |
+| `pink` | Pink | `#ff6fa8` | `#5a0f2e` | Mobility's |
+| `red` | Red | `#dc3d43` | white | the To do red |
+| `violet` | Violet | `#7c5cd6` | white | the Templates violet |
+| `indigo` | Indigo | `#4f46e5` | white | the cover pick that replaced teal |
+| `brown` | Brown | `#8b5e3c` | white | a calm earth tone |
+| `slate` | Grey | `#64748b` | white | the Settings slate |
+
+The first six are his workout colours (`docs/colours.md`, decided 28 Sep 2026) with the dark words of their pills —
+"the color that I connect to a specific template". No teal. Every ink reads on its fill at 3.6 : 1 or better (Swim's
+blue with white is the lowest, 3.65); every fill made readable as a mark (`readableHex`, text mode) reads at 4.5 : 1
+or better on the light card and on the dark one. A fill is one shade for day and night, as the section colours are.
+
+**Where the colour shows** — everywhere a template's icon is drawn (found by grepping `Cover(` and `IconMark` with a
+template icon):
+- `Cover` — the Templates tab's cards (34), the cover on the template's page (`CoverDoor`, 40), the picker's own
+  header (40) and its swatches (34): fill and ink as above.
+- The icon picker's ringed tile (Suggested, Letter or an icon): filled with the cover colour, its mark and label in
+  the cover's ink (white until 0.90 — unreadable on yellow).
+- `TemplateMarks` (spec 03) — a trip line's "from" icons, Before you go's To do lines and Before you start's To prepare
+  lines: a template he gave a colour draws its mark in **`Library.markColour(list, dark:)`** = `readableHex(color,
+  dark:)` (his hue, darkened on a light screen, lightened on a dark one, until it reads as text does); a template
+  with Automatic keeps the Templates violet it had (0.74). The "+N" stays violet.
+- NOT on Create new trip / Trip settings: their template pills show no icon, and WET pills keep their workout colours
+  (Open questions 34).
+
+**Model.** `chosenColour(templateId:)` → the stored hex or nil. `setTemplateColour(id:hex:)` → nil/blank = Automatic;
+false for an unknown template or a value that is not a hex colour (nothing changes); sets `updatedAt`.
+`TemplateColour.of(hex:)` (capitals ignored). `Library.automaticColourKey = "auto"`. A colour from the web app that is
+none of the palette is kept, drawn with white and rings no swatch.
+
 ### `CoverDoor` (on the template page)
 A plain button showing `Cover(size: 40)`; id `template-cover`; accessibility label "Icon of <name>";
 accessibility **value** = the icon key in force, or "letter" when none (the UI test reads this value). Owns its own
@@ -542,6 +601,19 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   `testEveryIconHasADrawingALabelAndItsOwnKey` counts 91. His own template's icon is his to pick in the picker —
   the app's Suggested offers the weekend bag; his data is not changed.
 - **Not covered:** an unknown stored key.
+- Model (0.90, `TemplateColourTests`): `testThePaletteReadsDayAndNightAndHasNoTeal` (≥ 10 colours, keys and hexes
+  unique, none keyed "auto", the six workout colours first, Bike's ink `#3d3000`, every ink ≥ 3.5 : 1 on its fill,
+  every mark ≥ 4.5 : 1 on the light and the dark card, no teal or cyan) — seen red with Bike's ink planted as white:
+  `("Optional("#ffffff")") is not equal to ("Optional("#3d3000")") - Bike's yellow carries dark words` and
+  `("1.4117637713407472") is less than ("3.5") - yellow: its icon does not read on it`;
+  `testHisColourIsKeptThroughEditsRecordsBackupsAndAShareAndAutomaticGivesTheOldOneBack` (blue → cover, resolved
+  templates and the trip-line mark wear it; yellow → dark ink; survives `addToTemplate`, `renameTemplate`,
+  `setTemplateIcon`, `setTemplateArea`; the stored records, `backupFile`, the backup's bytes as Restore reads them, a
+  shared link imported by someone else; Replace keeps his; nil → the automatic colour again and white ink, also in the
+  records; "blue" and an unknown id refused) — seen red with `setTemplateColour` planted not to store: `("#64748b") is
+  not equal to ("#0a84ff") - the cover does not wear his colour`, `… - the stored records lost the colour`, `… - a
+  backup lost the colour`, `… - Restore lost the colour`; `testAWebAppColourIsKeptAsItIs` (`#123456` kept, white ink).
+- UI (0.90): `testATemplatesColourIsChosenAndAutomaticGivesItsOwnBack` — see §4.
 
 ---
 
@@ -549,12 +621,22 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
 
 ### How it is reached and left
 Tap the cover on a template's page (`template-cover`). Left by: "Cancel" (`icon-cancel`; Escape too, 0.62), by any
-pick (each pick saves and closes), or a swipe down on the iPhone.
+pick — an icon or (0.90) a colour; each pick saves and closes — or a swipe down on the iPhone.
 
 ### What is on screen
 - Top row (padding 16): the template's cover (40), its name (20 heavy ink, 1 line, shrinks to 80 %), spacer,
   "Cancel" (outlined `HeaderButtonStyle`, muted tint).
 - Scroll (side 16, bottom 24), spacing 10:
+  - (0.90) **"Colour"** (`SectionTitle`, id `template-colour-title`), then `TemplateColourSwatches`: **Automatic** and
+    the palette's 11 (§3a) in plain rows of **6** (12 swatches = two full rows; a short row would be filled with
+    empty cells), 6 apart, rows 8 apart. Each swatch: the template's OWN cover drawn in that colour at 34 (its icon or
+    letter in that colour's ink — a preview of the Templates tab) with 3 pt of air, and under it the colour's word
+    (Caption 2, 1 line, shrinks to 70 %; muted, or bold ink when in force); min height 64, full width share. Automatic
+    shows the colour the app picks for this template. The swatch in force has a 2-pt `Theme.ink` ring round its
+    square (radius 34 × 0.28 + 3) and the trait `isSelected`: Automatic when no colour is stored, else the palette
+    colour stored (a web-app colour outside the palette rings none). Ids `template-colour-auto`,
+    `template-colour-<key>` — deliberately not `icon-…`, which the 91-icon count reads; accessibility label = the word.
+  - (0.90) **"Icon"** (`SectionTitle`, id `template-icon-title`) over the rest — until 0.90 the tiles had no heading.
   - Two tiles side by side: **"Suggested"** (id `icon-suggested`; shows the suggested icon at 30, or the letter
     (`coverLetter`) 22 heavy when there is no suggestion; selected when no choice is stored) and **"Letter"** (id
     `icon-letter`; the letter 22 heavy; selected when the stored choice is "letter").
@@ -566,11 +648,14 @@ pick (each pick saves and closes), or a swipe down on the iPhone.
     74 high) so its tiles keep the width of the others. Each tile: icon at 30 + its label; id `icon-<key>`; selected
     when a choice is stored and the icon in force is this key.
 - Tile look: mark 32 high; label 12 bold, 1 line, shrinks to 70 %; min height 74, full width share; selected =
-  filled with the template's own colour (`coverColour`), white mark and label, 2-pt stroke in that colour, trait
+  filled with the template's own colour (`coverColour`), mark and label in the cover's ink (`coverInk` — white until
+  0.90, dark on the light palette colours since), 2-pt stroke in that colour, trait
   `isSelected`; not selected = `Theme.card`, ink mark, muted label, 1-pt `Theme.line` stroke.
 - Container id `icon-picker` (`children: .contain`). Mac: min 520 × 620.
 
 ### Behaviour
+- A swatch → `model.change { setTemplateColour(id:, hex:) }` then dismiss; Automatic = nil (blanks `color`). The
+  colour and the icon are independent: one does not change the other.
 - `pick(key)` → `model.change { setTemplateIcon(id:, key:) }` then dismiss. Suggested = nil (removes the key),
   Letter = "letter", an icon = its key. Picking the very icon that is suggested **stores** it, so it no longer
   follows later renames.
@@ -590,6 +675,17 @@ until 0.78) whose id starts
 picker and the cover's value becomes "lounger"; it survives closing and reopening the template; reopened, the picker
 rings `icon-lounger` (`isSelected`); Cancel closes it. `testATemplatesIconIsSuggestedAndCanBeChosen` (0.78) also finds
 `icon-weekendbag` beside `icon-suitcase` when the picker opens.
+
+UI `testATemplatesColourIsChosenAndAutomaticGivesItsOwnBack` (0.90): the Templates tab's Hiking card
+(`template-row-1`) says its cover's colour as its accessibility **value** — a DEBUG-only value (`#if DEBUG`, "the
+tests' only way to see the colour its cover is drawn in"; the release build has none) read from `Cover.fill`, the very
+function the cover is filled by — a hex, not Blue; the picker shows `template-colour-auto` ringed and 12
+`template-colour-` buttons (picture `tmpl-colours-picker`); `template-colour-blue` closes the picker and the card says
+`#0a84ff`; reopened, Blue is ringed and Automatic is not; `template-colour-auto` gives back the colour the card said
+first. Seen red three ways: `Cover.fill` planted to ignore the chosen colour — `Hiking's cover is not blue:
+'#22c55e'`; the Automatic swatch planted to keep the chosen colour — `Automatic did not give back #f97316:
+'#0a84ff'` (the automatic colour differs per launch: the sample's ids are fresh each time). Day and night on the
+iPhone 17 Pro simulator (iOS 26.5), and on the Mac (the probe workflow).
 ---
 
 ## 5. A new template (`NewList`)
@@ -601,9 +697,14 @@ the same time "because it is one tap". It **refuses a name he already has** beca
 templates sharing a name as "two libraries have met on one account" (31 August 2026).
 
 ### How it is reached and left
-"+ New" on the Templates tab (`templates-new`). Left by "Cancel" (`newlist-cancel`; Escape too, 0.62 — nothing is
+"+ New" on the Templates tab (`templates-new`) — and since 0.90 "+ New template…" on a thing's page
+(`thing-lists-new`, spec 05; `NewTemplateDoor`), where the same sheet asks the same questions with two differences:
+its button says **"Add the template"** (`makeWords`) and a line under it (`madeWhen`, footnote muted, id
+`newlist-made-when`) says "It is made, with this thing on it, when you save the thing."; the name is checked against
+his templates AND the ones made on that page so far. Left by "Cancel" (`newlist-cancel`; Escape too, 0.62 — nothing is
 made, a typed name included), swipe down (iPhone), or
-"Make the template" succeeding (closes and the new template's page opens).
+"Make the template" succeeding (closes and the new template's page opens; from a thing's page: closes, and the new
+template is a lit pill there).
 
 ### What is on screen
 - Top row (padding 16): "A new template" — 20 heavy violet, id `newlist-title`; spacer; "Cancel" (outlined,
@@ -639,11 +740,12 @@ made, a typed name included), swipe down (iPhone), or
 - The caller saves it (`saveTemplate`) and opens it.
 - The needs line is the shared `needsLine`: it clears as soon as the name changes (until the spec pass it stayed
   until the next press).
-- There is no way here (or anywhere in this app) to make a `base` or `transport` template, or to set a colour,
-  emoji or default bag.
+- There is no way here (or anywhere in this app) to make a `base` or `transport` template, or to set an emoji or
+  default bag. Its colour is Automatic; it is chosen afterwards in the icon picker (§3a, 0.90).
 
 ### Tests
-UI `testHeMakesAListOfHisOwn` (title "A new template"; Make enabled; empty press says "…name…" and the line goes
+UI `testANewTemplateIsMadeFromAThingsPageWithTheThingOnIt` (0.90, spec 05) opens this sheet from a thing's page and
+finds `newlist-made-when`. UI `testHeMakesAListOfHisOwn` (title "A new template"; Make enabled; empty press says "…name…" and the line goes
 once a name is typed; "Hiking" shows `newlist-taken` and a press says "…do not have…"; "Mushroom picking" + GA →
 page opens; summary changes; the
 "Other Templates" area does not appear); `testANewTemplateAsksForItsActivityArea` (question text, "No activity
@@ -1394,7 +1496,7 @@ inside, labels list); `GroupingTests` — `testEntriesByPhaseOnlyReturnsNonEmpty
 | `id` | String; fresh `PackingEnv.makeId()`. |
 | `name` | Free text (no trimming in `coerceList`; `newList` from the UI trims). |
 | `emoji` | Cover glyph; trimmed, cut to 4 UTF-16 units; non-string → "". The web app shows it (📋 `TEMPLATE_DEFAULT_EMOJI` when ""); this app never does — its cover shows the first letter (§3). Kept for round trips; no UI sets it here. |
-| `color` | Cover colour; kept only if a hex colour, else "" (= hashed pick from `COVER_COLOURS`, §3). No UI sets it here. |
+| `color` | Cover colour; kept only if a hex colour, else "" (= Automatic: the hashed pick from `COVER_COLOURS`, §3). Since 0.90 set by the colour swatches of the icon picker (§3a, §4) — before, no UI set it here. |
 | `sections` | Ordered `[TemplateSection {id, name}]`; `normalizeSections`: unnamed (after trim) dropped, a missing id invented, a repeated id dropped, names trimmed. |
 | `group` | "GA" / "WET" / "OE" or "" (any other value → ""). A built-in activity area. Set when the template is made, and changed on its page (`setTemplateArea`, §14). An area HE made (0.89) is not here — `coerceList` would blank it — but in `extra["area"]`, with `group` ""; `Library.areaOf` reads the two together (§1a). |
 | `role` | "base" (always on every trip), "transport" (only when the trip's transport equals `transport`), "loose" (retired bin, never fed to a trip), "container" (the bag list, never fed to a trip), "" (an activity template the user ticks). Unknown → "". |
@@ -1872,7 +1974,7 @@ becomes a QR code; it opens in the web app for anyone, and in this app via Setti
   address — never the sync field `owner`), reminder flag, weight (rounded, if > 0), the condition lists and `sub`;
   then cover emoji (4 units), colour, group, role, transport, default bag (≤ 60), section names. Packed with an LZW
   "z." form when that is shorter. Photos, care and history are "deliberately left behind". The icon choice
-  (`extra.iconKey`) does **not** travel. An empty template throws "This template has nothing on it to share."
+  (`extra.iconKey`) does **not** travel; his colour (`color`, 0.90 §3a) does. An empty template throws "This template has nothing on it to share."
 - **Opening** (`Library.readShared` tries grab list, then template, then trip): the preview says what it is —
   "A TEMPLATE", "AN ALWAYS-PACKED TEMPLATE" (role base) or "A TRANSPORT TEMPLATE" (role transport), so he knows
   before he adds it — the name and "1 thing" / "<n> things" (`shared-count`; "1 things" until 0.62).
@@ -2124,6 +2226,22 @@ deciding before a rewrite.
 35. [idea] **His areas are ONE record** (0.89, spec 01 §1.11): two devices changing the LIST while both offline —
     the later write wins for the whole list (as for his kinds of thing). Which area a template is in is the
     template's own record and settles per template.
+
+**0.90 — a template's colour, and a new template from a thing's page.**
+
+34. [idea] **The colour on Create new trip and Trip settings.** A template's colour (§3a) paints its icon wherever
+    the icon is drawn; the template PILLS there show no icon, so they keep their look (violet when ticked; a WET
+    workout its workout colour). Lighting a ticked pill in his chosen colour (with its ink) would carry the colour to
+    the place he picks templates for a trip — not built: the pills' line was being changed by the activity-areas work
+    of the same release, and a chosen colour would have to win over the workout colours there. His call.
+35. [idea] **Automatic can look like a palette colour.** Automatic is the app's stable pick from `COVER_COLOURS`, three
+    of which (violet `#7c5cd6`, indigo `#4f46e5`, slate `#64748b`) are also palette colours — a template whose pick is
+    slate shows Automatic and Grey alike in the picker. Only Automatic is ringed, and choosing Grey stores it (it then
+    survives a rename that would change nothing anyway — the pick follows the id). Harmless; noted so nobody "fixes" it
+    by changing the palette.
+36. [untested] The Mac's keys on a thing's page do not reach "+ New template…" (it is no `ThingField`; Tab passes it,
+    as it passes every button that is not a field) — it is clicked, and New's sheet then has the keys (its window is
+    not the page's, so the page's key monitor lets them through: Return makes, Escape cancels).
 
 ## Reminders on a template (0.70)
 
