@@ -74,6 +74,8 @@ final class LibraryModel: ObservableObject {
     /// losers are deleted so both devices end up holding the same records
     /// (`StoreSession.load`, where the model tests reach it).
     func reload() {
+        let started = EditTiming.now
+        defer { EditTiming.reloaded(EditTiming.now - started) }
         do {
             let (fresh, records) = try StoreSession.load(store)
             held = records
@@ -91,11 +93,14 @@ final class LibraryModel: ObservableObject {
 
     /// The only way anything changes.
     func change(_ body: (inout Library) -> Void) {
+        let started = EditTiming.now
         var next = library
         body(&next)
         // A bag changed by any screen says when (0.90: Your bags' Last edited — BagSorting.swift).
         next.stampEditedBags(since: library)
+        let changed = EditTiming.now
         commit(next)
+        if EditTiming.on { EditTiming.change(model: changed - started, store: EditTiming.now - changed) }
     }
 
     /// ⚠️ What one change costs: `StoreSession.save` builds EVERY record of the
@@ -264,6 +269,13 @@ extension LibraryModel {
         return model
     }()
 
+    /// A store file for the tests, emptied first (with its journal files).
+    static func freshTestFile(_ name: String) -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(name)-library.store")
+        for tail in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + tail) }
+        return url
+    }
+
     /// Which store this launch uses — the first that matches, in this order:
     ///  -uiTestingEmpty        → memory, holding nothing (the first-run screen)
     ///  -uiTestingChecks       → memory, the sample + a carry-on bag, a knife, sun cream
@@ -322,6 +334,11 @@ extension LibraryModel {
     ///                           details for the desk (the Lost bag page, 0.80)
     ///  -uiTestingGrabHeadings → memory, the sample with Outdoor bike under three headings of
     ///                           his own (a grab list's headings, 0.85)
+    ///  -uiTestingBigLibrary   → a store FILE holding an invented library of his size (`SampleLibrary.big`,
+    ///                           for measuring with -timeEdits, 0.91)
+    ///  -uiTestingOnDisk       → a store FILE holding the sample; 15 s after launch "the other device"
+    ///                           writes a thing called Sunglasses into it (0.91: the app's own saves are
+    ///                           not read back, the other device's still are)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -347,7 +364,26 @@ extension LibraryModel {
             }
         }
         let sky: Forecaster = AMSPackingApp.testing ? InventedForecast() : OpenMeteo()
+        EditTiming.watch()
         if args.contains("-uiTestingEmpty") { return LibraryModel(store: MemoryStore(), usesICloud: false, sky: sky) }
+        // The sample in a store FILE (0.91): a change saved here is not read back, and one the other
+        // device writes into the store 15 s after launch — a thing called Sunglasses — still arrives.
+        if args.contains("-uiTestingOnDisk"), let store = try? CloudStore(cloud: false, file: LibraryModel.freshTestFile("disk")) {
+            let sample = SampleLibrary.make()
+            try? store.apply(RecordChanges(puts: sample.records()))
+            var later = sample
+            later.addThing(name: "Sunglasses")
+            let theirs = recordChanges(from: sample.records(), to: later.records()).puts
+            DispatchQueue.main.asyncAfter(deadline: .now() + 15) { store.writeAsTheOtherDevice(theirs) }
+            return LibraryModel(store: store, usesICloud: false, sky: sky)
+        }
+        // A library of his size, kept by SwiftData in a file as his is — every change pays what his
+        // pays: all records built, compared, the store's whole fetch, and what the store says after
+        // a save (`EditTiming`, 0.91). A fresh file each launch, in the app's temporary folder.
+        if args.contains("-uiTestingBigLibrary"), let store = try? CloudStore(cloud: false, file: LibraryModel.freshTestFile("big")) {
+            try? store.apply(RecordChanges(puts: SampleLibrary.big().records()))
+            return LibraryModel(store: store, usesICloud: false, sky: sky)
+        }
         if args.contains("-uiTestingChecks") {
             return LibraryModel(store: MemoryStore(SampleLibrary.checks().records()), usesICloud: false, sky: sky)
         }

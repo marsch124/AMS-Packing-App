@@ -2650,6 +2650,203 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["yourbags-count"]), "5")
     }
 
+    // MARK: - His bag findings on 0.90 (test sheet, 19 Oct 2026) — 0.91
+
+    /// "There is a delay. Once I have entered data, there is a delay if I would like to scroll or move
+    /// to the next data field." Since 0.91 a bag's page keeps what is typed in the field itself and
+    /// writes it once — when the field is left (another field, Return), on Done, a swipe down, or the
+    /// app going away — instead of saving the whole library at every key. So: seven fields filled one
+    /// after another at speed, then Done — all seven kept; again, closed by a swipe down (the iPhone) —
+    /// all kept; and Your bags' row shows the new max at once.
+    /// `TEST_RUNNER_MEASURE_EDITS=1`: the same walk on a library of his size with `-timeEdits`, for the
+    /// measurements in spec 05 (the app's log, category "timing").
+    func testABagsPageKeepsEverythingTypedFieldAfterField() {
+        let measure = ProcessInfo.processInfo.environment["MEASURE_EDITS"] != nil
+        let app = launch(measure ? "-uiTestingBigLibrary" : "-uiTestingBags", measure ? ["-timeEdits"] : [])
+        openFirstBag(app)                       // the Wheeled duffel
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        func field(_ id: String) -> XCUIElement { ["bag-detail-notes", "bag-detail-marks"].contains(id) ? anyField(app, id) : app.textFields[id] }
+        func fill(_ round: Int) -> [String: String] {
+            let want = ["bag-detail-maxkg": "2\(round)", "bag-detail-litres": "8\(round)", "bag-detail-empty": "310\(round)",
+                        "bag-detail-notes": "Wheel fixed \(round)", "bag-detail-brand": "Brand \(round)",
+                        "bag-detail-sizenote": "7\(round) cm", "bag-detail-marks": "Ribbon \(round)"]
+            // One after another, no pause: each `replace` taps the next field straight away.
+            for id in ["bag-detail-maxkg", "bag-detail-litres", "bag-detail-empty", "bag-detail-notes",
+                       "bag-detail-brand", "bag-detail-sizenote", "bag-detail-marks"] {
+                let f = field(id)
+                bringIntoView(app, f)
+                _ = waitUntil(timeout: 3) { self.settled(f) }     // a list still gliding takes a tap as "stop"
+                replace(want[id]!, in: f)
+            }
+            return want
+        }
+        func kept(_ want: [String: String], _ how: String) {
+            tap(app, id: "bag-0-name")
+            XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the bag's page did not open again")
+            for (id, typed) in want.sorted(by: { $0.key < $1.key }) {
+                let f = field(id)
+                bringIntoView(app, f)
+                XCTAssertTrue(waitUntil { self.value(f) == typed }, "\(how): \(id) was not kept: '\(value(f))', typed '\(typed)'")
+            }
+        }
+        let first = fill(1)
+        shot(app, "bags91-typed")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Done did not close the bag's page")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "21" },
+                      "Your bags does not show the max typed on the page: '\(value(app.textFields["bag-0-maxkg"]))'")
+        kept(first, "closed by Done")
+        #if os(iOS)
+        guard !measure else { return tap(app, id: "bag-done") }
+        let second = fill(2)
+        // Closed by a swipe down, the last field still being typed in.
+        if let sheet = find(app, "bag-detail") {
+            sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02))
+                .press(forDuration: 0.05, thenDragTo: sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
+        }
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "a swipe down did not close the bag's page")
+        kept(second, "closed by a swipe down")
+        #endif
+        tap(app, id: "bag-done")
+    }
+
+    /// The other half of typing without a wait (0.91): the store announces every save — the app's
+    /// own too — and the app read the whole store again for each (1.4 s on a library of his size, a
+    /// few seconds after every change). Now its own saves are not read back. This guards the half
+    /// that must not be lost: a change the other device writes into the store still arrives, also
+    /// after a save of this device's own (`-uiTestingOnDisk`: the sample in a store file; 15 s after
+    /// launch "the other device" writes a thing called Sunglasses into it).
+    func testAChangeFromTheOtherDeviceStillArrivesAfterOneMadeHere() {
+        let app = launch("-uiTestingOnDisk")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        type("Tote", into: app.textFields["bag-new-name"])
+        tap(app, id: "bag-new")                                 // a save of this device's own
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" }, "the bag was not added")
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Sunglasses", into: app.textFields["things-search"])
+        XCTAssertTrue(waitUntil(timeout: 40) { self.words(app.buttons["thing-row-0"]).hasPrefix("Sunglasses") },
+                      "the thing the other device wrote never arrived: '\(words(app.buttons["thing-row-0"]))'")
+        hideKeyboard(app)
+        shot(app, "bags91-other-device")
+    }
+
+    /// "Opening the bag: when pressing its name, it is good, but the arrow is not nice." The arrow
+    /// sits right after the name now — the name's button ends with it — with clear room before the
+    /// first number (it stood at the row's far end against MAX KG); the name still opens the bag.
+    func testYourBagsNameOpensTheBagWithItsArrowRightAfterIt() {
+        let app = launch("-uiTestingBags")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        for n in 0..<4 {
+            let name = app.buttons["bag-\(n)-name"], maxKg = app.textFields["bag-\(n)-maxkg"]
+            XCTAssertTrue(name.waitForExistence(timeout: 5) && maxKg.exists, "no row \(n)")
+            let room = maxKg.frame.minX - name.frame.maxX
+            XCTAssertGreaterThanOrEqual(room, 10, "row \(n): the name and its arrow run up to MAX KG: \(room) points between them")
+            XCTAssertLessThan(abs(name.frame.midY - maxKg.frame.midY), 4, "row \(n): the name is not level with its numbers")
+        }
+        shot(app, "bags91-rows")
+        tap(app, id: "bag-1-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the name did not open the bag")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Sports bag" },
+                      "the name opened another bag: '\(value(app.textFields["bag-name"]))'")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+    }
+
+    /// "I can't order the bags myself, but that would be a good function. Please add that." Under Own
+    /// order every row has the grip ≡ (on the Mac also ▲ ▼); the Camera bag carried above the
+    /// Backpack stays there — under another sort and back, and in a thing's Usually packed in, whose
+    /// list is the same order. Under A–Z no grip, and a quiet line says where to go.
+    func testYourBagsAreArrangedByHandInOwnOrder() {
+        let app = launch("-uiTestingBags")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        let four = ["Wheeled duffel", "Sports bag", "Backpack", "Camera bag"]
+        XCTAssertEqual(chosen(app, "yourbags-sort"), "Own order")
+        XCTAssertTrue(waitUntil { self.bagOrder(app, four) == four }, "Own order is not his: \(bagOrder(app, four))")
+        for n in 0..<4 { XCTAssertTrue(grip(app, "bag-\(n)-grip").exists, "row \(n) has no grip under Own order") }
+        XCTAssertTrue(element(app, "yourbags-order-hint").exists, "nothing says how to arrange them")
+        #if os(iOS)
+        XCTAssertFalse(app.buttons["bag-3-up"].exists, "a bag has ▲ on the iPhone")
+        #endif
+        moveInList(app, "bag", 3, by: -1)
+        let arranged = ["Wheeled duffel", "Sports bag", "Camera bag", "Backpack"]
+        XCTAssertTrue(waitUntil { self.bagOrder(app, four) == arranged }, "the Camera bag did not move up: \(bagOrder(app, four))")
+        shot(app, "bags91-own-order")
+        // Another sort: no grip, and the line says where to arrange them.
+        choose(app, "yourbags-sort", 1)
+        XCTAssertTrue(waitUntil { !self.grip(app, "bag-0-grip").exists }, "a grip under A–Z")
+        XCTAssertFalse(app.buttons["bag-0-up"].exists, "▲ under A–Z")
+        XCTAssertEqual(words(element(app, "yourbags-order-hint")), "Choose Own order to arrange your bags.")
+        shot(app, "bags91-az")
+        choose(app, "yourbags-sort", 0)
+        XCTAssertTrue(waitUntil { self.bagOrder(app, four) == arranged },
+                      "the order arranged by hand was not kept: \(bagOrder(app, four))")
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        // The same order in a thing's Usually packed in.
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Map", into: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        openDropDown(app, "thing-bag")
+        let listed = (0..<4).map { words(app.buttons["thing-bag-\($0)"]) }
+        XCTAssertEqual(listed, arranged, "Usually packed in does not list the bags in his order")
+        closeDropDown(app, "thing-bag")
+    }
+
+    /// "I would also like to be able to choose a screenshot of the photo or a photo that is stored in a
+    /// folder, not only via the Photos app." Every photo block has "Choose a file…": a thing's photos,
+    /// a bag's own and a packed bag's on the trip — the same squeeze and the same limit. (Under the
+    /// tests it reads a PNG the app writes, as a screenshot is, through the path a chosen file takes.)
+    func testAPhotoIsChosenFromAFile() {
+        let app = launch("-uiTestingPackingDay")
+        // A thing: two from files, then no more.
+        openThing(app, "Goggles")
+        tap(app, id: "thing-photo-file")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-0"].waitForExistence(timeout: 5), "the picture from a file was not kept")
+        shot(app, "bags91-thing-file")
+        tap(app, id: "thing-photo-file")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-1"].waitForExistence(timeout: 5), "a second picture from a file was not kept")
+        XCTAssertTrue(waitUntil { !app.buttons["thing-photo-file"].exists }, "a third photo is offered from a file")
+        tap(app, id: "thing-photo-thumb-0")
+        XCTAssertTrue(app.buttons["bag-photo-done"].waitForExistence(timeout: 5), "the picture from a file does not open large")
+        shot(app, "bags91-thing-file-large")
+        tap(app, id: "bag-photo-done")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        // A bag's own photo.
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-detail-photo-file"), "no Choose a file… for the bag's own photos")
+        tap(app, id: "bag-detail-photo-file")
+        XCTAssertTrue(app.buttons["bag-detail-photo-thumb-0"].waitForExistence(timeout: 5), "the bag's picture from a file was not kept")
+        bringIntoView(app, app.buttons["bag-detail-photo-thumb-0"])
+        shot(app, "bags91-bag-file")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        // A packed bag's photo on the trip.
+        openPackingDayTrip(app)
+        station(app, "photos")
+        tap(app, id: "day-photo-1-photo-file")
+        XCTAssertTrue(app.buttons["day-photo-1-photo-thumb-0"].waitForExistence(timeout: 5), "the packed bag's picture from a file was not kept")
+        shot(app, "bags91-trip-file")
+    }
+
     /// Your bags' four names in the order the list shows them, read from rows 0…3.
     private func bagOrder(_ app: XCUIApplication, _ names: [String]) -> [String] {
         (0..<names.count).map { n in

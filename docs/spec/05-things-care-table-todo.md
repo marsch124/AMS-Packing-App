@@ -1005,11 +1005,14 @@ apart; a field 6 pt under its heading):
      took away while the question stood takes the question with it.
    - Under them: while it has room (`takesThingPhoto`: fewer than `THING_PHOTOS_MAX` = 2 photo ids, as stored — one
      still on its way from the other device counts — and fewer than the web model's MAX_PHOTOS = 5 entries), the
-     photo pills (`PhotoTakers`, the bag photos' own, here in Care orange): on the iPhone "Take a photo" (`thing-photo`,
-     only when it has a camera) and "Choose a photo" (`thing-photo-pick`, the photo library); on the Mac only Choose
-     (from Photos — no file dropped on the page, as the bag photos take none); with a photo already "Take another" /
-     "Choose another"; under the UI tests ONE pill, "Photo of the thing" / "Another photo" (`thing-photo`), that keeps
-     a drawn picture. Full: "Two photos — remove one to add another" (`thing-photo-full`, Subheadline muted), no
+     photo pills (`PhotoTakers`, the bag photos' own, here in Care orange, in a row that wraps): on the iPhone "Take a
+     photo" (`thing-photo`, only when it has a camera) and "Choose a photo" (`thing-photo-pick`, the photo library); on
+     the Mac only Choose; and since 0.91 on both **"Choose a file…"** (`thing-photo-file`) — a picture kept in a folder
+     or a screenshot (his words on 0.90's test sheet: "I would like the possibility to be able to choose a screenshot or
+     another photo that is not in my Photos app but is in a folder on the computer"; spec 01 §1.10, "From a file");
+     and a picture dropped on the photos block (the Mac: from Finder or another app). With a photo already "Take
+     another" / "Choose another"; under the UI tests "Photo of the thing" / "Another photo" (`thing-photo`), that keeps
+     a drawn picture, and "Choose a file…" (`thing-photo-file`), that reads a PNG the app writes itself. Full: "Two photos — remove one to add another" (`thing-photo-full`, Subheadline muted), no
      pills. A thing that came from the web app with more (up to 5) shows them all and takes none.
    - Compressed as every photo: JPEG, at most 1600 on the long side, quality 0.75 (`JPEG.make`).
    - **Kept the moment it is taken** — `addThingPhoto` in a `model.change` of its own, as a bag's page keeps its
@@ -1673,16 +1676,33 @@ A trip's bag ("Goes in the cabin", `BagCabinRow`) can also MAKE a bag (see a bag
 **What is on screen** (container `yourbags-detail`):
 1. Header: "Your bags" (22 heavy orange), the count (`yourbags-count`, 15 heavy muted), "Done" (filled).
 2. Fixed (does not scroll — his ask 26 Sep 2026, "keep the header row visible"): "Give a bag its max weight and
-   every trip shows how full it is." (14 medium muted); then **Sort** (0.90, below); then the column names right-aligned over the fields:
-   "MAX KG" (64 wide), "LITRES" (64), "EMPTY G" (70) (10 heavy muted, kerning 0.4; one combined element
-   `yourbags-columns`); a 1 pt line under.
+   every trip shows how full it is." (14 medium muted); then **Sort** (0.90, below); under it (0.91) one quiet line
+   (Footnote muted, `yourbags-order-hint`): under Own order "Hold ≡ and drag to put your bags in your order." (the Mac:
+   "Hold ≡ and drag, or use the arrows, to put your bags in your order."), under any other sort "Choose Own order to
+   arrange your bags."; then the column names right-aligned over the fields:
+   "MAX KG" (54 wide), "LITRES" (54), "EMPTY G" (62) (`BagsScreen.numberWidth` / `gramsWidth`, 0.91 — 64, 64 and 70
+   before, narrowed for the grip; four and five digits still fit) (10 heavy muted, kerning 0.4; one combined element
+   `yourbags-columns`; on the Mac under Own order an empty space over the ▲ ▼); a 1 pt line under.
 3. Scrolling: one row per bag (min height 46, line under):
-   - the name button (`bag-N-name`): the name (15 semibold, may shrink to 80 %) and under it the glance line
-     (12 medium muted) — "`N` thing(s)" and/or "last trip `<weight>`" joined " · " (`BagsCard.kilos`: "N g" under
-     1000 g, else "%.1f kg"), also the button's accessibility value; a small chevron. Opens the bag's page.
-   - three number fields (`bag-N-maxkg` 64 wide, `bag-N-litres` 64, `bag-N-empty` 70; 15 semibold monospaced,
+   - under Own order with two bags or more (0.91): the grip ≡ first (`bag-N-grip`, `ReorderGrip` in Care orange,
+     6 pt into the margin) — below.
+   - the name button (`bag-N-name`): the name (Subheadline semibold ink; since 0.91 up to two lines in its own size —
+     it was shrunk to 80 % to fit one line, and still cut off once the grip came) with **the arrow right after it**
+     (0.91, his words on 0.90: "Opening the bag: when pressing its name, it is good, but the arrow is not nice"): the
+     chevron "M9 6l6 6-6 6" drawn on its 24-point grid at 13 (`onGrid`), 2-pt stroke, muted, 3 pt after the name and
+     centred on it — until 0.90 it stood at the far end of a name block as wide as it could be, framed 12 × 12 for a
+     drawing on a 24-point grid, so it hung low and right up against MAX KG. Under the name the glance line
+     (12 medium muted, one line) — "`N` thing(s)" and/or "last trip `<weight>`" joined " · " (`BagsCard.kilos`: "N g"
+     under 1000 g, else "%.1f kg"), also the button's accessibility value. The button is as wide as its words (4 pt
+     above and below); at least 12 pt of room before the first number. Opens the bag's page. (Kept rather than
+     taken away: the row is mostly fields, and without the arrow the name reads as a label — every other list
+     whose row opens a page in this app ends in the same chevron: Search, Settings' and Care's doors.)
+   - three number fields (`bag-N-maxkg` 54 wide, `bag-N-litres` 54, `bag-N-empty` 62; 15 semibold monospaced,
      right-aligned, height 34, card, radius 8). Max kg and litres show "" when 0, else the number without a
      decimal when whole, otherwise one decimal (`BagsScreen.show`); empty grams shows whole grams.
+   - on the Mac under Own order with two bags or more (0.91): ▲ ▼ after the numbers (`bag-N-up`, `bag-N-down`; the
+     app's drawn chevrons at 16 in a `Metrics.compact` × `Metrics.tap` button, Care orange, faint where it cannot
+     move; labels "Move <bag> up" / "down") — each one place at once.
    - No bags: "No bags yet." (15 medium muted).
 4. The add row at the BOTTOM: "A new bag" (`bag-new-name`) and "Add" (`bag-new`, orange `FieldButtonLabel`);
    needs line `bag-new-needs`.
@@ -1695,9 +1715,11 @@ below; ids `yourbags-sort` (the field, its value the choice's words), `yourbags-
 Remembered on this device (`@AppStorage("ams.bags.sort")`, `BagsScreen.sortKey`, raw values `own`, `name`, `used`,
 `added`, `edited`; an unknown value is Own order); the UI tests start from Own order (the key is cleared at launch).
 Where each order is read (`Library.sortedBags(_:)`) — no list of his is new, and one key is:
-- **Own order**: the bag list's own order (`bags()`) — the one he arranges with the grip ≡ in a thing's "Usually packed
-  in" list (`moveBag(named:by:)`, spec 07 part 13); a new bag joins at the end, a duplicate right after its original.
-  Your bags itself has no grip (the decision of 19 Oct 2026: "drag to arrange as now").
+- **Own order**: the bag list's own order (`bags()`) — the one a thing's "Usually packed in" list shows and arranges
+  (`moveBag(named:by:)`, spec 07 part 13); a new bag joins at the end, a duplicate right after its original. Since
+  0.91 he arranges it HERE too (below, "His own order"); until then Your bags had no grip (the decision of 19 Oct 2026,
+  "drag to arrange as now", which his test sheet the same day undid: "I can't order the bags myself, but that would be
+  a good function"). The words stay **Own order**: no list of the app says "My order".
 - **A–Z**: `jsLocaleCompare(…, sensitivity: .base)`, as names sort everywhere.
 - **Last used**: the newest trip each bag went on (`bagLastTrips()`): a trip with a line packed in it (`bagLoads`:
   no reminders, nothing skipped), or one Packing Stations' "+ Add a bag" put on (`addedBags`), by the trip's first day,
@@ -1715,6 +1737,20 @@ Where each order is read (`Library.sortedBags(_:)`) — no list of his is new, a
   or a copy counts as edited when it was added). A bag not changed since 0.90: when it was added. The web model never
   reads the key; it is synced and backed up with the thing.
 - Ties, and a bag with no answer, keep his own order (the sort is stable, from `bags()`).
+**His own order (0.91).** His words on 0.90's test sheet (19 Oct 2026): "The sorting works, but I don't really understand
+what my order means. It says "own order," right? I can't order the bags myself, but that would be a good function.
+Please add that." Under Own order each row has the grip ≡ (`bag-N-grip`, the shared `ReorderGrip`, Reorder.swift — hold
+and drag; on the iPhone hold first, then drag; VoiceOver's Move up / Move down) and, on the Mac, ▲ ▼ (`bag-N-up`,
+`bag-N-down`), as every list he orders (spec 06 §21, spec 07 part 13). With one bag there is nothing to arrange: no grip,
+no arrows. While the grip is held the row moves on the screen only (`order`, one place per row's height passed — the
+rows are followed by the bag's id, so the carried row keeps its gesture); let go (`carried` back to nil), the bag goes
+from where it was picked up to where it now stands in ONE change — one `moveBag(named:by:)` per place, the very move
+Usually packed in's list makes (a heading on the bag list still stops it: a bag never jumps to another heading) — and
+the rows are sorted again. ▲ ▼ and VoiceOver write each step at once. Whatever is typed in the rows is written in the
+same change. Synced and backed up as the bag list's order always was (its memberships' places). Under A–Z, Last used,
+Last added and Last edited: no grip, no arrows, and the line under Sort says "Choose Own order to arrange your bags."
+Back to Own order, his order is there.
+
 **The rows stay put while he types** (`order`, the ids as shown): the list is sorted when it opens, a sort is chosen,
 a bag comes or goes (added here, duplicated, deleted, from the other device) and when a bag's page closes — not on
 each change: under Last edited a number typed into a row would move that row away at the first key. A bag not in the
@@ -1722,12 +1758,17 @@ order yet (just arrived) stands after the others in its sorted place. The rows' 
 count the rows as shown.
 
 **Behaviour.**
-- Numbers are SAVED AS TYPED (`onChange` of the text): trimmed, a comma read as a point; empty → 0;
-  unreadable → no change; a value different from the stored one → `setBag(id:maxKg:/capacityL:/emptyGrams:)`,
-  which stores max(0, value) through `updateThing` (so `followThing` runs). The fields are filled from the bag
-  when the row first appears, and follow the bag afterwards (0.62): when a number changes elsewhere — on the
-  bag's own page, a sheet over this one — the row shows it as soon as that page closes, unless the field
-  already says that number (so what he is typing in the row is never rewritten).
+- Numbers are KEPT AS TYPED (0.91 — `DraftedField` and `EditDraft`, EditDraft.swift; see A bag's page, "0.91 —
+  typing without a wait"): the field keeps the words itself and puts them on Your bags' ledger, and Your bags writes
+  them all in ONE change when it is left (Done, Escape, a swipe — `onDisappear`), when the app goes to the background
+  (on the Mac also when it quits), before a bag's page opens from its name (so the page shows the same numbers), when
+  another sort is chosen (Last edited then sorts by them), when a bag is added, and with a move of his own order. Until
+  0.90 every key was a `model.change`. Read as before: trimmed, a comma read as a point; empty → 0; unreadable → no
+  change (`TypedNumber`); a value different from the stored one → `setBag(id:maxKg:/capacityL:/emptyGrams:)`, which
+  stores max(0, value) through `updateThing` (so `followThing` runs). A field shows the bag's number until typed in,
+  and follows the bag whenever nothing typed in it waits to be written: a number changed elsewhere — on the bag's own
+  page, a sheet over this one, or the other device — shows as soon as it is kept, and what he is typing is never
+  rewritten.
 - Add (or Return): normalised name empty → "Type a name first."; a BAG of that name exists → "You already have a
   bag called that."; else `addBag(name:)` and the field is emptied.
 - `addBag(name:)`: refused for blank or an existing bag name (`normName`). Makes his bag list first when he has
@@ -1751,6 +1792,17 @@ kept on the trip under the bag's NAME.
 
 **iPhone vs Mac.** Mac: at least 480 × 560.
 
+**Tests (0.91).** UI `testYourBagsNameOpensTheBagWithItsArrowRightAfterIt` (`-uiTestingBags`: each of the four rows
+has at least 10 pt between its name button — which ends with the arrow — and MAX KG, and the name is level with the
+numbers; Sports bag's name opens Sports bag's page) — seen RED with 0.90's layout planted back (the name block as wide
+as it can be, no room kept): "row 0: the name and its arrow run up to MAX KG: 5.5 points between them".
+`testYourBagsAreArrangedByHandInOwnOrder` (`-uiTestingBags`: a grip on all four rows under Own order and the line
+under Sort; the iPhone has no ▲; the Camera bag carried above the Backpack — the iPhone drags `bag-3-grip` onto
+`bag-2-grip`, the Mac presses `bag-3-up`; A–Z has no grip and no ▲, and the line says "Choose Own order to arrange
+your bags."; back to Own order the arranged order is there; the Map's Usually packed in lists the bags in that order)
+— seen RED with the write at the let-go planted out (`dropped` returning early): "the order arranged by hand was not
+kept: ["Wheeled duffel", "Sports bag", "Backpack", "Camera bag"]".
+
 **Tests.** Model `BagsTests`: `testABagGetsMadeAndItsListWithIt`, `testTwoBagsWithOneNameAreRefused`,
 `testALimitSetHereIsTheLimitATripUses`, `testSettingNumbersOnSomethingThatIsNotABagIsRefused`,
 `testAThingHeAlreadyOwnsBecomesABagRatherThanBeingRefused`; `BagEditsTests.testTheBagListIsShownAsBags`,
@@ -1771,7 +1823,10 @@ sort still says Last edited) — seen RED with the choice kept in the screen's o
 **Not covered by a test.** The duplicate-bag message; negative or comma numbers; the glance line; the empty state.
 
 **Traps and history.** 🪤 Saved AS HE TYPES: the numbers used to be saved only on Return, so numbers typed and
-left looked set and were lost (his max weights of 26 Sep 2026 morning never reached the trips; fixed 0.25).
+left looked set and were lost (his max weights of 26 Sep 2026 morning never reached the trips; fixed 0.25). 0.91 keeps
+that promise another way — kept as typed in the row, written when Your bags is left (or the app goes away) — because a
+write at every key was the wait he felt (A bag's page, "0.91 — typing without a wait"). A number typed and the app
+killed while Your bags is open on the Mac, without quitting, is the one way it can still be lost.
 
 ---
 
@@ -1806,14 +1861,13 @@ follows onto the copy's).
    the lost-luggage marks' field). It IS the bag's thing's own `note` — the same words as Its details' Notes, found by
    Search (`noteHits`), shown wherever a thing's note shows, carried by the thing's record (sync, backups). Under it, as
    under a thing's Notes, the notes his templates keep for it: "Note on the <template> template: <note>" (Subheadline
-   muted, `bag-row-note-<n>`; a bag he also packs). Saved as the lost-luggage fields are: 0.4 s after the last key
-   (`noteTyped`), and at once on Done, Duplicate, Its details or leaving the page (`writeNote` →
-   `Library.setThingNote(id:_:)`: trimmed, only when different). A note changed elsewhere reaches the field unless what
-   is typed already says it or is still on its way. (The brief said "saved with the page's Save": the bag's page has no
-   Save — everything on it is kept as typed — so its Notes are too.)
+   muted, `bag-row-note-<n>`; a bag he also packs). Kept as typed and written with the page's other fields (0.91,
+   below: when the page is left, the app goes away, or before Duplicate, Its details or a pill) —
+   `Library.setThingNote(id:_:)`: trimmed, only when different. (0.90 wrote it 0.4 s after the last key.) A note
+   changed elsewhere reaches the field unless something typed in it is still waiting to be written.
 2. **Numbers:** "MAX KG", "LITRES", "EMPTY G" (11 heavy muted) over fields `bag-detail-maxkg`,
-   `bag-detail-litres`, `bag-detail-empty` (17 semibold monospaced, height 40) — saved as typed, same rules as
-   Your bags.
+   `bag-detail-litres`, `bag-detail-empty` (17 semibold monospaced, height 40) — kept as typed, written when the page
+   is left (0.91, below), read by the same rules as Your bags (`TypedNumber`). (0.90 wrote at every key.)
 3. **Goes in the cabin** switch (`bag-detail-cabin`, orange): "Goes in the cabin" / "Carry-on. On a plane trip,
    the trip checks it for liquids and things not allowed on board."
 3b. **Has an AirTag** switch (0.79, `bag-detail-airtag`, orange; spec 07 part 17): "Has an AirTag" / "In Packing
@@ -1829,8 +1883,12 @@ follows onto the copy's).
    `-other`), **SIZE** (pills `bag-detail-size-cabin`, `-medium`, `-large`, and the note `bag-detail-sizenote`),
    **DISTINCTIVE MARKS** (`bag-detail-marks`, 1–4 lines), **PHOTOS OF THE BAG** (two at most, the thing's own
    `photos`: thumbnails `bag-detail-photo-thumb-<k>` with Remove `bag-detail-photo-remove-<k>`, the shared
-   PhotoTakers `bag-detail-photo`, at two `bag-detail-photo-full`). One choice per pill row; the lit one tapped again is
-   taken off. Saved 0.4 s after the last key and at once on Return, a pill, "Its details" and leaving the page.
+   PhotoTakers `bag-detail-photo` — since 0.91 also Choose a file… `bag-detail-photo-file`, and a picture dropped on
+   the block — at two `bag-detail-photo-full`). One choice per pill row; the lit one tapped again is
+   taken off. The words (brand, colour, measures, marks) kept as typed and written when the page is left (0.91, below);
+   a pill writes at once, with everything typed on the page in the same change. (0.90: 0.4 s after the last key, and at
+   once on Return, a pill, "Its details" and leaving the page.) The Colour field and its pills are one view of their
+   own (`BagColourPart`): the pills light by what is TYPED, as before.
    Brand and colour ARE the thing's `manufacturer` and `color` (the same values as "Its details" shows), the note
    its `size`; type, size class and marks are `extra` keys `bagType`, `bagSize`, `bagMarks`
    (`Library.setBagDetails(_:id:)`, read by `Library.bagDetails(bag:)` — which the trip's Lost bag page reads).
@@ -1902,6 +1960,48 @@ follows onto the copy's).
      (unused), "Delete, no bag" (No bag chosen) or "Move and delete". Ready and also on templates: a second row
      with "Keep it on `<template>`" / "Keep it on my templates" (`bag-delete-yes`, red outlined) and "Delete
      completely" (`bag-delete-all`, red filled).
+
+**0.91 — typing without a wait.** His test sheet on 0.90 (19 Oct 2026): "There is a delay. Once I have entered data,
+there is a delay if I would like to scroll or move to the next data field."
+- **Measured** (`EditTiming`, `-timeEdits`, App/Sources/Store/EditTiming.swift: every `LibraryModel.change` with its
+  store time, every full reload, and each turn of the main run loop that took in a key; read from the device's log,
+  category `timing`) on `-uiTestingBigLibrary` — an invented library of his size kept by SwiftData in a file as his is
+  (`SampleLibrary.big()`: the bags sample + 400 things on eight templates of 80, 20 bags, 24 trips of three templates —
+  about 4,000 lines — and 20 camera-size photos) — with UI `testABagsPageKeepsEverythingTypedFieldAfterField` and
+  `TEST_RUNNER_MEASURE_EDITS=1` (seven fields filled one after another on the Wheeled duffel's page, Done, opened again),
+  iPhone 17 Pro simulator, iOS 26.5, 19 Oct 2026:
+  | | 0.90 | 0.91 |
+  |---|---|---|
+  | writes while filling the seven fields | 19 — one per key in a number field, and Notes / a desk field 0.4 s after its last key | 0 |
+  | one write | 160–320 ms on the main thread (234 on average): every record built again (≈105 ms), compared (≈65), the store's whole fetch and save | the page's 7 fields in ONE change when it closes: 359 ms, once |
+  | whole-store reloads that followed | 21, each 1.35–1.42 s on the main thread, 2–4 s after a write — the store announced the app's own save as a "remote change" | 0 |
+  | the turn that takes in a key | 470 ms median (the screen never caught up: some turns ran 10–22 s); a key in Notes or a desk field alone ≈ 70–150 ms, the whole page drawn again | 9 ms median, 45 ms at the 90th percentile (the first key in a field ≈ 100 ms — the keyboard coming up) |
+  The wait he felt was these: a save at every number key, the page drawn again at every key, a save landing 0.4 s
+  after he stopped (just as he moved on), and — the biggest — a whole reload of 1.4 s a few seconds after every one of
+  them (what "a delay if I would like to scroll" was).
+- **What changed.** (1) Every field on the page keeps what is typed TO ITSELF (`DraftedField`; the name `BagHeader`,
+  the Colour `BagColourPart` — views of their own, so a key draws the field and nothing else) and puts it on the
+  page's ledger (`EditDraft`: per field the words and how to write them; not observed, so nothing redraws). (2) The
+  page writes the ledger in ONE `model.change` when it is left — Done, a swipe down, Escape, Duplicate turning it to the
+  copy (`onDisappear`) — when the app goes to the background (on the Mac also when it quits: `writesDraftWhenAway`),
+  and first, inside the same change, for Duplicate (with a typed name renamed if it can be), a pill (colour, type,
+  size) and Its details (written before it opens, so it shows the same words). Moving from field to field and
+  scrolling write nothing. A delete forgets the ledger. A typed name is still renamed by Rename, Return or Done only
+  (a swipe leaves it, as before); Duplicate reads it from the ledger. (3) The store no longer reads itself back after
+  its own saves: `CloudStore` names this app's saves (`context.author = "AMSPacking.app"`) and, on each remote-change
+  notification, asks the store's history what is new since it last looked — when every new change is its own, nothing
+  is read; anything else (iCloud bringing the other device's, no new change, a history that cannot be read) reloads
+  exactly as before (spec 01 §4). That one is for every screen: each tick, each change anywhere was followed by the
+  same reload. (4) Your bags' rows keep their numbers the same way (Care → Bags).
+- **Never lost.** Done, a swipe down, Escape, the app put away — all write. Not covered: the app killed while the page
+  is open and in front (iPhone: only from the app switcher, which puts it in the background first — written then).
+- **Tests.** UI `testABagsPageKeepsEverythingTypedFieldAfterField` (`-uiTestingBags`, the Wheeled duffel: max kg,
+  litres, empty g, Notes, brand, measures and marks typed one after another with no pause, Done — Your bags' row says
+  the new max at once, and opened again all seven are there; on the iPhone again, closed by a swipe down with the last
+  field still being typed in — all seven kept) — seen RED with the write on leaving planted out: "Your bags does not show
+  the max typed on the page: '23'". `testAChangeFromTheOtherDeviceStillArrivesAfterOneMadeHere` (`-uiTestingOnDisk`,
+  spec 01 §4) — seen RED with every notification taken for the app's own: "the thing the other device wrote never
+  arrived: ''".
 
 **Behaviour.**
 - Rename = `renameThing(id:to:)` (refused for blank or a name ANY other thing has); on success the field goes

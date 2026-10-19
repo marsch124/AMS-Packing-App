@@ -50,6 +50,7 @@
 		6ECECAF4ED81E81C8454B15B /* AreasScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0096D418FB0463E578A19AD2 /* AreasScreen.swift */; };
 		7489E41014894218A0EC730E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */; };
 		7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */; };
+		7DF2057F25F465D208B3118F /* EditTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5799D84209CA656EEE129EFC /* EditTiming.swift */; };
 		80E3669131BEA0D1C726A660 /* Releases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6B09947C62AF9C62758EFD /* Releases.swift */; };
 		811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */; };
 		852DE35543B8B6DE3F014ABA /* VoiceIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = A751E258BF8E1D5C8C0CF952 /* VoiceIO.swift */; };
@@ -57,6 +58,7 @@
 		8BFE6DA316436719B57AA594 /* RestoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34879BF77676913C07B69267 /* RestoreSheet.swift */; };
 		8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CEDA06EFED05D4A1612077 /* EventsScreen.swift */; };
 		92BFCF1AF636841A4A4B1D51 /* ReviewHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4023CCF833EE4F1EA60FEE23 /* ReviewHealth.swift */; };
+		93450604456A29D298763175 /* EditDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECF41033E25321E3361B7F37 /* EditDraft.swift */; };
 		940117517D3A376ADAF5F4CF /* SmallCoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9713345B304E68E88C1CFCB0 /* SmallCoreSheet.swift */; };
 		993DD5931C9E6CDCDB4605AF /* ThingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A727717D19724FB903E1AA /* ThingKeys.swift */; };
 		9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8E667C951BD91655405B94 /* Countdown.swift */; };
@@ -165,6 +167,7 @@
 		534AF493408BF588BA9222FF /* AMSPackingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSPackingApp.swift; sourceTree = "<group>"; };
 		55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenHeader.swift; sourceTree = "<group>"; };
 		56F5604CA6875D255BD93251 /* CareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareScreen.swift; sourceTree = "<group>"; };
+		5799D84209CA656EEE129EFC /* EditTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTiming.swift; sourceTree = "<group>"; };
 		5844FD1A40A106FF0878B093 /* TableColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumns.swift; sourceTree = "<group>"; };
 		5A986BF2DF0FA5E39E42559C /* Words.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Words.swift; sourceTree = "<group>"; };
 		5D88FA9EA0BC448F857072B9 /* WorldMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldMap.swift; sourceTree = "<group>"; };
@@ -222,6 +225,7 @@
 		E28540B3BBCD50AB31F2DF8D /* AppleHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealth.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		ECF41033E25321E3361B7F37 /* EditDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditDraft.swift; sourceTree = "<group>"; };
 		ED9B041225333263C7547689 /* ThingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsScreen.swift; sourceTree = "<group>"; };
 		EDA67771DAAE27E418C53DDE /* PlaceScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceScreen.swift; sourceTree = "<group>"; };
 		F1CE8693CFF4B56DD044E844 /* SearchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScreen.swift; sourceTree = "<group>"; };
@@ -285,6 +289,7 @@
 				E28540B3BBCD50AB31F2DF8D /* AppleHealth.swift */,
 				A841D9340C8D1312A6814431 /* CloudStore.swift */,
 				39A697D32B44D323BED24711 /* DoorChecks.swift */,
+				5799D84209CA656EEE129EFC /* EditTiming.swift */,
 				09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */,
 				E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */,
 				61946E344209EE542B58B829 /* QuickActions.swift */,
@@ -378,6 +383,7 @@
 				BA8E667C951BD91655405B94 /* Countdown.swift */,
 				200B88877006E1F006B96632 /* DateRangePicker.swift */,
 				1750ABC86D97A97B07370949 /* DropDown.swift */,
+				ECF41033E25321E3361B7F37 /* EditDraft.swift */,
 				77CEDA06EFED05D4A1612077 /* EventsScreen.swift */,
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
 				A3080E21A5A50FB111FBCE7E /* FlightsAndStay.swift */,
@@ -566,6 +572,8 @@
 				E23BC02087734333AE740F0A /* DeviceVoice.swift in Sources */,
 				A01FA7467EDE858441462FED /* DoorChecks.swift in Sources */,
 				4AD76B6494FA68210153D99C /* DropDown.swift in Sources */,
+				93450604456A29D298763175 /* EditDraft.swift in Sources */,
+				7DF2057F25F465D208B3118F /* EditTiming.swift in Sources */,
 				8E1AF01FB9C11A59C8A57753 /* EventsScreen.swift in Sources */,
 				4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */,
 				2F08456F712C8BEB09FE08B2 /* FlightsAndStay.swift in Sources */,

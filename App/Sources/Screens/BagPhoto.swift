@@ -15,7 +15,24 @@ enum JPEG {
                                         kCGImageSourceThumbnailMaxPixelSize: maxSide,
                                         kCGImageSourceCreateThumbnailWithTransform: true]
         guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
-        return encode(image)
+        return encode(opaque(image))
+    }
+
+    /// A see-through picture (a PNG screenshot of a window, 0.91) on white — a JPEG has no
+    /// see-through, and its clear parts would otherwise turn black.
+    static func opaque(_ image: CGImage) -> CGImage {
+        switch image.alphaInfo {
+        case .none, .noneSkipLast, .noneSkipFirst: return image
+        default: break
+        }
+        guard let ctx = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return image }
+        let all = CGRect(x: 0, y: 0, width: image.width, height: image.height)
+        ctx.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+        ctx.fill(all)
+        ctx.draw(image, in: all)
+        return ctx.makeImage() ?? image
     }
 
     static func encode(_ image: CGImage) -> Data? {
@@ -43,6 +60,26 @@ enum JPEG {
         ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
         ctx.setFillColor(red: 0.95, green: 0.62, blue: 0.18, alpha: 1)
         ctx.fill(CGRect(x: 110, y: 70, width: 180, height: 160))
+        return ctx.makeImage().flatMap(encode)
+    }
+
+    /// A photo the size a camera's is after `make` (1600 × 1200, a few hundred KB): coloured noise
+    /// over bands, which squeezes about as badly as a real scene. Only for `SampleLibrary.big()`.
+    static func measuring(seed: Int) -> Data? {
+        let w = 1600, h = 1200
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue),
+              let raw = ctx.data else { return nil }
+        let px = raw.bindMemory(to: UInt8.self, capacity: w * h * 4)
+        var x = UInt32(truncatingIfNeeded: seed &* 2_654_435_761 &+ 1)
+        for i in 0..<(w * h) {
+            x ^= x << 13; x ^= x >> 17; x ^= x << 5
+            let band = UInt8(truncatingIfNeeded: (i / w) / 8 &* 9 &+ seed &* 40)
+            px[i * 4] = band &+ UInt8(truncatingIfNeeded: x & 0x3F)
+            px[i * 4 + 1] = UInt8(truncatingIfNeeded: (x >> 8) & 0x7F)
+            px[i * 4 + 2] = 255 &- band
+        }
         return ctx.makeImage().flatMap(encode)
     }
 }
@@ -104,6 +141,7 @@ struct BagPhotoRow: View {
                             choose: shots.isEmpty ? "Choose a photo" : "Choose another") { keep($0) }
             }
         }
+        .takesDroppedPhoto(room: !full, tint: AppSection.events.color) { keep($0) }
     }
 
     private struct Shot { let id: String; let image: CGImage }
@@ -119,9 +157,14 @@ struct BagPhotoRow: View {
 
 /// The ways to take a photo (0.79: one place for a bag's own photos and the Packing day's photo
 /// of all the bags): on the iPhone "Take a photo" when it has a camera (`id`) and "Choose a
-/// photo" (`<id>-pick`, the photo library); on the Mac only Choose; under the UI tests ONE pill,
-/// `testTitle` (`id`), that keeps a drawn picture — no test can work a camera or a library.
-/// `keep` gets the JPEG the app keeps (at most 1600 on the long side), or nil.
+/// photo" (`<id>-pick`, the photo library); on the Mac only Choose; and on both, since 0.91,
+/// "Choose a file…" (`<id>-file`) — his test sheet of 19 Oct 2026: "I would also like to be able to
+/// choose a screenshot of the photo or a photo that is stored in a folder, not only via the Photos
+/// app": the Files app on the iPhone, the Mac's Open window — any picture (PNG, JPEG, HEIC, TIFF,
+/// a screenshot). Under the UI tests `testTitle` (`id`) keeps a drawn picture — no test can work a
+/// camera or a library — and "Choose a file…" reads a picture file the app writes itself
+/// (`PhotoFile.testFile`), through the very path a chosen file takes; no test can work the Open
+/// window either. `keep` gets the JPEG the app keeps (at most 1600 on the long side), or nil.
 struct PhotoTakers: View {
     let id: String
     let testTitle: String
@@ -132,11 +175,14 @@ struct PhotoTakers: View {
     let keep: (Data?) -> Void
     @State private var picked: PhotosPickerItem?
     @State private var camera = false
+    /// The Files app / the Mac's Open window is up (0.91).
+    @State private var choosingFile = false
 
     var body: some View {
-        HStack(spacing: 10) {
-            if AMSPackingApp.testing {
+        FlowRow(spacing: 10) {
+            if PhotoTakers.drawn {
                 pill(testTitle, id: id) { keep(JPEG.sample()) }
+                pill(PhotoFile.chooseWords, id: "\(id)-file") { keep(PhotoFile.testFile().flatMap(PhotoFile.jpeg(at:))) }
             } else {
                 #if os(iOS)
                 if UIImagePickerController.isSourceTypeAvailable(.camera) {
@@ -146,6 +192,7 @@ struct PhotoTakers: View {
                 PhotosPicker(selection: $picked, matching: .images) { pillLabel(choose) }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("\(id)-pick")
+                pill(PhotoFile.chooseWords, id: "\(id)-file") { choosingFile = true }
             }
         }
         .onChange(of: picked) { _, item in
@@ -154,6 +201,9 @@ struct PhotoTakers: View {
                 if let data = try? await item.loadTransferable(type: Data.self) { keep(JPEG.make(from: data)) }
                 picked = nil
             }
+        }
+        .fileImporter(isPresented: $choosingFile, allowedContentTypes: PhotoFile.types) { result in
+            if case .success(let url) = result { keep(PhotoFile.jpeg(at: url)) }
         }
         #if os(iOS)
         .fullScreenCover(isPresented: $camera) {
@@ -166,6 +216,10 @@ struct PhotoTakers: View {
         #endif
     }
 
+    /// The tests' pills (a drawn picture, the app's own file) — not with `-realPhotoTakers`, which
+    /// keeps the real ways under the tests, to look at the system's windows by hand.
+    static let drawn = AMSPackingApp.testing && !ProcessInfo.processInfo.arguments.contains("-realPhotoTakers")
+
     private func pill(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { pillLabel(title) }
             .buttonStyle(.plain).focusEffectDisabled()
@@ -177,6 +231,83 @@ struct PhotoTakers: View {
             .padding(.horizontal, 12).frame(minHeight: 38)
             .overlay(Capsule().stroke(tint, lineWidth: 1.4))
             .contentShape(Capsule())
+    }
+}
+
+/// A picture from a file (0.91): chosen in the Files app or the Mac's Open window, or dropped on a
+/// photo block (`takesDroppedPhoto`). Read with the file's permission, squeezed as every photo is.
+enum PhotoFile {
+    static let chooseWords = "Choose a file\u{2026}"
+    /// Any picture the system can read: PNG, JPEG, HEIC, TIFF, GIF… (a screenshot is a PNG).
+    static let types: [UTType] = [.image]
+
+    /// The JPEG the app keeps from a picture file, or nil when it is no picture.
+    static func jpeg(at url: URL) -> Data? {
+        let granted = url.startAccessingSecurityScopedResource()
+        defer { if granted { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return JPEG.make(from: data)
+    }
+
+    /// Under the UI tests: a picture file as a screenshot is one — a PNG, white with grey bars and
+    /// a see-through corner — written by the app into its own temporary folder.
+    static func testFile() -> URL? {
+        let w = 1170, h = 800
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.setFillColor(red: 0.55, green: 0.57, blue: 0.6, alpha: 1)
+        for k in 0..<6 { ctx.fill(CGRect(x: 60, y: 80 + k * 110, width: 700 - k * 60, height: 40)) }
+        ctx.clear(CGRect(x: w - 200, y: h - 200, width: 200, height: 200))
+        guard let image = ctx.makeImage() else { return nil }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Screenshot test.png")
+        guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, image, nil)
+        return CGImageDestinationFinalize(dest) ? url : nil
+    }
+}
+
+extension View {
+    /// A picture dropped on a photo block (0.91 — the Mac: a screenshot or a picture from a folder,
+    /// dragged from Finder or another app): kept as a chosen one is, while there is room (`room`).
+    /// A soft ring in `tint` while one is held over it.
+    func takesDroppedPhoto(room: Bool, tint: Color, keep: @escaping (Data?) -> Void) -> some View {
+        modifier(PhotoDrop(room: room, tint: tint, keep: keep))
+    }
+}
+
+private struct PhotoDrop: ViewModifier {
+    let room: Bool
+    let tint: Color
+    let keep: (Data?) -> Void
+    @State private var over = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if over && room {
+                    RoundedRectangle(cornerRadius: 10).stroke(tint, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                        .padding(-4)
+                        .allowsHitTesting(false)
+                }
+            }
+            .onDrop(of: [.fileURL, .image], isTargeted: $over) { providers in
+                guard room, let first = providers.first else { return false }
+                if first.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                    _ = first.loadObject(ofClass: URL.self) { url, _ in
+                        let jpeg = url.flatMap(PhotoFile.jpeg(at:))
+                        DispatchQueue.main.async { keep(jpeg) }
+                    }
+                    return true
+                }
+                first.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                    let jpeg = data.flatMap { JPEG.make(from: $0) }
+                    DispatchQueue.main.async { keep(jpeg) }
+                }
+                return true
+            }
     }
 }
 
@@ -343,6 +474,11 @@ struct ThingPhotos: View {
                     model.change { _ = $0.addThingPhoto(id: t, jpeg: jpeg) }
                 }
             }
+        }
+        .takesDroppedPhoto(room: !full, tint: tint) { jpeg in
+            guard let jpeg else { return }
+            let t = thingId
+            model.change { _ = $0.addThingPhoto(id: t, jpeg: jpeg) }
         }
         // The other device took the photo away while the question stood: no question left.
         .onChange(of: shots.map(\.0)) { _, ids in if let r = removing, !ids.contains(r) { removing = nil } }

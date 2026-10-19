@@ -36,26 +36,73 @@ final class Record {
 /// Records kept by SwiftData — on this device, and (when `cloud`) in his iCloud.
 final class CloudStore: LibraryStore {
     static let containerId = "iCloud.com.schabbauer.AMSPacking"
+    /// The name this app's own saves carry in the store's history (0.91, `onlyOurOwnSinceLastLook`).
+    static let author = "AMSPacking.app"
+    /// Authors whose changes bring nothing into the library: this app's own saves, and iCloud SENDING
+    /// them out (its export only notes what it sent). iCloud bringing the other device's changes in
+    /// ("NSCloudKitMirroringDelegate.import"), or any author not named here, is read.
+    static let bringNothingIn: Set<String> = [author, "NSCloudKitMirroringDelegate.export"]
 
     private let container: ModelContainer
     private let context: ModelContext
     private var observer: NSObjectProtocol?
     var onRemoteChange: (() -> Void)?
+    /// The newest change in the store's history already looked at (0.91).
+    private var seen: DefaultHistoryToken?
 
-    init(cloud: Bool, inMemory: Bool = false) throws {
+    /// `file`: a store in that file instead of the app's own (the measuring library, `EditTiming`).
+    init(cloud: Bool, inMemory: Bool = false, file: URL? = nil) throws {
         let schema = Schema([Record.self])
-        let config = ModelConfiguration(
-            "Library", schema: schema, isStoredInMemoryOnly: inMemory,
-            cloudKitDatabase: cloud ? .private(CloudStore.containerId) : .none)
+        let config = file.map { ModelConfiguration("Library", schema: schema, url: $0, cloudKitDatabase: .none) }
+            ?? ModelConfiguration(
+                "Library", schema: schema, isStoredInMemoryOnly: inMemory,
+                cloudKitDatabase: cloud ? .private(CloudStore.containerId) : .none)
         container = try ModelContainer(for: schema, configurations: [config])
         context = ModelContext(container)
         context.autosaveEnabled = false
+        context.author = CloudStore.author
+        seen = newestInHistory()
         // Records that arrived from the other device land in the store behind our
         // back; this is how we hear about it. Heard on the main queue: the model then
         // reloads the whole store there (see LibraryModel.init for what that costs).
+        // 🪤 The store also says so after every save of OUR OWN (0.91, measured: on a library of
+        // his size every change was followed, a few seconds later, by a whole reload of 1.4 s on
+        // the main thread — the wait he felt after typing). So the history is asked first, and
+        // when everything since the last look is this app's own saving, nothing is read again.
+        // Anything else — iCloud bringing the other device's changes, a history that cannot be
+        // read — reloads exactly as before.
         observer = NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main
-        ) { [weak self] _ in self?.onRemoteChange?() }
+        ) { [weak self] _ in
+            guard let self else { return }
+            if self.onlyOurOwnSinceLastLook() { return }
+            self.onRemoteChange?()
+        }
+    }
+
+    /// True only when the store's history holds new changes and every one of them was saved by this
+    /// app's own context (or is iCloud sending those out). False for anything else — another author,
+    /// no author, no new change at all, or a history that cannot be read (a store without one) — so a
+    /// doubt always reloads.
+    private func onlyOurOwnSinceLastLook() -> Bool {
+        var asked = HistoryDescriptor<DefaultHistoryTransaction>()
+        if let seen { asked.predicate = #Predicate { $0.token > seen } }
+        guard let changes = try? context.fetchHistory(asked) else { seen = nil; return false }
+        if let newest = changes.map(\.token).max() { seen = newest }
+        return !changes.isEmpty && changes.allSatisfy { $0.author.map(CloudStore.bringNothingIn.contains) ?? false }
+    }
+
+    /// Under the UI tests (`-uiTestingOnDisk`): records written into the store by ANOTHER hand, as
+    /// iCloud writes what the other device changed — a context of its own, under another name.
+    func writeAsTheOtherDevice(_ records: [StoredRecord]) {
+        let other = ModelContext(container)
+        other.author = "the other device"
+        for r in records { other.insert(Record(r)) }
+        try? other.save()
+    }
+
+    private func newestInHistory() -> DefaultHistoryToken? {
+        (try? context.fetchHistory(HistoryDescriptor<DefaultHistoryTransaction>()))?.map(\.token).max()
     }
 
     deinit { if let o = observer { NotificationCenter.default.removeObserver(o) } }

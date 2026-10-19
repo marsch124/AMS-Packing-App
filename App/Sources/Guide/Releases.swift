@@ -18,6 +18,16 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.91", date: "19 Oct 2026", title: "Home in frames, more colours, bags by hand",
+                new: ["Home: Grab and go and its lists in one frame; This Device right under the trip; Create new trip inside its card; Full trip and Quick as wide as the name.",
+                      "A template\u{2019}s colour shows on its pill on Create new trip and in Trip settings.",
+                      "Sixteen colours for a template, still in two rows: Plum, Navy, Olive and Sand are new.",
+                      "Find an icon: search the icons by name \u{2014} in English, Swedish or German (\u{201C}flyg\u{201D} finds the plane).",
+                      "Your bags in your own order: with Own order, drag a bag by its grip (arrows on the Mac).",
+                      "Choose a photo from a file \u{2014} a screenshot or a picture in a folder \u{2014} for things and bags; on the Mac, drop a picture on Photos."],
+                changed: ["The Activity areas pill sits at the foot of the Templates tab.",
+                          "A bag\u{2019}s page no longer lags while you type, scroll or move to the next field.",
+                          "Your bags: the arrow sits right after the bag\u{2019}s name."]),
         Release(version: "0.90", date: "19 Oct 2026", title: "Search, colours, bags and photos",
                 new: ["How it works has a search field: type a word and only what says it shows, the word marked. On the Mac, \u{2318}F.",
                       "A template\u{2019}s icon takes the colour you choose: tap the icon, then Colour. Automatic gives it its own colour back.",

@@ -2348,8 +2348,9 @@ tests, like `ams.view`). Until 0.74 the card was always open.
      `bag-<n>-photo-remove-<k>`, no confirmation); then, while fewer than three are stored, the add
      pills (15 bold green, 1.4 pt green outline): on the iPhone "Take a photo"/"Take another" when a
      camera exists (id `bag-<n>-photo`) and "Choose a photo"/"Choose another" (PhotosPicker, id
-     `bag-<n>-photo-pick`); on the Mac only Choose; under the UI tests one pill "Photo of the packed
-     bag"/"Another photo" (id `bag-<n>-photo`) that keeps a drawn picture. At three: "Three photos —
+     `bag-<n>-photo-pick`); on the Mac only Choose; since 0.91 on both "Choose a file…" (`bag-<n>-photo-file`)
+     and a picture dropped on the block (spec 01 §1.10, "From a file"); under the UI tests "Photo of the packed
+     bag"/"Another photo" (id `bag-<n>-photo`) that keeps a drawn picture, and "Choose a file…", a PNG the app writes. At three: "Three photos —
      remove one to add another" (15 medium muted, id `bag-<n>-photo-full`).
   4. **Bag-tag no.** (0.80, a plane trip's CHECKED bags only — not a cabin bag, not "Not in a bag",
      `asksBagTag`; spec 07 part 18 B): the label (Footnote semibold
