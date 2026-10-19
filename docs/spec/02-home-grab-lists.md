@@ -146,6 +146,11 @@ marks "On this device".
   `model.placeToOpen` (the code); `onChange(of: model.placeToOpen, initial: true)` switches to `.home`.
   Under UI tests `-uiTestingOpen <link>` plays the same at launch (`LibraryModel.shared`), and (iPhone, 0.73)
   `-uiTestingOpenOnReturn <link>` each time the running app comes back to the front after being put away.
+- **A thing's result tapped in Spotlight** (0.92, spec 06 §3d): `onContinueUserActivity(CSSearchableItemActionType)`
+  hands the activity to `ThingSpotlight.open`, which sets `model.thingToOpen` (the thing's id) for a thing that
+  exists; `onChange(of: model.thingToOpen, initial: true)` switches to `.home`. The same frame hands his things to
+  this device's Spotlight (`ThingSpotlight.shared.sync`) whenever the library settles (the 2-second wait) and when
+  the app comes to the front.
 - **A tab asked for from inside a window** (0.62): `onChange(of: model.tabToOpen)` switches to that
   section and sets it back to nil. Search sets it to `.actions` for a to-do (section 15).
 - **Under UI tests only**, when the app comes back to the front after being in the background
@@ -154,11 +159,14 @@ marks "On this device".
   `PackingReminders.open` with the next trip (as a tapped reminder does), `-dropOwnGrabListsOnReturn`
   removes `meta["grabOwnLists"]` (as a later write from the other device that no longer holds them), and
   (0.86, iPhone) `-quickActionOnReturn <title>` hands the entry under the app icon with that title to the
-  scene's delegate, as iOS does when he taps it while the app runs (section 13b).
+  scene's delegate, as iOS does when he taps it while the app runs (section 13b), and (0.92, iPhone)
+  `-spotlightTapOnReturn <name>` hands that thing's Spotlight result to the scene's delegate (`scene(_:continue:)`).
+  At launch, `-spotlightTap <name>` does the same once the result has been handed to Spotlight.
 - **Mac (0.86):** on appear each window counts itself into `GrabQuickActions.mainWindows` and leaves its
   `openWindow(id: "main")` in `GrabQuickActions.openMainWindow`; on disappear it counts itself out. A Dock menu
   choice made with no window open opens one first (section 13b). Under the UI tests `-dockMenu <title>` plays
-  that menu's entry once the window is up, `-dockMenuWhenClosed <title>` once the last main window has closed.
+  that menu's entry once the window is up, `-dockMenuWhenClosed <title>` once the last main window has closed;
+  (0.92) `-spotlightTapWhenClosed <name>` hands that thing's Spotlight result to the app's delegate then.
 
 **Data.** Reads `model.state`, `model.library`. Writes nothing itself (the test-only
 `-dropOwnGrabListsOnReturn` aside).
@@ -329,6 +337,7 @@ field above." (The fourth is the Create new trip file's, spec 03.)
 | Grab Lists | "Grab Lists" | `GrabCollectionScreen()` |
 | Which grab list? | `model.grabMenuOpen` set (the request, cleared at once) → the local `menuShown` | `GrabMenuScreen()` |
 | One grab list | a tile tap; `model.grabToOpen` | `GrabScreen(listId:)` |
+| A thing's page (0.92) | `model.thingToOpen` — its result tapped in Spotlight | `ThingEditor(itemId:)` (spec 05), local `thingShown` |
 
 Open-requests from outside are handled in `HomeScreen` with `onChange(…, initial: true)`:
 - `grabToOpen`: it is set back to `nil` at once. If `library.allGrabLists()` holds that id, the list
@@ -336,6 +345,8 @@ Open-requests from outside are handled in `HomeScreen` with `onChange(…, initi
 - `tripToOpen`: it is set back to `nil` at once. If `library.trips` holds that id, the trip opens. An
   unknown id does nothing.
 - `grabMenuOpen`: set back to `false` at once; the menu opens unless it is already up.
+- `thingToOpen` (0.92): set back to `nil` at once. If `library.items` holds that id, the thing's page opens. An
+  unknown id does nothing.
 - `placeToOpen` (0.69): set back to `nil` at once; `PlaceOpening.of(code:in:today:)` decides — the trip being
   packed opens on the place's lines, otherwise the place's page (also for a code nothing knows, which says so).
   On the iPhone, opening that trip also asks Pack by voice to start at the place: `whenFree` sets `voiceAsked`
@@ -346,7 +357,8 @@ Open-requests from outside are handled in `HomeScreen` with `onChange(…, initi
 - Each opening goes through `whenFree` (0.62): if one of Home's own sheets is up (Search, a trip, Grab
   Lists, a grab list, the menu), all of them are closed first and the asked-for one opens **0.8 s** later;
   otherwise it opens at once. Until then a Shortcut or a tapped reminder that arrived while, say, Grab
-  Lists was open could open nothing. Since 0.69 a place's page counts as one of Home's sheets too.
+  Lists was open could open nothing. Since 0.69 a place's page counts as one of Home's sheets too, and since 0.92
+  a thing's page opened from Spotlight.
 
 **iPhone vs Mac.** All of these are `.sheet`s. On the iPhone a sheet can also be swiped down (no
 `interactiveDismissDisabled` anywhere here). On the Mac each sheet sets its own minimum size (given per

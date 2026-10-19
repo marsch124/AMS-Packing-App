@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import CoreSpotlight
 import PackingCore
 import PackingLibrary
 
@@ -68,6 +69,8 @@ struct RootView: View {
             if AMSPackingApp.testing {
                 RootView.playTappedDoorCheck(model)
                 RootView.playTappedTripMessage(model)
+                // A Spotlight result tapped as the app opens (0.92).
+                ThingSpotlight.playTapped("-spotlightTap")
             }
             #if os(macOS)
             // The Dock icon's menu (0.86) opens a window first when none is open.
@@ -79,7 +82,10 @@ struct RootView: View {
         #if os(macOS)
         .onDisappear {
             GrabQuickActions.mainWindows -= 1
-            if GrabQuickActions.mainWindows == 0 { GrabQuickActions.playDockMenu("-dockMenuWhenClosed") }
+            if GrabQuickActions.mainWindows == 0 {
+                GrabQuickActions.playDockMenu("-dockMenuWhenClosed")
+                ThingSpotlight.playTapped("-spotlightTapWhenClosed")
+            }
         }
         #endif
         .onReceive(model.$library.debounce(for: .seconds(2), scheduler: RunLoop.main)) { library in
@@ -90,6 +96,8 @@ struct RootView: View {
             // the app icon (0.86): a list added, renamed, removed or moved on Home.
             PackingShortcuts.updateAppShortcutParameters()
             GrabQuickActions.refresh(library)
+            // His things in this device's Spotlight (0.92): what changed is handed over again.
+            ThingSpotlight.shared.sync(library)
         }
         // Back from the shop: what was ticked in Reminders is ticked here (field test 8.4).
         .onChange(of: scenePhase) { _, phase in
@@ -100,6 +108,8 @@ struct RootView: View {
             if phase == .active { Task { await PackingReminders.shared.reschedule(model.library) } }
             if phase == .active { Task { await DoorChecks.shared.reschedule(model.library) } }
             if phase == .active { Task { await TripMessages.shared.reschedule(model.library) } }
+            // The day alone moves a trip under way on — and so where a thing is, in Spotlight.
+            if phase == .active { ThingSpotlight.shared.sync(model.library) }
             if phase == .background {
                 wasAway = true
                 // What he finds under the icon on the Home Screen is right as he gets there.
@@ -112,6 +122,10 @@ struct RootView: View {
         }
         // A place's printed code, read by the iPhone's Camera (0.69): it opens on Home.
         .onOpenURL { model.open($0) }
+        // A thing's result tapped in Spotlight (0.92) — at a cold start or while the app runs, on
+        // the iPhone and the Mac: its page opens on Home.
+        .onContinueUserActivity(CSSearchableItemActionType) { ThingSpotlight.open($0) }
+        .onChange(of: model.thingToOpen, initial: true) { _, id in if id != nil { section = .home } }
         .onChange(of: model.placeToOpen, initial: true) { _, place in if place != nil { section = .home } }
         // A Shortcut asked for a grab list or a trip: both open on Home.
         .onChange(of: model.grabToOpen, initial: true) { _, id in if id != nil { section = .home } }
@@ -150,7 +164,8 @@ struct RootView: View {
     /// Action button would (`-openGrabOnReturn <word>`), a tapped packing reminder
     /// (`-openNextTripOnReturn`), the other device's later write that no longer
     /// holds his own grab lists (`-dropOwnGrabListsOnReturn`), or (iPhone, 0.86) an entry
-    /// under the app icon (`-quickActionOnReturn <title>`).
+    /// under the app icon (`-quickActionOnReturn <title>`), or (iPhone, 0.92) a thing's result
+    /// tapped in Spotlight (`-spotlightTapOnReturn <name>`).
     private static func playWhatHappenedWhileAway(_ model: LibraryModel) {
         let args = ProcessInfo.processInfo.arguments
         if let n = args.firstIndex(of: "-openGrabOnReturn"), n + 1 < args.count {
@@ -167,6 +182,7 @@ struct RootView: View {
         if let n = args.firstIndex(of: "-quickActionOnReturn"), n + 1 < args.count {
             GrabQuickActions.playWhileRunning(title: args[n + 1])
         }
+        ThingSpotlight.playTapped("-spotlightTapOnReturn")
         #endif
     }
 }

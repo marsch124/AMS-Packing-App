@@ -404,15 +404,22 @@ extension Library {
     /// Inside a kit: where the KIT is, the kit named (`kit`). Taken out of its kit for now:
     /// its own answer, saying so (`takenOutOf`).
     public func whereIs(thingId: String, today: String) -> WhereAnswer? {
+        whereIs(thingId: thingId, today: today, kits: kitIndex(), trip: tripUnderWay(today: today))
+    }
+
+    /// The same answer, with who holds what (`kitIndex`) and the trip under way worked out once by
+    /// a caller that asks about every thing at once (Spotlight, 0.92 — SpotlightThings.swift).
+    func whereIs(thingId: String, today: String, kits: KitIndex, trip underWay: TripEvent?) -> WhereAnswer? {
         guard let thing = items.first(where: { $0.id == thingId }) else { return nil }
-        let holder = kitHolding(thingId: thingId).flatMap { $0.id == thingId ? nil : $0 }
-        if let kit = holder, !isTakenOut(thingId: thingId), var a = whereIs(thingId: kit.id, today: today) {
+        let holder = kits.holder[thingId].flatMap { k in k == thingId ? nil : items.first { $0.id == k } }
+        let takenOut = holder.map { Library.kitIds($0.extra[KIT_OUT_KEY]).contains(thingId) } ?? false
+        if let kit = holder, !takenOut, var a = whereIs(thingId: kit.id, today: today, kits: kits, trip: underWay) {
             a.name = thing.name
             a.kit = kit.name
             return a
         }
         var a: WhereAnswer
-        if let trip = tripUnderWay(today: today),
+        if let trip = underWay,
            let line = trip.entries.first(where: { $0.sourceItemId == thingId && !isSetAside($0) }) {
             a = answer(line: line, trip: trip)
         } else {

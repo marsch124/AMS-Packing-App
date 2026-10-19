@@ -53,6 +53,9 @@ struct SettingsScreen: View {
                 // Remind me to pack (his idea 7) — per device, off until he says.
                 RemindersCard().environmentObject(model)
 
+                // His things in this device's Spotlight (0.92) — per device, on until he says.
+                SpotlightCard().environmentObject(model)
+
                 // iCloud sync on this device (his field test, 3 Oct 2026): sent, received,
                 // what is stuck and why — and Sync now, which the other device then shows.
                 SyncCard().environmentObject(model)

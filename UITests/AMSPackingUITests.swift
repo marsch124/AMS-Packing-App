@@ -4079,6 +4079,91 @@ final class AMSPackingUITests: XCTestCase {
     }
     #endif
 
+    // MARK: - Find your things in Spotlight (0.92)
+
+    /// The name on the thing's page that is open.
+    private func pageName(_ app: XCUIApplication) -> String {
+        let field = app.textFields["thing-name"]
+        return field.exists ? (field.value as? String ?? "") : ""
+    }
+
+    /// His yes of 19 Oct 2026: a thing's result tapped in Spotlight opens the app on that thing's
+    /// page. `-spotlightTap <name>` takes the result titled so from what the app handed Spotlight —
+    /// so a thing not handed over cannot be opened — and hands it to the app as the system does, as
+    /// the app opens; `-spotlightTapOnReturn <name>` (iPhone) as it comes back to the front, here
+    /// with Search up, which makes way; `-spotlightTapWhenClosed <name>` (Mac) once its last window
+    /// has closed: a window opens with the page.
+    func testASpotlightResultOpensItsThingsPage() {
+        let cold = launch("-uiTesting", ["-spotlightTap", "Headlamp"])
+        XCTAssertTrue(appears(cold, "thing-detail", timeout: 25), "the tapped result opened no page as the app opened")
+        XCTAssertTrue(waitUntil { self.pageName(cold) == "Headlamp" }, "it opened another thing: '\(pageName(cold))'")
+        shot(cold, "spotlight-opened")
+        cold.terminate()
+
+        #if os(iOS)
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-spotlightTapOnReturn", "Rain jacket"]
+        app.launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 15), "a result tapped while the app ran opened no page over Search")
+        XCTAssertTrue(waitUntil { self.pageName(app) == "Rain jacket" }, "it opened another thing: '\(pageName(app))'")
+        XCTAssertNil(find(app, "search-detail"), "Search is still up")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "the page did not close")
+        XCTAssertTrue(appears(app, "screen-home"), "Cancel did not bring him back to Home")
+        #else
+        let closed = launch("-uiTesting", ["-spotlightTapWhenClosed", "Rain jacket"])
+        XCTAssertTrue(appears(closed, "screen-home", timeout: 20))
+        // The hook waits for the result to be handed over (2 s after launch), then taps it.
+        closed.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(appears(closed, "thing-detail", timeout: 20), "with no window open, the tapped result brought no window with the page")
+        XCTAssertTrue(waitUntil { self.pageName(closed) == "Rain jacket" }, "it opened another thing: '\(pageName(closed))'")
+        #endif
+    }
+
+    /// Settings → Show my things in Spotlight: on to begin with, and the line under it says how many
+    /// things this device's Spotlight holds — the sample's 10. A thing deleted is taken out (9). Off
+    /// takes every one out; on puts them all back.
+    func testSettingsTakesHisThingsOutOfSpotlightAndPutsThemBack() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        XCTAssertTrue(switchNamed(app, "settings-spotlight").exists, "no Show my things in Spotlight switch")
+        XCTAssertTrue(isSwitchOn(app, "settings-spotlight"), "Spotlight is off before he said so")
+        let line = app.staticTexts["settings-spotlight-count"]
+        XCTAssertTrue(waitUntil(timeout: 15) { self.words(line).hasPrefix("10 things in Spotlight") },
+                      "the sample's 10 things are not in Spotlight: '\(words(line))'")
+        shot(app, "settings-spotlight")
+
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-delete"), "no Delete thing")
+        tap(app, id: "thing-delete")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-delete-yes"))
+        tap(app, id: "thing-delete-yes")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        tab(app, "settings")
+        XCTAssertTrue(waitUntil(timeout: 15) { self.words(line).hasPrefix("9 things in Spotlight") },
+                      "a deleted thing is still in Spotlight: '\(words(line))'")
+
+        setSwitch(app, "settings-spotlight", on: false)
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(line).hasPrefix("None of your things") },
+                      "off, his things are still in Spotlight: '\(words(line))'")
+        setSwitch(app, "settings-spotlight", on: true)
+        XCTAssertTrue(waitUntil(timeout: 15) { self.words(line).hasPrefix("9 things in Spotlight") },
+                      "on again, his things are not back in Spotlight: '\(words(line))'")
+    }
+
     #if os(iOS)
     /// The same, the way he does it: the Packing icon HELD on the Home Screen shows four of his
     /// grab lists — Outdoor bike among them once he has opened it, in the place Outdoor swim had

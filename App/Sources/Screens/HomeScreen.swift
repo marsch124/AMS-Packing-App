@@ -63,6 +63,8 @@ struct HomeScreen: View {
     /// A place's list, opened by its code when no trip is being packed (0.69).
     @State private var placeShown: PlaceOpening?
     @State private var grab: GrabDefinition?
+    /// A thing's page, opened by its result tapped in Spotlight (0.92, Store/Spotlight.swift).
+    @State private var thingShown: Opened?
     @State private var searching = false
     @State private var showingGrabLists = false
     /// "Which grab list?" — the Action button's menu, asked for through the model.
@@ -291,6 +293,13 @@ struct HomeScreen: View {
         .sheet(item: Binding(get: { grab.map { GrabOpened(list: $0) } }, set: { grab = $0?.list })) { g in
             GrabScreen(listId: g.list.id).environmentObject(model)
         }
+        // A thing's result tapped in Spotlight (0.92): its page, over whatever was up.
+        .sheet(item: $thingShown) { ThingEditor(itemId: $0.id).environmentObject(model) }
+        .onChange(of: model.thingToOpen, initial: true) { _, id in
+            guard let id else { return }
+            model.thingToOpen = nil
+            if model.library.items.contains(where: { $0.id == id }) { whenFree { thingShown = Opened(id: id) } }
+        }
     }
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
@@ -370,8 +379,10 @@ struct HomeScreen: View {
     /// so until 5 Oct 2026 such a request could open nothing.
     private func whenFree(_ open: @escaping () -> Void) {
         let busy = searching || showingGrabLists || opened != nil || grab != nil || menuShown || placeShown != nil
+            || thingShown != nil
         guard busy else { open(); return }
         searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false; placeShown = nil
+        thingShown = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
     }
 

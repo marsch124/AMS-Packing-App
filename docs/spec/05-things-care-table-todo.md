@@ -1660,6 +1660,76 @@ years"; never rounded up (5 months 30 days = "in 5 months"). Past: "yesterday (o
 date)" with the same units. "" when either side is not exactly YYYY-MM-DD. `addMonths(ymd, n)`: a day the target
 month lacks becomes its last day (31 Jan + 1 month = 28/29 Feb); years outside 0…9999 give "".
 
+## Your things in Spotlight (0.92 — `PackingLibrary/SpotlightThings.swift`; the app's side: spec 06 §3d)
+
+His yes of 19 Oct 2026 to the idea "Find your things in Spotlight: type 'headlamp' in Spotlight on the iPhone or
+Mac and see the thing and where it is, without opening the app." Every thing of his is one result in the device's
+own Spotlight; tapping it opens the app on the thing's page (`ThingEditor`, over Home — spec 02 section 3).
+
+**Which things** — `Library.spotlightThings(today:)`: `thingRows()` (every thing of his — `ownThings`, A–Z as Your
+things lists them) except a thing set to "Not in use" (`retired`), a to-do (`itemType == "reminder"`, e.g. one left on
+no template) and a thing with a blank name. A bag is a thing: "Backpack" finds the bag (and opens the thing's page,
+not the bag's page). One thing alone: `spotlightThing(id:today:)` (nil for no thing or one not shown).
+
+**The result** — `SpotlightThing`: `id`, `title` (its name, trimmed), `place` (the line under the name), `keywords`,
+`photoId` (its first photo on this device, `firstThingPhoto`; "" = none, and Spotlight then shows the app's icon).
+Its identifier in Spotlight: `"thing:" + id` (`SpotlightThing.identifier`; `thingId(_:)` reads it back and answers nil
+for any identifier that does not start so, or has nothing after it).
+
+**The line under the name** — `SpotlightWords.place(_ answer: WhereAnswer, keptAt:)`, from the very answer "Where is
+my …?" gives (`whereIs(thingId:today:)`, spec 03 "Bag pockets on a trip, and Where is my …?"): parts joined by
+" · ", the bag and its pocket as Search shows them (`Library.bagAndPocket`, "Backpack · Front pocket"), "the" before
+the bag:
+
+| Where it is | The line |
+|---|---|
+| On the trip under way, ticked | "Packed in the Backpack · Front pocket" (no bag on the line: "Packed, not in a bag") |
+| Packed for home (the home pocket) | "Packed for home in the Backpack · Lid" ("Packed for home, not in a bag") |
+| On the trip under way, not ticked | "Not packed yet · Goes in the Backpack · Front pocket · Kept at home: Garage" |
+| No trip under way, or not on it | "Usually in the Backpack · Front pocket · Kept at home: Garage" |
+| Inside a kit (not taken out) | "In the Camp pouch · " + the KIT's line — "In the Camp pouch · Usually in the Day pack · Front pocket · Kept at home: Garage" |
+| Taken out of its kit for now | "Taken out of the Camp pouch · " + its own line — "Taken out of the Camp pouch · Usually in the Tote · Kept at home: Kitchen drawer" |
+| No usual bag and no place at home | "No usual bag or place at home yet" (a place only: "Kept at home: Kim's room") |
+
+"Kept at home" is said only while the thing is at home (its usual answer, or not packed yet) — never once packed —
+and with a colon, as the thing's page labels it: a place is any words he chose ("Kim's room", "Förråd"), and
+"in the …" would not fit them all. For a thing inside its kit it is where the KIT is kept (the thing is in the kit);
+taken out, its own. The trip under way and the last day counting are `tripUnderWay(today:)`'s; the day alone
+changes the line (a trip ending turns "Packed in …" back into "Usually in …").
+
+**What it is found by** — its name, the line above, and `SpotlightWords.keywords(_:templates:)`, each once
+(capitals and accents aside, never the name again, blanks dropped), in this order: Kind of thing (`category`), Whose
+it is (`ownedBy`), the templates it is on (as Your things names them — the bag list as "Bags" — in the order of his
+templates), Brand (`manufacturer`), `model`, and its Swedish name (`swedish`, the web app's original wording:
+"Pannlampa" finds the Headlamp). **Never** its notes, serial number, Valid until, price, purchase link, warranty or
+when it was bought: Spotlight shows results to anyone holding an unlocked device, and notes are free text that can
+hold a code or a name. (The iPhone's index is locked while the iPhone is — spec 06 §3d.)
+
+**What is handed over again** — `SpotlightThing.fingerprint`: FNV-1a (64 bits, hex) of the words' version
+(`SpotlightWords.version`, 1), id, title, line, keywords and photo id — the same on every launch and every device
+(Swift's own `hashValue` changes from launch to launch). `SpotlightWords.changes(_:indexed:)` → `put`: every thing
+whose fingerprint differs from the one handed over last (or that has none), in the order given; `drop`: every id
+handed over that is no longer shown (deleted, set to Not in use, made a to-do), sorted. A change to the words in a
+later version bumps `version`, which hands everything over again once.
+
+**Cost.** Worked out off the main thread after every settled change: the kits (`kitIndex`), the trip under way and
+the things by id are worked out ONCE for all things (`SpotlightContext`; `whereIs(thingId:today:kits:trip:)` is the
+same answer with those handed in — asked thing by thing, `whereIs` works out the kits again for every thing).
+421 things with 20 kits and a trip under way: about 0.25 s in a debug build of the tests.
+
+**Tests** (`SpotlightThingsTests`, 10): `testTheLineUnderAThingSaysWhereItIsNow`, `testAThingInAKitIsWhereItsKitIs`,
+`testEveryLineIsTheAnswerWhereIsMyGivesThingByThing` (the batch and the one-thing paths agree with `whereIs` for every
+thing, on the trip and after it), `testAThingIsFoundByItsKindOwnerTemplatesBrandModelAndSwedishNameAndNothingPrivate`,
+`testEveryThingOfHisButTheOnesNotInUseAndTheToDos`, `testItsFirstPhotoGoesWithItAndChangesItsFingerprint`,
+`testTheFingerprintIsTheSameOnEveryLaunchAndChangesWithWhatIsHanded` (a fixed text, "4a6c5ffb09e4c261"),
+`testOnlyWhatChangedIsHandedOverAgainAndWhatWentIsTakenOut`, `testATappedResultNamesItsThing`,
+`testFourHundredThingsAreWorkedOutQuickly` (under 2 s). Each seen red with a planted fault (0.92): "Kept at home" said
+once packed; a kit member's own place; the batch path without the trip under way; notes among the keywords
+("Spotlight is handed '4711'"); a thing not in use shown; the photo left out of the fingerprint ("a new photo is not
+handed to Spotlight"); Swift's `hashValue` as the fingerprint; gone things never taken out; any identifier opening a
+thing ("another kind of result opened a thing"); and, in `PocketsTests`, the handed-in kit index ignoring "taken out".
+The UI tests (opening a tapped result, the Settings switch): spec 06 §3d.
+
 ---
 
 ## Care → Bags (App/Sources/Screens/BagsScreen.swift, PackingLibrary/Bags.swift)
@@ -2812,6 +2882,9 @@ removing, ticking, finding a reminder gone); the no-access and failure messages;
 | `ams.table.down` | Bool false | The first level runs ▼. |
 | `ams.table.then` | String "" | JSON `[SortLevel]` — the "then by" levels (at most two). |
 | `ams.table.filters` | String "" | JSON `{column id: [kept values]}`. |
+| `ams.spotlight.on` | Bool true | Show my things in Spotlight (0.92, spec 06 §3d). |
+| `ams.spotlight.indexed` | [String: String] | The fingerprint of each thing handed to this device's Spotlight, by thing id (0.92). |
+| `ams.spotlight.generation` | String "" | The mark of the last hand-over, also kept in the index as its client state (0.92). |
 
 They live in this device's UserDefaults: they do not sync, are not in a backup, and a fresh device starts with
 the defaults. Everything else in this area is library data (records → SwiftData → iCloud, docs/store.md).
