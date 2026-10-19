@@ -117,10 +117,13 @@ tall (minimum height 60 with 14 horizontal padding until 0.67); whole row tappab
 `.focusEffectDisabled()`; id `settings-lists`. Tap → `lists = true` → sheet.
 
 ### 2.3 How it is reached and left
-Reached only through the door. Left with **Done** (top right, `HeaderButtonStyle(tint: settings slate, filled:
-true)`, id `lists-done`) which calls `dismiss()` — Escape too (⌘. on an iPhone keyboard, 0.62, §20); or by swiping
-the sheet down on the iPhone. Nothing is ever
-"saved" on leaving — every Add, Remove, Rename and move is written immediately through `LibraryModel.change`.
+Reached only through the door. **Since 0.92 the page works on a copy of the library** (`ListsScreen` =
+`DraftedPage { ListsPage(page:) }`, §20a): every Add, Remove, Rename, move and This is me changes the copy — and so
+does For the lost-luggage desk opened from This is me. Left with **Done** (top right, `HeaderButtonStyle(tint:
+settings slate, filled: true)`, id `lists-done`, ⌘S), which hands over what was changed (`PageDraft.save`), or
+**Cancel** (top left, outlined muted, id `lists-cancel`; Escape too — ⌘. on an iPhone keyboard, §20), or by swiping
+the sheet down on the iPhone — both throw the copy away. Until 0.92 there was only Done (and Escape closed as Done
+did), and every Add, Remove, Rename and move was written at once through `LibraryModel.change`.
 
 ### 2.4 What is on screen, top to bottom
 - Header row (padding 16): **"Your choices"** (22 heavy, ink, id `choices-title`), Spacer, **Done**.
@@ -1629,7 +1632,9 @@ or, where it has no Cancel, its **Done** / **Close** — carries `.keyboardShort
 ⌘. on an iPhone with a keyboard. Never a Save, a Replace or an Add: no key saves anything by accident, and Return
 (`.defaultAction`) is given to no button, so it stays with the fields (`onSubmit`). Nested sheets: only the top one
 closes (each sheet is its own window on the Mac; on the iPhone the top sheet's shortcut is met first). A grab list
-being edited has no Cancel and no shortcut (its Done is hidden while editing). The Mac's own *All your things* window
+being edited has Cancel since 0.92 and Escape is that Cancel (until 0.92 it had no Cancel and no shortcut; its Done is
+hidden while editing). Since 0.92 every page that changes something has a Cancel, and Escape is it (§20a): a
+template's page and Your choices, whose Done carried Escape until then, too. The Mac's own *All your things* window
 (`ThingsTable(inWindow: true)`) has none either — a window closes with ⌘W, and Escape in its search field would close
 the whole table; its sheets (Filter, Sort, Columns, Change, a thing) do have it. On the iPhone a sheet that may be
 swiped away also closes on ⌘. by itself (the system's own, shortcut or not), so there the tests pin that the right
@@ -1655,6 +1660,77 @@ failures are listed in one message). `testHomeBuildsATrip` (Create trip enabled,
 `testTheCrossKeepsTheKeyboard`, `testTheWayHomeIsSearched` (0.62: its ✕ is the shared 36-point one). Deletes: `testATripIsDeletedOnlyAfterAsking`, `testAThingIsDeletedOnlyAfterAsking`,
 `testABagIsRenamedAndDeletedFromItsPage`. **Colour cannot be tested**: "A colour cannot be read by a test; being
 pressable and answering can."
+
+## 20a. Cancel everywhere — the one rule (0.92; `PageDraft`/`DraftedPage` in `Screens/EditDraft.swift`, `Library.applyingPage` in `PackingLibrary/PageChanges.swift`)
+
+**His words** (19 Oct 2026): "I open an item and change some property. How do I cancel that? There is only a Done
+button, right?" — and "the cancel function should be existing throughout the whole app right?"
+
+**The rule.** A page where he changes a PROPERTY of something — several fields, or one thing's settings — has
+**Cancel** top left (`HeaderButtonStyle(tint: Theme.muted, filled: false)`, quiet outlined, as the thing page's
+`thing-cancel`) and **Save** — or a **Done** that saves — top right (filled, full colour, never grey, §20). Cancel
+throws away every change made on that page since it opened; Save/Done keeps them. **Escape = Cancel** on the Mac (⌘.
+on an iPhone keyboard), never Save (§20); **⌘S = Save/Done** (`.keyboardShortcut("s", modifiers: .command)`; the
+thing page's ⌘S is the Mac's Thing menu, the button's own on the iPhone). **A swipe down never saves**: on the iPhone
+it is Cancel, as on a thing's page (spec 05: "(iPhone) a swipe down = Cancel") — except on the three pages that hold
+still while something is changed (Trip settings, the trip review, the lost-luggage desk: `interactiveDismissDisabled`,
+the spec pass of 5 Oct 2026 — there only Cancel or Save closes it; left as they were). What ONE tap does and closes —
+an icon or colour picked, a tick, Done today, a pill on a working list — is an action, not a form: it applies at once
+and stays as it is (inside a page on a copy, the page's Cancel still throws it away).
+
+**How a page holds its changes.** Either in its own state until Save (the thing page, a row, Trip settings, Activity
+areas, the desk, a grab list's edit — as before), or — for a page whose controls change the library AT ONCE (a
+template's page, Your choices) — on a **copy of the library** (0.92): `DraftedPage(live: model) { page in … }` makes a
+`PageDraft` whose `copy` is a `LibraryModel(copyOf:)` — in memory only (`isDraft`: no store, no iCloud, no trip pages
+written by `VaultShelf`, `reload()` does nothing) — and hands that copy to the page and to every page opened from it as
+their `LibraryModel`. **Done** = `PageDraft.save()`: `live.change { $0 = $0.applyingPage(from: opened, to: copy) }` —
+per record, by id: what the page added or changed is the page's, what it deleted goes, every other record keeps what
+the real library holds NOW (the other device's changes while the page was open stay; a record both changed: the
+page's wins); nothing changed = nothing written; the "When" steps and conditions are installed again from the real
+library. **Cancel** = dismiss; the copy is dropped; `PageDraft.left()` (on disappear) installs the real library's
+"When" steps and conditions again if the copy changed them. Not kept: the app put away or quit while such a page is
+open keeps nothing of it — as a thing's page never did (the bag page's `EditDraft` writes on going away; dup092).
+The Mac's other windows are untouched by a page's copy (a change made there while the page is open stays).
+
+**The audit (0.92)** — every screen or sheet where he changes data; "today" = before 0.92.
+
+| Screen | How it saves | Cancel | Escape (Mac) | Swipe down (iPhone) |
+|---|---|---|---|---|
+| A thing's page (`ThingEditor`) | Save (state until Save; photos kept when taken) | `thing-cancel` | Cancel | Cancel |
+| Kit Inside, Only on some trips, Care schedule and notes, the drop-downs' own lists (Kind of thing, Whose it is, Kept at home, Usually packed in, Pocket, When, Condition) on a thing's page | held with the page (`KitDraft`, `ChoiceEdits` — 0.69/0.70) | the page's | the page's | the page's |
+| A bag's page (`BagDetail`) incl. Pockets | was: written when left (`EditDraft`, 0.91) | **added in 0.92 (work/dup092)** | — | — |
+| A template's page (`TemplatePage`): name, cover icon/colour, Counts as, Activity area, reminders, Add, ✕, Arrange | was: at once; **0.92: a copy until Done** | **0.92** `template-cancel` | Cancel (while arranging: ends Arrange first) | Cancel; held while arranging |
+| A row on a template (`RowEditor`) incl. its lists | Save (state); 0.92 ⌘S | `row-cancel` | Cancel | Cancel |
+| Reminders on a template | at once — on the template page's copy since 0.92 | the template's | the template's | the template's |
+| Icon and colour picker (`IconPickerScreen`) | one tap applies and closes (an action) | `icon-cancel` closes without a choice | Cancel | closes |
+| Choose from your things (`PickThings`) | Add N | yes | Cancel | Cancel |
+| Small core (`SmallCoreSheet`), New template (`NewList`) | Make | yes | Cancel | Cancel |
+| Activity areas (`AreasScreen`) | Save (state); 0.92 ⌘S | `areas-cancel` | Cancel | Cancel |
+| Your choices (`ListsPage`) | was: at once; **0.92: a copy until Done** | **0.92** `lists-cancel` | Cancel (was: closed as Done) | Cancel |
+| A grab list being edited | Save (draft); 0.92 ⌘S | **0.92** `grab-cancel` (the list stays open) | Cancel (was: none) | closes, edit thrown away |
+| For the lost-luggage desk (`DeskDetailsScreen`) | Save (state); 0.92 ⌘S | `desk-cancel`, **moved top left in 0.92** | Cancel | held while changed |
+| Trip settings (incl. Flights and stay, I leave at) | Save changes (foot); **0.92 also Save top right** `tripset-save-top`, ⌘S | `tripset-cancel` | Cancel | held while changed |
+| Trip review | Save review (foot); 0.92 ⌘S | `review-cancel`, **moved top left in 0.92** | Cancel | held while marked |
+| Create new trip (Home) incl. Flights and stay | Create trip — nothing is stored before | — (a form on a tab, not a sheet) | — | — |
+| Change several things (`BulkChange`), the date picker, Restore | Change / OK / Replace | yes | Cancel | Cancel ("Nothing was replaced.") |
+| A trip's list, Packing day stations (tags, AirTag, add a to-do or a bag), On site, Pack to go home | one-tap actions at once; heading ticks and Clear have Undo; the composers have their own Cancel | — (working lists) | Done closes | closes |
+| The bag-tag number (Packing day, Bags card), a bag's weight on a trip | one field, kept when left | — (one field) | — | — |
+| To do, To buy | Add, tick, ✕ at once; ✕ offers Undo | — (lists) | — | — |
+| Care (Done today) | one tap | — (an action) | — | — |
+| Your bags (numbers per row), the things table's cells (Mac) | kept when the list is left (`EditDraft`) / each cell at once with Undo | — (tables) | Done closes | closes |
+| Settings' switches (Remind me to pack, messages, vault folder) | at once (Apple's switches) | — | — | — |
+
+**Tests** (each seen RED with a planted fault first — Cancel saving — see spec 07 §11, 19 Oct 2026): model
+`PageChangesTests` (Save hands over the page's rename, add, ✕ and a new place and keeps a thing and a place the
+other device added meanwhile; a delete deletes only that; nothing changed = the library itself; Cancel hands nothing
+over); UI `testCancelOnATemplatePutsItBackAndDoneKeepsIt` (Hiking renamed, a thing added, moved to OE → Cancel →
+GA, "Hiking", 4 things; moved again → Done, ⌘S on the Mac → under OE), `testCancelOnYourChoicesPutsItBackAndDoneKeepsIt`
+(a place added → Cancel → gone; added → Done/⌘S → kept), `testCancelWhileEditingAGrabListPutsItBack` (renamed and
+one removed → Cancel, Escape on the Mac → 7 things, the old name, still open; renamed → Save → kept),
+`testCancelOnTheDeskAndTripSettingsPutsItBackAndSaveKeepsIt` (Cancel left of Save; the phone changed → Cancel →
+as it was → Save/⌘S → kept; the trip renamed → Cancel → unchanged → Save top right/⌘S → renamed); Escape on the Mac:
+`testEscapeClosesSettingsWindowsAndNeverReplaces` (a place ADDED in Your choices, then Escape → gone) and
+`testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (the template's area changed, then Escape → as it was).
 
 ## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `ScreenHeader.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 

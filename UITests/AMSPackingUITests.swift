@@ -6313,14 +6313,14 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         XCTAssertTrue(app.buttons["template-cancel"].waitForExistence(timeout: 5), "the template's page has no Cancel")
         XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5), "expected 4 things")
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events", "the area did not change")
+        shot(app, "cancel-template")
         replace("Hill walk", in: app.textFields["template-name"])
         tap(app, id: "template-rename")
         type("Compass", into: app.textFields["template-add-name"])
         tap(app, id: "template-add")
         XCTAssertTrue(app.buttons["template-item-4"].waitForExistence(timeout: 5), "the thing was not added")
         hideKeyboard(app)
-        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events", "the area did not change")
-        shot(app, "cancel-template")
         tap(app, id: "template-cancel")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Cancel did not close the template")
         XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5), "Cancel kept the move out of GA")
@@ -6349,13 +6349,13 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
         XCTAssertTrue(app.buttons["lists-cancel"].waitForExistence(timeout: 5), "Your choices has no Cancel")
+        shot(app, "cancel-choices")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists)
         type("Attic shelf", into: app.textFields["list-places-add-name"])
         tap(app, id: "list-places-add")
         XCTAssertTrue(app.staticTexts["list-places-name-12"].waitForExistence(timeout: 5), "the place was not added")
         hideKeyboard(app)
-        shot(app, "cancel-choices")
         tap(app, id: "lists-cancel")
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Cancel did not close Your choices")
 
@@ -6391,10 +6391,10 @@ final class AMSPackingUITests: XCTestCase {
         let first = app.buttons["grab-item-0"].label
         tap(app, id: "grab-edit")
         XCTAssertTrue(app.buttons["grab-cancel"].waitForExistence(timeout: 5), "editing a grab list has no Cancel")
+        shot(app, "cancel-grab")
         replace("Swim shorts", in: app.textFields["grab-rename-0"])
         app.buttons["grab-remove-1"].tap()
         hideKeyboard(app)
-        shot(app, "cancel-grab")
         #if os(macOS)
         pressEscape(app)
         #else
@@ -6424,12 +6424,12 @@ final class AMSPackingUITests: XCTestCase {
         let phone = app.textFields["desk-phone"]
         XCTAssertTrue(phone.waitForExistence(timeout: 5))
         let was = phone.value as? String ?? ""
+        shot(app, "cancel-desk")
         if let cancel = find(app, "desk-cancel"), let save = find(app, "desk-save") {
             XCTAssertLessThan(cancel.frame.maxX, save.frame.minX, "Cancel is not left of Save")
         }
         replace("+46 70 222 22 22", in: phone)
         hideKeyboard(app)
-        shot(app, "cancel-desk")
         tap(app, id: "desk-cancel")
         XCTAssertTrue(disappears(app, "desk-screen", timeout: 5), "Cancel did not close the desk")
         tap(app, id: "settings-desk")
@@ -6456,9 +6456,9 @@ final class AMSPackingUITests: XCTestCase {
         let before = words(name)
         tap(app, id: "trip-settings")
         XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        shot(app, "cancel-tripset")
         replace("Renamed trip", in: app.textFields["tripset-name"])
         hideKeyboard(app)
-        shot(app, "cancel-tripset")
         tap(app, id: "tripset-cancel")
         XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Cancel did not close Trip settings")
         XCTAssertEqual(words(name), before, "Cancel renamed the trip")
@@ -11962,12 +11962,14 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-row-1")
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
         let cover = app.buttons["template-cover"], share = app.buttons["template-share"]
-        let done = app.buttons["template-detail-done"]
+        let done = app.buttons["template-detail-done"], cancel = app.buttons["template-cancel"]
         XCTAssertTrue(cover.waitForExistence(timeout: 5), "the template has no icon")
-        XCTAssertTrue(share.exists && done.exists, "no Share or Done on the template")
-        for (id, e) in [("template-share", share), ("template-detail-done", done)] {
-            let off = e.frame.midY - cover.frame.midY
-            XCTAssertLessThanOrEqual(abs(off), 1.5, "\(id) sits \(off) pt off the icon's centre line (\(e.frame) vs \(cover.frame))")
+        XCTAssertTrue(share.exists && done.exists && cancel.exists, "no Share, Cancel or Done on the template")
+        // Since 0.92 Cancel and Done have a line of their own above the icon and name (Cancel
+        // everywhere); Share stays on the icon's line.
+        for (id, e, on) in [("template-share", share, cover), ("template-detail-done", done, cancel)] {
+            let off = e.frame.midY - on.frame.midY
+            XCTAssertLessThanOrEqual(abs(off), 1.5, "\(id) sits \(off) pt off its line (\(e.frame) vs \(on.frame))")
         }
         shot(app, "share-template-header")
         tap(app, id: "template-detail-done")

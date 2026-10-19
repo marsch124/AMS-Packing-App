@@ -1191,15 +1191,19 @@ else is the same.
 
 **How it is reached and left.**
 - **In:** "Edit" (`grab-edit`) on an open list.
-- **Out:** "Save" (the same button, now filled) — unless nothing is left on the list, when the editor stays
-  open and says so (0.62). Swiping the iPhone sheet down while editing throws the draft away (nothing is
-  saved). On one of his own lists, "Delete the grab list" closes the sheet and the list is gone.
+- **Out:** "Save" (the same button, now filled; ⌘S since 0.92) — unless nothing is left on the list, when the
+  editor stays open and says so (0.62). **"Cancel"** (0.92, Cancel everywhere — his words, 19 Oct 2026: "the cancel
+  function should be existing throughout the whole app right?"): at the header's left while editing, outlined
+  muted, id `grab-cancel`, Escape too (`cancelEdits`) — the draft is thrown away (nothing was written while
+  editing) and the list shows as it was, still open. Until 0.92 an edit had no Cancel and no Escape. Swiping the
+  iPhone sheet down while editing throws the draft away too (nothing is saved). On one of his own lists, "Delete
+  the grab list" closes the sheet and the list is gone.
 - While editing, the counter, Share and Done are hidden. The button's identifier stays `grab-edit`
   whether it reads "Edit" or "Save".
 
 **What is on screen** (editing) — the list's lines in his order, things and (0.85) his headings, each heading a
 line of its own (0.84 showed it flat while the open list was grouped by kind):
-1. The header with **"Save"** (a capsule filled with the tone). Under the header, after a refused Save
+1. The header with **"Cancel"** first (0.92, `grab-cancel`, outlined muted) and **"Save"** (a capsule filled with the tone). Under the header, after a refused Save
    (0.62): **"Put at least one thing on the list first."** (`grab-save-needs`, 15 pt bold red — the
    shared `NeedsLine`). It goes as soon as the draft changes (a name typed, a thing added or removed) and
    when editing starts again.

@@ -633,9 +633,6 @@ struct TemplatePage: View {
                     .keyboardShortcut(arranging ? nil : .cancelAction)
                     .accessibilityIdentifier("template-cancel")
                 Spacer()
-                ShareDoor(id: "template-share", tint: AppSection.templates.color) {
-                    ShareOffer(title: "Share \u{201C}\(list.name)\u{201D}", link: model.library.shareLink(templateId: list.id))
-                }
                 Button("Done") { page.save(); dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true))
                     .focusEffectDisabled()
@@ -667,6 +664,11 @@ struct TemplatePage: View {
                     .accessibilityIdentifier("template-rename")
                 }
                 Spacer(minLength: 0)
+                // Share on the icon's line (his note on 0.63: "The share button is not aligned
+                // with the icon").
+                ShareDoor(id: "template-share", tint: AppSection.templates.color) {
+                    ShareOffer(title: "Share \u{201C}\(list.name)\u{201D}", link: model.library.shareLink(templateId: list.id))
+                }
             }
             // The small core's sheet hangs here, on the header that is always there (0.71). Made,
             // it is kept with the rest of the page (0.92: the page's copy is handed over first).

@@ -1723,8 +1723,9 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
 `tripset-screen`; Mac minimum 540 × 600.
 
 ### What is on screen
-- Header: **Cancel** (outlined muted, id `tripset-cancel`), title "Trip settings" (22 heavy ink), an
-  empty 56 pt spacer.
+- Header: **Cancel** (outlined muted, id `tripset-cancel`), title "Trip settings" (22 heavy ink, one line,
+  scaling to 80 %), and since 0.92 **Save** top right (filled green, id `tripset-save-top`, ⌘S — the same as Save
+  changes at the foot; Cancel everywhere, spec 06 §20a). Until 0.92 an empty 56 pt spacer stood there.
 - Name field (placeholder "Name your trip", 20 semibold, card fill, line stroke), id `tripset-name`.
 - **Full trip | Quick** (`TripKindChoice`, 0.67) as on Create new trip but GREEN: ids `tripset-kind-full`,
   `tripset-kind-quick`, the line `tripset-kind-note`. (Until 0.67 a "Quick" switch `tripset-quick` and a
@@ -2809,8 +2810,9 @@ iPhone since 0.70 (his choice of 7 Oct 2026; the whole design, the table and eve
 
 **How it is reached and left.** The trip's **Review** button (while not reviewed and with lines; since 0.84 only
 once the trip has started — On site or later — or at any time on a trip with no start date; at any date until then),
-or a tapped "Welcome home — review …" (spec 07 part 16). Sheet; **Cancel** (outlined muted, `review-cancel`; Escape too, 0.62) closes without saving;
-**Save review** saves and closes. A swipe down on the iPhone closes it only while nothing is marked,
+or a tapped "Welcome home — review …" (spec 07 part 16). Sheet; **Cancel** (outlined muted, `review-cancel`; Escape too, 0.62; top LEFT since 0.92 — it stood at the
+right of the title until then) closes without saving; **Save review** (at the foot, always in sight; ⌘S since 0.92)
+saves and closes. A swipe down on the iPhone closes it only while nothing is marked,
 added or typed (0.62: marks made in an unsaved review were lost to a swipe). Screen id `review-detail`;
 Mac minimum 520 × 600.
 

@@ -951,7 +951,8 @@ nearer its heading").
 page ("Its details" and each thing "Usually in it"), the global search (a thing), a trip's "Check before you
 go" (`TripScreen`), the trip review (`ReviewScreen`) and Pack to go home (`WayHomeScreen`, its "Open"). Left with
 "Cancel" (`thing-cancel`: nothing is saved; Escape presses it too, 0.62 — never Save, so a name typed is not kept),
-"Save" (`thing-save`: saves and closes, unless the name is refused), "Delete the thing" (closes, then deletes), or
+"Save" (`thing-save`: saves and closes, unless the name is refused; ⌘S — the Mac's Thing menu, and since 0.92 the
+button's own on an iPhone keyboard), "Delete the thing" (closes, then deletes), or
 (iPhone) a swipe down = Cancel. Only the thing's page closes, not the screen it was opened from. The screen behind is not
 rebuilt, so it is exactly where it was (the table keeps its scroll position). On the Mac (0.68) the page can also stay
 open and go on: ⌘N saves and turns it into a NEW thing's page, ⌘↓ ⌘↑ save and show the next or previous thing of the

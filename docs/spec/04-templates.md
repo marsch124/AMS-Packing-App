@@ -914,9 +914,24 @@ pick "C" of three pictured layouts, 5 Oct 2026).
 
 ### How it is reached and left
 - Reached: a card on the Templates tab; a Search result; straight after "Make the template".
-- Left: "Done" (`template-detail-done`; Escape too, 0.62 — while arranging Escape ends Arrange instead, §6a),
-  "Delete the template", swipe down on the iPhone (not while arranging). A rename typed but not confirmed (Rename /
-  Return) is **discarded** on leaving — by Escape too.
+- **On a copy until Done (0.92, Cancel everywhere — his words, 19 Oct 2026: "I open an item and change some
+  property. How do I cancel that? There is only a Done button, right?").** `TemplateDetail` is now a thin wrapper:
+  `DraftedPage(live: model) { TemplatePage(…, page:) }` (`EditDraft.swift`, spec 06 §20a). Everything on the page —
+  and on every page opened from it (a row, a bag from a row's refusal, the icon picker, Choose from your things,
+  the small core) — changes a COPY of the library (`LibraryModel(copyOf:)`: in memory, never stored, never
+  synced, no trip pages written). Until 0.92 the page "saved as it went": the name (Rename / Return), Counts as,
+  the Activity area (0.89), the cover's icon and colour, the reminders, Add, ✕ and Arrange each wrote at once.
+- Left: **"Done"** (`template-detail-done`, ⌘S too) hands over what the page changed (`PageDraft.save` →
+  `Library.applyingPage(from:to:)`: per record, by id — what the page added or changed is the page's, what it
+  deleted goes, every other record keeps what the real library holds now, so the other device's changes while the
+  page was open stay). **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
+  Escape ends Arrange first, §6a, and a second Escape is Cancel) throws the copy away: nothing on the page was
+  kept. A swipe down on the iPhone (not while arranging) = Cancel, as on a thing's page. "Delete the template"
+  deletes it from the real library at once (asked first) and closes — what else the page changed goes with it.
+  A small core made from the page (§14b) is handed over with the rest of the page as its sheet closes, then the page
+  closes as before. A rename typed but not confirmed (Rename / Return) is **discarded** by Done and Cancel alike.
+  The app put away or quit with the page open keeps nothing of it (as a thing's page). When the copy changed the
+  "When" steps or conditions, the real library's are installed again as the page goes (`PageDraft.left`).
 - Sheet; container id `template-detail` (`children: .contain`). Mac: min 480 × 600.
 - If the template no longer exists while open (deleted elsewhere), it renders as an empty unnamed template
   (`?? newList()`, a fresh id on every redraw). Add, Choose and the cover then do nothing
@@ -925,7 +940,11 @@ pick "C" of three pictured layouts, 5 Oct 2026).
 
 ### What is on screen, top to bottom
 
-**Header row** (HStack spacing 12, padding 16):
+**Top row** (0.92; HStack spacing 12, padding 16 sides and top): **"Cancel"** (`template-cancel`,
+`HeaderButtonStyle` outlined muted, Escape — not while arranging), Spacer, **"Done"** (`template-detail-done`,
+filled violet, ⌘S). Done and Cancel stood on the name's row until 0.92 (Done only).
+
+**Header row** (HStack spacing 12, padding 16 sides, 10 top and bottom):
 - `CoverDoor` (§3).
 - **The name is the field** ("Press it, type, and it is renamed — no second screen for one word"): plain
   TextField, 22 heavy ink, id `template-name`, shows the typed text while typing (`renaming`), else the name.
@@ -934,13 +953,14 @@ pick "C" of three pictured layouts, 5 Oct 2026).
   button, id `template-rename`. Always in colour.
 - Spacer.
 - **Share** — `ShareDoor(id: "template-share")`: outlined violet capsule (`HeaderButtonStyle`, centred on the
-  icon's line like Done) with the drawn share mark and "Share", 6 pt apart; label "Share". The mark is
+  icon's line; Done stood there too until 0.92) with the drawn share mark and "Share", 6 pt apart; label "Share". The mark is
   `ShareMark` framed 22 × 22 and drawn through `GridShape`, so it is centred on the word's line (0.67: measured
   in the day picture, the mark's middle and the capitals' middle are 0.2 pt apart). Until 0.67 it was framed at
   18 while drawn on its 24-pt grid: it hung 3 pt low and right, its box through the pill's lower edge — his
   note on 0.63, "The share buttons is not aligned with the icon". Opens the share sheet with title
   `Share “<name>”` and `link = library.shareLink(templateId:)` (§19).
-- **"Done"** — `HeaderButtonStyle` filled violet (white 17 bold on a capsule, min height 36; 16 until 0.62).
+- ("Done" — `HeaderButtonStyle` filled violet, white 17 bold on a capsule, min height 36; 16 until 0.62 — sits on
+  the top row since 0.92.)
 - Under the row, `needsLine` id `template-rename-needs` (15 bold red), cleared as soon as the typed name changes.
 
 **Group pills** (`FlowRow` spacing 6, side 16, bottom 4): the word "Group" (15 heavy muted, min height 36), then
@@ -1125,8 +1145,9 @@ both.
   replaced by "Swim" → `template-rename` → `template-rename-needs`); `testATripReviewIsSavedAndTheMissedThingIsFiled`
   (a missed thing lands on the base template: `template-item-4`); `testOneSearchReachesEverything` (a Search
   result opens `template-detail`); `testATemplateAndAGrabListAreSharedAndOpenedAgain` (`template-share`);
-  `testShareSitsOnItsHeadersCentreLine` (0.67: on Hiking, `template-share` and `template-detail-done` sit within
-  1.5 pt of the centre line of `template-cover`; seen red with the header row planted as `.top`-aligned: "template-share
+  `testShareSitsOnItsHeadersCentreLine` (0.67: on Hiking, `template-share` sits within 1.5 pt of the centre
+  line of `template-cover` — and since 0.92 `template-detail-done` within 1.5 pt of `template-cancel`'s, on the
+  top row; until then Done was measured against the cover too; seen red with the header row planted as `.top`-aligned: "template-share
   sits -5.0 pt off the icon's centre line"; the mark inside the pill is checked in the pictures);
   `testTypingAThingAlreadyOnTheTemplateSaysSo` ("map" on Hiking → `template-add-needs` says "already", no fifth
   row); `testATemplateMovesToAnotherActivityArea` (Hiking's field reads "GA · Goal Activity", row 1 ticked; row 3 →
@@ -1308,8 +1329,9 @@ what this editor's Save stores for it, and the trips still ahead follow the same
 
 ### How it is reached and left
 Tap a row on a template page. Left by "Cancel" (`row-cancel`, nothing saved; Escape too, 0.62 — the template's page
-behind it stays open), "Save" (`row-save`, saves then closes; no key presses it), swipe down (= Cancel). Container id
-`row-detail`. Mac: min 520 × 600.
+behind it stays open), "Save" (`row-save`, saves then closes; ⌘S since 0.92 — until then no key pressed it), swipe
+down (= Cancel). Container id `row-detail`. Mac: min 520 × 600. Since 0.92 the row editor works on the template
+page's copy of the library (§6): its Save is kept by the template's Done and thrown away by the template's Cancel.
 
 ### What is on screen
 - Top row (padding 16): "Cancel" (outlined, muted) · spacer · "Save" (filled violet).
@@ -2182,10 +2204,12 @@ Activity areas page (§1a), with the same tools.
 
 ### How it is reached and left
 Settings → "Your choices" card ("Storage places, owners, packers, conditions, \"When\" steps"; id `settings-lists`).
-Left by "Done" (`lists-done`, filled slate; Escape too, 0.62) or swipe down. Container `lists-detail`. Mac: min 520 × 600.
+Since 0.92 on a copy of the library until Done (spec 06 §2.3, §20a): left by "Done" (`lists-done`, filled slate,
+⌘S) — what was changed is kept — or "Cancel" (`lists-cancel`, top left, outlined muted; Escape too) or a swipe
+down — nothing changed here is kept. Container `lists-detail`. Mac: min 520 × 600.
 
 ### What is on screen
-- "Your choices" (22 heavy ink, `choices-title`) · Done.
+- Cancel · "Your choices" (22 heavy ink, `choices-title`) · Done.
 - Intro (15 medium muted, `choices-intro`): "The words the app offers you as buttons. Add your own with the field under
   each part; one that is still in use somewhere cannot be removed."
 - A problem line when a removal was refused (15 semibold red, `lists-problem`).
