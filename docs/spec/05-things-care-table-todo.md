@@ -988,7 +988,28 @@ apart; a field 6 pt under its heading):
     Remove (no arrows: A–Z) and "A new owner" — see below.
 6. **On these templates** — pills band in VIOLET (templates colour, `thing-lists-title`): every template except
     the bag list (`templatesForThings()`), A–Z (`jsLocaleCompare`, base sensitivity) (`thing-lists-N`; with the sample: Common base 0,
-    Hiking 1, Swim 2); several may be lit; a tap toggles.
+    Hiking 1, Swim 2); several may be lit; a tap toggles. Since 0.90 the pills also hold the templates made on this
+    page and not saved yet (item 6b), in their A–Z place.
+6b. **+ New template…** (0.90 — his words, 19 Oct 2026: "Add New Template from within Item view") — at the foot of
+    the pills, 4 pt closer than the page's 12 (`NewTemplateDoor`, NewList.swift; id `thing-lists-new`): a violet
+    capsule, outlined, 10 % violet fill, Subheadline semibold "+ New template…", `Metrics.chip` tall — the look of the
+    Templates tab's "Activity areas" door, quieter than + New's filled capsule because it is not the page's main
+    button. It opens New (spec 04 §5) as its own sheet — the door owns it, so the page keeps the one sheet it has:
+    the name, the activity area (default "No activity area" = Other Templates; with his own areas, 0.89, his list),
+    and **"Add the template"** with the line "It is made, with this thing on it, when you save the thing."
+    (`newlist-made-when`). A name he has — or one made on this page already — is refused there, as + New refuses it.
+    Added, the sheet closes and the new template stands among the pills, **lit**; its "Section on <name>" drop-down
+    appears under them (item 6a: no sections yet; "A new section" at its foot works, made at Save after the template);
+    Only on some trips reads it as any template (a WET one offers Context).
+    - **Decided: nothing is made until Save**, like a new place, owner, step or section on this page (0.69 — they
+      used to join at once and stayed after Cancel). The page holds the new templates (`newTemplates`); **Save**
+      makes each one still lit (`saveTemplate`, first in the same change, before the thing is put on its templates)
+      and the thing goes on it like on any lit template; one unticked again before Save is **not** made; **Cancel**
+      makes none. ⌘N (Mac) saves them and the next thing starts on them too (its pills are carried); ⌘↓ ⌘↑ save
+      them and the next page starts with none waiting. A new template made here has no colour of its own (Automatic)
+      and no icon choice (its name suggests one) — both are set on its page afterwards (spec 04 §3, §3a).
+    - Not in the Mac's Tab order (it is a button, not a field — spec 04 Open questions 36); New's sheet has its own
+      keys (Return makes, Escape cancels).
 6a. **Section on <template>** (0.64) — his ask of 6 Oct 2026: he likes sections because "it gives a visual
     structure to the packing", and asked whether a thing's section can be set "already in this view" — its page —
     instead of opening each template it is on. A section belongs to a TEMPLATE (`PackList.sections`) and the
@@ -1512,6 +1533,14 @@ Section to Season", and in the Tab-order test "Tab did not go on to thing-season
 a jump from today, nothing typed and nonsense). The Section tools on both: `testASectionIsRenamedFromAThingsPageAndKeepsItsThings`,
 `testASectionIsMovedFromAThingsPageAndANewTripReadsIt`, `testASectionIsRemovedFromAThingsPageAndItsThingsStay`,
 `testCancelLeavesTheSectionsAsTheyWere`; model `SectionEditsTests` (spec 04 §13a).
+
+**Tests (+ New template…, 0.90).** UI `testANewTemplateIsMadeFromAThingsPageWithTheThingOnIt`: the sample has no
+"Other Templates" area; on the Headlamp's page `thing-lists-new` opens `newlist-detail` with `newlist-made-when`;
+"Beach day" Added → `thing-lists-0` says "Beach day" and is lit (A–Z before Common base); Save → Your things' row says
+it is on Beach day; the Templates tab's summary changes, `templates-area-other` appears, `template-row-3` opens a page
+whose name is "Beach day" and whose first row is the Headlamp. Seen red with the page's Save planted not to make the
+new template: `the thing is not on the new template: 'Headlamp, Common base, Hiking · Garage'`. Day and night,
+iPhone; the Mac by the probe.
 
 **Tests (Section on a template, 0.64).** UI `testAThingsPageSetsItsSectionOnATemplate` (the Map, on Hiking only:
 `thing-section-1` and no `-0`/`-2`; "Section on Hiking", "No section", under the pills; Swim lit → `thing-section-2`

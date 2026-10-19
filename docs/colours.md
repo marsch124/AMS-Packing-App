@@ -91,3 +91,29 @@ raspberry and warm sand. Do not use teal for anything new.
 
 Status: decided during his test round of 0.39 and built in 0.40 ("workout
 colours" in What's new), seen in day and night mode before it shipped.
+
+## Template colours — his choice per template (0.90, `TemplateColour.palette`, PackingLibrary)
+
+His words (19 Oct 2026): "I would like the ability to change the color of the table template icons. That way, I can
+more easily find the templates if they have the color that I connect to a specific template." Chosen in a template's
+icon picker; Automatic keeps the cover pick above (the web app's ten, teal and cyan swapped). The fill is one shade for
+day and night; the icon on it is white on the deep ones and the workout pills' dark words on the light ones; drawn on
+its own (a trip line's mark) it is made readable as text on each card (`readableHex`).
+
+| Word     | Fill      | Icon on it | Ink on fill | Mark on light card | Mark on dark card |
+|----------|-----------|------------|-------------|--------------------|-------------------|
+| Blue     | `#0a84ff` | white      | 3.7 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Yellow   | `#ffd60a` | `#3d3000`  | 9.2 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Green    | `#30d158` | `#0b3a17`  | 6.4 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Orange   | `#ff8c1a` | `#4a2300`  | 5.9 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Lavender | `#bf9cff` | `#2e1a5c`  | 6.6 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Pink     | `#ff6fa8` | `#5a0f2e`  | 5.3 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Red      | `#dc3d43` | white      | 4.4 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Violet   | `#7c5cd6` | white      | 4.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Indigo   | `#4f46e5` | white      | 6.3 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Brown    | `#8b5e3c` | white      | 5.6 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Grey     | `#64748b` | white      | 4.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+
+The first six are the workout pills' fills and words above. No teal. Pinned by
+`TemplateColourTests.testThePaletteReadsDayAndNightAndHasNoTeal`. Spec 04 §3a.
+

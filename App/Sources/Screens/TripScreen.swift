@@ -1024,7 +1024,9 @@ struct PackLine: View {
 
 /// Where a trip's line comes from (0.74, his ask of 12 Oct 2026 — "valuable to know from
 /// which template the item comes"; of three looks he picked the template's OWN icon): the
-/// icon of each template, small and in the Templates violet, in the trip's template order.
+/// icon of each template, small and in the Templates violet — or, since 0.90, in the colour
+/// he chose for that template, made readable on the page (`Library.markColour`) — in the
+/// trip's template order.
 /// Up to three; four or more = two and "+N". A template that shows a letter on its cover
 /// is its name's first word. Never squeezed: the bag's words are cut first. ONE element
 /// for VoiceOver and the tests — the template NAMES, never icon ids — and a tooltip on the Mac.
@@ -1048,11 +1050,15 @@ struct TemplateMarks: View {
         let shown = from.count > 3 ? Array(from.prefix(2)) : from
         HStack(spacing: 3) {
             ForEach(Array(shown.enumerated()), id: \.offset) { _, list in
+                // His colour for the template (0.90), else the violet.
+                let tint = Library.markColour(list, dark: scheme == .dark).map { Color(hexString: $0) } ?? violet
                 if let icon = TemplateIcons.icon(Library.icon(of: list)) {
                     IconMark(path: icon.path, size: TemplateMarks.size, weight: 1.9)
+                        .foregroundStyle(tint)
                 } else {
                     Text(String(jsTrim(list.name).split(separator: " ").first ?? ""))
                         .font(.system(.footnote, weight: .semibold)).lineLimit(1)
+                        .foregroundStyle(tint)
                 }
             }
             if from.count > 3 {

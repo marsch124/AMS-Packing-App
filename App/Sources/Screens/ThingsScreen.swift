@@ -351,11 +351,15 @@ struct ThingEditor: View {
     /// The thing on the page ("" while a new one is being made).
     private var current: String { shown ?? "" }
 
-    /// Every template but the bag list, A–Z — the pills of On these templates.
+    /// Every template but the bag list, A–Z — the pills of On these templates — with the
+    /// ones made on this page (0.90), not yet saved.
     private var templates: [PackList] {
-        model.library.templatesForThings()
+        (model.library.templatesForThings() + newTemplates)
             .stableSorted(compare: { a, b in jsLocaleCompare(a.name, b.name, sensitivity: .base) })
     }
+    /// Templates made here with "+ New template…" (0.90), waiting for Save like a new place
+    /// or section: Save makes each one still ticked and puts the thing on it.
+    @State private var newTemplates: [PackList] = []
     /// What it holds, or the kit it is in (0.70, ThingKitPart.swift) — kept until Save.
     @State private var kit = KitDraft()
     /// Its own "Only on some trips" (0.73, spec 07 part 14): every template it is on follows
@@ -438,6 +442,13 @@ struct ThingEditor: View {
                         #endif
                     }
                     .keyed(.templates)
+                    // A template that is not there yet (0.90, his "Add New Template from within
+                    // Item view"): made with the thing on it when the thing is saved.
+                    NewTemplateDoor(library: libraryWithNewTemplates) { list in
+                        newTemplates.append(list)
+                        onLists.insert(list.id)
+                    }
+                    .padding(.top, -4)
                     sectionChoices(templates)
                     // Only on some trips, set once HERE (0.73 — his words, 10 Oct 2026: "if I have
                     // an item on five templates, I need to change this in five places"). Until then
@@ -623,6 +634,7 @@ struct ThingEditor: View {
         newSections = [:]
         sectionEdits = [:]
         choiceLists = [:]
+        newTemplates = []
         kit = KitDraft(model.library, thingId: id)     // what it holds, or its kit (0.70)
         limits = model.library.items.first { $0.id == id }.map(Library.thingLimits) ?? TripLimits()
         limitAt = [:]
@@ -679,6 +691,14 @@ struct ThingEditor: View {
     private func showsContext(_ templates: [PackList]) -> Bool {
         templates.contains { onLists.contains($0.id) && contextApplies($0) }
             || !storedLimits.contexts.isEmpty || !limits.contexts.isEmpty
+    }
+
+    /// His library with the templates made on this page beside his own — what New asks
+    /// against, so a name made here once is not made twice.
+    private var libraryWithNewTemplates: Library {
+        var lib = model.library
+        lib.templates += newTemplates
+        return lib
     }
 
     private func toggleTemplate(_ id: String) {
@@ -1094,8 +1114,12 @@ struct ThingEditor: View {
         let kitSays = kit
         let only = limits
         let held = choiceLists
+        // The templates made here (0.90) that are still ticked: made now, before the thing
+        // is put on its templates below. One ticked off again is not made.
+        let madeHere = newTemplates.filter { lists.contains($0.id) }
         var written = d
         model.change { lib in
+            for t in madeHere { lib.saveTemplate(t) }
             // A template's sections changed in its Section list here (0.68), first: the
             // thing's own choice below is made among them as they now are.
             for (templateId, edits) in edited.sorted(by: { $0.key < $1.key }) {
@@ -1165,6 +1189,7 @@ struct ThingEditor: View {
         draft.phase = written.phase; draft.condition = written.condition; draft.container = written.container
         Library.setUsualPocket(&draft, Library.usualPocket(written))
         choiceLists = [:]
+        newTemplates = []                              // made now: they are his templates
         return true
     }
 
