@@ -289,7 +289,7 @@ extension Library {
 
     /// Make the small core: a new always-packed template of the ticked rows (each
     /// with its own answers, under the same headings), and the big template moved to
-    /// `bigArea` (GA, WET, OE or "" = none) with all its rows. With a pasted plan, its
+    /// `bigArea` (one of his activity areas — 0.89 — or "" = none) with all its rows. With a pasted plan, its
     /// kits are made and filled first and each kit is on the core; `seconds` are the
     /// clashes he answered with "Make a second one". nil, and nothing changed, when
     /// the template is not always packed, the area is not one of his, or
@@ -299,7 +299,7 @@ extension Library {
                                        bigArea: String, plan: PastePlan? = nil, seconds: Set<String> = []) -> PackList? {
         let kits = plan?.kits ?? []
         guard let big = templates.first(where: { $0.id == templateId }), big.role == Library.ALWAYS_PACKED_AREA,
-              bigArea.isEmpty || GROUP_IDS.contains(bigArea),
+              bigArea.isEmpty || activityAreas().contains(where: { $0.id == bigArea }),
               smallCoreProblem(templateId: templateId, name: name, ticked: ticked,
                                kits: kits.filter { !$0.inside.isEmpty || $0.thingId != nil }.count) == nil else { return nil }
         let bigRows = smallCoreRows(templateId: templateId)

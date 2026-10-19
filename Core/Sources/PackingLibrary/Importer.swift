@@ -173,6 +173,10 @@ public enum Importer {
         if let kinds = prefs?[Library.categoriesKey]?.arrayValue?.compactMap({ $0.stringValue }), !kinds.isEmpty {
             lib.setCategories(kinds)
         }
+        // His activity areas (0.89), cleaned as the app keeps them.
+        if let areas = prefs?[Library.areasKey]?.arrayValue, !areas.isEmpty {
+            lib.setActivityAreas(areas.map { ActivityArea(id: $0["id"]?.stringValue ?? "", name: $0["name"]?.stringValue ?? "") })
+        }
         if let grab = prefs?["grab"]?.objectValue {
             let items = grab["items"]?.objectValue ?? [:]
             let looks = grab["meta"]?.objectValue ?? [:]

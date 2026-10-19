@@ -163,6 +163,8 @@ extension Library {
             return timeline().first { $0.id != except && Library.choiceKey($0.label) == want }?.label
         case "categories":
             return categories().first { $0 != except && Library.choiceKey($0) == want }
+        case "areas":
+            return activityAreas().first { $0.id != except && Library.choiceKey($0.name) == want }?.name
         default:
             return nil
         }
@@ -250,6 +252,10 @@ extension Library {
             guard let n = list.firstIndex(where: { $0.id == key }) else { return nil }
             list[n].label = jsSlice(name, 0, 60)
             setTimeline(list)
+        case "areas":
+            // Pointed at by its id, as a step is: every template in it follows (0.89).
+            if let reserved = Library.areaNameReserved(name) { return reserved }
+            _ = renameArea(key, to: name)
         default:
             return nil
         }
@@ -258,7 +264,7 @@ extension Library {
 
     /// Whether a list's order is his to set. Owners are always A–Z (as every Owner
     /// dropdown offers them); the others keep the order he gives them.
-    public static func canMove(_ kind: String) -> Bool { ["places", "people", "conditions", "phases", "categories"].contains(kind) }
+    public static func canMove(_ kind: String) -> Bool { ["places", "people", "conditions", "phases", "categories", "areas"].contains(kind) }
 
     /// Moves one entry one place up (`by: -1`) or down (`by: 1`). False when it cannot
     /// move (the first up, the last down, an owner, an unknown key). Moving a list back
@@ -289,6 +295,8 @@ extension Library {
             guard var list = moved(timeline(), { $0.id == key }) else { return false }
             for i in list.indices { list[i].order = Double(i) }
             return setTimeline(list)
+        case "areas":
+            return moveArea(key, by: step)
         default:
             return false
         }

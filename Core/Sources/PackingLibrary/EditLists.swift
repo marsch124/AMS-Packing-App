@@ -43,18 +43,22 @@ extension Library {
     /// the area picked. Several always-packed templates are fine (every Full trip
     /// brings each of them), and so is none. Transport templates stay where they are
     /// (refused, false), as does an area that is not one of his.
+    ///
+    /// 0.89 (his own areas, ActivityAreas.swift): `area` is any of HIS areas — a built-in is
+    /// kept in `group`, one he made in `extra["area"]` (`Library.filed`). A built-in he
+    /// removed is not one of his any more, and is refused like any other unknown area.
     @discardableResult
     public mutating func setTemplateArea(id: String, area: String) -> Bool {
         guard let n = templates.firstIndex(where: { $0.id == id }) else { return false }
         let role = templates[n].role
         guard role.isEmpty || role == Library.ALWAYS_PACKED_AREA else { return false }
         let always = area == Library.ALWAYS_PACKED_AREA
-        guard always || area.isEmpty || GROUP_IDS.contains(area) else { return false }
-        let newRole = always ? Library.ALWAYS_PACKED_AREA : "", newGroup = always ? "" : area
-        guard templates[n].role != newRole || templates[n].group != newGroup else { return true }
-        templates[n].role = newRole
-        templates[n].group = newGroup
-        templates[n].updatedAt = nowISO()
+        guard always || area.isEmpty || activityAreas().contains(where: { $0.id == area }) else { return false }
+        var next = Library.filed(templates[n], in: always ? "" : area)
+        next.role = always ? Library.ALWAYS_PACKED_AREA : ""
+        guard next.role != templates[n].role || next.group != templates[n].group || next.extra != templates[n].extra else { return true }
+        next.updatedAt = nowISO()
+        templates[n] = next
         return true
     }
 

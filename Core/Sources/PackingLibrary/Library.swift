@@ -304,14 +304,13 @@ extension Library {
     /// template offers it) was shown on the Templates tab but never offered for a trip,
     /// and Trip settings dropped it from a trip on Save. The web app offers such lists
     /// last ("Other lists"); so does this, in the words of the Templates tab.
+    ///
+    /// 0.89: his OWN areas, in his order and under his names (`listsByArea`, ActivityAreas.swift);
+    /// `label` is his name for the area — `Library.areaWords` makes the heading of it.
     public func activityChoices() -> [(group: ActivityGroup, lists: [PackList])] {
-        let all = resolvedTemplates().filter { $0.role.isEmpty }
-        let grouped: [(group: ActivityGroup, lists: [PackList])] = GROUPS.compactMap { g in
-            let mine = orderActivities(g.id, all.filter { $0.group == g.id })
-            return mine.isEmpty ? nil : (g, mine)
+        listsByArea(resolvedTemplates().filter { $0.role.isEmpty }).map { a in
+            (ActivityGroup(id: a.area.id, label: a.area.name, hint: group(a.area.id)?.hint ?? ""), a.lists)
         }
-        let other = all.filter { !GROUP_IDS.contains($0.group) }
-        return other.isEmpty ? grouped : grouped + [(ActivityGroup(id: "", label: "Other Templates", hint: ""), other)]
     }
 }
 

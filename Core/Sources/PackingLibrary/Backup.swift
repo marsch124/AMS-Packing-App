@@ -56,6 +56,9 @@ extension Library {
         if let desk = meta[LOST_DESK_KEY], desk.objectValue?.isEmpty == false { prefs[LOST_DESK_KEY] = desk }
         // His kinds of thing, once he changed them from a thing's page (0.69) — ours too.
         if let kinds = meta[Library.categoriesKey], kinds.arrayValue?.isEmpty == false { prefs[Library.categoriesKey] = kinds }
+        // His activity areas, once he changed them (0.89) — ours too; the templates in one of
+        // his own carry it in their `extra`, inside their own rows.
+        if let areas = meta[Library.areasKey], areas.arrayValue?.isEmpty == false { prefs[Library.areasKey] = areas }
         let places = orderedNamesFromRows(shared, "places")
         if !places.isEmpty { prefs["storageLocations"] = JSONValue(places) }
         let presets = presetsFromRows(shared)

@@ -139,6 +139,9 @@ extension Library {
             list.role = old.role
             list.group = old.group
             list.transport = old.transport
+            // …and his own area (0.89), which lives in `extra`.
+            if let area = old.extra[Library.areaKey] { list.extra[Library.areaKey] = area }
+            else { list.extra.removeValue(forKey: Library.areaKey) }
         } else if templateNameTaken(list.name) {
             return nil
         }

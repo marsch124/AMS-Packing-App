@@ -16,7 +16,8 @@ import PackingCore
 // name says the new one, and its printed code still opens it.
 //
 // The lists, by their `kind`: "places", "owners", "conditions", "phases" (When),
-// "categories" (Kind of thing), "bags" and "pockets" (one bag's — `bag` names it).
+// "categories" (Kind of thing), "bags" and "pockets" (one bag's — `bag` names it), and since
+// 0.89 "areas" (his activity areas, keyed by id — ActivityAreas.swift).
 
 /// What a page did to ONE of his lists before it was saved.
 public struct ChoiceEdits: Equatable, Sendable {
@@ -24,7 +25,8 @@ public struct ChoiceEdits: Equatable, Sendable {
     /// For "pockets": the bag's name, as stored.
     public var bag: String
     /// Entry key → its new name. A key is the entry's stored name, or its id for a
-    /// condition or a When step (an id never changes, so nothing pointing at it moves).
+    /// condition, a When step or an activity area (an id never changes, so nothing pointing
+    /// at it moves).
     public var names: [String: String] = [:]
     /// Every key in the new order (added ones by `addedKey`); nil = the order was not changed.
     public var order: [String]? = nil
@@ -72,6 +74,7 @@ extension Library {
             return bags().map { jsTrim($0.name) }.filter { !$0.isEmpty && seen.insert(normName($0)).inserted }
                 .map { ChoiceRow(key: $0, label: $0) }
         case "pockets": return pockets(bag: bag).map { ChoiceRow(key: $0, label: $0) }
+        case "areas": return activityAreas().map { ChoiceRow(key: $0.id, label: $0.name) }
         default: return []
         }
     }
@@ -112,6 +115,9 @@ extension Library {
             return "You already have \(twin.label)."
         }
         switch e.kind {
+        case "areas":
+            // "Other Templates" as an area would read as two of that heading (0.89).
+            if let reserved = Library.areaNameReserved(clean) { return reserved }
         case "places", "owners", "categories":
             // A name his things carry that is none of the list's would merge them.
             let listed = choiceRows(e.kind).contains { Library.choiceKey($0.key) == want }
@@ -137,6 +143,8 @@ extension Library {
         var lib = self
         if let except { lib.items.removeAll { $0.id == except } }
         switch kind {
+        case "areas":
+            return ChoiceUse(templates: lib.templatesIn(area: key).count)
         case "pockets":
             let b = normName(bag), p = normName(key)
             var use = ChoiceUse()
@@ -173,6 +181,8 @@ extension Library {
     public func choiceRemoveProblem(_ kind: String, key: String, label: String, bag: String = "",
                                     except: String? = nil, pageSays: Bool = false) -> String? {
         if let fixed = choiceFixed(kind, key) { return fixed }
+        // An activity area names the templates still in it, and the workout area stays (0.89).
+        if kind == "areas" { return areaRemoveProblem(key, label: label) }
         var use = choiceUse(kind, key: key, bag: bag, except: except)
         if pageSays { use.things += 1 }
         if kind == "bags" {
@@ -199,6 +209,7 @@ extension Library {
         guard !clean.isEmpty else { return nil }
         if kind != "bags", kind != "pockets", existingChoice(kind, clean) != nil { return nil }
         switch kind {
+        case "areas": return addArea(clean)
         case "places": setNames("places", storagePlaces() + [clean]); return clean
         case "owners": setNames("owners", owners() + [clean]); return clean
         case "categories":
@@ -237,6 +248,7 @@ extension Library {
         case "people": setPeople(people().filter { $0.name != key })
         case "conditions": setConditions(conditions().filter { $0.id != key })
         case "phases": setTimeline(timeline().filter { $0.id != key })
+        case "areas": dropArea(key)
         case "bags":
             guard let id = bags().first(where: { normName($0.name) == normName(key) })?.id else { return nil }
             deleteBag(id: id, moveTo: "")
@@ -309,7 +321,7 @@ extension Library {
     @discardableResult
     public mutating func applyChoiceEdits(_ e: ChoiceEdits) -> [String: String] {
         var map: [String: String] = [:]
-        let byName = !["conditions", "phases"].contains(e.kind)
+        let byName = !["conditions", "phases", "areas"].contains(e.kind)
         let stored = Dictionary(choiceRows(e.kind, bag: e.bag).map { ($0.key, $0.label) }, uniquingKeysWith: { a, _ in a })
         var waiting = e.names.filter { stored[$0.key] != nil && !jsTrim($0.value).isEmpty && jsTrim($0.value) != stored[$0.key] }
         func took(_ key: String, _ name: String) {
