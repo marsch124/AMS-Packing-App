@@ -1019,7 +1019,9 @@ dramatically, not only a bit."
 
 The foot below — Choose from your things, Type a new thing, Activity area and Delete — steps aside while a
 heading's name is being changed in Arrange (the keyboard is up; seen on the screen, 5 Oct 2026: the list was left
-a sliver and Remove heading was out of sight). It stays while arranging otherwise, as his picture had it.
+a sliver and Remove heading was out of sight). It stays while arranging otherwise, as his picture had it — but since
+0.92 without the template's own settings (Counts as, Activity area, Delete template): Cancel and Done took a row of
+their own at the top, and the moved lines keep the room they had (the iPhone's six Hiking lines all in sight).
 
 **Choose from your things** — `PickThingsDoor` (side 16, top 10): wide outlined button (drawn list mark 22,
 "Choose from your things" 17 bold violet, min height 48, 8 % violet fill, 1.4 stroke, radius 12); id

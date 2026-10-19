@@ -871,7 +871,10 @@ struct TemplatePage: View {
                     .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.actions.color, lineWidth: 1))
                     .padding(.horizontal, 16).padding(.bottom, 10)
-                } else if !keyboardUp {
+                } else if !keyboardUp && !arranging {
+                    // While arranging, the template's own settings — Counts as, Activity area, Delete —
+                    // step aside (0.92): Cancel and Done took a row of their own at the top, and the
+                    // headings and things being moved keep the room they had.
                     // Which Apple Health workout it meets in the trip review (0.70).
                     if list.role.isEmpty {
                         CountsAsField(list: list).environmentObject(model)

@@ -461,6 +461,7 @@ final class AMSPackingUITests: XCTestCase {
             down ? list.swipeUp() : list.swipeDown()
             #endif
             usleep(300_000)
+            if !down { keepEditingIfAsked(app) }            // only a swipe DOWN can reach the sheet
             // A control below the screen should move UP as the list goes down; if
             // it did not, this is the wrong way round.
             if e.exists && e.frame.midY >= before { down.toggle() }
@@ -529,6 +530,17 @@ final class AMSPackingUITests: XCTestCase {
 
     /// A screen's container exists the moment it is created; its controls can be a
     /// beat behind on a slow machine. So: wait for the control, then tap it.
+    /// 🪤 0.92: a swipe that scrolls a changed page past its top is, to iOS, a swipe down on the sheet —
+    /// the page asks "Discard changes?" (spec 06 §20a). A helper's scroll means none of that: Keep editing.
+    private func keepEditingIfAsked(_ app: XCUIApplication) {
+        #if os(iOS)
+        let keep = app.buttons["discard-keep"]
+        guard keep.exists else { return }
+        keep.tap()
+        _ = waitUntil(timeout: 2) { !keep.exists }
+        #endif
+    }
+
     private func tap(_ app: XCUIApplication, id: String, timeout: TimeInterval = 10) {
         // A FRESH query every time: waiting on one held query has been seen not to
         // find a control that appears a moment later (Settings, 2026-09-22).
