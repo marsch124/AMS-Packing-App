@@ -136,8 +136,18 @@ struct HomeScreen: View {
                 VStack(alignment: .leading, spacing: 10) {
                     // The heading inside its card, above the name (0.91 — his words: "I would also
                     // like to have the text "Create New Trip" within the "Name your trip" frame.").
-                    Text("Create new trip").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                    // A tad smaller since 0.92 — his words (19 Oct 2026): "The text "Create new trip" on the
+                    // home page, could we please make it a tad smaller? Not much, but a bit smaller." One
+                    // step down Apple's text styles, Title 3 → Headline, still bold; Grab and go stays Title 3.
+                    // And a tad grey — "Maybe a tad grayish, not so super black.": `Theme.inkGrey`.
+                    let headingTone = Theme.inkGreyPair
+                    Text("Create new trip").font(.system(.headline, weight: .bold))
+                        .foregroundStyle(Color(light: headingTone.light, dark: headingTone.dark))
                         .accessibilityIdentifier("home-create-heading")
+                        #if DEBUG && os(iOS)
+                        // The colour it is written in, day/night, for the tests (the Mac reports a text's words).
+                        .accessibilityValue(String(format: "#%06x/#%06x", headingTone.light, headingTone.dark))
+                        #endif
                     TextField("Name your trip", text: $name)
                         .textFieldStyle(.plain)
                         .font(.system(.title3, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -343,15 +353,18 @@ struct HomeScreen: View {
 
     /// This Device: how many trips, things and templates. His marks on the Mac: the heading
     /// struck out and written down the SIDE instead, and Trips and Templates swapped over.
+    /// At the foot of that side heading, the sync dot (0.92, `SyncLight` — his pick B: "put the
+    /// sync dot under the This Device label"): in the same 16-point column, the block no taller.
+    /// The heading is Caption 2 since 0.92 (Caption 1 until then) so the dot fits under it in the
+    /// tiles' 76 points; the column wraps it up the side at its own length (`SideLabel`).
     private var thisDevice: some View {
         HStack(spacing: 10) {
-            Text("This Device")
-                .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
-                .kerning(0.5)
-                .fixedSize()
-                .rotationEffect(.degrees(-90))
-                .frame(width: 16)
-                .accessibilityIdentifier("device-heading")
+            VStack(spacing: 3) {
+                SideLabel(text: "This Device")
+                    .accessibilityIdentifier("device-heading")
+                SyncLight()
+            }
+            .frame(width: 16)
             CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
             CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
             // The templates Your templates shows — not the hidden bags list or the
@@ -359,6 +372,8 @@ struct HomeScreen: View {
             CountTile(number: TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count },
                       label: "Templates", id: "count-templates", color: AppSection.templates.color)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home-device")
     }
 
     /// The code's Pack by voice, asked only now that Home's trip screen is up (spec 07 part
@@ -685,6 +700,23 @@ extension View {
     }
 }
 
+/// Words written up the side, bottom to top (This Device, 0.92): laid out at their own length,
+/// so what stands under them in the column starts where they end.
+struct SideLabel: View {
+    let text: String
+    @State private var size = CGSize.zero
+
+    var body: some View {
+        Text(text)
+            .font(.system(.caption2, weight: .semibold)).foregroundStyle(Theme.muted)
+            .kerning(0.3)
+            .fixedSize()
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
+            .rotationEffect(.degrees(-90))
+            .frame(width: size.height, height: size.width)
+    }
+}
+
 struct CountTile: View {
     let number: Int
     let label: String
@@ -699,6 +731,9 @@ struct CountTile: View {
         .frame(maxWidth: .infinity, minHeight: 76)
         .background(RoundedRectangle(cornerRadius: 14).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line, lineWidth: 1))
+        // The tile itself, for the tests' measuring (0.92); its number keeps its own name.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("\(id)-tile")
     }
 }
 

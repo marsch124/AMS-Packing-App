@@ -701,6 +701,12 @@ Origin: field test 3 Oct 2026 ("we need to get the sync going because I need to 
 A card like Remind me to pack's: padding 12 at the sides and 10 above and below, its lines **4** apart (0.67; 14 and 8
 until then).
 
+- (0.92) The pill says what Home's sync light says (`SyncCheck.light`; spec 02 §12b, spec 01 §8): iCloud off, Can’t
+  tell, In sync (green), Sending… / Receiving… (orange), Stuck (red — failed, hung ten minutes, or waited half an hour);
+  new lines `sync-running` (a send or receive running; loud once hung: "Receiving from iCloud has hung since 07:57 —
+  quit Packing and open it again.") and `sync-waited`; "Not in iCloud yet" orange until it has waited too long; a
+  receive with no end is never "failed" again. The card also opens from Home — the sync dot at the foot of "This
+  Device", its bubble, Details — as Sync details (spec 02 §12b). What follows is the card before 0.92.
 - Header: **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
   (muted fill) when this build keeps its library on the device only (`model.usesICloud == false`, always so under
   tests); **"Can’t tell"** (muted, 0.62) when iCloud is on but the store file could not be read — then no
@@ -721,7 +727,8 @@ until then).
 - `<when>`: "today HH:MM", "D Mon HH:MM" (local), or "never". The card border turns red when stuck. It refreshes on
   appear and 1 s after every library change. The device word is "Mac" under `#if os(macOS)`, else "iPhone".
 - "Not in iCloud yet" lists kinds most first; equal counts in the order of the store's tables (0.62).
-- Tests: UI `testSyncNowChecksInFromThisDevice`, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` (0.62); model
+- Tests: UI `testSyncNowChecksInFromThisDevice`, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` (0.62),
+  `testTheSyncLightOnHomeSaysHowICloudIsGoing` (0.92); model
   `SyncCheckInTests.testACheckInTravelsWithTheLibraryAndKeepsTheDevicesApart`, `SyncCheckTests` (0.62: the reading,
   the pill, the order, the plain words, `<when>`).
 

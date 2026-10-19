@@ -16,7 +16,7 @@ is covered by another file. This file covers everything else on Home and everyth
   back?"), the Action
   button's menu **"Which grab list?"**, and sharing a grab list;
 - the countdown card to the next trip;
-- the **This Device** count tiles;
+- the **This Device** count tiles, and at the foot of its side label (0.92) the **sync dot** (section 12b);
 - the three Shortcuts actions that open a place (App Intents) — a fourth, "Where is my …?" (0.69), answers in words and opens nothing (spec 06 §3b);
 - (0.86) the grab lists under the app icon — held on the iPhone's Home Screen — and in the Mac's Dock icon menu (section 13b);
 - packing reminders (Settings → **Remind me to pack**; its code lives in `Countdown.swift` and
@@ -323,8 +323,9 @@ field above." (The fourth is the Create new trip file's, spec 03.)
 3. **The This Device row** (section 12, `thisDevice`) — right under the countdown card, or right under Grab and
    go's frame when no trip is ahead (0.91, his "directly under the trip list" — the trip on Home is the countdown
    card). Until 0.91 it was Home's last line, under Create new trip, with 8 pt top padding.
-4. **Create new trip's card** (`homeCard(id: "home-create-card")`), its heading "Create new trip" (Title 3 bold,
-   ink, `home-create-heading`) now its FIRST line, above the name (0.91; until then above the card, 8 pt top
+4. **Create new trip's card** (`homeCard(id: "home-create-card")`), its heading "Create new trip" (**Headline**
+   bold since 0.92 — Title 3 bold in 0.91, one step bigger; "Grab and go" stays Title 3 — in **ink grey** `Theme.inkGrey`
+   since 0.92, `ink` before; `home-create-heading`) now its FIRST line, above the name (0.91; until then above the card, 8 pt top
    padding). See the Create new trip file.
 
 **Sheets attached to Home** (all on the one `HomeScreen` view):
@@ -338,6 +339,8 @@ field above." (The fourth is the Create new trip file's, spec 03.)
 | Which grab list? | `model.grabMenuOpen` set (the request, cleared at once) → the local `menuShown` | `GrabMenuScreen()` |
 | One grab list | a tile tap; `model.grabToOpen` | `GrabScreen(listId:)` |
 | A thing's page (0.92) | `model.thingToOpen` — its result tapped in Spotlight | `ThingEditor(itemId:)` (spec 05), local `thingShown` |
+| The sync dot's bubble (0.92) | a tap on the sync dot (section 12b) | a popover — one line and Details |
+| Sync details (0.92) | Details in that bubble | `SyncDetailsSheet()` — attached to the dot itself (`SyncLight`), not to `HomeScreen`, and not part of `whenFree` |
 
 Open-requests from outside are handled in `HomeScreen` with `onChange(…, initial: true)`:
 - `grabToOpen`: it is set back to `nil` at once. If `library.allGrabLists()` holds that id, the list
@@ -371,7 +374,12 @@ screen below). Escape closes each of them as its Done / Close / Cancel does (0.6
   `home-grab-heading`, `grab-lists`, `grab-0` (and on the iPhone `search-open`), each frame inside it (±1 pt);
   the heading less than 24 pt under the frame's top and above the first tile; on the Mac `search-open` above the
   frame (in the strip). `count-trips` 0–40 pt under `home-countdown` and above `home-create-card`;
-  `home-create-card` holds `home-create-heading` and `trip-name`, the heading above the name; `trip-kind-track`
+  `home-create-card` holds `home-create-heading` and `trip-name`, the heading above the name; (0.92) `home-create-heading`
+  more than 1 pt LOWER than `home-grab-heading` — a tad smaller (iPhone: Headline 21 pt against Title 3's 24), and on the
+  iPhone written in the ink grey (its DEBUG value `#34444c/#c4cfd2`; seen red with `ink`: `("Optional("#16232a/#e7edee")")
+  is not equal to ("Optional("#34444c/#c4cfd2")") - Create new trip is not written in the ink grey`), picture
+  `home92-create`; seen red with the heading back at Title 3: `XCTAssertLessThan failed: ("24.0") is not less than
+  ("23.0") - Create new trip is not smaller than Grab and go: 24.0 vs 24.0 pt`; `trip-kind-track`
   starts and ends with the name's box (±1 pt) — on the iPhone `trip-name`'s frame; 🪤 the Mac reports the text field
   itself, INSIDE the 12 pt of side padding its box has, so there the box is that frame widened by 12 at each side
   (GitHub's Mac, 19 Oct 2026: field 193…814, box and track 181…826 — the first Mac probe went red on it with the
@@ -1907,8 +1915,10 @@ Create new trip (0.91, his words: "I would also like the "This device" area to m
 list."); until 0.91 Home's last line.
 
 **What is on screen.** A row with 10 pt spacing:
-- **"This Device"**: 12 pt heavy `muted`, kerning 0.5, rotated −90° in a 16-pt-wide column
-  (`device-heading`).
+- **"This Device"**: `muted`, rotated −90° in a 16-pt-wide column (`device-heading`). Since 0.92 Caption 2 semibold,
+  kerning 0.3 (`SideLabel`, laid out at its own length — about 64 pt on the iPhone), so the sync dot fits under it
+  inside the tiles' 76 pt; until 0.92 Caption 1 (12 pt) heavy, kerning 0.5, 72 pt long. The label and the dot are
+  centred together on the tiles, 3 pt apart; with no dot the label alone is centred, as before.
 - Three `CountTile`s of equal width, each minimum 76 tall, `card` fill, radius 14, hairline stroke. Each
   shows the number (30 pt heavy monospaced) and under it a 14 pt semibold `muted` label:
 
@@ -1930,7 +1940,87 @@ device (Home is not shown at all there). UI `testHomeCountsTheTemplatesYourTempl
 **Not covered:** the Trips and Things numbers. Settings has its own per-table counts (`device-count-*`),
 tested elsewhere.
 
----
+## 12b. The sync dot (`SyncLight`, 0.92)
+
+**Purpose and origin.** His yes (19 Oct 2026) to the idea: "Sync light on Home: a small dot — green when both
+devices are in step, orange while changes are waiting. A tap opens Sync details, so you see problems like last
+week's without digging." Last week's: on 16 Oct a receive on the Mac never ended, and only Settings' card — read
+by hand, and then wrongly as "failed" — showed anything (spec 01 §8, 0.92). The first build put a line of its own
+under the three numbers (a dot, a word, a chevron); he then asked: "I would like the sync light to be more visually
+appealing and inspired … it shall take up absolutely minimal space in the app and not push anything downwards …
+Maybe just a small dot, and when you press it, you can get more information." — and of four drawings picked **B**:
+"put the sync dot under the This Device label".
+
+**Where.** At the FOOT of the side label "This Device", in its 16-pt column, centred under the words, 3 pt below
+them. The column is no wider and the block no taller than in 0.91 (76 pt, the tiles'); for that the label is one
+style smaller (section 12). Nothing on Home moves.
+
+**What is on screen.** A dot, 8 pt across, in the state's colour — no words beside it (`SyncCheck.Light`, spec 01 §8):
+
+| Light | Dot | When |
+|---|---|---|
+| `inSync` | Trips green `#2f9e63` | nothing waiting, nothing failed, nothing hung, and a good send or receive on record |
+| `sending` | Care orange `#dd7324` | changes not in iCloud yet (for less than half an hour, or with a good send in it), or a send running |
+| `receiving` | Care orange | a receive running for less than ten minutes |
+| `stuck` | To do red `#dc3d43` | a failure after the last good one; or a send/receive running ten minutes; or changes waiting half an hour with no good send in that half hour |
+| `unknown` | `muted` | iCloud on, and the store's record cannot be read, or holds no good send or receive at all |
+| `off` | — | **no dot at all**: this copy keeps its library on the device (`model.usesICloud == false`) — nothing to sync (decided by the build; his TestFlight build always syncs). Settings' card still says "iCloud off". |
+
+Before its first look the dot's place is kept empty (8 × 8), so nothing shifts when it appears.
+
+**Behaviour.**
+- A tap within **44 pt** of it opens a **bubble**: the button is an invisible 44 × 44 laid OVER the dot (`.overlay`, so
+  the column and the block keep their size; the dot itself is drawn 8 pt and hidden from VoiceOver). 🪤 A tap shape
+  drawn wider than the dot (`contentShape(Rectangle().inset(by: -18))`) worked on the iPhone and NOT on the Mac:
+  GitHub's Mac, 19 Oct 2026, a click 16 pt above the dot opened nothing — the run's video showed the red dot, the
+  pointer on it, no bubble. The bubble is a popover (`presentationCompactAdaptation(.popover)` — a bubble on the
+  iPhone too, not a sheet), 270 pt wide, `card` background, padding 14 × 10, to the dot's RIGHT, over the tiles
+  (🪤 iOS 26 puts the bubble on the side away from `arrowEdge`: `.trailing` put it off the screen to the left, so
+  the iPhone passes `.leading` and the Mac `.trailing`; and without a width of its own a bubble at the screen's edge
+  shrank to a sliver — wrapping words have no ideal width). In it: the dot again and ONE line (`SyncCheck.line`,
+  Subheadline semibold, ink — red when Stuck; `home-sync-line`), then **Details** (Subheadline semibold, Settings
+  slate, `home-sync-details`). The bubble is the container `home-sync-popover`. Lines:
+  "In sync · today 18:20" (the newer of the last good send and receive), "Sending 3 changes…" / "Sending 1 change…"
+  / "Sending…" (a send running, nothing counted), "Receiving…", "Stuck — Receiving has hung since 07:57" / "Stuck —
+  Sending has hung since …", "Stuck — the last send failed: Your iCloud storage is full", "Stuck — 3 changes waiting
+  since 07:57", "Can’t tell how the sync is going".
+- **Details** closes the bubble and, once it has gone (its `onDisappear`, then 0.35 s — two windows at once, SwiftUI
+  shows neither), opens **Sync details** (`SyncDetailsSheet`): "Sync details" (Title 3 bold, Settings slate,
+  `sync-details-title`) and **Done** (filled slate header button, Escape too, `sync-details-done`) over Settings' own
+  `SyncCard` — the same card, lines, Sync now and Copy details for Claude (spec 01 §8). The sheet is a container
+  `sync-details`; iPhone: medium and large detents; Mac: at least 460 × 380.
+- It looks at the store's record (`SyncWatch.look`: `SyncCheck.read()` OFF the main thread, about 8 ms on a library
+  of his size, measured on a copy of his Mac's store) when Home shows it, then every 30 s while it is on screen
+  (a `.task` loop, cancelled when Home goes), and 1 s after the store says it changed (`NSPersistentStoreRemoteChange`,
+  debounced — after a save, and after iCloud sends or brings something). The last look is kept app-wide
+  (`SyncWatch.last`), so Home coming back shows it at once and then looks again.
+- Its time rules use `SyncWatch.awake`: when the app last came to the front on the iPhone
+  (`willEnterForegroundNotification`; the iPhone pauses the app, and an unfinished receive with it, in the
+  background), else the first look — so a receive left unfinished by an earlier run gets its ten minutes again.
+- VoiceOver: the dot is a button "iCloud sync", its value the bubble's line, hint "Shows how the sync is going.". In
+  DEBUG builds the value starts with the dot's colour, "green · In sync · today 18:20" — the tests' only way to see it.
+
+**Test hook.** `-syncLight insync|sending|receiving|hung|failed|waited|unknown|off` with a `-uiTesting…` library
+(`SyncWatch.invented`): an invented record, its times counted back from the launch (good send 3 min and receive
+2 min ago; sending: 1 trip and 3 trip lines waiting 30 s; receiving: a receive with no end since 1 min; hung: since 12
+min, the good ones 14 and 13 min ago; failed: a send failed 1 min ago, storage full; waited: 2 things waiting 45 min,
+the last good send 90 min ago; unknown: iCloud on, no record; off: iCloud off). `awake` is then the distant past.
+
+**Tests.** UI `testTheSyncLightOnHomeSaysHowICloudIsGoing`: no `home-sync-light` with iCloud off (the tests' own
+library), and This Device as in 0.91 (`deviceBlockIsAsIn091`: the Trips tile, `count-trips-tile`, 76 ± 1 tall and
+`home-create-card` 10 ± 1 under it — the block's own frame cannot say it: it takes in the dot's 44-pt tap area); with
+`insync` the dot says "green · In sync · today …", with `sending` "orange · Sending 4 changes…"; each time the block
+as in 0.91 and the dot (the middle of its 44-pt frame) left of the first tile, under `device-heading`, centred on it
+(± 1.5) and not below the tiles; with `hung` "red · Stuck — Receiving has hung since …"; a tap 16 pt ABOVE the dot's
+middle opens `home-sync-popover`, whose `home-sync-line` says the same; `home-sync-details` opens `sync-details`,
+whose `sync-state` says "Stuck" and `sync-running` "…has hung since … — quit Packing and open it again." and no
+`sync-problem`; Done closes it. Pictures `synclight2-insync`, `-sending`, `-hung`, `-hung-bubble`, `-hung-details`.
+Seen red (iPhone): the dot in a row of its own under the label — `("17.666666666666686") is not equal to ("10.0")
++/- ("1.0") - This Device pushed Create new trip down`; a dot without its 44 pt — `XCTAssertTrue failed - a tap beside
+the dot did not open its bubble` (iPhone: the button 8 × 8; the Mac: the old wider tap shape); Details doing nothing — `XCTAssertTrue failed - Details did not open Sync details`;
+and, with the first build's line, `a sync light while iCloud is off`. Model: spec 01 §8 (`SyncCheck.line` in
+`testTheLightsWordsAndColours`, red with the older time shown — `("In sync · today 11:55") is not equal to ("In sync ·
+today 11:56")` — and without the singular — `("Sending 1 changes…") is not equal to ("Sending 1 change…")`).
 
 ## 13. Shortcuts and the Action button (App Intents)
 
@@ -2324,8 +2414,11 @@ nothing on GitHub's slower runner, and would have on the phone too.
   `screen-<section>`; `screen-title`; `app-version`; `library-problem`.
 - First run: `first-run-wait`, `first-run-import`, `first-run-problem`.
 - Home: `home-grab-frame` (0.91), `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none`
-  (0.62), `home-countdown`, `device-heading`, `count-trips`, `count-things`, `count-templates`, `home-create-card`
-  (0.91), `home-create-heading`, `trip-kind-track` (0.91).
+  (0.62), `home-countdown`, `home-device` (0.92, the This Device block), `device-heading`, `count-trips`, `count-things`,
+  `count-templates`, `count-<…>-tile` (0.92, each tile), `home-sync-light` (0.92, the dot), `home-create-card` (0.91),
+  `home-create-heading`, `trip-kind-track` (0.91).
+- The sync dot's bubble (0.92): `home-sync-popover`, `home-sync-line`, `home-sync-details`. Sync details (0.92):
+  `sync-details`, `sync-details-title`, `sync-details-done`, and the card's own (spec 01 §8).
 - Grab list:
   - `grab-detail`, `grab-title` (0.86), `grab-edit`, `grab-done`, `grab-count`, `grab-allthere`;
   - `grab-group-<g>` (0.84 a kind's heading; since 0.85 one of HIS headings, as shown, top to bottom; since 0.87
@@ -2480,7 +2573,7 @@ keep their tag and say why they were left.
     - "only sometimes" / "not this time" 13;
     - the Grab Lists pills 13, and "<k> things" 13;
     - Search's headings 12, under-lines 13 and "more" line 13;
-    - the tile labels 14, "Grab Lists" 14, "This Device" 12, the count-tile labels 14;
+    - the tile labels 14, "Grab Lists" 14, "This Device" 12 (Caption 2, 11, since 0.92 — room for the sync dot), the count-tile labels 14;
     - the tab labels 12.5, and the version 11.
     (The new "Delete grab list" button is 15, through `SmallDeleteButton`'s `size`.)
 

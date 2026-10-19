@@ -4167,6 +4167,75 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "sync-card")
     }
 
+    /// The sync light on Home (0.92) — his yes of 19 Oct 2026 to "a small dot — green when both
+    /// devices are in step, orange while changes are waiting. A tap opens Sync details", and his pick B
+    /// of four drawings: "put the sync dot under the This Device label" ("absolutely minimal space …
+    /// not push anything downwards"). The tests keep the library on the device, so with no iCloud there
+    /// is no dot at all; `-syncLight <case>` hands the app an invented record (`SyncWatch.invented`).
+    /// Hung = a receive with no end for 12 minutes: red, and the details say what to do.
+    func testTheSyncLightOnHomeSaysHowICloudIsGoing() {
+        var app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertTrue(app.staticTexts["count-trips"].waitForExistence(timeout: 5), "no This Device on Home")
+        XCTAssertFalse(app.buttons["home-sync-light"].waitForExistence(timeout: 2), "a sync dot while iCloud is off")
+        deviceBlockIsAsIn091(app)
+        for (state, says) in [("insync", "green \u{00B7} In sync \u{00B7} today "), ("sending", "orange \u{00B7} Sending 4 changes\u{2026}")] {
+            app = launch("-uiTesting", ["-syncLight", state])
+            let dot = app.buttons["home-sync-light"], label = app.staticTexts["device-heading"], tile = app.staticTexts["count-trips"]
+            XCTAssertTrue(dot.waitForExistence(timeout: 10), "no sync dot on Home for \(state)")
+            XCTAssertTrue(waitUntil { (dot.value as? String ?? "").hasPrefix(says) },
+                          "the dot for \(state) does not say '\(says)': '\(dot.value as? String ?? "")'")
+            // At the foot of "This Device", in its narrow column; the block no taller than 0.91's. (The dot's
+            // frame is its 44-point tap area: its middle is the dot's.)
+            deviceBlockIsAsIn091(app)
+            let box = app.otherElements["count-trips-tile"].exists ? app.otherElements["count-trips-tile"] : app.groups["count-trips-tile"]
+            XCTAssertLessThan(dot.frame.midX + 4, box.frame.minX, "the dot is not in the side column (\(dot.frame) vs \(box.frame))")
+            XCTAssertGreaterThanOrEqual(dot.frame.midY - 4, label.frame.maxY - 1, "the dot is not under This Device (\(dot.frame) vs \(label.frame))")
+            XCTAssertLessThanOrEqual(dot.frame.midY + 4, box.frame.maxY + 1, "the dot hangs below the tiles (\(dot.frame) vs \(box.frame))")
+            XCTAssertEqual(dot.frame.midX, label.frame.midX, accuracy: 1.5, "the dot is not centred under This Device")
+            _ = tile
+            bringIntoView(app, dot)
+            shot(app, "synclight2-\(state)")
+        }
+        app = launch("-uiTesting", ["-syncLight", "hung"])
+        let dot = app.buttons["home-sync-light"]
+        XCTAssertTrue(dot.waitForExistence(timeout: 10), "no sync dot on Home for a hung receive")
+        let said = dot.value as? String ?? ""
+        XCTAssertTrue(said.hasPrefix("red \u{00B7} Stuck \u{2014} Receiving has hung since "), "a receive running 12 minutes is not stuck: '\(said)'")
+        bringIntoView(app, dot)
+        shot(app, "synclight2-hung")
+        // 44 points to tap: 16 above the dot's middle still opens its bubble.
+        _ = waitUntil(timeout: 3) { self.settled(dot) }
+        dot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: -16)).tap()
+        XCTAssertTrue(appears(app, "home-sync-popover", timeout: 5), "a tap beside the dot did not open its bubble")
+        let line = app.staticTexts["home-sync-line"]
+        XCTAssertTrue(line.waitForExistence(timeout: 5) && words(line).hasPrefix("Stuck \u{2014} Receiving has hung since "),
+                      "the bubble does not say what is wrong: '\(words(line))'")
+        shot(app, "synclight2-hung-bubble")
+        tap(app, id: "home-sync-details")
+        XCTAssertTrue(appears(app, "sync-details", timeout: 8), "Details did not open Sync details")
+        let state = app.staticTexts["sync-state"], running = app.staticTexts["sync-running"]
+        XCTAssertTrue(running.waitForExistence(timeout: 5), "Sync details do not say the receive has hung")
+        XCTAssertEqual(words(state), "Stuck", "the card's pill does not say what the dot says")
+        XCTAssertTrue(words(running).contains("has hung since") && words(running).hasSuffix("quit Packing and open it again."),
+                      "the details do not say what to do: '\(words(running))'")
+        XCTAssertFalse(app.staticTexts["sync-problem"].exists, "a receive with no end was called a failure")
+        shot(app, "synclight2-hung-details")
+        tap(app, id: "sync-details-done")
+        XCTAssertTrue(disappears(app, "sync-details", timeout: 5), "Done did not close Sync details")
+    }
+
+    /// This Device as in 0.91 (0.92's sync dot must not move anything): its tiles 76 tall, and Create new
+    /// trip's card the stack's 10 points under them — nothing pushed down.
+    private func deviceBlockIsAsIn091(_ app: XCUIApplication) {
+        let box = app.otherElements["count-trips-tile"].exists ? app.otherElements["count-trips-tile"] : app.groups["count-trips-tile"]
+        XCTAssertTrue(box.waitForExistence(timeout: 5), "no Trips tile")
+        let card = find(app, "home-create-card")?.frame ?? .zero
+        XCTAssertEqual(box.frame.height, 76, accuracy: 1, "the tiles are not 76 tall: \(box.frame)")
+        XCTAssertEqual(card.minY - box.frame.maxY, 10, accuracy: 1,
+                       "This Device pushed Create new trip down: \(card.minY - box.frame.maxY) pt under the tiles (\(box.frame) vs \(card))")
+    }
+
     /// Field test 7.3/6.1 (3 Oct 2026): the trip's own bag says whether it goes in the cabin,
     /// and the cabin check follows at once. (-uiTestingChecks: a plane trip, a knife and
     /// sun cream in the carry-on.) And Quick says that Plane still turns on the airport checks
@@ -7310,6 +7379,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(box.contains(createHeading.frame), "Create new trip at \(createHeading.frame) is outside its card \(card)")
         XCTAssertTrue(box.contains(name.frame), "the name at \(name.frame) is outside Create new trip's card \(card)")
         XCTAssertLessThanOrEqual(createHeading.frame.maxY, name.frame.minY + 1, "the heading is not above the name")
+        // A tad smaller than Grab and go since 0.92 — his words (19 Oct 2026): "could we please make it a tad
+        // smaller? Not much, but a bit smaller." One text style down; Grab and go keeps its own.
+        XCTAssertLessThan(createHeading.frame.height, heading.frame.height - 1,
+                          "Create new trip is not smaller than Grab and go: \(createHeading.frame.height) vs \(heading.frame.height) pt")
+        #if os(iOS)
+        // …and a tad grey, "not so super black" (0.92): `Theme.inkGrey`, not `ink` (#16232a/#e7edee).
+        XCTAssertEqual(createHeading.value as? String, "#34444c/#c4cfd2", "Create new trip is not written in the ink grey")
+        #endif
+        bringIntoView(app, createHeading)
+        shot(app, "home92-create")
 
         // Full trip | Quick: as wide as the name field, edge to edge.
         XCTAssertTrue(appears(app, "trip-kind-track", timeout: 5), "Full trip | Quick has no track")

@@ -195,7 +195,9 @@ sheet; *Create trip* makes the trip and opens it at once as a sheet (`opened = m
 The card is `homeCard(id: "home-create-card")` (0.91) — the same card as Grab and go's frame (spec 02), an
 accessibility container named `home-create-card` whose lines keep their own ids. It sits under This Device (0.91).
 
-0. **The heading "Create new trip"** (Title 3 bold, ink — 22 heavy before 0.62), id `home-create-heading` — the
+0. **The heading "Create new trip"** (Headline bold since 0.92 — his words, 19 Oct 2026: "could we please make it a
+   tad smaller? Not much, but a bit smaller."; Title 3 bold 0.62–0.91, 22 heavy before), in **ink grey** `Theme.inkGrey`
+   (`#34444c` / `#c4cfd2`) since 0.92 — "Maybe a tad grayish, not so super black." — `ink` before, id `home-create-heading` — the
    card's FIRST line, above the name, since 0.91 (his words, 19 Oct 2026: "I would also like to have the text
    "Create New Trip" within the "Name your trip" frame."); until then above the card, 8 pt over it.
 
