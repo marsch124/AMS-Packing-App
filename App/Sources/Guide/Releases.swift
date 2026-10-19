@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.89", date: "19 Oct 2026", title: "Your own activity areas",
+                new: ["Activity areas, on the Templates tab: add your own, rename them with the pen, move them with the grip, and Remove one that holds no template. Your areas show on the Templates tab, on Create new trip and in Trip settings, in your order.",
+                      "A template\u{2019}s page has Activity area as a drop-down: pick any area, or make a new one at its foot."]),
         Release(version: "0.88", date: "18 Oct 2026", title: "Clearer notes",
                 changed: ["A thing found by its notes says whose note it is: \u{201C}Note on Travel: work” for a template\u{2019}s note, \u{201C}Note: \u{2026}\u{201D} for its own. Its page says \u{201C}Note on the Travel template: \u{2026}\u{201D}."]),
         Release(version: "0.87", date: "15 Oct 2026", title: "Charge tonight, and done headings fold",

@@ -43,7 +43,7 @@
 # <main checkout>/private/release-tools/ asc.py, ensure-group.sh, revoke-api-certs.sh (or RELEASE_TOOLS).
 #
 # Environment (all optional):
-#   PACKING_SIM        the model the test simulators copy  (default "Packing CI iPhone 18 Pro": its iPhone
+#   PACKING_SIM        the model the test simulators copy  (default "Packing CI iPhone 17 Pro 26", iOS 26.5: its iPhone
 #                      model and iOS; it is not tested on itself any more)
 #   PACKING_SIM_COUNT  how many simulators run the tests side by side, 1–9 (default 3 — measured 14 Oct 2026
 #                      on 33 tests: 1 → 19½ min, 2 → 11, 3 → 8½; spec 06 §28a); "Packing CI fast 1…N" are
@@ -189,7 +189,7 @@ TMP="${TMPDIR:-/tmp}"; TMP="${TMP%/}"
 KEY=$(printf '%s' "$ROOT" | shasum | cut -c1-8)
 DD_TEST="$TMP/AMSPacking-quick-$KEY"          # the simulator build, kept between runs (faster next time)
 DD_ARCHIVE="$TMP/AMSPacking-archive-$KEY"     # the archives' derived data, kept between runs too
-SIM_NAME="${PACKING_SIM:-Packing CI iPhone 18 Pro}"   # the model the test simulators are made like
+SIM_NAME="${PACKING_SIM:-Packing CI iPhone 17 Pro 26}"   # the model the test simulators are made like — iOS 26.5 since 18 Oct 2026: the iOS 27.0 simulator's wallpaper process crash-looped and put a crash window on his screen every 10 s
 FAST_SIM="Packing CI fast"                     # the test simulators: "Packing CI fast 1" … "… $SIM_COUNT"
 LOCAL_TIMES="$TMP/AMSPacking-ui-times-local.json"   # each test's seconds on this Mac, for the next split
 BUNDLE_ID=com.schabbauer.AMSPacking
