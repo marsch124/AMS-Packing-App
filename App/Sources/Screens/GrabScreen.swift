@@ -263,7 +263,14 @@ struct GrabScreen: View {
             // The count stays in sight while the list scrolls under it (his test B.2:
             // "When scrolling, the counter moves out of sight").
             if !editing { counter(items: items, complete: complete) }
-            if editing { editor } else { KeyboardAwayScroll {
+            if editing {
+                editor
+                    #if os(macOS)
+                    // Escape while typing in one of the editor's fields: Cancel too (a text field
+                    // keeps Escape for itself otherwise).
+                    .onExitCommand { cancelEdits() }
+                    #endif
+            } else { KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 0) {
                     if items.isEmpty {
                         // A list just made has nothing on it yet: say how to fill it.
@@ -380,6 +387,11 @@ struct GrabScreen: View {
             if let now { lastSeen = now }
             else if leaving == nil, let lastSeen { leaving = lastSeen; dismiss() }
         }
+        #if os(macOS)
+        // While editing, Escape is the edit's Cancel and the list stays open (0.92): the Mac's own
+        // Escape would close the whole sheet (seen in the 0.92 probe).
+        .interactiveDismissDisabled(editing)
+        #endif
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("grab-detail")
         #if os(macOS)
