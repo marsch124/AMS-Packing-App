@@ -786,7 +786,9 @@ no entry shows no marker anywhere (and fails the test).
 
 **Purpose.** "The whole app in plain words, one screen at a time, with each tab's own mark."
 
-**On screen,** in this order inside a `VStack(spacing: 12)`, container id `guide-howitworks`:
+**On screen,** under `GuideHeader("How it works")` and (0.90) the search field (§7a), in this order inside a
+`VStack(spacing: 12)` — since 0.90 the view `HowItWorksGuide`, which watches nothing, so a key pressed in the search
+field never builds it again; the sheet's container id stays `guide-howitworks`:
 1. `FirstTripCard` (§8) — "at the very top" (his idea 13, 2 Oct 2026).
 2. `LoopGuideCard` (§9).
 3. `WordsCard` (§10).
@@ -970,7 +972,12 @@ no entry shows no marker anywhere (and fails the test).
    trip being packed on that place, what goes back after a trip, or everything kept there — Open on the place's page
    shows the same on the Mac; Worth a look
    (only when something seems wrong; one-press fix such as Remove it; an undated photo nothing shows goes only on Remove — 0.62); Open a shared link (trip arrives unticked,
-   template links to existing things — with a name he has, a name of its own or Replace (0.62) —, grab list takes a free Home place or waits). (10 lines.)
+   template links to existing things — with a name he has, a name of its own or Replace (0.62) —, grab list takes a free Home place or waits);
+   (0.90, the sixth line, after the first-real-trip door) How it works' own search — "How it works has a search field
+   at its top: type a word and only what says it shows — each paragraph under its part, with the word marked, and at
+   the top how many places say it (“4 places”). Capitals and accents do not count; a part whose heading alone says it
+   shows whole. The ✕ brings the whole guide back, where you were reading. On the Mac ⌘F puts the cursor in the
+   field, and Escape empties it." (11 lines; 10 until 0.90.)
 10. **Shortcuts and the Action button** (Home mark): three actions (Choose a grab list, Open a grab list, Open my next
    trip); the Action-button path (iPhone Settings → Action Button → Shortcut → Packing → Choose a grab list); if
    Packing is missing, open it once; Home Screen or Siri ("Open Swim in Packing"); (0.86) hold the Packing icon on
@@ -985,7 +992,113 @@ card, first-trip card, Words), (0.79) `testHowItWorksExplainsThePackingDayStatio
 its six stations in order, "1 · " … "6 · ", each wearing its own mark — the label of `guide-day-<key>-mark` is his
 pick's — the first five saying what turns them green, Weigh that it opens by itself, Tags the bag's Has an AirTag;
 pictures `day-howitworks-1`/`-2`, day and night; seen red with the card left out: "How it works has no Packing day
-part"). **Not covered:** the number of topics, their order, their text.
+part"); (0.90) `testHowItWorksSearchShowsOnlyWhatSaysTheWords` (§7a). **Not covered:** the number of topics, their
+order, their text.
+
+### 7a. Search in How it works (0.90; `HowItWorksScreen`, `GuideSearchResults`, `GuideHitCard`, `GuideMarks` in `Guide/GuideScreen.swift`; the matching in `Core/Sources/PackingLibrary/GuideSearch.swift`)
+
+**Origin.** His ask of 19 Oct 2026: "Search function in How-it-works. There is a lot of information in how it works,
+and I really like that. Keep up the good work in making it extensive. The search function will make it even better."
+(Spec 07 §11, decision log.)
+
+**The field.** Right under the header (`GuideHeader`, padding 16; the field 4 pt up into that padding, 12 above the
+guide): the app's search-field look — a plain `TextField` "Search How it works" (Body, ink), `Metrics.compact` tall
+(32 iPhone / 24 Mac), 12 in from its edges, `Theme.card` with a 1-pt `Theme.line` ring, radius 10, 16 from the
+sheet's sides — and the shared ✕ (`clearButton`, §20): there only while something is typed, one tap empties the field
+and the keyboard stays. Field id `guide-search`, its ✕ `guide-search-clear`. The app puts no cursor there when How it
+works opens (on the iPhone a keyboard would cover the guide he came to read; the Mac may give a sheet's first field
+the focus by itself). **On the Mac:** ⌘F puts the cursor in the
+field (a zero-opacity button behind it holds the shortcut, hidden from VoiceOver); Escape — which a text field keeps
+for itself, so `GuideHeader`'s Done (`.cancelAction`) never hears it — empties the field when something is typed and
+closes How it works, as Done does, when nothing is (`.onExitCommand`).
+
+**When it searches.** As soon as the field holds anything but spaces (`GuideSearch.needle` not empty), on every key
+press. Spaces alone are no search: the whole guide shows.
+
+**What is searched** (`HowItWorksScreen.parts`, one `GuidePart` per card, in the guide's order, read from the same
+statics the cards draw — so the search can never miss a sentence the guide has; a new card in How it works joins this
+list):
+1. `quickstart` — "Your first real trip in 6 steps" (`FirstTripCard.title`): its six steps, each "<n> · <title> —
+   <words>" (lead "<n> · <title>").
+2. `loop` — "The loop" (`LoopGuideCard.title`): its first line (`LoopGuideCard.intro`), the five steps "<name> —
+   <sentence>" (`LoopStep.explained`) and the bold line (`LoopWords.footer`). **Not** the picture: its boxes repeat the
+   steps' words.
+3. `words` — "Words" (`WordsCard.title`): every entry "<term> — <meaning>". **The Words list IS searched** — it is a
+   part of How it works, and a word he wonders about is the likeliest thing to look up.
+4. `topic-<n>` — each topic, its title and its lines (n = the topic's own number, as `guide-topic-<n>`), and, right
+   after `Packing a trip` (`HowItWorksScreen.stationsAfter`), `stations` — "Packing Stations"
+   (`PackingDayGuideCard.title`): its first paragraph (`.intro`), the six stations "<n> · <name> — <words>"
+   (`PackingDayGuideCard.says`; not the drawn marks' descriptions), its four closing lines (`.more`).
+
+`Loop.swift` and `PackingDay.swift` gave up their inline sentences for these statics in 0.90 (the cards draw the same
+words); `Words.swift` gained `WordsCard.title`, `FirstTripCard` its `title`.
+
+**How words match** (`GuideSearch`, model-tested): as the app's other searches — `normName` (trimmed, lower case, runs
+of spaces as one) and the words are ONE phrase ("bag weight" finds "bag weight", not "bag … weight"); and, the guide
+being prose he did not type, also **accents** (`cafe` finds `café`) and the **curly and straight quotes** (‘ ’ ‛ ′ as
+', “ ” „ ″ as "): "trip's" typed on the Mac finds "trip’s", and the iPhone's curly ’ finds a straight one.
+Case-insensitive and diacritic-insensitive `range(of:)` over the text with its quotes straightened — each a one-UTF-16-
+unit swap, so a place found there is at the same offset in the words as written.
+
+**What shows** (`GuideSearch.find`): each part the words are in, in the guide's order, under its own heading — with
+only its paragraphs that hold them, in order; **a part whose heading alone holds them shows whole** (it is about them:
+"iPhone and Mac" shows that part, though no paragraph says the phrase). A part whose heading and some paragraphs hold
+them shows just those paragraphs. Every other card is gone.
+
+**On screen while searching** (`GuideSearchResults`, container `guide-search-results`, in a `KeyboardAwayScroll`, a
+`LazyVStack(spacing: 12)` — one letter can find most of the guide, and only the cards in sight are built, so the next
+key press is not kept waiting; 16 from the sides, 24 at the foot, `Theme.bg`):
+- **The count line** (`guide-search-count`, Subheadline semibold, monospaced digits, muted): "1 place" / "<n> places"
+  — the places the words are in: each paragraph holding them (twice in one paragraph is one place) and each heading
+  holding them.
+- **A card per part** (`GuideHitCard`, container `guide-hit-<key>`; padding 14, radius 12, the card's look as in the
+  guide: the first trip's Home blue at 8 % with a 1.2-pt Home-blue ring, the stations' `Theme.card` with a 1.2-pt Pack
+  green ring at 70 %, every other `Theme.card` with the 1-pt hairline): the heading as the guide shows it — the topic's
+  `SectionMark` (24, 1.9) in its colour, the Words' "Aa" in slate, the stations' sun-out-of-a-case mark in the Pack
+  step's readable green; the first trip and the loop wear none, as in the guide — then the title (Body semibold,
+  ink; id `guide-hit-<key>-title`); then each paragraph after a 6-pt dot in the card's colour (a topic's section
+  colour; first trip Home blue; loop Templates violet; Words Settings slate; stations Pack green): the text in
+  Callout ink, its lead (a step's, a word's, a station's name) semibold; id `guide-hit-<key>-<n>`, n = the paragraph's
+  place in its part (the first trip's steps 0–5; the loop's first line 0, steps 1–5, bold line 6; Words' entries as
+  `word-<n>`; the stations' first paragraph 0, stations 1–6, closing lines 7–10; a topic's lines as in the code).
+- **The words marked** (`GuideMarks`): every place, in the heading and the paragraphs, semibold, in How it works' own
+  colour — its title's Settings slate — on a band of the same slate at 16 %, as a found note's line marks them in
+  Search (`NoteHitLine`). **At night** the word keeps the text's own colour (ink) on a stronger band, slate at 55 %:
+  slate words on the dark card read dimmer than the words around them, which is no mark (seen on the first night
+  picture, 19 Oct 2026). Each heading and paragraph's accessibility value says how many places in it are marked
+  ("1 place marked", "2 places marked") — what VoiceOver hears after the words, and what the test reads.
+- **Nothing found** (`guide-search-none`): one calm line, "Nothing in How it works says that." (Callout, muted) —
+  as a template's search says "Nothing on this template is called that.". No count line.
+
+**Back to the whole guide.** The guide stays built under the search, only out of sight (`opacity` 0, no hit testing,
+hidden from VoiceOver — so a test, or VoiceOver, finds no `guide-topic-<n>` while searching): the ✕ (or emptying the
+field by hand) gives it back **exactly as it was, scrolled to where he was reading**. (How it works has no folds.)
+Leaving How it works and opening it again starts with an empty field, at the top.
+
+**Tests.** Model `GuideSearchTests` (5, `Core/Tests/PackingLibraryTests/GuideSearchTests.swift`, invented parts):
+only the paragraphs holding the words, each under its part, in order, and "2 places"; a heading alone shows its whole
+part ("1 place"), heading and paragraph show just the paragraph (2 places); case, spaces, accents and curly or straight
+' and " do not count; every place marked, none overlapping ("aaaa"/"aa" → two), at the right offset after a curly
+quote; spaces alone or nothing found → nothing. Each seen red with its fault planted: quotes not straightened —
+`XCTAssertEqual failed: ("["don\'t"]") is not equal to ("["Don’t", "don\'t"]") - a straight ' finds the curly one
+too`; accents counted — `("[]") is not equal to ("["café"]") - accents do not count`; a heading alone showing nothing
+more — `… paragraphs: [], places: 1)]") is not equal to (… paragraphs: [0, 1], places: 1)]") - only the heading says
+it: the part is about it, so all of it shows`; every paragraph of a found part shown — `("[0, 1, 2]") is not equal to
+("[1]") - Care: only the kit paragraph says "the"`.
+UI `testHowItWorksSearchShowsOnlyWhatSaysTheWords` (iPhone and Mac): the guide read on a little (two swipes; the
+second topic's place noted); "siri" typed → "2 places", the paragraphs `guide-hit-topic-1-7` (Packing a trip,
+Where is my …?) and `guide-hit-topic-11-3` (Shortcuts and the Action button), each under its heading, each saying
+Siri with "1 place marked"; no `guide-hit-topic-1-0`, no Words part, no `guide-topic-1` (the guide out of sight);
+"qxzqxz" → the nothing line, no count, no part; the ✕ → the search gone, the field empty, the second topic back within
+4 points of where it was. On the Mac then ⌘F + "siri" → "2 places"; Escape empties it and How it works stays; a
+second Escape closes it. Pictures `guide-search-0-before`, `-1-found`, `-2-none`, day and night. Seen red with each
+fault planted: no marks — `XCTAssertEqual failed: ("0") is not equal to ("1") - Siri is not marked in paragraph 7 of
+topic-1: 'Where is my …? …'`; every paragraph of a found part — `XCTAssertFalse failed - a paragraph that does not say
+it shows`; the guide built again after the search (`if !searching`) — `XCTAssertEqualWithAccuracy failed:
+("7973.166666666667") is not equal to ("6611.166666666667") +/- ("4.0") - the guide came back somewhere else, not where
+it was`; no nothing line — `XCTAssertTrue failed - nothing found, and nothing says so`; the guide left in VoiceOver's
+reach under the search — `XCTAssertNil failed: ""guide-topic-1" Other" - the whole guide still shows under the
+search`.
 
 ---
 
@@ -1045,6 +1158,8 @@ picture; the words.
 - **The words** (`LoopWords`): five rows — the step name (16 heavy, readable tint, 72 wide) and its sentence (16 ink)
   — then in bold: "Review looks back at one trip. Refine uses several reviews to make your templates better."
 
+**Searched** (0.90, §7a): the first line, the five steps' words and the bold line; not the picture.
+
 **Tests.** `testTheLoopShowsWhereATripStands`: `guide-loop` exists, exactly five `loop-step-*`, step 0 label contains
 "on Home", step 2 starts "On site" and contains "on Trips", step 4 contains "on Templates", each step's mark says
 the mark he picked (0.77), no step says "You are here" in the guide. (The same test then checks the trip's strip and the full loop screen — owned by the loop chapter.)
@@ -1091,6 +1206,9 @@ Shipped in 0.41.
 | 23 | To do | To do | The tab for getting ready: things to sort out before you go, and — on its other side — To buy, with worn-out or run-down things suggested. |
 | 24 | Your choices | Settings | Your own lists in Settings: storage places, owners, packers, conditions and the When steps. |
 | 25 | Care | Care | Looking after your things: services that fall due, weights, bags. The Care tab. |
+
+**Searched** (0.90, §7a): every entry, "<term> — <meaning>", in How it works' search — decided so: the Words are a
+part of How it works, and a word he wonders about is the likeliest thing to look up.
 
 **Tests.** `testTheLoopShowsWhereATripStands` requires `guide-words` and a `word-<n>` reading exactly "Kit"
 (searched among 0…29). **Not covered:** the other 25 terms.
@@ -2579,11 +2697,12 @@ too), `testOwnersAreTheNamesHisThingsCarry`, `testSettingsOpensYourChoicesAndThe
 (36 / 26) and `doorPitch` (52 / 46), measured top to top by the helpers `rowFrames` and `pitch` (the rows on screen,
 by `shownRow`) and `airAbove` (a heading to the bottom of the row above it). 0.79:
 `testHowItWorksExplainsThePackingDayStations` (§7, the Packing day's part; the Packing day's own tests are in spec 07
-part 17).
+part 17). 0.90: `testHowItWorksSearchShowsOnlyWhatSaysTheWords` (§7a).
 
 Model: `SettingsListsTests` (14 since 0.62), `SharedRowsTests` (26), `PresetsTests` (5), `PhasesTests` (12),
 `ItemConditionsTests` (6), `PeopleTests` (8), `HealthTests` (5), `PhotoTidyTests` (4 since 0.62), `BackupTests` (library, 5),
-`RestoreTests` (3), `SyncCheckInTests` (1), `CountdownTests` (4), `ContrastTests` (3); and (0.62)
+`RestoreTests` (3), `SyncCheckInTests` (1), `CountdownTests` (4), `ContrastTests` (3), (0.90) `GuideSearchTests` (5,
+§7a); and (0.62)
 `tools/release-to-testers.py --self-check`. Not unit-tested at all (the app
 target has no unit-test target): `SVGPath`, `RescueCopies` (its naming, time and pruning are, since 0.62: `RescueNamesTests`; also `StoreTests`, `SyncCheckTests`, `UndatedPhotoTests`), `AppInfo`, `Releases`/`Words`/`HowItWorksScreen`
 content, the button and heading components.

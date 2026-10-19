@@ -45,12 +45,13 @@ enum Words {
 
 /// The Words chapter in How it works: each word in its tab's colour, its meaning under it.
 struct WordsCard: View {
+    static let title = "Words"
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Text("Aa").font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .frame(width: 24, height: 24)
-                Text("Words").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text(WordsCard.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
             }
             ForEach(Array(Words.all.enumerated()), id: \.offset) { n, e in
                 VStack(alignment: .leading, spacing: 2) {

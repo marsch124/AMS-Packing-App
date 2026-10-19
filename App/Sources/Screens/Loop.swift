@@ -201,6 +201,8 @@ private struct LoopArrow: View {
 
 /// The five steps and what each means — the picture's words.
 struct LoopWords: View {
+    /// The bold line under the five steps — a static, so How it works' search reads the same words.
+    static let footer = "Review looks back at one trip. Refine uses several reviews to make your templates better."
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -212,7 +214,7 @@ struct LoopWords: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Text("Review looks back at one trip. Refine uses several reviews to make your templates better.")
+            Text(LoopWords.footer)
                 .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 4)
@@ -324,10 +326,14 @@ struct LoopScreen: View {
 
 /// How it works starts here: the picture, then the words.
 struct LoopGuideCard: View {
+    /// Its heading and first line — statics, so How it works' search (0.90) reads the same words.
+    static let title = "The loop"
+    static let intro = "Every trip goes round the same five steps, and each time round your templates get a little better."
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("The loop").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-            Text("Every trip goes round the same five steps, and each time round your templates get a little better.")
+            Text(LoopGuideCard.title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+            Text(LoopGuideCard.intro)
                 .font(.system(.callout)).foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             LoopPicture()
