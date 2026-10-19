@@ -2203,6 +2203,12 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
        (`search-things-<n>-note`, `NoteHitLine`): Footnote, one line; muted, the words searched for in Home blue
        and semibold; since 0.88 a template's note starts with "Note on <template>: " and his own Notes with "Note: " (until 0.88 "<template>: " and no word). A text of its own outside the row's button
        (2 pt pulled up, 5 under it; a tap on it opens the thing too); the hairline is under the pair.
+     - (0.90) a thing WITH a photo: its first photo, small (`ThingPhotoThumb`, BagPhoto.swift — 24 pt square on the
+       iPhone, 20 on the Mac, corners 5, a 1 pt `line` edge), between the details and the chevron
+       (`search-things-<n>-photo`, an image element named "Photo of <name>"). Nothing for a thing without one, and
+       never on a template, trip or to-do row. Like the note line it is an element of its own BESIDE the row's button,
+       and so since 0.90 is the chevron (hidden from VoiceOver): the row is `HStack(spacing 10) {button, photo?,
+       chevron}`, and a tap on the photo or the chevron opens the row as the button does. The row is no taller for it.
 
 **Matching.** `needle = normName(query)` (trimmed, lower-cased, whitespace runs collapsed). A hit is a
 **substring** of the same `normName` of a field:
@@ -2232,6 +2238,8 @@ The ✕ that empties the field came from the field test of 3 Oct 2026 (release 0
 - UI `testTheCrossEmptiesASearch`: `search-field-clear` empties the field and `search-none` goes.
 - UI `testSearchFindsAThingByWordsInItsNotes` (0.69, `-uiTestingNotes`; its second half): "pouch" →
   `search-things-0` is the Passport and `search-things-0-note` reads "Keep it in the blue pouch with the tickets".
+- UI `testAThingTakesAPhotoOrTwoAndShowsItInYourThingsAndSearch` (0.90; its last part): "goggles" → `search-things-0`
+  and `search-things-0-photo`; "map" → `search-things-0` without one (spec 05, A thing's page, item 3a).
 - UI `testASearchedToDoOpensTheToDoTab` (0.62): a to-do added on To do, Search opened from **Home**,
   "ferry" → `search-todos-0` → Search closes and `screen-actions` shows.
 - **Not covered:**
@@ -2289,7 +2297,7 @@ nothing on GitHub's slower runner, and would have on the phone too.
 - Reminders card: `settings-reminders-card`, `settings-reminders`, `settings-reminders-refused`,
   `settings-reminders-next`.
 - Search: `search-detail`, `search-done`, `search-field`, `search-field-clear`, `search-none`,
-  `search-<things|lists|trips|todos>-<n>`, `search-things-more`.
+  `search-<things|lists|trips|todos>-<n>`, `search-things-more`, `search-things-<n>-photo` (0.90).
 - Sharing a grab list: `share-screen`, `share-done`, `share-qr`, `share-qr-toolong`, `share-link`,
   `share-send`, `share-copy`, `share-toolong`, `share-empty` (0.62); receiving: `settings-openshared`, `shared-screen`,
   `shared-input`, `shared-paste`, `shared-open`, `shared-bad`, `shared-preview`, `shared-kind`,

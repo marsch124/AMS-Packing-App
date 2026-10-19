@@ -200,6 +200,8 @@ struct ThingsScreen: View {
     /// opens the thing too.
     private func thingRow(_ row: (item: Item, templates: [String]), n: Int, note: NoteHit? = nil) -> some View {
         VStack(alignment: .leading, spacing: 0) {
+        // Its first photo, small, at the row's end (0.90): nothing when it has none.
+        HStack(spacing: 10) {
         Button { editing = row.item.id } label: {
             // The name and where it lives on ONE line (his word, 5 Oct 2026: "set the item
             // name and the info on the same line").
@@ -219,6 +221,8 @@ struct ThingsScreen: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("thing-row-\(n)")
+        ThingPhotoThumb(item: row.item, id: "thing-row-\(n)-photo") { editing = row.item.id }
+        }
             if let note {
                 NoteHitLine(hit: note, query: query, tint: AppSection.care.color)
                     .padding(.top, -3).padding(.bottom, 5)
@@ -404,6 +408,12 @@ struct ThingEditor: View {
                         rowNotes
                     }
                     .keyed(.notes)
+                    // Photos right under Notes (0.90 — his ask of 19 Oct 2026: "A photo or two for
+                    // each item"): with the name and the notes, what tells this thing from another.
+                    // Kept as soon as taken, so only on a thing that is there (not one ⌘N is making).
+                    if let id = shown {
+                        labelled("Photos") { ThingPhotos(thingId: id).environmentObject(model).id(id) }
+                    }
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
