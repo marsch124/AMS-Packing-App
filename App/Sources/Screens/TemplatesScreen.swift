@@ -529,11 +529,28 @@ struct TemplateColourSwatches: View {
 
 /// One template: its things under his "When" headings; a thing can be added
 /// at the foot and taken off with ✕ (the thing itself survives).
+/// A template's page on its own copy of the library (0.92, Cancel everywhere — `PageDraft`): what
+/// is changed on it — the name, the cover, Counts as, the area, reminders, things added, taken off
+/// or arranged, a row saved — is kept by Done and thrown away by Cancel, Escape or a swipe down.
 struct TemplateDetail: View {
+    let listId: String
+    var onSmallCore: ((String) -> Void)? = nil
+    @EnvironmentObject var model: LibraryModel
+
+    var body: some View {
+        DraftedPage(live: model) { page in
+            TemplatePage(listId: listId, onSmallCore: onSmallCore, page: page)
+        }
+    }
+}
+
+struct TemplatePage: View {
     let listId: String
     /// A small core was made from this template (0.71): what the Templates screen says.
     /// The page closes. nil where the page is opened from elsewhere (Search).
     var onSmallCore: ((String) -> Void)? = nil
+    /// The copy this page works on (0.92): Done hands it over, Cancel throws it away.
+    let page: PageDraft
     /// "Make a small core from this…" is open, and what it said once made.
     @State private var makingCore = false
     @State private var coreNews: String?
@@ -605,6 +622,29 @@ struct TemplateDetail: View {
         let index: [String: Int] = Dictionary(groups.flatMap(\.items).enumerated().map { ($1.memId ?? "\($0)", $0) },
                                               uniquingKeysWith: { a, _ in a })
         VStack(spacing: 0) {
+            // Cancel and Done on a row of their own (0.92), as on a thing's page: Cancel throws
+            // away everything changed here since the page opened, Done keeps it.
+            HStack(spacing: 12) {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    // Escape = Cancel, never Done — except while arranging, when Escape ends
+                    // Arrange instead (the Arrange pill); a second Escape is Cancel.
+                    .keyboardShortcut(arranging ? nil : .cancelAction)
+                    .accessibilityIdentifier("template-cancel")
+                Spacer()
+                ShareDoor(id: "template-share", tint: AppSection.templates.color) {
+                    ShareOffer(title: "Share \u{201C}\(list.name)\u{201D}", link: model.library.shareLink(templateId: list.id))
+                }
+                Button("Done") { page.save(); dismiss() }
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true))
+                    .focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
+                    .foregroundStyle(AppSection.templates.color)
+                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Done (0.92)
+                    .accessibilityIdentifier("template-detail-done")
+            }
+            .padding(.horizontal, 16).padding(.top, 16)
             HStack(spacing: 12) {
                 CoverDoor(list: list).environmentObject(model)
                 // The name is the field. Press it, type, and it is renamed — no
@@ -626,28 +666,17 @@ struct TemplateDetail: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("template-rename")
                 }
-                Spacer()
-                ShareDoor(id: "template-share", tint: AppSection.templates.color) {
-                    ShareOffer(title: "Share \u{201C}\(list.name)\u{201D}", link: model.library.shareLink(templateId: list.id))
-                }
-                Button("Done") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true))
-                    .focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold))
-                    .foregroundStyle(AppSection.templates.color)
-                    // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026) — except
-                    // while arranging, when Escape ends Arrange instead (the Arrange pill).
-                    .keyboardShortcut(arranging ? nil : .cancelAction)
-                    .accessibilityIdentifier("template-detail-done")
+                Spacer(minLength: 0)
             }
-            // The small core's sheet hangs here, on the header that is always there (0.71).
+            // The small core's sheet hangs here, on the header that is always there (0.71). Made,
+            // it is kept with the rest of the page (0.92: the page's copy is handed over first).
             .sheet(isPresented: $makingCore, onDismiss: {
-                if let said = coreNews { coreNews = nil; onSmallCore?(said); dismiss() }
+                if let said = coreNews { coreNews = nil; page.save(); onSmallCore?(said); dismiss() }
             }) {
                 SmallCoreSheet(templateId: listId) { coreNews = $0 }.environmentObject(model)
             }
             .needsLine($renameNeeds, typed: renaming ?? "", id: "template-rename-needs")
-            .padding(16)
+            .padding(.horizontal, 16).padding(.vertical, 10)
             // Group the things the ways a trip sorts (his H.3), in sight above the list.
             FlowRow(spacing: 6) {
                 Text("Group").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
@@ -821,7 +850,9 @@ struct TemplateDetail: View {
                                 .accessibilityIdentifier("template-delete-no")
                             Spacer()
                             Button {
-                                model.change { _ = $0.deleteTemplate(id: listId) }
+                                // Its own decision, asked first: the template goes from the real
+                                // library at once (0.92), and what else the page changed goes with it.
+                                page.live.change { _ = $0.deleteTemplate(id: listId) }
                                 dismiss()
                             } label: {
                                 Text("Delete the template")
@@ -876,7 +907,8 @@ struct TemplateDetail: View {
         .onChange(of: canArrange) { _, offered in if !offered { endArranging() } }
         // While arranging, the page is not swiped away — a drag that strays to its top
         // would close it mid-move — and the iPhone's own ⌘. (which closes an untouched
-        // sheet by itself) leaves Escape to Arrange. Done still closes it.
+        // sheet by itself) leaves Escape to Arrange. Done and Cancel still close it. Otherwise
+        // a swipe down is Cancel (0.92), as on a thing's page.
         .interactiveDismissDisabled(arranging)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("template-detail")
@@ -1218,6 +1250,7 @@ struct RowEditor: View {
                 Button("Save") { save() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.templates.color)
+                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Save (0.92)
                     .accessibilityIdentifier("row-save")
             }
             .padding(16)

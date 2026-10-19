@@ -36,14 +36,15 @@ struct ReviewScreen: View {
         let lists = model.library.tripTemplates(tripId: tripId)
         let target = missWhere ?? (lists.first?.id ?? "")
         VStack(spacing: 0) {
-            HStack {
-                Text("Trip review").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
-                Spacer()
+            // Cancel top left (0.92, Cancel everywhere); Save review stays at the foot, always in sight.
+            HStack(spacing: 12) {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("review-cancel")
+                Text("Trip review").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                Spacer()
             }
             .padding(16)
             LoopDoor(here: .review, id: "review-loop")
@@ -184,6 +185,7 @@ struct ReviewScreen: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
+            .keyboardShortcut("s", modifiers: .command)          // ⌘S = Save review (0.92)
             .padding(.horizontal, 16).padding(.vertical, 10)
             .accessibilityIdentifier("review-save")
         }

@@ -391,6 +391,9 @@ struct ThingEditor: View {
                 Button("Save") { save() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                    #if os(iOS)
+                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Save (0.92); the Mac's is the Thing menu's
+                    #endif
                     .accessibilityIdentifier("thing-save")
             }
             .padding(16)

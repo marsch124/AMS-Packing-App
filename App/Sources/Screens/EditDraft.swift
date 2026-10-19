@@ -132,3 +132,66 @@ enum TypedNumber {
         return v != now
     }
 }
+
+// MARK: - A page's copy of the library (0.92, Cancel everywhere)
+//
+// His words, 19 Oct 2026: "I open an item and change some property. How do I cancel that? There is
+// only a Done button, right?" — and "the cancel function should be existing throughout the whole
+// app right?" A page whose controls change the library at once — a template's page, Your choices —
+// now works on a COPY of the library while it is open: everything on it (and on the pages opened
+// from it) changes the copy. Done hands over what the page changed (`Library.applyingPage` — only
+// the records it touched, so the other device's changes meanwhile stay); Cancel, Escape and a swipe
+// down throw the copy away. The app put away or quit with the page open keeps nothing of it — as a
+// thing's page never did.
+
+/// The copy a page works on, and the real library it came from (spec 06 §20a).
+@MainActor
+final class PageDraft: ObservableObject {
+    let live: LibraryModel
+    /// What the page and everything opened from it see as "the library".
+    let copy: LibraryModel
+    /// The library as the page opened.
+    private let opened: Library
+
+    init(live: LibraryModel) {
+        self.live = live
+        self.opened = live.library
+        self.copy = LibraryModel(copyOf: live)
+    }
+
+    /// Has anything on the page changed?
+    var changed: Bool { copy.library != opened }
+
+    /// Done: what the page changed, in one change of the real library. Nothing changed = nothing written.
+    func save() {
+        guard changed else { return }
+        let from = opened, to = copy.library
+        live.change { $0 = $0.applyingPage(from: from, to: to) }
+        live.library.installLiveChoices()
+    }
+
+    /// The page has gone — after Done, Cancel or a swipe: the "When" steps and conditions in force
+    /// are the real library's again (a copy that changed them installed its own while it was open).
+    func left() {
+        let now = copy.library
+        if now.phases != opened.phases || now.shared != opened.shared { live.library.installLiveChoices() }
+    }
+}
+
+/// A page on its own copy of the library (`PageDraft`): `content` is handed the draft for its Done
+/// and Cancel, and sees the copy as its `LibraryModel`.
+struct DraftedPage<Content: View>: View {
+    @StateObject private var draft: PageDraft
+    private let content: (PageDraft) -> Content
+
+    init(live: LibraryModel, @ViewBuilder content: @escaping (PageDraft) -> Content) {
+        _draft = StateObject(wrappedValue: PageDraft(live: live))
+        self.content = content
+    }
+
+    var body: some View {
+        content(draft)
+            .environmentObject(draft.copy)
+            .onDisappear { draft.left() }
+    }
+}

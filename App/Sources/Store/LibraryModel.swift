@@ -17,9 +17,13 @@ final class LibraryModel: ObservableObject {
     }
 
     @Published private(set) var library = Library() {
-        // The Mac writes the trip pages the library is waiting for (0.70, spec 07 part 8).
-        didSet { VaultShelf.shared.libraryChanged(self) }
+        // The Mac writes the trip pages the library is waiting for (0.70, spec 07 part 8) — never
+        // from a page's copy (0.92), which is not his library until its Save.
+        didSet { if !isDraft { VaultShelf.shared.libraryChanged(self) } }
     }
+    /// A page's copy of the library (0.92, `PageDraft`): its changes stay in memory — never
+    /// stored, never synced — until the page's Save hands them to the real library.
+    let isDraft: Bool
     @Published private(set) var state: State = .loading
 
     /// Trips whose forecast is being looked up right now, and what went wrong.
@@ -58,6 +62,7 @@ final class LibraryModel: ObservableObject {
         self.store = store
         self.usesICloud = usesICloud
         self.sky = sky
+        self.isDraft = false
         // ⚠️ Every iCloud notification reloads the WHOLE store — every record read,
         // settled and turned back into a library — on the main thread, so the screen
         // waits while it runs, and a sync that arrives in bursts reloads once per
@@ -70,10 +75,22 @@ final class LibraryModel: ObservableObject {
         reload()
     }
 
+    /// A copy of `live` for a page that holds its changes until Save (0.92, `PageDraft`). It
+    /// reads nothing and writes nothing: no store, no iCloud, no trip pages.
+    init(copyOf live: LibraryModel) {
+        self.store = MemoryStore()
+        self.usesICloud = live.usesICloud
+        self.sky = live.sky
+        self.isDraft = true
+        self.library = live.library
+        self.state = live.state
+    }
+
     /// Read everything the store holds. Duplicate keys are settled by rule, and the
     /// losers are deleted so both devices end up holding the same records
     /// (`StoreSession.load`, where the model tests reach it).
     func reload() {
+        guard !isDraft else { return }                  // a page's copy has no store to read
         let started = EditTiming.now
         defer { EditTiming.reloaded(EditTiming.now - started) }
         do {
@@ -110,6 +127,12 @@ final class LibraryModel: ObservableObject {
     /// photos. Kept because a full comparison can never forget a change; a rewrite
     /// would remember what changed instead (the spec pass, 5 Oct 2026; spec 01 item 15).
     private func commit(_ next: Library) {
+        // A page's copy keeps its changes in memory (0.92): the page's Save stores them.
+        if isDraft {
+            if next != library { library = next }
+            state = next.isEmpty ? .empty : .ready
+            return
+        }
         do {
             guard let records = try StoreSession.save(next, held: held, to: store) else { return }
             held = records

@@ -2,10 +2,23 @@ import SwiftUI
 import PackingCore
 import PackingLibrary
 
+/// Your choices on its own copy of the library (0.92, Cancel everywhere — `PageDraft`): what is
+/// added, renamed, moved or removed here is kept by Done and thrown away by Cancel, Escape or a
+/// swipe down.
+struct ListsScreen: View {
+    @EnvironmentObject var model: LibraryModel
+
+    var body: some View {
+        DraftedPage(live: model) { page in ListsPage(page: page) }
+    }
+}
+
 /// The lists he authors himself: storage places, owners, packers, conditions and
 /// the "When" timeline. They belong to the account, so both devices show the
 /// same; an entry still in use cannot be removed by accident.
-struct ListsScreen: View {
+struct ListsPage: View {
+    /// The copy this page works on (0.92): Done hands it over, Cancel throws it away.
+    let page: PageDraft
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var adding: [String: String] = [:]
@@ -58,14 +71,22 @@ struct ListsScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            // Cancel throws away everything changed here since the page opened; Done keeps it (0.92).
+            HStack(spacing: 12) {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Done (0.92)
+                    .accessibilityIdentifier("lists-cancel")
+                Spacer(minLength: 4)
                 Text("Your choices").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
                     .accessibilityIdentifier("choices-title")
-                Spacer()
-                Button("Done") { dismiss() }
+                Spacer(minLength: 4)
+                Button("Done") { page.save(); dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
-                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
+                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Done (0.92)
                     .accessibilityIdentifier("lists-done")
             }
             .padding(16)

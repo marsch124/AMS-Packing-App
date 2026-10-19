@@ -73,8 +73,14 @@ struct TripSettingsScreen: View {
                     .accessibilityIdentifier("tripset-cancel")
                 Spacer()
                 Text("Trip settings").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
                 Spacer()
-                Color.clear.frame(width: 56, height: 1)
+                // Save top right too (0.92, Cancel everywhere: Cancel top left, Save top right on
+                // every page that changes something) — the same as Save changes at the foot.
+                Button("Save") { save(flat) }
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
+                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Save
+                    .accessibilityIdentifier("tripset-save-top")
             }
             .padding(16)
             KeyboardAwayScroll {

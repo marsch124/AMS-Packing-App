@@ -502,21 +502,26 @@ struct DeskDetailsScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Cancel top left, Save top right, as on every page that changes something (0.92); the
+            // title on its own line under them.
             HStack(spacing: 10) {
-                Text("For the lost-luggage desk").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("desk-title")
-                Spacer()
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: tint, filled: false)).focusEffectDisabled()
+                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("desk-cancel")
+                Spacer()
                 // Never grey: with nothing changed it simply closes.
                 Button("Save") { save() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
+                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Save (0.92)
                     .accessibilityIdentifier("desk-save")
             }
-            .padding(16)
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
+            Text("For the lost-luggage desk").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.bottom, 8)
+                .accessibilityIdentifier("desk-title")
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("What a baggage desk asks about you. Kept on your devices and in your backup, and shown only on a bag\u{2019}s Lost bag page.")

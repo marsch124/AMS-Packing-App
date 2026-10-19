@@ -227,6 +227,15 @@ struct GrabScreen: View {
         let complete = state.isComplete(items)
         VStack(spacing: 0) {
             HStack(spacing: 8) {
+                // While editing (0.92, Cancel everywhere): Cancel throws the edit away and the list
+                // is as it was; Save keeps it. Escape = Cancel, ⌘S = Save.
+                if editing {
+                    Button("Cancel") { cancelEdits() }
+                        .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .keyboardShortcut(.cancelAction)
+                        .accessibilityIdentifier("grab-cancel")
+                }
                 GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
                 Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
@@ -235,6 +244,7 @@ struct GrabScreen: View {
                 Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: editing)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(tint)
+                    .keyboardShortcut(editing ? KeyboardShortcut("s", modifiers: .command) : nil)
                     .accessibilityIdentifier("grab-edit")
                 if !editing {
                     // Share is no longer here: it sits at the bottom right (0.84, his "I almost
@@ -793,6 +803,15 @@ struct GrabScreen: View {
         .padding(.top, n == 0 ? 0 : 8)
         .reorderStep("\(key)", into: $heights)
         .reorderLift(carried, key: "\(key)", tint: tint)
+    }
+
+    /// Cancel while editing (0.92): the edit is thrown away — nothing was written while it lasted —
+    /// and the list is shown as it was.
+    private func cancelEdits() {
+        namingHeading = nil
+        askingToDelete = false
+        saveNeeds = ""
+        editing = false
     }
 
     private func saveEdits() {

@@ -64,6 +64,7 @@ struct AreasScreen: View {
                 Button("Save") { save() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(tint)
+                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Save (0.92)
                     .accessibilityIdentifier("areas-save")
             }
             .padding(16)

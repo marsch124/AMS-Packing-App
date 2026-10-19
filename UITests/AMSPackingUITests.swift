@@ -6284,6 +6284,193 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["trip-activity-2"].exists, "an always-packed template is offered to tick")
     }
 
+    // MARK: - Cancel everywhere (0.92)
+    //
+    // His words, 19 Oct 2026: "I open an item and change some property. How do I cancel that? There
+    // is only a Done button, right?" — and "the cancel function should be existing throughout the
+    // whole app right?" Every page where he changes something has Cancel (top left) and Save or Done
+    // (top right): Cancel throws away everything changed there since the page opened.
+
+    /// Done (on the Mac ⌘S) or Cancel: on the Mac by the key, on the iPhone by the button.
+    private func pressSave(_ app: XCUIApplication, _ id: String) {
+        #if os(macOS)
+        sleep(1)
+        app.typeKey("s", modifierFlags: .command)
+        #else
+        tap(app, id: id)
+        #endif
+    }
+
+    /// A template's page holds what is changed on it until Done (0.92): renamed, moved to another
+    /// area and a thing added — Cancel, and it is as it was; changed again and Done (⌘S on the
+    /// Mac), and it is kept.
+    func testCancelOnATemplatePutsItBackAndDoneKeepsIt() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5))
+        tap(app, id: "template-row-1")                            // Hiking, in GA, 4 things
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-cancel"].waitForExistence(timeout: 5), "the template's page has no Cancel")
+        XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5), "expected 4 things")
+        replace("Hill walk", in: app.textFields["template-name"])
+        tap(app, id: "template-rename")
+        type("Compass", into: app.textFields["template-add-name"])
+        tap(app, id: "template-add")
+        XCTAssertTrue(app.buttons["template-item-4"].waitForExistence(timeout: 5), "the thing was not added")
+        hideKeyboard(app)
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events", "the area did not change")
+        shot(app, "cancel-template")
+        tap(app, id: "template-cancel")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Cancel did not close the template")
+        XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5), "Cancel kept the move out of GA")
+        XCTAssertFalse(app.staticTexts["templates-area-OE"].exists, "Cancel kept the move to OE")
+
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertEqual(cellSays(app, "template-name"), "Hiking", "Cancel kept the new name")
+        XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["template-item-4"].exists, "Cancel kept the added thing")
+        XCTAssertEqual(chosen(app, "template-area"), "GA \u{00B7} Goal Activity", "Cancel kept the area")
+
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events")
+        pressSave(app, "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Done did not close the template")
+        XCTAssertTrue(app.staticTexts["templates-area-OE"].waitForExistence(timeout: 5), "Done did not keep the move to OE")
+        XCTAssertFalse(app.staticTexts["templates-area-GA"].exists, "Hiking is still under GA after Done")
+    }
+
+    /// Your choices holds what is changed on it until Done (0.92): a place added — Cancel, and it
+    /// is not there; added again and Done (⌘S on the Mac), and it is.
+    func testCancelOnYourChoicesPutsItBackAndDoneKeepsIt() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["lists-cancel"].waitForExistence(timeout: 5), "Your choices has no Cancel")
+        XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["list-places-name-12"].exists)
+        type("Attic shelf", into: app.textFields["list-places-add-name"])
+        tap(app, id: "list-places-add")
+        XCTAssertTrue(app.staticTexts["list-places-name-12"].waitForExistence(timeout: 5), "the place was not added")
+        hideKeyboard(app)
+        shot(app, "cancel-choices")
+        tap(app, id: "lists-cancel")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Cancel did not close Your choices")
+
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Cancel kept the place")
+        type("Attic shelf", into: app.textFields["list-places-add-name"])
+        tap(app, id: "list-places-add")
+        XCTAssertTrue(app.staticTexts["list-places-name-12"].waitForExistence(timeout: 5))
+        hideKeyboard(app)
+        pressSave(app, "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Done did not close Your choices")
+
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        let kept = app.staticTexts["list-places-name-12"]
+        XCTAssertTrue(kept.waitForExistence(timeout: 5), "Done did not keep the place")
+        XCTAssertEqual(words(kept), "Attic shelf")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+    }
+
+    /// A grab list being edited has Cancel (0.92): renamed and one removed — Cancel (Escape on the
+    /// Mac), and the list is as it was, still open; edited again and Save, and it is kept.
+    func testCancelWhileEditingAGrabListPutsItBack() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "0 of 7 in hand" }, "the list is not the sample's: '\(words(count))'")
+        let first = app.buttons["grab-item-0"].label
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(app.buttons["grab-cancel"].waitForExistence(timeout: 5), "editing a grab list has no Cancel")
+        replace("Swim shorts", in: app.textFields["grab-rename-0"])
+        app.buttons["grab-remove-1"].tap()
+        hideKeyboard(app)
+        shot(app, "cancel-grab")
+        #if os(macOS)
+        pressEscape(app)
+        #else
+        tap(app, id: "grab-cancel")
+        #endif
+        XCTAssertTrue(waitUntil { self.words(count) == "0 of 7 in hand" }, "Cancel kept the removal: '\(words(count))'")
+        XCTAssertNotNil(find(app, "grab-detail"), "Cancel closed the grab list")
+        XCTAssertEqual(app.buttons["grab-item-0"].label, first, "Cancel kept the new name")
+
+        tap(app, id: "grab-edit")
+        replace("Swim shorts", in: app.textFields["grab-rename-0"])
+        hideKeyboard(app)
+        tap(app, id: "grab-edit")                                    // Save
+        XCTAssertTrue(waitUntil { app.buttons["grab-item-0"].label.contains("Swim shorts") }, "Save did not keep the new name")
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+    }
+
+    /// For the lost-luggage desk and Trip settings: Cancel top left throws a change away, Save top
+    /// right keeps it (0.92).
+    func testCancelOnTheDeskAndTripSettingsPutsItBackAndSaveKeepsIt() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5))
+        let phone = app.textFields["desk-phone"]
+        XCTAssertTrue(phone.waitForExistence(timeout: 5))
+        let was = phone.value as? String ?? ""
+        if let cancel = find(app, "desk-cancel"), let save = find(app, "desk-save") {
+            XCTAssertLessThan(cancel.frame.maxX, save.frame.minX, "Cancel is not left of Save")
+        }
+        replace("+46 70 222 22 22", in: phone)
+        hideKeyboard(app)
+        shot(app, "cancel-desk")
+        tap(app, id: "desk-cancel")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5), "Cancel did not close the desk")
+        tap(app, id: "settings-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.textFields["desk-phone"].value as? String ?? "") == was },
+                      "Cancel kept the phone: '\(app.textFields["desk-phone"].value ?? "")'")
+        replace("+46 70 222 22 22", in: app.textFields["desk-phone"])
+        hideKeyboard(app)
+        pressSave(app, "desk-save")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5), "Save did not close the desk")
+        tap(app, id: "settings-desk")
+        XCTAssertTrue(appears(app, "desk-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { (app.textFields["desk-phone"].value as? String ?? "") == "+46 70 222 22 22" },
+                      "Save did not keep the phone: '\(app.textFields["desk-phone"].value ?? "")'")
+        tap(app, id: "desk-cancel")
+        XCTAssertTrue(disappears(app, "desk-screen", timeout: 5))
+
+        // Trip settings: Save now also top right.
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let name = app.staticTexts["trip-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        let before = words(name)
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        replace("Renamed trip", in: app.textFields["tripset-name"])
+        hideKeyboard(app)
+        shot(app, "cancel-tripset")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Cancel did not close Trip settings")
+        XCTAssertEqual(words(name), before, "Cancel renamed the trip")
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        replace("Renamed trip", in: app.textFields["tripset-name"])
+        hideKeyboard(app)
+        pressSave(app, "tripset-save-top")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5), "Save top right did not close Trip settings")
+        XCTAssertTrue(waitUntil { self.words(name) == "Renamed trip" }, "Save top right did not rename the trip: '\(words(name))'")
+    }
+
     /// His own activity areas (0.89) — his words, 18 Oct 2026: "I would like the ability to
     /// add and adjust activity areas so that I can organize templates." A new one is made on
     /// the Activity areas page and moved first; nothing changes until Save; a template is
@@ -10323,6 +10510,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Escape added the place that was only typed")
+        // Since 0.92 Escape is Cancel here: a place ADDED on the page is thrown away too.
+        type("Attic shelf", into: app.textFields["list-places-add-name"])
+        tap(app, id: "list-places-add")
+        XCTAssertTrue(app.staticTexts["list-places-name-12"].waitForExistence(timeout: 5), "the place was not added")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Escape did not cancel Your choices")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Escape kept the place added on the page")
         tap(app, id: "lists-done")
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
 
@@ -10442,6 +10639,14 @@ final class AMSPackingUITests: XCTestCase {
         closeDropDown(app, "row-section")
         tap(app, id: "row-cancel")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        // Since 0.92 Escape is the template's Cancel: the area chosen on the page is thrown away.
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events", "the area did not change")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Escape did not close the template")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "template-area") == "GA \u{00B7} Goal Activity" },
+                      "Escape kept the area chosen on the page: '\(chosen(app, "template-area"))'")
         pressEscape(app)
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Escape did not close the template")
 
