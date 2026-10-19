@@ -327,6 +327,14 @@ final class AMSPackingUITests: XCTestCase {
         if window.exists && !window.frame.contains(mid) { return false }
         // In a list, but scrolled out of its visible part.
         if let list = listHolding(app, e), list.exists, !list.frame.contains(mid) { return false }
+        #if os(iOS)
+        // 🪤 Under the on-screen keyboard: it looks hittable and takes no tap ("Neither element nor
+        // any descendant has keyboard focus"). 0.92: a bag page's header grew a row (Cancel) and its
+        // brand field came to rest at the keyboard's top, mid-typing — under the bar of suggestions,
+        // which the keyboard's reported frame leaves out (keys at 583, the bar from about 540).
+        let keys = app.keyboards.firstMatch
+        if keys.exists, keys.frame.height > 0, e.frame.maxY > keys.frame.minY - 50 { return false }
+        #endif
         return true
     }
 

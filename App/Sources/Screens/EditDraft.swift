@@ -32,11 +32,16 @@ final class EditDraft {
     /// (a swipe leaves a typed name unrenamed, as before).
     var typedName: String?
 
+    /// Cancel (0.92): the page is closing and writes nothing — a field that hands its words in as
+    /// it gives up the keys on the way out (the Mac's do) is not taken any more.
+    private(set) var closed = false
+
     var isEmpty: Bool { pending.isEmpty }
     func isPending(_ key: String) -> Bool { pending[key] != nil }
 
     /// A field typed: `differs` false (it says what is kept) takes it off the ledger.
     func typed(_ key: String, _ text: String, differs: Bool, write: @escaping (String, inout Library) -> Void) {
+        guard !closed else { return }
         guard differs else { drop(key); return }
         if pending[key] == nil { order.append(key) }
         pending[key] = (text, write)
@@ -47,8 +52,11 @@ final class EditDraft {
         order.removeAll { $0 == key }
     }
 
-    /// Forget everything held — Cancel (0.92), or the bag is being deleted. A name typed too.
+    /// Forget everything held — the bag is being deleted. A name typed too.
     func discard() { pending = [:]; order = []; typedName = nil }
+
+    /// Cancel (0.92): forget everything held, and take nothing more.
+    func close() { discard(); closed = true }
 
     /// Apply everything typed to a library being changed — inside a change that does more
     /// (Duplicate). The ledger is empty afterwards (a name typed and not taken stays, for Done).

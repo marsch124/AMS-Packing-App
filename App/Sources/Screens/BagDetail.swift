@@ -89,7 +89,8 @@ struct BagPage: View {
         VStack(spacing: 0) {
             if let bag {
                 let facts = model.library.bagFacts(name: bag.name)
-                BagHeader(bag: bag, selectName: selectName, draft: draft, done: { dismiss() }, cancel: { cancel() })
+                BagHeader(bag: bag, selectName: selectName, draft: draft, done: { draft.flush(model); dismiss() },
+                          cancel: { cancel() })
                     .environmentObject(model)
                 KeyboardAwayScroll {
                     VStack(alignment: .leading, spacing: 12) {
@@ -124,9 +125,12 @@ struct BagPage: View {
             }
         }
         .onAppear { if pocketsAt == nil { pocketsAt = model.library.keepPockets(bagId: bagId) } }
-        // Left — Done, a swipe down, a turn to the copy: everything held is written, at once. (Cancel
-        // and Escape forget it first.)
+        // Left by a swipe down (the iPhone): everything held is written, at once — Done writes it itself,
+        // Cancel and Escape forget it. Not on the Mac (0.92): its sheet also closes ITSELF on Escape, and
+        // Escape is Cancel — so there only Done (and the app going away) writes.
+        #if os(iOS)
         .onDisappear { draft.flush(model) }
+        #endif
         .writesDraftWhenAway(draft, model)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("bag-detail")
@@ -372,7 +376,7 @@ struct BagPage: View {
 
     /// Close and write nothing the page holds; the pockets as the page found them.
     private func cancel() {
-        draft.discard()
+        draft.close()
         if pocketsTouched, let kept = pocketsAt {
             model.change(stamping: false) { _ = $0.putBackPockets(kept) }
         }

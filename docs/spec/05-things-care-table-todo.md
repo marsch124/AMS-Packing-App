@@ -2019,10 +2019,13 @@ follows onto the copy's).
 **0.92 — Cancel.** His question of 19 Oct 2026: "I open an item and change some property. How do I cancel that? There
 is only a Done button, right?" A thing's page had Cancel and Save; a bag's page only Done (and since 0.91 kept what is
 typed on a ledger, written on leaving).
-- **Cancel** (`bag-cancel`, header item 1, top left as on a thing's page; Escape): `draft.discard()` — nothing the
-  page holds is written, a name typed too — then, when a pocket was changed on the page, `putBackPockets` in a change
-  that does not stamp Last edited (`LibraryModel.change(stamping: false)`: the bag reads as it did, its Last edited
-  too); then the page closes (its `onDisappear` write finds the ledger empty).
+- **Cancel** (`bag-cancel`, header item 1, top left as on a thing's page; Escape): `draft.close()` — nothing the
+  page holds is written, a name typed too, and the ledger takes nothing more (a Mac text field hands its words in
+  again as it gives up the keys on the way out) — then, when a pocket was changed on the page, `putBackPockets` in a
+  change that does not stamp Last edited (`LibraryModel.change(stamping: false)`: the bag reads as it did, its Last
+  edited too); then the page closes. **Done** writes the ledger itself (`flush`) and closes. The page's own write on
+  leaving (`onDisappear`) is the iPhone's only — it is how a swipe writes; on the Mac the sheet ALSO closes itself on
+  Escape, so a write there turned Escape into Done (the Mac probe of 19 Oct 2026: "Escape kept the max typed").
 - **What the page holds** (so Cancel forgets it): every typed field (0.91); the desk's pills — colour, type, size
   (item 3c); Goes in the cabin and Has an AirTag (items 3, 3b); a name taken with Rename or Return (item 1). Each is
   shown at once from the page's own state and put on the ledger (`hold`): written in ONE change when the page is left
@@ -2049,10 +2052,15 @@ typed on a ledger, written on leaving).
   `testABagsPageCancelsWhatWasChangedAndDoneKeepsIt` (`-uiTestingBags`, the Wheeled duffel: Cancel left of Done; max 31,
   Notes, the Blue pill, Hard case, Has an AirTag and a pocket "Side 1" — Cancel — opened again: 23, "Wheels squeak a
   little", Black, a duffel, no AirTag, 1 pocket; on the Mac Escape the same; the same changes and Done — all kept, Your
-  bags' row 32) — seen RED with Cancel writing the ledger ("after Cancel: the max is '31', not 23"), with a pill or
+  bags' row 32) — seen RED with Cancel writing the ledger ("after Cancel: the max is '31', not 23"), on the Mac with the
+  page writing as its sheet closed ("Escape kept the max typed" — the fault the Mac probe found), with a pill or
   switch written at once ("after Cancel: Has an AirTag"), and with the pockets not put back ("after Cancel: the
   pockets"). `testABagIsRenamedAndDeletedFromItsPage` (Rename then Done) and `testABagKeepsWhatTheLostLuggageDeskAsks`
-  (pills then Done) still green.
+  (pills then Done) still green. The header's second row moved the brand field to rest right under the keyboard's bar
+  of suggestions while `testABagsPageKeepsEverythingTypedFieldAfterField` types field after field ("Neither element nor
+  any descendant has keyboard focus", every run): the tests' `onScreen` now counts a control reaching within 50 points
+  of the keyboard's reported top (the keys at 583; the bar from about 540) as covered, so `bringIntoView` scrolls it
+  clear first.
 
 **0.91 — typing without a wait.** His test sheet on 0.90 (19 Oct 2026): "There is a delay. Once I have entered data,
 there is a delay if I would like to scroll or move to the next data field."
