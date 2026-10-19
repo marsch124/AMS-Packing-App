@@ -2446,6 +2446,89 @@ final class AMSPackingUITests: XCTestCase {
                       "the bag's own photo still shows beside a bag with a photo of it packed")
     }
 
+    /// A thing's small photo — an image element of its own beside a row's button (0.90): an
+    /// Image on both, an Other or a Group if the system names it so.
+    private func photoMark(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        for query in [app.images, app.otherElements, app.groups] where query[id].exists { return query[id] }
+        return app.images[id]
+    }
+
+    /// Photos of a thing (0.90 — his ask of 19 Oct 2026: "A photo or two for each item"): on its page
+    /// right under Notes, two at most, kept as soon as taken (Cancel keeps them); a tap shows one
+    /// large; Remove asks first. Small at the end of its row in Your things and in Search.
+    func testAThingTakesAPhotoOrTwoAndShowsItInYourThingsAndSearch() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["thing-row-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(photoMark(app, "thing-row-0-photo").exists, "a thing with no photo shows one in Your things")
+        tap(app, id: "thing-row-0")              // Goggles, the first A–Z
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        // Right under Notes, before Kind of thing.
+        let notes = app.descendants(matching: .any).matching(identifier: "thing-notes").firstMatch.frame
+        let take = app.buttons["thing-photo"]
+        XCTAssertTrue(take.waitForExistence(timeout: 5), "the thing's page offers no photo")
+        XCTAssertLessThan(notes.maxY, take.frame.minY, "Photos are not under Notes")
+        XCTAssertLessThan(take.frame.maxY, app.buttons["thing-category"].frame.minY, "Photos are not above Kind of thing")
+        tap(app, id: "thing-photo")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-0"].waitForExistence(timeout: 5), "the thing's photo was not kept")
+        tap(app, id: "thing-photo")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-1"].waitForExistence(timeout: 5), "a second photo was not kept")
+        XCTAssertTrue(waitUntil { self.element(app, "thing-photo-full").exists }, "two photos, and it does not say so")
+        XCTAssertFalse(app.buttons["thing-photo"].exists, "a third photo is offered")
+        shot(app, "thing-photos")
+        // Large on a tap: the first of two.
+        tap(app, id: "thing-photo-thumb-0")
+        let count = app.staticTexts["bag-photo-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "1 of 2" }, "the photo does not open large: '\(words(count))'")
+        shot(app, "thing-photo-large")
+        tap(app, id: "bag-photo-done")
+        XCTAssertTrue(waitUntil { !app.buttons["bag-photo-done"].exists }, "the large photo did not close")
+        // Remove asks first; Keep it keeps it.
+        tap(app, id: "thing-photo-remove-1")
+        XCTAssertTrue(app.buttons["thing-photo-remove-yes"].waitForExistence(timeout: 5), "Remove did not ask first")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-1"].exists, "the photo went before the answer")
+        shot(app, "thing-photo-remove-ask")
+        tap(app, id: "thing-photo-remove-no")
+        XCTAssertTrue(waitUntil { !app.buttons["thing-photo-remove-yes"].exists }, "Keep it left the question standing")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-1"].exists, "Keep it removed the photo")
+        tap(app, id: "thing-photo-remove-1")
+        tap(app, id: "thing-photo-remove-yes")
+        XCTAssertTrue(waitUntil { !app.buttons["thing-photo-thumb-1"].exists }, "Remove kept the photo")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-0"].exists, "Remove took the other photo too")
+        XCTAssertTrue(app.buttons["thing-photo"].waitForExistence(timeout: 5), "with one gone, no way to take another")
+        // Kept at once: Cancel does not take it back.
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.photoMark(app, "thing-row-0-photo").exists }, "Your things does not show the thing's photo")
+        XCTAssertFalse(photoMark(app, "thing-row-1-photo").exists, "a thing without a photo shows one")
+        // Calm: the row is no taller for it.
+        let row0 = app.buttons["thing-row-0"].frame, row1 = app.buttons["thing-row-1"].frame
+        XCTAssertEqual(row0.height, row1.height, accuracy: 1, "the photo made its row taller")
+        XCTAssertGreaterThan(photoMark(app, "thing-row-0-photo").frame.minX, row0.maxX - 1, "the photo is not at the row's end")
+        shot(app, "things-row-photo")
+        // A tap on it opens the thing, as the row does.
+        photoMark(app, "thing-row-0-photo").tap()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "a tap on the row's photo did not open the thing")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        // Search: small before the row's arrow.
+        tap(app, id: "search-open")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 5))
+        type("goggles", into: app.textFields["search-field"])
+        XCTAssertTrue(app.buttons["search-things-0"].waitForExistence(timeout: 5), "Search does not find the thing")
+        XCTAssertTrue(waitUntil { self.photoMark(app, "search-things-0-photo").exists }, "Search does not show the thing's photo")
+        hideKeyboard(app)
+        shot(app, "search-photo")
+        tap(app, id: "search-field-clear")
+        type("map", into: app.textFields["search-field"])
+        XCTAssertTrue(app.buttons["search-things-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(photoMark(app, "search-things-0-photo").exists, "a thing without a photo shows one in Search")
+    }
+
     /// Care → Bags → the first bag's page.
     private func openFirstBag(_ app: XCUIApplication) {
         tab(app, "care")
@@ -10000,7 +10083,7 @@ final class AMSPackingUITests: XCTestCase {
         closeDropDown(app, "thing-bag")
     }
 
-    /// A thing's page in his order (6 Oct 2026): Name, Notes, Kind of thing, Whose it is,
+    /// A thing's page in his order (6 Oct 2026): Name, Notes, (Photos since 0.90) Kind of thing, Whose it is,
     /// On these templates, Kept at home, Usually packed in, When, Weight, Brand, Colour,
     /// Condition, Care, On a plane, Valid until — and On a plane's switches carry their
     /// words only. Kept at home is chosen from a list, and a new place made there joins
@@ -10012,7 +10095,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        let order = ["thing-heading-name", "thing-heading-notes", "thing-category-title", "thing-owner-title",
+        let order = ["thing-heading-name", "thing-heading-notes", "thing-heading-photos", "thing-category-title", "thing-owner-title",
                      "thing-lists-title", "thing-heading-kept", "thing-bag-title", "thing-when-title",
                      "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-condition-title",
                      "thing-care-title", "thing-heading-plane", "thing-heading-battery", "thing-heading-valid"]

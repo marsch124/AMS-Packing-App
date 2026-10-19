@@ -856,6 +856,15 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
      "on 2 templates" (a count, not the names) and Choose from your things (a place only) are unchanged; 5 pt vertical padding (until 0.62: the details on a second line, 10 pt padding); a
      1 pt line under it (since 0.69 under the note line when there is one). A just-added row is lit for a moment: a
      rounded (8) orange 18 % background reaching 8 pt past the text on each side.
+   - A thing WITH a photo (0.90): its first photo, small, at the row's END, after the templates and the place
+     (`thing-row-N-photo`, `ThingPhotoThumb` in BagPhoto.swift: 24 pt square on the iPhone, 20 on the Mac, corners 5,
+     a 1 pt `line` edge; an image element "Photo of <name>"). Nothing for a thing without one. At the end, not the
+     start, so the names still line up A–Z (a picture at the start of only some rows set their names at two
+     depths — decided by the build); smaller than the row, so the row is no taller. An element of its own BESIDE the
+     row's button (`HStack(spacing 10)`; the button folds what it holds into itself), and a tap on it opens the thing
+     as the row does. Its first photo that is on this device; none while its photos are still on their way. (Not in
+     All your things · table, Choose from your things or a template's rows: Your things and Search are where he
+     looks a thing up — keep it calm.)
    - Under a thing found by its NOTES and not by its name (0.69): the note line (`thing-row-N-note`, `NoteHitLine`
      in SearchScreen.swift) — Footnote, one line, cut at the end; muted, the words searched for in Care orange and
      semibold (every place they occur, case and accents not counting); since 0.88 a template's note starts with
@@ -901,6 +910,15 @@ above it; both back in A–Z after leaving); `testTheCrossEmptiesASearch` ("Head
 `testARowOfAListHasItsOwnAnswers`, `testANoteMadeOnSiteReachesTheThing` (all open things from here).
 
 UI `testANewThingWithANameHeHasSaysSo` ("map" → the line says "already", the field still says "map", 10 things).
+
+UI `testAThingTakesAPhotoOrTwoAndShowsItInYourThingsAndSearch` (0.90): no `thing-row-0-photo` before; on the Goggles'
+page the photo pill under Notes and above Kind of thing; two photos, then `thing-photo-full` and no pill; the first
+large ("1 of 2"); Remove asks (`thing-photo-remove-yes`, the photo still there), Keep it keeps it, Remove photo
+removes it, the other stays, the pill is back; after Cancel the row shows `thing-row-0-photo` at its end, row 1
+none, both rows equally tall; a tap on the photo opens the thing; Search "goggles" → `search-things-0-photo`, "map"
+→ none. Planted faults seen red: Remove without asking ("Remove did not ask first"), no photo on the row ("Your
+things does not show the thing's photo"), none in Search ("Search does not show the thing's photo"). Model
+`ThingPhotosTests` (5).
 
 UI `testSearchFindsAThingByWordsInItsNotes` (0.69, `-uiTestingNotes`): "blue pouch" → "1 thing", the Passport, its
 note line "Keep it in the blue pouch with the tickets"; "waterproof" → the Map, "Hiking: The waterproof one, folded
@@ -969,6 +987,37 @@ apart; a field 6 pt under its heading):
    `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
    twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.
+3a. **Photos** (0.90 — his ask of 19 Oct 2026: "A photo or two for each item") — band "Photos"
+   (`thing-heading-photos`), right under Notes: with the name and the notes, what tells this thing from another, so
+   it is the first thing seen (decided by the build; not further down by Brand and Colour). `ThingPhotos`
+   (Screens/BagPhoto.swift), only on a thing that is THERE — not on a new thing's page (⌘N, Mac), since a photo is
+   kept at once and needs a thing to sit on; Save makes it, and its page then has Photos.
+   - Each photo (in the order taken): an 80 pt square, corners 8, a 1 pt `line` edge, cut to fill — a button
+     (`thing-photo-thumb-<k>`, "Photo <k+1> of the thing") that opens them LARGE (`BigPhoto`, the bag photos' sheet:
+     the thing's stored name as the caption, "1 of 2", Next / a swipe, Done or Escape — in Care orange here), and
+     under it "Remove" (`thing-photo-remove-<k>`, Subheadline semibold muted, at least 80 × 34). 12 pt between photos.
+     The small pictures are made once per photo (`PhotoThumbs`, three pixels a point, kept while the app runs); the
+     full ones only when the large sheet opens.
+   - **Remove asks first** (his ask): a card under the photos (card colour, red 1 pt border, radius 12, as Delete
+     thing's): "Remove photo <k+1>?" — "Remove the photo?" when there is only one — (`thing-photo-remove-ask`, Callout
+     semibold ink); "Keep it" (`thing-photo-remove-no`) closes it; the red capsule "Remove photo"
+     (`thing-photo-remove-yes`, white on red, LAST) removes it at once (`removeThingPhoto`). A photo the other device
+     took away while the question stood takes the question with it.
+   - Under them: while it has room (`takesThingPhoto`: fewer than `THING_PHOTOS_MAX` = 2 photo ids, as stored — one
+     still on its way from the other device counts — and fewer than the web model's MAX_PHOTOS = 5 entries), the
+     photo pills (`PhotoTakers`, the bag photos' own, here in Care orange): on the iPhone "Take a photo" (`thing-photo`,
+     only when it has a camera) and "Choose a photo" (`thing-photo-pick`, the photo library); on the Mac only Choose
+     (from Photos — no file dropped on the page, as the bag photos take none); with a photo already "Take another" /
+     "Choose another"; under the UI tests ONE pill, "Photo of the thing" / "Another photo" (`thing-photo`), that keeps
+     a drawn picture. Full: "Two photos — remove one to add another" (`thing-photo-full`, Subheadline muted), no
+     pills. A thing that came from the web app with more (up to 5) shows them all and takes none.
+   - Compressed as every photo: JPEG, at most 1600 on the long side, quality 0.75 (`JPEG.make`).
+   - **Kept the moment it is taken** — `addThingPhoto` in a `model.change` of its own, as a bag's page keeps its
+     photos: Cancel does not take a photo back (Remove does), and Save does not touch `photos` (it writes only the
+     fields it names). No empty-state words: the pills say what to do.
+   - The same photos as a BAG's own (spec 07 part 18 A): a bag's thing page shows and takes the very photos its bag
+     page does.
+   - On the Mac the keys (Tab, ⌘J) do not reach Photos: they are clicked.
 4. **Kind of thing** — drop-down (0.64; band `thing-category-title`, field `thing-category`, list
    `thing-category-list`): one row per kind of thing — since 0.69 his own list, `Library.categories()` (the app's
    twelve `CATEGORIES` until he changes one; `thing-category-0` … `-11`; Electronics is `-7`); single
@@ -1183,7 +1232,7 @@ apart; a field 6 pt under its heading):
 17. When a save was refused: the problem in red (`thing-problem`, 15 semibold): "A thing needs a name." or "You
     already have a thing called that."
 18. "A change here reaches every template it is on. Past trips keep what they were packed with." (14 muted).
-(The order is his, 6 Oct 2026, release 0.64: Kind of thing after Notes, Whose it is under it, On these templates
+(The order is his, 6 Oct 2026, release 0.64: Kind of thing after Notes (since 0.90 after Photos, item 3a), Whose it is under it, On these templates
 moved up, When with Usually packed in, Condition under Colour, On a plane and Valid until at the foot — Battery
 between them since 0.75.
 UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's place.)
@@ -1290,10 +1339,13 @@ templates Subheadline, `Metrics.chip` tall.
   trip already packed, reviewed or over keeps the headings it was packed with.
 - If the thing no longer exists when Save is pressed, the page just closes.
 - Delete the thing: closes the page FIRST, then `deleteThing(id:)` (memberships and kit entries go; trips keep
-  their lines).
+  their lines; since 0.90 its photos' records go too, each unless something else still shows it — until then they
+  stayed behind, and Worth a look called them "left behind by a deleted trip" a day later).
 
 **Data.** The catalogue item (`items` record) and its memberships (`memberships` records). The bag's `cabin`
-extra key is preserved untouched (the draft is the whole item).
+extra key is preserved untouched (the draft is the whole item). Photos (0.90, item 3a): the thing's own `photos`
+(ids) and one `photos` record per picture, written at once, not by Save (PackingLibrary/ThingPhotos.swift; spec 01
+§1.10).
 
 **iPhone vs Mac.** Mac: at least 520 × 600. The date picker is the platform's compact picker on the iPhone; on the Mac
 (0.68) the date is typed (item 16). Everything in **Keyboard (Mac)** is the Mac's only — his answer of 7 Oct 2026: "Mac

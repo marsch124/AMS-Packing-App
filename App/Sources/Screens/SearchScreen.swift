@@ -76,9 +76,17 @@ struct SearchScreen: View {
                             heading(part.title, part.total)
                             ForEach(Array(part.rows.enumerated()), id: \.element.id) { n, row in
                                 VStack(alignment: .leading, spacing: 0) {
-                                    Button { chose(row) } label: { line(row) }
-                                        .buttonStyle(.plain).focusEffectDisabled()
-                                        .accessibilityIdentifier("search-\(part.id)-\(n)")
+                                    HStack(spacing: 10) {
+                                        Button { chose(row) } label: { line(row) }
+                                            .buttonStyle(.plain).focusEffectDisabled()
+                                            .accessibilityIdentifier("search-\(part.id)-\(n)")
+                                        // A thing's first photo, small, before the arrow (0.90): its own
+                                        // element beside the button, as the note line is; a tap opens the thing.
+                                        if let item = row.item {
+                                            ThingPhotoThumb(item: item, id: "search-\(part.id)-\(n)-photo") { chose(row) }
+                                        }
+                                        arrow.onTapGesture { chose(row) }
+                                    }
                                     // Outside the button, so the Mac keeps it a text of its own.
                                     if let note = row.note {
                                         NoteHitLine(hit: note, query: query, tint: AppSection.home.color)
@@ -128,6 +136,8 @@ struct SearchScreen: View {
         enum Kind { case thing, list, trip, todo }
         /// The line of a thing's notes the search found it by (0.69).
         var note: NoteHit? = nil
+        /// The thing itself, for its photo (0.90). nil for everything else.
+        var item: Item? = nil
     }
 
     struct Part: Identifiable {
@@ -163,7 +173,7 @@ struct SearchScreen: View {
                 // Found by its notes, not its name: the line that matched goes under it.
                 let byName = normName(thing.name).contains(needle) || normName(thing.swedish).contains(needle)
                 return Row(id: thing.id, name: thing.name, under: under.joined(separator: " · "), kind: .thing,
-                           note: byName ? nil : hits[thing.id])
+                           note: byName ? nil : hits[thing.id], item: thing)
             }
             out.append(Part(id: "things", title: "Things", rows: Array(rows), total: things.count))
         }
@@ -245,12 +255,20 @@ struct SearchScreen: View {
                     .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .lineLimit(1).truncationMode(.middle)
             }
-            SVGPath.path("M9 6l6 6-6 6")
-                .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                .frame(width: 20, height: 20).foregroundStyle(Theme.muted)
         }
         .frame(minHeight: Metrics.compact)
         .contentShape(Rectangle())
+    }
+
+    /// The arrow at a row's end — beside its button since 0.90, so a thing's photo can sit
+    /// before it as an element of its own; a tap on it opens the row all the same.
+    private var arrow: some View {
+        SVGPath.path("M9 6l6 6-6 6")
+            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+            .frame(width: 20, height: 20).foregroundStyle(Theme.muted)
+            .frame(minHeight: Metrics.compact)
+            .contentShape(Rectangle())
+            .accessibilityHidden(true)
     }
 
     private func note(_ text: String) -> some View {

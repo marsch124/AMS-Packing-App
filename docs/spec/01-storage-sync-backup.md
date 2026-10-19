@@ -143,6 +143,13 @@ Six kinds in ONE table, one row per entry: `conditions`, `presets`, `people`, `o
 
 `{id, data, createdAt}`, `data` a `data:image/jpeg;base64,…` URL. In memory and in a backup the picture is that URL; in the store it is split into bytes + mime (§3). Who points at a photo: an item's `photos`, a trip line's `photos`, a trip's `extra.bagPhotos` (up to `BAG_PHOTOS_MAX` = 3 per bag) and, since 0.79, a trip's `extra.dayBagsPhoto` (the Packing day's photo of all the bags). `photoInUse(id)` and `photoIdsInUse()` check all four.
 
+**A thing's photos (0.90 — his ask of 19 Oct 2026: "A photo or two for each item"; PackingLibrary/ThingPhotos.swift).** Nothing new is stored: they are the item's own `photos` (ids) plus one `PhotoRecord` each — the field and the table every photo already used, so the iCloud record type and its picture fields (`CD_blob` / `CD_blob_ckAsset`, deployed to Production on 3 Oct 2026, §7) carry them with no schema change. A bag's own photos (0.80) have been exactly these since the start; `addBagOwnPhoto` / `removeBagOwnPhoto` now go through the thing's (`BAG_OWN_PHOTOS_MAX` = `THING_PHOTOS_MAX` = 2).
+- `thingPhotoIds(id:)` = `photoRefs` of the thing (as stored; an inline legacy `data:` entry is no id); `thingPhotos(id:)` = those whose record is on this device, in the order taken; `firstThingPhoto(id:)` the first of them (the small one on its rows); `takesThingPhoto(id:)` = fewer than 2 ids AND fewer than `MAX_PHOTOS` (5) entries.
+- `addThingPhoto(id:jpeg:)`: refused (nil) for no bytes, an id that is no thing, or no room; otherwise a record `{id: makeId(), data: "data:image/jpeg;base64,…", createdAt: nowISO()}` appended to `photos` and its id to the thing's `photos` (`updateThing`, so trips still ahead follow as for any change of the thing — a line copies no photos, so nothing changes on them).
+- `removeThingPhoto(id:photoId:)`: false unless the thing holds that id; the id off the thing (and its web-app `thumb` emptied when it was the FIRST photo — the thumb is of the first); the record removed unless `photoInUse` still finds it elsewhere.
+- `deleteThing` (0.90) takes the deleted thing's records along by the same rule (`dropPhotos`); before, they stayed until Worth a look offered them a day later.
+- **Where they go and where they do not** — the same as a bag's own photos: in the store and iCloud, in the backup file (the `photos` array holds every record and `items` every thing with its ids — §10) and back with a restore (§11), through a rename (the id stays). NOT in a shared template, trip or grab list (§16.2: a template's code has no photo field; a trip's line copies none of the thing's — `entryFromItem`), NOT in Save as Excel (§15: no photo is), NOT on the trip's page in Obsidian (spec 07 part 8: only the packed bags' photos). Counted under Photos in This device holds (§13).
+
 ### 1.11 `meta` keys (every one used anywhere)
 
 | Key | Value | Written by | Meaning |
@@ -528,7 +535,7 @@ Card column spacing 8; the header row spacing 8; the button row spacing 10. When
 | `actions`, `kits` | as stored |
 | `phases` | his own timeline; [] when factory |
 | `things` | `thingsOnNoList()` resolved alone (`_memId` ""): every thing with no place in `placesOnTemplates()` — since 0.61 including a thing whose only memberships point at gone templates |
-| `photos` | every `{id, data (data URL), createdAt}` |
+| `photos` | every `{id, data (data URL), createdAt}` — a trip's bag photos, a bag's and (0.90) any thing's own photos alike |
 | `items` (`Library.backupItemsKey`, 0.61) | EVERY thing exactly as stored (`Item.json`, `extra` included, bags included), in library order — read only by this app |
 | `memberships` (`Library.backupPlacesKey`, 0.61) | every place on a template as stored (`Membership.json`, `extra` included) — only `placesOnTemplates()`, i.e. those whose template and thing both exist — read only by this app |
 | `placeCodes` (`Library.backupPlaceCodesKey`, 0.69) | `{CODE: place name}` — every `placeCode:` meta key (`placeCodes()`); absent when there is none — read only by this app, so a label printed before a restore still opens its place after it |

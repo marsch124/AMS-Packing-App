@@ -596,10 +596,11 @@ extension Library {
     /// Delete a thing — his ask (2026-09-27): off every list and out of every kit,
     /// then gone. Past trips keep their lines (a trip line is a copy); a to-do tied
     /// to it keeps its name. A BAG is refused: things are packed in it by name, so
-    /// it goes through `deleteBag`, which asks where they go.
+    /// it goes through `deleteBag`, which asks where they go. Its photos go with it,
+    /// each unless something else still shows it (0.90, ThingPhotos.swift).
     @discardableResult
     public mutating func deleteThing(id: String, evenABag: Bool = false) -> Bool {
-        guard items.contains(where: { $0.id == id }) else { return false }
+        guard let thing = items.first(where: { $0.id == id }) else { return false }
         if !evenABag, bags().contains(where: { $0.id == id }) { return false }
         memberships.removeAll { $0.itemId == id }
         for k in kits.indices { kits[k].itemIds.removeAll { $0 == id } }
@@ -610,6 +611,7 @@ extension Library {
                              out: Set(Library.kitIds(k.extra[KIT_OUT_KEY])))
         }
         items.removeAll { $0.id == id }
+        dropPhotos(of: photoRefs(thing))
         return true
     }
 

@@ -37,8 +37,9 @@ public let BAG_MARKS_KEY = "bagMarks"
 /// Every extra key the bag details write on a bag's thing.
 public let BAG_DETAIL_KEYS = [BAG_TYPE_KEY, BAG_SIZE_KEY, BAG_MARKS_KEY]
 /// The photos of the bag itself its page takes: two. A bag that came with more (the web app
-/// keeps up to MAX_PHOTOS on a thing) shows them all and takes no new one.
-public let BAG_OWN_PHOTOS_MAX = 2
+/// keeps up to MAX_PHOTOS on a thing) shows them all and takes no new one. They are the
+/// thing's own photos, so the same two as a thing's page takes (`THING_PHOTOS_MAX`, 0.90).
+public let BAG_OWN_PHOTOS_MAX = THING_PHOTOS_MAX
 
 /// The kind of bag — the airlines' baggage-desk categories, in plain words.
 public enum BagType: String, CaseIterable, Sendable, Identifiable {
@@ -224,27 +225,18 @@ extension Library {
     /// Keep one more photo of the bag itself (JPEG bytes) — onto the thing's own `photos`.
     /// Refused (nil) for anything not a bag, and when it has `BAG_OWN_PHOTOS_MAX` already (or
     /// its thing is full, MAX_PHOTOS): a third would push one out unseen.
+    /// (Since 0.90 any thing takes them the same way — `addThingPhoto`.)
     @discardableResult
     public mutating func addBagOwnPhoto(id: String, jpeg: Data) -> PhotoRecord? {
-        guard !jpeg.isEmpty, let d = bagDetails(id: id), d.photoIds.count < BAG_OWN_PHOTOS_MAX,
-              let thing = items.first(where: { $0.id == id }), thing.photos.count < MAX_PHOTOS else { return nil }
-        let photo = PhotoRecord(id: PackingEnv.makeId(), data: "data:image/jpeg;base64,\(jpeg.base64EncodedString())",
-                                createdAt: nowISO())
-        photos.append(photo)
-        _ = updateThing(id: id) { $0.photos.append(photo.id) }
-        return photo
+        guard bagDetails(id: id) != nil else { return nil }
+        return addThingPhoto(id: id, jpeg: jpeg)
     }
 
     /// Take one photo off the bag itself. Its record goes too, unless something else still shows
     /// it. The web app's small `thumb` is of the FIRST photo: taking that one away clears it.
     @discardableResult
     public mutating func removeBagOwnPhoto(id: String, photoId: String) -> Bool {
-        guard let d = bagDetails(id: id), d.photoIds.contains(photoId) else { return false }
-        _ = updateThing(id: id) { thing in
-            if thing.photos.first == photoId { thing.thumb = "" }
-            thing.photos.removeAll { $0 == photoId }
-        }
-        if !photoInUse(photoId) { photos.removeAll { $0.id == photoId } }
-        return true
+        guard bagDetails(id: id) != nil else { return false }
+        return removeThingPhoto(id: id, photoId: photoId)
     }
 }
