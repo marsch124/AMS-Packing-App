@@ -200,6 +200,8 @@ struct PackingDaySheet: View {
     @FocusState private var typing: Bool
     /// The bag whose Lost bag page is open, from Photos or Ready (0.80, spec 07 part 18 C).
     @State private var lost: LostBagOpen?
+    /// The bag whose own page is open from its pen in a station (0.90, "Edit bag when packing").
+    @State private var editing: EditBagOpen?
 
     /// Opened by itself, on Weigh, when the last thing was ticked: the trip keeps that it was
     /// offered once it is really on screen — never again on this trip.
@@ -243,6 +245,9 @@ struct PackingDaySheet: View {
                     .accessibilityIdentifier("day-done")
             }
             .padding(16)
+            // A bag's own page from its pen (0.90) — on the header, a view of its own (two sheets on one
+            // view is the Search lesson); closed, the station is as it was.
+            .sheet(item: $editing) { open in BagDetail(bagId: open.id).environmentObject(model) }
             StationChips(day: day, highlight: shown, idPrefix: "day-sheet-station", wraps: true) { go($0) }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.bottom, 6)
@@ -391,6 +396,8 @@ struct PackingDaySheet: View {
                             .accessibilityIdentifier("day-bag-\(n)-remove")
                             .accessibilityLabel("Take \(bag.name) off this trip")
                         }
+                        EditBagPen(bag: bag.name, id: "day-bag-\(n)-edit") { editing = EditBagOpen(id: $0) }
+                            .environmentObject(model)
                     }
                     .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
                 }
@@ -431,10 +438,15 @@ struct PackingDaySheet: View {
             ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
                 if let w = rows.first(where: { $0.load.container == bag.name }) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Button { open(w) } label: { BagWeightRow(bag: w) }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("day-weigh-\(n)")
-                            .accessibilityValue(BagsCard.gauge(w))
+                        HStack(alignment: .top, spacing: 10) {
+                            Button { open(w) } label: { BagWeightRow(bag: w) }
+                                .buttonStyle(.plain).focusEffectDisabled()
+                                .accessibilityIdentifier("day-weigh-\(n)")
+                                .accessibilityValue(BagsCard.gauge(w))
+                            // Beside the row, not in it: a button inside a button never reaches the tree.
+                            EditBagPen(bag: bag.name, id: "day-weigh-\(n)-edit") { editing = EditBagOpen(id: $0) }
+                                .environmentObject(model)
+                        }
                         if weighing == bag.name { scaleField(w, n: n, day: day) }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -522,7 +534,7 @@ struct PackingDaySheet: View {
             // another bag"); `n` stays the bag's place among the trip's bags, as in every station.
             ForEach(Array(day.bags.enumerated()), id: \.element.name) { n, bag in
                 if bag.inside.isEmpty {
-                    TagsBagCard(tripId: tripId, bag: bag, n: n).environmentObject(model)
+                    TagsBagCard(tripId: tripId, bag: bag, n: n) { editing = EditBagOpen(id: $0) }.environmentObject(model)
                 }
             }
             if day.done(.tags) { said("Every tag is on.", id: "day-tags-said") }
@@ -558,6 +570,9 @@ struct PackingDaySheet: View {
                         // How the bag looks (0.80, spec 07 part 18 A), until it has a photo of it packed.
                         BagLookThumb(tripId: tripId, bag: bag.name, id: "day-photo-\(n)-look").environmentObject(model)
                         Text(bag.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
+                        Spacer(minLength: 8)
+                        EditBagPen(bag: bag.name, id: "day-photo-\(n)-edit") { editing = EditBagOpen(id: $0) }
+                            .environmentObject(model)
                     }
                     BagPhotoRow(tripId: tripId, bag: bag.name, n: n, prefix: "day-photo-\(n)").environmentObject(model)
                     // The photos are for the airline desk: the bag's whole Lost bag page is one tap away (0.80) —
@@ -831,6 +846,7 @@ struct PackingDayGuideCard: View {
                 line("Getting around: tap a station in the row to open it \u{2014} Pack goes straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the stations are at the top too. Done closes it.")
                 line("A trip with no bags yet has nothing to lay out, weigh, tag or photograph: those four stations are faded with a dashed edge and say \u{201C}no bags yet\u{201D}; opened, they say how to give things a bag (Usually packed in, on a thing\u{2019}s page). Ready then waits only for the packing.")
                 line("A To do written here (Remind me, Add a reminder) is a line of the trip\u{2019}s own, under To do: due at once, so it is in Before you go at the top of the trip straight away \u{2014} tick it there or on the list. Like every reminder it counts on the list: Pack waits for it.")
+                line("A bag of yours has the round pen at the end of its line in Bags out, Weigh, Tags and Photos (and in the trip\u{2019}s Bags): it opens the bag\u{2019}s page \u{2014} its name, numbers, notes, details \u{2014} and Done brings you back to the same station.")
                 line("Once the trip sets off, the row is gone \u{2014} the weights and photos stay in Bags. A trip you share, or start again from this one, begins its stations afresh.")
             }
             .padding(.top, 2)

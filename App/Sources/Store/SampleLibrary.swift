@@ -247,6 +247,55 @@ enum SampleLibrary {
         return lib
     }
 
+    /// Four bags for sorting Your bags and duplicating a bag (`-uiTestingBags`, 0.90 — his asks of
+    /// 19 Oct 2026). Made 40, 30, 20 and 10 days ago — the Sports bag, the Camera bag, the Wheeled
+    /// duffel, the Backpack — and arranged by him as Wheeled duffel, Sports bag, Backpack, Camera bag
+    /// (`bag-0` … `bag-3`). The Map goes in the Camera bag (on the sample trip, a month ahead); the
+    /// Towel in the Sports bag (on "Old coast", two months ago); the other two never went on a trip. So:
+    /// A–Z Backpack, Camera bag, Sports bag, Wheeled duffel; Last used Camera bag, Sports bag, then
+    /// Wheeled duffel and Backpack (his order); Last added Backpack, Wheeled duffel, Camera bag, Sports
+    /// bag — and Last edited the same until one is changed. The Wheeled duffel is described in full —
+    /// 23 kg, 90 litres, 3400 g, Exempel, Black, Duffel, Large, a red strap, a Lid pocket, a note — for
+    /// Duplicate. All invented.
+    static func bags() -> Library {
+        var lib = make()
+        let clock = PackingEnv.now
+        defer { PackingEnv.now = clock }
+        for (days, name) in [(40, "Sports bag"), (30, "Camera bag"), (20, "Wheeled duffel"), (10, "Backpack")] {
+            let then = Date().addingTimeInterval(-Double(days) * 86_400)
+            PackingEnv.now = { then }
+            _ = lib.addBag(name: name)
+        }
+        PackingEnv.now = clock
+        _ = lib.moveBag(named: "Wheeled duffel", by: -1)
+        _ = lib.moveBag(named: "Wheeled duffel", by: -1)
+        _ = lib.moveBag(named: "Backpack", by: -1)
+        if let duffel = lib.bags().first(where: { $0.name == "Wheeled duffel" })?.id {
+            _ = lib.setBag(id: duffel, maxKg: 23, capacityL: 90, emptyGrams: 3400)
+            _ = lib.setBagDetails(BagDetails(brand: "Exempel", colour: "Black", type: .duffel, size: .large,
+                                             sizeNote: "80 \u{00D7} 40 \u{00D7} 40 cm", marks: "red strap"), id: duffel)
+            _ = lib.addPocket(bagId: duffel, name: "Lid")
+            _ = lib.setThingNote(id: duffel, "Wheels squeak a little")
+        }
+        for n in lib.items.indices {
+            if lib.items[n].name == "Map" { lib.items[n].container = "Camera bag" }
+            if lib.items[n].name == "Towel" { lib.items[n].container = "Sports bag" }
+        }
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if !lib.trips.isEmpty { lib.trips[0].entries = buildTotalEntries(lib.trips[0], lib.resolvedTemplates()) }
+        if let swim = lib.templates.first(where: { $0.name == "Swim" }) {
+            var old = newEvent(name: "Old coast", startDate: day(-60), endDate: day(-58))
+            old.activities = [swim.id]
+            old.entries = buildTotalEntries(old, lib.resolvedTemplates())
+            lib.trips.append(old)
+        }
+        return lib
+    }
+
     /// The sample library for the Packing day (`-uiTestingPackingDay`, 0.79 — spec 07 part 17): a
     /// Day pack, one of his bags WITH an AirTag, that the Hiking boots and the Rain jacket go in;
     /// the rest stays in the carry-on (only a name on the lines, no AirTag). So the trip, a month

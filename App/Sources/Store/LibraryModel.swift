@@ -93,6 +93,8 @@ final class LibraryModel: ObservableObject {
     func change(_ body: (inout Library) -> Void) {
         var next = library
         body(&next)
+        // A bag changed by any screen says when (0.90: Your bags' Last edited — BagSorting.swift).
+        next.stampEditedBags(since: library)
         commit(next)
     }
 
@@ -335,7 +337,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey] {
+            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", BagsScreen.sortKey, "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             // -tableChosenBefore (0.86): columns he chose before the Battery column came —
@@ -411,6 +413,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingLostBag") {
             return LibraryModel(store: MemoryStore(SampleLibrary.lostBag().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingBags") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.bags().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingPackingDay") {
             let almost = args.contains("-packingDayAlmost"), byPlane = args.contains("-packingDayByPlane")

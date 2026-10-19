@@ -2786,6 +2786,29 @@ bags:)`, over the trip's bags as its Bags card names them (`dayBags`):
 
 ---
 
+### 0.90 — Edit the bag from a station
+
+His words (19 Oct 2026): "Add the possibility to Edit bag when packing". Decided by the build: the trip's own round
+pen (`EditBagPen` — `RoundIconLabel` in the trips' green with the drawn `PenMark`, the button beside the trip's name
+since 0.73, his ask then: a bare pen did not read as an edit button) at the right end of each bag's line, wherever a
+trip shows its bags — the clearest: one mark, the same place, the app's own "change this". Words ("Edit bag") were
+weighed: they fit under a row (as Lost bag? does) but not in Bags out's tight tick rows, and one look everywhere won.
+- **Bags out**: after the row (and its ✕), `day-bag-<n>-edit`.
+- **Weigh**: beside the bag's weight row, top-aligned (beside, not inside: a button inside a button never reaches the
+  tree), `day-weigh-<n>-edit`.
+- **Tags**: at the end of the card's name line, after "done", `day-tag-<n>-edit` (`TagsBagCard(edit:)`).
+- **Photos**: at the end of the bag's name line, `day-photo-<n>-edit`.
+- The trip's **Bags card** (spec 03): `bag-<n>-edit`.
+Label "Edit the <bag>". Only for a bag of his (`Library.bagId(named:)`): a name on the lines that is no bag of his has
+no page and no pen. A tap opens the bag's page (`BagDetail`, spec 05) over the sheet; Done, Escape or a swipe brings
+him back to the SAME station, the bag that was open in Weigh still open. The sheet hangs on the Packing Stations'
+header line (a view of its own: the Lost bag page's sheet is on the sheet's body). A change made on the page is on
+the station at once (a rename everywhere, a max on Weigh's bar, Has an AirTag on Tags).
+Tests: UI `testABagIsEditedFromTheTripWhilePacking` (`-uiTestingPackingDay`): the Bags card's `bag-1-edit` (the Day
+pack), none for the carry-on; it opens the Day pack's page; 9 typed as its max shows "/ 9 kg" on the card after Done,
+on the trip; Bags out's `day-bag-1-edit` (none for `day-bag-0`), Weigh's opens the page and Done comes back to Weigh,
+Tags' and Photos' pens are there.
+
 ## 18. Lost luggage
 
 > His yes (13 Oct 2026), 0.80: when a bag goes missing, the airline's baggage desk asks what it looks like — and on the
@@ -3809,6 +3832,10 @@ left is not under the count"). Green again without them, day and night.
 | 15 Oct 2026 | **Done headings turn green and fold (0.87):** in an open grab list, each heading of his gets the trip's small ring (`GroupProgressMark`, "x of y in hand"), filling as its things are ticked; once every thing under it is in hand — a skipped ⊘ thing counts as done; a heading of skips alone is NOT done (nothing in hand; it stays open so a skip can be taken back) — the heading turns green with the check on the trip's soft green band and its things fold to that one line, 0.4 s after the tap, in 0.3 s (Reduce Motion: a 0.2 s fade, no movement). A tap on a done heading opens it (or folds it again); a heading not done ignores taps, so nothing still to take is ever hidden; opened by hand it stays open while done, and folds again the next time everything under it is in hand. The things above his first heading never fold; a list without headings is unchanged; the count, Still missing, Start over (opens all) and Ready to go unchanged. Nothing stored: the folds follow the ticks, this device's own | His yes, 15 Oct 2026, to: "Done headings turn green and fold: in a grab list, when everything under a heading is in hand, it turns green and folds to one line, like the groups on a trip. You scroll less at the door." Skips as done, skips alone not done, the delay and the tap rules decided by the build. Spec 02 §6, "Done headings fold". |
 | 18 Oct 2026 | A note a template keeps for a thing reads **"Note on <template>: …"** under a thing found by its notes (Your things, Search), his own Notes **"Note: …"**, and the thing's page **"Note on the <template> template: …"** (0.88) | His field report: "Travel: work" under four things (the web app's line notes on Travel) — "I don't understand why the “: work” is there. Where does it come from?", then "make the line clearer". Red first: ("On the Swim template: Rinse after the sea") is not equal to ("Note on the Swim template: Rinse after the sea"). |
 | 18 Oct 2026 | **His own activity areas (0.89).** The areas a template lives in are his list: on the Templates tab an "Activity areas" pill opens them — + Add (a name only; no code to type), the pen renames (every template in it follows: an area is pointed at by its id), the grip ≡ (Mac arrows) moves, Remove asks; one that holds templates stays and names them; nothing until Save. A template's page gets a pick-one drop-down "Activity area" (Always packed, his areas, No activity area, a new area at its foot). The Templates tab, Create new trip, Trip settings, New and the small core show HIS areas in HIS order under his names. GA, WET and OE stay as built-ins: renamed they show his words alone, under their own name their code as before; GA and OE can be removed once empty, WET never (each workout's own Context on a trip reads it). Stored: the list as ONE `meta` record `activityAreas` (as his kinds of thing — a new shared-row kind would be blanked by PackingCore), in a backup as `prefs.activityAreas`; a built-in stays in the template's `group`, one of his in `extra["area"]` with `group` "" — the web app's model sees nothing new (parity 211/211). An empty area has no heading; a template whose area went falls under Other Templates | His words: "I would like the ability to add and adjust activity areas so that I can organize templates." Spec 04 §1a, §1, §5, §6, §14; spec 01 §1.11–1.12, §9, §10; spec 03 Create new trip. |
+| 19 Oct 2026 | **A bag's Notes (0.90):** right under the bag's name on its page, above its numbers — the bag's thing's own Notes (one value with Its details; Search finds it; synced and backed up with the thing), 1–8 lines, saved as typed like the rest of the page (it has no Save) | "Add Notes under Bag Name" — his screenshot of a bag's page, an arrow at the empty space under the name. Spec 05, a bag's page 1b. |
+| 19 Oct 2026 | **Edit the bag while packing (0.90):** the trip's round pen at the end of each bag's line — the Bags card, Bags out, Weigh, Tags, Photos — opens the bag's page over the trip; Done comes back to the same place; only for a bag of his. Done on a bag's page now takes a name typed and not yet renamed | "Add the possibility to Edit bag when packing". The pen (not words), its places and Done keeping the name decided by the build. Spec 03 (the Bags card); part 17 "0.90"; spec 05. |
+| 19 Oct 2026 | **Duplicate a bag (0.90):** "Duplicate this bag" near the end of its page (outlined, calm): a copy with everything that describes the bag — numbers, brand, colour, type, size, marks, pockets, cabin, AirTag, notes, its care and its row — not its photos, trips, contents, review counts, serial or care log; named "<name> 2" (the next free number), right after the original on Your bags, opened at once with the name selected | "Add possibility to duplicate a bag/container (use case: if I buy four of the same and just want to change colour and name...)". Copying the colour (he changes it), the list of what stays behind, the name rule and the place decided by the build. Spec 05, a bag's page 6b. |
+| 19 Oct 2026 | **Sort Your bags (0.90):** a Sort drop-down — Own order, A–Z, Last used, Last added, Last edited — remembered per device. Own order = the bag list's order (arranged in Usually packed in's list, as now); Last used = the newest trip it went on (a line in it or "+ Add a bag"; a trip ahead counts); Last added = the moment in the id of its row on the bag list (no new field); Last edited = a new key on the bag's thing, `bagEditedAt`, stamped by every change of it but its review counts (until then, when it was added); ties keep his order; the rows stay put while he types | "Add the ability to sort bags in the Care page / Bags. Alphabetical, Own order, Last used, Last added, last edited etc." Where each is read decided by the build. Spec 05, Care → Bags; spec 01 (the key). |
 
 ## Open questions
 

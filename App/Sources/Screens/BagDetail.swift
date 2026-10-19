@@ -7,11 +7,53 @@ import PackingLibrary
 /// trip; a delete first moves the bag's things to a bag he picks; the page shows
 /// everything — its numbers, the things usually in it, its trips, and its details
 /// as a thing.
+///
+/// Duplicate (0.90, his ask of 19 Oct 2026 — "if I buy four of the same and just want to change
+/// colour and name"): the page turns to the copy at once, its name selected for typing. So the
+/// sheet holds the bag SHOWN, and each bag gets a fresh page (`.id`): nothing typed on the
+/// original's page — its fields, the delete question — follows onto the copy's.
 struct BagDetail: View {
     let bagId: String
     @EnvironmentObject var model: LibraryModel
+    @State private var shown: String
+    /// The copy just made: its page opens with the name selected.
+    @State private var copied: String?
+
+    init(bagId: String) {
+        self.bagId = bagId
+        _shown = State(initialValue: bagId)
+    }
+
+    var body: some View {
+        BagPage(bagId: shown, selectName: copied == shown) { copy in
+            copied = copy
+            shown = copy
+        }
+        .environmentObject(model)
+        .id(shown)
+    }
+
+    /// "Travel", "Travel and Swim", "Travel, Swim and Run" (`BagPage.names`).
+    static func names(_ lists: [String]) -> String { BagPage.names(lists) }
+}
+
+/// The page of one bag (`BagDetail` holds which).
+struct BagPage: View {
+    let bagId: String
+    /// Open with the name selected, ready to be typed over (a copy just made).
+    var selectName = false
+    /// Duplicate made this copy: the sheet turns to it.
+    var duplicated: (String) -> Void = { _ in }
+    @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var renaming: String?
+    /// The name's selection, and whether it has the keys — for a copy just made (0.90).
+    @State private var nameSelection: TextSelection?
+    @FocusState private var naming: Bool
+    /// Its Notes (0.90) — the thing's own `note` — as typed, written a moment after the last key
+    /// (`noteWrite`) and at once on Done, Duplicate, Its details or leaving the page.
+    @State private var note = ""
+    @State private var noteWrite: Task<Void, Never>?
     @State private var problem = ""
     @State private var maxKg = ""
     @State private var litres = ""
@@ -45,6 +87,9 @@ struct BagDetail: View {
                 header(bag)
                 KeyboardAwayScroll {
                     VStack(alignment: .leading, spacing: 12) {
+                        // Notes right under the name (0.90, his ask with an arrow at that spot) — the
+                        // bag's thing's own Notes, as a thing's page has them under its name.
+                        notes(bag)
                         numbers(bag)
                         cabinSwitch(bag)
                         airTagSwitch(bag)
@@ -55,6 +100,8 @@ struct BagDetail: View {
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)
+                        // Duplicate (0.90): near the end, calm — the copy opens at once.
+                        duplicateBag(bag)
                         deleteBag(bag, facts)
                     }
                     .padding(.horizontal, 16).padding(.bottom, 24)
@@ -76,14 +123,23 @@ struct BagDetail: View {
             litres = bag.capacityL > 0 ? BagsScreen.show(bag.capacityL) : ""
             empty = bag.weight > 0 ? String(Int(bag.weight.rounded())) : ""
             loadLost(model.library.bagDetails(id: bag.id) ?? BagDetails())
+            note = storedNote ?? ""
+            if selectName { selectTheName(bag.name) }
         }
+        // Notes changed elsewhere (Its details, the other device) reach the field — unless what is
+        // typed already says it, or is still on its way to being written.
+        .onChange(of: storedNote) { _, kept in
+            guard let kept, noteWrite == nil, jsTrim(note) != kept else { return }
+            note = kept
+        }
+        .onChange(of: note) { _, _ in noteTyped() }
         // A change from the other device, or from "Its details", reaches the fields — unless
         // what is typed already says it, or is still on its way to being written.
         .onChange(of: model.library.bagDetails(id: bagId)) { _, kept in
             guard let kept, lostWrite == nil else { return }
             followLost(kept)
         }
-        .onDisappear { writeLost() }
+        .onDisappear { writeLost(); writeNote() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("bag-detail")
         #if os(macOS)
@@ -97,8 +153,10 @@ struct BagDetail: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 // The name is the field — press it, type, Rename.
-                TextField("", text: Binding(get: { renaming ?? bag.name }, set: { renaming = $0; problem = "" }))
+                TextField("", text: Binding(get: { renaming ?? bag.name }, set: { renaming = $0; problem = "" }),
+                          selection: $nameSelection)
                     .textFieldStyle(.plain)
+                    .focused($naming)
                     .font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
                     .onSubmit { rename(bag) }
                     .accessibilityIdentifier("bag-name")
@@ -113,7 +171,9 @@ struct BagDetail: View {
                     .accessibilityIdentifier("bag-rename")
                 }
                 Spacer(minLength: 4)
-                Button("Done") { dismiss() }
+                // Done takes a name typed and not yet renamed (0.90: a copy is named and closed in
+                // one go); a name refused keeps the page open and says why.
+                Button("Done") { leave(bag) }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
@@ -127,12 +187,109 @@ struct BagDetail: View {
         .padding(16)
     }
 
-    private func rename(_ bag: Item) {
-        guard let wanted = renaming else { return }
+    @discardableResult private func rename(_ bag: Item) -> Bool {
+        guard let wanted = renaming else { return true }
+        guard jsTrim(wanted) != bag.name else { renaming = nil; return true }
         var ok = false
         model.change { ok = $0.renameThing(id: bag.id, to: wanted) }
         if ok { renaming = nil; problem = "" }
         else { problem = jsTrim(wanted).isEmpty ? "A bag needs a name." : "You already have something called that." }
+        return ok
+    }
+
+    /// Done: what is typed is kept first — a new name too — then the page closes.
+    private func leave(_ bag: Item) {
+        guard rename(bag) else { return }
+        writeLost()
+        writeNote()
+        dismiss()
+    }
+
+    /// The copy's name, selected and holding the keys, so what he types replaces it — once the
+    /// sheet has come up (a field focused while it is still sliding in is not given the keys).
+    private func selectTheName(_ name: String) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            naming = true
+            try? await Task.sleep(for: .milliseconds(100))
+            nameSelection = TextSelection(range: name.startIndex..<name.endIndex)
+        }
+    }
+
+    // MARK: Notes (0.90) — the bag's thing's own
+
+    private var storedNote: String? { model.library.items.first { $0.id == bagId }?.note }
+
+    private func notes(_ bag: Item) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("NOTES").font(.system(.caption2, weight: .semibold)).kerning(0.4).foregroundStyle(Theme.muted)
+                .accessibilityIdentifier("bag-detail-notes-label")
+            TextField("Anything worth remembering", text: $note, axis: .vertical)
+                .lineLimit(1...8)
+                .textFieldStyle(.plain)
+                .font(.system(.body)).foregroundStyle(Theme.ink)
+                .padding(.horizontal, 10).padding(.vertical, 9).frame(minHeight: 40)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.card))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line, lineWidth: 1))
+                .accessibilityIdentifier("bag-detail-notes")
+            // The notes its templates keep for it, as under a thing's Notes (a bag he also packs).
+            ForEach(Array(model.library.rowNotes(itemId: bag.id).enumerated()), id: \.offset) { n, said in
+                Text("Note on the \(said.template) template: \(said.note)")
+                    .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("bag-row-note-\(n)")
+            }
+        }
+    }
+
+    /// A key typed: written 0.4 s after the last one, as the lost-luggage fields are.
+    private func noteTyped() {
+        guard let kept = storedNote, jsTrim(note) != kept else { noteWrite?.cancel(); noteWrite = nil; return }
+        noteWrite?.cancel()
+        noteWrite = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            writeNote()
+        }
+    }
+
+    private func writeNote() {
+        noteWrite?.cancel()
+        noteWrite = nil
+        guard let kept = storedNote, jsTrim(note) != kept else { return }
+        let id = bagId, words = note
+        model.change { _ = $0.setThingNote(id: id, words) }
+    }
+
+    // MARK: Duplicate (0.90) — his ask of 19 Oct 2026
+
+    /// "Duplicate this bag": a copy of everything that describes it — not its photos, its trips
+    /// or what is in it (BagDuplicate.swift) — right after it on Your bags; its page opens at once,
+    /// the name ("Duffel 2") selected for typing. Calm, outlined, like Start a new trip from this one.
+    private func duplicateBag(_ bag: Item) -> some View {
+        Button {
+            rename(bag)
+            writeLost()
+            writeNote()
+            var copy: Item?
+            let id = bag.id
+            model.change { copy = $0.duplicateBag(id: id) }
+            if let copy { duplicated(copy.id) }
+        } label: {
+            VStack(spacing: 2) {
+                Text("Duplicate this bag")
+                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
+                Text("Sizes, details and pockets \u{2014} not its photos or trips")
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.care.color, lineWidth: 1.4))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("bag-duplicate")
     }
 
     // MARK: Numbers — saved as typed (the 0.25 lesson)
@@ -393,7 +550,7 @@ struct BagDetail: View {
     // MARK: Its details as a thing
 
     private func detailsDoor(_ bag: Item) -> some View {
-        Button { writeLost(); opened = .thing(bag.id) } label: {
+        Button { writeLost(); writeNote(); opened = .thing(bag.id) } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Its details").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -449,7 +606,7 @@ struct BagDetail: View {
                     }
                 }
                 if !lists.isEmpty {
-                    Text("The \(bag.name) is also on your \(BagDetail.names(lists)) template\(lists.count == 1 ? "" : "s"), as something you pack.")
+                    Text("The \(bag.name) is also on your \(BagPage.names(lists)) template\(lists.count == 1 ? "" : "s"), as something you pack.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("bag-delete-lists")
@@ -646,3 +803,34 @@ struct BagLookThumb: View {
         }
     }
 }
+
+/// Edit the bag while packing (0.90, his ask of 19 Oct 2026: "Add the possibility to Edit bag when
+/// packing"). The trip's own pen — the round one beside its name in the header (`RoundIconLabel`
+/// with `PenMark`, his 12 Oct ask: a bare pen did not read as an edit button) — at the right end of a
+/// bag's line wherever a trip shows its bags: the Bags card and Packing Stations' Bags out, Weigh,
+/// Tags and Photos. A tap opens the bag's own page over the trip; Done (or a swipe) brings him back
+/// to the same place, the station and the open bag as they were. Only for a bag of his — one with a
+/// page — never for Not in a bag, or a name on the lines that is no bag of his.
+///
+/// The page opens from the SCREEN (`open`), not from the pen: a renamed bag is another row, and a
+/// sheet hung on the old row would close the moment the name was taken.
+struct EditBagPen: View {
+    let bag: String
+    let id: String
+    let open: (String) -> Void
+    @EnvironmentObject var model: LibraryModel
+
+    var body: some View {
+        if let bagId = model.library.bagId(named: bag) {
+            Button { open(bagId) } label: {
+                RoundIconLabel(tint: AppSection.events.color) { PenMark() }
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier(id)
+            .accessibilityLabel("Edit the \(bag)")
+        }
+    }
+}
+
+/// The bag whose page a trip has open (`EditBagPen`).
+struct EditBagOpen: Identifiable, Equatable { let id: String }

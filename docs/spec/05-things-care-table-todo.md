@@ -1592,7 +1592,7 @@ A trip's bag ("Goes in the cabin", `BagCabinRow`) can also MAKE a bag (see a bag
 **What is on screen** (container `yourbags-detail`):
 1. Header: "Your bags" (22 heavy orange), the count (`yourbags-count`, 15 heavy muted), "Done" (filled).
 2. Fixed (does not scroll — his ask 26 Sep 2026, "keep the header row visible"): "Give a bag its max weight and
-   every trip shows how full it is." (14 medium muted), then the column names right-aligned over the fields:
+   every trip shows how full it is." (14 medium muted); then **Sort** (0.90, below); then the column names right-aligned over the fields:
    "MAX KG" (64 wide), "LITRES" (64), "EMPTY G" (70) (10 heavy muted, kerning 0.4; one combined element
    `yourbags-columns`); a 1 pt line under.
 3. Scrolling: one row per bag (min height 46, line under):
@@ -1605,6 +1605,40 @@ A trip's bag ("Goes in the cabin", `BagCabinRow`) can also MAKE a bag (see a bag
    - No bags: "No bags yet." (15 medium muted).
 4. The add row at the BOTTOM: "A new bag" (`bag-new-name`) and "Add" (`bag-new`, orange `FieldButtonLabel`);
    needs line `bag-new-needs`.
+
+**Sort** (0.90 — his words, 19 Oct 2026: "Add the ability to sort bags in the Care page / Bags. Alphabetical, Own
+order, Last used, Last added, last edited etc."). The app's `DropDown` with its word beside it (`heading: .beside`, as
+the trip's Sorting), "Sort", in the Care orange, between the explaining line and the column names, 8 pt above and
+below; ids `yourbags-sort` (the field, its value the choice's words), `yourbags-sort-list`, rows `yourbags-sort-0` …
+`-4`: **Own order**, **A–Z**, **Last used**, **Last added**, **Last edited** (`BagSort`, PackingLibrary/BagSorting.swift).
+Remembered on this device (`@AppStorage("ams.bags.sort")`, `BagsScreen.sortKey`, raw values `own`, `name`, `used`,
+`added`, `edited`; an unknown value is Own order); the UI tests start from Own order (the key is cleared at launch).
+Where each order is read (`Library.sortedBags(_:)`) — no list of his is new, and one key is:
+- **Own order**: the bag list's own order (`bags()`) — the one he arranges with the grip ≡ in a thing's "Usually packed
+  in" list (`moveBag(named:by:)`, spec 07 part 13); a new bag joins at the end, a duplicate right after its original.
+  Your bags itself has no grip (the decision of 19 Oct 2026: "drag to arrange as now").
+- **A–Z**: `jsLocaleCompare(…, sensitivity: .base)`, as names sort everywhere.
+- **Last used**: the newest trip each bag went on (`bagLastTrips()`): a trip with a line packed in it (`bagLoads`:
+  no reminders, nothing skipped), or one Packing Stations' "+ Add a bag" put on (`addedBags`), by the trip's first day,
+  or the day it was made when undated. A trip still ahead counts — the bag is on it. Never on a trip: last. (The bag's
+  page's "On your trips" lists only trips where its things weigh something; Last used counts any line in it.)
+- **Last added**: when the bag joined Your bags — read from the id of its row on the bag list (`Library.idTime`: an
+  id begins with the moment it was made, milliseconds in base 36 — `PackingEnv.defaultMakeId`, the web app's own
+  `Date.now().toString(36)`; an id that is no time, or one outside 2015–2100, is no answer). No new field. His bags
+  moved in from the web app at ONE moment tie, and keep his order among themselves. Kept by the store's records and a
+  backup (a membership keeps its id).
+- **Last edited**: the bag's thing's extra key `bagEditedAt` (`BAG_EDITED_KEY`, an ISO time) — stamped by
+  `stampEditedBags(since:)`, which `LibraryModel.change` runs on EVERY change: any bag whose thing differs afterwards
+  (name, numbers, Notes, details, pockets, switches, photos, its own bag…) gets the moment; its review counts (`stats`,
+  written by a trip's review, not by him) and the stamp itself do not count, nor does a bag new since then (a new bag
+  or a copy counts as edited when it was added). A bag not changed since 0.90: when it was added. The web model never
+  reads the key; it is synced and backed up with the thing.
+- Ties, and a bag with no answer, keep his own order (the sort is stable, from `bags()`).
+**The rows stay put while he types** (`order`, the ids as shown): the list is sorted when it opens, a sort is chosen,
+a bag comes or goes (added here, duplicated, deleted, from the other device) and when a bag's page closes — not on
+each change: under Last edited a number typed into a row would move that row away at the first key. A bag not in the
+order yet (just arrived) stands after the others in its sorted place. The rows' ids (`bag-N-name`, `bag-N-maxkg`, …)
+count the rows as shown.
 
 **Behaviour.**
 - Numbers are SAVED AS TYPED (`onChange` of the text): trimmed, a comma read as a point; empty → 0;
@@ -1645,6 +1679,13 @@ max 1 kg typed with Return and 33 litres typed WITHOUT Return both stay; the tri
 
 UI `testYourBagsShowsANumberChangedOnTheBagsPage` (7 typed as max kg on the bag's page → the row says "7").
 
+**0.90 — Sort.** Model `BagSortingTests.testYourBagsSortByOwnOrderNameUseAndWhenAdded`,
+`testBagsWithNoAnswerOrTheSameAnswerKeepHisOwnOrder`, `testABagIsStampedWhenItChangesButNotForItsReviewCounts` (the
+records and a backup keep both orders). UI `testYourBagsSortByNameUseAddedAndEditedAndRememberIt` (`-uiTestingBags`:
+four bags made 40/30/20/10 days ago and arranged by him; each of the five orders read from `bag-0…3-name`; 12 typed as
+the Sports bag's max under Last edited leaves the row where it is, and closed and opened again it is first and the
+sort still says Last edited).
+
 **Not covered by a test.** The duplicate-bag message; negative or comma numbers; the glance line; the empty state.
 
 **Traps and history.** 🪤 Saved AS HE TYPES: the numbers used to be saved only on Return, so numbers typed and
@@ -1661,14 +1702,33 @@ unused bag gets a plain delete (27 Sep, his empty handbag); a bag that is also a
 goes completely (27 Sep, "I thought it would just be a deleted bag"). "Goes in the cabin": his idea 4 (2 Oct
 2026, 0.48).
 
-**How it is reached and left.** Your bags → a bag's name. A sheet; "Done" (`bag-done`; Escape too, 0.62) or a swipe. If the bag
-no longer exists the page closes itself on appear. "Delete …" closes it.
+**How it is reached and left.** Your bags → a bag's name; since 0.90 also a bag's round pen on a trip (spec 03, the
+Bags card; spec 07 part 17, the stations) and Duplicate on another bag's page (below). A sheet; "Done" (`bag-done`;
+Escape too, 0.62) or a swipe. If the bag no longer exists the page closes itself on appear. "Delete …" closes it.
+**Done keeps a typed name (0.90):** a name typed and not yet renamed is renamed first (as Rename would); refused, the
+page stays and says why under the name — so a copy is named and closed in one go. Escape is Done too. A swipe still
+leaves a typed name unrenamed.
+**Which bag (0.90):** `BagDetail` holds the bag SHOWN and draws `BagPage` for it with `.id(shown)` — Duplicate turns the
+same sheet to the copy, and each bag gets a fresh page (nothing typed on the original's, nor its delete question,
+follows onto the copy's).
 
 **What is on screen** (container `bag-detail`, 18 pt between blocks):
 1. **Header:** the name IS the field (`bag-name`, 22 heavy orange). When the typed name differs from the stored
    one (trimmed), "Rename" appears beside it (`bag-rename`, 15 bold white on orange). "Done" (filled) right. A
    refusal shows under it in red (`bag-problem`, 14 semibold): "A bag needs a name." or "You already have
    something called that."
+1b. **Notes** (0.90 — his words, 19 Oct 2026: "Add Notes under Bag Name", his screenshot with an arrow at the empty
+   space under the name): the first block under the header — "NOTES" (Caption 2 semibold capitals, kerning 0.4, muted,
+   as MAX KG; `bag-detail-notes-label`) over a field that grows downwards, 1 to 8 lines (`bag-detail-notes`, "Anything
+   worth remembering", Body ink, 10 sideways and 9 up and down, at least 40 tall, the card colour, corner 8, a hairline —
+   the lost-luggage marks' field). It IS the bag's thing's own `note` — the same words as Its details' Notes, found by
+   Search (`noteHits`), shown wherever a thing's note shows, carried by the thing's record (sync, backups). Under it, as
+   under a thing's Notes, the notes his templates keep for it: "Note on the <template> template: <note>" (Subheadline
+   muted, `bag-row-note-<n>`; a bag he also packs). Saved as the lost-luggage fields are: 0.4 s after the last key
+   (`noteTyped`), and at once on Done, Duplicate, Its details or leaving the page (`writeNote` →
+   `Library.setThingNote(id:_:)`: trimmed, only when different). A note changed elsewhere reaches the field unless what
+   is typed already says it or is still on its way. (The brief said "saved with the page's Save": the bag's page has no
+   Save — everything on it is kept as typed — so its Notes are too.)
 2. **Numbers:** "MAX KG", "LITRES", "EMPTY G" (11 heavy muted) over fields `bag-detail-maxkg`,
    `bag-detail-litres`, `bag-detail-empty` (17 semibold monospaced, height 40) — saved as typed, same rules as
    Your bags.
@@ -1717,6 +1777,31 @@ no longer exists the page closes itself on appear. "Delete …" closes it.
    weight, red when over; "Heaviest: `<weight>` on `<trip>`" (`bag-heaviest`) when more than one trip.
 6. **Its details** door (`bag-details`): "Its details" / "Kept at home, condition, brand, colour, notes" → the
    bag's own thing page (which has no Delete for a bag).
+6b. **Duplicate this bag** (0.90 — his words, 19 Oct 2026: "Add possibility to duplicate a bag/container (use case: if
+   I buy four of the same and just want to change colour and name...)"): after Its details, before Delete bag — calm,
+   outlined like Trip settings' "Start a new trip from this one": a full-width button at least 56 tall, a 1.4-pt Care
+   orange ring, corner 12, "Duplicate this bag" (Body semibold orange) over "Sizes, details and pockets — not its photos
+   or trips" (Footnote muted, centred); id `bag-duplicate`. A tap keeps what is typed first (a typed name is renamed if
+   it can be, the lost-luggage fields and Notes written), then `Library.duplicateBag(id:)` in one change, and the sheet
+   turns to the copy at once: its name ("Wheeled duffel 2") **selected and holding the keys** (`selectName`: 0.45 s
+   after the page turns the field is focused, 0.1 s later its whole name selected — `TextField(text:selection:)`,
+   iOS 18 / macOS 15), so what he types replaces it; Done takes the typed name (above). The copy (BagDuplicate.swift):
+   - **Its name**: `duplicateName(of:)` — "<name> 2", or the next number no thing of his has (bags are things; two
+     things never share a name); a copy of a copy counts on from the original ("Duffel 2" → "Duffel 3" when "Duffel"
+     is one of his things; "Size 40" alone → "Size 40 2").
+   - **Copied**: everything that describes the bag — max kg, litres, empty weight, brand, colour, its size's note,
+     type, size class, distinctive marks, pockets, Goes in the cabin, Has an AirTag, Has a battery, Notes, kind of
+     thing, whose it is, kept at home, the bag it usually goes in (and its pocket), condition, when bought, price,
+     link, warranty, its care (what to do, how often) and its row on Your bags (heading, answers) — and any key a later
+     version adds, unless listed next. The colour is copied too (decided by the build: he changes it).
+   - **Not copied**: its photos (`photos`, `thumb`); its trips — kept on the trips under the bag's name, which the copy
+     does not have; what is in it — things whose Usually packed in is the original stay there, and a kit's contents
+     (`kitContents`, `kitOut`, `kitCheck`, `BAG_COPY_LEAVES`) are the original's; its review counts (`stats`), Refine's
+     Keep it, its serial number, the care log (last done, the log), retired; the templates it is ALSO packed on as a
+     thing (a copy never joins a trip by itself); the kit it is part of; the edit stamp (`bagEditedAt`).
+   - **Where**: a new thing and a new row on Your bags (the original's row copied, with an id of its own — so its own
+     moment for Last added), right after the original in his order, under the same heading (`moveRow`); a second copy
+     of the same bag goes right after the original again, before the first copy.
 7. **Delete:** the small "Delete bag" (`bag-delete`). Pressed, a card (red 1 pt border) asks "Delete
    “`<name>`”?" and:
    - **Nothing packed in it** (`bagIsUsed` false: no thing, list row, list default or trip line names it):
@@ -1788,7 +1873,18 @@ pocket row; "Side pocket" made at the foot is chosen, kept on Save and is the ba
 bag takes the Pocket list away — red with the 0.69 rule planted back (`!pockets.rows.isEmpty`): "no Pocket list for
 a bag of his with no pockets"); model `ChoiceEditsTests.testABagWithNoPocketsTakesItsFirstPocketFromAThingsPage`.
 
-**Not covered by a test.** The rename refusal texts; "Show all"; the trips list beyond the first; "Heaviest:".
+**0.90.** UI `testABagHasNotesRightUnderItsName` (`-uiTestingChecks`, the carry-on: Notes between the name and MAX KG;
+typed, closed and opened again they are kept; Its details' `thing-notes` says the same) — seen RED with the write planted
+out of `writeNote`: "the bag's notes were not kept: ''"; `testABagIsDuplicatedAndOpensReadyToBeNamed` (`-uiTestingBags`,
+the Wheeled duffel: Duplicate turns the page to "Wheeled duffel 2"; "Blue duffel" typed at once replaces the name; 23 kg,
+90 litres, its Notes, its brand and 1 pocket came along, 0 trips; Done names it, and on Your bags it is `bag-1`, right
+after the original, with 23 as its max; 5 bags) — seen RED with the selection planted out: "the copy's name was not
+selected for typing: 'Wheeled duffel 2Blue duffel'" (see the commit for the exact words), and with the copy placed last:
+"the copy is not right after its original". Model `BagSortingTests.testADuplicateTakesEverythingThatDescribesTheBagButNotItsPhotosTripsOrContents`,
+`testACopysNameIsTheNextFreeNumberAmongAllHisThings`, `testABagsNotesAreItsThingsOwnAndSearchFindsThem`.
+
+**Not covered by a test.** The rename refusal texts; "Show all"; the trips list beyond the first; "Heaviest:"; Done
+refusing a taken name.
 
 ---
 

@@ -74,6 +74,8 @@ struct TagsBagCard: View {
     let tripId: String
     let bag: PackingDay.Bag
     let n: Int
+    /// Its own page, from the pen at the end of its name's line (0.90, "Edit bag when packing").
+    var edit: ((String) -> Void)? = nil
     @EnvironmentObject var model: LibraryModel
     @Environment(\.colorScheme) private var scheme
     /// Remind me is open, and what it added (shown under the card until the sheet closes).
@@ -106,6 +108,9 @@ struct TagsBagCard: View {
                             .accessibilityIdentifier("day-tag-\(n)-done")
                     }
                     .foregroundStyle(words)
+                }
+                if let edit {
+                    EditBagPen(bag: bag.name, id: "day-tag-\(n)-edit", open: edit).environmentObject(model)
                 }
             }
             .padding(.bottom, 4)

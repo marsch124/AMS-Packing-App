@@ -42,6 +42,8 @@ struct BagsCard: View {
     @State private var lost: LostBagOpen?
     /// "+ Add a bag" is open (0.83).
     @State private var addingBag = false
+    /// The bag whose own page is open from its pen (0.90, "Edit bag when packing").
+    @State private var editing: EditBagOpen?
 
     var body: some View {
         // Every bag that has something in it — weighed or not (the spec pass, 5 Oct
@@ -101,6 +103,7 @@ struct BagsCard: View {
                 // The rest of the line opens and folds it too.
                 .contentShape(Rectangle())
                 .onTapGesture { unfolded.toggle() }
+                .sheet(item: $editing) { open in BagDetail(bagId: open.id).environmentObject(model) }
                 if unfolded {
                     if showKey { key }
                     // The Packing day's photo of all the bags (0.79, spec 07 part 17) — here at every
@@ -134,6 +137,9 @@ struct BagsCard: View {
                                     .accessibilityIdentifier("bag-\(n)-remove")
                                     .accessibilityLabel("Take \(bag.load.container) off this trip")
                                 }
+                                // Its page, from the trip (0.90): the round pen, last on the line.
+                                EditBagPen(bag: bag.load.container, id: "bag-\(n)-edit") { editing = EditBagOpen(id: $0) }
+                                    .environmentObject(model)
                             }
                             // Lost bag? (0.80): everything a baggage desk asks about this bag — at every
                             // step, for the airport. Only for a bag a desk can lose (0.83, `hasLostBagPage`:

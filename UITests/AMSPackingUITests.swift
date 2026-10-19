@@ -2461,6 +2461,155 @@ final class AMSPackingUITests: XCTestCase {
         return app.textViews[id].exists ? app.textViews[id] : app.textFields[id]
     }
 
+    // MARK: - His four bag asks of 19 Oct 2026 (0.90)
+
+    /// "Add Notes under Bag Name" (his screenshot, an arrow at the space under the name): Notes come
+    /// right under the bag's name, above its numbers; what is typed is kept — closed and opened again
+    /// it is there — and it IS the thing's own Notes: Its details shows the same words.
+    func testABagHasNotesRightUnderItsName() {
+        let app = launch("-uiTestingChecks")
+        openFirstBag(app)
+        let notes = anyField(app, "bag-detail-notes")
+        XCTAssertTrue(notes.waitForExistence(timeout: 5), "the bag's page has no Notes")
+        let name = app.textFields["bag-name"], maxKg = app.textFields["bag-detail-maxkg"]
+        XCTAssertTrue(name.frame.maxY <= notes.frame.minY + 1 && notes.frame.maxY <= maxKg.frame.minY + 1,
+                      "Notes are not right under the name: name \(name.frame), notes \(notes.frame), max kg \(maxKg.frame)")
+        type("Strap in the side pocket", into: notes)
+        hideKeyboard(app)
+        shot(app, "bag-notes")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(self.anyField(app, "bag-detail-notes")) == "Strap in the side pocket" },
+                      "the bag's notes were not kept: '\(value(anyField(app, "bag-detail-notes")))'")
+        XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-details"), "no Its details on the bag's page")
+        tap(app, id: "bag-details")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Its details did not open")
+        XCTAssertTrue(waitUntil { self.value(self.anyField(app, "thing-notes")) == "Strap in the side pocket" },
+                      "the bag's notes are not the thing's own Notes: '\(value(anyField(app, "thing-notes")))'")
+    }
+
+    /// "Add the possibility to Edit bag when packing": the round pen at the end of a bag's line on the
+    /// trip — the Bags card, Packing Stations' Bags out, Weigh, Tags and Photos — opens the bag's own
+    /// page; Done comes back to the same place. Only for a bag of his: the carry-on, a name on the lines
+    /// only, has none.
+    func testABagIsEditedFromTheTripWhilePacking() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        openBags(app)
+        XCTAssertTrue(app.buttons["bag-1-edit"].waitForExistence(timeout: 5), "no pen beside the Day pack on the trip's Bags card")
+        XCTAssertFalse(app.buttons["bag-0-edit"].exists, "a pen beside the carry-on, which is no bag of his")
+        shot(app, "bag-edit-trip")
+        tap(app, id: "bag-1-edit")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the pen did not open the bag's page")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Day pack" },
+                      "the pen opened another bag: '\(value(app.textFields["bag-name"]))'")
+        replace("9", in: app.textFields["bag-detail-maxkg"])
+        hideKeyboard(app)
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(find(app, "trip-detail") != nil, "Done did not come back to the trip")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["bag-1"]).contains("/ 9 kg") },
+                      "the max set on the bag's page did not reach the trip: '\(words(app.buttons["bag-1"]))'")
+        // The stations: each bag's line has its pen; the page closes back onto the same station.
+        station(app, "bags")
+        XCTAssertTrue(app.buttons["day-bag-1-edit"].waitForExistence(timeout: 5), "no pen in Bags out")
+        XCTAssertFalse(app.buttons["day-bag-0-edit"].exists, "a pen beside the carry-on in Bags out")
+        tap(app, id: "day-sheet-station-weigh")
+        XCTAssertTrue(appears(app, "day-view-weigh", timeout: 5))
+        XCTAssertTrue(app.buttons["day-weigh-1-edit"].waitForExistence(timeout: 5), "no pen in Weigh")
+        shot(app, "bag-edit-weigh")
+        tap(app, id: "day-weigh-1-edit")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the pen in Weigh did not open the bag's page")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(find(app, "day-view-weigh") != nil, "Done did not come back to Weigh")
+        tap(app, id: "day-sheet-station-tags")
+        XCTAssertTrue(app.buttons["day-tag-1-edit"].waitForExistence(timeout: 5), "no pen in Tags")
+        tap(app, id: "day-sheet-station-photos")
+        XCTAssertTrue(app.buttons["day-photo-1-edit"].waitForExistence(timeout: 5), "no pen in Photos")
+    }
+
+    /// "Add possibility to duplicate a bag/container (use case: if I buy four of the same and just want
+    /// to change colour and name...)": Duplicate this bag on its page makes "<name> 2" with its numbers,
+    /// details, pockets and notes, and opens it at once with the name selected — what he types replaces
+    /// it. On Your bags the copy stands right after its original. Its photos and trips stay behind.
+    func testABagIsDuplicatedAndOpensReadyToBeNamed() {
+        let app = launch("-uiTestingBags")
+        openFirstBag(app)                       // the Wheeled duffel, first in his order
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        XCTAssertTrue(scrollWithin(app, "bag-detail", until: "bag-duplicate"), "no Duplicate on the bag's page")
+        bringIntoView(app, app.buttons["bag-duplicate"])
+        shot(app, "bag-duplicate-button")
+        tap(app, id: "bag-duplicate")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel 2" },
+                      "Duplicate did not open the copy: '\(value(app.textFields["bag-name"]))'")
+        usleep(900_000)                         // the name is selected a moment after the page turns
+        shot(app, "bag-duplicate-copy")
+        app.typeText("Blue duffel")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Blue duffel" },
+                      "the copy's name was not selected for typing: '\(value(app.textFields["bag-name"]))'")
+        // Everything that describes it came along.
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "23", "the max kg was not copied")
+        XCTAssertEqual(value(app.textFields["bag-detail-litres"]), "90", "the litres were not copied")
+        XCTAssertEqual(value(anyField(app, "bag-detail-notes")), "Wheels squeak a little", "the notes were not copied")
+        XCTAssertEqual(value(app.textFields["bag-detail-brand"]), "Exempel", "the brand was not copied")
+        XCTAssertEqual(words(app.staticTexts["bag-pockets-count"]), "1", "the pockets were not copied")
+        XCTAssertEqual(words(app.staticTexts["bag-trips-count"]), "0", "the copy took the original's trips")
+        // Done takes the typed name; the copy stands right after the original.
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Done did not close the copy's page")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["bag-1-name"]).hasPrefix("Blue duffel") },
+                      "the copy is not right after its original: '\(words(app.buttons["bag-1-name"]))'")
+        XCTAssertTrue(words(app.buttons["bag-0-name"]).hasPrefix("Wheeled duffel"), "the original moved")
+        XCTAssertEqual(value(app.textFields["bag-1-maxkg"]), "23")
+        XCTAssertEqual(words(app.staticTexts["yourbags-count"]), "5")
+    }
+
+    /// Your bags' four names in the order the list shows them, read from rows 0…3.
+    private func bagOrder(_ app: XCUIApplication, _ names: [String]) -> [String] {
+        (0..<names.count).map { n in
+            let said = words(app.buttons["bag-\(n)-name"])
+            return names.sorted { $0.count > $1.count }.first { said.hasPrefix($0) } ?? said
+        }
+    }
+
+    /// "Add the ability to sort bags in the Care page / Bags. Alphabetical, Own order, Last used, Last
+    /// added, last edited etc.": the Sort drop-down on Your bags — Own order, A–Z, Last used (the newest
+    /// trip), Last added, Last edited — remembered on the device.
+    func testYourBagsSortByNameUseAddedAndEditedAndRememberIt() {
+        let app = launch("-uiTestingBags")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        let four = ["Wheeled duffel", "Sports bag", "Backpack", "Camera bag"]
+        XCTAssertEqual(chosen(app, "yourbags-sort"), "Own order")
+        XCTAssertTrue(waitUntil { self.bagOrder(app, four) == four }, "Own order is not his: \(bagOrder(app, four))")
+        func sorted(_ n: Int, _ want: [String], _ what: String) {
+            choose(app, "yourbags-sort", n)
+            XCTAssertTrue(waitUntil { self.bagOrder(app, four) == want }, "\(what): \(bagOrder(app, four))")
+        }
+        sorted(1, ["Backpack", "Camera bag", "Sports bag", "Wheeled duffel"], "A–Z is not by name")
+        sorted(2, ["Camera bag", "Sports bag", "Wheeled duffel", "Backpack"], "Last used is not by the newest trip")
+        sorted(3, ["Backpack", "Wheeled duffel", "Camera bag", "Sports bag"], "Last added is not by when each was added")
+        sorted(4, ["Backpack", "Wheeled duffel", "Camera bag", "Sports bag"], "Last edited, nothing edited, is not by when added")
+        shot(app, "bag-sort")
+        // The Sports bag changed (a max weight): the row stays under his finger while he types…
+        type("12", into: app.textFields["bag-3-maxkg"])
+        hideKeyboard(app)
+        XCTAssertTrue(bagOrder(app, four).last == "Sports bag", "the row jumped while he typed: \(bagOrder(app, four))")
+        // …and closed and opened again — the sort remembered — it is the last edited.
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "yourbags-sort") == "Last edited" },
+                      "the sort was not remembered: '\(chosen(app, "yourbags-sort"))'")
+        XCTAssertTrue(waitUntil { self.bagOrder(app, four).first == "Sports bag" },
+                      "the bag just changed is not first under Last edited: \(bagOrder(app, four))")
+    }
+
     /// A bag says whether it goes in the cabin (his idea 4): a carry-on by its name until
     /// he says otherwise, and the plane trip's check follows his word.
     func testABagSaysWhetherItGoesInTheCabin() {

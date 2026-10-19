@@ -18,9 +18,35 @@ struct BagsScreen: View {
     /// The bag whose own page is open.
     @State private var openBag: OpenBag?
     struct OpenBag: Identifiable { let id: String }
+    /// How the bags are sorted (0.90, his ask of 19 Oct 2026) — remembered on this device.
+    @AppStorage(BagsScreen.sortKey) private var sort = BagSort.own.rawValue
+    static let sortKey = "ams.bags.sort"
+    /// The order the rows stand in (bag ids), sorted when the list opens, the sort is chosen, a bag
+    /// comes or goes, or a bag's page closes — never while he types a number into a row: under Last
+    /// edited the row would jump away from his finger at the first key.
+    @State private var order: [String] = []
+
+    private var sorting: BagSort { BagSort(rawValue: sort) ?? .own }
+
+    /// His bags as the rows stand: in `order`, then any not sorted yet (one arriving from the other
+    /// device), in the sort's own place for them.
+    private var shown: [Item] {
+        let all = model.library.sortedBags(sorting)
+        let place = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { a, _ in a })
+        return all.stableSorted(compare: { a, b in
+            switch (place[a.id], place[b.id]) {
+            case let (x?, y?): return x < y ? -1 : (x > y ? 1 : 0)
+            case (_?, nil): return -1
+            case (nil, _?): return 1
+            default: return 0
+            }
+        })
+    }
+
+    private func resort() { order = model.library.sortedBags(sorting).map(\.id) }
 
     var body: some View {
-        let bags = model.library.bags()
+        let bags = shown
         VStack(spacing: 0) {
             HStack {
                 Text("Your bags").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
@@ -42,7 +68,14 @@ struct BagsScreen: View {
                 Text("Give a bag its max weight and every trip shows how full it is.")
                     .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 10)
+                    .padding(.bottom, 8)
+
+                // Sort (0.90): Own order (as arranged in Usually packed in's list), A–Z, Last used
+                // (newest trip), Last added, Last edited — BagSorting.swift. Ties keep his order.
+                DropDown(title: "Sort", heading: .beside, options: BagSort.allCases.map { ($0.rawValue, $0.label) },
+                         selected: BagSort(rawValue: sort)?.rawValue ?? BagSort.own.rawValue,
+                         id: "yourbags-sort", tint: AppSection.care.color) { sort = $0 }
+                    .padding(.bottom, 8)
 
                 HStack(spacing: 6) {
                     Spacer()
@@ -91,7 +124,10 @@ struct BagsScreen: View {
         .background(Theme.bg.ignoresSafeArea())
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("yourbags-detail")
-        .sheet(item: $openBag) { b in BagDetail(bagId: b.id).environmentObject(model) }
+        .sheet(item: $openBag, onDismiss: resort) { b in BagDetail(bagId: b.id).environmentObject(model) }
+        .onAppear(perform: resort)
+        .onChange(of: sort) { _, _ in resort() }
+        .onChange(of: model.library.bags().map(\.id).sorted()) { _, _ in resort() }
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 560)
         #endif

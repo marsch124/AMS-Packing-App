@@ -2359,6 +2359,16 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   Above it, while a bag added has nothing in it, Bags out's hint (Footnote muted, id `bags-addbag-hint`): "To fill <the
   first such bag>, pick it as Usually packed in on its things' pages — sorted by Into, the list shows what is in each
   bag."
+- **The bag's pen** (0.90 — his words, 19 Oct 2026: "Add the possibility to Edit bag when packing"): at the right end
+  of each bag's row, after its ✕ when it has one — the trip's own round pen (`EditBagPen`: `RoundIconLabel` in the
+  trips' green with the drawn `PenMark`, `Metrics.tap` across, as beside the trip's name), id `bag-<n>-edit`, label
+  "Edit the <bag>". Only for a bag of his (`Library.bagId(named:)` — one with a page): never "Not in a bag", never a
+  name on the lines that is no bag of his (the sample's carry-on). A tap opens the bag's own page (`BagDetail`, spec 05)
+  over the trip; Done or a swipe comes back to the trip as it was — the card open, the trip where it was scrolled. The
+  CARD owns the sheet (on its header line: a renamed bag is another row, and a sheet hung on the row would close the
+  moment the name was taken; two sheets on one view is the Search lesson). A change made there shows at once (a max →
+  the bar; a rename → the row's name, through `renameBagEverywhere`). The same pen in every Packing Stations bag line
+  (spec 07 part 17, "0.90"). UI `testABagIsEditedFromTheTripWhilePacking`.
 
 ### Behaviour
 - Bags shown: `Library.weighedBags(tripId:)` = `bagLoads(lines, qtyNights, bagLimits())` with each bag's
