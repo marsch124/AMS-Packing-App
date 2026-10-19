@@ -347,6 +347,10 @@ final class ThingSpotlight: ObservableObject {
               let id = SpotlightThing.thingId(identifier) else { return false }
         let model = LibraryModel.shared
         guard model.library.items.contains(where: { $0.id == id }) else { return false }
+        // One tap, one page: should the same tap reach the app twice (the Mac's delegate and SwiftUI
+        // both), the second would close the page and open it again.
+        if let last = lastOpened, last.id == id, Date().timeIntervalSince(last.at) < 2 { return true }
+        lastOpened = (id, Date())
         #if os(macOS)
         // With no window of the app open, one opens for the page (as the Dock menu does).
         NSApp.activate()
@@ -355,6 +359,9 @@ final class ThingSpotlight: ObservableObject {
         model.thingToOpen = id
         return true
     }
+
+    /// The last thing a tapped result opened, and when.
+    private static var lastOpened: (id: String, at: Date)?
 
     // MARK: The tests
 

@@ -82,6 +82,9 @@ targets:
         NSRemindersUsageDescription: Your To buy list goes into Reminders, to take to the shop; what you tick there is ticked here.
         # A place's printed square code (0.69): the iPhone's Camera reads
         # amspacking://place/<name> and offers to open the app on that place.
+        # A thing's result tapped in Spotlight (0.92) comes back as this activity
+        # (CSSearchableItemActionType) — Store/Spotlight.swift.
+        NSUserActivityTypes: [com.apple.corespotlightitem]
         CFBundleURLTypes:
           - CFBundleURLName: com.schabbauer.AMSPacking.place
             CFBundleTypeRole: Viewer

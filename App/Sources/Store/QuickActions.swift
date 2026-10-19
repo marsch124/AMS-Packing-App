@@ -193,5 +193,13 @@ final class PackingMacDelegate: NSObject, NSApplicationDelegate {
         guard let id = item.representedObject as? String else { return }
         GrabQuickActions.openFromDock(id)
     }
+
+    /// A thing's result tapped in the Mac's Spotlight (0.92): the Mac hands it to the app's delegate —
+    /// SwiftUI's `onContinueUserActivity` did not receive it there (GitHub's Mac, 19 Oct 2026) — so it
+    /// is taken here. Anything else is not ours.
+    func application(_ application: NSApplication, continue userActivity: NSUserActivity,
+                     restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void) -> Bool {
+        ThingSpotlight.open(userActivity)
+    }
 }
 #endif
