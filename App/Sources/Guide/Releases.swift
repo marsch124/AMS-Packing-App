@@ -18,6 +18,14 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.92", date: "19 Oct 2026", title: "Cancel everywhere, a sync dot and 41 new icons",
+                new: ["A small dot under This Device on Home shows how iCloud sync is going \u{2014} green in sync, orange on its way, red stuck. Tap it for one line and Details.",
+                      "Duplicate this thing, on a thing\u{2019}s page: the copy goes on the same templates and opens as \u{201C}\u{2026} 2\u{201D}, ready for its new name.",
+                      "Find your things in Spotlight on the iPhone and the Mac: type a name and see where it is; a tap opens it. Settings can switch it off.",
+                      "41 new icons, among them sauna, ice skating, sled, cottage, midsummer, rowing, paddleboard and pram \u{2014} found in English, Swedish and German."],
+                changed: ["Every page where you change something has Cancel at the top left \u{2014} a bag\u{2019}s page, a template\u{2019}s page, your lists, a grab list\u{2019}s Edit and the lost-luggage details too. On the Mac, Escape cancels and \u{2318}S saves.",
+                          "Swipe a changed page down on the iPhone and it asks \u{201C}Discard changes?\u{201D} instead of keeping or losing them silently.",
+                          "Create new trip\u{2019}s heading is a little smaller and dark grey."]),
         Release(version: "0.91", date: "19 Oct 2026", title: "Home in frames, more colours, bags by hand",
                 new: ["Home: Grab and go and its lists in one frame; This Device right under the trip; Create new trip inside its card; Full trip and Quick as wide as the name.",
                       "A template\u{2019}s colour shows on its pill on Create new trip and in Trip settings.",

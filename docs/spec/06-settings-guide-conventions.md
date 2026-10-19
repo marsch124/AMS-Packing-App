@@ -781,11 +781,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (91 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (92 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.92 | 19 Oct 2026 | Cancel everywhere, a sync dot and 41 new icons | N4 C3 | sync dot under This Device (SyncLight, SyncCheck.light, running vs left-behind vs hung); Duplicate a thing (ThingDuplicate.swift, copyRecord/copyRow); Spotlight (SpotlightThings.swift, Spotlight.swift, per-device switch); 132 icons (41 new + keywords); Cancel everywhere (PageDraft/DraftedPage, Library.applyingPage, swipe asks Discard changes?, §20a audit); bag page Cancel; Create new trip ink grey |
 | 0.91 | 19 Oct 2026 | Home in frames, more colours, bags by hand | N6 C3 | Home frames (homeCard, home-grab-frame, home-create-card, This Device under the trip, Full/Quick full width); pill colours (Library.pillColour, TemplateTone); 16 colours (plum, navy, olive, sand; pickerRows 2); icon search (TemplateIconKeywords.swift); Activity areas pill at the foot; Your bags own order by hand, arrow after the name; bag page typing lag fixed; photos from a file (Mac drop, Files) |
 | 0.90 | 19 Oct 2026 | Search, colours, bags and photos | N7 | How it works search (GuideSearch.swift, `guide-search`); template icon colour (TemplateColour.swift, TemplateColourSwatches); New template from a thing's page (NewTemplateDoor); thing photos (ThingPhotos.swift, THING_PHOTOS_MAX 2); bag Notes, Duplicate (BagDuplicate.swift), edit pen while packing (EditBagPen), Care → Bags sort (BagSorting.swift, bagEditedAt) |
 | 0.89 | 19 Oct 2026 | Your own activity areas | N2 | his own areas (ActivityAreas.swift, meta `activityAreas`, own area in template extra["area"], built-ins keep `group`; AreasScreen; ChoiceEdits kind "areas"; WET never removable); template page Activity area drop-down; fast lane test phones iOS 26.5 by default |
