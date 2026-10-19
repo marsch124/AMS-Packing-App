@@ -117,3 +117,10 @@ its own (a trip line's mark) it is made readable as text on each card (`readable
 The first six are the workout pills' fills and words above. No teal. Pinned by
 `TemplateColourTests.testThePaletteReadsDayAndNightAndHasNoTeal`. Spec 04 §3a.
 
+**On the template pills (0.91)** — his "Yes, show the template colours on the Create new trip pills too": on Create new
+trip and in Trip settings a template he gave a colour wears it on its pill as the workout pills wear theirs — picked:
+the fill with the "Icon on it" colour as its words; not picked: a 1.8 pt line in the fill, ink words. His colour wins
+over a workout's; Automatic templates keep the violet. A colour from the web app outside this table gets white or
+`#16232a` words, whichever reads better on it (`Library.pillColour`). Pinned by
+`TemplateColourTests.testAPillWearsHisColourWithWordsThatRead`.
+

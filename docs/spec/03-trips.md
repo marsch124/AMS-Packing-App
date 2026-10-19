@@ -183,7 +183,9 @@ could be outdoors Run and indoors Swim."). **0.76** (his decisions of 13 Oct 202
 transport template — "the car is just go and drive"; he travels mostly by car, every weekend by RV, by plane
 a couple of times a year): Transport's three pills Car / Plane / RV became **Travelling by** with two, Plane
 and RV, both off for an ordinary trip; Season follows the trip's first day until he picks one (he lives in
-Sweden: winter is November to March); Season, Food and Laundry fold away under **More choices**.
+Sweden: winter is November to March); Season, Food and Laundry fold away under **More choices**. **0.91** (his
+"Yes, show the template colours on the Create new trip pills too — put it in 0.91", 19 Oct 2026): a template he gave a
+colour (0.90, spec 04 §3a) wears it on its pill, here and in Trip settings.
 
 **How it is reached and left.** Home tab, under the grab lists and the countdown card. It is not a
 sheet; *Create trip* makes the trip and opens it at once as a sheet (`opened = made.id`).
@@ -237,17 +239,26 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
    Pills: one per template, label = template name; ids `trip-activity-<n>` where n counts across ALL
    groups in the order offered (so "trip-activity-0" names one pill). Order inside a group:
    `orderActivities` — for WET the names Swim, Bike, Run, Strength, Mobility, Breath work first (in
-   that order, matched by normName), everything else after, A–Z. WET pills carry `WorkoutTone`
-   colours by normName with spaces removed: swim #0a84ff/white text, bike #ffd60a/#3d3000,
+   that order, matched by normName), everything else after, A–Z. **A pill's colour** (`Pills.tones`, by the
+   template's id — `TemplateTone.byId(lists, workouts:)`, the same on Trip settings): (1, 0.91) the colour he chose
+   for the template (spec 04 §3a), `Library.pillColour` — its fill and its words (the palette's ink: dark on Bike's
+   yellow …; on a web-app colour white or `#16232a`, whichever reads); else (2) in the WET area the `WorkoutTone`
+   colour by normName with spaces removed: swim #0a84ff/white text, bike #ffd60a/#3d3000,
    run #30d158/#0b3a17, strength #ff8c1a/#4a2300, breathwork #bf9cff/#2e1a5c,
-   mobility #ff6fa8/#5a0f2e; others (and GA/OE) use violet. Multi-select toggles.
+   mobility #ff6fa8/#5a0f2e; else (3) none — violet when picked, as every Automatic template (GA, OE, his own areas,
+   Other Templates) was. His colour wins over a workout's (it is the colour that template's cover already wears); the
+   palette's first six ARE the workout colours, so Blue on Swim looks as Swim always did. A coloured pill: picked =
+   filled with its fill, its words; not picked = `Theme.bg`, ink words, a 1.8 pt line in its fill. Multi-select
+   toggles.
 6. **Context, per workout** (`WorkoutContexts`, 0.67; only when at least one WET template is ticked),
    placed DIRECTLY under the WET pill block — so above the OE block when there is one, not after all
    the groups — set in 18 pt with a 3 pt `Theme.line` bar down its left side (10 pt gap): question
    heading "Context" (Subheadline semibold ink), id `trip-context-title`; then ONE LINE PER TICKED
-   WORKOUT, in the order offered: the workout's name (Subheadline semibold, in its `WorkoutTone`
-   colour made readable — darkened on a light screen, lightened on a dark one, `readableHex` — or ink
-   for a workout with no colour; up to 2 lines, scales to 0.8; a column `Metrics.contextName` wide,
+   WORKOUT, in the order offered: the workout's name (Subheadline semibold, in its PILL's colour — his own
+   for that template since 0.91, else its `WorkoutTone` (`WorkoutContexts.Workout.fill`, from
+   `TemplateTone.of(list, workout: true)`) — made readable — darkened on a light screen, lightened on a dark
+   one, `readableHex` — or ink for a workout with no colour; on the iPhone in a DEBUG build its accessibility value
+   is that readable hex, for the tests; up to 2 lines, scales to 0.8; a column `Metrics.contextName` wide,
    72 / Mac 64), id `trip-context-<n>-name`, then its own pills Indoor, Outdoor, Race (Subheadline,
    semibold when picked; padding 10 sideways, min height `Metrics.chip`; picked = slate
    `AppSection.settings.color` #64748b fill and white words; not picked = `Theme.bg`, 1 pt line), ids
@@ -339,7 +350,9 @@ Above the card: heading **"Create new trip"** (Title 3 bold, ink — 22 heavy be
 
 Pills (`Pills` view, shared with Trip settings): 15 pt, bold when picked / medium when not; picked =
 filled with the tint (or tone) and white (or tone ink) words; not picked = `Theme.bg` fill, ink words,
-1 pt `Theme.line` stroke (a toned pill: 1.8 pt stroke in its tone). Min height 36, horizontal padding
+1 pt `Theme.line` stroke (a toned pill: 1.8 pt stroke in its tone — the template pills' tones, item 5). In a
+DEBUG build a toned pill without a drawing says `"<fill>/<ink>"` as its accessibility value (0.91, for the tests;
+the release build says nothing there). Min height 36, horizontal padding
 12, they wrap (`FlowRow`, spacing 6). A picked pill carries the `.isSelected` trait. Identifier =
 `<id>-<position>`, never words.
 
@@ -530,6 +543,11 @@ with the old rule planted, `templateMissing` returning "Pick at least one templa
 trip, no key when empty, junk read as nothing; a shared file and link carry it) and
 `WorkoutContextsLibraryTests` (made, changed in Trip settings with 1 added / 1 removed, kept by the sync
 records and a backup, copied by Start again).
+**0.91:** UI `testATemplatesColourIsWornByItsPillOnCreateNewTrip` (Hiking Automatic → no colour, Swim its workout
+blue; Hiking given Yellow and Swim Red → `trip-activity-0` `#ffd60a/#3d3000` unticked and ticked, `trip-activity-1`
+`#dc3d43/#ffffff`, Swim's Context name follows into red on the iPhone; Trip settings' `tripset-activity-0/1` the same —
+red with `TemplateTone.of` skipping his colour: "Hiking's pill does not wear its yellow: ''"; details spec 04 §3a
+Tests) and model `TemplateColourTests.testAPillWearsHisColourWithWordsThatRead`.
 **Not covered:** that Travelling by and Food survive a create; that a workout's picks are dropped when it
 is ticked off before Create; the trip-wide `contexts` written as the union; the red name border.
 
@@ -1716,7 +1734,8 @@ closes it (`interactiveDismissDisabled`, 0.62) and Cancel or Save must be presse
   behind the sheet takes a new first-day time at once: its step and On site door follow it (The loop, "Turning
   while the trip is open").
 - The template pill groups (ids `tripset-activity-<n>`, same numbering as Create new trip, "OTHER
-  TEMPLATES" last; heading id `tripset-activity-title`), Context per workout (`WorkoutContexts`, 0.67:
+  TEMPLATES" last; heading id `tripset-activity-title`; each pill in his colour for its template, else its workout
+  colour, else violet when ticked — Create new trip item 5, 0.91), Context per workout (`WorkoutContexts`, 0.67:
   `tripset-context-title`, a line per ticked workout `tripset-context-<n>-name` with its pills
   `tripset-context-<n>-0…2`, n = its `tripset-activity-<n>`), **Travelling by** (0.76, `TravellingBy` as on
   Create new trip, blue like the sheet's other pills: heading `tripset-transport-title`, Plane `tripset-transport-1`, RV

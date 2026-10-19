@@ -111,7 +111,8 @@ struct TripSettingsScreen: View {
                               options: choice.lists.map { ($0.id, $0.name) },
                               selected: activities, id: "tripset-activity", tint: AppSection.templates.color,
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
-                              tones: choice.group.id == "WET" ? WorkoutTone.of : nil) { id in
+                              // His colour for a template (0.91), else a workout's own — as on Create new trip.
+                              tones: TemplateTone.byId(choice.lists, workouts: choice.group.id == "WET")) { id in
                             if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
                             if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
                         }

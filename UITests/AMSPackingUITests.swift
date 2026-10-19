@@ -6435,6 +6435,88 @@ final class AMSPackingUITests: XCTestCase {
                       "Automatic did not give back \(automatic): '\(card.value as? String ?? "")'")
     }
 
+    /// 0.91 (his "Yes, show the template colours on the Create new trip pills too", 19 Oct
+    /// 2026): a template's pill on Create new trip and in Trip settings wears the colour he
+    /// chose for it; an Automatic one keeps the look it had; a workout keeps its own colour
+    /// until he gives it one, and then its Context name follows. A pill says its colour as
+    /// its DEBUG-only value, "fill/words" (none in the release build).
+    func testATemplatesColourIsWornByItsPillOnCreateNewTrip() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        // Hiking 0 (Automatic), Swim 1 (a workout).
+        let hiking = app.buttons["trip-activity-0"], swim = app.buttons["trip-activity-1"]
+        XCTAssertTrue(scrollUntil(app, "trip-activity-1"), "no template pills on Create new trip")
+        XCTAssertEqual(hiking.value as? String ?? "", "", "Automatic Hiking's pill has a colour of its own")
+        XCTAssertEqual(swim.value as? String ?? "", "#0a84ff/#ffffff", "Swim's pill is not its workout blue")
+        #if os(iOS)
+        select(app, swim)
+        let swimName = app.staticTexts["trip-context-1-name"]
+        XCTAssertTrue(swimName.waitForExistence(timeout: 5), "Swim has no Context line")
+        XCTAssertTrue(waitUntil { self.reddish(swimName.value as? String) == false },
+                      "Swim's Context name is not written in its blue: '\(swimName.value as? String ?? "")'")
+        #endif
+
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        for (row, key) in [(1, "yellow"), (2, "red")] {              // Hiking, Swim
+            tap(app, id: "template-row-\(row)")
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+            tap(app, id: "template-cover")
+            XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the picker")
+            tap(app, id: "template-colour-\(key)")
+            XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "a colour did not close the picker")
+            tap(app, id: "template-detail-done")
+            XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        }
+
+        tab(app, "home")
+        XCTAssertTrue(appears(app, "screen-home"))
+        XCTAssertTrue(scrollUntil(app, "trip-activity-1"))
+        XCTAssertTrue(waitUntil { (hiking.value as? String) == "#ffd60a/#3d3000" },
+                      "Hiking's pill does not wear its yellow: '\(hiking.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil { (swim.value as? String) == "#dc3d43/#ffffff" },
+                      "Swim's pill does not wear his red over the workout blue: '\(swim.value as? String ?? "")'")
+        select(app, hiking)
+        XCTAssertEqual(hiking.value as? String ?? "", "#ffd60a/#3d3000", "ticked, Hiking's pill lost its yellow")
+        #if os(iOS)
+        if !isOn(swim) { select(app, swim) }
+        XCTAssertTrue(app.staticTexts["trip-context-1-name"].waitForExistence(timeout: 5))
+        XCTAssertTrue(waitUntil { self.reddish(app.staticTexts["trip-context-1-name"].value as? String) == true },
+                      "Swim's Context name does not follow its red: '\(app.staticTexts["trip-context-1-name"].value as? String ?? "")'")
+        #endif
+        bringIntoView(app, hiking)
+        sleep(1)
+        shot(app, "pills091-create")
+
+        // Trip settings: the sample trip is of Hiking — ticked, in its yellow.
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-settings")
+        XCTAssertTrue(appears(app, "tripset-screen", timeout: 5))
+        let setHiking = app.buttons["tripset-activity-0"], setSwim = app.buttons["tripset-activity-1"]
+        XCTAssertTrue(scrollWithin(app, "tripset-screen", until: "tripset-activity-1"))
+        XCTAssertTrue(waitUntil { self.isOn(setHiking) }, "the trip's Hiking is not ticked in Trip settings")
+        XCTAssertEqual(setHiking.value as? String ?? "", "#ffd60a/#3d3000", "Trip settings' Hiking pill does not wear its yellow")
+        XCTAssertEqual(setSwim.value as? String ?? "", "#dc3d43/#ffffff", "Trip settings' Swim pill does not wear his red")
+        bringIntoView(app, setHiking)
+        sleep(1)
+        shot(app, "pills091-tripset")
+        tap(app, id: "tripset-cancel")
+        XCTAssertTrue(disappears(app, "tripset-screen", timeout: 5))
+    }
+
+    /// A colour as "#rrggbb" is mostly red (more red than blue and green), false when not,
+    /// nil when it is no colour.
+    private func reddish(_ hex: String?) -> Bool? {
+        guard let hex, hex.hasPrefix("#"), hex.count == 7 else { return nil }
+        let v = Array(hex.dropFirst())
+        guard let r = Int(String(v[0..<2]), radix: 16), let g = Int(String(v[2..<4]), radix: 16),
+              let b = Int(String(v[4..<6]), radix: 16) else { return nil }
+        return r > b && r > g
+    }
+
     /// 0.74 (his "Add approximately 40 new icons, specifically one that is related to
     /// 'On the beach'", 12 Oct 2026): the picker holds all 90, under their six headings;
     /// a new one — the lounger under its parasol — is chosen, kept, and still there after

@@ -18,7 +18,7 @@ menu lead here. There is no way "out" other than another tab.
 
 Sources read for this chapter: `App/Sources/Screens/SettingsScreen.swift`, `ListsScreen.swift`, `Countdown.swift`
 (RemindersCard), `SyncCard.swift`, `Share.swift` (OpenSharedDoor), `RestoreSheet.swift`, `SmallDelete.swift`,
-`Headings.swift`, `HomeScreen.swift` (Pills, FlowRow, PillTone, WorkoutTone), `Loop.swift` (the guide's loop card),
+`Headings.swift`, `HomeScreen.swift` (Pills, FlowRow, PillTone, TemplateTone, WorkoutTone), `Loop.swift` (the guide's loop card),
 `App/Sources/Guide/*.swift`, `App/Sources/{AMSPackingApp,RootView,Theme,Sections,Buttons,SVGPath}.swift`,
 `App/Sources/Store/{LibraryModel,SampleLibrary,RescueCopies,Reminders,Today}.swift`,
 `Core/Sources/PackingLibrary/{SettingsLists,Health,Backup,Contrast,Countdown,SyncCheckIn,TripEdits}.swift`,
@@ -885,8 +885,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    the RV template by its name). (8) (0.76) More choices folds Season, Food and Laundry away with one line of what is
    picked, a tap opens it; (0.78) Summer and Winter carry the sun and the snowflake, as Plane and RV carry theirs;
    Food is Self-sufficient, Eating out or Mix; Season follows the dates (November to March Winter, otherwise Summer) until picked by
-   hand; the device remembers open or closed. (9) Pick templates, Travelling by and More choices; workout colours (Swim blue, Bike yellow,
-   Run green, Strength orange, Breath work lavender, Mobility pink); each picked workout its own Context line
+   hand; the device remembers open or closed. (9) Pick templates, Travelling by and More choices; (0.91) a template given a colour shows it on its pill — filled once
+   picked, outlined until then, the others violet once picked; workout colours (Swim blue, Bike yellow,
+   Run green, Strength orange, Breath work lavender, Mobility pink) until one is given a colour of its own; each picked workout its own Context line
    (Indoor, Outdoor, Race) set in under them — Run outdoors and Swim indoors on one trip (0.67); templates without an activity area come last, under Other Templates (0.62; his casing 0.78). (10) Laundry: per-night things count only the nights before a wash — 4 unless 3, 5, 7, 10 or 14; shown as
    ×4 · laundry with a washtub. (11) This Device: how many trips, things and templates.
 1. **Packing a trip** (Trips mark): tap to tick / untick; the round button ticks a section; (0.82, spec 07 part 20)
@@ -1493,7 +1494,8 @@ refused lines, restore warnings). Each section's colour is "the screen's colour"
 
 **Other fixed colours** (colours.md): grab-list tones (GrabScreen) blue `#3a86d4`, yellow `#c99700`, green
 `#2e9e6b`, red `#cf5b52`, purple `#8a63c9`, teal `#17969b`, other `#64748b` — "mid-tones on purpose, so they read on
-the light card and the dark one alike". Workout pills (`WorkoutTone.of(name)`, matched on `normName` with all white
+the light card and the dark one alike". Template pills he gave a colour (0.91): his colour and its ink
+(`Library.pillColour`, spec 04 §3a), ahead of the workout colour. Workout pills (`WorkoutTone.of(name)`, matched on `normName` with all white
 space removed): swim `#0a84ff`/white, bike `#ffd60a`/`#3d3000`, run `#30d158`/`#0b3a17`, strength `#ff8c1a`/`#4a2300`,
 breath work `#bf9cff`/`#2e1a5c`, mobility `#ff6fa8`/`#5a0f2e` (fill/words; light fills carry dark words — "white is
 unreadable on yellow"). He does not like teal: "Do not use teal for anything new." (docs/colours.md was brought up to date in 0.62: the
@@ -1811,12 +1813,16 @@ macOS 26) — and how far a header must step in so its title starts just after t
 a heading (band / title / question, id `<id>-title`) over pills in a `FlowRow(spacing: 6)`. Each pill: Subheadline,
 semibold when picked, regular when not; padding 12 sideways, min height `Metrics.chip`; picked = filled with its tone
 or the tint, white (or the tone's dark) words; not picked = `Theme.bg` fill, ink words, outlined in `line` (1 pt) or,
-for a toned pill, in its tone (1.8 pt). Id `<id>-<startIndex + position>` — "its position — never its words";
+for a toned pill, in its tone (1.8 pt). `tones` is asked by the option's **id** (by its words until 0.91): the
+template pills pass `TemplateTone.byId(lists, workouts:)` — his colour for the template (`Library.pillColour`), else a
+workout's `WorkoutTone`, else none. `PillTone` holds hexes (`fillHex`, `inkHex`; `fill`/`ink` the colours); in a DEBUG
+build a toned pill with no drawing says `"<fillHex>/<inkHex>"` as its accessibility value. Id `<id>-<startIndex + position>` — "its position — never its words";
 picked pills carry the `.isSelected` trait (what tests read). `cursor: Int?` (0.68, nil everywhere but a thing's On
 these templates on the Mac): the pill the keys' arrows are on, ringed 2 pt in the tint just outside it (`focusRing`).
 `WorkoutContexts` (0.67; `ContextPills` until then)
 puts Context under the workouts, indented 18 with a 3-pt grey line down its side: a `.question` heading "Context",
-then one line per ticked workout — its name in its colour made readable (`WorkoutTone.words`, `readableHex`), in a
+then one line per ticked workout — its name in its pill's colour made readable (`Workout.fill`, `readableHex`; 0.91:
+his colour for it when he chose one — `WorkoutTone.words` is gone), in a
 `Metrics.contextName` column (72 / Mac 64) — and its own Indoor, Outdoor, Race pills in the Settings slate
 (padding 10). **`TripKindChoice`** (0.67): two answers in one capsule track — Full trip | Quick — the picked one
 filled with the tint, `.isSelected`; a muted Footnote line under it.

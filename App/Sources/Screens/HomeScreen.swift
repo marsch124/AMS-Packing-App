@@ -160,7 +160,8 @@ struct HomeScreen: View {
                               options: choice.lists.map { ($0.id, $0.name) },
                               selected: activities, id: "trip-activity", tint: AppSection.templates.color,
                               startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
-                              tones: choice.group.id == "WET" ? WorkoutTone.of : nil) { id in
+                              // His colour for a template (0.91), else a workout's own colour.
+                              tones: TemplateTone.byId(choice.lists, workouts: choice.group.id == "WET")) { id in
                             if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
                             if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
                         }
@@ -530,8 +531,9 @@ struct Pills: View {
     /// smaller than the heading". Until then most pill rows had a small grey heading
     /// (14) over bigger buttons (15).
     var heading: PillsHeading = .title
-    /// A colour of its own for some pills, by their words — the workouts (his
-    /// colours, 2026-09-28). Picked: filled in it; not picked: outlined in it.
+    /// A colour of its own for some pills, by the option's id — a template's pill on Create
+    /// new trip and Trip settings: the colour he chose for it (0.91), else a workout's own (his
+    /// colours, 2026-09-28; `TemplateTone`). Picked: filled in it; not picked: outlined in it.
     var tones: ((String) -> PillTone?)? = nil
     /// The pill the Mac's arrows are on (a thing's On these templates, 0.68): ringed in
     /// the pills' colour, just outside it. nil = none (everywhere else).
@@ -561,7 +563,7 @@ struct Pills: View {
             FlowRow(spacing: 6) {
                 ForEach(Array(options.enumerated()), id: \.element.id) { n, o in
                     let on = selected.contains(o.id)
-                    let tone = tones?(o.label)
+                    let tone = tones?(o.id)
                     let lent = on && borrowed
                     let mark = icons?(o.id).flatMap { key in TemplateIcons.icon(key).map { (key: key, path: $0.path) } }
                     Button { choose(o.id) } label: {
@@ -583,7 +585,14 @@ struct Pills: View {
                     .buttonStyle(.plain).focusEffectDisabled()
                     .focusRing(cursor == n, tint: tint, radius: 11, gap: 2)
                     .accessibilityIdentifier("\(id)-\(startIndex + n)")
+                    #if DEBUG
+                    // The tests' only way to see the colour a pill is drawn in (0.91): its fill and
+                    // words, "#ffd60a/#3d3000" — read from the very tone it is drawn with. None in
+                    // the release build, where a pill says only its drawing's key, as before.
+                    .accessibilityValue(mark?.key ?? tone.map { "\($0.fillHex)/\($0.inkHex)" } ?? "")
+                    #else
                     .accessibilityValue(mark?.key ?? "")
+                    #endif
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
@@ -687,10 +696,32 @@ struct TripKindChoice: View {
     }
 }
 
-/// A pill's own colour: its fill, and the words on it.
+/// A pill's own colour: its fill, and the words on it (hex, "#rrggbb").
 struct PillTone {
-    let fill: Color
-    let ink: Color
+    let fillHex: String
+    let inkHex: String
+    var fill: Color { Color(hexString: fillHex) }
+    var ink: Color { Color(hexString: inkHex) }
+}
+
+/// A template pill's own colour on Create new trip and Trip settings (0.91 — his "Yes, show the
+/// template colours on the Create new trip pills too", 19 Oct 2026): the colour he chose for the
+/// template, with words that read on it (`Library.pillColour` — the cover's own fill and ink);
+/// else, in the workouts' area, the workout's colour by its name (`WorkoutTone`); else none, and
+/// the pill keeps the Templates violet when ticked. His choice wins over a workout's colour: it is
+/// the colour the template's cover and marks already wear. Drawn as the workouts always were —
+/// picked: filled in it, its words; not picked: outlined in it, ink words.
+enum TemplateTone {
+    static func of(_ list: PackList?, workout: Bool) -> PillTone? {
+        guard let list else { return nil }
+        if let c = Library.pillColour(list) { return PillTone(fillHex: c.fill, inkHex: c.ink) }
+        return workout ? WorkoutTone.of(list.name) : nil
+    }
+
+    /// `Pills.tones` for one area's templates: a pill's colour by its id.
+    static func byId(_ lists: [PackList], workouts: Bool) -> (String) -> PillTone? {
+        { id in of(lists.first { $0.id == id }, workout: workouts) }
+    }
 }
 
 /// The workout colours he chose (2026-09-28), the same in AMS Workout Sync — and
@@ -713,15 +744,7 @@ enum WorkoutTone {
     }
 
     static func of(_ name: String) -> PillTone? {
-        pair(name).map { PillTone(fill: Color(hex: $0.fill), ink: Color(hex: $0.ink)) }
-    }
-
-    /// The workout's colour as WORDS on the card (the per-workout Context lines, 0.67):
-    /// its hue, darkened on a light screen or lightened on a dark one until it reads —
-    /// the way his own colours are written (`readableHex`; Bike's bright yellow is
-    /// unreadable on white as it is). Nil for a template with no colour of its own.
-    static func words(_ name: String, dark: Bool) -> Color? {
-        pair(name).map { Color(hexString: readableHex(String(format: "#%06x", $0.fill), dark: dark)) }
+        pair(name).map { PillTone(fillHex: String(format: "#%06x", $0.fill), inkHex: String(format: "#%06x", $0.ink)) }
     }
 }
 
@@ -736,7 +759,8 @@ enum WorkoutTone {
 /// `<id>-<n>-name` (its name), `<id>-<n>-0…2` (Indoor, Outdoor, Race; picked = `.isSelected`);
 /// the heading `<id>-title`.
 struct WorkoutContexts: View {
-    struct Workout: Identifiable { let id: String; let name: String; let index: Int }
+    /// `fill`: its pill's colour (`TemplateTone` — his colour for it, else the workout's), nil = none.
+    struct Workout: Identifiable { let id: String; let name: String; let index: Int; var fill: String? = nil }
     let workouts: [Workout]
     let selected: [String: Set<String>]
     let id: String
@@ -747,7 +771,8 @@ struct WorkoutContexts: View {
     /// its place among ALL the template pills — the number its pill carries.
     static func ticked(_ lists: [PackList], _ ticked: Set<String>, _ flat: [PackList]) -> [Workout] {
         lists.filter { ticked.contains($0.id) }.map { l in
-            Workout(id: l.id, name: l.name, index: flat.firstIndex { $0.id == l.id } ?? 0)
+            Workout(id: l.id, name: l.name, index: flat.firstIndex { $0.id == l.id } ?? 0,
+                    fill: TemplateTone.of(l, workout: true)?.fillHex)
         }
     }
 
@@ -774,13 +799,22 @@ struct WorkoutContexts: View {
             VStack(alignment: .leading, spacing: 6) {
                 HeadingTitle(title: "Context", tint: AppSection.settings.color, id: "\(id)-title", question: true)
                 ForEach(workouts) { w in
+                    // Its name in its pill's colour, as WORDS on the card: the hue darkened on a light
+                    // screen or lightened on a dark one until it reads (`readableHex`; Bike's bright
+                    // yellow is unreadable on white as it is) — his own colour for it since 0.91.
+                    let words = w.fill.map { readableHex($0, dark: scheme == .dark) }
                     HStack(alignment: .center, spacing: 8) {
                         Text(w.name)
                             .font(.system(.subheadline, weight: .semibold))
-                            .foregroundStyle(WorkoutTone.words(w.name, dark: scheme == .dark) ?? Theme.ink)
+                            .foregroundStyle(words.map { Color(hexString: $0) } ?? Theme.ink)
                             .lineLimit(2).minimumScaleFactor(0.8)
                             .frame(width: Metrics.contextName, alignment: .leading)
                             .accessibilityIdentifier("\(id)-\(w.index)-name")
+                            #if DEBUG && os(iOS)
+                            // The colour its name is written in, for the tests (0.91). Not on the Mac,
+                            // which reports a text's words as its value.
+                            .accessibilityValue(words ?? "")
+                            #endif
                         FlowRow(spacing: 6) {
                             ForEach(Array(CONTEXTS.enumerated()), id: \.element) { k, c in
                                 let on = selected[w.id, default: []].contains(c)

@@ -89,4 +89,21 @@ extension Library {
         guard isHexColor(list.color) else { return nil }
         return readableHex(list.color, dark: dark)
     }
+
+    /// The dark words a pill takes on a light colour from the web app — `Theme.ink` by day.
+    public static let pillDarkInk = "#16232a"
+
+    /// A template's pill on Create new trip and Trip settings (0.91 — his "Yes, show the
+    /// template colours on the Create new trip pills too", 19 Oct 2026): the colour he chose
+    /// and the words on it. The palette's own ink on a palette colour (the cover's: dark on
+    /// Bike's yellow); on a colour from the web app that is none of the palette, white or
+    /// `pillDarkInk`, whichever reads better on it — words, unlike a cover's icon, must read.
+    /// nil = Automatic: the pill keeps the look it had (the app's pick is no colour of his).
+    public static func pillColour(_ list: PackList) -> (fill: String, ink: String)? {
+        guard isHexColor(list.color) else { return nil }
+        let fill = list.color.lowercased()
+        if let p = TemplateColour.of(hex: fill) { return (p.hex, p.ink) }
+        let white = "#ffffff"
+        return (fill, contrastRatio(white, fill) >= contrastRatio(pillDarkInk, fill) ? white : pillDarkInk)
+    }
 }

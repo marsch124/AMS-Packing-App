@@ -109,4 +109,38 @@ final class TemplateColourTests: XCTestCase {
         XCTAssertEqual(Library.coverInk(list), "#ffffff")
         XCTAssertEqual(lib.chosenColour(templateId: list.id), "#123456")
     }
+
+    /// 0.91 (his "Yes, show the template colours on the Create new trip pills too", 19 Oct
+    /// 2026): a template's pill wears the colour he chose, with words that read on it — the
+    /// palette's ink, or for a web-app colour white or dark, whichever reads; Automatic = none.
+    func testAPillWearsHisColourWithWordsThatRead() throws {
+        var lib = Library()
+        lib.saveTemplate(newList(name: "Hiking", group: "GA"))
+        let id = lib.templates[0].id
+        XCTAssertNil(Library.pillColour(try XCTUnwrap(lib.resolvedTemplate(id: id))), "an Automatic template's pill took a colour")
+
+        XCTAssertTrue(lib.setTemplateColour(id: id, hex: "#ffd60a"))
+        // What Create new trip offers is what the pill is drawn from.
+        let offered = try XCTUnwrap(lib.activityChoices().flatMap(\.lists).first { $0.id == id })
+        let yellow = try XCTUnwrap(Library.pillColour(offered), "the offered template lost his colour")
+        XCTAssertEqual(yellow.fill, "#ffd60a")
+        XCTAssertEqual(yellow.ink, "#3d3000", "white words on Bike's yellow")
+
+        for c in TemplateColour.palette {
+            var l = newList(name: "Any"); l.color = c.hex.uppercased()
+            let pill = try XCTUnwrap(Library.pillColour(l), "\(c.key) gives the pill no colour")
+            XCTAssertEqual(pill.fill, c.hex, "\(c.key): the pill is not its colour")
+            XCTAssertEqual(pill.ink, c.ink, "\(c.key): the pill's words are not the cover's ink")
+        }
+        // A colour from the web app: its words read on it, a light one dark, a deep one white.
+        for (hex, ink) in [("#f5e6a0", Library.pillDarkInk), ("#123456", "#ffffff"), ("#f59e0b", Library.pillDarkInk)] {
+            var l = newList(name: "Web"); l.color = hex
+            let pill = try XCTUnwrap(Library.pillColour(l))
+            XCTAssertEqual(pill.ink, ink, "\(hex): the words on it")
+            XCTAssertGreaterThanOrEqual(contrastRatio(pill.ink, hex), 4.5, "\(hex): its words do not read on it")
+        }
+
+        XCTAssertTrue(lib.setTemplateColour(id: id, hex: nil))
+        XCTAssertNil(Library.pillColour(try XCTUnwrap(lib.resolvedTemplate(id: id))), "Automatic kept the pill's colour")
+    }
 }

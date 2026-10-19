@@ -556,13 +556,29 @@ template icon):
   lines: a template he gave a colour draws its mark in **`Library.markColour(list, dark:)`** = `readableHex(color,
   dark:)` (his hue, darkened on a light screen, lightened on a dark one, until it reads as text does); a template
   with Automatic keeps the Templates violet it had (0.74). The "+N" stays violet.
-- NOT on Create new trip / Trip settings: their template pills show no icon, and WET pills keep their workout colours
-  (Open questions 34).
+- (0.91) **The template pills on Create new trip and in Trip settings** (spec 03, Create new trip item 5): a template
+  he gave a colour has it on its pill — **picked: filled with it, the words in its ink; not picked: outlined in it
+  (1.8 pt), ink words on `Theme.bg`** — exactly the look the workout pills have had since 0.40, so the lit/unlit
+  difference is the one he knows, and the pill keeps its size (no icon is added: the pills carry words, every pill on
+  both screens is a word pill, and an icon on some would make the rows uneven and wrap sooner). Fill and words =
+  **`Library.pillColour(list)`** (below), drawn by the app's `TemplateTone.of(list, workout:)`. **His colour wins over
+  a workout's colour** — it is the colour that template's cover and marks already wear; a workout with Automatic
+  keeps its workout colour (`WorkoutTone`, by name), and its Context name follows the pill (spec 03 item 6).
+  **Automatic templates look as before** — unlit grey line, violet when picked: the Automatic colour is the app's
+  stable pick, not his, and painting every pill with it would turn the rows into colours he never chose (an
+  Automatic orange or green would also look like a workout's). His words, 19 Oct 2026: "Yes, show the template colours
+  on the Create new trip pills too — put it in 0.91." (Open questions 34, answered.) Not changed: the template pills
+  elsewhere — a thing's On these templates, the review's "Put it on which template" — which stay in their tint.
 
 **Model.** `chosenColour(templateId:)` → the stored hex or nil. `setTemplateColour(id:hex:)` → nil/blank = Automatic;
 false for an unknown template or a value that is not a hex colour (nothing changes); sets `updatedAt`.
 `TemplateColour.of(hex:)` (capitals ignored). `Library.automaticColourKey = "auto"`. A colour from the web app that is
 none of the palette is kept, drawn with white and rings no swatch.
+**`Library.pillColour(list)`** (0.91) → `(fill, ink)` or nil: nil when `color` is no hex colour (Automatic); a palette
+colour (capitals ignored) → its hex and its own `ink` (the cover's — dark on the six light ones); any other colour (from
+the web app) → that colour lower-cased and **white or `Library.pillDarkInk` `#16232a`** (`Theme.ink` by day),
+whichever has the higher contrast ratio on it (ties → white) — a pill carries words, so unlike a cover's icon (always
+white on a web colour) they must read: `#f59e0b` → dark, `#123456` → white.
 
 ### `CoverDoor` (on the template page)
 A plain button showing `Cover(size: 40)`; id `template-cover`; accessibility label "Icon of <name>";
@@ -614,6 +630,26 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   not equal to ("#0a84ff") - the cover does not wear his colour`, `… - the stored records lost the colour`, `… - a
   backup lost the colour`, `… - Restore lost the colour`; `testAWebAppColourIsKeptAsItIs` (`#123456` kept, white ink).
 - UI (0.90): `testATemplatesColourIsChosenAndAutomaticGivesItsOwnBack` — see §4.
+- Model (0.91): `TemplateColourTests.testAPillWearsHisColourWithWordsThatRead` (Automatic → nil; yellow chosen → the
+  template as `activityChoices` offers it gives `#ffd60a` / `#3d3000`; every palette colour stored upper-case → its own
+  hex and ink; web colours `#f5e6a0` and `#f59e0b` → `pillDarkInk`, `#123456` → white, each ≥ 4.5 : 1; Automatic again
+  → nil) — seen red with the palette's ink planted out (white for every palette colour): `XCTAssertEqual failed:
+  ("#ffffff") is not equal to ("#3d3000") - white words on Bike's yellow` (and the five other light colours, "… the
+  pill's words are not the cover's ink").
+- UI (0.91): `testATemplatesColourIsWornByItsPillOnCreateNewTrip` — a pill says its colour as its accessibility
+  **value**, DEBUG only (`#if DEBUG`; the release build keeps the old value: a drawing's key or nothing), read from the
+  very tone it is drawn with: `"<fill>/<ink>"`, e.g. `#ffd60a/#3d3000`; a pill with a drawing (Season) still says its
+  key. The sample's Hiking (`trip-activity-0`, Automatic) says "" and Swim (`trip-activity-1`) `#0a84ff/#ffffff`
+  (its workout blue); on the iPhone, Swim ticked, its Context name (`trip-context-1-name`, whose DEBUG-only value on
+  the iPhone is the colour it is written in — not on the Mac, which reports a text's words as its value) is bluish.
+  Hiking given Yellow and Swim Red in the picker (`template-colour-yellow`, `-red`): Hiking's pill says
+  `#ffd60a/#3d3000`, unticked and ticked; Swim's `#dc3d43/#ffffff` (his red over the workout blue) and, on the iPhone,
+  its Context name turns reddish (more red than green and blue, day and night); in the sample trip's Trip settings
+  `tripset-activity-0` is ticked and says `#ffd60a/#3d3000`, `tripset-activity-1` `#dc3d43/#ffffff`. Pictures
+  `pills091-create`, `pills091-tripset`. Seen red with `TemplateTone.of` planted to skip his colour: `XCTAssertTrue
+  failed - Hiking's pill does not wear its yellow: ''`. Green on the iPhone 17 Pro simulator (iOS 26.5) day and
+  night, with its neighbours (the 0.90 colour test, Context, Trip settings, Other Templates, Always packed alone,
+  laundry, the editors' headings — 12 tests), and on the Mac (the probe workflow).
 
 ---
 
@@ -2229,11 +2265,11 @@ deciding before a rewrite.
 
 **0.90 — a template's colour, and a new template from a thing's page.**
 
-34. [idea] **The colour on Create new trip and Trip settings.** A template's colour (§3a) paints its icon wherever
-    the icon is drawn; the template PILLS there show no icon, so they keep their look (violet when ticked; a WET
-    workout its workout colour). Lighting a ticked pill in his chosen colour (with its ink) would carry the colour to
-    the place he picks templates for a trip — not built: the pills' line was being changed by the activity-areas work
-    of the same release, and a chosen colour would have to win over the workout colours there. His call.
+34. **Resolved in 0.91** (his "Yes, show the template colours on the Create new trip pills too — put it in 0.91", 19
+    Oct 2026) — ~~The colour on Create new trip and Trip settings: the template pills show no icon, so they keep their
+    look.~~ A template he gave a colour has it on its pill there, filled when picked and outlined when not, as the
+    workout pills always were; his colour wins over a workout's; Automatic pills look as before (§3a, "Where the
+    colour shows").
 35. [idea] **Automatic can look like a palette colour.** Automatic is the app's stable pick from `COVER_COLOURS`, three
     of which (violet `#7c5cd6`, indigo `#4f46e5`, slate `#64748b`) are also palette colours — a template whose pick is
     slate shows Automatic and Grey alike in the picker. Only Automatic is ringed, and choosing Grey stores it (it then
