@@ -108,13 +108,14 @@ final class LibraryModel: ObservableObject {
         }
     }
 
-    /// The only way anything changes.
-    func change(_ body: (inout Library) -> Void) {
+    /// The only way anything changes. `stamping` false (0.92): a bag put back as it was — a bag
+    /// page's Cancel — keeps the Last edited it is given instead of being stamped now.
+    func change(stamping: Bool = true, _ body: (inout Library) -> Void) {
         let started = EditTiming.now
         var next = library
         body(&next)
         // A bag changed by any screen says when (0.90: Your bags' Last edited — BagSorting.swift).
-        next.stampEditedBags(since: library)
+        if stamping { next.stampEditedBags(since: library) }
         let changed = EditTiming.now
         commit(next)
         if EditTiming.on { EditTiming.change(model: changed - started, store: EditTiming.now - changed) }

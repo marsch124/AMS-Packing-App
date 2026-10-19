@@ -100,6 +100,35 @@ final class PocketsTests: XCTestCase {
         XCTAssertEqual(Library.pocket(line(lib, "Charger")), "", "a line still in a pocket that is gone")
     }
 
+    /// A bag page's Cancel (0.92, his "How do I cancel that?"): pockets are written as they are
+    /// changed — a rename and a removal reach things and lines — and put back as the page found them.
+    func testABagsPocketsArePutBackAsThePageFoundThem() {
+        var (lib, bag, trip) = library()
+        _ = lib.setChecked(true, tripId: trip, entryId: line(lib, "Charger").id)
+        XCTAssertTrue(lib.setHomePocket("Lid", tripId: trip, entryId: line(lib, "Charger").id))
+        lib.items[lib.items.firstIndex { $0.id == bag }!].extra[BAG_EDITED_KEY] = .string("2026-09-30T08:00:00.000Z")
+        let opened = lib
+        guard let kept = lib.keepPockets(bagId: bag) else { return XCTFail("no pockets kept for a bag") }
+        XCTAssertNil(lib.keepPockets(bagId: thing(lib, "Charger")), "a thing that is no bag")
+        // On the page: renamed, moved, one taken away, one added; a thing put in the new one.
+        XCTAssertTrue(lib.renamePocket(bagId: bag, from: "Front pocket", to: "Outer pocket"))
+        XCTAssertTrue(lib.movePocket(bagId: bag, from: 2, to: 0))
+        XCTAssertTrue(lib.removePocket(bagId: bag, name: "Lid"))
+        XCTAssertTrue(lib.addPocket(bagId: bag, name: "Side"))
+        XCTAssertTrue(lib.setUsualPocket(thingId: thing(lib, "Torch"), pocket: "Side"))
+        lib.stampEditedBags(since: opened, at: "2026-10-01T12:30:00.000Z")
+        XCTAssertNotEqual(lib, opened)
+        // Cancel.
+        XCTAssertTrue(lib.putBackPockets(kept))
+        XCTAssertEqual(lib.pockets(bagId: bag), ["Main", "Front pocket", "Lid"], "the bag's pockets were not put back")
+        XCTAssertEqual(lib.usualPocket(thingId: thing(lib, "Charger")), "Front pocket", "the thing's pocket was not put back")
+        XCTAssertEqual(lib.usualPocket(thingId: thing(lib, "Torch")), "", "a thing stayed in a pocket that is gone")
+        XCTAssertEqual(Library.pocket(line(lib, "Charger")), "Front pocket", "the line's pocket was not put back")
+        XCTAssertEqual(Library.homePocket(line(lib, "Charger")), "Lid", "the way home's pocket was not put back")
+        XCTAssertEqual(lib, opened, "putting the pockets back left something else changed")
+        XCTAssertFalse(lib.putBackPockets(kept), "nothing to put back, and it says it changed something")
+    }
+
     func testABagDeletedIntoAnotherTakesItsPocketsAlong() {
         var (lib, bag, trip) = library()
         _ = lib.setChecked(true, tripId: trip, entryId: line(lib, "Charger").id)

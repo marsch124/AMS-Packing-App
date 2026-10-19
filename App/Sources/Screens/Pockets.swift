@@ -55,6 +55,8 @@ struct PocketPills: View {
 /// `bag-pocket-new`, Add `bag-pocket-add`, and what Add was missing `bag-pocket-add-needs`.
 struct BagPockets: View {
     let bagId: String
+    /// A pocket changed here (0.92): the bag's page puts them back on Cancel.
+    var touched: () -> Void = {}
     @EnvironmentObject var model: LibraryModel
     @State private var newName = ""
     @State private var addNeeds = ""
@@ -174,6 +176,7 @@ struct BagPockets: View {
         let list = model.library.pockets(bagId: bagId)
         guard let n = list.firstIndex(of: pocket), list.indices.contains(n + by) else { return }
         typed = [:]
+        touched()
         model.change { _ = $0.movePocket(bagId: bagId, from: n, to: n + by) }
     }
 
@@ -181,6 +184,7 @@ struct BagPockets: View {
         let name = jsTrim(newName)
         guard !name.isEmpty else { addNeeds = "Type a pocket first."; return }
         var ok = false
+        touched()
         model.change { ok = $0.addPocket(bagId: bagId, name: name) }
         if ok { newName = ""; typed = [:] } else { addNeeds = "The bag already has a pocket called that." }
     }
@@ -188,6 +192,7 @@ struct BagPockets: View {
     private func rename(_ n: Int, _ pocket: String) {
         guard let wanted = typed[n] else { return }
         var ok = false
+        touched()
         model.change { ok = $0.renamePocket(bagId: bagId, from: pocket, to: wanted) }
         if ok { typed = [:]; problem = "" }
         else { problem = jsTrim(wanted).isEmpty ? "A pocket needs a name." : "The bag already has a pocket called that." }
@@ -195,11 +200,13 @@ struct BagPockets: View {
 
     private func move(_ n: Int) {
         typed = [:]
+        touched()
         model.change { _ = $0.movePocket(bagId: bagId, from: n, to: n - 1) }
     }
 
     private func remove(_ pocket: String) {
         typed = [:]
+        touched()
         model.change { _ = $0.removePocket(bagId: bagId, name: pocket) }
     }
 }

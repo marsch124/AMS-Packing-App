@@ -95,7 +95,9 @@ Traps met here, each of which cost a red CI run:
 - **The keyboard.** This Mac has a hardware keyboard, GitHub's simulator has not.
   So on CI the on-screen keyboard covers the bottom of the screen, and a control
   under it takes no tap while looking perfectly hittable. Screens put the keyboard
-  away themselves once a line has been added; the tests have `hideKeyboard`.
+  away themselves once a line has been added; the tests have `hideKeyboard`. And the
+  keyboard's reported frame leaves out its bar of suggestions (about 44 points above
+  the keys): `onScreen` counts 50 points above the keys as covered (0.92).
 - **Which list a control is in is a question of descendancy, not rectangles.**
   `scrollViews.firstMatch` is the screen BEHIND an open sheet; the frontmost one
   may be a strip of pills. And a fixed bar below a list (Save on the trip review)

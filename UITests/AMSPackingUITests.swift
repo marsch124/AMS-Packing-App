@@ -327,6 +327,14 @@ final class AMSPackingUITests: XCTestCase {
         if window.exists && !window.frame.contains(mid) { return false }
         // In a list, but scrolled out of its visible part.
         if let list = listHolding(app, e), list.exists, !list.frame.contains(mid) { return false }
+        #if os(iOS)
+        // 🪤 Under the on-screen keyboard: it looks hittable and takes no tap ("Neither element nor
+        // any descendant has keyboard focus"). 0.92: a bag page's header grew a row (Cancel) and its
+        // brand field came to rest at the keyboard's top, mid-typing — under the bar of suggestions,
+        // which the keyboard's reported frame leaves out (keys at 583, the bar from about 540).
+        let keys = app.keyboards.firstMatch
+        if keys.exists, keys.frame.height > 0, e.frame.maxY > keys.frame.minY - 50 { return false }
+        #endif
         return true
     }
 
@@ -2648,6 +2656,129 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(words(app.buttons["bag-0-name"]).hasPrefix("Wheeled duffel"), "the original moved")
         XCTAssertEqual(value(app.textFields["bag-1-maxkg"]), "23")
         XCTAssertEqual(words(app.staticTexts["yourbags-count"]), "5")
+    }
+
+    // MARK: - 0.92: Duplicate a thing, and Cancel on a bag's page
+
+    /// His yes of 19 Oct 2026: "Duplicate a thing: the same as Duplicate bag, for any thing — handy for
+    /// near-copies like a second charger or a spare cable". The Headlamp — on Common base and Hiking
+    /// (under Lights), kept in the Garage — gets a photo and new Notes, then Duplicate this thing: the
+    /// page is saved first and turns to "Headlamp 2" at once, its name selected (what he types replaces
+    /// it), on both templates, Lights on Hiking, the same kind and place, the Notes typed just before —
+    /// and no photo. Saved, it stands right after the Headlamp on Hiking, under Lights.
+    func testAThingIsDuplicatedOnItsTemplatesAndOpensReadyToBeNamed() {
+        let app = launch()
+        openThing(app, "Headlamp")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == "Headlamp" })
+        let kind = chosen(app, "thing-category"), place = keptAtHome(app)
+        XCTAssertEqual(place, "Garage")
+        tap(app, id: "thing-photo")
+        XCTAssertTrue(app.buttons["thing-photo-thumb-0"].waitForExistence(timeout: 5), "the Headlamp's photo was not kept")
+        replace("Spare bulb inside", in: anyField(app, "thing-notes"))   // not saved yet: Duplicate saves it first
+        hideKeyboard(app)
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-duplicate"), "no Duplicate on the thing's page")
+        bringIntoView(app, app.buttons["thing-duplicate"])
+        XCTAssertLessThan(app.buttons["thing-duplicate"].frame.maxY, app.buttons["thing-delete"].frame.minY,
+                          "Duplicate is not above Delete thing")
+        shot(app, "dupthing-button")
+        tap(app, id: "thing-duplicate")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == "Headlamp 2" },
+                      "Duplicate did not open the copy: '\(value(app.textFields["thing-name"]))'")
+        usleep(900_000)                         // the name is selected a moment after the page turns
+        shot(app, "dupthing-copy")
+        app.typeText("Spare headlamp")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == "Spare headlamp" },
+                      "the copy's name was not selected for typing: '\(value(app.textFields["thing-name"]))'")
+        // What describes it came along — the Notes typed before Duplicate too; the photo did not.
+        XCTAssertEqual(value(anyField(app, "thing-notes")), "Spare bulb inside", "the page was not saved before the copy, or the notes not copied")
+        XCTAssertEqual(chosen(app, "thing-category"), kind, "the kind of thing was not copied")
+        XCTAssertEqual(keptAtHome(app), "Garage", "Kept at home was not copied")
+        XCTAssertFalse(app.buttons["thing-photo-thumb-0"].exists, "the photo was copied")
+        XCTAssertTrue(app.buttons["thing-photo"].waitForExistence(timeout: 5), "the copy offers no photo")
+        XCTAssertTrue(isOn(app.buttons["thing-lists-0"]), "the copy is not on Common base")
+        XCTAssertTrue(isOn(app.buttons["thing-lists-1"]), "the copy is not on Hiking")
+        XCTAssertFalse(isOn(app.buttons["thing-lists-2"]), "the copy is on Swim, where the Headlamp is not")
+        XCTAssertEqual(chosen(app, "thing-section-1"), "Lights", "the copy is not under Lights on Hiking")
+        bringIntoView(app, app.buttons["thing-section-1"])
+        shot(app, "dupthing-templates")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Save did not close the copy's page")
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+        let page = hikingBySection(app)
+        XCTAssertEqual(heading(of: "Spare headlamp", in: page), "Lights", "the copy is not under Lights on Hiking: \(page)")
+        let at = page.firstIndex { $0.hasPrefix("Headlamp") } ?? -9
+        XCTAssertTrue(page.indices.contains(at + 1) && page[at + 1].hasPrefix("Spare headlamp"),
+                      "the copy is not right after the Headlamp on Hiking: \(page)")
+    }
+
+    /// His question of 19 Oct 2026: "I open an item and change some property. How do I cancel that?
+    /// There is only a Done button, right?" A bag's page has Cancel top left, as a thing's page has: the
+    /// Wheeled duffel's max (23), Notes, colour (Black — the Blue pill), type (a duffel — Hard case),
+    /// Has an AirTag and a new pocket changed, then Cancel — opened again, every one as it was. The same
+    /// changes and Done — opened again, every one kept. On the Mac, Escape is Cancel.
+    func testABagsPageCancelsWhatWasChangedAndDoneKeepsIt() {
+        let app = launch("-uiTestingBags")
+        openFirstBag(app)                       // the Wheeled duffel, first in his order
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        XCTAssertTrue(app.buttons["bag-cancel"].exists, "no Cancel on the bag's page")
+        XCTAssertLessThan(app.buttons["bag-cancel"].frame.maxX, app.buttons["bag-done"].frame.minX, "Cancel is not left of Done")
+        func change(_ round: Int) {
+            replace("3\(round)", in: app.textFields["bag-detail-maxkg"])
+            replace("Wheel fixed \(round)", in: anyField(app, "bag-detail-notes"))
+            hideKeyboard(app)
+            bringIntoView(app, app.buttons["bag-detail-colour-blue"])
+            tap(app, id: "bag-detail-colour-blue")
+            XCTAssertTrue(waitUntil { app.buttons["bag-detail-colour-blue"].isSelected }, "the Blue pill is not lit")
+            tap(app, id: "bag-detail-type-hard")
+            XCTAssertTrue(waitUntil { app.buttons["bag-detail-type-hard"].isSelected }, "Hard case is not chosen")
+            setSwitch(app, "bag-detail-airtag", on: true)
+            let pocket = app.textFields["bag-pocket-new"]
+            bringIntoView(app, pocket)
+            type("Side \(round)", into: pocket)
+            tap(app, id: "bag-pocket-add")
+            XCTAssertTrue(waitUntil { self.words(app.staticTexts["bag-pockets-count"]) == "2" }, "the pocket was not added")
+            hideKeyboard(app)
+        }
+        func reopen() {
+            XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "the bag's page did not close")
+            tap(app, id: "bag-0-name")
+            XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the bag's page did not open again")
+            XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        }
+        func says(max: String, notes: String, colour: String, hard: Bool, airTag: Bool, pockets: String, _ how: String) {
+            XCTAssertTrue(waitUntil { self.value(app.textFields["bag-detail-maxkg"]) == max },
+                          "\(how): the max is '\(value(app.textFields["bag-detail-maxkg"]))', not \(max)")
+            XCTAssertEqual(value(anyField(app, "bag-detail-notes")), notes, "\(how): the notes")
+            XCTAssertEqual(isSwitchOn(app, "bag-detail-airtag"), airTag, "\(how): Has an AirTag")
+            bringIntoView(app, app.buttons["bag-detail-type-hard"])
+            XCTAssertEqual(value(app.textFields["bag-detail-colour"]), colour, "\(how): the colour")
+            XCTAssertEqual(app.buttons["bag-detail-type-hard"].isSelected, hard, "\(how): Hard case")
+            XCTAssertEqual(app.buttons["bag-detail-type-duffel"].isSelected, !hard, "\(how): Duffel")
+            XCTAssertEqual(words(app.staticTexts["bag-pockets-count"]), pockets, "\(how): the pockets")
+        }
+        change(1)
+        shot(app, "bagcancel-changed")
+        tap(app, id: "bag-cancel")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "23" },
+                      "Cancel kept the max typed: Your bags says '\(value(app.textFields["bag-0-maxkg"]))'")
+        reopen()
+        says(max: "23", notes: "Wheels squeak a little", colour: "Black", hard: false, airTag: false, pockets: "1", "after Cancel")
+        #if os(macOS)
+        // Escape is Cancel too.
+        replace("39", in: app.textFields["bag-detail-maxkg"])
+        app.typeKey(.escape, modifierFlags: [])
+        reopen()
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "23", "Escape kept the max typed")
+        #endif
+        change(2)
+        tap(app, id: "bag-done")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "32" },
+                      "Done did not keep the max: Your bags says '\(value(app.textFields["bag-0-maxkg"]))'")
+        reopen()
+        says(max: "32", notes: "Wheel fixed 2", colour: "Blue", hard: true, airTag: true, pockets: "2", "after Done")
+        shot(app, "bagcancel-kept")
+        tap(app, id: "bag-done")
     }
 
     // MARK: - His bag findings on 0.90 (test sheet, 19 Oct 2026) — 0.91
