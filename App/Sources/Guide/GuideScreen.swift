@@ -294,6 +294,7 @@ struct HowItWorksScreen: View {
             "Both hold the same library through iCloud. A change on one reaches the other within a minute or so.",
             "The magnifier at the top of most screens searches everything at once \u{2014} a thing\u{2019}s notes too.",
             "Every page where you change something has Cancel at the top left and Save (or Done) at the top right \u{2014} a thing, a bag, a template and its rows, Trip settings, Your choices, Activity areas, a grab list while you edit it, For the lost-luggage desk. Cancel puts back everything you changed on that page since you opened it; Save or Done keeps it. A swipe down on the iPhone closes a page you changed nothing on; with something changed it asks first \u{2014} Discard changes? \u{2014} Discard puts everything back, Keep editing stays. What one tap does on a list \u{2014} a tick, Done today \u{2014} is done at once.",
+            "Save keeps only what you changed on that page \u{2014} a change made on the other device while it was open stays. If a change cannot be saved, a small note says \u{201C}Couldn't save that \u{2014} try again.\u{201D} The screen then shows what is kept; just do it again.",
             "On the Mac, Escape closes the window you are in, as its Cancel (or Done) does \u{2014} it never saves; \u{2318}S is Save (or Done). The All your things window closes with Done or \u{2318}W."]),
     ]
 

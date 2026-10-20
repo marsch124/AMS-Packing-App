@@ -20,7 +20,7 @@ extension Library {
         out.items = Library.merge(items, from: from.items, to: to.items, id: \.id)
         out.memberships = Library.merge(memberships, from: from.memberships, to: to.memberships, id: \.id)
         out.templates = Library.merge(templates, from: from.templates, to: to.templates, id: \.id)
-        out.trips = Library.merge(trips, from: from.trips, to: to.trips, id: \.id)
+        out.trips = Library.mergeTrips(trips, from: from.trips, to: to.trips)
         out.actions = Library.merge(actions, from: from.actions, to: to.actions, id: \.id)
         out.kits = Library.merge(kits, from: from.kits, to: to.kits, id: \.id)
         out.phases = Library.merge(phases, from: from.phases, to: to.phases, id: \.id)
@@ -29,6 +29,78 @@ extension Library {
         for (key, value) in to.meta where from.meta[key] != value { out.meta[key] = value }
         for key in from.meta.keys where to.meta[key] == nil { out.meta[key] = nil }
         return out
+    }
+
+    // A trip, its head and each of its lines on their own (0.93, the outside review of 0.92 — his
+    // "fix 1, 2 and 6"). A page never edits a trip itself, but what it does reaches the trips ahead:
+    // a thing renamed or a row saved rewrites the thing's open lines (`followThing`, which also
+    // stamps the trip's `updatedAt`), a place or an owner renamed in Your choices is carried into
+    // every line. Handed over as whole trips, the page's copy from when it opened — with ALL its
+    // lines — replaced the real one: a tick or a line added on the other device meanwhile was
+    // undone or deleted. Now only the fields the page changed are put in, line by line, and on the
+    // trip's head; the stamp alone is no change; a trip or a line deleted on the other device
+    // stays deleted (the page never deletes or adds one on purpose — what it touched there was a
+    // follow).
+
+    /// The trips: `live` with what the page changed on its copy (`from` → `to`) put in, field by
+    /// field. A trip the page added comes last; one it deleted goes.
+    static func mergeTrips(_ live: [TripEvent], from: [TripEvent], to: [TripEvent]) -> [TripEvent] {
+        guard from != to else { return live }
+        var before: [String: TripEvent] = [:]
+        for t in from { before[t.id] = t }
+        var after: [String: TripEvent] = [:]
+        for t in to { after[t.id] = t }
+        var out: [TripEvent] = []
+        var placed = Set<String>()
+        for trip in live {
+            placed.insert(trip.id)
+            guard let was = before[trip.id] else { out.append(trip); continue }   // new here since the page opened
+            guard let now = after[trip.id] else { continue }                      // the page deleted it
+            out.append(was == now ? trip : trip.withPage(from: was, to: now))
+        }
+        for t in to where before[t.id] == nil && !placed.contains(t.id) {          // the page made it
+            out.append(t)
+            placed.insert(t.id)
+        }
+        return out
+    }
+
+    /// A trip's lines: `live` with the fields the page changed put in, line by line. A line the
+    /// page added comes last; one it deleted goes; one gone here stays gone.
+    static func mergeLines(_ live: [Item], from: [Item], to: [Item]) -> [Item] {
+        guard from != to else { return live }
+        var before: [String: Item] = [:]
+        for x in from { before[x.id] = x }
+        var after: [String: Item] = [:]
+        for x in to { after[x.id] = x }
+        var out: [Item] = []
+        var placed = Set<String>()
+        for x in live {
+            placed.insert(x.id)
+            guard let was = before[x.id] else { out.append(x); continue }
+            guard let now = after[x.id] else { continue }
+            if was == now { out.append(x); continue }
+            let merged = Library.fieldsPut(was.json, now.json, into: x.json, except: [])
+            out.append(merged.map { Item(json: $0) } ?? x)
+        }
+        for x in to where before[x.id] == nil && !placed.contains(x.id) {
+            out.append(x)
+            placed.insert(x.id)
+        }
+        return out
+    }
+
+    /// `into` with every field that differs between `was` and `now` set to `now`'s (a field `now`
+    /// lacks is taken away); `except` is never touched. nil when no field differs.
+    static func fieldsPut(_ was: JSONValue, _ now: JSONValue, into: JSONValue, except: Set<String>) -> JSONValue? {
+        let a = was.objectValue ?? [:], b = now.objectValue ?? [:]
+        var o = into.objectValue ?? [:]
+        var any = false
+        for key in Set(a.keys).union(b.keys) where !except.contains(key) && a[key] != b[key] {
+            o[key] = b[key]
+            any = true
+        }
+        return any ? .object(o) : nil
     }
 
     /// One table: `live` with the page's changes (`from` → `to`) put in, in `live`'s order; what
@@ -56,6 +128,21 @@ extension Library {
             out.append(x)
             placed.insert(id(x))
         }
+        return out
+    }
+}
+
+extension TripEvent {
+    /// This trip with what a page changed on its copy of it (`from` → `to`): the head field by
+    /// field — the time it was last changed is no change of its own — and the lines line by line.
+    /// Anything put in moves the time on to the later of the two.
+    func withPage(from was: TripEvent, to now: TripEvent) -> TripEvent {
+        var out = self
+        if let head = Library.fieldsPut(was.json, now.json, into: json, except: ["entries", "updatedAt"]) {
+            out = TripEvent(json: head)
+        }
+        out.entries = Library.mergeLines(entries, from: was.entries, to: now.entries)
+        if out != self, now.updatedAt > out.updatedAt { out.updatedAt = now.updatedAt }
         return out
     }
 }

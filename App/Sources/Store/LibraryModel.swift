@@ -91,8 +91,9 @@ final class LibraryModel: ObservableObject {
 
     /// Read everything the store holds. Duplicate keys are settled by rule, and the
     /// losers are deleted so both devices end up holding the same records
-    /// (`StoreSession.load`, where the model tests reach it).
-    func reload() {
+    /// (`StoreSession.load`, where the model tests reach it). `keepingScreens` (0.93): read
+    /// after a failed save — a store that cannot be read then leaves the screens as they are.
+    func reload(keepingScreens: Bool = false) {
         guard !isDraft else { return }                  // a page's copy has no store to read
         let started = EditTiming.now
         defer { EditTiming.reloaded(EditTiming.now - started) }
@@ -107,7 +108,7 @@ final class LibraryModel: ObservableObject {
             // same answer on every device, so two devices doing it at once agree.
             change { _ = $0.repairConditionLabels() }
         } catch {
-            state = .failed(error.localizedDescription)
+            if !keepingScreens { state = .failed(error.localizedDescription) }
         }
     }
 
@@ -130,21 +131,45 @@ final class LibraryModel: ObservableObject {
     /// (`CloudStore.apply`). So one tick costs as much as the whole library and its
     /// photos. Kept because a full comparison can never forget a change; a rewrite
     /// would remember what changed instead (the spec pass, 5 Oct 2026; spec 01 item 15).
-    private func commit(_ next: Library) {
+    /// false: the store refused the change, and nothing of it was kept (0.93).
+    @discardableResult
+    private func commit(_ next: Library) -> Bool {
         // A page's copy keeps its changes in memory (0.92): the page's Save stores them.
         if isDraft {
             if next != library { library = next }
             state = next.isEmpty ? .empty : .ready
-            return
+            return true
         }
         do {
-            guard let records = try StoreSession.save(next, held: held, to: store) else { return }
+            guard let records = try StoreSession.save(next, held: held, to: store) else { return true }
             held = records
             library = next
             state = next.isEmpty ? .empty : .ready
+            return true
         } catch {
-            state = .failed(error.localizedDescription)
+            couldNotSave()
+            return false
         }
+    }
+
+    /// One failed save no longer shuts the app (0.93, the outside review of 0.92 — his "fix 1, 2
+    /// and 6"): every tab was replaced by the error. Now the screens stay, a small note says
+    /// "Couldn't save that — try again" (`SaveNote`, plain words), and the library is read again
+    /// — the store rolled the change back (`CloudStore.apply`) — so the screen shows what is kept.
+    private func couldNotSave() {
+        SaveNote.shared.show()
+        // A reload's own small repair can save, and fail, too: read once, never round and round.
+        guard !recovering else { return }
+        recovering = true
+        defer { recovering = false }
+        reload(keepingScreens: true)
+    }
+    private var recovering = false
+
+    /// A replacing write the store refused (0.93), in his words: said where he asked for it.
+    struct NotSaved: LocalizedError {
+        let words: String
+        var errorDescription: String? { words }
     }
 
     /// The one-time import of a web-app backup file (docs/store.md, rules 3 and 4).
@@ -154,7 +179,9 @@ final class LibraryModel: ObservableObject {
     @discardableResult
     func importBackup(_ data: Data) throws -> Importer.Report {
         let (imported, report) = try Importer.firstImport(data, onto: library)
-        commit(imported)
+        guard commit(imported) else {
+            throw NotSaved(words: "Nothing was brought in \u{2014} it couldn't be saved. Try again.")
+        }
         imported.installLiveChoices()
         return report
     }
@@ -251,7 +278,10 @@ final class LibraryModel: ObservableObject {
     /// devices' check-ins stay (`Importer.restoring`).
     func restore(_ imported: Library) throws {
         try RescueCopies.write(library)
-        commit(Importer.restoring(imported, over: library))
+        // A restore the store refused said "Restored" (0.93, the outside review): it says so now.
+        guard commit(Importer.restoring(imported, over: library)) else {
+            throw NotSaved(words: "Nothing was replaced \u{2014} it couldn't be saved. Try again.")
+        }
         reload()
     }
 }
@@ -366,6 +396,8 @@ extension LibraryModel {
     ///  -uiTestingOnDisk       → a store FILE holding the sample; 15 s after launch "the other device"
     ///                           writes a thing called Sunglasses into it (0.91: the app's own saves are
     ///                           not read back, the other device's still are)
+    ///  -uiTestingSaveFails    → (debug builds) a store FILE holding the sample; its first save after
+    ///                           launch fails (0.93: a note, the screens kept, the store and screen agree)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -404,6 +436,15 @@ extension LibraryModel {
             DispatchQueue.main.asyncAfter(deadline: .now() + 15) { store.writeAsTheOtherDevice(theirs) }
             return LibraryModel(store: store, usesICloud: false, sky: sky)
         }
+        #if DEBUG
+        // The sample in a store FILE whose first save fails (0.93, the outside review of 0.92): the
+        // app keeps its screens, says so in a note, and holds what the store holds.
+        if args.contains("-uiTestingSaveFails"), let store = try? CloudStore(cloud: false, file: LibraryModel.freshTestFile("fails")) {
+            try? store.apply(RecordChanges(puts: SampleLibrary.make().records()))
+            store.failNextSave = true
+            return LibraryModel(store: store, usesICloud: false, sky: sky)
+        }
+        #endif
         // A library of his size, kept by SwiftData in a file as his is — every change pays what his
         // pays: all records built, compared, the store's whole fetch, and what the store says after
         // a save (`EditTiming`, 0.91). A fresh file each launch, in the app's temporary folder.

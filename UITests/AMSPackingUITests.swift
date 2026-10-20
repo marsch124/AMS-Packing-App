@@ -2893,6 +2893,95 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "bags91-other-device")
     }
 
+    // MARK: - The outside review of 0.92 (0.93, his "fix 1, 2 and 6")
+
+    /// A save that fails no longer shuts the app: every tab was replaced by the error, and the failed
+    /// change stayed waiting in the store — the next save stored it, or failed again. Now the screens
+    /// stay, a small note says so in plain words, the screen shows what the store holds (the failed
+    /// bag is not there), and the next change saves (`-uiTestingSaveFails`: the sample in a store
+    /// file; its first save fails).
+    func testAFailedSaveKeepsTheScreensAndSaysSo() {
+        let app = launch("-uiTestingSaveFails")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "0" })
+        type("Tote", into: app.textFields["bag-new-name"])
+        tap(app, id: "bag-new")                                      // this save fails
+        XCTAssertTrue(app.staticTexts["save-problem"].waitForExistence(timeout: 5), "a failed save said nothing")
+        XCTAssertEqual(words(app.staticTexts["save-problem"]), "Couldn't save that \u{2014} try again.")
+        #if os(iOS)
+        // Seen, not under the keyboard (it was, on the first try: there, and hidden).
+        let keys = app.keyboards.firstMatch
+        if keys.exists {
+            XCTAssertLessThanOrEqual(app.staticTexts["save-problem"].frame.maxY, keys.frame.minY,
+                                     "the note is under the keyboard: \(app.staticTexts["save-problem"].frame), keyboard \(keys.frame)")
+        }
+        #endif
+        XCTAssertFalse(app.staticTexts["library-problem"].exists, "a failed save shut the app")
+        XCTAssertTrue(find(app, "yourbags-detail") != nil, "a failed save closed the page")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "0" },
+                      "the screen shows a bag the store never kept: \(words(app.staticTexts["yourbags-count"])) bags")
+        shot(app, "save93-failed")
+        replace("Holdall", in: app.textFields["bag-new-name"])
+        tap(app, id: "bag-new")                                      // the next save works
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" },
+                      "the next save did not work: \(words(app.staticTexts["yourbags-count"])) bags")
+        XCTAssertTrue(waitUntil(timeout: 10) { !app.staticTexts["save-problem"].exists }, "the note never went away")
+        tap(app, id: "yourbags-done")
+        XCTAssertTrue(disappears(app, "yourbags-detail", timeout: 5))
+        tab(app, "home")
+        XCTAssertTrue(appears(app, "screen-home"), "Home is gone after a failed save")
+    }
+
+    /// A restore whose save fails says nothing was replaced — it said "Restored" — and the device
+    /// shows what it still holds.
+    func testARestoreThatCannotBeSavedSaysNothingWasReplaced() {
+        let app = launch("-uiTestingSaveFails")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let things = app.staticTexts["device-count-items"]
+        XCTAssertTrue(things.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(things) == "10" }, "the sample is not what it was: '\(words(things))'")
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        tap(app, id: "restore-confirm")                              // its save fails
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+        let status = app.staticTexts["backup-status"]
+        XCTAssertTrue(waitUntil { self.words(status).hasPrefix("Nothing was replaced") },
+                      "a restore that was not saved said: '\(words(status))'")
+        XCTAssertTrue(waitUntil { self.words(things) == "10" }, "the device shows \(words(things)) things, not what it holds")
+        XCTAssertFalse(app.staticTexts["library-problem"].exists, "a failed restore shut the app")
+        shot(app, "save93-restore-failed")
+    }
+
+    #if os(iOS)
+    /// A thing's Save writes only what was changed on its page: it wrote every field as the page
+    /// opened, so the bag the other device chose meanwhile went back when only the notes were
+    /// changed here (`-bagOnReturn`: as the app comes back to the front, the other device has put
+    /// the Map in the Checked luggage).
+    func testAThingsSaveKeepsTheBagChangedOnTheOtherDevice() {
+        let app = launch("-uiTesting", ["-bagOnReturn", "Map", "Checked luggage"])
+        openThing(app, "Map")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == "Map" })
+        XCTAssertNotEqual(chosen(app, "thing-bag"), "Checked luggage")
+        replace("Fold along the creases", in: anyField(app, "thing-notes"))
+        hideKeyboard(app)
+        XCUIDevice.shared.press(.home)                               // meanwhile, on the other device…
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 10))
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(value(anyField(app, "thing-notes")), "Fold along the creases", "the notes typed here were not saved")
+        XCTAssertEqual(chosen(app, "thing-bag"), "Checked luggage", "Save put back the bag the page opened with")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+    }
+    #endif
+
     /// "Opening the bag: when pressing its name, it is good, but the arrow is not nice." The arrow
     /// sits right after the name now — the name's button ends with it — with clear room before the
     /// first number (it stood at the row's far end against MAX KG); the name still opens the bag.

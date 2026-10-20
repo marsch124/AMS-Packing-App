@@ -52,6 +52,9 @@ struct RootView: View {
                 model.tripToOpen = id
             }
             PackingReminders.shared.start()
+            #if os(iOS)
+            SaveNote.shared.watchKeyboard()    // a failed save's note sits above the keyboard (0.93)
+            #endif
             // A tapped door check (0.69): its trip, on just what is left.
             DoorChecks.shared.open = { id, kind in
                 section = .home
@@ -177,6 +180,12 @@ struct RootView: View {
         if args.contains("-dropOwnGrabListsOnReturn") {
             model.change { $0.meta[GRAB_OWN_META] = nil }
         }
+        // The other device put a thing in another bag while its page was open here (0.93):
+        // `-bagOnReturn <thing> <bag>`.
+        if let n = args.firstIndex(of: "-bagOnReturn"), n + 2 < args.count,
+           let id = model.library.items.first(where: { $0.name == args[n + 1] })?.id {
+            model.change { _ = $0.updateThing(id: id) { $0.container = args[n + 2] } }
+        }
         #if os(iOS)
         // An entry under the app icon tapped while the app waited in the background (0.86).
         if let n = args.firstIndex(of: "-quickActionOnReturn"), n + 1 < args.count {
@@ -286,5 +295,133 @@ private struct TabButtonLabel: View {
         }
         .frame(maxWidth: .infinity, minHeight: 54)
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - A save that failed (0.93, the outside review of 0.92 — his "fix 1, 2 and 6")
+//
+// One failed save replaced every tab with the error, and the failed change stayed waiting in the
+// store. Now the store rolls it back (`CloudStore.apply`), the library is read again — the screen
+// shows what is kept — and this note says so for a few seconds, in plain words, over whatever is
+// open. A page is a sheet above the tabs, so the note is a small window of its own: on the iPhone
+// above the tab bar — and above the keyboard while it is up — on the Mac at the foot of the window
+// in front (a sheet's own window when one is open). A tap puts it away.
+
+@MainActor
+final class SaveNote {
+    static let shared = SaveNote()
+    static let words = "Couldn't save that \u{2014} try again."
+    private var hide: DispatchWorkItem?
+    #if os(iOS)
+    private var window: UIWindow?
+    /// The keyboard's top on the screen while it is up — the note sits above it.
+    private var keyboardTop: CGFloat?
+    private var watching: NSObjectProtocol?
+
+    /// Where the keyboard is, heard from the app's start (RootView): a note shown while it is up
+    /// would sit under it.
+    func watchKeyboard() {
+        guard watching == nil else { return }
+        watching = NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            let end = (note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue
+            Task { @MainActor in self?.keyboardMoved(end) }
+        }
+    }
+
+    private func keyboardMoved(_ end: CGRect?) {
+        guard let screen = SaveNote.scene()?.coordinateSpace.bounds else { return }
+        if let end, end.height > 0, end.minY < screen.height { keyboardTop = end.minY } else { keyboardTop = nil }
+        if let w = window { place(w) }
+    }
+
+    private static func scene() -> UIWindowScene? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first
+    }
+
+    /// Above the tab bar, and above the keyboard while it is up; across the middle.
+    private func place(_ w: UIWindow) {
+        guard let scene = w.windowScene else { return }
+        let screen = scene.coordinateSpace.bounds
+        let size = w.frame.size
+        let bottom = scene.windows.first(where: \.isKeyWindow)?.safeAreaInsets.bottom ?? 0
+        var y = screen.height - bottom - size.height - 64
+        if let top = keyboardTop { y = min(y, top - size.height - 12) }
+        w.frame = CGRect(x: (screen.width - size.width) / 2, y: y, width: size.width, height: size.height)
+    }
+    #else
+    private var panel: NSPanel?
+    #endif
+
+    func show() {
+        close()
+        #if os(iOS)
+        guard let scene = SaveNote.scene() else { return }
+        let host = UIHostingController(rootView: SaveNoteView { [weak self] in self?.close() })
+        host.view.backgroundColor = .clear
+        host.safeAreaRegions = []
+        let screen = scene.coordinateSpace.bounds
+        let size = host.sizeThatFits(in: CGSize(width: screen.width - 32, height: 200))
+        let w = UIWindow(windowScene: scene)
+        w.windowLevel = .alert + 1
+        w.backgroundColor = .clear
+        w.rootViewController = host
+        w.frame = CGRect(origin: .zero, size: size)
+        place(w)
+        w.isHidden = false                     // shown, never made key: typing stays where it was
+        window = w
+        #else
+        guard let front = NSApp.keyWindow ?? NSApp.mainWindow else { return }
+        let host = NSHostingView(rootView: SaveNoteView { [weak self] in self?.close() })
+        let size = host.fittingSize
+        let p = NSPanel(contentRect: NSRect(x: front.frame.midX - size.width / 2, y: front.frame.minY + 24,
+                                            width: size.width, height: size.height),
+                        styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        p.isOpaque = false
+        p.backgroundColor = .clear
+        p.hasShadow = false
+        p.contentView = host
+        front.addChildWindow(p, ordered: .above)
+        panel = p
+        #endif
+        let work = DispatchWorkItem { [weak self] in self?.close() }
+        hide = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: work)
+    }
+
+    func close() {
+        hide?.cancel()
+        hide = nil
+        #if os(iOS)
+        window?.isHidden = true
+        window = nil
+        #else
+        if let p = panel {
+            p.parent?.removeChildWindow(p)
+            p.orderOut(nil)
+        }
+        panel = nil
+        #endif
+    }
+}
+
+/// The note's look: calm, the app's card and ink, a thin line round it.
+private struct SaveNoteView: View {
+    let close: () -> Void
+
+    var body: some View {
+        Text(SaveNote.words)
+            .font(.system(.subheadline, weight: .semibold))
+            .foregroundStyle(Theme.ink)
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .background(Capsule().fill(Theme.card))
+            .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
+            .fixedSize()
+            .padding(4)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: close)
+            .accessibilityIdentifier("save-problem")
     }
 }

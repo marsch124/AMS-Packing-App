@@ -1096,8 +1096,11 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    the Home Screen for the four grab lists opened most recently — on the Mac, right-click its Dock icon for all of
    them. (5 lines.)
 11. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
-    so; the magnifier searches everything (a thing's notes too — 0.69); on the Mac Escape closes a window as its Cancel or Done does, never saving
-    (0.62). (3 lines.)
+    so; the magnifier searches everything (a thing's notes too — 0.69); every page's Cancel and Save/Done and the swipe
+    that asks (0.92); (0.93) "Save keeps only what you changed on that page — a change made on the other device while it
+    was open stays. If a change cannot be saved, a small note says “Couldn't save that — try again.” The screen then
+    shows what is kept; just do it again." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
+    (0.62). (5 lines.)
 
 **Tests.** `testWhatsNewStartsWithThisVersion` (topics 0 and 1 exist), `testTheLoopShowsWhereATripStands` (loop
 card, first-trip card, Words), (0.79) `testHowItWorksExplainsThePackingDayStations` (the Packing day part is there;
@@ -1814,7 +1817,9 @@ written by `VaultShelf`, `reload()` does nothing) — and hands that copy to the
 their `LibraryModel`. **Done** = `PageDraft.save()`: `live.change { $0 = $0.applyingPage(from: opened, to: copy) }` —
 per record, by id: what the page added or changed is the page's, what it deleted goes, every other record keeps what
 the real library holds NOW (the other device's changes while the page was open stay; a record both changed: the
-page's wins); nothing changed = nothing written; the "When" steps and conditions are installed again from the real
+page's wins) — and a TRIP, since 0.93, field by field: its head and each of its lines get only the fields the page
+changed (a thing renamed or a place renamed reaches the open lines through the copy), so a tick or a line added on the
+other device meanwhile stays, and the follow's stamp alone changes nothing (spec 01 §5, "A page's Save"); nothing changed = nothing written; the "When" steps and conditions are installed again from the real
 library. **Cancel** = dismiss; the copy is dropped; `PageDraft.left()` (on disappear) installs the real library's
 "When" steps and conditions again if the copy changed them. Not kept: the app put away or quit while such a page is
 open keeps nothing of it — as a thing's page never did (the bag page's `EditDraft` writes on going away; dup092).
@@ -1863,6 +1868,33 @@ keeps nothing), `testASwipeDownKeepsWhatIsNotSavedYet` (the review: Keep editing
 as it was → Save/⌘S → kept; the trip renamed → Cancel → unchanged → Save top right/⌘S → renamed); Escape on the Mac:
 `testEscapeClosesSettingsWindowsAndNeverReplaces` (a place ADDED in Your choices, then Escape → gone) and
 `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (the template's area changed, then Escape → as it was).
+
+## 20b. A save that fails — a note, never a dead app (0.93; `SaveNote` in `RootView.swift`, `LibraryModel.couldNotSave`, `CloudStore.apply`)
+
+**Why** (the outside review of 0.92, fixed at his word on 20 Oct 2026, "fix 1, 2 and 6 as one version (0.93) and ship
+it to TestFlight before the trip"): one failed save replaced EVERY tab with the error (`.failed`, spec 01 §5), the failed
+change stayed waiting in the store — the next save stored it or failed on it again — and a restore that was not saved
+said "Restored".
+
+**The rule.** A change the store refuses is rolled back in the store (`context.rollback()`, spec 01 §4); the screens
+stay; the library is read again, so the screen shows exactly what is kept (the change he just made goes back on the
+screen); and a small calm note says, in plain words, **"Couldn't save that — try again."** — no error codes, no
+technical words. Where he asked for a replacing write and waits for its answer (Restore from a file, the first-run
+import), that answer says it too: "Nothing was replaced — it couldn't be saved. Try again." / "Nothing was brought in —
+it couldn't be saved. Try again." The red `library-problem` screen remains only for a store that cannot be opened or
+read at all.
+
+**The note.** `Text(SaveNote.words)`, Subheadline semibold, `Theme.ink` on a `Theme.card` capsule with a 1-pt
+`Theme.line` border, padding 16 × 10; id `save-problem`; shown for 4 s, a tap puts it away; a second failure shows it
+afresh. It must be seen over whatever is open — a page is a sheet above the tabs — so it is a small window of its own:
+on the iPhone a `UIWindow` at `.alert + 1`, the note's own size, centred, 64 pt above the bottom safe area, and — while
+the keyboard is up — 12 pt above the keyboard (`SaveNote.watchKeyboard`, started with the frame in `RootView.onAppear`;
+first try sat under the keyboard: there for the test, hidden for him), never made key (typing stays where it was); on
+the Mac a borderless non-activating `NSPanel`, a child of the window in front (a sheet's own window when one is open),
+centred 24 pt above its foot. Day and night: the app's colours (looked at in both, 20 Oct 2026).
+
+**Tests.** UI `testAFailedSaveKeepsTheScreensAndSaysSo`, `testARestoreThatCannotBeSavedSaysNothingWasReplaced`
+(`-uiTestingSaveFails`, debug builds: a store file whose first save fails) — spec 01 §5 and §11; seen RED on 0.92.
 
 ## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `ScreenHeader.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 
@@ -2327,6 +2359,8 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-reviewAtPack` | (testing only) the trip header's Review shows at Pack too (`TripScreen.reviewAtPack`) — for the tests about the review itself on the sample trip a month ahead; the rule of when it shows (`Library.offersReview`, once the trip has started) is tested without it | 0.84 |
 | `-clockAt HH:mm:ss` | (testing only) the app's clock (`Today.now`) is today at that time when the app opened, and runs on — when a trip sets off (spec 03, The loop) | 0.75 |
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
+| `-bagOnReturn <thing> <bag>` | (testing only) played when the app returns from the background: the other device puts that thing in that bag (a thing's page open meanwhile, spec 05) | 0.93 |
+| `-uiTestingSaveFails` | (debug builds only) the sample in a store file whose first save after launch fails (§20b, spec 01 §6) | 0.93 |
 | `-quickAction <title>` | (testing only, iPhone) the entry under the app icon with that title — taken from the entries the app hands the system, so only one of the four — tapped to START the app: handed over through the cold-start path (`PackingAppDelegate`, as `options.shortcutItem`) | 0.86 |
 | `-quickActionOnReturn <title>` | (testing only, iPhone) played when the app returns from the background: that entry handed to the scene's delegate (`windowScene(_:performActionFor:)`), as iOS does while the app runs | 0.86 |
 | `-dockMenu <title>`, `-dockMenuWhenClosed <title>` | (testing only, Mac) the Dock icon's menu asked of the app's delegate and that entry performed — a second after the window is up / after the last main window closed | 0.86 |

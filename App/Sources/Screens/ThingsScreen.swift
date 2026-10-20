@@ -1221,9 +1221,13 @@ struct ThingEditor: View {
             return false
         }
         let itemId: String
+        // The page as it opened on THIS thing (0.93, the outside review of 0.92): Save writes only
+        // what differs from it, so a change made on the other device meanwhile stays. None — a
+        // thing made on the page — writes it all, as before.
+        let opened = it.flatMap { thing in atLoad.flatMap { $0.draft.id == thing.id ? $0 : nil } }
         if let it {
             itemId = it.id
-            if jsTrim(draft.name) != it.name {
+            if jsTrim(draft.name) != it.name, opened.map({ jsTrim(draft.name) != jsTrim($0.draft.name) }) ?? true {
                 var ok = false
                 model.change { ok = $0.renameThing(id: itemId, to: draft.name) }
                 if !ok { problem = jsTrim(draft.name).isEmpty ? "A thing needs a name." : "You already have a thing called that."; return false }
@@ -1247,6 +1251,7 @@ struct ThingEditor: View {
         let chosen = sections, atOpen = sectionsAtOpen, typed = newSections, edited = sectionEdits
         let kitSays = kit
         let only = limits
+        let weightUntouched = weightText == opened?.weightText
         let held = choiceLists
         // The templates made here (0.90) that are still ticked: made now, before the thing
         // is put on its templates below. One ticked off again is not made.
@@ -1263,47 +1268,59 @@ struct ThingEditor: View {
             // entries first — the thing's own choices then follow them — removals last,
             // once the thing no longer says what it moved away from.
             let maps = lib.applyPageChoices(held)
-            var page = d
             func follow(_ v: String, _ kind: String) -> String { Library.choiceValue(v, after: maps[kind] ?? [:]) }
-            page.storage = follow(page.storage, "places")
-            page.category = follow(page.category, "categories")
-            page.ownedBy = follow(page.ownedBy, "owners")
-            page.phase = follow(page.phase, "phases")
-            page.condition = follow(page.condition, "conditions")
-            let pocketsKey = ThingEditor.choiceKey("pockets", bag: page.container)
-            Library.setUsualPocket(&page, follow(Library.usualPocket(page), pocketsKey))
-            page.container = follow(page.container, "bags")
+            // What Save writes into the thing, from the page — as it is, and as it opened.
+            func asSaved(_ x: Item) -> Item {
+                var page = x
+                page.storage = follow(page.storage, "places")
+                page.category = follow(page.category, "categories")
+                page.ownedBy = follow(page.ownedBy, "owners")
+                page.phase = follow(page.phase, "phases")
+                page.condition = follow(page.condition, "conditions")
+                let pocketsKey = ThingEditor.choiceKey("pockets", bag: page.container)
+                Library.setUsualPocket(&page, follow(Library.usualPocket(page), pocketsKey))
+                page.container = follow(page.container, "bags")
+                return page
+            }
+            let page = asSaved(d)
             written = page
+            var saved = page
+            saved.storage = jsTrim(page.storage)
+            saved.weight = grams
+            saved.manufacturer = jsTrim(page.manufacturer)
+            saved.color = jsTrim(page.color)
+            saved.note = jsTrim(page.note)
+            var was = opened.map { asSaved($0.draft) }
+            if var w = was {
+                w.storage = jsTrim(w.storage)
+                // The weight as typed is what changed, or not: untouched, it is no change at all.
+                w.weight = weightUntouched ? grams : w.weight
+                w.manufacturer = jsTrim(w.manufacturer)
+                w.color = jsTrim(w.color)
+                w.note = jsTrim(w.note)
+                was = w
+            }
             kitSays.save(&lib, thingId: itemId)      // what it holds, or taken out of its kit (0.70)
             // Its own "Only on some trips" (0.73); `updateThing` below brings trips ahead along.
-            lib.setThingLimits(id: itemId, only, follow: false)
+            if opened.map({ only != $0.limits }) ?? true { lib.setThingLimits(id: itemId, only, follow: false) }
+            let careChanged = opened.map { every != $0.careEvery || notes != jsTrim($0.careNotes) } ?? true
             _ = lib.updateThing(id: itemId) { thing in
-                thing.storage = jsTrim(page.storage)
-                thing.category = page.category
-                thing.container = page.container
-                thing.extra[USUAL_POCKET_KEY] = page.extra[USUAL_POCKET_KEY]
-                thing.phase = page.phase
-                thing.ownedBy = page.ownedBy
-                thing.condition = page.condition
-                thing.weight = grams
-                thing.manufacturer = jsTrim(page.manufacturer)
-                thing.color = jsTrim(page.color)
-                thing.note = jsTrim(page.note)
-                thing.liquid = page.liquid
-                thing.restricted = page.restricted
-                thing.extra[BATTERY_KEY] = page.extra[BATTERY_KEY]       // has a battery (0.75)
-                thing.expiry = page.expiry
+                // Only the fields changed on the page (0.93): place, kind, bag, pocket, When, owner,
+                // condition, weight, maker, colour, notes, liquid, restricted, battery, expiry.
+                thing.takePage(opened: was, page: saved)
                 // The care record changes only when what is said here changed: its log
                 // and last service stay as they were.
                 let had = thing.maintenance
-                if (had?.intervalDays ?? 0) != every || jsTrim(had?.notes ?? "") != notes {
+                if careChanged, (had?.intervalDays ?? 0) != every || jsTrim(had?.notes ?? "") != notes {
                     var care = had ?? Maintenance()
                     care.intervalDays = every
                     care.notes = notes
                     thing.maintenance = normalizeMaintenance(care)
                 }
             }
-            for t in lib.templatesForThings() {
+            // On or off a template only where he ticked it here (0.93): one the other device
+            // put it on meanwhile stays.
+            for t in lib.templatesForThings() where opened.map({ lists.contains(t.id) != $0.onLists.contains(t.id) }) ?? true {
                 _ = lib.setOnTemplate(itemId: itemId, templateId: t.id, on: lists.contains(t.id))
             }
             // Its section on each template it is on now — only where he changed it; the

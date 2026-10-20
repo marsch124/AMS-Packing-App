@@ -136,6 +136,25 @@ final class CloudStore: LibraryStore {
             }
         }
         for id in changes.deletes { for r in held[id] ?? [] { context.delete(r) } }
-        try context.save()
+        do {
+            #if DEBUG
+            // Under the UI tests (`-uiTestingSaveFails`): this save fails, as a full disk would (0.93).
+            if failNextSave { failNextSave = false; throw SaveRefusedForTests() }
+            #endif
+            try context.save()
+        } catch {
+            // A save that fails leaves nothing waiting (0.93, the outside review of 0.92): the failed
+            // change stayed in the context — the next save stored it, or failed on it again, and a
+            // reload read it back as if it were kept. Rolled back, the store holds what it held; the
+            // model reads it again and says the change was not saved (`LibraryModel.couldNotSave`).
+            context.rollback()
+            throw error
+        }
     }
+
+    #if DEBUG
+    /// The next save fails (0.93, the outside review of 0.92): `-uiTestingSaveFails` sets it.
+    var failNextSave = false
+    struct SaveRefusedForTests: Error {}
+    #endif
 }

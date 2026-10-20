@@ -1378,20 +1378,39 @@ templates Subheadline, `Metrics.chip` tall.
   survive. Read on Save by `readAmount`: a comma or a point, empty = 0, anything else (letters, a minus,
   "1e3") = not a number. Untouched, the stored weight is kept exactly.
 - **Save**, in this order: (00, Mac) Valid until as typed: no date → its line, NOTHING saved. (0) the weight: unreadable
-  → the line under the weight field, NOTHING saved, the page stays open. (1) when the trimmed name differs from the stored name, `renameThing` — on refusal
+  → the line under the weight field, NOTHING saved, the page stays open. (1) when the trimmed name differs from the stored name — and (0.93) from the name the page opened with — `renameThing` — on refusal
   the problem line shows and NOTHING else is saved (the page stays open). On a NEW thing's page (⌘N, Mac) the name
   makes the thing instead (`addThing`; blank → "A thing needs a name.", one he has → "You already have a thing called
   that.", nothing made). (2) One `model.change`: first each template's section edits (`applySectionEdits`, item 6a),
-  then `updateThing` setting storage (trimmed), category, container, phase, ownedBy, condition, weight, manufacturer
+  then `updateThing` setting storage (trimmed), category, container, the usual pocket, phase, ownedBy, condition, weight, manufacturer
   (trimmed), color (trimmed), note (trimmed), liquid, restricted, the `battery` key (0.75), expiry, and — only when how often or the notes
   differ from the record — the care record (`normalizeMaintenance` of the old record with the new interval and
   trimmed notes: its log, last service and link kept; nothing said = no record); then for every template of
   `templatesForThings()` `setOnTemplate(on: chosen)` (a new membership goes to the bottom; an unticked template
-  loses the membership; the bag list membership is never touched); then (0.64), for every template it is on now
+  loses the membership; the bag list membership is never touched); **since 0.93 each of these only where the page
+  CHANGED it** (below); then (0.64), for every template it is on now
   whose Section was CHANGED on the page (the choice differs from what it showed on opening; a template lit in this
   edit counts from No section), `Library.setThingSection(itemId:templateId:section:newSection:)`
   (PackingLibrary/ThingSections.swift) with the chosen section id — or, for a typed one, "" and its name. (3)
   Close. Rename and update are two commits; each runs `followThing`, so open lines on trips still ahead follow.
+- **Only what the page changed is written (0.93, the outside review of 0.92 — his "fix 1, 2 and 6", 20 Oct 2026).**
+  Until 0.93 Save wrote every field above as the page had it — the page's copy from when it opened — so a change
+  made on the other device while the page was open (its bag, say) went back when only the notes were changed here.
+  Now the page compares with what it loaded (`atLoad`, the `ThingKept` of 0.92 — only when it is THIS thing's: a
+  thing made on the page with ⌘N, or a page whose `atLoad` is another thing's, writes everything as before): the
+  fields go through `Item.takePage(opened:page:)` (PackingLibrary/ThingPageSave.swift) — each of storage, category,
+  container, the usual pocket, phase, ownedBy, condition, weight, manufacturer, color, note, liquid, restricted,
+  battery and expiry is set only where the page's value (followed through the drop-downs' own list changes and
+  trimmed, as written) differs from the loaded one put through the same; the weight counts as changed only when its
+  TEXT differs from the text it loaded; the name only when it differs from the loaded name; the care record only when
+  how often or the notes differ from what loaded; Only on some trips (`setThingLimits`) only when the pills differ
+  from what loaded; each template on or off only where its tick differs from what loaded (one the other device put it
+  on meanwhile stays). Sections were already written only where changed (above), and the kit only where its part
+  changed (`KitDraft.save`). A field changed on both: the page's (Save is the later word). Tests: model
+  `ThingPageSaveTests.testOnlyWhatThePageChangedIsWritten`; UI `testAThingsSaveKeepsTheBagChangedOnTheOtherDevice`
+  (iPhone; `-bagOnReturn Map "Checked luggage"` plays the other device as the app comes back to the front: the Map's
+  notes typed, the app put away and back, Save → the notes kept AND the Checked luggage) — seen RED on 0.92:
+  `("Carry-on / hand luggage") is not equal to ("Checked luggage") - Save put back the bag the page opened with`.
 - `setThingSection` stores what the row editor's Save stores for its Section (`saveRow`): the FIRST place's
   `section` (via `updateMembership`), and nothing else of the place. A typed name (trimmed, not blank) wins over the
   id: the template's section of that `normName` is used, or a new one is made then (`addSection`, appended to the

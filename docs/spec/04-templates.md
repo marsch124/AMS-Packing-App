@@ -1018,7 +1018,8 @@ pick "C" of three pictured layouts, 5 Oct 2026).
 - Left: **"Done"** (`template-detail-done`, ⌘S too) hands over what the page changed (`PageDraft.save` →
   `Library.applyingPage(from:to:)`: per record, by id — what the page added or changed is the page's, what it
   deleted goes, every other record keeps what the real library holds now, so the other device's changes while the
-  page was open stay). **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
+  page was open stay; a trip — whose open lines a row saved or a thing renamed here reaches — field by field since
+  0.93, so a tick or a line added on the other device meanwhile stays: spec 01 §5, "A page's Save"). **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
   Escape ends Arrange first, §6a, and a second Escape is Cancel) throws the copy away: nothing on the page was
   kept. A swipe down on the iPhone (not while arranging): with nothing changed it closes; with something changed it
   asks "Discard changes?" — Discard = Cancel, Keep editing stays (`asksBeforeDiscarding(page.changed, holds: arranging)`,
