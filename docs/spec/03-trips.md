@@ -1364,9 +1364,17 @@ smaller tick circles and less space between lines").
   folded. The kit's own tick is a plain tick. Its weight on the Bags card is the weight then
   (`linesWithKitWeights(trip:)`). A trip reviewed before 0.73 shows the kits as they are now, as before.
 
-Each row view is keyed by "id|checked|aside|group|placing|qtyNights|pocketing|pocket" (the last two 0.69), so it is rebuilt whenever its
-tick, set-aside, group, place panel or night count changes (bug B1, his Mac 2026-09-26: a row showed no
-tick while the trip had it; and a moved lazy row kept "Set place").
+Each row has two keys (since 0.96; until then one key, "id|checked|aside|group|placing|qtyNights|pocketing|pocket",
+on the row itself — see Traps: the endless redraw):
+- **The row itself** — what the lazy stack holds — is keyed by "id|group|place in its group": it is a NEW row only
+  when the line MOVES, to another section or up or down in its own (a lazy row that moved kept its old face —
+  "Set place" still showing under the place just chosen, 2026-09-26, and again on 20 Oct 2026 when tried
+  without the place in its group). A tick, a set-aside, the place panel or the pocket pills never move a line
+  (no sorting groups by ticks), so they never make a new row.
+- **What is inside the row's own box** (a `VStack`, spacing 0 — it looks the same) is keyed by
+  "checked|aside|placing|qtyNights|pocketing|pocket" (the last two 0.69), so its face is rebuilt whenever its
+  tick, set-aside, place panel, pocket pills, pocket or night count changes (bug B1, his Mac 2026-09-26: a row
+  showed no tick while the trip had it).
 
 ### Sorting and grouping (`groupBy`, `Grouping.swift`)
 
@@ -1587,6 +1595,18 @@ the field takes what the word leaves). The Sorting list is a popover on both.
   scroll line by line (`scrollUntil`).
 - 🪤 The fold arrow is its own button so the heading's words stay a text of their own (Mac folding).
 - 🪤 Never trap on a repeated line id (E.6): the screen's index keeps the first.
+- 🪤 **The endless redraw (0.96, 20 Oct 2026).** Until 0.96 the whole B1 key, tick included, sat on the row the
+  lazy stack holds, so each tick replaced that row with a NEW one in the same place. With lines ticked and then
+  the keyboard up for "Add a thing to this trip" — the list a window about one line tall — iOS's lazy stack
+  (seen on iOS 26.5) redrew the list without end: its prefetch pass and its layout set each other off for ever
+  (`LazyLayoutViewCache.signalPrefetch` → `updateItemPhases` → layout → again), the main thread at 100 % and the
+  screen frozen for good. GitHub's way-home tests had failed this way since 0.88; a trip with nothing ticked was
+  spared. The same with the key as the `ForEach`'s own id instead of an `.id` (tried). Rule for every lazy list
+  here: a row may become a new row when it MOVES (that is what keeps a moved row fresh), never while it stays
+  in place — what changes in place is keyed inside the row's own box. A plain `VStack` for the list was measured
+  and refused: on a 244-line trip each key typed took about 0.7 s (the lazy list: mostly under 0.1 s, the same with the fix).
+  Test: `testATickedTripStillAnswersWithTheKeyboardUp` (red on 0.95: "Test exceeded execution time allowance of
+  5 minutes", the app hung at 100 %).
 
 ---
 

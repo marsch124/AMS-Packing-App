@@ -3448,6 +3448,29 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "bought-on-site-line")
     }
 
+    /// The trip froze for good (0.96, 20 Oct 2026 — GitHub's way-home tests since 0.88): lines
+    /// ticked, then the keyboard up for Add. Each row of the trip's lazy list had an identity made
+    /// of its state, so a tick replaced the row with a NEW one in the same place; with the keyboard
+    /// leaving the list a window about one line tall, iOS's lazy list redrew it without end. The
+    /// screen must still answer: what is typed shows, Bought on site is offered, and Add puts it on
+    /// the trip. (Spec 03, Traps: the endless redraw.)
+    func testATickedTripStillAnswersWithTheKeyboardUp() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" })
+        app.buttons["trip-line-1"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" })
+        type("Sandals", into: app.textFields["trip-add-name"])
+        XCTAssertTrue(app.buttons["trip-add-bought"].waitForExistence(timeout: 10),
+                      "with the keyboard up the trip no longer answers: no Bought on site")
+        tap(app, id: "trip-add")
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/8" }, "Add did not put it on the trip: '\(words(progress))'")
+    }
+
     /// Pack to go home (his idea 13): what went and what was bought on site, with ticks of
     /// its own; Used up takes a thing off; it is kept when closed.
     func testTheWayHomeIsPackedFromWhatWent() {
