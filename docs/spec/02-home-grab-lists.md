@@ -1351,7 +1351,16 @@ line of its own (0.84 showed it flat while the open list was grouped by kind):
   2. `sometimes` = the draft THINGS whose `normName` is marked; the list's marks before the save are noted;
   3. one `model.change`: `saveGrabEdit(id:lines:sometimes:)` (0.85; `…items:…` before) — `saveGrabList(id:lines:)`,
      and only if that succeeds `setSometimes(listId:names:)`, which validates against the new items. "One door for
-     every list, his own ones too."
+     every list, his own ones too." **Since 0.95 (residual of the outside review) onto the list as it is THEN:**
+     Edit keeps the lines and the marks as it opened (`draftOpened`, `marksOpened`), and Save calls
+     `saveGrabEdit(id:opened:openedSometimes:lines:sometimes:)`, which merges before that same door — the lines by
+     the list rule of spec 01 §5 (a thing known by its `normName`, a heading by its words: what the editor added,
+     took off or moved goes in; what the other device added meanwhile stays, in its place; a list holding a
+     heading twice is the editor's), the marks as a set (live marks, minus those the editor unmarked, plus those it
+     marked). Until 0.95 the editor's whole list was written and a thing added on the other device while Edit was
+     open was gone. Test: model `PageChangesTests.testAGrabListsEditKeepsWhatTheOtherDeviceAddedMeanwhile` — seen
+     RED on 0.94: `("["Flip-flops", "Fins"]") is not equal to ("["Nose clip", "Fins"]") - a thing added on one of
+     the devices was lost` and `("["Towel"]") is not equal to ("["Towel", "Goggles"]") - a mark was lost`.
   4. **Refused** (no THING left on the list — headings alone count as nothing, 0.85): nothing is stored, the
      editor stays open, and `grab-save-needs` says "Put at least one thing on the list first." (0.62).
   5. Otherwise editing ends and the delete question closes.

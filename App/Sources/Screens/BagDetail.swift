@@ -77,6 +77,8 @@ struct BagPage: View {
     /// The pockets as the page found them (or last wrote itself), and whether they were changed here.
     @State private var pocketsAt: PocketsKept?
     @State private var pocketsTouched = false
+    /// What this page's own pocket changes did (0.95): Cancel puts back only that.
+    @State private var pocketsTrail = PocketsTrail()
     /// Something is held on the page and not written (0.92): a swipe down then asks first. Set once,
     /// by the ledger, when it first holds something (`EditDraft.onFirstHold`).
     @State private var touched = false
@@ -111,7 +113,8 @@ struct BagPage: View {
                         // For the lost-luggage desk (0.80, spec 07 part 18 A): said once, every trip uses it.
                         lostDesk(bag)
                         // Its pockets (0.69): named once, offered when a thing is ticked.
-                        BagPockets(bagId: bag.id, touched: { pocketsTouched = true }).environmentObject(model)
+                        BagPockets(bagId: bag.id, touched: { pocketsTouched = true },
+                                   did: { pocketsTrail.add(before: $0, after: $1) }).environmentObject(model)
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)
@@ -386,11 +389,13 @@ struct BagPage: View {
 
     // MARK: Cancel (0.92) — his "How do I cancel that?"
 
-    /// Close and write nothing the page holds; the pockets as the page found them.
+    /// Close and write nothing the page holds; the pockets as the page found them — only what this
+    /// page changed there (0.95): a pocket or a line's pocket the other device changed meanwhile stays.
     private func cancel() {
         draft.close()
         if pocketsTouched, let kept = pocketsAt {
-            model.change(stamping: false) { _ = $0.putBackPockets(kept) }
+            let trail = pocketsTrail
+            model.change(stamping: false) { _ = $0.putBackPockets(kept, trail: trail) }
         }
         dismiss()
     }
@@ -401,6 +406,7 @@ struct BagPage: View {
         if touched || pocketsTouched { keptEarlier = true }
         pocketsAt = model.library.keepPockets(bagId: bagId)
         pocketsTouched = false
+        pocketsTrail = PocketsTrail()
         armTouched()
     }
 

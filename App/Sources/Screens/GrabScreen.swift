@@ -172,6 +172,10 @@ struct GrabScreen: View {
     @State private var editing = false
     /// The list being edited, top to bottom: things and (0.85) his headings.
     @State private var draft: [GrabLine] = []
+    /// The list and its "1 in 10" marks as Edit opened (0.95): Save puts in only what the editor
+    /// changed, onto the list as it is then (`saveGrabEdit(id:opened:…)`).
+    @State private var draftOpened: [GrabLine] = []
+    @State private var marksOpened: [String] = []
     /// One key per draft row, moved with it (0.72): the rows are followed by these, not by
     /// their place, so a row carried by its grip keeps its gesture as the others move.
     @State private var rowKeys: [Int] = []
@@ -726,9 +730,11 @@ struct GrabScreen: View {
 
     private func startEditing() {
         draft = list.lines
+        draftOpened = list.lines
         rowKeys = Array(0..<draft.count)
         nextKey = draft.count
-        draftSometimes = Set(model.library.sometimes(listId: listId).map(normName))
+        marksOpened = model.library.sometimes(listId: listId)
+        draftSometimes = Set(marksOpened.map(normName))
         newThing = ""
         newHeading = ""
         addNeeds = ""
@@ -843,7 +849,8 @@ struct GrabScreen: View {
         // until 4 Oct 2026: the door took the original six only). The things and the
         // marks are saved together or not at all.
         var saved = false
-        model.change { saved = $0.saveGrabEdit(id: listId, lines: lines, sometimes: sometimes) }
+        let opened = draftOpened, marked = marksOpened
+        model.change { saved = $0.saveGrabEdit(id: listId, opened: opened, openedSometimes: marked, lines: lines, sometimes: sometimes) }
         guard saved else { saveNeeds = "Put at least one thing on the list first."; return }
         editing = false
         askingToDelete = false

@@ -494,6 +494,8 @@ struct DeskDetailsScreen: View {
     @State private var email = ""
     @State private var address = ""
     @State private var loaded = false
+    /// The details as the screen opened (0.95): Save writes only the fields typed differently.
+    @State private var opened = DeskDetails()
     @FocusState private var field: DeskField?
 
     private var tint: Color { AppSection.settings.color }
@@ -578,6 +580,7 @@ struct DeskDetailsScreen: View {
             guard !loaded else { return }
             let d = model.library.deskDetails()
             name = d.name; phone = d.phone; email = d.email; address = d.address
+            opened = d
             loaded = true
             if let focus { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { field = focus } }
         }
@@ -597,8 +600,8 @@ struct DeskDetailsScreen: View {
 
     private func save() {
         if changed {
-            let d = typed
-            model.change { _ = $0.setDeskDetails(d) }
+            let d = typed, o = opened
+            model.change { _ = $0.setDeskDetails(d, opened: o) }
         }
         dismiss()
     }

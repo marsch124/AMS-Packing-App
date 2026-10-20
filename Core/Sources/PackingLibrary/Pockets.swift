@@ -461,7 +461,68 @@ public struct PocketsKept: Equatable, Sendable {
     let edited: JSONValue?
 }
 
+/// What a bag page's OWN pocket changes did (0.95, residual of the outside review): each place they
+/// changed — the bag's list of pockets, its Last edited, a thing's usual pocket, a line's two pockets —
+/// with the value they left there. Cancel puts back only these places, and only where the value is
+/// still the one the page left: a line the other device put in a pocket meanwhile, or a pocket it
+/// added, stays. Until 0.95 Cancel put back every place as the page found it.
+public struct PocketsTrail: Equatable, Sendable {
+    var left: [String: JSONValue] = [:]
+    public init() {}
+    public var isEmpty: Bool { left.isEmpty }
+
+    /// One change on the page: the bag's pockets kept just before it and just after it.
+    public mutating func add(before: PocketsKept?, after: PocketsKept?) {
+        guard let b = before?.places, let a = after?.places else { return }
+        for k in Set(b.keys).union(a.keys) where b[k] != a[k] { left[k] = a[k] ?? .null }
+    }
+}
+
+extension PocketsKept {
+    /// Every place as one value, by name ("pockets", "edited", "usual" + id, "line" + trip + line).
+    var places: [String: JSONValue] {
+        var o: [String: JSONValue] = ["pockets": JSONValue(pockets), "edited": edited ?? .null]
+        for (id, p) in usual { o["usual\u{1F}" + id] = .string(p) }
+        for (trip, ls) in lines { for (line, two) in ls { o["line\u{1F}" + trip + "\u{1F}" + line] = JSONValue(two) } }
+        return o
+    }
+}
+
 extension Library {
+    /// A bag page's Cancel (0.95): the bag's pockets as they are now, with each place the page itself
+    /// changed (`trail`) — and nobody changed since — put back as kept when it opened. The list of
+    /// pockets by the list rule of `Library.mergeList`: the page's own adds and removals undone, the
+    /// other device's kept. A thing or line then in a pocket the bag no longer has is simply in the bag.
+    @discardableResult
+    public mutating func putBackPockets(_ kept: PocketsKept, trail: PocketsTrail) -> Bool {
+        guard !trail.isEmpty, let now = keepPockets(bagId: kept.bagId) else { return false }
+        let here = now.places, then = kept.places
+        var pockets = now.pockets, edited = now.edited, usual = now.usual, lines = now.lines
+        for (k, left) in trail.left {
+            let current = here[k] ?? .null
+            if k == "pockets" {
+                let leftList = (left.arrayValue ?? []).compactMap(\.stringValue)
+                pockets = current == left ? kept.pockets
+                    : Library.mergeList(now.pockets, was: leftList, now: kept.pockets, id: normName) { here, _, _ in here }
+                continue
+            }
+            guard current == left else { continue }                  // changed since by someone else
+            let back = then[k] ?? .null
+            let parts = k.components(separatedBy: "\u{1F}")
+            switch parts[0] {
+            case "edited": edited = back == .null ? nil : back
+            case "usual" where parts.count == 2: usual[parts[1]] = back.stringValue ?? ""
+            case "line" where parts.count == 3:
+                if let two = back.arrayValue?.compactMap(\.stringValue), two.count == 2 { lines[parts[1], default: [:]][parts[2]] = two }
+            default: break
+            }
+        }
+        let has = Set(pockets.map(normName))
+        usual = usual.mapValues { has.contains(normName($0)) ? $0 : "" }
+        lines = lines.mapValues { $0.mapValues { $0.map { has.contains(normName($0)) ? $0 : "" } } }
+        return putBackPockets(PocketsKept(bagId: kept.bagId, pockets: pockets, usual: usual, lines: lines, edited: edited))
+    }
+
     /// The bag's pockets now, for `putBackPockets`. nil for an id that is no bag of his.
     public func keepPockets(bagId: String) -> PocketsKept? {
         guard let bag = bags().first(where: { $0.id == bagId }),

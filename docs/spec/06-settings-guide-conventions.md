@@ -1102,7 +1102,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
     so; the magnifier searches everything (a thing's notes too — 0.69); every page's Cancel and Save/Done and the swipe
     that asks (0.92) — and (0.94) "Put the app away with a template, Your choices or a bag open and what you changed
     there is kept; back in the app, Cancel puts back only what you change after that." (§20a); (0.93) "Save keeps only
-    what you changed on that page — a change made on the other device while it was open stays. If a change cannot be
+    what you changed on that page — a change made on the other device while it was open stays" — (0.95) ", and so does
+    what it added to the same list (a section, a kind of thing, a grab list’s things); Cancel on a bag takes back only
+    what you changed there." — (0.93) "If a change cannot be
     saved, a small note says “Couldn't save that — try again.” The screen then shows what is kept; just do it again"
     — (0.94) "— a bag, a template or Your choices stays open with what you changed, so Done again saves it." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62). (5 lines.)

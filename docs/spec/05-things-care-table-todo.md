@@ -1406,7 +1406,12 @@ templates Subheadline, `Metrics.chip` tall.
   how often or the notes differ from what loaded; Only on some trips (`setThingLimits`) only when the pills differ
   from what loaded; each template on or off only where its tick differs from what loaded (one the other device put it
   on meanwhile stays). Sections were already written only where changed (above), and the kit only where its part
-  changed (`KitDraft.save`). A field changed on both: the page's (Save is the later word). Tests: model
+  changed (`KitDraft.save`) — since 0.95 (residual of the outside review) onto the kit as it is THEN: the contents and
+  the ones taken out as the page opened and as it leaves them go through `Library.kitFromPage` (the list rule of spec
+  01 §5: a thing the page put in, took out or moved goes in; one the other device put in meanwhile stays — until 0.95
+  the page's whole list was written and it was gone; taken out: what the page changed, the rest as kept), then
+  `setKit`. Test: model `PageChangesTests.testAKitsPageSavesWhatItChangedOntoTheKitAsItIsNow` — seen RED on 0.94:
+  `("["id-6"]") is not equal to ("["id-10", "id-6"]") - a thing put in on the other device was lost`. A field changed on both: the page's (Save is the later word). Tests: model
   `ThingPageSaveTests.testOnlyWhatThePageChangedIsWritten`; UI `testAThingsSaveKeepsTheBagChangedOnTheOtherDevice`
   (iPhone; `-bagOnReturn Map "Checked luggage"` plays the other device as the app comes back to the front: the Map's
   notes typed, the app put away and back, Save → the notes kept AND the Checked luggage) — seen RED on 0.92:
@@ -2131,6 +2136,17 @@ typed on a ledger, written on leaving).
   (`Library.keepPockets(bagId:)` on appear: the bag's list and Last edited, the usual pocket of every thing in it, both
   pockets of every trip line in it) and Cancel puts all of it back (`putBackPockets`: nothing else of a thing or a line
   is touched; a thing or line in the bag now naming a pocket the bag no longer has is simply in the bag).
+  **Only what THIS page changed (0.95, residual of the outside review):** each pocket change on the page tells the page
+  the bag's pockets just before and just after it (`BagPockets.did`, read outside the change so Last edited's stamp is
+  in it), and the page keeps a `PocketsTrail` — every place its own changes touched (the bag's list, Last edited, a
+  thing's usual pocket, a line's two pockets) with the value they left there. Cancel (`putBackPockets(_:trail:)`) puts
+  back only those places, and only where the value is still the one the page left; the list of pockets, when the other
+  device changed it too, by the list rule of spec 01 §5 (the page's own adds and removals undone, the other device's
+  kept). Until 0.95 Cancel put back EVERY place as the page found it: a line packed into a pocket on the other device
+  while the page was open came out of it again, a pocket added there was gone. `savedHere` starts a new trail. Test:
+  model `PageChangesTests.testABagPagesCancelPutsBackOnlyWhatThePageChanged` — seen RED on 0.94:
+  `("["Main", "Lid"]") is not equal to ("["Main", "Lid", "Side"]") - Cancel took away the other device's pocket` and
+  `("") is not equal to ("Lid") - Cancel took the line out of the pocket the other device put it in`.
 - **Kept the moment they are made** (Cancel does not take them back, as on a thing's page): photos of the bag; what is
   saved on a page opened from this one (Its details, a thing in it — each has its own Save and Cancel); the copy
   Duplicate makes; a delete.

@@ -182,6 +182,22 @@ extension Library {
         saveGrabEdit(id: id, lines: items.map { .thing($0) }, sometimes: names)
     }
 
+    /// The editor's Save onto the list as it is NOW (0.95, residual of the outside review): the lines
+    /// and "1 in 10" marks as Edit opened (`opened`, `openedSometimes`) and as he leaves them. What he
+    /// added, took off or moved goes in; what the other device added or marked meanwhile stays (the
+    /// list rule of `Library.mergeList`). Until 0.95 the editor's whole list was written.
+    @discardableResult
+    public mutating func saveGrabEdit(id: String, opened: [GrabLine], openedSometimes: [String],
+                                      lines: [GrabLine], sometimes: [String]) -> Bool {
+        let now = grabList(id: id)?.lines ?? opened
+        func key(_ l: GrabLine) -> String { l.isHeading ? "h:" + jsTrim(l.name) : "t:" + normName(l.name) }
+        let merged = Library.mergeList(now, was: GrabLine.cleaned(opened), now: GrabLine.cleaned(lines), id: key) { _, _, b in b }
+        let was = Set(openedSometimes.map(normName)), mine = Set(sometimes.map(normName))
+        var marks = self.sometimes(listId: id).filter { !(was.contains(normName($0)) && !mine.contains(normName($0))) }
+        for n in sometimes where !was.contains(normName(n)) && !marks.contains(where: { normName($0) == normName(n) }) { marks.append(n) }
+        return saveGrabEdit(id: id, lines: merged, sometimes: marks)
+    }
+
     /// The editor's Save with his headings among the things (0.85).
     @discardableResult
     public mutating func saveGrabEdit(id: String, lines: [GrabLine], sometimes names: [String]) -> Bool {

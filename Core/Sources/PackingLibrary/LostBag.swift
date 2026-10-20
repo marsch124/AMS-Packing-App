@@ -204,6 +204,20 @@ extension Library {
         return true
     }
 
+    /// For the lost-luggage desk's Save (0.95, residual of the outside review): only the fields typed
+    /// differently from how the screen opened (`opened`) are put onto the details as kept now — a
+    /// field changed on the other device while the screen was open stays. False when nothing changed.
+    @discardableResult
+    public mutating func setDeskDetails(_ typed: DeskDetails, opened: DeskDetails) -> Bool {
+        let t = typed.cleaned, o = opened.cleaned
+        var d = deskDetails()
+        if t.name != o.name { d.name = t.name }
+        if t.phone != o.phone { d.phone = t.phone }
+        if t.email != o.email { d.email = t.email }
+        if t.address != o.address { d.address = t.address }
+        return setDeskDetails(d)
+    }
+
     /// The name the desk gets: the full name he typed; else the owner marked "This is me";
     /// else "".
     public func deskName() -> String {

@@ -1803,6 +1803,17 @@ stays (the app's rule, spec 06 §20a; until then it held still without a word an
   templates this screen does not show), `contexts` = every context in those entries (`WorkoutContexts.union`),
   transport, season, catering, `weatherOn` (`WEATHER_CONDITION_IDS` order), laundry, `extra.laundryNights`,
   dates (no dates — never picked, or Clear dates — → both "").
+  **Only what the screen changed (0.95, residual of the outside review):** those answers are written
+  onto the trip AS THE SCREEN OPENED ON IT (`atLoad`, kept by `load`), and only the fields that then
+  differ from it are put onto the trip as it is now (`TripEvent.takingSettings(from:to:)` = the
+  template page's `withPage`: the head field by field — an `extra` key such as the leave times, the
+  laundry nights, the flights or the bag tags is a field of its own — the lines untouched). Until 0.95
+  Save wrote every field the screen shows, so a name, a place, dates or a leave time changed on the
+  other device while the screen was open went back. A field changed on both: the screen's (Save is the
+  later word); `activities` is one field (a template ticked on each device: the screen's list). The
+  question before Save (`needs`) asks of the trip as Save would write it. Test: model
+  `PageChangesTests.testTripSettingsWriteOnlyWhatTheScreenChanged` — seen RED on 0.94:
+  `("Weekend") is not equal to ("Weekend in the hills") - Save put back the trip's name from when the screen opened`.
   `changeTrip`: trims the name; refuses (nil, nothing changed) a blank name, or a QUICK trip with no
   templates (a Full trip with none is rebuilt from Always packed and the transport kit — the screen asks
   first whether that packs anything, 0.73); `nights = nightsBetween ?? 0`; `entries = regenerated(trip)`; `updatedAt = now`; returns

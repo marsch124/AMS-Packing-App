@@ -78,7 +78,9 @@ struct KitDraft: Equatable {
     func save(_ lib: inout Library, thingId: String) {
         guard !none else { return }
         if contents != opened || out != openedOut || check != openedCheck {
-            lib.setKit(kitId: thingId, contents: contents, takenOut: out,
+            // Onto the kit as it is now (0.95): a thing put in on the other device meanwhile stays.
+            let kept = lib.kitFromPage(kitId: thingId, opened: opened, openedOut: openedOut, contents: contents, out: out)
+            lib.setKit(kitId: thingId, contents: kept.contents, takenOut: kept.out,
                        check: checkSaid || check != openedCheck ? check : nil)
         }
         if holder != nil, takenOut != openedTakenOut {

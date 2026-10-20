@@ -57,6 +57,9 @@ struct BagPockets: View {
     let bagId: String
     /// A pocket changed here (0.92): the bag's page puts them back on Cancel.
     var touched: () -> Void = {}
+    /// Each change here, with the bag's pockets just before and just after it (0.95): Cancel then puts
+    /// back only what this page changed (`PocketsTrail`), not what the other device did meanwhile.
+    var did: (PocketsKept?, PocketsKept?) -> Void = { _, _ in }
     @EnvironmentObject var model: LibraryModel
     @State private var newName = ""
     @State private var addNeeds = ""
@@ -176,38 +179,42 @@ struct BagPockets: View {
         let list = model.library.pockets(bagId: bagId)
         guard let n = list.firstIndex(of: pocket), list.indices.contains(n + by) else { return }
         typed = [:]
+        changing { $0.movePocket(bagId: bagId, from: n, to: n + by) }
+    }
+
+    /// One change of the bag's pockets, told to the page with the pockets just before and after it.
+    @discardableResult
+    private func changing(_ body: (inout Library) -> Bool) -> Bool {
         touched()
-        model.change { _ = $0.movePocket(bagId: bagId, from: n, to: n + by) }
+        let before = model.library.keepPockets(bagId: bagId)
+        var ok = false
+        model.change { ok = body(&$0) }
+        did(before, model.library.keepPockets(bagId: bagId))
+        return ok
     }
 
     private func add() {
         let name = jsTrim(newName)
         guard !name.isEmpty else { addNeeds = "Type a pocket first."; return }
-        var ok = false
-        touched()
-        model.change { ok = $0.addPocket(bagId: bagId, name: name) }
+        let ok = changing { $0.addPocket(bagId: bagId, name: name) }
         if ok { newName = ""; typed = [:] } else { addNeeds = "The bag already has a pocket called that." }
     }
 
     private func rename(_ n: Int, _ pocket: String) {
         guard let wanted = typed[n] else { return }
-        var ok = false
-        touched()
-        model.change { ok = $0.renamePocket(bagId: bagId, from: pocket, to: wanted) }
+        let ok = changing { $0.renamePocket(bagId: bagId, from: pocket, to: wanted) }
         if ok { typed = [:]; problem = "" }
         else { problem = jsTrim(wanted).isEmpty ? "A pocket needs a name." : "The bag already has a pocket called that." }
     }
 
     private func move(_ n: Int) {
         typed = [:]
-        touched()
-        model.change { _ = $0.movePocket(bagId: bagId, from: n, to: n - 1) }
+        changing { $0.movePocket(bagId: bagId, from: n, to: n - 1) }
     }
 
     private func remove(_ pocket: String) {
         typed = [:]
-        touched()
-        model.change { _ = $0.removePocket(bagId: bagId, name: pocket) }
+        changing { $0.removePocket(bagId: bagId, name: pocket) }
     }
 }
 

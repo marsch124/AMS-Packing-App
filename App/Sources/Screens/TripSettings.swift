@@ -17,6 +17,8 @@ struct TripSettingsScreen: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var loaded = false
+    /// The trip as the screen opened on it (0.95): Save writes only what the screen changed since.
+    @State private var atLoad: TripEvent?
     @State private var name = ""
     @State private var hasDates = false
     @State private var start = Date()
@@ -284,6 +286,7 @@ struct TripSettingsScreen: View {
     private func load() {
         guard !loaded, let t = model.library.trips.first(where: { $0.id == tripId }) else { return }
         loaded = true
+        atLoad = t
         name = t.name
         place = t.destination
         hasDates = !t.startDate.isEmpty
@@ -327,9 +330,8 @@ struct TripSettingsScreen: View {
     private func needs(_ flat: [PackList]) -> String {
         var said: [String] = []
         if jsTrim(name).isEmpty { said.append("Give the trip a name.") }
-        if var trip = model.library.trips.first(where: { $0.id == tripId }) {
-            edited(&trip, flat)
-            if let missing = model.library.templateMissing(trip) { said.append(missing) }
+        if let trip = model.library.trips.first(where: { $0.id == tripId }) {
+            if let missing = model.library.templateMissing(settingsOnto(trip, flat)) { said.append(missing) }
         }
         return said.joined(separator: " ")
     }
@@ -338,9 +340,20 @@ struct TripSettingsScreen: View {
         stillNeeded = needs(flat)
         guard stillNeeded.isEmpty else { return }
         var result: Library.TripRebuilt?
-        model.change { lib in result = lib.changeTrip(id: tripId) { edited(&$0, flat) } }
+        model.change { lib in result = lib.changeTrip(id: tripId) { $0 = settingsOnto($0, flat) } }
         if let result { rebuilt(result) }
         dismiss()
+    }
+
+    /// The screen's answers onto the trip as it is NOW (0.95, residual of the outside review): written
+    /// onto the trip as the screen opened on it, and only the fields that differ from that are put in
+    /// (`takingSettings`) — a name, a place or dates changed on the other device meanwhile stay. Until
+    /// 0.95 Save wrote every field the screen shows.
+    private func settingsOnto(_ live: TripEvent, _ flat: [PackList]) -> TripEvent {
+        guard let was = atLoad else { var t = live; edited(&t, flat); return t }
+        var page = was
+        edited(&page, flat)
+        return live.takingSettings(from: was, to: page)
     }
 
     /// The screen's answers written onto the trip: what Save stores, and what `needs`

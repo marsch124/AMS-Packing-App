@@ -286,6 +286,18 @@ extension Library {
         return changed || items[k].extra != before
     }
 
+    /// What a kit's page saves, onto the kit as it is NOW (0.95, residual of the outside review): its
+    /// contents and the ones taken out as the page opened (`opened`, `openedOut`) and as it leaves them.
+    /// A thing the page put in, took out or moved goes in; one put in on the other device meanwhile
+    /// stays (the list rule of `Library.mergeList`). Until 0.95 the page's whole list was written.
+    public func kitFromPage(kitId: String, opened: [String], openedOut: Set<String>,
+                            contents: [String], out: Set<String>) -> (contents: [String], out: Set<String>) {
+        guard let kit = items.first(where: { $0.id == kitId }) else { return (contents, out) }
+        let merged = Library.mergeList(Library.listedContents(kit), was: opened, now: contents, id: { $0 }) { here, _, _ in here }
+        let hereOut = Set(Library.kitIds(kit.extra[KIT_OUT_KEY]))
+        return (merged, hereOut.subtracting(openedOut.subtracting(out)).union(out.subtracting(openedOut)))
+    }
+
     /// Put one thing in a kit (at the end), moving it out of any other.
     @discardableResult
     public mutating func addToKit(kitId: String, thingId: String) -> Bool {
