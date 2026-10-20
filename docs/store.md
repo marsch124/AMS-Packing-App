@@ -70,8 +70,13 @@ which is how the web app works too.
 5. **Same key, two records → one survives, by rule.** CloudKit cannot enforce a
    unique key, and two devices can create `phases/prep` independently. On load,
    records are grouped by (table, key); the newest `updatedAt` wins, the rest are
-   deleted, and on an equal `updatedAt` the greater JSON text wins — the content
-   is the tiebreak (twins share their key), so both devices pick the same one.
+   deleted, and on an equal `updatedAt` the greater JSON text wins (then the
+   parent, then a photo's bytes, 0.94) — the content is the tiebreak (twins share
+   their key), so both devices pick the same one. The row KEPT is the one that
+   already holds the winner — never "the first one fetched", which differs per
+   device (0.94: each device kept its own row and deleted the other's, and after
+   the sync neither was left). Identical twins are left alone; a change made to a
+   key with twins goes into every twin and deletes none (`planTwins`).
 6. **Stable keys for things that are the same thing.** A phase is `prep`, a shared
    row is `places:garage`. Random ids only for things that are genuinely new.
 7. **No field is ever called `owner` or `realmId`** (PackingCore already refuses).

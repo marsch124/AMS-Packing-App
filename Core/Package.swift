@@ -16,6 +16,8 @@ let package = Package(
         // The library in memory, the records it is stored and synced as, and the
         // one-time import of a web-app backup. Still no screen and no iCloud in here:
         // the store is a protocol, and tests use the in-memory one. See docs/store.md.
+        // One exception, on purpose (0.94): `StoreHistory` reads a SwiftData store's
+        // history, so a test can measure it on a real store file (spec 01 §4).
         .target(name: "PackingLibrary", dependencies: ["PackingCore"]),
         // The Swift half of the parity checker (tools/parity): answers the contract's
         // questions about a backup file, through PackingCore's PUBLIC API only.

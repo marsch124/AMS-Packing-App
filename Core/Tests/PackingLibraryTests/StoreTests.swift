@@ -130,26 +130,117 @@ final class StoreTests: XCTestCase {
 
     // MARK: - The store (item 29: reload, commit and a refusing store had no test)
 
-    /// A store that can hold twins, as CloudKit can, and can refuse a write.
+    /// A store that can hold twins, as CloudKit can, and can refuse a write. Each row has a name of its
+    /// own, as CloudKit names each record on every device alike — a name the store's rule never sees
+    /// (SwiftData does not hand it out), so the tests can say WHICH row each device deleted (0.94).
     final class TwinStore: LibraryStore {
-        var records: [StoredRecord]
+        var rows: [(name: String, record: StoredRecord)] = []
+        var records: [StoredRecord] { rows.map(\.record) }
         var refuse = false
         var log: [RecordChanges] = []
+        /// The names of the rows this store deleted, in order.
+        var deleted: [String] = []
         var onRemoteChange: (() -> Void)?
-        init(_ records: [StoredRecord]) { self.records = records }
+        private var made = 0
+        init(_ records: [StoredRecord]) { for r in records { add(r) } }
+        init(named: [(String, StoredRecord)]) { rows = named.map { (name: $0.0, record: $0.1) } }
+        private func add(_ r: StoredRecord) { made += 1; rows.append((name: "row-\(made)", record: r)) }
+        func row(_ name: String) -> StoredRecord? { rows.first { $0.name == name }?.record }
         func loadAll() throws -> [StoredRecord] { records }
         func apply(_ changes: RecordChanges) throws {
             if refuse { throw CocoaError(.fileWriteNoPermission) }
             log.append(changes)
-            // As CloudStore does: a put updates the first twin and deletes the others.
+            // As CloudStore.apply does: the twins of a put are settled by `planTwins`.
             for put in changes.puts {
-                if let n = records.firstIndex(where: { $0.id == put.id }) {
-                    records[n] = put
-                    records = records.enumerated().filter { $0.offset == n || $0.element.id != put.id }.map(\.element)
-                } else { records.append(put) }
+                let twins = rows.indices.filter { rows[$0].record.id == put.id }
+                guard !twins.isEmpty else { add(put); continue }
+                let plan = planTwins(twins.map { rows[$0].record }, storing: put)
+                for n in plan.write { rows[twins[n]].record = put }
+                let gone = Set(plan.delete.map { twins[$0] })
+                deleted += gone.sorted().map { rows[$0].name }
+                rows = rows.enumerated().filter { !gone.contains($0.offset) }.map(\.element)
             }
-            records.removeAll { changes.deletes.contains($0.id) }
+            for id in changes.deletes {
+                deleted += rows.filter { $0.record.id == id }.map(\.name)
+                rows.removeAll { $0.record.id == id }
+            }
         }
+    }
+
+    // MARK: - Twins made on both devices (0.94, item 3 of the outside review of 0.92)
+
+    /// The same fixed key written on both devices before they synced — here the first edit of the
+    /// "When" steps. Each device then holds both rows, its own usually first. Until 0.94 the store
+    /// wrote the winner into the FIRST row it fetched and deleted the others: each device kept its own
+    /// row and deleted the other's, and once that synced both were gone — the steps fell back to the
+    /// factory seven. Now both devices keep the SAME row: the one holding the winning content.
+    func testTwinsMadeOnBothDevicesLeaveOneRowWhicheverOrderEachReadsThem() throws {
+        let early = Date(timeIntervalSince1970: 1_000), late = Date(timeIntervalSince1970: 2_000)
+        var iPhoneSteps = DEFAULT_PHASES[0]; iPhoneSteps.label = "Pack the night before"
+        var macSteps = DEFAULT_PHASES[0]; macSteps.label = "Get ready"
+        let iPhoneRow = StoredRecord(table: .phases, key: "prep", json: iPhoneSteps.json, updatedAt: early)
+        let macRow = StoredRecord(table: .phases, key: "prep", json: macSteps.json, updatedAt: late)
+
+        // Each device reads its own row first — and, to be sure the order never matters, the other way round.
+        for flipped in [false, true] {
+            let onIPhone = [("iphone-row", iPhoneRow), ("mac-row", macRow)]
+            let onMac = [("mac-row", macRow), ("iphone-row", iPhoneRow)]
+            let iPhone = TwinStore(named: flipped ? onMac : onIPhone)
+            let mac = TwinStore(named: flipped ? onIPhone : onMac)
+            let (onePhone, _) = try StoreSession.load(iPhone)
+            let (oneMac, _) = try StoreSession.load(mac)
+            XCTAssertEqual(onePhone.phases.map(\.label), ["Get ready"], "the newer twin did not win on the iPhone")
+            XCTAssertEqual(oneMac.phases.map(\.label), ["Get ready"], "the newer twin did not win on the Mac")
+
+            // What iCloud is left with once both devices' deletions have travelled.
+            let gone = Set(iPhone.deleted + mac.deleted)
+            let left = ["iphone-row", "mac-row"].filter { !gone.contains($0) }
+            XCTAssertEqual(left, ["mac-row"], "flipped \(flipped): the rows left in iCloud after both devices settled their twins: \(left)")
+            XCTAssertEqual(mac.row("mac-row")?.json, macSteps.json, "flipped \(flipped): the row kept lost its content on the Mac")
+            XCTAssertEqual(iPhone.row("mac-row")?.json, macSteps.json, "flipped \(flipped): the row kept lost its content on the iPhone")
+        }
+    }
+
+    /// Twins that hold exactly the same are left alone: deleting "the other one" on each device could
+    /// delete both. Nothing is written, now or at the next load.
+    func testIdenticalTwinsAreLeftAlone() throws {
+        let when = Date(timeIntervalSince1970: 1_000)
+        var steps = DEFAULT_PHASES[0]; steps.label = "Get ready"
+        let row = StoredRecord(table: .phases, key: "prep", json: steps.json, updatedAt: when)
+        let store = TwinStore(named: [("a", row), ("b", row)])
+        let (lib, _) = try StoreSession.load(store)
+        XCTAssertEqual(lib.phases.map(\.label), ["Get ready"])
+        XCTAssertEqual(store.deleted, [], "an identical twin was deleted")
+        XCTAssertTrue(store.log.isEmpty, "identical twins were written: \(store.log)")
+    }
+
+    /// A change made here to a key that has twins goes into EVERY twin and deletes none: a change is
+    /// made on one device, and the other may be settling the same twins at that moment — a row deleted
+    /// here and the other deleted there would leave nothing.
+    func testAChangeToAKeyWithTwinsGoesIntoEveryTwin() throws {
+        let when = Date(timeIntervalSince1970: 1_000)
+        let row = StoredRecord(table: .phases, key: "prep", json: coercePhase(DEFAULT_PHASES[0]).json, updatedAt: when)
+        let store = TwinStore(named: [("a", row), ("b", row)])
+        let (lib, held) = try StoreSession.load(store)
+        var next = lib
+        var steps = DEFAULT_PHASES; steps[0].label = "Water the plants"
+        next.phases = steps
+        XCTAssertNotNil(try StoreSession.save(next, held: held, to: store))
+        XCTAssertEqual(store.deleted, [], "a change deleted a twin")
+        XCTAssertEqual(store.rows.filter { $0.record.id == RecordID(.phases, "prep") }.map { Phase(json: $0.record.json).label },
+                       ["Water the plants", "Water the plants"], "not every twin took the change")
+    }
+
+    /// Two twins written in the same instant with the same text, differing only in what they belong
+    /// to (or a photo's bytes): both devices still choose the same one, whatever order they read.
+    func testTwinsThatDifferOnlyInWhatTheyBelongToSettleTheSameWayOnBothDevices() {
+        let when = Date(timeIntervalSince1970: 1_000)
+        let a = StoredRecord(table: .memberships, key: "m1", parent: "tpl-a", json: ["id": "m1"], updatedAt: when)
+        let b = StoredRecord(table: .memberships, key: "m1", parent: "tpl-b", json: ["id": "m1"], updatedAt: when)
+        XCTAssertEqual(settleDuplicates([a, b]).kept, settleDuplicates([b, a]).kept, "the parent did not decide")
+        let p = StoredRecord(table: .photos, key: "p1", json: ["id": "p1"], blob: Data([1, 2]), updatedAt: when)
+        let q = StoredRecord(table: .photos, key: "p1", json: ["id": "p1"], blob: Data([1, 3]), updatedAt: when)
+        XCTAssertEqual(settleDuplicates([p, q]).kept, settleDuplicates([q, p]).kept, "the photo's bytes did not decide")
     }
 
     func testLoadingSettlesTwinsSoBothDevicesHoldTheSame() throws {

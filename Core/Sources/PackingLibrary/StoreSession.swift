@@ -15,7 +15,9 @@ import PackingCore
 public enum StoreSession {
     /// Read everything the store holds. Twins of a key (CloudKit cannot keep a key
     /// unique) are settled by rule, and the survivors written again so the store
-    /// drops the losers — both devices end up holding the same records.
+    /// drops the losers — both devices end up holding the same records. Only the
+    /// survivors of keys with a twin that says something ELSE are written: twins
+    /// identical to their survivor are left alone (0.94, `planTwins`).
     ///
     /// `held` is what the store is believed to hold, rebuilt from the LIBRARY, not
     /// from what was read: records the library cannot see (a line of a trip deleted on
@@ -24,8 +26,9 @@ public enum StoreSession {
     public static func load(_ store: LibraryStore) throws -> (library: Library, held: [StoredRecord]) {
         let settled = settleDuplicates(try store.loadAll())
         if !settled.dropped.isEmpty {
-            let losers = Set(settled.dropped.map(\.id))
-            try store.apply(RecordChanges(puts: settled.kept.filter { losers.contains($0.id) }))
+            let winners = Dictionary(settled.kept.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            let losers = Set(settled.dropped.filter { !(winners[$0.id]?.identical(to: $0) ?? false) }.map(\.id))
+            if !losers.isEmpty { try store.apply(RecordChanges(puts: settled.kept.filter { losers.contains($0.id) })) }
         }
         var library = Library(records: settled.kept)
         // Rows whose note or "How many" an older build froze from their thing follow the
