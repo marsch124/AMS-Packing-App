@@ -1019,10 +1019,15 @@ pick "C" of three pictured layouts, 5 Oct 2026).
   `Library.applyingPage(from:to:)`: per record, by id — what the page added or changed is the page's, what it
   deleted goes, every other record keeps what the real library holds now, so the other device's changes while the
   page was open stay; a trip — whose open lines a row saved or a thing renamed here reaches — field by field since
-  0.93, so a tick or a line added on the other device meanwhile stays: spec 01 §5, "A page's Save"). **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
+  0.93, so a tick or a line added on the other device meanwhile stays: spec 01 §5, "A page's Save"; a thing, a row
+  and the template itself field by field since 0.94, so the bag, How many or colour the other device changed meanwhile
+  stays). Refused by the store (0.94), Done leaves the page open, holding it all, with the note. **The app put away
+  with the page open (0.94, review item 5):** what the page changed — rows whose own Save was pressed included — is
+  handed over as the app goes to the background (the Mac: as it quits), and the page goes on from there: Done, Cancel
+  and a swipe then deal only with what is changed after (spec 06 §20a). **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
   Escape ends Arrange first, §6a, and a second Escape is Cancel) throws the copy away: nothing on the page was
   kept. A swipe down on the iPhone (not while arranging): with nothing changed it closes; with something changed it
-  asks "Discard changes?" — Discard = Cancel, Keep editing stays (`asksBeforeDiscarding(page.changed, holds: arranging)`,
+  asks "Discard changes?" — Discard = Cancel, Keep editing stays (`asksBeforeDiscarding(page.changed, holds: arranging, keptEarlier: page.keptEarlier)`,
   spec 06 §20a). "Delete the template"
   deletes it from the real library at once (asked first) and closes — what else the page changed goes with it.
   A small core made from the page (§14b) is handed over with the rest of the page as its sheet closes, then the page

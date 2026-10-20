@@ -549,8 +549,9 @@ struct TemplatePage: View {
     /// A small core was made from this template (0.71): what the Templates screen says.
     /// The page closes. nil where the page is opened from elsewhere (Search).
     var onSmallCore: ((String) -> Void)? = nil
-    /// The copy this page works on (0.92): Done hands it over, Cancel throws it away.
-    let page: PageDraft
+    /// The copy this page works on (0.92): Done hands it over, Cancel throws it away. Watched (0.94):
+    /// the app put away keeps the page's changes, and the page then counts as unchanged until the next one.
+    @ObservedObject var page: PageDraft
     /// "Make a small core from this…" is open, and what it said once made.
     @State private var makingCore = false
     @State private var coreNews: String?
@@ -633,7 +634,8 @@ struct TemplatePage: View {
                     .keyboardShortcut(arranging ? nil : .cancelAction)
                     .accessibilityIdentifier("template-cancel")
                 Spacer()
-                Button("Done") { page.save(); dismiss() }
+                // A save the store refused (0.94) leaves the page open, holding it, for Done again.
+                Button("Done") { if page.save() { dismiss() } }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true))
                     .focusEffectDisabled()
                     .font(.system(.body, weight: .semibold))
@@ -914,7 +916,7 @@ struct TemplatePage: View {
         // would close it mid-move — and the iPhone's own ⌘. (which closes an untouched
         // sheet by itself) leaves Escape to Arrange. Done and Cancel still close it. With
         // something changed, a swipe down asks first (0.92, the app's rule; spec 06 §20a).
-        .asksBeforeDiscarding(page.changed, holds: arranging) { dismiss() }
+        .asksBeforeDiscarding(page.changed, holds: arranging, keptEarlier: page.keptEarlier) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("template-detail")
         #if os(macOS)

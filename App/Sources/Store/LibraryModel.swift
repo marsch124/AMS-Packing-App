@@ -113,16 +113,19 @@ final class LibraryModel: ObservableObject {
     }
 
     /// The only way anything changes. `stamping` false (0.92): a bag put back as it was — a bag
-    /// page's Cancel — keeps the Last edited it is given instead of being stamped now.
-    func change(stamping: Bool = true, _ body: (inout Library) -> Void) {
+    /// page's Cancel — keeps the Last edited it is given instead of being stamped now. false (0.94):
+    /// the store refused it and nothing of it was kept — a page then keeps holding what it wrote.
+    @discardableResult
+    func change(stamping: Bool = true, _ body: (inout Library) -> Void) -> Bool {
         let started = EditTiming.now
         var next = library
         body(&next)
         // A bag changed by any screen says when (0.90: Your bags' Last edited — BagSorting.swift).
         if stamping { next.stampEditedBags(since: library) }
         let changed = EditTiming.now
-        commit(next)
+        let kept = commit(next)
         if EditTiming.on { EditTiming.change(model: changed - started, store: EditTiming.now - changed) }
+        return kept
     }
 
     /// ⚠️ What one change costs: `StoreSession.save` builds EVERY record of the
@@ -397,7 +400,8 @@ extension LibraryModel {
     ///                           writes a thing called Sunglasses into it (0.91: the app's own saves are
     ///                           not read back, the other device's still are)
     ///  -uiTestingSaveFails    → (debug builds) a store FILE holding the sample; its first save after
-    ///                           launch fails (0.93: a note, the screens kept, the store and screen agree)
+    ///                           launch fails (0.93: a note, the screens kept, the store and screen agree);
+    ///                           + -saveFailsBags: the sample with bags (0.94: a bag page's failed save)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -440,7 +444,9 @@ extension LibraryModel {
         // The sample in a store FILE whose first save fails (0.93, the outside review of 0.92): the
         // app keeps its screens, says so in a note, and holds what the store holds.
         if args.contains("-uiTestingSaveFails"), let store = try? CloudStore(cloud: false, file: LibraryModel.freshTestFile("fails")) {
-            try? store.apply(RecordChanges(puts: SampleLibrary.make().records()))
+            // `-saveFailsBags` (0.94): the sample with his bags, so the failed save can be a bag page's.
+            let sample = args.contains("-saveFailsBags") ? SampleLibrary.bags() : SampleLibrary.make()
+            try? store.apply(RecordChanges(puts: sample.records()))
             store.failNextSave = true
             return LibraryModel(store: store, usesICloud: false, sky: sky)
         }

@@ -17,8 +17,9 @@ struct ListsScreen: View {
 /// the "When" timeline. They belong to the account, so both devices show the
 /// same; an entry still in use cannot be removed by accident.
 struct ListsPage: View {
-    /// The copy this page works on (0.92): Done hands it over, Cancel throws it away.
-    let page: PageDraft
+    /// The copy this page works on (0.92): Done hands it over, Cancel throws it away. Watched (0.94):
+    /// the app put away keeps the page's changes, and the page then counts as unchanged until the next one.
+    @ObservedObject var page: PageDraft
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var adding: [String: String] = [:]
@@ -83,7 +84,8 @@ struct ListsPage: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .accessibilityIdentifier("choices-title")
                 Spacer(minLength: 4)
-                Button("Done") { page.save(); dismiss() }
+                // A save the store refused (0.94) leaves the page open, holding it, for Done again.
+                Button("Done") { if page.save() { dismiss() } }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .keyboardShortcut("s", modifiers: .command)  // ⌘S = Done (0.92)
@@ -214,7 +216,7 @@ struct ListsPage: View {
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: $coding) { PlaceCodeSheet(place: $0.id).environmentObject(model) }
         // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a).
-        .asksBeforeDiscarding(page.changed) { dismiss() }
+        .asksBeforeDiscarding(page.changed, keptEarlier: page.keptEarlier) { dismiss() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("lists-detail")
         #if os(macOS)

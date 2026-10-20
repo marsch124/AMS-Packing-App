@@ -1065,7 +1065,8 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    back just that, the bar counts ticked things out of sight — 0.62;
    own window on the Mac); Filter by every column (pills, Clear); Sort up to three levels (blank last); the arrow
    opens the thing and returns to the same spot; Services List or Calendar (Done today, Today); the numbers under
-   the services. (19 lines.)
+   the services; (0.94, the bag page's saving line) "A glance at Control Center or a call coming in saves nothing —
+   Cancel still puts it all back; after the app was put away, Cancel puts back only what you changed since." (19 lines.)
 8. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
    "To buy · Packing", each once, dated, all day, ticks read back; ticks and removals here follow there, and a reminder deleted there can be sent again
    (0.62). (3 lines.)
@@ -1098,9 +1099,11 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    them. (5 lines.)
 11. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
     so; the magnifier searches everything (a thing's notes too — 0.69); every page's Cancel and Save/Done and the swipe
-    that asks (0.92); (0.93) "Save keeps only what you changed on that page — a change made on the other device while it
-    was open stays. If a change cannot be saved, a small note says “Couldn't save that — try again.” The screen then
-    shows what is kept; just do it again." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
+    that asks (0.92) — and (0.94) "Put the app away with a template, Your choices or a bag open and what you changed
+    there is kept; back in the app, Cancel puts back only what you change after that." (§20a); (0.93) "Save keeps only
+    what you changed on that page — a change made on the other device while it was open stays. If a change cannot be
+    saved, a small note says “Couldn't save that — try again.” The screen then shows what is kept; just do it again"
+    — (0.94) "— a bag, a template or Your choices stays open with what you changed, so Done again saves it." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62). (5 lines.)
 
 **Tests.** `testWhatsNewStartsWithThisVersion` (topics 0 and 1 exist), `testTheLoopShowsWhereATripStands` (loop
@@ -1787,9 +1790,12 @@ cancel function should be existing throughout the whole app": with nothing chang
 changed it holds still (`interactiveDismissDisabled`) and asks, as Notes and Calendar do — **"Discard changes?"** /
 "What you changed on this page is not kept.", **Keep editing** (outlined; or a tap on the dimmed page) and **Discard**
 (red, filled: what Cancel does). Cancel itself never asks — it was pressed on purpose. `View.asksBeforeDiscarding(_
-changed:, holds:, discard:)` (`EditDraft.swift`): `holds` holds the page still without asking (a template being
-arranged); the question is the app's own card in the look of a template's "Take it off?" (`DiscardCard`, ids
-`discard-ask`, `discard-question`, `discard-keep`, `discard-yes`) — a system action sheet's buttons cannot carry the
+changed:, holds:, keptEarlier:, discard:)` (`EditDraft.swift`): `holds` holds the page still without asking (a template being
+arranged); `keptEarlier` (0.94) — part of the page was kept already while it stayed open (the app put away; on a bag's
+page also Its details) — and the card's second line says so instead: "Your latest changes are not kept. What the app
+kept earlier stays." (id `discard-says`; "is not kept" of the whole page would not be true then). The question is the
+app's own card in the look of a template's "Take it off?" (`DiscardCard`, ids
+`discard-ask`, `discard-question`, `discard-says`, `discard-keep`, `discard-yes`) — a system action sheet's buttons cannot carry the
 identifiers the tests find them by; the swipe is heard through UIKit's `presentationControllerDidAttemptToDismiss`
 (`SwipeAttempt`: a relay in front of SwiftUI's own delegate of the sheet, passing everything else on). Until 0.92 a
 swipe was Cancel on a thing's page, a row, Activity areas and the template's page, wrote everything on a bag's page,
@@ -1821,10 +1827,38 @@ the real library holds NOW (the other device's changes while the page was open s
 page's wins) — and a TRIP, since 0.93, field by field: its head and each of its lines get only the fields the page
 changed (a thing renamed or a place renamed reaches the open lines through the copy), so a tick or a line added on the
 other device meanwhile stays, and the follow's stamp alone changes nothing (spec 01 §5, "A page's Save"); nothing changed = nothing written; the "When" steps and conditions are installed again from the real
-library. **Cancel** = dismiss; the copy is dropped; `PageDraft.left()` (on disappear) installs the real library's
-"When" steps and conditions again if the copy changed them. Not kept: the app put away or quit while such a page is
-open keeps nothing of it — as a thing's page never did (the bag page's `EditDraft` writes on going away; dup092).
-The Mac's other windows are untouched by a page's copy (a change made there while the page is open stays).
+library. Since 0.94 a THING, a ROW and a TEMPLATE are put in field by field too (only the fields the page changed,
+onto the record as it is now; a record deleted on the other device stays deleted — spec 01 §5). A Done the store refuses
+(0.94: `save()` returns false) leaves the page open, holding everything, with the note (§20b) — Done again saves it.
+**Cancel** = dismiss; the copy is dropped; `PageDraft.left()` (on disappear) installs the real library's
+"When" steps and conditions again if the copy changed them. The Mac's other windows are untouched by a page's copy (a
+change made there while the page is open stays).
+
+**The app put away with the page open (0.94, review item 5 of the outside review of 0.92; his "fix review items 3, 4,
+5 and 7 …", 20 Oct 2026).** Until 0.94 a template's page and Your choices kept NOTHING when the app was put away and
+then closed (by the iPhone, or by him from the app switcher) or the Mac app quit with the page open — not even a row
+whose own Save was pressed: the row editor's Save writes into the page's copy (`RowEditor.save`), the copy had no
+background or quit handling. Now `DraftedPage` carries `PageAway`: on the iPhone's `.background` (where the app may be
+closed without another word — not `.inactive`, see below) and on the Mac's `willTerminateNotification`,
+`PageDraft.keepAway()` hands over what the page changed — `save()`, through the field-wise merge — and, if it was kept,
+the page goes on from there: `opened` becomes the copy as it is (published, so the page's `changed` is false again —
+`TemplatePage`/`ListsPage` observe the draft), and `keptEarlier` is set. Back in the app the page is still open: Done
+hands over only what is changed after, Cancel (and Discard, which says so — above) throw away only that. The simplest
+safe choice of the two the review offered: keeping the copy and offering it back at the next start would need it
+written somewhere outside the library and a question at launch; written at once, it reaches the other device and a
+backup like any change. A row editor still open on top keeps its own unsaved answers to itself (as a thing's page
+does). The bag page's ledger is written the same way (`writesDraftWhenAway`, spec 05).
+
+**Only the app put away writes — never a glance (0.94, review item 4).** Until 0.94 a bag's page and Your bags wrote
+their ledger whenever the scene phase was anything but `.active` — also `.inactive`, which the iPhone passes through
+for a glance at Control Center or Notification Center, a call coming in, or the app switcher: Cancel or Discard after
+such a glance had nothing left to throw away (and the bag page's "something is held" was never reset). Now
+`DraftAway` and `PageAway` write only on `.background` (and the Mac's quit); after such a write the bag page resets
+Cancel's starting point (`savedHere()`: the pockets as they are now, `touched` cleared, `keptEarlier`), so Cancel and
+Discard then throw away only what came after. The Mac's scene goes inactive whenever another app is in front — the
+same rule there: clicking into another app writes nothing. The UI test cannot pull Control Center down, so (debug
+builds only) it posts a system-wide notification, `se.ams.packing.uitest.inactive` (`PretendPhase`, `EditDraft.swift`),
+which a page hears as the phase going inactive and coming back — nothing the app needs lives under `#if DEBUG`.
 
 **The audit (0.92)** — every screen or sheet where he changes data; "today" = before 0.92.
 
@@ -1869,6 +1903,12 @@ keeps nothing), `testASwipeDownKeepsWhatIsNotSavedYet` (the review: Keep editing
 as it was → Save/⌘S → kept; the trip renamed → Cancel → unchanged → Save top right/⌘S → renamed); Escape on the Mac:
 `testEscapeClosesSettingsWindowsAndNeverReplaces` (a place ADDED in Your choices, then Escape → gone) and
 `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (the template's area changed, then Escape → as it was).
+0.94: `testABagsPageStillCancelsAfterAGlanceAtControlCentre` (the Wheeled duffel's max 23 typed as 31, the app inactive
+for a moment, Cancel → 23; iPhone: 32 typed, the app put away and back, 45 litres typed, Cancel → max 32 kept, litres
+as they were) — RED on 0.93: "a glance away wrote the max, and Cancel could not take it back: Your bags says '31'";
+`testATemplatesPageIsKeptWhenTheAppIsPutAway` (iPhone: a row's How many 7 saved and Hiking renamed Hill walk, the app put
+away and back, renamed Hill trek, Cancel → "Hill walk", How many 7) — RED on 0.93: `("Hiking") is not equal to ("Hill
+walk") - the name given before the app was put away was not kept`.
 
 ## 20b. A save that fails — a note, never a dead app (0.93; `SaveNote` in `RootView.swift`, `LibraryModel.couldNotSave`, `CloudStore.apply`)
 
@@ -1894,8 +1934,22 @@ first try sat under the keyboard: there for the test, hidden for him), never mad
 the Mac a borderless non-activating `NSPanel`, a child of the window in front (a sheet's own window when one is open),
 centred 24 pt above its foot. Day and night: the app's colours (looked at in both, 20 Oct 2026).
 
+**What a page does with a save that fails (0.94, the empty bag name of 0.93's report).** In 0.93 the store and the
+screen agreed, but a page that wrote lost what it held: Your bags' Add emptied the name typed (he had to type it again —
+the 0.93 test did), a bag page's Done closed the page — the name taken with Rename and every field typed gone with the
+failed save — and Duplicate turned the page to a copy that was never kept. `LibraryModel.change` now answers whether it
+was kept (spec 01 §5); `EditDraft.flush` / `EditDraft.writing(_:also:)` put everything back on the ledger when it was
+not; and: Your bags' Add keeps the name in its field (and the rows' typed numbers held); a bag page's Done, Its details
+and Duplicate leave the page open, still holding everything — the name too; a template page's and Your choices' Done
+leave the page open on its copy. "Try again" is then one press of the same button.
+
 **Tests.** UI `testAFailedSaveKeepsTheScreensAndSaysSo`, `testARestoreThatCannotBeSavedSaysNothingWasReplaced`
 (`-uiTestingSaveFails`, debug builds: a store file whose first save fails) — spec 01 §5 and §11; seen RED on 0.92.
+0.94: `testAFailedSaveKeepsTheScreensAndSaysSo` also checks the name stays in Your bags' field and the second Add needs
+no retyping — RED on 0.93: `("A new bag") is not equal to ("Tote") - the failed save emptied the name typed` (the
+empty field reads as its prompt); `testAFailedSaveOnABagsPageKeepsTheName` (`-saveFailsBags`: the Wheeled duffel
+renamed Big duffel, Done fails → the note, the page still open, "Big duffel" in the name field; Done again → saved) —
+RED on 0.93: "a failed save closed the bag's page, and what it held went with it".
 
 ## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `ScreenHeader.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 
@@ -2362,6 +2416,8 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-openGrabOnReturn <label or title>`, `-openNextTripOnReturn`, `-dropOwnGrabListsOnReturn` | (testing only) played when the app returns from the background: a Shortcut, a tapped reminder, the other device's write that no longer holds his own grab lists | 0.62 |
 | `-bagOnReturn <thing> <bag>` | (testing only) played when the app returns from the background: the other device puts that thing in that bag (a thing's page open meanwhile, spec 05) | 0.93 |
 | `-uiTestingSaveFails` | (debug builds only) the sample in a store file whose first save after launch fails (§20b, spec 01 §6) | 0.93 |
+| `-saveFailsBags` | (debug builds only, with `-uiTestingSaveFails`) the sample with bags, so the failed save can be a bag page's (§20b) | 0.94 |
+| Darwin notification `se.ams.packing.uitest.inactive` | (debug builds only; not a launch argument — the UI test posts it) a page that writes when the app goes away hears the phase go inactive and come back, as for a glance at Control Center (`PretendPhase`, §20a) | 0.94 |
 | `-quickAction <title>` | (testing only, iPhone) the entry under the app icon with that title — taken from the entries the app hands the system, so only one of the four — tapped to START the app: handed over through the cold-start path (`PackingAppDelegate`, as `options.shortcutItem`) | 0.86 |
 | `-quickActionOnReturn <title>` | (testing only, iPhone) played when the app returns from the background: that entry handed to the scene's delegate (`windowScene(_:performActionFor:)`), as iOS does while the app runs | 0.86 |
 | `-dockMenu <title>`, `-dockMenuWhenClosed <title>` | (testing only, Mac) the Dock icon's menu asked of the app's delegate and that entry performed — a second after the window is up / after the last main window closed | 0.86 |

@@ -189,10 +189,9 @@ struct BagsScreen: View {
             return
         }
         let name = newName
-        model.change { lib in
-            draft.apply(to: &lib)
-            _ = lib.addBag(name: name)
-        }
+        // A save the store refused (0.94, the empty bag name of 0.93's report): the name stays in its
+        // field and the numbers typed in the rows stay held — "try again" is one press, not retyping.
+        guard draft.writing(model, also: { _ = $0.addBag(name: name) }) else { return }
         newName = ""
     }
 

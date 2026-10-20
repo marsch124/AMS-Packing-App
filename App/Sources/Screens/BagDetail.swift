@@ -80,6 +80,9 @@ struct BagPage: View {
     /// Something is held on the page and not written (0.92): a swipe down then asks first. Set once,
     /// by the ledger, when it first holds something (`EditDraft.onFirstHold`).
     @State private var touched = false
+    /// Part of the page was written while it stayed open (0.94) — the app was put away, or Its
+    /// details: Discard then says that what was kept stays.
+    @State private var keptEarlier = false
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
     enum Opened: Identifiable {
@@ -92,7 +95,9 @@ struct BagPage: View {
         VStack(spacing: 0) {
             if let bag {
                 let facts = model.library.bagFacts(name: bag.name)
-                BagHeader(bag: bag, selectName: selectName, draft: draft, done: { draft.flush(model); dismiss() },
+                // Done closes only when what the page holds was kept (0.94): a save the store refused
+                // leaves the page open, still holding it — the name too — for Done again.
+                BagHeader(bag: bag, selectName: selectName, draft: draft, done: { if draft.flush(model) { dismiss() } },
                           cancel: { cancel() })
                     .environmentObject(model)
                 KeyboardAwayScroll {
@@ -134,8 +139,11 @@ struct BagPage: View {
         // A swipe down (the iPhone): with nothing held it closes; with something held it asks first —
         // Discard is Cancel (0.92, the app's rule; spec 06 §20a). Until then a swipe wrote everything.
         // Only Done (and the app going away) writes.
-        .asksBeforeDiscarding(touched || pocketsTouched) { cancel() }
-        .writesDraftWhenAway(draft, model)
+        .asksBeforeDiscarding(touched || pocketsTouched, keptEarlier: keptEarlier) { cancel() }
+        // The app put away (0.94, review item 4): what the page held is written there — the page stays
+        // open, and Cancel or Discard then throw away only what is changed after. Not a glance at
+        // Control Center (the app merely inactive): Cancel still cancels then.
+        .writesDraftWhenAway(draft, model) { if touched || pocketsTouched { savedHere() } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("bag-detail")
         #if os(macOS)
@@ -185,14 +193,14 @@ struct BagPage: View {
         Button {
             var copy: Item?
             let id = bag.id, name = draft.typedName
-            model.change { lib in
-                draft.apply(to: &lib)
+            // A save the store refused (0.94): no copy, and the page keeps holding what it held.
+            let kept = draft.writing(model) { lib in
                 if let name, let now = lib.items.first(where: { $0.id == id })?.name, jsTrim(name) != now {
                     _ = lib.renameThing(id: id, to: name)
                 }
                 copy = lib.duplicateBag(id: id)
             }
-            if let copy { duplicated(copy.id) }
+            if kept, let copy { duplicated(copy.id) }
         } label: {
             VStack(spacing: 2) {
                 Text("Duplicate this bag")
@@ -387,8 +395,10 @@ struct BagPage: View {
         dismiss()
     }
 
-    /// The page has written what it holds (Its details, Duplicate): Cancel goes back to here.
+    /// The page has written what it holds (Its details, Duplicate; 0.94 the app put away): Cancel goes
+    /// back to here, and Discard says that what was kept stays.
     private func savedHere() {
+        if touched || pocketsTouched { keptEarlier = true }
         pocketsAt = model.library.keepPockets(bagId: bagId)
         pocketsTouched = false
         armTouched()
@@ -466,7 +476,11 @@ struct BagPage: View {
 
     private func detailsDoor(_ bag: Item) -> some View {
         // What is typed is written first: Its details shows the same notes, brand and colour.
-        Button { draft.flush(model); savedHere(); opened = .thing(bag.id) } label: {
+        Button {
+            guard draft.flush(model) else { return }       // refused (0.94): the page keeps holding it
+            savedHere()
+            opened = .thing(bag.id)
+        } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Its details").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)

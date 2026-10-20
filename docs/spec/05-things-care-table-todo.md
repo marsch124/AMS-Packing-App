@@ -2137,8 +2137,25 @@ typed on a ledger, written on leaving).
 - **Save points**: Its details and Duplicate write the page first (they show or copy what it says) — Its details then
   keeps the pockets anew (`savedHere`), so Cancel after it takes back only what changed since; Duplicate turns the page
   to the copy (a fresh page). Duplicate writes the ledger first and then a name typed and not taken (the newest word on
-  the name wins over one taken before it). The app put in the background writes the ledger (0.91) — Cancel after that
-  has nothing to forget.
+  the name wins over one taken before it). The app put in the background writes the ledger (0.91) — and since 0.94
+  that is a save point too (`writesDraftWhenAway(draft, model) { savedHere() }` when something was held): Cancel and
+  Discard afterwards throw away only what is changed after it, and Discard then says "Your latest changes are not kept.
+  What the app kept earlier stays." (`keptEarlier`, also after Its details; spec 06 §20a).
+- **Only the app put away writes — not a glance (0.94, review item 4 of the outside review of 0.92; his "fix review
+  items 3, 4, 5 and 7 plus the template-page merge and the empty bag name", 20 Oct 2026).** Until 0.94 the ledger was
+  written on ANY scene phase but `.active` (`EditDraft.swift`, `DraftAway`) — also `.inactive`, which the iPhone passes
+  through for a glance at Control Center or Notification Center, a call coming in, or the app switcher; then Cancel
+  (`cancel()`) found the ledger empty and `touched` was never reset, so Cancel and Discard after a glance kept what was
+  typed. Now: written only on `.background` (the iPhone: where the app may be closed without another word) and the Mac's
+  quit; a glance writes nothing, and Cancel still cancels. The same for Your bags' rows.
+- **A save that fails (0.94, the empty bag name of 0.93's report).** The ledger is written by `EditDraft.flush` /
+  `EditDraft.writing(_:also:)`, which put everything back on it when the store refuses (`LibraryModel.change` → false;
+  spec 06 §20b): **Done** closes only when what the page held was kept — refused, the page stays open, the note says
+  "Couldn't save that — try again.", and the name taken with Rename (`heldName`) and every field typed are still there
+  for Done again (0.93 closed the page: what it held went with the failed save); **Its details** opens only once the
+  page is written; **Duplicate** turns the page to the copy only when it was kept (0.93 turned it to a copy the store
+  never kept, and the page closed itself). **Your bags' Add** keeps the name in its field when the add was refused (0.93
+  emptied it — the 0.93 test had to type the name again) and the rows' typed numbers stay held.
 - **The swipe** (iPhone): since the merge with Cancel everywhere (0.92) it follows the app's one rule (spec 06 §20a):
   nothing held — it closes; something held (`touched`, or the pockets touched) — it asks "Discard changes?": Discard is
   this Cancel, Keep editing stays. Until then it wrote everything (0.91 — his test sheet asked that nothing typed be
@@ -2160,6 +2177,15 @@ typed on a ledger, written on leaving).
   any descendant has keyboard focus", every run): the tests' `onScreen` now counts a control reaching within 50 points
   of the keyboard's reported top (the keys at 583; the bar from about 540) as covered, so `bringIntoView` scrolls it
   clear first.
+- Tests (0.94): UI `testABagsPageStillCancelsAfterAGlanceAtControlCentre` (`-uiTestingBags`, the Wheeled duffel: max
+  23 typed as 31, the app inactive for a moment — the debug-only `PretendPhase` notification, spec 06 §20a — Cancel →
+  Your bags says 23; on the iPhone 32 typed, the app put away and back, 45 litres typed, Cancel → 32 kept, the litres as
+  they were) — RED on 0.93: "a glance away wrote the max, and Cancel could not take it back: Your bags says '31'";
+  `testAFailedSaveOnABagsPageKeepsTheName` (`-uiTestingSaveFails -saveFailsBags`: renamed Big duffel, Done fails → the
+  note, the page open, "Big duffel" in the name field; Done again → Your bags' first row is Big duffel) — RED on 0.93:
+  "a failed save closed the bag's page, and what it held went with it"; `testAFailedSaveKeepsTheScreensAndSaysSo` now
+  also checks Your bags' Add keeps "Tote" in its field — RED on 0.93: `("A new bag") is not equal to ("Tote") - the
+  failed save emptied the name typed`.
 
 **0.91 — typing without a wait.** His test sheet on 0.90 (19 Oct 2026): "There is a delay. Once I have entered data,
 there is a delay if I would like to scroll or move to the next data field."
@@ -2194,7 +2220,7 @@ there is a delay if I would like to scroll or move to the next data field."
   exactly as before (spec 01 §4). That one is for every screen: each tick, each change anywhere was followed by the
   same reload. (4) Your bags' rows keep their numbers the same way (Care → Bags).
 - **Never lost.** Done, a swipe down, Escape (until 0.92 — since then Escape is Cancel, which writes nothing on
-  purpose), the app put away — all write. Not covered: the app killed while the page
+  purpose), the app put away (since 0.94 only put away — the background — not a glance at Control Center) — all write. Not covered: the app killed while the page
   is open and in front (iPhone: only from the app switcher, which puts it in the background first — written then).
 - **Tests.** UI `testABagsPageKeepsEverythingTypedFieldAfterField` (`-uiTestingBags`, the Wheeled duffel: max kg,
   litres, empty g, Notes, brand, measures and marks typed one after another with no pause, Done — Your bags' row says
