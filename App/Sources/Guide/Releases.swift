@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.96", date: "20 Oct 2026", title: "No freeze on a trip",
+                fixed: ["A trip no longer freezes when you tick some lines and then type in Add a thing (for example for Bought on site) \u{2014} the app used to stop answering and had to be closed."]),
         Release(version: "0.95", date: "20 Oct 2026", title: "Both devices, every page",
                 fixed: ["Done on a template\u{2019}s page or your own lists keeps to-dos, kits, When steps, places, kinds of thing and photos changed or added on your other device meanwhile.",
                         "A section added on each device both stay; one removed on the other device stays removed.",
