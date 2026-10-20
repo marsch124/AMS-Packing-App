@@ -2090,13 +2090,17 @@ final class AMSPackingUITests: XCTestCase {
 
         // Create new trip: Hiking 0, Swim 1, and the new one last. A Quick trip of it.
         tab(app, "home")
+        // The name first, while its field is in view: after scrolling down to the pills
+        // the Mac's field sat under the window's toolbar and took no typing (0.95's full
+        // run, 20 Oct 2026: "Neither element nor any descendant has keyboard focus").
+        bringIntoView(app, app.textFields["trip-name"])
+        type("Lunch out", into: app.textFields["trip-name"])
+        hideKeyboard(app)
         XCTAssertTrue(scrollUntil(app, "trip-activity-2"), "a template with no activity area is not offered")
         let picnic = app.buttons["trip-activity-2"]
         XCTAssertEqual(words(picnic), "Picnic")
         bringIntoView(app, picnic)
         shot(app, "home-other-templates")
-        type("Lunch out", into: app.textFields["trip-name"])
-        hideKeyboard(app)
         select(app, app.buttons["trip-kind-quick"])
         select(app, picnic)
         tapVisible(app, app.buttons["trip-create"])

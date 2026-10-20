@@ -42,7 +42,9 @@ jobs:
     # 120: at 108 UI tests (0.58, 4 Oct 2026) the iPhone job passed every one and was
     # cancelled at 80 minutes while the quick model tests were still finishing.
     # 180 while the suite ran as one job; a group now needs about an hour.
-    timeout-minutes: 120
+    # 240: from 0.89 (19 Oct 2026) every group ran past 120 minutes and was cancelled
+    # before the end — six full runs in a row never finished (found 20 Oct, 0.95).
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
 
@@ -149,7 +151,9 @@ jobs:
     # 120, the same room as the iPhone job: the Mac runs the same 110-odd UI tests and,
     # since 0.62, both bundles of model tests as well (the iPhone job outgrew 80 minutes
     # at 108 UI tests, 0.58, 4 Oct 2026). 180 while it ran as one job; a group needs about an hour.
-    timeout-minutes: 120
+    # 240: in 0.95's run (20 Oct 2026) a Mac group took 101 minutes for its 175 tests and the
+    # other was cancelled at 120 — six full runs in a row (0.89–0.94) never finished.
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
 
