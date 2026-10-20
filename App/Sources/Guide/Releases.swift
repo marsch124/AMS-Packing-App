@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.95", date: "20 Oct 2026", title: "Both devices, every page",
+                fixed: ["Done on a template\u{2019}s page or your own lists keeps to-dos, kits, When steps, places, kinds of thing and photos changed or added on your other device meanwhile.",
+                        "A section added on each device both stay; one removed on the other device stays removed.",
+                        "Trip settings, the lost-luggage desk, a grab list\u{2019}s Edit and a kit change only what you changed there.",
+                        "Cancel on a bag\u{2019}s page takes back only your own pocket changes, not those made on your other device."]),
         Release(version: "0.94", date: "20 Oct 2026", title: "Nothing lost",
                 fixed: ["A bag\u{2019}s page still cancels after a glance at Control Center or a notification \u{2014} the page now writes only when the app is really put away.",
                         "A template\u{2019}s page and your own lists keep what you changed when the app is put away or closed; Done or Cancel then deal only with what came after.",

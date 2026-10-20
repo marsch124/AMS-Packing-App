@@ -781,11 +781,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (94 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (95 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.95 | 20 Oct 2026 | Both devices, every page | F4 | residual of the outside review: PageChanges merges to-dos, kits, When steps (mergePhases), settings rows (mergeShared), photos and meta (mergeMeta) field by field; list fields (sections, kit itemIds, photos, kitContents/kitOut, meta lists) merge as lists (mergeList); Trip settings (TripEvent.takingSettings), desk (setDeskDetails), grab Edit (saveGrabEdit), kit part (kitFromPage) write only changes; bag Cancel puts back only its own pocket changes (PocketsTrail) |
 | 0.94 | 20 Oct 2026 | Nothing lost | F6 | outside review items 3, 4, 5, 7 + 0.93's two open points: bag page writes only on background/quit (DraftAway; savedHere after), template page/Your choices save on background/quit through the field-wise merge (PageAway), Library.mergeFields for things/rows/templates (deleted stays deleted), failed save keeps the page and typed name (LibraryModel.change returns kept), content-based twin plan (Records.planTwins), launch reads only the newest history entry (StoreHistory) |
 | 0.93 | 20 Oct 2026 | Safe on both devices | F3 | outside review fixes 1, 2, 6: PageChanges merges trip heads and lines field-wise (follow stamp no change; deletions stay); failed save rolls back + note, red screen only when the store can't open, restore/import report failure; thing page Save writes only changed fields (Item.takePage, ThingPageSave.swift) |
 | 0.92 | 19 Oct 2026 | Cancel everywhere, a sync dot and 41 new icons | N4 C3 | sync dot under This Device (SyncLight, SyncCheck.light, running vs left-behind vs hung); Duplicate a thing (ThingDuplicate.swift, copyRecord/copyRow); Spotlight (SpotlightThings.swift, Spotlight.swift, per-device switch); 132 icons (41 new + keywords); Cancel everywhere (PageDraft/DraftedPage, Library.applyingPage, swipe asks Discard changes?, §20a audit); bag page Cancel; Create new trip ink grey |
