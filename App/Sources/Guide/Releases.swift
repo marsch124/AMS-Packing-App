@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.94", date: "20 Oct 2026", title: "Nothing lost",
+                fixed: ["A bag\u{2019}s page still cancels after a glance at Control Center or a notification \u{2014} the page now writes only when the app is really put away.",
+                        "A template\u{2019}s page and your own lists keep what you changed when the app is put away or closed; Done or Cancel then deal only with what came after.",
+                        "Done on a template\u{2019}s page keeps a thing\u{2019}s bag, a line\u{2019}s count or a template\u{2019}s colour changed on your other device meanwhile, and something deleted there stays deleted.",
+                        "If a save fails, a bag\u{2019}s page and Your bags keep the name and everything you typed, so you can just try again.",
+                        "The same thing or setting made on both devices at once no longer disappears from both when sync tidies up.",
+                        "The app starts faster with a long sync history: it no longer reads the whole history at every start."]),
         Release(version: "0.93", date: "20 Oct 2026", title: "Safe on both devices",
                 fixed: ["Done on a template\u{2019}s page or on your own lists no longer undoes ticks, added things or deletions made on your other device meanwhile.",
                         "Save on a thing\u{2019}s page writes only what you changed there \u{2014} a bag or note changed on your other device stays.",

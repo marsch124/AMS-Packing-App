@@ -12,14 +12,17 @@ import PackingCore
 
 extension Library {
     /// This library with what a page changed on its copy — the copy as it opened (`from`) and as
-    /// it is now (`to`) — put in. Per record, by id: one the page added or changed is the page's,
-    /// one it deleted goes, every other one stays as it is here. Nothing changed = this library.
+    /// it is now (`to`) — put in. Per record, by id: one the page added is the page's, one it deleted
+    /// goes, every other one stays as it is here. One it changed: things, rows, templates and trips
+    /// take only the FIELDS the page changed (0.93 trips, 0.94 the rest of a template page's work);
+    /// the smaller tables (to-dos, kits, "When" steps, settings rows, photos) the page's whole record.
+    /// Nothing changed = this library.
     public func applyingPage(from: Library, to: Library) -> Library {
         guard from != to else { return self }
         var out = self
-        out.items = Library.merge(items, from: from.items, to: to.items, id: \.id)
-        out.memberships = Library.merge(memberships, from: from.memberships, to: to.memberships, id: \.id)
-        out.templates = Library.merge(templates, from: from.templates, to: to.templates, id: \.id)
+        out.items = Library.mergeFields(items, from: from.items, to: to.items, id: \.id)
+        out.memberships = Library.mergeFields(memberships, from: from.memberships, to: to.memberships, id: \.id)
+        out.templates = Library.mergeFields(templates, from: from.templates, to: to.templates, id: \.id, stamp: "updatedAt")
         out.trips = Library.mergeTrips(trips, from: from.trips, to: to.trips)
         out.actions = Library.merge(actions, from: from.actions, to: to.actions, id: \.id)
         out.kits = Library.merge(kits, from: from.kits, to: to.kits, id: \.id)
@@ -86,6 +89,47 @@ extension Library {
         for x in to where before[x.id] == nil && !placed.contains(x.id) {
             out.append(x)
             placed.insert(x.id)
+        }
+        return out
+    }
+
+    // Things, rows and templates field by field too (0.94, the open point of 0.93's report). Handed
+    // over whole, a thing the page touched — its note written, or a follow of a place renamed in Your
+    // choices — went back to the page's copy of it: the bag the other device chose for it meanwhile
+    // was undone. The same for a row (its count) and a template (its colour). Now only the fields the
+    // page changed are put onto the record as it is here; a record deleted on the other device stays
+    // deleted, as a trip does (there is nothing here to put the page's fields onto).
+
+    /// One table, field by field: `live` with the fields the page changed (`from` → `to`) put onto
+    /// each record as it is here; what the page added comes last, in the page's order; what it deleted
+    /// goes; one gone here stays gone. `stamp` (a template's `updatedAt`) is no change of its own:
+    /// anything put in moves it on to the later of the two.
+    static func mergeFields<T: JSONModel>(_ live: [T], from: [T], to: [T], id: (T) -> String, stamp: String? = nil) -> [T] {
+        guard from != to else { return live }
+        var before: [String: T] = [:]
+        for x in from { before[id(x)] = x }
+        var after: [String: T] = [:]
+        for x in to { after[id(x)] = x }
+        let except: Set<String> = stamp.map { [$0] } ?? []
+        var out: [T] = []
+        var placed = Set<String>()
+        for x in live {
+            let key = id(x)
+            placed.insert(key)
+            guard let was = before[key] else { out.append(x); continue }   // new here since the page opened
+            guard let now = after[key] else { continue }                   // the page deleted it
+            if was == now { out.append(x); continue }
+            guard var o = Library.fieldsPut(was.json, now.json, into: x.json, except: except)?.objectValue else {
+                out.append(x); continue                                     // only the stamp moved
+            }
+            if let s = stamp, let mine = now.json[s]?.stringValue, let here = x.json[s]?.stringValue {
+                o[s] = .string(max(mine, here))
+            }
+            out.append(T(json: .object(o)))
+        }
+        for x in to where before[id(x)] == nil && !placed.contains(id(x)) {        // the page made it
+            out.append(x)
+            placed.insert(id(x))
         }
         return out
     }

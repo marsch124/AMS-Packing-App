@@ -18,7 +18,8 @@ import PackingLibrary
 // the background (or, on the Mac, quits), and before anything that needs it written first
 // (Duplicate, Its details). Moving from field to field and scrolling write nothing. Since 0.92 the
 // ledger holds a bag page's pills, switches and a name taken with Rename too, and Cancel (`discard`)
-// forgets all of it.
+// forgets all of it. Since 0.94 only the app put away writes — not a glance at Control Center (the
+// app merely INACTIVE) — and a write the store refuses leaves everything held, for the next try.
 
 /// What is typed on a page and not written yet: per field, the words and how to write them. Not
 /// observed (no screen redraws when it changes) — it is a ledger, read when the page writes.
@@ -78,12 +79,29 @@ final class EditDraft {
         for (text, write) in todo { write(text, &lib) }
     }
 
-    /// Write everything typed, in one change. Nothing typed = nothing written.
-    func flush(_ model: LibraryModel) {
-        guard !isEmpty else { return }
+    /// Write everything typed, in one change. Nothing typed = nothing written. false (0.94): the
+    /// store refused it — everything stays held, for Done to try again.
+    @discardableResult
+    func flush(_ model: LibraryModel) -> Bool {
+        guard !isEmpty else { return true }
         let n = order.count, started = EditTiming.now
-        model.change { apply(to: &$0) }
+        let kept = writing(model) { _ in }
         EditTiming.flushed(n, EditTiming.now - started)
+        return kept
+    }
+
+    /// Everything held and `also`, in ONE change (Duplicate, a bag added on Your bags). The store
+    /// refused it (0.94, the empty bag name of 0.93's report): everything is held again as it was —
+    /// what was typed is not lost with the failed save.
+    @discardableResult
+    func writing(_ model: LibraryModel, also: (inout Library) -> Void) -> Bool {
+        let held = (pending, order)
+        let kept = model.change { lib in
+            apply(to: &lib)
+            also(&lib)
+        }
+        if !kept && !closed { pending = held.0; order = held.1 }
+        return kept
     }
 }
 
@@ -119,26 +137,60 @@ struct DraftedField<Field: View>: View {
 extension View {
     /// Write the page's ledger when the app goes to the background — on the iPhone it may be
     /// closed there without another word — and when the Mac app quits with the page open.
-    func writesDraftWhenAway(_ draft: EditDraft, _ model: LibraryModel) -> some View {
-        modifier(DraftAway(draft: draft, model: model))
+    /// `wrote`: written as the app went to the background — the page is still open (0.94), and its
+    /// Cancel now throws away only what comes after.
+    func writesDraftWhenAway(_ draft: EditDraft, _ model: LibraryModel, wrote: @escaping () -> Void = {}) -> some View {
+        modifier(DraftAway(draft: draft, model: model, wrote: wrote))
     }
 }
 
+// Only the app put away writes (0.94, review item 4 of the outside review of 0.92). Until then a page
+// wrote whenever the app was not in front — also when it was only INACTIVE for a moment: Control
+// Center or Notification Center pulled down and put back, a call coming in. Cancel or Discard
+// afterwards had nothing to throw away. Now the iPhone writes when the app goes to the BACKGROUND
+// (where it may be closed without another word), the Mac when it quits.
 private struct DraftAway: ViewModifier {
     let draft: EditDraft
     let model: LibraryModel
+    let wrote: () -> Void
     @Environment(\.scenePhase) private var phase
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: phase) { _, now in if now != .active { draft.flush(model) } }
+            .onChange(of: phase) { _, now in went(now) }
             #if os(macOS)
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                 draft.flush(model)
             }
             #endif
+            #if DEBUG
+            .onAppear { _ = PretendPhase.listening }
+            .onReceive(NotificationCenter.default.publisher(for: PretendPhase.heard)) { _ in went(.inactive); went(.active) }
+            #endif
+    }
+
+    private func went(_ now: ScenePhase) {
+        guard now == .background else { return }
+        if draft.flush(model) { wrote() }
     }
 }
+
+#if DEBUG
+/// UI tests only (0.94): a glance at Control Center or Notification Center, or a call coming in,
+/// puts the app INACTIVE for a moment. A test cannot pull those down, so it posts this system-wide
+/// notification instead, and a page that writes when the app goes away hears the phase go inactive
+/// and come back, as it would. Nothing the app needs lives here.
+enum PretendPhase {
+    static let darwinName = "se.ams.packing.uitest.inactive"
+    static let heard = Notification.Name("PretendPhase.inactiveAndBack")
+    /// Listening starts the first time such a page appears.
+    static let listening: Void = {
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), nil, { _, _, _, _, _ in
+            DispatchQueue.main.async { NotificationCenter.default.post(name: PretendPhase.heard, object: nil) }
+        }, darwinName as CFString, nil, .deliverImmediately)
+    }()
+}
+#endif
 
 /// A number typed as the bag fields take it: trimmed, a comma read as a point; empty is 0; nil for
 /// words that are no number (they change nothing).
@@ -162,9 +214,14 @@ enum TypedNumber {
 // app right?" A page whose controls change the library at once — a template's page, Your choices —
 // now works on a COPY of the library while it is open: everything on it (and on the pages opened
 // from it) changes the copy. Done hands over what the page changed (`Library.applyingPage` — only
-// the records it touched, so the other device's changes meanwhile stay); Cancel, Escape and a swipe
-// down throw the copy away. The app put away or quit with the page open keeps nothing of it — as a
-// thing's page never did.
+// the fields it touched, so the other device's changes meanwhile stay); Cancel, Escape and a swipe
+// down throw the copy away.
+//
+// The app put away with the page open (0.94, review item 5): until then it kept NOTHING of the page
+// — not even a row whose own Save was pressed (that Save writes into the copy) — when the iPhone then
+// closed the app, or the Mac app quit. Now the page's changes are handed over the moment the app goes
+// to the background (the Mac: as it quits), as a bag's page writes there, and the page stays open on
+// what was kept: Done, Cancel and a swipe down then deal only with what is changed after.
 
 /// The copy a page works on, and the real library it came from (spec 06 §20a).
 @MainActor
@@ -172,8 +229,11 @@ final class PageDraft: ObservableObject {
     let live: LibraryModel
     /// What the page and everything opened from it see as "the library".
     let copy: LibraryModel
-    /// The library as the page opened.
-    private let opened: Library
+    /// The library as the page opened — or as it was kept when the app was put away (0.94).
+    @Published private(set) var opened: Library
+    /// Part of the page was kept already while it stayed open — the app was put away (0.94): Discard
+    /// then says so.
+    @Published private(set) var keptEarlier = false
 
     init(live: LibraryModel) {
         self.live = live
@@ -184,12 +244,24 @@ final class PageDraft: ObservableObject {
     /// Has anything on the page changed?
     var changed: Bool { copy.library != opened }
 
-    /// Done: what the page changed, in one change of the real library. Nothing changed = nothing written.
-    func save() {
-        guard changed else { return }
+    /// Done: what the page changed, in one change of the real library. Nothing changed = nothing
+    /// written. false (0.94): the store refused it — the page stays open, holding it, for Done again.
+    @discardableResult
+    func save() -> Bool {
+        guard changed else { return true }
         let from = opened, to = copy.library
-        live.change { $0 = $0.applyingPage(from: from, to: to) }
+        guard live.change({ $0 = $0.applyingPage(from: from, to: to) }) else { return false }
         live.library.installLiveChoices()
+        return true
+    }
+
+    /// The app put away (the iPhone) or quitting (the Mac) with the page open (0.94, review item 5):
+    /// what the page changed is handed over now, and the page goes on from there — Done hands over
+    /// only what is changed after, Cancel throws away only that.
+    func keepAway() {
+        guard changed, save() else { return }
+        opened = copy.library
+        keptEarlier = true
     }
 
     /// The page has gone — after Done, Cancel or a swipe: the "When" steps and conditions in force
@@ -215,6 +287,24 @@ struct DraftedPage<Content: View>: View {
         content(draft)
             .environmentObject(draft.copy)
             .onDisappear { draft.left() }
+            .modifier(PageAway(draft: draft))
+    }
+}
+
+/// A page on its copy, kept when the app goes away (0.94, review item 5): the iPhone's background —
+/// where the app may be closed without another word — and the Mac app quitting.
+private struct PageAway: ViewModifier {
+    let draft: PageDraft
+    @Environment(\.scenePhase) private var phase
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: phase) { _, now in if now == .background { draft.keepAway() } }
+            #if os(macOS)
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                draft.keepAway()
+            }
+            #endif
     }
 }
 
@@ -230,16 +320,19 @@ struct DraftedPage<Content: View>: View {
 
 extension View {
     /// `changed`: something on the page is not saved — a swipe down then asks. `holds`: the page holds
-    /// still for another reason (a template being arranged) without asking. `discard`: what Discard
-    /// does — the page's Cancel.
-    func asksBeforeDiscarding(_ changed: Bool, holds: Bool = false, discard: @escaping () -> Void) -> some View {
-        modifier(DiscardAsk(changed: changed, holds: holds, discard: discard))
+    /// still for another reason (a template being arranged) without asking. `keptEarlier` (0.94): part
+    /// of the page was kept already — the app was put away, or Its details wrote it — so Discard says
+    /// that what was kept stays. `discard`: what Discard does — the page's Cancel.
+    func asksBeforeDiscarding(_ changed: Bool, holds: Bool = false, keptEarlier: Bool = false,
+                              discard: @escaping () -> Void) -> some View {
+        modifier(DiscardAsk(changed: changed, holds: holds, keptEarlier: keptEarlier, discard: discard))
     }
 }
 
 private struct DiscardAsk: ViewModifier {
     let changed: Bool
     let holds: Bool
+    let keptEarlier: Bool
     let discard: () -> Void
     @State private var asking = false
 
@@ -249,7 +342,8 @@ private struct DiscardAsk: ViewModifier {
             .interactiveDismissDisabled(changed || holds)
             .background(SwipeAttempt { if changed { withAnimation(.easeOut(duration: 0.15)) { asking = true } } }
                 .frame(width: 0, height: 0).accessibilityHidden(true))
-            .overlay { if asking { DiscardCard(keep: { withAnimation(.easeOut(duration: 0.15)) { asking = false } },
+            .overlay { if asking { DiscardCard(keptEarlier: keptEarlier,
+                                               keep: { withAnimation(.easeOut(duration: 0.15)) { asking = false } },
                                                discard: { asking = false; discard() }) } }
         #else
         content.interactiveDismissDisabled(holds)
@@ -260,6 +354,7 @@ private struct DiscardAsk: ViewModifier {
 /// "Discard changes?" in the middle of the page, the rest dimmed — the look of a template's "Take it
 /// off?" card: Keep editing (outlined) and Discard (red, filled).
 private struct DiscardCard: View {
+    let keptEarlier: Bool
     let keep: () -> Void
     let discard: () -> Void
 
@@ -272,10 +367,13 @@ private struct DiscardCard: View {
                     .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("discard-question")
-                Text("What you changed on this page is not kept.")
+                // Part of the page kept already (0.94): saying "is not kept" of all of it would not be true.
+                Text(keptEarlier ? "Your latest changes are not kept. What the app kept earlier stays."
+                                 : "What you changed on this page is not kept.")
                     .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("discard-says")
                 HStack(spacing: 12) {
                     Button { keep() } label: { Text("Keep editing") }
                         .buttonStyle(HeaderButtonStyle(tint: Theme.ink, filled: false, stretch: true)).focusEffectDisabled()

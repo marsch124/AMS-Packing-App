@@ -172,4 +172,83 @@ final class PageChangesTests: XCTestCase {
         XCTAssertNil(line(saved, tripId, "Head torch"), "Save brought back a line deleted on the other device")
         XCTAssertNotNil(line(saved, tripId, "Map"))
     }
+
+    // MARK: - Things, rows and templates field by field (0.94, the open point of 0.93's report)
+    //
+    // 0.93 merged a trip field by field, but a thing, a row (membership) and a template were still
+    // handed over WHOLE: a field the other device changed on a record the page also changed went
+    // back to what it was when the page opened.
+
+    private func thing(_ lib: Library, _ name: String) -> Item? { lib.items.first { $0.name == name } }
+
+    private func torchRow(_ lib: Library) -> Membership? {
+        let torch = thing(lib, "Torch")!.id
+        return lib.memberships.first { $0.itemId == torch }
+    }
+
+    /// The page wrote a note on the Torch; the other device put the Torch in another bag. Both stay.
+    func testAThingsNoteFromThePageAndItsBagFromTheOtherDeviceBothStay() {
+        let opened = library()
+        let torch = thing(opened, "Torch")!.id
+        var page = opened
+        XCTAssertTrue(page.setThingNote(id: torch, "Spare batteries in the lid"))
+        var live = opened
+        XCTAssertTrue(live.updateThing(id: torch) { $0.container = "Day pack" })
+
+        let saved = live.applyingPage(from: opened, to: page)
+        XCTAssertEqual(thing(saved, "Torch")?.note, "Spare batteries in the lid", "the page's note was not handed over")
+        XCTAssertEqual(thing(saved, "Torch")?.container, "Day pack", "Save put back the bag the other device chose")
+    }
+
+    /// The page moved the Torch's row into a section; the other device made it two. Both stay.
+    func testARowsSectionFromThePageAndItsCountFromTheOtherDeviceBothStay() {
+        let opened = library()
+        let hiking = template(opened, "Hiking")!.id
+        let row = torchRow(opened)!.id
+        var page = opened
+        let lights = page.addSection(templateId: hiking, name: "Lights")!
+        XCTAssertTrue(page.updateMembership(memId: row) { $0.section = lights.id })
+        var live = opened
+        XCTAssertTrue(live.updateMembership(memId: row) { $0.qty = "2" })
+
+        let saved = live.applyingPage(from: opened, to: page)
+        XCTAssertEqual(saved.memberships.first { $0.id == row }?.section, lights.id, "the page's section was not handed over")
+        XCTAssertEqual(saved.memberships.first { $0.id == row }?.qty, "2", "Save put back the count from when the page opened")
+        XCTAssertEqual(template(saved, "Hiking")?.sections.map(\.name), ["Lights"])
+    }
+
+    /// The page renamed Hiking; the other device gave it a colour. Both stay, and its time is the later one.
+    func testATemplatesNameFromThePageAndItsColourFromTheOtherDeviceBothStay() {
+        let opened = library()
+        let hiking = template(opened, "Hiking")!.id
+        PackingEnv.freeze(at: "2026-10-19T12:03:00.000Z")
+        var live = opened
+        XCTAssertTrue(live.setTemplateColour(id: hiking, hex: "#2f7d4a"))
+        PackingEnv.freeze(at: "2026-10-19T12:05:00.000Z")
+        var page = opened
+        XCTAssertTrue(page.renameTemplate(id: hiking, to: "Hill walk"))
+
+        let saved = live.applyingPage(from: opened, to: page)
+        let t = saved.templates.first { $0.id == hiking }
+        XCTAssertEqual(t?.name, "Hill walk", "the page's name was not handed over")
+        XCTAssertEqual(t?.color, "#2f7d4a", "Save put back the colour from when the page opened")
+        XCTAssertEqual(t?.updatedAt, "2026-10-19T12:05:00.000Z")
+    }
+
+    /// Your choices renamed the place the Torch is kept in (carried onto the Torch); the other device
+    /// deleted the Torch meanwhile. It stays deleted — the follow does not bring it back.
+    func testAThingDeletedOnTheOtherDeviceStaysDeleted() {
+        var opened = library()
+        let torch = thing(opened, "Torch")!.id
+        XCTAssertTrue(opened.updateThing(id: torch) { $0.storage = "Garage" })
+        var page = opened
+        XCTAssertNil(page.renameChoice("places", key: "Garage", to: "Shed"))
+        XCTAssertEqual(thing(page, "Torch")?.storage, "Shed")
+        var live = opened
+        XCTAssertTrue(live.deleteThing(id: torch))
+
+        let saved = live.applyingPage(from: opened, to: page)
+        XCTAssertNil(saved.items.first { $0.id == torch }, "Save brought back a thing deleted on the other device")
+        XCTAssertTrue(saved.storagePlaces().contains("Shed"), "the page's rename was not handed over")
+    }
 }

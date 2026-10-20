@@ -2923,7 +2923,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "0" },
                       "the screen shows a bag the store never kept: \(words(app.staticTexts["yourbags-count"])) bags")
         shot(app, "save93-failed")
-        replace("Holdall", in: app.textFields["bag-new-name"])
+        // The name typed is still in its field (0.94: it was emptied — the save gone and the name with it).
+        XCTAssertEqual(value(app.textFields["bag-new-name"]), "Tote", "the failed save emptied the name typed")
         tap(app, id: "bag-new")                                      // the next save works
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["yourbags-count"]) == "1" },
                       "the next save did not work: \(words(app.staticTexts["yourbags-count"])) bags")
@@ -2981,6 +2982,116 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
     }
     #endif
+
+    // MARK: - The hardening (0.94, his "fix review items 3, 4, 5 and 7 plus the template-page merge and the empty bag name")
+
+    /// The app goes inactive for a moment — Control Center or Notification Center pulled down and put
+    /// back, a call coming in. A test cannot pull those down, so it tells the app as the system would
+    /// (`PretendPhase`, debug builds only): the phase goes inactive and comes back.
+    private func pretendTheAppWentInactive() {
+        CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
+                                             CFNotificationName("se.ams.packing.uitest.inactive" as CFString), nil, nil, true)
+        sleep(1)
+    }
+
+    /// Review item 4: a bag's page wrote everything it held whenever the app was not in front — also
+    /// for a glance at Control Center — so Cancel afterwards had nothing to throw away. Now only the app
+    /// put away (or the Mac app quitting) writes. The Wheeled duffel's max (23) typed as 31, a glance
+    /// away, Cancel: still 23. On the iPhone, put away for real: what was changed is kept, and Cancel
+    /// afterwards throws away only what came after.
+    func testABagsPageStillCancelsAfterAGlanceAtControlCentre() {
+        let app = launch("-uiTestingBags")
+        openFirstBag(app)
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "23")
+        replace("31", in: app.textFields["bag-detail-maxkg"])
+        hideKeyboard(app)
+        pretendTheAppWentInactive()
+        tap(app, id: "bag-cancel")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Cancel did not close the bag's page")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "23" },
+                      "a glance away wrote the max, and Cancel could not take it back: Your bags says '\(value(app.textFields["bag-0-maxkg"]))'")
+        #if os(iOS)
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
+        let litres = value(app.textFields["bag-detail-litres"])
+        replace("32", in: app.textFields["bag-detail-maxkg"])
+        hideKeyboard(app)
+        XCUIDevice.shared.press(.home)                               // put away: written now
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 10), "the bag's page is gone after the app came back")
+        replace("45", in: app.textFields["bag-detail-litres"])
+        hideKeyboard(app)
+        tap(app, id: "bag-cancel")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "32" },
+                      "what was changed before the app was put away is gone: '\(value(app.textFields["bag-0-maxkg"]))'")
+        XCTAssertEqual(value(app.textFields["bag-0-litres"]), litres, "Cancel kept the litres typed after the app came back")
+        #endif
+    }
+
+    #if os(iOS)
+    /// Review item 5: a template's page kept NOTHING when the app was put away (and then closed) with
+    /// it open — not even a row whose own Save was pressed. Now the page's changes are kept the moment
+    /// the app goes to the background: renamed and a row's How many saved, put away, back, Cancel —
+    /// both kept. Something changed after coming back is still thrown away by Cancel.
+    func testATemplatesPageIsKeptWhenTheAppIsPutAway() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                               // Hiking, 4 things
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        replace("7", in: app.textFields["row-qty"])
+        tapVisible(app, app.buttons["row-save"])
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        replace("Hill walk", in: app.textFields["template-name"])
+        tap(app, id: "template-rename")
+        hideKeyboard(app)
+        XCUIDevice.shared.press(.home)                               // put away: the page is kept now
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 10), "the template's page is gone after the app came back")
+        replace("Hill trek", in: app.textFields["template-name"])
+        tap(app, id: "template-rename")
+        hideKeyboard(app)
+        tap(app, id: "template-cancel")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertEqual(cellSays(app, "template-name"), "Hill walk",
+                       "the name given before the app was put away was not kept (or Cancel kept the one after)")
+        tap(app, id: "template-item-0")
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        XCTAssertEqual(value(app.textFields["row-qty"]), "7", "the row saved before the app was put away was not kept")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-cancel")
+    }
+    #endif
+
+    /// The empty bag name (0.93's report): a save that failed on a bag's page closed the page and lost
+    /// what it held — the name taken with Rename too. Now the page stays, still holding it, and the
+    /// next Done saves it (`-saveFailsBags`: the sample with bags; the first save fails).
+    func testAFailedSaveOnABagsPageKeepsTheName() {
+        let app = launch("-uiTestingSaveFails", ["-saveFailsBags"])
+        openFirstBag(app)
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        replace("Big duffel", in: app.textFields["bag-name"])
+        tap(app, id: "bag-rename")
+        hideKeyboard(app)
+        tap(app, id: "bag-done")                                     // this save fails
+        XCTAssertTrue(app.staticTexts["save-problem"].waitForExistence(timeout: 5), "a failed save said nothing")
+        XCTAssertTrue(find(app, "bag-detail") != nil, "a failed save closed the bag's page, and what it held went with it")
+        XCTAssertEqual(value(app.textFields["bag-name"]), "Big duffel", "the name is not what was typed after a failed save")
+        shot(app, "save94-bag-failed")
+        tap(app, id: "bag-done")                                     // the next save works
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Done did not close the page the second time")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["bag-0-name"]).hasPrefix("Big duffel") },
+                      "the name was not saved the second time: '\(words(app.buttons["bag-0-name"]))'")
+    }
 
     /// "Opening the bag: when pressing its name, it is good, but the arrow is not nice." The arrow
     /// sits right after the name now — the name's button ends with it — with clear room before the
