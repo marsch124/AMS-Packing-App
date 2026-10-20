@@ -420,10 +420,11 @@ struct TripScreen: View {
                             // and 36-point buttons, until 0.67).
                             .padding(.top, 6)
                             if !folded {
-                            ForEach(group.entries, id: \.id) { line in
+                            ForEach(Array(group.entries.enumerated()), id: \.element.id) { place, line in
                                 let n = index[line.id] ?? 0
                                 let aside = isSetAside(line)
                                 let needsPlace = view == "stored" && group.label == "No place set"
+                                VStack(alignment: .leading, spacing: 0) {
                                 VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 4) {
                                     Button {
@@ -495,13 +496,23 @@ struct TripScreen: View {
                                 }
                                 // Bug B1 (his Mac, 2026-09-26): a row kept showing NO tick while the
                                 // stored trip — and the section's own count — had it ticked. Not
-                                // reproduced on demand; this makes a row rebuild whenever its tick
-                                // or its set-aside changes, so it cannot be left showing an old state.
-                                // …and when it moves to another section, or its place panel opens or
-                                // closes: a lazy row that MOVED kept its old face ("Set place" still
-                                // showing under the place just chosen — the same staleness, seen
-                                // 2026-09-26 in the Set place test).
-                                .id("\(line.id)|\(line.checked)|\(aside)|\(group.label)|\(placing == line.id)|\(qtyNights(trip))|\(pocketing == "\(g)|\(line.id)")|\(Library.pocket(line))")
+                                // reproduced on demand; this makes the row's face rebuild whenever its
+                                // tick or its set-aside changes, so it cannot be left showing an old state
+                                // — and when its place panel opens or closes, its pocket pills come or
+                                // go, or the nights change.
+                                .id("\(line.checked)|\(aside)|\(placing == line.id)|\(qtyNights(trip))|\(pocketing == "\(g)|\(line.id)")|\(Library.pocket(line))")
+                                }
+                                // The row ITSELF is a new row only when it MOVES — to another section, or up
+                                // or down in its own: a lazy row that moved kept its old face ("Set place"
+                                // still showing under the place just chosen — the same staleness, seen
+                                // 2026-09-26 in the Set place test, and again on 20 Oct 2026 without this).
+                                // Never on a tick (0.96): until then the whole key above sat here, so a tick
+                                // gave the lazy list a NEW row in the same place, and with the keyboard up —
+                                // the list a window one line tall — iOS redrew the list without end: the trip
+                                // froze for good (GitHub's way-home tests since 0.88). A row that stays where
+                                // it is takes its changes in place, and the key above renews its face.
+                                // Spec 03, the trip's list.
+                                .id("\(line.id)|\(group.label)|\(place)")
                             }
                             }
                         }
