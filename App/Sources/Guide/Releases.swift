@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.93", date: "20 Oct 2026", title: "Safe on both devices",
+                fixed: ["Done on a template\u{2019}s page or on your own lists no longer undoes ticks, added things or deletions made on your other device meanwhile.",
+                        "Save on a thing\u{2019}s page writes only what you changed there \u{2014} a bag or note changed on your other device stays.",
+                        "If a save fails, the app keeps its screens and says \u{201C}Couldn\u{2019}t save that \u{2014} try again.\u{201D} instead of showing only an error; a restore that could not be saved now says nothing was replaced."]),
         Release(version: "0.92", date: "19 Oct 2026", title: "Cancel everywhere, a sync dot and 41 new icons",
                 new: ["A small dot under This Device on Home shows how iCloud sync is going \u{2014} green in sync, orange on its way, red stuck. Tap it for one line and Details.",
                       "Duplicate this thing, on a thing\u{2019}s page: the copy goes on the same templates and opens as \u{201C}\u{2026} 2\u{201D}, ready for its new name.",
