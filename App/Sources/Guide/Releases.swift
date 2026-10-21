@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.97", date: "21 Oct 2026", title: "Sections and grab lists on both devices",
+                fixed: ["A section made on each device at the same time keeps its name on both \u{2014} a line never shows a code in place of its section again.",
+                        "Section, When, bag, Condition and activity area never show a code: something unknown reads \u{201C}No section\u{201D}, \u{201C}Not said\u{201D} or \u{201C}No activity area\u{201D}.",
+                        "One of the grab lists that come with the app, changed on both devices for the first time, keeps what each device took off or added."]),
         Release(version: "0.96", date: "20 Oct 2026", title: "No freeze on a trip",
                 fixed: ["A trip no longer freezes when you tick some lines and then type in Add a thing (for example for Bought on site) \u{2014} the app used to stop answering and had to be closed."]),
         Release(version: "0.95", date: "20 Oct 2026", title: "Both devices, every page",
