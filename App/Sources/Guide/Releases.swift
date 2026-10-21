@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.99", date: "21 Oct 2026", title: "\u{2318}Q on the Mac",
+                fixed: ["On the Mac, \u{2318}Q quits again while a template\u{2019}s page, your own lists or a bag\u{2019}s page is open \u{2014} and asks \u{201C}Discard changes?\u{201D} first when the page holds a change you have not confirmed with Done."]),
         Release(version: "0.98", date: "21 Oct 2026", title: "Cancel and Done the Apple way",
                 changed: ["A template\u{2019}s page, your own lists and a bag\u{2019}s page now work like Apple\u{2019}s own apps: Done saves, Cancel throws away everything since the page opened. Switch to another app and back, and the page is still open with your changes; swipe the app away, and changes not confirmed with Done are gone.",
                           "A pocket added on a bag\u{2019}s page is kept only with Done, like the rest of the page."]),
