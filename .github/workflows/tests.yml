@@ -10,6 +10,8 @@ name: Tests
 # release one Mac group waited 40 minutes for a free machine.
 on:
   push:
+    # probe/gh4tests only: its own iPhone probe runs instead of the whole suite.
+    branches-ignore: ['probe/**']
     # Commits that cannot change the app or its tests start no suite (9 Oct 2026: a
     # TestFlight-workflow-only commit held all five Mac machines for an hour). The
     # TestFlight release still runs the suite through workflow_call; a manual run too.
