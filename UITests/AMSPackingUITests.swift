@@ -3044,9 +3044,9 @@ final class AMSPackingUITests: XCTestCase {
     // MARK: - The Apple way for Cancel and Done (0.98, his decision of 21 Oct 2026)
 
     /// Ends the app as he would: on the iPhone put away, then closed from the app switcher (the app
-    /// goes to the background first, then it is ended). On the Mac ⌘Q does nothing while a page's
-    /// sheet is open (the 0.98 probe on GitHub's Mac: the app stayed, with no question), so there the
-    /// app is ended by force — as Force Quit, a log-out or a crash would.
+    /// goes to the background first, then it is ended). On the Mac the app is ended by force — as Force
+    /// Quit or a crash would; ⌘Q with a page open has its own test (`testQuitWithAPageOpenQuitsOrAsksFirst`:
+    /// until then it did nothing while a page's sheet was open).
     private func endTheApp(_ app: XCUIApplication) {
         #if os(iOS)
         XCUIDevice.shared.press(.home)
@@ -3201,6 +3201,79 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "the place never confirmed with Done was kept when the app ended")
         tap(app, id: "lists-cancel")
     }
+
+    #if os(macOS)
+    /// ⌘Q with a page open (Mac, after 0.98): it did NOTHING while a template's page, Your choices or a
+    /// bag's page was open — the Mac holds an app with a sheet open back from quitting, without a word
+    /// (`QuitGuard`). Now an untouched page lets the app quit at once, and a page holding a change asks
+    /// first, as a swipe down does on the iPhone (`-uiTestingKept`: a store file that outlives the app).
+    /// Hiking's page and Your choices untouched → ⌘Q quits. The Wheeled duffel's max (23) typed as 32 →
+    /// ⌘Q asks → Keep editing: still open with 32 → ⌘Q → Discard: the app ends. Hiking moved to OE → ⌘Q
+    /// → Discard. At the next launch the max is 23 and Hiking under GA: what Discard dropped is not kept.
+    func testQuitWithAPageOpenQuitsOrAsksFirst() {
+        var app = launch("-uiTestingKept", ["-keptStart"])
+        func quitEnds(_ page: String) {
+            sleep(1)
+            app.typeKey("q", modifierFlags: .command)
+            XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "⌘Q did nothing with \(page) open")
+        }
+        func quitAsks(_ page: String) {
+            sleep(1)
+            app.typeKey("q", modifierFlags: .command)
+            XCTAssertTrue(app.buttons["discard-yes"].waitForExistence(timeout: 10),
+                          "⌘Q did not ask before throwing away what was changed on \(page)")
+            XCTAssertTrue(app.buttons["discard-keep"].exists, "the question has no Keep editing")
+            XCTAssertNotEqual(app.state, .notRunning, "the app quit before the question was answered")
+        }
+        func openHiking() {
+            tab(app, "templates")
+            XCTAssertTrue(appears(app, "screen-templates"))
+            tap(app, id: "template-row-1")                           // Hiking, in GA
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        }
+        openHiking()
+        quitEnds("a template's page")
+
+        app = launch("-uiTestingKept")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        quitEnds("Your choices")
+
+        app = launch("-uiTestingKept")
+        openFirstBag(app)
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "23")
+        replace("32", in: app.textFields["bag-detail-maxkg"])
+        quitAsks("a bag's page")
+        tap(app, id: "discard-keep")
+        XCTAssertTrue(waitUntil { !app.buttons["discard-yes"].exists }, "Keep editing did not put the question away")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "Keep editing closed the bag's page")
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "32", "Keep editing lost the max typed")
+        quitAsks("a bag's page")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "Discard did not quit the app")
+
+        app = launch("-uiTestingKept")
+        openHiking()
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events", "the area did not change")
+        quitAsks("a template's page")
+        tap(app, id: "discard-yes")
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "Discard did not quit the app")
+
+        app = launch("-uiTestingKept")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5),
+                      "Hiking is no longer under GA: the move thrown away at ⌘Q was kept")
+        XCTAssertFalse(app.staticTexts["templates-area-OE"].exists, "the move thrown away at ⌘Q was kept")
+        openFirstBag(app)
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "23", "the max thrown away at ⌘Q was kept")
+        tap(app, id: "bag-cancel")
+    }
+    #endif
 
     /// The empty bag name (0.93's report): a save that failed on a bag's page closed the page and lost
     /// what it held — the name taken with Rename too. Now the page stays, still holding it, and the
