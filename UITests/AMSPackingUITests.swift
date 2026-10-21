@@ -454,32 +454,47 @@ final class AMSPackingUITests: XCTestCase {
             guard e.exists else { return }
             if onScreen(app, e) { return }
             guard let list = listHolding(app, e), list.exists, list.isHittable else { return }
-            #if os(iOS)
-            // On the phone the way is plain from where it stands: above the list's top, the list
-            // goes up (swipe down); below it, or under the keyboard, the list goes down (swipe up).
-            down = e.frame.midY >= list.frame.minY
-            #endif
             let before = e.frame.midY
             #if os(macOS)
             list.scroll(byDeltaX: 0, deltaY: down ? -200 : 200)
             #else
-            down ? list.swipeUp() : list.swipeDown()
+            let keysUp = app.keyboards.count > 0
+            swipeList(app, list, up: down)
+            // The drag put the keyboard away: let it go before judging, or the control still
+            // reads as covered and the next swipe goes the other way — down, on a sheet.
+            if keysUp { _ = waitUntil(timeout: 2) { app.keyboards.count == 0 } }
             #endif
             usleep(300_000)
             if !down { keepEditingIfAsked(app) }            // only a swipe DOWN can reach the sheet
             // A control below the screen should move UP as the list goes down; if
             // it did not, this is the wrong way round.
-            #if os(iOS)
-            // 🪤 Nothing moved: the list is at its end — a page that fits, with the keyboard over
-            // its foot (Open a shared link's Add, Bags out's Add the bag). The other way can bring
-            // nothing up from below, and on a sheet a swipe down at the top pulls the SHEET: on
-            // GitHub's iPhone it closed it (0.96, run 39461088551); here it only put the keyboard
-            // away. `tapVisible` takes the part above the keyboard instead.
-            guard e.exists, down ? e.frame.midY < before : e.frame.midY > before else { return }
-            #else
             if e.exists && e.frame.midY >= before { down.toggle() }
-            #endif
         }
+    }
+
+    /// Swipe a list as a finger does (iPhone). With the keyboard up, NOT from the list's middle:
+    /// there sit the field being typed in or the keyboard itself, and the swipe moved nothing —
+    /// then the helper swiped the other way, and on GitHub that pulled the sheet SHUT (0.96, run
+    /// 39461088551: Open a shared link, Bags out's Add a bag; a bag's page asked Discard instead).
+    /// From the part that shows above the keyboard, a drag scrolls the list or, where the page
+    /// fits, at least puts the keyboard away (`scrollDismissesKeyboard`) — as his finger would.
+    private func swipeList(_ app: XCUIApplication, _ list: XCUIElement, up: Bool) {
+        #if os(iOS)
+        let keys = app.keyboards.firstMatch
+        if keys.exists, keys.frame.height > 0 {
+            let box = list.frame
+            // The keyboard's frame leaves out its bar of suggestions: 50 points above the keys.
+            let top = max(box.minY, app.windows.firstMatch.frame.minY), bottom = min(box.maxY, keys.frame.minY - 50)
+            if bottom - top > 100 {
+                let o = app.coordinate(withNormalizedOffset: .zero)
+                let low = o.withOffset(CGVector(dx: box.midX, dy: top + (bottom - top) * 0.45))
+                let high = o.withOffset(CGVector(dx: box.midX, dy: top + (bottom - top) * 0.1))
+                up ? low.press(forDuration: 0.05, thenDragTo: high) : high.press(forDuration: 0.05, thenDragTo: low)
+                return
+            }
+        }
+        up ? list.swipeUp() : list.swipeDown()
+        #endif
     }
 
     /// The part of a control the keyboard leaves showing, when the keyboard covers its middle —
@@ -534,15 +549,20 @@ final class AMSPackingUITests: XCTestCase {
     private func hideKeyboard(_ app: XCUIApplication) {
         #if os(iOS)
         guard app.keyboards.count > 0 else { return }
-        // The TALLEST list that takes a swipe — a row of pills is a scroll view too, and
+        // The BIGGEST list on screen — a row of pills is a scroll view too, and
         // swiping one of those fails outright. Any scroll is enough here, because
         // every screen uses `scrollDismissesKeyboard(.immediately)`.
-        // 🪤 Not the biggest of the first and the frontmost: on a sheet the first is the screen
-        // BEHIND it (not hittable) and the frontmost can be the field being typed in, so the
-        // swipe went to the middle of the app — on a grab list's Edit that is the gap above its
-        // fixed foot, and the keyboard stayed (GitHub's iPhone, 0.96).
-        if let list = tallestHittableList(app) { list.swipeUp() } else { app.swipeUp() }
-        _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
+        let big = biggestList(app)
+        if let big, big.exists, big.isHittable { big.swipeUp() } else { app.swipeUp() }
+        if waitUntil(timeout: 3, { app.keyboards.count == 0 }) { return }
+        // 🪤 Still up: on a sheet the biggest list is the screen BEHIND it (not hittable), so the
+        // swipe went to the middle of the app — on a grab list's Edit the gap above its fixed foot
+        // (GitHub's iPhone, 0.96). Then the tallest list that takes a swipe, from its part above
+        // the keyboard.
+        if let list = tallestHittableList(app) {
+            swipeList(app, list, up: true)
+            _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
+        }
         #endif
     }
 
@@ -6389,11 +6409,12 @@ final class AMSPackingUITests: XCTestCase {
         #else
         // 🪤 A grip scrolled out of its list's sight takes no press — "Not hittable", and unlike a
         // tap a press does not scroll it in first (GitHub's iPhone, 0.96: Kept at home's list left
-        // scrolled to its foot after the keyboard had been up). A grip only moves when HELD, so a
-        // tap on it does nothing but that scrolling.
-        if !a.isHittable {
-            a.tap()
-            _ = waitUntil(timeout: 3) { a.isHittable && self.settled(a) }
+        // scrolled to its foot after the keyboard had been up; a template's reminders scrolled a
+        // line up while the keyboard shrank the list to 133 points). A grip only moves when HELD,
+        // so a tap on it does nothing but that scrolling — the target first, then the one held.
+        for g in [b, a] where !g.isHittable {
+            g.tap()
+            _ = waitUntil(timeout: 3) { g.isHittable && self.settled(g) }
         }
         if edge {
             let up = b.frame.midY < a.frame.midY
