@@ -454,6 +454,11 @@ final class AMSPackingUITests: XCTestCase {
             guard e.exists else { return }
             if onScreen(app, e) { return }
             guard let list = listHolding(app, e), list.exists, list.isHittable else { return }
+            #if os(iOS)
+            // On the phone the way is plain from where it stands: above the list's top, the list
+            // goes up (swipe down); below it, or under the keyboard, the list goes down (swipe up).
+            down = e.frame.midY >= list.frame.minY
+            #endif
             let before = e.frame.midY
             #if os(macOS)
             list.scroll(byDeltaX: 0, deltaY: down ? -200 : 200)
@@ -464,8 +469,35 @@ final class AMSPackingUITests: XCTestCase {
             if !down { keepEditingIfAsked(app) }            // only a swipe DOWN can reach the sheet
             // A control below the screen should move UP as the list goes down; if
             // it did not, this is the wrong way round.
+            #if os(iOS)
+            // 🪤 Nothing moved: the list is at its end — a page that fits, with the keyboard over
+            // its foot (Open a shared link's Add, Bags out's Add the bag). The other way can bring
+            // nothing up from below, and on a sheet a swipe down at the top pulls the SHEET: on
+            // GitHub's iPhone it closed it (0.96, run 39461088551); here it only put the keyboard
+            // away. `tapVisible` takes the part above the keyboard instead.
+            guard e.exists, down ? e.frame.midY < before : e.frame.midY > before else { return }
+            #else
             if e.exists && e.frame.midY >= before { down.toggle() }
+            #endif
         }
+    }
+
+    /// The part of a control the keyboard leaves showing, when the keyboard covers its middle —
+    /// where his finger goes (iPhone; nil when nothing is covered or nothing shows). The
+    /// keyboard's frame leaves out its bar of suggestions (keys at 583, the bar from 539 on an
+    /// iPhone 17), so 50 points above the keys count as covered, as in `onScreen`.
+    private func peekAboveKeyboard(_ app: XCUIApplication, _ e: XCUIElement) -> XCUICoordinate? {
+        #if os(iOS)
+        let keys = app.keyboards.firstMatch
+        guard e.exists, keys.exists, keys.frame.height > 0 else { return nil }
+        let top = keys.frame.minY - 50, box = e.frame
+        guard box.height > 0, box.midY > top, box.minY < top - 6 else { return nil }
+        let y = (box.minY + top) / 2
+        print("TAP-PEEK \(e.identifier) at \(box) · keyboard \(keys.frame) · tapped at y \(y)")
+        return e.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (y - box.minY) / box.height))
+        #else
+        return nil
+        #endif
     }
 
     private func tab(_ app: XCUIApplication, _ name: String) {
@@ -502,13 +534,32 @@ final class AMSPackingUITests: XCTestCase {
     private func hideKeyboard(_ app: XCUIApplication) {
         #if os(iOS)
         guard app.keyboards.count > 0 else { return }
-        // The BIGGEST list on screen — a row of pills is a scroll view too, and
+        // The TALLEST list that takes a swipe — a row of pills is a scroll view too, and
         // swiping one of those fails outright. Any scroll is enough here, because
         // every screen uses `scrollDismissesKeyboard(.immediately)`.
-        let big = biggestList(app)
-        if let big, big.exists, big.isHittable { big.swipeUp() } else { app.swipeUp() }
+        // 🪤 Not the biggest of the first and the frontmost: on a sheet the first is the screen
+        // BEHIND it (not hittable) and the frontmost can be the field being typed in, so the
+        // swipe went to the middle of the app — on a grab list's Edit that is the gap above its
+        // fixed foot, and the keyboard stayed (GitHub's iPhone, 0.96).
+        if let list = tallestHittableList(app) { list.swipeUp() } else { app.swipeUp() }
         _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
         #endif
+    }
+
+    /// The tallest scroll view that takes a swipe, above the keyboard's bar of suggestions (a
+    /// scroll view too). One `count` and `element(boundBy:)` per list, as `frontList` does.
+    private func tallestHittableList(_ app: XCUIApplication) -> XCUIElement? {
+        let keys = app.keyboards.firstMatch
+        let keyTop = keys.exists && keys.frame.height > 0 ? keys.frame.minY - 50 : .infinity
+        let lists = app.scrollViews
+        var best: XCUIElement? = nil
+        var height: CGFloat = 0
+        for n in 0..<lists.count {
+            let list = lists.element(boundBy: n)
+            guard list.exists, list.frame.minY < keyTop, list.isHittable else { continue }
+            if list.frame.height > height { height = list.frame.height; best = list }
+        }
+        return best
     }
 
     private func tapVisible(_ app: XCUIApplication, _ e: XCUIElement) {
@@ -516,6 +567,7 @@ final class AMSPackingUITests: XCTestCase {
         // 🪤 A list still gliding from the swipe takes a tap as "stop", not as a press:
         // Start a new trip was tapped mid-glide on GitHub and nothing started (0.49).
         _ = waitUntil(timeout: 3) { e.exists && self.settled(e) }
+        if let part = peekAboveKeyboard(app, e) { part.tap(); return }
         e.tap()
     }
 
@@ -6335,6 +6387,14 @@ final class AMSPackingUITests: XCTestCase {
         let end = b.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.05 : 0.95))
         start.press(forDuration: 1.0, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.8)
         #else
+        // 🪤 A grip scrolled out of its list's sight takes no press — "Not hittable", and unlike a
+        // tap a press does not scroll it in first (GitHub's iPhone, 0.96: Kept at home's list left
+        // scrolled to its foot after the keyboard had been up). A grip only moves when HELD, so a
+        // tap on it does nothing but that scrolling.
+        if !a.isHittable {
+            a.tap()
+            _ = waitUntil(timeout: 3) { a.isHittable && self.settled(a) }
+        }
         if edge {
             let up = b.frame.midY < a.frame.midY
             let start = a.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
