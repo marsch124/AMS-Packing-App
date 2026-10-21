@@ -46,6 +46,11 @@ jobs:
           ')
           NAME=$(echo "$UDID" | cut -d" " -f2-)
           UDID=$(echo "$UDID" | cut -d" " -f1)
+          if [ -z "$UDID" ]; then
+            LINE=$(xcrun simctl list devices available | grep -E "^ +iPhone [0-9]" | sort -V | tail -1)
+            UDID=$(echo "$LINE" | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
+            NAME=$(echo "$LINE" | sed -E 's/ *\(.*//')
+          fi
           if [ -z "$UDID" ]; then echo "::error::no iPhone simulator on this runner"; exit 1; fi
           echo "SIM_UDID=$UDID" >> $GITHUB_ENV
           echo "Using simulator: $NAME"
