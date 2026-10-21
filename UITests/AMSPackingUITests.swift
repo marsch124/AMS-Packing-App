@@ -554,32 +554,8 @@ final class AMSPackingUITests: XCTestCase {
         // every screen uses `scrollDismissesKeyboard(.immediately)`.
         let big = biggestList(app)
         if let big, big.exists, big.isHittable { big.swipeUp() } else { app.swipeUp() }
-        if waitUntil(timeout: 3, { app.keyboards.count == 0 }) { return }
-        // 🪤 Still up: on a sheet the biggest list is the screen BEHIND it (not hittable), so the
-        // swipe went to the middle of the app — on a grab list's Edit the gap above its fixed foot
-        // (GitHub's iPhone, 0.96). Then the tallest list that takes a swipe, from its part above
-        // the keyboard.
-        if let list = tallestHittableList(app) {
-            swipeList(app, list, up: true)
-            _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
-        }
+        _ = waitUntil(timeout: 3) { app.keyboards.count == 0 }
         #endif
-    }
-
-    /// The tallest scroll view that takes a swipe, above the keyboard's bar of suggestions (a
-    /// scroll view too). One `count` and `element(boundBy:)` per list, as `frontList` does.
-    private func tallestHittableList(_ app: XCUIApplication) -> XCUIElement? {
-        let keys = app.keyboards.firstMatch
-        let keyTop = keys.exists && keys.frame.height > 0 ? keys.frame.minY - 50 : .infinity
-        let lists = app.scrollViews
-        var best: XCUIElement? = nil
-        var height: CGFloat = 0
-        for n in 0..<lists.count {
-            let list = lists.element(boundBy: n)
-            guard list.exists, list.frame.minY < keyTop, list.isHittable else { continue }
-            if list.frame.height > height { height = list.frame.height; best = list }
-        }
-        return best
     }
 
     private func tapVisible(_ app: XCUIApplication, _ e: XCUIElement) {
