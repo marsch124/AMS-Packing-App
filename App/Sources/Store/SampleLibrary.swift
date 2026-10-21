@@ -410,6 +410,26 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample as stored after the two devices' saves of a template crossed (0.97, his check 6,
+    /// `-uiTestingLostSection`): Hiking's record without its section Lights — the Headlamp's line
+    /// still carries Lights' name — and Swim's Goggles naming a section whose name is stored nowhere
+    /// (a line stored before 0.97, his "mvho3cjj-0-r6dbge").
+    static func lostSection() -> [StoredRecord] {
+        var lib = make()
+        guard let hiking = lib.templates.first(where: { $0.name == "Hiking" })?.id,
+              let swim = lib.templates.first(where: { $0.name == "Swim" })?.id,
+              let goggles = lib.resolvedTemplate(id: swim)?.items.first(where: { $0.name == "Goggles" })?.memId
+        else { return lib.records() }
+        lib.updateMembership(memId: goggles) { $0.section = "lost7abc-0-x1y2z3" }
+        return lib.records().map { r in
+            guard r.table == .templates, r.key == hiking, var o = r.json.objectValue else { return r }
+            var lost = r
+            o["sections"] = .array([])
+            lost.json = .object(o)
+            return lost
+        }
+    }
+
     /// The sample library with a photo nothing shows any more, from long ago — what a
     /// trip deleted before 0.59 left behind (`-uiTestingOldPhoto`).
     static func oldPhoto() -> Library {

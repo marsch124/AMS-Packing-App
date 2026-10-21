@@ -485,7 +485,7 @@ struct ThingEditor: View {
                     keptAtHome
                         .keyed(.storage)
                     DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
-                             selected: bag.selected, id: "thing-bag",
+                             selected: bag.selected, id: "thing-bag", unknown: "Not said",
                              newEntry: bags.newEntry("A new bag", needs: "Type the bag's name first.") { draft.container = $0 },
                              tools: bags.tools, ring: ring(.bag)) { picked in
                         draft.container = picked
@@ -510,7 +510,7 @@ struct ThingEditor: View {
                             .keyed(.pocket)
                     }
                     let steps = drop("phases", chosen: draft.phase, words: "your \u{201C}When\u{201D} steps")
-                    DropDown(title: "When", options: steps.options, selected: draft.phase, id: "thing-when",
+                    DropDown(title: "When", options: steps.options, selected: draft.phase, id: "thing-when", unknown: "Not said",
                              newEntry: steps.newEntry("A new step", needs: "Type the step first.") { draft.phase = $0 },
                              tools: steps.tools, ring: ring(.when)) { draft.phase = $0 }
                         .keyed(.when)
@@ -544,7 +544,7 @@ struct ThingEditor: View {
                     let condition = model.library.conditionId(for: draft.condition) ?? draft.condition
                     let wear = drop("conditions", chosen: condition, words: "your conditions")
                     DropDown(title: "Condition", options: [("", "Not said")] + wear.options,
-                             selected: condition, id: "thing-condition",
+                             selected: condition, id: "thing-condition", unknown: "Not said",
                              newEntry: wear.newEntry("A new condition", needs: "Type the condition first.") { draft.condition = $0 },
                              tools: wear.tools, ring: ring(.condition)) { draft.condition = $0 }
                         .keyed(.condition)
@@ -916,7 +916,7 @@ struct ThingEditor: View {
         return DropDown(title: "Section on \(t.name)", heading: .title,
                         options: shown.map { ($0.id, $0.name) } + (typed.isEmpty ? [] : [(RowEditor.newSectionKey, typed)]),
                         selected: sections[t.id] ?? "", id: DropDownIds(stringLiteral: "thing-section-\(n)"),
-                        tint: AppSection.templates.color, blank: "No section",
+                        tint: AppSection.templates.color, blank: "No section", unknown: "No section",
                         newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") {
                             newSection($0, on: t.id)
                         }, tools: sectionTools(t), ring: ring(.section(t.id))) { sections[t.id] = $0 }

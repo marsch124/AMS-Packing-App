@@ -206,3 +206,45 @@ extension Library {
         return true
     }
 }
+
+// Twins of an original list's row (0.97, his check 7 of 21 Oct 2026). Mac: a grab list's Edit open;
+// iPhone: the same list's Edit, ✕ on one thing, Save; Mac, before that had arrived: ✕ on another,
+// Save. The list had never been changed, so neither device held a row for it, and each made its own
+// under the list's fixed key ("grab:swim") — twins. The load kept the newer whole: the other
+// device's removal came back. Twins of such a row can only come from two devices each changing the
+// ORIGINAL list (once a row is stored, a change goes into it), so each twin is read as one edit of the
+// original list and both are kept — what either removed stays removed, what either added stays —
+// in the order of the newest, with its name, drawing and colour, and the other's where the newest
+// left the original's.
+
+extension Library {
+    /// An original grab list's row (`shared`, "grab:<id>").
+    static func isGrabRow(_ id: RecordID) -> Bool { id.table == .shared && id.key.hasPrefix("grab:") }
+
+    /// Twins of one original list's row as one: the newest, with what each other twin changed on the
+    /// original list put in (`mergeList`). Both devices read the twins in the same order (`beats`),
+    /// so both make the same row, with the newest twin's time. nil: no original list's row.
+    static func mergeGrabTwins(_ twins: [StoredRecord]) -> StoredRecord? {
+        let ordered = twins.sorted { $0.beats($1) }
+        guard var out = ordered.first else { return nil }
+        var row = SharedRow(json: out.json)
+        let lists = ordered.map { grabFromRows([SharedRow(json: $0.json)]).first }
+        guard let gid = lists[0]?.id, let original = GRAB_FACTORY.first(where: { $0.id == gid }) else { return nil }
+        func key(_ l: GrabLine) -> String { l.isHeading ? "h:" + jsTrim(l.name) : "t:" + normName(l.name) }
+        var lines = GrabLine.lines(stored: lists[0]?.items ?? [])
+        var data = row.data.objectValue ?? [:]
+        for list in lists.dropFirst() {
+            guard let list, list.id == gid else { continue }
+            lines = Library.mergeList(lines, was: original.lines, now: GrabLine.lines(stored: list.items), id: key) { _, _, b in b }
+            let theirs = ["label": list.label, "icon": list.icon, "tone": list.tone]
+            for (field, value) in theirs where (data[field]?.stringValue ?? "").isEmpty && !value.isEmpty { data[field] = .string(value) }
+        }
+        data["items"] = JSONValue(GrabLine.stored(lines))
+        guard .object(data) != row.data else { return out }      // nothing of the others' to put in
+        row.data = .object(data)
+        let label = data["label"]?.stringValue ?? ""
+        row.name = label.isEmpty ? gid : label
+        out.json = row.json
+        return out
+    }
+}

@@ -1361,6 +1361,21 @@ line of its own (0.84 showed it flat while the open list was grouped by kind):
      open was gone. Test: model `PageChangesTests.testAGrabListsEditKeepsWhatTheOtherDeviceAddedMeanwhile` — seen
      RED on 0.94: `("["Flip-flops", "Fins"]") is not equal to ("["Nose clip", "Fins"]") - a thing added on one of
      the devices was lost` and `("["Towel"]") is not equal to ("["Towel", "Goggles"]") - a mark was lost`.
+     **When the other device's Save has NOT arrived yet (0.97, his check 7 of 21 Oct 2026 — Mac: Edit open;
+     iPhone: ✕ on one thing, Save; Mac: ✕ on another, Save).** The list's lines are one field of one record (an
+     original list's `grab` row; his own lists all in one `meta` record), and iCloud keeps the version sent last.
+     An original list never changed before has no row on either device: each Save made its own row under the
+     list's key ("grab:swim") — twins — and the load kept the newer whole, so the other device's removal came
+     back. Since 0.97 such twins are merged as two edits of the original list (`Library.mergeGrabTwins`, spec 01
+     §3): what either device took off stays off, what either put on stays, in the newer list's order, with its
+     name, drawing and colour (the other's where the newer left the original's). A list already stored (an
+     original one changed before, or one of his own) saved on both devices before either had the other's Save
+     keeps the Save iCloud got last — the other device's change of the list is lost; closing that needs a model
+     change (spec 01 Open questions 32). Tests: model `CrossingSavesTests.testAGrabListEditedOnEachDeviceBeforeEitherStoredItKeepsBothRemovals`
+     (both sending orders) — seen RED on 0.96: "Mac last true: on the iPhone the iPhone's removal came back:
+     ["Swim trunks", "Goggles", …]", on the Mac too, and with the iPhone sending last;
+     `testAGrabListsTwinsKeepWhatEachDeviceAddedAndItsNewName` — RED: the iPhone's Fins lost and
+     `("Swim") is not equal to ("Pool") - the iPhone's new name was lost`.
   4. **Refused** (no THING left on the list — headings alone count as nothing, 0.85): nothing is stored, the
      editor stays open, and `grab-save-needs` says "Put at least one thing on the list first." (0.62).
   5. Otherwise editing ends and the delete question closes.
@@ -2622,3 +2637,7 @@ keep their tag and say why they were left.
 40. **Resolved in 0.85, before it shipped** — ~~Moving a heading far on the iPhone is a long drag; a new heading
     always goes last.~~ "Heading above" in a thing's context menu puts a heading right above it (section 7). Moving
     a heading or a thing far is still one place per row passed (the list does not scroll under a carried row).
+41. **Open (0.97)** — A grab list already stored, edited on both devices before either had the other's Save,
+    keeps only the Save iCloud got last (section 7, step 3; spec 01 §5 "saves that cross"). An ORIGINAL list
+    edited on both devices before either had stored it is merged since 0.97. Closing the rest needs a model
+    change — spec 01 Open questions 32 says what would close it; his to decide.

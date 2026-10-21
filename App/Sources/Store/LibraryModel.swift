@@ -396,6 +396,9 @@ extension LibraryModel {
     ///                           his own (a grab list's headings, 0.85)
     ///  -uiTestingBigLibrary   → a store FILE holding an invented library of his size (`SampleLibrary.big`,
     ///                           for measuring with -timeEdits, 0.91)
+    ///  -uiTestingLostSection  → memory, the sample after two saves of Hiking crossed: its section Lights
+    ///                           given back from the Headlamp's line, and Swim's Goggles naming a section
+    ///                           whose name is stored nowhere (0.97, his check 6)
     ///  -uiTestingOnDisk       → a store FILE holding the sample; 15 s after launch "the other device"
     ///                           writes a thing called Sunglasses into it (0.91: the app's own saves are
     ///                           not read back, the other device's still are)
@@ -480,6 +483,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingOldConditions") {
             return LibraryModel(store: MemoryStore(SampleLibrary.oldConditions().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingLostSection") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.lostSection()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingOldPhoto") {
             return LibraryModel(store: MemoryStore(SampleLibrary.oldPhoto().records()), usesICloud: false, sky: sky)

@@ -1298,7 +1298,7 @@ struct RowEditor: View {
                     let steps = drop("phases", chosen: when, words: "your \u{201C}When\u{201D} steps")
                     DropDown(title: "When, on this template", options: [("", "Same as the thing (\(phaseLabel(thing.phase)))")]
                                 + steps.options,
-                             selected: when, id: "row-when", tint: AppSection.templates.color,
+                             selected: when, id: "row-when", tint: AppSection.templates.color, unknown: "Not said",
                              newEntry: steps.newEntry("A new step", needs: "Type the step first.") { when = $0 },
                              tools: steps.tools) { when = $0 }
                     // Always there since 0.64: "A new section" is the list's foot, as "A new
@@ -1306,7 +1306,7 @@ struct RowEditor: View {
                     DropDown(title: "Section of this template",
                              options: [("", "No section")] + model.library.sectionsAsEdited(templateId: templateId, sectionEdits).map { ($0.id, $0.name) }
                                 + (pendingSection.isEmpty ? [] : [(RowEditor.newSectionKey, pendingSection)]),
-                             selected: section, id: "row-section", tint: AppSection.templates.color,
+                             selected: section, id: "row-section", tint: AppSection.templates.color, unknown: "No section",
                              newEntry: DropDownNew(placeholder: "A new section", needs: "Type the section's name first.") { addSection($0) },
                              tools: .sections(model.library, template: list, edits: sectionEdits, keep: { sectionEdits = $0 },
                                               removed: { value in if section == value { section = "" } })

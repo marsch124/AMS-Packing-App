@@ -83,13 +83,24 @@ public struct StoredRecord: Equatable, Sendable {
 /// independently. So: records are grouped by (table, key); the NEWEST wins; the
 /// content is the tiebreak so that both devices pick the same survivor (`beats`).
 /// Returns the survivors and the losers (which `StoreSession.load` has the store delete).
+///
+/// Twins of an original grab list's row (0.97, his check 7) are not chosen between but MERGED:
+/// such twins mean both devices changed the list before either had stored it, each starting
+/// from the original list — so each twin is one edit of it, and both edits are kept
+/// (`Library.mergeGrabTwins`). The survivor then holds what neither twin held; `planTwins` puts
+/// it into every twin and deletes none, the same on both devices.
 public func settleDuplicates(_ records: [StoredRecord]) -> (kept: [StoredRecord], dropped: [StoredRecord]) {
     var best: [RecordID: StoredRecord] = [:]
     var order: [RecordID] = []
     var dropped: [StoredRecord] = []
+    var twins: [RecordID: [StoredRecord]] = [:]
     for r in records {
         guard let have = best[r.id] else { best[r.id] = r; order.append(r.id); continue }
+        if Library.isGrabRow(r.id) { twins[r.id, default: [have]].append(r) }
         if r.beats(have) { dropped.append(have); best[r.id] = r } else { dropped.append(r) }
+    }
+    for (id, all) in twins where all.contains(where: { !$0.sameContent(as: all[0]) }) {
+        best[id] = Library.mergeGrabTwins(all) ?? best[id]
     }
     return (order.compactMap { best[$0] }, dropped)
 }

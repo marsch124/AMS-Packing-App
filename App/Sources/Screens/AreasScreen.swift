@@ -382,7 +382,7 @@ struct TemplateAreaField: View {
         VStack(alignment: .leading, spacing: 4) {
             DropDown(title: "Activity area", heading: .beside, options: options,
                      selected: always ? Library.ALWAYS_PACKED_AREA : lib.areaOf(list),
-                     id: "template-area", tint: AppSection.templates.color,
+                     id: "template-area", tint: AppSection.templates.color, unknown: TemplateAreaField.noneWords,
                      newEntry: DropDownNew(placeholder: "A new area", needs: "Type the new area\u{2019}s name first.") { typed in
                          make(typed)
                      }) { value in

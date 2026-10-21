@@ -17,7 +17,18 @@ extension Library {
             out.append(StoredRecord(table: t, key: key, parent: parent, json: json, blob: blob, updatedAt: now))
         }
         for i in items { add(.items, i.id, i.json) }
-        for m in memberships { add(.memberships, m.id, m.json, parent: m.templateId) }
+        // Each line carries its section's name (0.97, `sectionCopyKey`): a template's sections are one
+        // field of ONE record, so two devices' saves of it that cross keep only one device's sections.
+        var sectionNames: [String: [String: String]] = [:]
+        for t in templates { for s in t.sections { sectionNames[t.id, default: [:]][s.id] = s.name } }
+        for m in memberships {
+            var json = m.json
+            if !m.section.isEmpty, let name = sectionNames[m.templateId]?[m.section], var o = json.objectValue {
+                o[Library.sectionCopyKey] = ["id": .string(m.section), "name": .string(name)]
+                json = .object(o)
+            }
+            add(.memberships, m.id, json, parent: m.templateId)
+        }
         for t in templates {
             var bare = t; bare.items = []
             add(.templates, t.id, bare.json)
@@ -52,11 +63,15 @@ extension Library {
         self.init()
         let records = settleDuplicates(all).kept.sorted { $0.id < $1.id }
         var entriesByTrip: [String: [(key: String, entry: Item)]] = [:]
+        var sectionCopies: [String: JSONValue] = [:]
         var heads: [(trip: TripEvent, order: [String])] = []
         for r in records {
             switch r.table {
             case .items: items.append(Item(json: r.json))
-            case .memberships: memberships.append(Membership(json: r.json))
+            case .memberships:
+                var m = Membership(json: r.json)
+                if let copy = m.extra.removeValue(forKey: Library.sectionCopyKey) { sectionCopies[m.id] = copy }
+                memberships.append(m)
             case .templates:
                 var t = PackList(json: r.json); t.items = []
                 templates.append(t)
@@ -92,6 +107,7 @@ extension Library {
             trips.append(trip)
         }
         phases = phases.stableSorted(compare: { a, b in jsOr(jsSign(a.order - b.order), jsLocaleCompare(a.id, b.id)) })
+        giveSectionsBack(sectionCopies)
     }
 
     /// "data:image/jpeg;base64,…" → its bytes and its type. Anything that is not a

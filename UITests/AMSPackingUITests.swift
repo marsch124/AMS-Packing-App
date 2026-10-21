@@ -6752,6 +6752,34 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "row-cancel")
     }
 
+    /// His check 6 (0.97): a section made on each device while their saves of the template crossed —
+    /// iCloud kept one device's template, without the other's section. Its line reads under that
+    /// section's name, given back from the line itself; a line whose section's name is stored nowhere
+    /// reads "No section" — never the section's id ("mvho3cjj-0-r6dbge").
+    func testALostSectionIsGivenBackAndNoRowShowsAnId() {
+        let app = launch("-uiTestingLostSection")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking: Lights, gone from its record
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Lights" },
+                      "the Headlamp is not under Lights: '\(words(app.staticTexts["template-group-0"]))'")
+        tap(app, id: "template-item-0")                           // the Headlamp
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        XCTAssertEqual(chosen(app, "row-section"), "Lights", "the Headlamp's section did not come back")
+        tap(app, id: "row-cancel")
+        XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
+        tap(app, id: "template-cancel")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-row-2")                            // Swim: the Goggles' section's name is nowhere
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-item-0")                           // the Goggles
+        XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        XCTAssertEqual(chosen(app, "row-section"), "No section", "the Goggles' row shows its section's id")
+        shot(app, "row-section-lost")
+        tap(app, id: "row-cancel")
+    }
+
     /// New asks for the activity area; the template page puts a wrong answer right
     /// (the spec pass, 5 Oct 2026). Since 0.71 an always-packed template has the field
     /// too (see testATemplateMovesOutOfAndIntoAlwaysPacked); since 0.89 it is a drop-down

@@ -104,6 +104,10 @@ struct DropDown: View {
     /// gets a row of its own at the end, `<row>-other`, ticked — so it is seen and can
     /// be left as it is. For lists whose values are words; an id would read as nonsense.
     let other: Bool
+    /// What a chosen value that is none of the rows reads as, for a list whose values are IDS
+    /// (0.97, his check 6: a line naming a section its template had lost showed "mvho3cjj-0-r6dbge").
+    /// nil: the value itself — a word or a number of his reads as it is.
+    let unknown: String?
     /// When two values are the same choice: exact, unless the list says otherwise
     /// (his places compare as names, ignoring capitals and spaces).
     let same: (String, String) -> Bool
@@ -153,12 +157,12 @@ struct DropDown: View {
 
     init(title: String?, heading: DropDownHeading = .band, options: [(value: String, label: String)],
          selected: String, id: DropDownIds,
-         tint: Color = AppSection.care.color, blank: String? = nil, other: Bool = false,
+         tint: Color = AppSection.care.color, blank: String? = nil, other: Bool = false, unknown: String? = nil,
          same: @escaping (String, String) -> Bool = { $0 == $1 }, newEntry: DropDownNew? = nil,
          tools: DropDownRowTools? = nil, ring: Color? = nil, choose: @escaping (String) -> Void) {
         self.title = title; self.heading = heading
         self.options = options; self.selected = selected; self.ids = id
-        self.tint = tint; self.blank = blank; self.other = other; self.same = same
+        self.tint = tint; self.blank = blank; self.other = other; self.unknown = unknown; self.same = same
         self.newEntry = newEntry; self.tools = tools; self.ring = ring; self.choose = choose
     }
 
@@ -166,7 +170,7 @@ struct DropDown: View {
     private var shown: String {
         if blank != nil, same("", selected) { return blank ?? "" }
         if let hit = options.first(where: { same($0.value, selected) }) { return hit.label }
-        return selected.isEmpty ? "Not said" : selected
+        return selected.isEmpty ? "Not said" : (unknown ?? selected)
     }
 
     /// The chosen value is none of the rows, and the list shows it on a row of its own.

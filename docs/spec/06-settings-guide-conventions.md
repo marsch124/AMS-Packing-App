@@ -2146,7 +2146,7 @@ these templates; a row's Season, Context, Transport, Food), and so do the short 
 settings (a few words each, seen at a glance, one tap).
 
 `DropDown(title:, heading = .band, options:, selected:, id:, tint = Care orange, blank = nil, other = false,
-same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
+unknown = nil, same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
 - `title: String?` — the heading's words (no heading when nil).
 - `heading: DropDownHeading` (0.64) — how the title reads: `.band` — a `HeadingBand` in the tint over the field (every
   drop-down until 0.64); `.title` — a `HeadingTitle` in the tint over the field (Subheadline semibold): a heading
@@ -2168,6 +2168,12 @@ same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
 - `other: Bool` — when the value that stands is not blank and none of the rows, a row of its own at the END, its
   words = the value, ticked, named `<row>-other`; for lists whose values are words (Kind of thing, Whose it is, Kept
   at home, a row's Bag) — an id (a When step, a section, a condition) would read as nonsense.
+- `unknown: String?` (0.97, his check 6 of 21 Oct 2026) — what the FIELD reads when the value that stands is not
+  blank and none of the rows, for a list whose values are ids: a row's When ("Not said") and Section ("No
+  section"); a thing's bag, When and Condition ("Not said") and its Section on each template ("No section"); a
+  template's activity area ("No activity area"). nil (every other list): the value itself, as before — a pocket's
+  or a number's words are his. Until 0.97 an id read as itself: a line naming a section its template had lost
+  showed "mvho3cjj-0-r6dbge" (spec 01 §5, saves that cross).
 - `same: (String, String) -> Bool` — when two values are one choice: exact; Kept at home compares by `normName`.
 - `newEntry: DropDownNew?` — a foot under the rows: `DropDownNew(placeholder:, button = "Add", needs:, add:)` — a
   field (`<row>-new`) and the button (`<row>-add`, `FieldButtonLabel` in the tint, never grey); Add or Return with

@@ -1449,7 +1449,10 @@ page's copy of the library (§6): its Save is kept by the template's Done and th
   `row-when-list`, `row-section-list`; one row per choice named as its pill was (`row-bag-<n>` …), the chosen row
   ticked in violet (selected trait); a tap on a row takes it and closes the list (nothing is stored before Save).
   A blank choice ("Same as …", "No section") is in grey on the field and in the list. Until 0.64 each was a row of
-  pills; the "Only on some trips" lists, where several may be picked, stay pills.
+  pills; the "Only on some trips" lists, where several may be picked, stay pills. **Never an id (0.97, his check
+  6 of 21 Oct 2026):** a value that is none of the rows reads "Not said" on When and "No section" on Section
+  (`DropDown(unknown:)`; until 0.97 the field showed the value itself — a line naming a section its template had
+  lost read "mvho3cjj-0-r6dbge"). Bag keeps showing a bag of his that is none of the rows as its words (`other`).
   2. **"Bag on this template"** (heading band, id `row-bag-title`; field `row-bag`): `row-bag-0` = what a blank bag
      really means (`sameBagWords`): "Same as the template (<its own bag>)" on a template that came with a default
      bag, else "Same as the thing (<the thing's own bag>)"; then `row-bag-1…` = `bagNames()` — his own bags, in his
@@ -1467,6 +1470,15 @@ page's copy of the library (§6): its Save is kept by the template's Done and th
      section" (`row-section-new`; it said "e.g. Lights" under the band) and "Add" (`row-section-add`); Add with
      nothing typed → "Type the section's name first." under it (`row-section-add-needs`); otherwise the section is
      chosen (see Behaviour) and the list closes. What was typed and not added is dropped when the list closes.
+     **A section lost from the template's record (0.97):** when both devices saved the template before either had the
+     other's save (each adding a section), iCloud kept one device's template; the other's section is given back on
+     every load from its lines' own records — under the name the line carries, or the name the same line has on a
+     trip still ahead, joining a section of that name; a line whose section's name is stored nowhere reads under no
+     section ("No section" here). In memory only: the template is stored with it when it is next saved. Spec 01 §3
+     step 7 and §5 ("saves that cross"). A section with no line in it, a rename or a new order is still lost when two
+     saves of the template cross (spec 01 Open questions 32). UI `testALostSectionIsGivenBackAndNoRowShowsAnId`
+     (`-uiTestingLostSection`): Hiking stored without Lights — its first heading is Lights again and the Headlamp's
+     Section reads Lights; Swim's Goggles, naming a section whose name is nowhere, read "No section".
   **Changed inside their lists (0.69)** — his ask of 7 Oct 2026, "work on all the drop-downs so that they can be
   edited, changed, added, and deleted from within the drop-downs": Bag (his own bags), When (his steps) and Section
   (this template's sections) take the tools a thing's page has (spec 05, "His lists inside their drop-downs" and
@@ -1818,7 +1830,7 @@ overrides), **TRIP LINE** (thing ↔ trip: a frozen copy).
 | `qty` | the thing's own qty | Text; a JSON number becomes JS number text ("3", "0.5", "1e+21"); 0 → "". |
 | `note` | the thing's own note | Text. |
 | `order` | — | Position on the template (a Double, never floored); non-finite or a numeric string → 0. |
-| `extra` | — | Unknown keys kept, `owner`/`realmId` dropped. (0.73) `onlyAnyHere`: the kinds ("seasons", "contexts", "transports", "catering") for which this row comes on ANY trip whatever the thing says (spec 07 part 14). |
+| `extra` | — | Unknown keys kept, `owner`/`realmId` dropped. (0.97) `sectionCopy` — `{id, name}` of the row's section, in the STORED record only: written by `Library.records()` when the section is one of the template's, taken off again by the load, which uses it to give the template a section it lost (spec 01 §3 step 7); a build before 0.97 keeps it untouched, so a copy naming another id than `section` is never used. (0.73) `onlyAnyHere`: the kinds ("seasons", "contexts", "transports", "catering") for which this row comes on ANY trip whatever the thing says (spec 07 part 14). |
 
 Field lists: `INTRINSIC_FIELDS` (name, swedish, category, charging, chargeType, liquid, restricted, perNight,
 consumable, shortList, weight, storage, packer, sub, photos, thumb, maintenance, stats, color, size, manufacturer,
