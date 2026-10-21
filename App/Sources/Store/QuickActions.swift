@@ -170,9 +170,14 @@ final class PackingSceneDelegate: NSObject, UIWindowSceneDelegate {
     }
 }
 #else
-/// The app's delegate on the Mac — there only for the Dock icon's menu.
+/// The app's delegate on the Mac — for the Dock icon's menu, and quitting with a page open.
 @MainActor
 final class PackingMacDelegate: NSObject, NSApplicationDelegate {
+    /// Every sheet lets the app quit; ⌘Q asks first while a page holds a change (`QuitGuard`).
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        QuitGuard.start()
+    }
+
     /// Right-click (or hold) the Dock icon while the app runs: every grab list, in Home's order,
     /// under a "Grab lists" heading. Choosing one opens it.
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {

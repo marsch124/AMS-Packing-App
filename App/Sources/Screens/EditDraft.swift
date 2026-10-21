@@ -269,9 +269,10 @@ struct DraftedPage<Content: View>: View {
 // throughout the whole app": on the iPhone a page that changes something closes on a swipe down while
 // nothing is changed; with something changed it holds still and asks — "Discard changes?", Discard
 // (red: what Cancel does, nothing kept) or Keep editing — as Notes and Calendar do. Cancel itself
-// never asks (it was pressed on purpose); Save, Done and ⌘S keep. Nothing of this on the Mac: its
-// sheets are not swiped, and Escape is Cancel. The question is the app's own card (the look of "Take it
-// off?"), so the tests find its buttons by their identifiers (spec 06 §20a).
+// never asks (it was pressed on purpose); Save, Done and ⌘S keep. On the Mac its sheets are not
+// swiped, and Escape is Cancel — there the same question comes with ⌘Q (`QuitGuard`, below). The
+// question is the app's own card (the look of "Take it off?"), so the tests find its buttons by their
+// identifiers (spec 06 §20a).
 
 extension View {
     /// `changed`: something on the page is not saved — a swipe down then asks. `holds`: the page holds
@@ -291,6 +292,8 @@ private struct DiscardAsk: ViewModifier {
     let keptEarlier: Bool
     let discard: () -> Void
     @State private var asking = false
+    /// The page as `QuitGuard` knows it (Mac).
+    @State private var page = UUID()
 
     func body(content: Content) -> some View {
         #if os(iOS)
@@ -303,7 +306,21 @@ private struct DiscardAsk: ViewModifier {
                                                discard: { asking = false; discard() }) } }
         #else
         content.interactiveDismissDisabled(holds)
+            .onAppear { QuitGuard.shows(page, changed: changed, keptEarlier: keptEarlier) }
+            .onChange(of: changed) { _, now in QuitGuard.shows(page, changed: now, keptEarlier: keptEarlier) }
+            .onChange(of: keptEarlier) { _, now in QuitGuard.shows(page, changed: changed, keptEarlier: now) }
+            .onDisappear { QuitGuard.gone(page) }
         #endif
+    }
+}
+
+/// The question's words — the iPhone's card and the Mac's ⌘Q say the same.
+private enum DiscardWords {
+    static let question = "Discard changes?"
+    /// Part of the page kept already (0.94): saying "is not kept" of all of it would not be true.
+    static func says(keptEarlier: Bool) -> String {
+        keptEarlier ? "Your latest changes are not kept. What the app kept earlier stays."
+                    : "What you changed on this page is not kept."
     }
 }
 
@@ -319,13 +336,11 @@ private struct DiscardCard: View {
             Color.black.opacity(0.35).ignoresSafeArea()
                 .onTapGesture { keep() }
             VStack(spacing: 14) {
-                Text("Discard changes?")
+                Text(DiscardWords.question)
                     .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("discard-question")
-                // Part of the page kept already (0.94): saying "is not kept" of all of it would not be true.
-                Text(keptEarlier ? "Your latest changes are not kept. What the app kept earlier stays."
-                                 : "What you changed on this page is not kept.")
+                Text(DiscardWords.says(keptEarlier: keptEarlier))
                     .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -414,6 +429,116 @@ private struct SwipeAttempt: UIViewControllerRepresentable {
         override func forwardingTarget(for selector: Selector!) -> Any? {
             if passOn?.responds(to: selector) == true { return passOn }
             return super.forwardingTarget(for: selector)
+        }
+    }
+}
+#endif
+
+#if os(macOS)
+// MARK: - ⌘Q with a page open (Mac, after 0.98)
+//
+// Found by the 0.98 probe on GitHub's Mac: ⌘Q did NOTHING while a template's page, Your choices or a
+// bag's page was open — no quit, no question. Not the app's doing: every window starts with
+// `preventsApplicationTerminationWhenModal` on, a SwiftUI sheet is such a window, and while one is open
+// the Mac refuses to quit without a word — before it even asks the app (seen with a bare SwiftUI app,
+// 21 Oct 2026: a sheet open, `NSApp.terminate` returned and the app stayed; the delegate's
+// `applicationShouldTerminate` was never called). Any sheet did it, a thing's page and Trip settings too.
+//
+// Now, the Apple way of 0.98 (the app ended keeps nothing a Done did not confirm): every sheet lets the
+// app quit, so the Dock's Quit and a log-out end it at once; and ⌘Q itself asks first while a page with
+// Cancel (`asksBeforeDiscarding`) holds a change — the iPhone's swipe-down question, "Discard changes?",
+// as an alert on the sheet in front: Keep editing (Escape) stays with everything, Discard (red) quits.
+// Nothing of the page is written on the way out; Your bags still writes its rows as the app quits
+// (`writesDraftWhenAway`).
+
+/// The pages open on the Mac with a Cancel, and the app menu's Quit (spec 06 §20a).
+@MainActor
+enum QuitGuard {
+    private struct Page {
+        let id: UUID
+        var changed: Bool
+        var keptEarlier: Bool
+    }
+    private static var pages: [Page] = []
+    private static var asking = false
+    private static var watching: [Any] = []
+
+    /// A page with Cancel is open — or what it holds changed.
+    static func shows(_ id: UUID, changed: Bool, keptEarlier: Bool) {
+        if let i = pages.firstIndex(where: { $0.id == id }) {
+            pages[i].changed = changed
+            pages[i].keptEarlier = keptEarlier
+        } else {
+            pages.append(Page(id: id, changed: changed, keptEarlier: keptEarlier))
+        }
+    }
+
+    static func gone(_ id: UUID) { pages.removeAll { $0.id == id } }
+
+    /// At launch (`PackingMacDelegate`): every sheet, as it opens, no longer holds the app back from quitting.
+    static func start() {
+        guard watching.isEmpty else { return }
+        for name in [NSWindow.willBeginSheetNotification, NSWindow.didBecomeKeyNotification] {
+            watching.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
+                // "Will begin": the sheet is attached a moment later.
+                DispatchQueue.main.async { MainActor.assumeIsolated { letSheetsGo() } }
+            })
+        }
+    }
+
+    private static func letSheetsGo() {
+        for window in NSApp.windows where window.isSheet || window.sheetParent != nil {
+            window.preventsApplicationTerminationWhenModal = false
+        }
+    }
+
+    /// ⌘Q: quit — unless a page holds a change, then ask first.
+    static func quit() {
+        letSheetsGo()
+        guard !asking else { return }
+        guard pages.contains(where: \.changed), let front = sheetInFront() else {
+            NSApp.terminate(nil)
+            return
+        }
+        asking = true
+        let alert = NSAlert()
+        alert.messageText = DiscardWords.question
+        alert.informativeText = DiscardWords.says(keptEarlier: pages.contains { $0.changed && $0.keptEarlier })
+        let keep = alert.addButton(withTitle: "Keep editing")
+        let discard = alert.addButton(withTitle: "Discard")
+        keep.keyEquivalent = "\u{1b}"                    // Escape is Cancel on the Mac: here, stay
+        discard.hasDestructiveAction = true
+        keep.setAccessibilityIdentifier("discard-keep")
+        discard.setAccessibilityIdentifier("discard-yes")
+        alert.beginSheetModal(for: front) { answer in
+            asking = false
+            guard answer == .alertSecondButtonReturn else { return }
+            DispatchQueue.main.async {
+                letSheetsGo()
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    /// The sheet on top, in the window in front — where the page being asked about is.
+    private static func sheetInFront() -> NSWindow? {
+        let held = NSApp.windows.filter { $0.sheetParent == nil && $0.attachedSheet != nil }
+        var window = held.first { $0.isKeyWindow || $0.isMainWindow } ?? held.first
+        while let sheet = window?.attachedSheet { window = sheet }
+        return window
+    }
+
+    static var appName: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "AMS Packing"
+    }
+}
+
+/// The app menu's Quit (⌘Q), through `QuitGuard`.
+struct QuitCommand: Commands {
+    var body: some Commands {
+        CommandGroup(replacing: .appTermination) {
+            Button("Quit \(QuitGuard.appName)") { QuitGuard.quit() }
+                .keyboardShortcut("q")
         }
     }
 }

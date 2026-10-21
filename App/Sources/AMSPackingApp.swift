@@ -33,8 +33,12 @@ struct AMSPackingApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowBackgroundDragBehavior(.disabled)
         // A thing's page from the keyboard (0.68): the Thing menu lists its keys, and is
-        // on only while a thing's page is open (ThingKeys.swift).
-        .commands { ThingCommands() }
+        // on only while a thing's page is open (ThingKeys.swift). Quit (⌘Q) asks first while a
+        // page holds a change, and quits with a page open (`QuitGuard`, EditDraft.swift).
+        .commands {
+            ThingCommands()
+            QuitCommand()
+        }
         .handlesExternalEvents(matching: ["*"])
         #endif
 
