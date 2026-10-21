@@ -405,6 +405,9 @@ extension LibraryModel {
     ///  -uiTestingSaveFails    → (debug builds) a store FILE holding the sample; its first save after
     ///                           launch fails (0.93: a note, the screens kept, the store and screen agree);
     ///                           + -saveFailsBags: the sample with bags (0.94: a bag page's failed save)
+    ///  -uiTestingKept         → (debug builds) a store FILE kept from one launch to the next, holding the
+    ///                           sample with bags; + -keptStart: made afresh (0.98: what a page held when
+    ///                           the app was ended without Done is looked for at the next launch)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -452,6 +455,18 @@ extension LibraryModel {
             try? store.apply(RecordChanges(puts: sample.records()))
             store.failNextSave = true
             return LibraryModel(store: store, usesICloud: false, sky: sky)
+        }
+        // The sample with bags in a store FILE that outlives the app (0.98, the Apple way): a test ends
+        // the app with a page open and changed, launches it again WITHOUT -keptStart, and finds what the
+        // store kept. -keptStart (the first launch) makes the file afresh.
+        if args.contains("-uiTestingKept") {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("kept-library.store")
+            let fresh = args.contains("-keptStart") || !FileManager.default.fileExists(atPath: url.path)
+            if fresh { for tail in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + tail) } }
+            if let store = try? CloudStore(cloud: false, file: url) {
+                if fresh { try? store.apply(RecordChanges(puts: SampleLibrary.bags().records())) }
+                return LibraryModel(store: store, usesICloud: false, sky: sky)
+            }
         }
         #endif
         // A library of his size, kept by SwiftData in a file as his is — every change pays what his

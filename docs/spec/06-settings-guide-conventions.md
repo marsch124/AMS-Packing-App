@@ -1069,8 +1069,14 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    back just that, the bar counts ticked things out of sight — 0.62;
    own window on the Mac); Filter by every column (pills, Clear); Sort up to three levels (blank last); the arrow
    opens the thing and returns to the same spot; Services List or Calendar (Done today, Today); the numbers under
-   the services; (0.94, the bag page's saving line) "A glance at Control Center or a call coming in saves nothing —
-   Cancel still puts it all back; after the app was put away, Cancel puts back only what you changed since." (19 lines.)
+   the services; the bag page's saving line — (0.98, the Apple way) "Everything you change on a bag’s page — its
+   numbers, Notes, the desk’s words and pills, the switches, a new name and its pockets — is kept as you go and saved
+   only when you leave the page with Done (⌘S on the Mac); Duplicate and Its details save it first. So typing, moving
+   to the next field and scrolling never wait. Switch to another app and back and the page is still open with all of
+   it; close the app (swipe it away) or quit it and nothing you did not confirm with Done is kept." (0.94 to 0.97 it
+   said the app going to the background saved it, and that a glance at Control Center saved nothing); its Cancel line
+   (0.98) "… nothing you changed there is kept, the pockets included." (until 0.98 "the pockets go back as they were
+   too"). (19 lines.)
 8. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
    "To buy · Packing", each once, dated, all day, ticks read back; ticks and removals here follow there, and a reminder deleted there can be sent again
    (0.62). (3 lines.)
@@ -1103,11 +1109,14 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    them. (5 lines.)
 11. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
     so; the magnifier searches everything (a thing's notes too — 0.69); every page's Cancel and Save/Done and the swipe
-    that asks (0.92) — and (0.94) "Put the app away with a template, Your choices or a bag open and what you changed
-    there is kept; back in the app, Cancel puts back only what you change after that." (§20a); (0.93) "Save keeps only
+    that asks (0.92) — and (0.98, the Apple way, replacing 0.94's "Put the app away with a template, Your choices or a
+    bag open and what you changed there is kept; back in the app, Cancel puts back only what you change after that.")
+    "Switch to another app and back with a page open and it is still open, with what you changed; close the app (swipe
+    it away) or quit it and what you did not confirm with Save or Done is not kept — as in Calendar or Contacts."
+    (§20a); (0.93) "Save keeps only
     what you changed on that page — a change made on the other device while it was open stays" — (0.95) ", and so does
-    what it added to the same list (a section, a kind of thing, a grab list’s things); Cancel on a bag takes back only
-    what you changed there." — (0.93) "If a change cannot be
+    what it added to the same list (a section, a kind of thing, a grab list’s things)" — (0.98) "; Cancel never touches
+    what the other device changed." (0.95 to 0.97: "Cancel on a bag takes back only what you changed there.") — (0.93) "If a change cannot be
     saved, a small note says “Couldn't save that — try again.” The screen then shows what is kept; just do it again"
     — (0.94) "— a bag, a template or Your choices stays open with what you changed, so Done again saves it." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62). (5 lines.)
@@ -1797,9 +1806,10 @@ changed it holds still (`interactiveDismissDisabled`) and asks, as Notes and Cal
 "What you changed on this page is not kept.", **Keep editing** (outlined; or a tap on the dimmed page) and **Discard**
 (red, filled: what Cancel does). Cancel itself never asks — it was pressed on purpose. `View.asksBeforeDiscarding(_
 changed:, holds:, keptEarlier:, discard:)` (`EditDraft.swift`): `holds` holds the page still without asking (a template being
-arranged); `keptEarlier` (0.94) — part of the page was kept already while it stayed open (the app put away; on a bag's
-page also Its details) — and the card's second line says so instead: "Your latest changes are not kept. What the app
-kept earlier stays." (id `discard-says`; "is not kept" of the whole page would not be true then). The question is the
+arranged); `keptEarlier` (0.94) — part of the page was kept already while it stayed open — and the card's second line
+says so instead: "Your latest changes are not kept. What the app kept earlier stays." (id `discard-says`; "is not kept"
+of the whole page would not be true then). Since 0.98 only a bag's page passes it, after Its details wrote the page
+(0.94 to 0.97 also the app put away, on a template's page and Your choices too). The question is the
 app's own card in the look of a template's "Take it off?" (`DiscardCard`, ids
 `discard-ask`, `discard-question`, `discard-says`, `discard-keep`, `discard-yes`) — a system action sheet's buttons cannot carry the
 identifiers the tests find them by; the swipe is heard through UIKit's `presentationControllerDidAttemptToDismiss`
@@ -1809,7 +1819,8 @@ and held without a word on Trip settings, the review and the desk. "Changed" per
 choices — the copy differs from the library they opened on (`PageDraft.changed`); a thing's page — any field, list,
 section, kit, Only on some trips or care answer differs from what it loaded (`ThingKept`), or a list, section or
 template is held to be made; a row — its answers (`RowKept`), a section typed, its lists changed; a bag's page — its
-ledger held something (`EditDraft.onFirstHold`: told once, so a key draws nothing more) or its pockets were touched;
+ledger held something (`EditDraft.onFirstHold`: told once, so a key draws nothing more) — since 0.98 a pocket changed
+too, held on the ledger (until 0.98: or its pockets were touched);
 a grab list's edit — its lines or "only sometimes" marks differ; Trip settings — its snapshot; the review — a mark,
 a thing typed or added; the desk and Activity areas — a field or an area changed. Nothing of it on the Mac: its sheets
 are not swiped, and Escape is Cancel.
@@ -1840,31 +1851,42 @@ onto the record as it is now; a record deleted on the other device stays deleted
 "When" steps and conditions again if the copy changed them. The Mac's other windows are untouched by a page's copy (a
 change made there while the page is open stays).
 
-**The app put away with the page open (0.94, review item 5 of the outside review of 0.92; his "fix review items 3, 4,
-5 and 7 …", 20 Oct 2026).** Until 0.94 a template's page and Your choices kept NOTHING when the app was put away and
-then closed (by the iPhone, or by him from the app switcher) or the Mac app quit with the page open — not even a row
-whose own Save was pressed: the row editor's Save writes into the page's copy (`RowEditor.save`), the copy had no
-background or quit handling. Now `DraftedPage` carries `PageAway`: on the iPhone's `.background` (where the app may be
-closed without another word — not `.inactive`, see below) and on the Mac's `willTerminateNotification`,
-`PageDraft.keepAway()` hands over what the page changed — `save()`, through the field-wise merge — and, if it was kept,
-the page goes on from there: `opened` becomes the copy as it is (published, so the page's `changed` is false again —
-`TemplatePage`/`ListsPage` observe the draft), and `keptEarlier` is set. Back in the app the page is still open: Done
-hands over only what is changed after, Cancel (and Discard, which says so — above) throw away only that. The simplest
-safe choice of the two the review offered: keeping the copy and offering it back at the next start would need it
-written somewhere outside the library and a question at launch; written at once, it reaches the other device and a
-backup like any change. A row editor still open on top keeps its own unsaved answers to itself (as a thing's page
-does). The bag page's ledger is written the same way (`writesDraftWhenAway`, spec 05).
-
-**Only the app put away writes — never a glance (0.94, review item 4).** Until 0.94 a bag's page and Your bags wrote
-their ledger whenever the scene phase was anything but `.active` — also `.inactive`, which the iPhone passes through
-for a glance at Control Center or Notification Center, a call coming in, or the app switcher: Cancel or Discard after
-such a glance had nothing left to throw away (and the bag page's "something is held" was never reset). Now
-`DraftAway` and `PageAway` write only on `.background` (and the Mac's quit); after such a write the bag page resets
-Cancel's starting point (`savedHere()`: the pockets as they are now, `touched` cleared, `keptEarlier`), so Cancel and
-Discard then throw away only what came after. The Mac's scene goes inactive whenever another app is in front — the
-same rule there: clicking into another app writes nothing. The UI test cannot pull Control Center down, so (debug
-builds only) it posts a system-wide notification, `se.ams.packing.uitest.inactive` (`PretendPhase`, `EditDraft.swift`),
-which a page hears as the phase going inactive and coming back — nothing the app needs lives under `#if DEBUG`.
+**The app put away or ended with a page open — the Apple way (0.98, his decision of 21 Oct 2026).** His words: "Yes,
+go with the Apple way for Cancel/Done: remove the keep-on-close from the template page, your lists and the bag page,
+and ship it after the trip." On his check sheet of 0.97 he found a template's new name NOT kept after swiping the app
+away (0.94 meant to keep it — the rename was typed but not taken, so it was never in the copy) and asked "Why should you
+keep a name that isn't confirmed with Done? What is the Apple standard?" The Apple standard, as Calendar's, Contacts'
+and Reminders' edit sheets: unconfirmed changes on a Cancel/Done page survive switching to another app and coming back —
+the page is still open with them; swiping the app away (or the app being ended, or the Mac app quitting) throws them
+away; Cancel always throws away everything since the page opened; Done keeps. So since 0.98:
+- **A template's page and Your choices** (`DraftedPage`/`PageDraft`): the copy lives in memory with the page. Nothing
+  happens when the app goes to the background or the Mac app quits — `PageAway` and `PageDraft.keepAway()` are gone,
+  `opened` is the library as the page opened (no longer moved on), `keptEarlier` is gone from `PageDraft`, and
+  `TemplatePage`/`ListsPage` take the draft as a plain `let` again (they observed it only for 0.94's move). Done saves
+  through the field-wise merge as before; Cancel, Escape and Discard throw away everything since the page opened; a row
+  whose own Save was pressed is part of the page's copy, so it goes with it when the app is swiped away.
+- **A bag's page**: its ledger (`EditDraft`) lives in memory with the page; `writesDraftWhenAway` is no longer on it, so
+  the app going to the background or the Mac app quitting writes nothing, and `savedHere()` is called only after Its
+  details. Its pockets, written as they changed from 0.69 to 0.97 (and put back by Cancel — 0.92, 0.95's
+  `PocketsTrail`), are held on the ledger too (`EditDraft.step`, `BagPockets(draft:)`; spec 05), so nothing of the page
+  reaches the store before Done — and nothing reaches the other device or a backup before Done either. Typing stays
+  instant: still no store work per key (0.91).
+- **Your bags** (a list with Done and no Cancel — what is typed in its rows counts as kept, as in a list of Apple's own)
+  keeps 0.91's rule: its rows' numbers are written when the list is left, and when the app goes to the background or
+  the Mac app quits (`writesDraftWhenAway`, now Your bags' only user; still never on the INACTIVE of a glance at Control
+  Center — 0.94).
+- **0.94 and why it went.** 0.94 (review item 5 of the outside review of 0.92) handed a template's page and Your choices
+  over as the app went to the background (the Mac: as it quit) and moved Cancel's starting point there; the bag page
+  wrote its ledger there too (`DraftAway` + `savedHere()`), and only on `.background` — not the `.inactive` of a glance
+  at Control Center (review item 4; until 0.94 any phase but `.active` wrote, so Cancel after a glance had nothing to
+  throw away). It meant an unconfirmed change was kept — the opposite of the Apple standard he chose. The debug-only
+  hook that let a UI test pretend a glance (`PretendPhase`, the Darwin notification `se.ams.packing.uitest.inactive`)
+  went with it: no page with Cancel listens to the scene phase any more, and a background is the stronger case, which
+  the 0.98 tests use.
+- **What remains not kept** (by design now): everything on a page not confirmed with Done when the app is swiped away,
+  ended by the system while in the background, or quit on the Mac — the page is gone at the next launch, with no
+  question. A page left open while the app is merely in the background for hours stays open as long as the system keeps
+  the app.
 
 **The audit (0.92)** — every screen or sheet where he changes data; "today" = before 0.92.
 
@@ -1872,7 +1894,7 @@ which a page hears as the phase going inactive and coming back — nothing the a
 |---|---|---|---|---|
 | A thing's page (`ThingEditor`) | Save (state until Save; photos kept when taken) | `thing-cancel` | Cancel | **asks when changed** (was: Cancel) |
 | Kit Inside, Only on some trips, Care schedule and notes, the drop-downs' own lists (Kind of thing, Whose it is, Kept at home, Usually packed in, Pocket, When, Condition) on a thing's page | held with the page (`KitDraft`, `ChoiceEdits` — 0.69/0.70) | the page's | the page's | the page's |
-| A bag's page (`BagDetail`) incl. Pockets | written by Done (was: also by a swipe — `EditDraft`, 0.91) | **added in 0.92 (work/dup092)**, `bag-cancel` | Cancel | **asks when changed** (was: wrote everything) |
+| A bag's page (`BagDetail`) incl. Pockets | written by Done (was: also by a swipe — `EditDraft`, 0.91; until 0.98 also by the app put away, and the pockets as they changed) | **added in 0.92 (work/dup092)**, `bag-cancel` | Cancel | **asks when changed** (was: wrote everything) |
 | A template's page (`TemplatePage`): name, cover icon/colour, Counts as, Activity area, reminders, Add, ✕, Arrange | was: at once; **0.92: a copy until Done** | **0.92** `template-cancel` | Cancel (while arranging: ends Arrange first) | **asks when changed**; held while arranging |
 | A row on a template (`RowEditor`) incl. its lists | Save (state); 0.92 ⌘S | `row-cancel` | Cancel | **asks when changed** (was: Cancel) |
 | Reminders on a template | at once — on the template page's copy since 0.92 | the template's | the template's | the template's |
@@ -1891,7 +1913,7 @@ which a page hears as the phase going inactive and coming back — nothing the a
 | The bag-tag number (Packing day, Bags card), a bag's weight on a trip | one field, kept when left | — (one field) | — | — |
 | To do, To buy | Add, tick, ✕ at once; ✕ offers Undo | — (lists) | — | — |
 | Care (Done today) | one tap | — (an action) | — | — |
-| Your bags (numbers per row), the things table's cells (Mac) | kept when the list is left (`EditDraft`) / each cell at once with Undo | — (tables) | Done closes | closes |
+| Your bags (numbers per row), the things table's cells (Mac) | kept when the list is left or the app goes to the background (`EditDraft`; no Cancel, so it stays so in 0.98) / each cell at once with Undo | — (tables) | Done closes | closes |
 | Settings' switches (Remind me to pack, messages, vault folder) | at once (Apple's switches) | — | — | — |
 
 **Tests** (each seen RED with a planted fault first — Cancel saving — see spec 07 §11, 19 Oct 2026): model
@@ -1909,12 +1931,17 @@ keeps nothing), `testASwipeDownKeepsWhatIsNotSavedYet` (the review: Keep editing
 as it was → Save/⌘S → kept; the trip renamed → Cancel → unchanged → Save top right/⌘S → renamed); Escape on the Mac:
 `testEscapeClosesSettingsWindowsAndNeverReplaces` (a place ADDED in Your choices, then Escape → gone) and
 `testEscapeLeavesHomeAndTemplatesWindowsWithoutSaving` (the template's area changed, then Escape → as it was).
-0.94: `testABagsPageStillCancelsAfterAGlanceAtControlCentre` (the Wheeled duffel's max 23 typed as 31, the app inactive
-for a moment, Cancel → 23; iPhone: 32 typed, the app put away and back, 45 litres typed, Cancel → max 32 kept, litres
-as they were) — RED on 0.93: "a glance away wrote the max, and Cancel could not take it back: Your bags says '31'";
-`testATemplatesPageIsKeptWhenTheAppIsPutAway` (iPhone: a row's How many 7 saved and Hiking renamed Hill walk, the app put
-away and back, renamed Hill trek, Cancel → "Hill walk", How many 7) — RED on 0.93: `("Hiking") is not equal to ("Hill
-walk") - the name given before the app was put away was not kept`.
+0.94: `testABagsPageStillCancelsAfterAGlanceAtControlCentre` and `testATemplatesPageIsKeptWhenTheAppIsPutAway` (they
+asserted the keep-on-close; RED on 0.93) — replaced in 0.98 by the two below, whose expectations are the opposite.
+0.98 (the Apple way; `-uiTestingKept`, debug builds: a store file that outlives the app, `-keptStart` making it afresh;
+the app "ended" = on the iPhone put away and then terminated, as the app switcher does; on the Mac ⌘Q):
+`testABagsPageKeepsNothingButByDone` (the Wheeled duffel: iPhone — max 23 typed as 31 and a pocket Side added, the app
+put away and back: the page still open with 31 and 2 pockets, Cancel → Your bags 23, 1 pocket; both — 32 typed, the
+app ended → 23 at the next launch; 33 and Done/⌘S, the app ended → 33) and
+`testATemplatesPageAndYourChoicesKeepNothingButByDone` (iPhone — a row's How many saved as 7 and Hiking renamed Hill
+walk, the app put away and back: still open, named Hill walk, Cancel → Hiking and How many as it was; both — renamed
+Hill trek and moved to OE, the app ended → Hiking in GA at the next launch; moved to OE and Done/⌘S, ended → under OE;
+a place added in Your choices, ended → not there). Seen RED on 0.97 (iPhone, 0.97 with only the `-uiTestingKept` hook added): "the app put away kept the max, and Cancel could not take it back: Your bags says '31'", "the app put away kept the pocket, and Cancel could not take it back: 2 pockets" and `("32") is not equal to ("23") - the max typed and never confirmed with Done was kept when the app ended`; `("Hill walk") is not equal to ("Hiking") - the app put away kept the name, and Cancel could not take it back`, `("7") is not equal to ("e.g. 2, or 2 pairs") - the app put away kept the row's How many, and Cancel could not take it back` (the empty field reads as its prompt), the ended app's move kept (`("Swim") is not equal to ("Hiking") - the name never confirmed with Done was kept when the app ended` — Hiking had left GA, so the first row was Swim; the test now first checks GA and OE directly) and "the place never confirmed with Done was kept when the app ended".
 
 ## 20b. A save that fails — a note, never a dead app (0.93; `SaveNote` in `RootView.swift`, `LibraryModel.couldNotSave`, `CloudStore.apply`)
 
@@ -1947,7 +1974,10 @@ failed save — and Duplicate turned the page to a copy that was never kept. `Li
 was kept (spec 01 §5); `EditDraft.flush` / `EditDraft.writing(_:also:)` put everything back on the ledger when it was
 not; and: Your bags' Add keeps the name in its field (and the rows' typed numbers held); a bag page's Done, Its details
 and Duplicate leave the page open, still holding everything — the name too; a template page's and Your choices' Done
-leave the page open on its copy. "Try again" is then one press of the same button.
+leave the page open on its copy. "Try again" is then one press of the same button. Since 0.98 (the Apple way, §20a)
+what such a page holds after a refused Done lives in memory only, like everything else on it: still there after
+switching to another app and back, gone when the app is swiped away or quit — until 0.97 the app put away tried the
+write again (`DraftAway`, `PageAway`). Your bags' typed rows still get that try as the app goes to the background.
 
 **Tests.** UI `testAFailedSaveKeepsTheScreensAndSaysSo`, `testARestoreThatCannotBeSavedSaysNothingWasReplaced`
 (`-uiTestingSaveFails`, debug builds: a store file whose first save fails) — spec 01 §5 and §11; seen RED on 0.92.
@@ -2429,7 +2459,9 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-bagOnReturn <thing> <bag>` | (testing only) played when the app returns from the background: the other device puts that thing in that bag (a thing's page open meanwhile, spec 05) | 0.93 |
 | `-uiTestingSaveFails` | (debug builds only) the sample in a store file whose first save after launch fails (§20b, spec 01 §6) | 0.93 |
 | `-saveFailsBags` | (debug builds only, with `-uiTestingSaveFails`) the sample with bags, so the failed save can be a bag page's (§20b) | 0.94 |
-| Darwin notification `se.ams.packing.uitest.inactive` | (debug builds only; not a launch argument — the UI test posts it) a page that writes when the app goes away hears the phase go inactive and come back, as for a glance at Control Center (`PretendPhase`, §20a) | 0.94 |
+| Darwin notification `se.ams.packing.uitest.inactive` | **gone in 0.98** — (debug builds only; not a launch argument — the UI test posted it) a page that wrote when the app went away heard the phase go inactive and come back, as for a glance at Control Center (`PretendPhase`); since 0.98 no page with Cancel listens to the phase (§20a) | 0.94 |
+| `-uiTestingKept` | (debug builds only) the sample with bags in a store file that outlives the app — a test ends the app with a page open and finds what was kept at the next launch (§20a, 0.98) | 0.98 |
+| `-keptStart` | (with `-uiTestingKept`) the file is made afresh | 0.98 |
 | `-quickAction <title>` | (testing only, iPhone) the entry under the app icon with that title — taken from the entries the app hands the system, so only one of the four — tapped to START the app: handed over through the cold-start path (`PackingAppDelegate`, as `options.shortcutItem`) | 0.86 |
 | `-quickActionOnReturn <title>` | (testing only, iPhone) played when the app returns from the background: that entry handed to the scene's delegate (`windowScene(_:performActionFor:)`), as iOS does while the app runs | 0.86 |
 | `-dockMenu <title>`, `-dockMenuWhenClosed <title>` | (testing only, Mac) the Dock icon's menu asked of the app's delegate and that entry performed — a second after the window is up / after the last main window closed | 0.86 |

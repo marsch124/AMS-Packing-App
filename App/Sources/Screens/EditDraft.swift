@@ -14,12 +14,14 @@ import PackingLibrary
 //
 // Now: a field keeps what is typed TO ITSELF (`DraftedField`, its own state — a key draws the
 // field and nothing else) and puts it in the page's `EditDraft`, which writes everything typed on
-// the page in ONE change when the page is left — Done, a swipe down, Escape — or the app goes to
-// the background (or, on the Mac, quits), and before anything that needs it written first
-// (Duplicate, Its details). Moving from field to field and scrolling write nothing. Since 0.92 the
-// ledger holds a bag page's pills, switches and a name taken with Rename too, and Cancel (`discard`)
-// forgets all of it. Since 0.94 only the app put away writes — not a glance at Control Center (the
-// app merely INACTIVE) — and a write the store refuses leaves everything held, for the next try.
+// the page in ONE change when the page is left with Done, and before anything that needs it written
+// first (Duplicate, Its details). Moving from field to field and scrolling write nothing. Since 0.92
+// the ledger holds a bag page's pills, switches and a name taken with Rename too, and Cancel
+// (`close`) forgets all of it; a write the store refuses leaves everything held, for the next try
+// (0.94). Since 0.98 (the Apple way, his decision of 21 Oct 2026) it holds a bag page's pocket
+// changes as well (`step`), and a bag page writes NOTHING when the app goes away: the ledger lives
+// in memory — still there when he comes back to the app, gone when the app is swiped away or ends.
+// Your bags (Done only, no Cancel) still writes its rows when the app goes to the background.
 
 /// What is typed on a page and not written yet: per field, the words and how to write them. Not
 /// observed (no screen redraws when it changes) — it is a ledger, read when the page writes.
@@ -28,6 +30,9 @@ final class EditDraft {
     private var pending: [String: (text: String, write: (String, inout Library) -> Void)] = [:]
     /// The order fields were typed in, so a write applies them as typed.
     private var order: [String] = []
+    /// Changes that are not one field's words (0.98: a bag's pockets — an Add, a rename, a move, a
+    /// ✕), each applied in turn after the fields, in the order they were made.
+    private var steps: [(inout Library) -> Void] = []
 
     /// A bag's name typed and not renamed yet — renamed by Duplicate first, never by leaving
     /// (a swipe leaves a typed name unrenamed, as before).
@@ -48,7 +53,7 @@ final class EditDraft {
     /// it gives up the keys on the way out (the Mac's do) is not taken any more.
     private(set) var closed = false
 
-    var isEmpty: Bool { pending.isEmpty }
+    var isEmpty: Bool { pending.isEmpty && steps.isEmpty }
     func isPending(_ key: String) -> Bool { pending[key] != nil }
 
     /// A field typed: `differs` false (it says what is kept) takes it off the ledger.
@@ -65,8 +70,16 @@ final class EditDraft {
         order.removeAll { $0 == key }
     }
 
+    /// A change held as a step (0.98: a pocket added, renamed, moved or removed) — written with the
+    /// fields, after them, by Done (or first by Duplicate and Its details); Cancel forgets it.
+    func step(_ write: @escaping (inout Library) -> Void) {
+        guard !closed else { return }
+        steps.append(write)
+        heldSomething()
+    }
+
     /// Forget everything held — the bag is being deleted. A name typed too.
-    func discard() { pending = [:]; order = []; typedName = nil }
+    func discard() { pending = [:]; order = []; steps = []; typedName = nil }
 
     /// Cancel (0.92): forget everything held, and take nothing more.
     func close() { discard(); closed = true }
@@ -74,9 +87,10 @@ final class EditDraft {
     /// Apply everything typed to a library being changed — inside a change that does more
     /// (Duplicate). The ledger is empty afterwards (a name typed and not taken stays, for Done).
     func apply(to lib: inout Library) {
-        let todo = order.compactMap { pending[$0] }
-        pending = [:]; order = []
+        let todo = order.compactMap { pending[$0] }, then = steps
+        pending = [:]; order = []; steps = []
         for (text, write) in todo { write(text, &lib) }
+        for write in then { write(&lib) }
     }
 
     /// Write everything typed, in one change. Nothing typed = nothing written. false (0.94): the
@@ -95,12 +109,12 @@ final class EditDraft {
     /// what was typed is not lost with the failed save.
     @discardableResult
     func writing(_ model: LibraryModel, also: (inout Library) -> Void) -> Bool {
-        let held = (pending, order)
+        let held = (pending, order, steps)
         let kept = model.change { lib in
             apply(to: &lib)
             also(&lib)
         }
-        if !kept && !closed { pending = held.0; order = held.1 }
+        if !kept && !closed { pending = held.0; order = held.1; steps = held.2 }
         return kept
     }
 }
@@ -135,62 +149,31 @@ struct DraftedField<Field: View>: View {
 }
 
 extension View {
-    /// Write the page's ledger when the app goes to the background — on the iPhone it may be
-    /// closed there without another word — and when the Mac app quits with the page open.
-    /// `wrote`: written as the app went to the background — the page is still open (0.94), and its
-    /// Cancel now throws away only what comes after.
-    func writesDraftWhenAway(_ draft: EditDraft, _ model: LibraryModel, wrote: @escaping () -> Void = {}) -> some View {
-        modifier(DraftAway(draft: draft, model: model, wrote: wrote))
+    /// Your bags only (a list with Done and no Cancel — what is typed in its rows counts as kept):
+    /// write the ledger when the app goes to the background — on the iPhone it may be closed there
+    /// without another word — and when the Mac app quits with the list open. Never for a glance at
+    /// Control Center, the app merely INACTIVE (0.94). A page with Cancel does not use it since 0.98:
+    /// what it holds is kept by Done alone (the Apple way, his decision of 21 Oct 2026).
+    func writesDraftWhenAway(_ draft: EditDraft, _ model: LibraryModel) -> some View {
+        modifier(DraftAway(draft: draft, model: model))
     }
 }
 
-// Only the app put away writes (0.94, review item 4 of the outside review of 0.92). Until then a page
-// wrote whenever the app was not in front — also when it was only INACTIVE for a moment: Control
-// Center or Notification Center pulled down and put back, a call coming in. Cancel or Discard
-// afterwards had nothing to throw away. Now the iPhone writes when the app goes to the BACKGROUND
-// (where it may be closed without another word), the Mac when it quits.
 private struct DraftAway: ViewModifier {
     let draft: EditDraft
     let model: LibraryModel
-    let wrote: () -> Void
     @Environment(\.scenePhase) private var phase
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: phase) { _, now in went(now) }
+            .onChange(of: phase) { _, now in if now == .background { draft.flush(model) } }
             #if os(macOS)
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                 draft.flush(model)
             }
             #endif
-            #if DEBUG
-            .onAppear { _ = PretendPhase.listening }
-            .onReceive(NotificationCenter.default.publisher(for: PretendPhase.heard)) { _ in went(.inactive); went(.active) }
-            #endif
-    }
-
-    private func went(_ now: ScenePhase) {
-        guard now == .background else { return }
-        if draft.flush(model) { wrote() }
     }
 }
-
-#if DEBUG
-/// UI tests only (0.94): a glance at Control Center or Notification Center, or a call coming in,
-/// puts the app INACTIVE for a moment. A test cannot pull those down, so it posts this system-wide
-/// notification instead, and a page that writes when the app goes away hears the phase go inactive
-/// and come back, as it would. Nothing the app needs lives here.
-enum PretendPhase {
-    static let darwinName = "se.ams.packing.uitest.inactive"
-    static let heard = Notification.Name("PretendPhase.inactiveAndBack")
-    /// Listening starts the first time such a page appears.
-    static let listening: Void = {
-        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), nil, { _, _, _, _, _ in
-            DispatchQueue.main.async { NotificationCenter.default.post(name: PretendPhase.heard, object: nil) }
-        }, darwinName as CFString, nil, .deliverImmediately)
-    }()
-}
-#endif
 
 /// A number typed as the bag fields take it: trimmed, a comma read as a point; empty is 0; nil for
 /// words that are no number (they change nothing).
@@ -217,11 +200,13 @@ enum TypedNumber {
 // the fields it touched, so the other device's changes meanwhile stay); Cancel, Escape and a swipe
 // down throw the copy away.
 //
-// The app put away with the page open (0.94, review item 5): until then it kept NOTHING of the page
-// — not even a row whose own Save was pressed (that Save writes into the copy) — when the iPhone then
-// closed the app, or the Mac app quit. Now the page's changes are handed over the moment the app goes
-// to the background (the Mac: as it quits), as a bag's page writes there, and the page stays open on
-// what was kept: Done, Cancel and a swipe down then deal only with what is changed after.
+// The app put away with the page open — the Apple way (0.98, his decision of 21 Oct 2026: "Yes, go
+// with the Apple way for Cancel/Done: remove the keep-on-close from the template page, your lists and
+// the bag page"), as Calendar's, Contacts' and Reminders' edit sheets: the copy lives in memory, so
+// switching to another app and back finds the page open with everything changed on it; the app swiped
+// away (or ended, or the Mac app quit) keeps NOTHING of it — a row whose own Save was pressed included,
+// that Save writes into the copy. Only Done keeps. (0.94 to 0.97 handed the page over as the app went
+// to the background; he found a template's new name kept that he never confirmed with Done.)
 
 /// The copy a page works on, and the real library it came from (spec 06 §20a).
 @MainActor
@@ -229,11 +214,8 @@ final class PageDraft: ObservableObject {
     let live: LibraryModel
     /// What the page and everything opened from it see as "the library".
     let copy: LibraryModel
-    /// The library as the page opened — or as it was kept when the app was put away (0.94).
-    @Published private(set) var opened: Library
-    /// Part of the page was kept already while it stayed open — the app was put away (0.94): Discard
-    /// then says so.
-    @Published private(set) var keptEarlier = false
+    /// The library as the page opened.
+    let opened: Library
 
     init(live: LibraryModel) {
         self.live = live
@@ -253,15 +235,6 @@ final class PageDraft: ObservableObject {
         guard live.change({ $0 = $0.applyingPage(from: from, to: to) }) else { return false }
         live.library.installLiveChoices()
         return true
-    }
-
-    /// The app put away (the iPhone) or quitting (the Mac) with the page open (0.94, review item 5):
-    /// what the page changed is handed over now, and the page goes on from there — Done hands over
-    /// only what is changed after, Cancel throws away only that.
-    func keepAway() {
-        guard changed, save() else { return }
-        opened = copy.library
-        keptEarlier = true
     }
 
     /// The page has gone — after Done, Cancel or a swipe: the "When" steps and conditions in force
@@ -287,24 +260,6 @@ struct DraftedPage<Content: View>: View {
         content(draft)
             .environmentObject(draft.copy)
             .onDisappear { draft.left() }
-            .modifier(PageAway(draft: draft))
-    }
-}
-
-/// A page on its copy, kept when the app goes away (0.94, review item 5): the iPhone's background —
-/// where the app may be closed without another word — and the Mac app quitting.
-private struct PageAway: ViewModifier {
-    let draft: PageDraft
-    @Environment(\.scenePhase) private var phase
-
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: phase) { _, now in if now == .background { draft.keepAway() } }
-            #if os(macOS)
-            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-                draft.keepAway()
-            }
-            #endif
     }
 }
 
@@ -321,8 +276,9 @@ private struct PageAway: ViewModifier {
 extension View {
     /// `changed`: something on the page is not saved — a swipe down then asks. `holds`: the page holds
     /// still for another reason (a template being arranged) without asking. `keptEarlier` (0.94): part
-    /// of the page was kept already — the app was put away, or Its details wrote it — so Discard says
-    /// that what was kept stays. `discard`: what Discard does — the page's Cancel.
+    /// of the page was kept already — on a bag's page Its details wrote it (since 0.98 the app put
+    /// away keeps nothing) — so Discard says that what was kept stays. `discard`: what Discard does —
+    /// the page's Cancel.
     func asksBeforeDiscarding(_ changed: Bool, holds: Bool = false, keptEarlier: Bool = false,
                               discard: @escaping () -> Void) -> some View {
         modifier(DiscardAsk(changed: changed, holds: holds, keptEarlier: keptEarlier, discard: discard))

@@ -53,14 +53,21 @@ struct PocketPills: View {
 /// only, not on the first), ✕
 /// `bag-pocket-<n>-remove`; a refused rename `bag-pockets-problem`; the new pocket's field
 /// `bag-pocket-new`, Add `bag-pocket-add`, and what Add was missing `bag-pocket-add-needs`.
+///
+/// Held, not written (0.98, the Apple way — his decision of 21 Oct 2026): each Add, rename, move and
+/// ✕ is a step on the bag page's ledger (`EditDraft.step`), written with the rest of the page by Done
+/// (or first by Duplicate and Its details) and forgotten by Cancel or the app swiped away. The pockets
+/// shown are the page's own copy of the library with those steps made (`held`) — made by the
+/// library's own rules, so a name refused here is refused as it was. Each step finds its pocket by
+/// NAME when it is written, so a pocket the other device added meanwhile does not shift a move.
+/// Until 0.98 each was written at once and Cancel put back what the page changed (0.92, 0.95).
 struct BagPockets: View {
     let bagId: String
-    /// A pocket changed here (0.92): the bag's page puts them back on Cancel.
-    var touched: () -> Void = {}
-    /// Each change here, with the bag's pockets just before and just after it (0.95): Cancel then puts
-    /// back only what this page changed (`PocketsTrail`), not what the other device did meanwhile.
-    var did: (PocketsKept?, PocketsKept?) -> Void = { _, _ in }
+    /// The bag page's ledger (0.98).
+    let draft: EditDraft
     @EnvironmentObject var model: LibraryModel
+    /// The library with this page's pocket steps made; nil = nothing held, the library itself shown.
+    @State private var held: Library?
     @State private var newName = ""
     @State private var addNeeds = ""
     /// What is typed into a pocket's field, by its place, until Rename.
@@ -70,8 +77,10 @@ struct BagPockets: View {
     @State private var carried: ReorderDrag?
     @State private var heights: [String: CGFloat] = [:]
 
+    private var shownPockets: [String] { (held ?? model.library).pockets(bagId: bagId) }
+
     var body: some View {
-        let pockets = model.library.pockets(bagId: bagId)
+        let pockets = shownPockets
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Text("Pockets").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -170,51 +179,62 @@ struct BagPockets: View {
     }
 
     private func canStep(_ pocket: String, _ by: Int) -> Bool {
-        let list = model.library.pockets(bagId: bagId)
+        let list = shownPockets
         guard let n = list.firstIndex(of: pocket) else { return false }
         return list.indices.contains(n + by)
     }
 
     private func step(_ pocket: String, _ by: Int) {
-        let list = model.library.pockets(bagId: bagId)
-        guard let n = list.firstIndex(of: pocket), list.indices.contains(n + by) else { return }
         typed = [:]
-        changing { $0.movePocket(bagId: bagId, from: n, to: n + by) }
+        changing(BagPockets.moving(bagId, pocket, by: by))
     }
 
-    /// One change of the bag's pockets, told to the page with the pockets just before and after it.
+    /// One change of the bag's pockets, held (0.98): made on the page's copy — false, nothing held,
+    /// when the library's rules refuse it there — and put on the ledger as a step.
     @discardableResult
-    private func changing(_ body: (inout Library) -> Bool) -> Bool {
-        touched()
-        let before = model.library.keepPockets(bagId: bagId)
-        var ok = false
-        model.change { ok = body(&$0) }
-        did(before, model.library.keepPockets(bagId: bagId))
-        return ok
+    private func changing(_ body: @escaping (inout Library) -> Bool) -> Bool {
+        var lib = held ?? model.library
+        guard body(&lib) else { return false }
+        held = lib
+        draft.step { _ = body(&$0) }
+        return true
+    }
+
+    /// A move by name (0.98): the pocket's place is looked up again when the step is written.
+    static func moving(_ bagId: String, _ pocket: String, by: Int) -> (inout Library) -> Bool {
+        { lib in
+            let list = lib.pockets(bagId: bagId)
+            guard let n = list.firstIndex(of: pocket), list.indices.contains(n + by) else { return false }
+            return lib.movePocket(bagId: bagId, from: n, to: n + by)
+        }
     }
 
     private func add() {
-        let name = jsTrim(newName)
+        let name = jsTrim(newName), id = bagId
         guard !name.isEmpty else { addNeeds = "Type a pocket first."; return }
-        let ok = changing { $0.addPocket(bagId: bagId, name: name) }
+        let ok = changing { $0.addPocket(bagId: id, name: name) }
         if ok { newName = ""; typed = [:] } else { addNeeds = "The bag already has a pocket called that." }
     }
 
     private func rename(_ n: Int, _ pocket: String) {
         guard let wanted = typed[n] else { return }
-        let ok = changing { $0.renamePocket(bagId: bagId, from: pocket, to: wanted) }
+        let id = bagId
+        let ok = changing { $0.renamePocket(bagId: id, from: pocket, to: wanted) }
         if ok { typed = [:]; problem = "" }
         else { problem = jsTrim(wanted).isEmpty ? "A pocket needs a name." : "The bag already has a pocket called that." }
     }
 
     private func move(_ n: Int) {
+        let list = shownPockets
+        guard list.indices.contains(n) else { return }
         typed = [:]
-        changing { $0.movePocket(bagId: bagId, from: n, to: n - 1) }
+        changing(BagPockets.moving(bagId, list[n], by: -1))
     }
 
     private func remove(_ pocket: String) {
         typed = [:]
-        changing { $0.removePocket(bagId: bagId, name: pocket) }
+        let id = bagId
+        changing { $0.removePocket(bagId: id, name: pocket) }
     }
 }
 

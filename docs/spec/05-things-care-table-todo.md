@@ -1900,7 +1900,8 @@ count the rows as shown.
 - Numbers are KEPT AS TYPED (0.91 — `DraftedField` and `EditDraft`, EditDraft.swift; see A bag's page, "0.91 —
   typing without a wait"): the field keeps the words itself and puts them on Your bags' ledger, and Your bags writes
   them all in ONE change when it is left (Done, Escape, a swipe — `onDisappear`), when the app goes to the background
-  (on the Mac also when it quits), before a bag's page opens from its name (so the page shows the same numbers), when
+  (on the Mac also when it quits — `writesDraftWhenAway`, Your bags' alone since 0.98: a list with Done and no Cancel,
+  where what is typed counts as kept; a bag's PAGE keeps nothing but by Done since then), before a bag's page opens from its name (so the page shows the same numbers), when
   another sort is chosen (Last edited then sorts by them), when a bag is added, and with a move of his own order. Until
   0.90 every key was a `model.change`. Read as before: trimmed, a comma read as a point; empty → 0; unreadable → no
   change (`TypedNumber`); a value different from the stored one → `setBag(id:maxKg:/capacityL:/emptyGrams:)`, which
@@ -2057,9 +2058,14 @@ follows onto the copy's).
    (`bag-pocket-new`, Body, `Metrics.tap` tall) and **Add** (`FieldButtonLabel`, orange, `bag-pocket-add`; Return
    too) — always in colour; with nothing typed it says "Type a pocket first." under the field
    (`bag-pocket-add-needs`), with a name the bag has, "The bag already has a pocket called that.". Model:
-   `addPocket` / `renamePocket` (carried to things and trip lines) / `movePocket` / `removePocket` (spec 03). Each is
-   still written as it is made; since 0.92 each tells the page (`touched`), and Cancel puts the pockets back as the
-   page found them (**0.92 — Cancel**, below).
+   `addPocket` / `renamePocket` (carried to things and trip lines) / `movePocket` / `removePocket` (spec 03). **Since
+   0.98 each is HELD** with the rest of the page (the Apple way, **0.98** below): made on the page's own copy of the
+   library by the same model rule (`BagPockets.held`; refused there = refused, said as before, nothing held) and put on
+   the page's ledger as a step (`EditDraft.step`) — written with the page by Done, first by Duplicate and Its details,
+   forgotten by Cancel, Discard and the app swiped away. A step finds its pocket by NAME when it is written (a move:
+   `BagPockets.moving` looks the place up again), so a pocket the other device added meanwhile does not shift it. The
+   count and rows show the page's copy; after Its details writes the page they show the library again (`.id` renewed).
+   0.69 to 0.97 each was written as it was made; 0.92 to 0.97 Cancel put the pockets back (**0.92 — Cancel**, below).
 4. **Usually in it** `N` (`bag-things-count`): "Nothing yet. A thing goes here when its “Usually packed in” is
    this bag." or up to 12 things (`bag-thing-i`: name 16 medium, weight when > 0), each opening its thing's page;
    "Show all `N`" / "Show fewer" (`bag-things-all`) when more than 12.
@@ -2119,19 +2125,22 @@ is only a Done button, right?" A thing's page had Cancel and Save; a bag's page 
 typed on a ledger, written on leaving).
 - **Cancel** (`bag-cancel`, header item 1, top left as on a thing's page; Escape): `draft.close()` — nothing the
   page holds is written, a name typed too, and the ledger takes nothing more (a Mac text field hands its words in
-  again as it gives up the keys on the way out) — then, when a pocket was changed on the page, `putBackPockets` in a
-  change that does not stamp Last edited (`LibraryModel.change(stamping: false)`: the bag reads as it did, its Last
-  edited too); then the page closes. **Done** writes the ledger itself (`flush`) and closes. The page's own write on
+  again as it gives up the keys on the way out) — then the page closes. Since 0.98 the pockets are held too, so there
+  is nothing to put back; 0.92 to 0.97, when a pocket was changed on the page, Cancel ran `putBackPockets` in a change
+  that did not stamp Last edited (`LibraryModel.change(stamping: false)`). **Done** writes the ledger itself (`flush`) and closes. The page's own write on
   leaving (`onDisappear`, the iPhone's, how a swipe wrote) is gone since the merge with Cancel everywhere: a swipe with
   something held asks first and Discard is this Cancel (0.92, the app's rule, spec 06 §20a); on the Mac the sheet ALSO closes itself on Escape,
   so a write there had turned Escape into Done (the Mac probe of 19 Oct 2026: "Escape kept the max typed").
 - **What the page holds** (so Cancel forgets it): every typed field (0.91); the desk's pills — colour, type, size
-  (item 3c); Goes in the cabin and Has an AirTag (items 3, 3b); a name taken with Rename or Return (item 1). Each is
-  shown at once from the page's own state and put on the ledger (`hold`): written in ONE change when the page is left
-  by Done or ⌘S, or the app goes away, and first for Duplicate and Its details. The ledger tells the page once, the
+  (item 3c); Goes in the cabin and Has an AirTag (items 3, 3b); a name taken with Rename or Return (item 1); since
+  0.98 the pockets' Add, rename, move and ✕ (item 3a, as steps). Each is shown at once from the page's own state and
+  put on the ledger (`hold`): written in ONE change when the page is left by Done or ⌘S, and first for Duplicate and
+  Its details (0.94 to 0.97 also when the app went to the background or the Mac app quit — gone in 0.98). The ledger tells the page once, the
   first time it holds something (`EditDraft.onFirstHold` → `touched`; again after Its details writes it), so a swipe
   knows to ask without a redraw on every key.
-- **Put back**: the pockets — each Add, rename, ✕ and drag is written as it is made (a rename or a removal reaches the
+- **Put back (0.92 to 0.97; since 0.98 the pockets are held, item 3a, and none of this runs — `putBackPockets`,
+  `keepPockets` and `PocketsTrail` stay in PackingLibrary with their model tests, no longer called by the app)**: the
+  pockets — each Add, rename, ✕ and drag was written as it was made (a rename or a removal reaches the
   things in the bag and the trip lines packed in it), so the page keeps the pockets as it found them
   (`Library.keepPockets(bagId:)` on appear: the bag's list and Last edited, the usual pocket of every thing in it, both
   pockets of every trip line in it) and Cancel puts all of it back (`putBackPockets`: nothing else of a thing or a line
@@ -2153,11 +2162,22 @@ typed on a ledger, written on leaving).
 - **Save points**: Its details and Duplicate write the page first (they show or copy what it says) — Its details then
   keeps the pockets anew (`savedHere`), so Cancel after it takes back only what changed since; Duplicate turns the page
   to the copy (a fresh page). Duplicate writes the ledger first and then a name typed and not taken (the newest word on
-  the name wins over one taken before it). The app put in the background writes the ledger (0.91) — and since 0.94
-  that is a save point too (`writesDraftWhenAway(draft, model) { savedHere() }` when something was held): Cancel and
-  Discard afterwards throw away only what is changed after it, and Discard then says "Your latest changes are not kept.
-  What the app kept earlier stays." (`keptEarlier`, also after Its details; spec 06 §20a).
-- **Only the app put away writes — not a glance (0.94, review item 4 of the outside review of 0.92; his "fix review
+  the name wins over one taken before it). After Its details Discard says "Your latest changes are not kept. What the
+  app kept earlier stays." (`keptEarlier`; spec 06 §20a), and the pockets show the library again (`pocketsFresh`). The
+  app put in the background wrote the ledger from 0.91 to 0.97 — from 0.94 a save point too
+  (`writesDraftWhenAway(draft, model) { savedHere() }`); since 0.98 it is no save point and writes nothing.
+- **0.98 — the Apple way (his decision of 21 Oct 2026: "Yes, go with the Apple way for Cancel/Done: remove the
+  keep-on-close from the template page, your lists and the bag page, and ship it after the trip"; spec 06 §20a).**
+  Nothing of the page reaches the store before Done: the ledger — fields, pills, switches, a name taken, and now the
+  pockets — lives in memory with the page. Switching to another app and back: the page is still open with all of it;
+  Cancel then still throws away everything since the page opened. The app swiped away, ended by the system, or the Mac
+  app quit: nothing of it was kept (no question at the next launch). `writesDraftWhenAway` is no longer on the page
+  (Your bags keeps it). Typing stays as 0.91 made it: no store work per key. A failed Done (0.94) still leaves the page
+  open holding everything, in memory. A thing opened from "Usually in it" sees the library, not the page's held
+  pockets: a pocket added on the page is offered on that thing's page only after Done (Its details writes the page
+  first, as before).
+- **Only the app put away writes — not a glance (0.94 to 0.97; superseded by 0.98 above, where the app put away writes
+  nothing either. 0.94: review item 4 of the outside review of 0.92; his "fix review
   items 3, 4, 5 and 7 plus the template-page merge and the empty bag name", 20 Oct 2026).** Until 0.94 the ledger was
   written on ANY scene phase but `.active` (`EditDraft.swift`, `DraftAway`) — also `.inactive`, which the iPhone passes
   through for a glance at Control Center or Notification Center, a call coming in, or the app switcher; then Cancel
@@ -2173,7 +2193,8 @@ typed on a ledger, written on leaving).
   never kept, and the page closed itself). **Your bags' Add** keeps the name in its field when the add was refused (0.93
   emptied it — the 0.93 test had to type the name again) and the rows' typed numbers stay held.
 - **The swipe** (iPhone): since the merge with Cancel everywhere (0.92) it follows the app's one rule (spec 06 §20a):
-  nothing held — it closes; something held (`touched`, or the pockets touched) — it asks "Discard changes?": Discard is
+  nothing held — it closes; something held (`touched` — since 0.98 a pocket changed too; until then also "the pockets
+  touched") — it asks "Discard changes?": Discard is
   this Cancel, Keep editing stays. Until then it wrote everything (0.91 — his test sheet asked that nothing typed be
   lost; nothing is lost without a word now either) while a thing's page's swipe was a Cancel without a word.
   `testABagsPageKeepsEverythingTypedFieldAfterField` guards it: a swipe asks, Discard keeps nothing, Keep editing then
@@ -2193,10 +2214,16 @@ typed on a ledger, written on leaving).
   any descendant has keyboard focus", every run): the tests' `onScreen` now counts a control reaching within 50 points
   of the keyboard's reported top (the keys at 583; the bar from about 540) as covered, so `bringIntoView` scrolls it
   clear first.
-- Tests (0.94): UI `testABagsPageStillCancelsAfterAGlanceAtControlCentre` (`-uiTestingBags`, the Wheeled duffel: max
-  23 typed as 31, the app inactive for a moment — the debug-only `PretendPhase` notification, spec 06 §20a — Cancel →
-  Your bags says 23; on the iPhone 32 typed, the app put away and back, 45 litres typed, Cancel → 32 kept, the litres as
-  they were) — RED on 0.93: "a glance away wrote the max, and Cancel could not take it back: Your bags says '31'";
+- Tests (0.98): UI `testABagsPageKeepsNothingButByDone` (`-uiTestingKept`, a store file that outlives the app; the
+  Wheeled duffel: iPhone — max 23 typed as 31 and a pocket Side added, the app put away and back, the page still open
+  with 31 and 2 pockets, Cancel → Your bags 23 and 1 pocket; both devices — 32 typed, the app ended (iPhone: put away,
+  then terminated; Mac: ⌘Q) → 23 at the next launch; 33, Done (⌘S on the Mac), ended → 33) — RED on 0.97: "the app put away kept the max, and Cancel could not take it back: Your bags says '31'", "the app put away kept the pocket, and Cancel could not take it back: 2 pockets" and `("32") is not equal to ("23") - the max typed and never confirmed with Done was kept when the app ended`.
+  It replaced 0.94's `testABagsPageStillCancelsAfterAGlanceAtControlCentre` (max 31, a pretended glance, Cancel → 23;
+  iPhone: 32, the app put away and back, 45 litres, Cancel → 32 KEPT — the keep-on-close he turned down; RED on 0.93:
+  "a glance away wrote the max, and Cancel could not take it back: Your bags says '31'"). `testABagsPageCancelsWhatWasChangedAndDoneKeepsIt`
+  and `testABagsPageListsItsPockets` now prove the held pockets (Cancel → 1 pocket; Done → 2; rename, move and ✕ shown
+  from the page's copy).
+- Tests (0.94):
   `testAFailedSaveOnABagsPageKeepsTheName` (`-uiTestingSaveFails -saveFailsBags`: renamed Big duffel, Done fails → the
   note, the page open, "Big duffel" in the name field; Done again → Your bags' first row is Big duffel) — RED on 0.93:
   "a failed save closed the bag's page, and what it held went with it"; `testAFailedSaveKeepsTheScreensAndSaysSo` now
@@ -2225,8 +2252,8 @@ there is a delay if I would like to scroll or move to the next data field."
   the Colour `BagColourPart` — views of their own, so a key draws the field and nothing else) and puts it on the
   page's ledger (`EditDraft`: per field the words and how to write them; not observed, so nothing redraws). (2) The
   page writes the ledger in ONE `model.change` when it is left — Done, a swipe down, Escape, Duplicate turning it to the
-  copy (`onDisappear`) — when the app goes to the background (on the Mac also when it quits: `writesDraftWhenAway`),
-  and first, inside the same change, for Duplicate (with a typed name renamed if it can be), a pill (colour, type,
+  copy (`onDisappear`) — when the app goes to the background (on the Mac also when it quits: `writesDraftWhenAway`;
+  gone from the page in 0.98, the Apple way), and first, inside the same change, for Duplicate (with a typed name renamed if it can be), a pill (colour, type,
   size) and Its details (written before it opens, so it shows the same words). Moving from field to field and
   scrolling write nothing. A delete forgets the ledger. A typed name is still renamed by Rename, Return or Done only
   (a swipe leaves it, as before); Duplicate reads it from the ledger. (3) The store no longer reads itself back after
@@ -2238,6 +2265,8 @@ there is a delay if I would like to scroll or move to the next data field."
 - **Never lost.** Done, a swipe down, Escape (until 0.92 — since then Escape is Cancel, which writes nothing on
   purpose), the app put away (since 0.94 only put away — the background — not a glance at Control Center) — all write. Not covered: the app killed while the page
   is open and in front (iPhone: only from the app switcher, which puts it in the background first — written then).
+  **Since 0.98 (the Apple way, his decision) only Done writes:** the app put away keeps the page open in memory, and
+  the app swiped away or quit keeps nothing that was not confirmed with Done — on purpose.
 - **Tests.** UI `testABagsPageKeepsEverythingTypedFieldAfterField` (`-uiTestingBags`, the Wheeled duffel: max kg,
   litres, empty g, Notes, brand, measures and marks typed one after another with no pause, Done — Your bags' row says
   the new max at once, and opened again all seven are there; on the iPhone again, closed by a swipe down with the last
