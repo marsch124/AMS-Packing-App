@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.98", date: "21 Oct 2026", title: "Cancel and Done the Apple way",
+                changed: ["A template\u{2019}s page, your own lists and a bag\u{2019}s page now work like Apple\u{2019}s own apps: Done saves, Cancel throws away everything since the page opened. Switch to another app and back, and the page is still open with your changes; swipe the app away, and changes not confirmed with Done are gone.",
+                          "A pocket added on a bag\u{2019}s page is kept only with Done, like the rest of the page."]),
         Release(version: "0.97", date: "21 Oct 2026", title: "Sections and grab lists on both devices",
                 fixed: ["A section made on each device at the same time keeps its name on both \u{2014} a line never shows a code in place of its section again.",
                         "Section, When, bag, Condition and activity area never show a code: something unknown reads \u{201C}No section\u{201D}, \u{201C}Not said\u{201D} or \u{201C}No activity area\u{201D}.",

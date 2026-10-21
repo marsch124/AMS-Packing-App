@@ -781,11 +781,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (97 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (98 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.98 | 21 Oct 2026 | Cancel and Done the Apple way | C2 | his decision 21 Oct: template page/Your choices lose 0.94's save on background/quit (PageAway, keepAway removed); bag page holds every change incl. pockets until Done (EditDraft.step; PocketsTrail unused by the app); new tests testABagsPageKeepsNothingButByDone, testATemplatesPageAndYourChoicesKeepNothingButByDone (launch mode -uiTestingKept); 0.94's two keep-on-close tests replaced; the four GitHub-only iPhone tests fixed (work/gh4tests: keyboard put away as before) |
 | 0.97 | 21 Oct 2026 | Sections and grab lists on both devices | F3 | his checks 6 and 7 of sheet 0.94–0.95: a line's record carries its section's {id, name} (inside the JSON, stripped on load); SectionsBack gives a lost section back on load (in memory, saved with the next save); DropDown(unknown:) so no raw id shows; twins of an original grab list's record merged (mergeGrabTwins), none deleted; new CrossingSavesTests (both sending orders) and UI test testALostSectionIsGivenBackAndNoRowShowsAnId |
 | 0.96 | 20 Oct 2026 | No freeze on a trip | F1 | the trip list's endless redraw (iOS 26 lazy list): a trip row's state key moved off the lazy row onto an inner VStack, the row keyed by line id, group and position only; new UI test testATickedTripStillAnswersWithTheKeyboardUp; GitHub suite timeout 120 → 240 min (six full runs never finished, 0.89–0.94) and the Mac trip-name test typed while in view |
 | 0.95 | 20 Oct 2026 | Both devices, every page | F4 | residual of the outside review: PageChanges merges to-dos, kits, When steps (mergePhases), settings rows (mergeShared), photos and meta (mergeMeta) field by field; list fields (sections, kit itemIds, photos, kitContents/kitOut, meta lists) merge as lists (mergeList); Trip settings (TripEvent.takingSettings), desk (setDeskDetails), grab Edit (saveGrabEdit), kit part (kitFromPage) write only changes; bag Cancel puts back only its own pocket changes (PocketsTrail) |
