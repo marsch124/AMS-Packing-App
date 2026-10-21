@@ -1823,8 +1823,8 @@ template is held to be made; a row — its answers (`RowKept`), a section typed,
 ledger held something (`EditDraft.onFirstHold`: told once, so a key draws nothing more) — since 0.98 a pocket changed
 too, held on the ledger (until 0.98: or its pockets were touched);
 a grab list's edit — its lines or "only sometimes" marks differ; Trip settings — its snapshot; the review — a mark,
-a thing typed or added; the desk and Activity areas — a field or an area changed. Nothing of it on the Mac: its sheets
-are not swiped, and Escape is Cancel.
+a thing typed or added; the desk and Activity areas — a field or an area changed. On the Mac its sheets are not
+swiped and Escape is Cancel; there the same question comes with **⌘Q** (below, "⌘Q with a page open").
 
 **On the Mac, Escape closes a sheet by itself** (the 0.92 probe: with Cancel planted to SAVE, Escape on a template's
 page and on Your choices still saved nothing — the sheet closed without its Cancel being pressed). The outcome is
@@ -1887,9 +1887,28 @@ away; Cancel always throws away everything since the page opened; Done keeps. So
 - **What remains not kept** (by design now): everything on a page not confirmed with Done when the app is swiped away,
   ended by the system while in the background, or quit on the Mac — the page is gone at the next launch, with no
   question. A page left open while the app is merely in the background for hours stays open as long as the system keeps
-  the app. On the Mac ⌘Q does nothing while a page's sheet is open (seen on GitHub's Mac in the 0.98 probe: the app
-  stayed, with no question) — so there a page open and changed is lost only when the app is ended otherwise (Force
-  Quit, a crash); the Mac tests end it by force (`XCUIApplication.terminate()`).
+  the app. On the Mac ⌘Q asks first while the page holds a change (next point); the Dock's Quit, a log-out, Force Quit
+  or a crash end the app without a question. The Mac tests end the app by force (`XCUIApplication.terminate()`).
+- **⌘Q with a page open (Mac; 21 Oct 2026, after 0.98 — `QuitGuard`/`QuitCommand` in `EditDraft.swift`).** Found by the
+  0.98 probe on GitHub's Mac: ⌘Q did NOTHING while a template's page, Your choices or a bag's page was open — no quit, no
+  question, silently (any sheet did it: a thing's page, Trip settings, the review too). Not the app's own doing, and no
+  quit-reply left waiting (the app never answered `applicationShouldTerminate`; 0.94's quit path only listened for
+  `willTerminate`): every Mac window starts with `preventsApplicationTerminationWhenModal` on, a SwiftUI sheet is such a
+  window, and while one is open the Mac refuses to quit before it even asks the app (proved with a bare SwiftUI app: a
+  sheet open, `NSApp.terminate` returned and the app stayed; the delegate was never asked). Now:
+  - **every sheet lets the app quit** — `QuitGuard.start()` (from `PackingMacDelegate.applicationDidFinishLaunching`)
+    turns that switch off on each sheet as it opens (`NSWindow.willBeginSheetNotification`, and again when a window
+    becomes key); so the Dock's Quit and a log-out end the app at once, with nothing of an open page written;
+  - **⌘Q (the app menu's Quit, `QuitCommand` replacing `.appTermination`, still "Quit AMS Packing" ⌘Q)** quits at once
+    when no open page holds a change; when one does — any page with Cancel, by the same "changed" as the iPhone's swipe
+    (each `asksBeforeDiscarding` page tells `QuitGuard` as it shows, changes and goes) — it asks once, as an alert on
+    the sheet in front: **"Discard changes?"** / "What you changed on this page is not kept." (or the `keptEarlier`
+    line), **Keep editing** (Escape — Escape is Cancel on the Mac; ids `discard-keep`) stays with everything as it was,
+    **Discard** (red; `discard-yes`) quits. Same words and ids as the iPhone's card (`DiscardWords`); a Mac alert rather
+    than the card, so it always sits on the sheet in front (with a sheet over a changed page, the card would be under it).
+    A second ⌘Q while the question is up does nothing.
+  - Nothing of a page is written on the way out (the app quits in the same moment; no page's Cancel or Done runs). Your
+    bags (Done only) still writes its rows as the app quits (`writesDraftWhenAway`).
 
 **The audit (0.92)** — every screen or sheet where he changes data; "today" = before 0.92.
 
@@ -1937,9 +1956,9 @@ as it was → Save/⌘S → kept; the trip renamed → Cancel → unchanged → 
 0.94: `testABagsPageStillCancelsAfterAGlanceAtControlCentre` and `testATemplatesPageIsKeptWhenTheAppIsPutAway` (they
 asserted the keep-on-close; RED on 0.93) — replaced in 0.98 by the two below, whose expectations are the opposite.
 0.98 (the Apple way; `-uiTestingKept`, debug builds: a store file that outlives the app, `-keptStart` making it afresh;
-the app "ended" = on the iPhone put away and then terminated, as the app switcher does; on the Mac ended by force —
-⌘Q does nothing on the Mac while a page's sheet is open, the app stays without a question, seen on GitHub's Mac in the
-0.98 probe, so a Mac page is lost only to Force Quit, a log-out or a crash):
+the app "ended" = on the iPhone put away and then terminated, as the app switcher does; on the Mac ended by force, as
+Force Quit or a crash would — until 21 Oct 2026 ⌘Q did nothing on the Mac while a page's sheet was open, see
+`testQuitWithAPageOpenQuitsOrAsksFirst` below):
 `testABagsPageKeepsNothingButByDone` (the Wheeled duffel: iPhone — max 23 typed as 31 and a pocket Side added, the app
 put away and back: the page still open with 31 and 2 pockets, Cancel → Your bags 23, 1 pocket; both — 32 typed, the
 app ended → 23 at the next launch; 33 and Done/⌘S, the app ended → 33) and
@@ -1947,6 +1966,7 @@ app ended → 23 at the next launch; 33 and Done/⌘S, the app ended → 33) and
 walk, the app put away and back: still open, named Hill walk, Cancel → Hiking and How many as it was; both — renamed
 Hill trek and moved to OE, the app ended → Hiking in GA at the next launch; moved to OE and Done/⌘S, ended → under OE;
 a place added in Your choices, ended → not there). Seen RED on 0.97 (iPhone, 0.97 with only the `-uiTestingKept` hook added): "the app put away kept the max, and Cancel could not take it back: Your bags says '31'", "the app put away kept the pocket, and Cancel could not take it back: 2 pockets" and `("32") is not equal to ("23") - the max typed and never confirmed with Done was kept when the app ended`; `("Hill walk") is not equal to ("Hiking") - the app put away kept the name, and Cancel could not take it back`, `("7") is not equal to ("e.g. 2, or 2 pairs") - the app put away kept the row's How many, and Cancel could not take it back` (the empty field reads as its prompt), the ended app's move kept (`("Swim") is not equal to ("Hiking") - the name never confirmed with Done was kept when the app ended` — Hiking had left GA, so the first row was Swim; the test now first checks GA and OE directly) and "the place never confirmed with Done was kept when the app ended".
+⌘Q with a page open (Mac, 21 Oct 2026): `testQuitWithAPageOpenQuitsOrAsksFirst` (Mac only; `-uiTestingKept`) — Hiking's page and Your choices untouched → ⌘Q ends the app; the Wheeled duffel's max 23 typed as 32 → ⌘Q asks (`discard-yes`, `discard-keep`), the app still running → Keep editing: the bag's page still open with 32 → ⌘Q → Discard: the app ends; Hiking moved to OE → ⌘Q → Discard: ends; at the next launch Hiking under GA and the max 23. Seen RED on 0.98 on GitHub's Mac (Mac probe run 39660205132: "⌘Q did nothing with a template's page open"); green with the fix (run 39660205411, first time, with `testABagsPageKeepsNothingButByDone`, `testATemplatesPageAndYourChoicesKeepNothingButByDone`, both Escape tests and `testTheThingMenuIsOnOnlyWhileAPageIsOpen`).
 
 ## 20b. A save that fails — a note, never a dead app (0.93; `SaveNote` in `RootView.swift`, `LibraryModel.couldNotSave`, `CloudStore.apply`)
 
