@@ -458,7 +458,11 @@ final class AMSPackingUITests: XCTestCase {
             #if os(macOS)
             list.scroll(byDeltaX: 0, deltaY: down ? -200 : 200)
             #else
-            down ? list.swipeUp() : list.swipeDown()
+            let keysUp = app.keyboards.count > 0
+            swipeList(app, list, up: down)
+            // The drag put the keyboard away: let it go before judging, or the control still
+            // reads as covered and the next swipe goes the other way — down, on a sheet.
+            if keysUp { _ = waitUntil(timeout: 2) { app.keyboards.count == 0 } }
             #endif
             usleep(300_000)
             if !down { keepEditingIfAsked(app) }            // only a swipe DOWN can reach the sheet
@@ -466,6 +470,49 @@ final class AMSPackingUITests: XCTestCase {
             // it did not, this is the wrong way round.
             if e.exists && e.frame.midY >= before { down.toggle() }
         }
+    }
+
+    /// Swipe a list as a finger does (iPhone). With the keyboard up, NOT from the list's middle:
+    /// there sit the field being typed in or the keyboard itself, and the swipe moved nothing —
+    /// then the helper swiped the other way, and on GitHub that pulled the sheet SHUT (0.96, run
+    /// 39461088551: Open a shared link, Bags out's Add a bag; a bag's page asked Discard instead).
+    /// From the part that shows above the keyboard, a drag scrolls the list or, where the page
+    /// fits, at least puts the keyboard away (`scrollDismissesKeyboard`) — as his finger would.
+    private func swipeList(_ app: XCUIApplication, _ list: XCUIElement, up: Bool) {
+        #if os(iOS)
+        let keys = app.keyboards.firstMatch
+        if keys.exists, keys.frame.height > 0 {
+            let box = list.frame
+            // The keyboard's frame leaves out its bar of suggestions: 50 points above the keys.
+            let top = max(box.minY, app.windows.firstMatch.frame.minY), bottom = min(box.maxY, keys.frame.minY - 50)
+            if bottom - top > 100 {
+                let o = app.coordinate(withNormalizedOffset: .zero)
+                let low = o.withOffset(CGVector(dx: box.midX, dy: top + (bottom - top) * 0.45))
+                let high = o.withOffset(CGVector(dx: box.midX, dy: top + (bottom - top) * 0.1))
+                up ? low.press(forDuration: 0.05, thenDragTo: high) : high.press(forDuration: 0.05, thenDragTo: low)
+                return
+            }
+        }
+        up ? list.swipeUp() : list.swipeDown()
+        #endif
+    }
+
+    /// The part of a control the keyboard leaves showing, when the keyboard covers its middle —
+    /// where his finger goes (iPhone; nil when nothing is covered or nothing shows). The
+    /// keyboard's frame leaves out its bar of suggestions (keys at 583, the bar from 539 on an
+    /// iPhone 17), so 50 points above the keys count as covered, as in `onScreen`.
+    private func peekAboveKeyboard(_ app: XCUIApplication, _ e: XCUIElement) -> XCUICoordinate? {
+        #if os(iOS)
+        let keys = app.keyboards.firstMatch
+        guard e.exists, keys.exists, keys.frame.height > 0 else { return nil }
+        let top = keys.frame.minY - 50, box = e.frame
+        guard box.height > 0, box.midY > top, box.minY < top - 6 else { return nil }
+        let y = (box.minY + top) / 2
+        print("TAP-PEEK \(e.identifier) at \(box) · keyboard \(keys.frame) · tapped at y \(y)")
+        return e.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (y - box.minY) / box.height))
+        #else
+        return nil
+        #endif
     }
 
     private func tab(_ app: XCUIApplication, _ name: String) {
@@ -516,6 +563,7 @@ final class AMSPackingUITests: XCTestCase {
         // 🪤 A list still gliding from the swipe takes a tap as "stop", not as a press:
         // Start a new trip was tapped mid-glide on GitHub and nothing started (0.49).
         _ = waitUntil(timeout: 3) { e.exists && self.settled(e) }
+        if let part = peekAboveKeyboard(app, e) { part.tap(); return }
         e.tap()
     }
 
@@ -6335,6 +6383,15 @@ final class AMSPackingUITests: XCTestCase {
         let end = b.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.05 : 0.95))
         start.press(forDuration: 1.0, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.8)
         #else
+        // 🪤 A grip scrolled out of its list's sight takes no press — "Not hittable", and unlike a
+        // tap a press does not scroll it in first (GitHub's iPhone, 0.96: Kept at home's list left
+        // scrolled to its foot after the keyboard had been up; a template's reminders scrolled a
+        // line up while the keyboard shrank the list to 133 points). A grip only moves when HELD,
+        // so a tap on it does nothing but that scrolling — the target first, then the one held.
+        for g in [b, a] where !g.isHittable {
+            g.tap()
+            _ = waitUntil(timeout: 3) { g.isHittable && self.settled(g) }
+        }
         if edge {
             let up = b.frame.midY < a.frame.midY
             let start = a.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
