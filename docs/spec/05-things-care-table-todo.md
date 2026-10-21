@@ -2217,7 +2217,7 @@ typed on a ledger, written on leaving).
 - Tests (0.98): UI `testABagsPageKeepsNothingButByDone` (`-uiTestingKept`, a store file that outlives the app; the
   Wheeled duffel: iPhone — max 23 typed as 31 and a pocket Side added, the app put away and back, the page still open
   with 31 and 2 pockets, Cancel → Your bags 23 and 1 pocket; both devices — 32 typed, the app ended (iPhone: put away,
-  then terminated; Mac: ⌘Q) → 23 at the next launch; 33, Done (⌘S on the Mac), ended → 33) — RED on 0.97: "the app put away kept the max, and Cancel could not take it back: Your bags says '31'", "the app put away kept the pocket, and Cancel could not take it back: 2 pockets" and `("32") is not equal to ("23") - the max typed and never confirmed with Done was kept when the app ended`.
+  then terminated; Mac: ended by force — ⌘Q does nothing while a page's sheet is open there, seen on GitHub's Mac) → 23 at the next launch; 33, Done (⌘S on the Mac), ended → 33) — RED on 0.97: "the app put away kept the max, and Cancel could not take it back: Your bags says '31'", "the app put away kept the pocket, and Cancel could not take it back: 2 pockets" and `("32") is not equal to ("23") - the max typed and never confirmed with Done was kept when the app ended`.
   It replaced 0.94's `testABagsPageStillCancelsAfterAGlanceAtControlCentre` (max 31, a pretended glance, Cancel → 23;
   iPhone: 32, the app put away and back, 45 litres, Cancel → 32 KEPT — the keep-on-close he turned down; RED on 0.93:
   "a glance away wrote the max, and Cancel could not take it back: Your bags says '31'"). `testABagsPageCancelsWhatWasChangedAndDoneKeepsIt`

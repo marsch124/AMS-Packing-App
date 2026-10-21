@@ -2996,16 +2996,15 @@ final class AMSPackingUITests: XCTestCase {
     // MARK: - The Apple way for Cancel and Done (0.98, his decision of 21 Oct 2026)
 
     /// Ends the app as he would: on the iPhone put away, then closed from the app switcher (the app
-    /// goes to the background first, then it is ended); on the Mac ⌘Q.
+    /// goes to the background first, then it is ended). On the Mac ⌘Q does nothing while a page's
+    /// sheet is open (the 0.98 probe on GitHub's Mac: the app stayed, with no question), so there the
+    /// app is ended by force — as Force Quit, a log-out or a crash would.
     private func endTheApp(_ app: XCUIApplication) {
         #if os(iOS)
         XCUIDevice.shared.press(.home)
         sleep(2)
-        app.terminate()
-        #else
-        sleep(1)
-        app.typeKey("q", modifierFlags: .command)
         #endif
+        app.terminate()
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "the app did not end")
     }
 

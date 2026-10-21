@@ -382,7 +382,7 @@ struct BagPage: View {
     }
 
     /// A pill or a switch (0.92): shown at once and held on the page's ledger with everything typed —
-    /// written when the page is left by Done or a swipe, forgotten by Cancel.
+    /// written when the page is left by Done (a swipe asks first since 0.92), forgotten by Cancel.
     private func hold(_ key: String, _ value: String, kept: String, write: @escaping (String, inout Library) -> Void) {
         held[key] = value
         draft.typed(key, value, differs: value != kept, write: write)
@@ -641,7 +641,7 @@ struct BagPage: View {
 /// the name draws the name and not the whole page). A name taken — Rename, Return, or Done with a
 /// name typed (0.90: a copy is named and closed in one go) — is checked at once (a name refused keeps
 /// the page open and says why) and held on the page's ledger since 0.92: written with everything else
-/// when the page is left by Done or a swipe; Cancel forgets it. What is typed and not taken is on the
+/// when the page is left by Done (a swipe asks first since 0.92); Cancel forgets it. What is typed and not taken is on the
 /// ledger for Duplicate.
 struct BagHeader: View {
     let bag: Item

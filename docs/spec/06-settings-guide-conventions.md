@@ -1886,7 +1886,9 @@ away; Cancel always throws away everything since the page opened; Done keeps. So
 - **What remains not kept** (by design now): everything on a page not confirmed with Done when the app is swiped away,
   ended by the system while in the background, or quit on the Mac — the page is gone at the next launch, with no
   question. A page left open while the app is merely in the background for hours stays open as long as the system keeps
-  the app.
+  the app. On the Mac ⌘Q does nothing while a page's sheet is open (seen on GitHub's Mac in the 0.98 probe: the app
+  stayed, with no question) — so there a page open and changed is lost only when the app is ended otherwise (Force
+  Quit, a crash); the Mac tests end it by force (`XCUIApplication.terminate()`).
 
 **The audit (0.92)** — every screen or sheet where he changes data; "today" = before 0.92.
 
@@ -1934,7 +1936,9 @@ as it was → Save/⌘S → kept; the trip renamed → Cancel → unchanged → 
 0.94: `testABagsPageStillCancelsAfterAGlanceAtControlCentre` and `testATemplatesPageIsKeptWhenTheAppIsPutAway` (they
 asserted the keep-on-close; RED on 0.93) — replaced in 0.98 by the two below, whose expectations are the opposite.
 0.98 (the Apple way; `-uiTestingKept`, debug builds: a store file that outlives the app, `-keptStart` making it afresh;
-the app "ended" = on the iPhone put away and then terminated, as the app switcher does; on the Mac ⌘Q):
+the app "ended" = on the iPhone put away and then terminated, as the app switcher does; on the Mac ended by force —
+⌘Q does nothing on the Mac while a page's sheet is open, the app stays without a question, seen on GitHub's Mac in the
+0.98 probe, so a Mac page is lost only to Force Quit, a log-out or a crash):
 `testABagsPageKeepsNothingButByDone` (the Wheeled duffel: iPhone — max 23 typed as 31 and a pocket Side added, the app
 put away and back: the page still open with 31 and 2 pockets, Cancel → Your bags 23, 1 pocket; both — 32 typed, the
 app ended → 23 at the next launch; 33 and Done/⌘S, the app ended → 33) and
