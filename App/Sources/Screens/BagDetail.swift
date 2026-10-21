@@ -42,18 +42,25 @@ struct BagDetail: View {
 /// 0.91 — typing without a wait (his test sheet of 19 Oct 2026: "There is a delay. Once I have entered
 /// data, there is a delay if I would like to scroll or move to the next data field"): every field on
 /// the page keeps what is typed to itself (`DraftedField`, EditDraft.swift) and the page writes it all
-/// in ONE change when it is left — Done, a swipe down, Escape — or the app goes away, and before
-/// Duplicate or Its details. Moving from field to field and scrolling write nothing; a key
+/// in ONE change when it is left with Done (until 0.92 also a swipe down and Escape, until 0.98 also
+/// the app going away), and before Duplicate or Its details. Moving from field to field and scrolling write nothing; a key
 /// draws its field and nothing else (the name is typed in `BagHeader`, its own view, for the same reason).
 ///
 /// 0.92 — Cancel (his question of 19 Oct 2026: "I open an item and change some property. How do I
 /// cancel that? There is only a Done button, right?"): Cancel, top left as on a thing's page, closes
 /// the page and writes NOTHING it holds. So everything changed on the page waits on its ledger — the
 /// typed fields (0.91) and now the desk's pills, Goes in the cabin, Has an AirTag and a name taken
-/// with Rename — and the pockets, written as they change (a rename reaches things and trips), are
-/// put back as the page found them (`putBackPockets`). Photos are kept the moment they are taken, as
-/// on a thing's page. Its details and Duplicate write the page first (they show or copy what it
-/// says): Cancel after them takes back only what changed since. Escape is Cancel; Done and ⌘S write.
+/// with Rename — and the pockets, written as they changed until 0.98 and put back by Cancel. Photos
+/// are kept the moment they are taken, as on a thing's page. Its details and Duplicate write the page
+/// first (they show or copy what it says): Cancel after them takes back only what changed since.
+/// Escape is Cancel; Done and ⌘S write.
+///
+/// 0.98 — the Apple way (his decision of 21 Oct 2026: "Yes, go with the Apple way for Cancel/Done:
+/// remove the keep-on-close from the template page, your lists and the bag page"), as Calendar's and
+/// Contacts' edit sheets: nothing reaches the library until Done. The pockets too are held now — each
+/// Add, rename, move and ✕ a step on the ledger (`EditDraft.step`), the page showing them from its own
+/// copy (`BagPockets`) — so Cancel has nothing to put back. The app put away and back: the page is
+/// still open with everything on it; the app swiped away or ended: nothing of it was kept.
 struct BagPage: View {
     let bagId: String
     /// Open with the name selected, ready to be typed over (a copy just made).
@@ -74,17 +81,15 @@ struct BagPage: View {
     /// The desk's pills and the two switches as picked on the page and not written yet (0.92), by
     /// their key on the ledger: a type's or size's raw value ("" = none), "1"/"0" for a switch.
     @State private var held: [String: String] = [:]
-    /// The pockets as the page found them (or last wrote itself), and whether they were changed here.
-    @State private var pocketsAt: PocketsKept?
-    @State private var pocketsTouched = false
-    /// What this page's own pocket changes did (0.95): Cancel puts back only that.
-    @State private var pocketsTrail = PocketsTrail()
-    /// Something is held on the page and not written (0.92): a swipe down then asks first. Set once,
-    /// by the ledger, when it first holds something (`EditDraft.onFirstHold`).
+    /// Something is held on the page and not written (0.92) — since 0.98 a pocket changed too: a
+    /// swipe down then asks first. Set once, by the ledger, when it first holds something
+    /// (`EditDraft.onFirstHold`).
     @State private var touched = false
-    /// Part of the page was written while it stayed open (0.94) — the app was put away, or Its
-    /// details: Discard then says that what was kept stays.
+    /// Part of the page was written while it stayed open — by Its details (0.94; until 0.98 also the
+    /// app put away): Discard then says that what was kept stays.
     @State private var keptEarlier = false
+    /// Its details wrote the page (0.98): the pockets show the library again, not the page's copy.
+    @State private var pocketsFresh = 0
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
     enum Opened: Identifiable {
@@ -113,8 +118,8 @@ struct BagPage: View {
                         // For the lost-luggage desk (0.80, spec 07 part 18 A): said once, every trip uses it.
                         lostDesk(bag)
                         // Its pockets (0.69): named once, offered when a thing is ticked.
-                        BagPockets(bagId: bag.id, touched: { pocketsTouched = true },
-                                   did: { pocketsTrail.add(before: $0, after: $1) }).environmentObject(model)
+                        // Held on the ledger with the rest (0.98): nothing reaches the library before Done.
+                        BagPockets(bagId: bag.id, draft: draft).environmentObject(model).id(pocketsFresh)
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)
@@ -136,17 +141,13 @@ struct BagPage: View {
             }
         }
         .onAppear {
-            if pocketsAt == nil { pocketsAt = model.library.keepPockets(bagId: bagId) }
             if !touched && draft.onFirstHold == nil { armTouched() }     // once: not again after a sheet on top
         }
         // A swipe down (the iPhone): with nothing held it closes; with something held it asks first —
         // Discard is Cancel (0.92, the app's rule; spec 06 §20a). Until then a swipe wrote everything.
-        // Only Done (and the app going away) writes.
-        .asksBeforeDiscarding(touched || pocketsTouched, keptEarlier: keptEarlier) { cancel() }
-        // The app put away (0.94, review item 4): what the page held is written there — the page stays
-        // open, and Cancel or Discard then throw away only what is changed after. Not a glance at
-        // Control Center (the app merely inactive): Cancel still cancels then.
-        .writesDraftWhenAway(draft, model) { if touched || pocketsTouched { savedHere() } }
+        // Only Done writes — since 0.98 not the app going away either (the Apple way): the ledger
+        // stays in memory while the app is away, and goes with it when the app is swiped away.
+        .asksBeforeDiscarding(touched, keptEarlier: keptEarlier) { cancel() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("bag-detail")
         #if os(macOS)
@@ -381,7 +382,7 @@ struct BagPage: View {
     }
 
     /// A pill or a switch (0.92): shown at once and held on the page's ledger with everything typed —
-    /// written when the page is left by Done or a swipe, forgotten by Cancel.
+    /// written when the page is left by Done (a swipe asks first since 0.92), forgotten by Cancel.
     private func hold(_ key: String, _ value: String, kept: String, write: @escaping (String, inout Library) -> Void) {
         held[key] = value
         draft.typed(key, value, differs: value != kept, write: write)
@@ -389,24 +390,19 @@ struct BagPage: View {
 
     // MARK: Cancel (0.92) — his "How do I cancel that?"
 
-    /// Close and write nothing the page holds; the pockets as the page found them — only what this
-    /// page changed there (0.95): a pocket or a line's pocket the other device changed meanwhile stays.
+    /// Close and write nothing the page holds — since 0.98 its pocket changes neither: they were
+    /// held too, so there is nothing to put back (until 0.98 they were written as made, and Cancel put
+    /// back what this page changed — 0.95's `PocketsTrail`).
     private func cancel() {
         draft.close()
-        if pocketsTouched, let kept = pocketsAt {
-            let trail = pocketsTrail
-            model.change(stamping: false) { _ = $0.putBackPockets(kept, trail: trail) }
-        }
         dismiss()
     }
 
-    /// The page has written what it holds (Its details, Duplicate; 0.94 the app put away): Cancel goes
-    /// back to here, and Discard says that what was kept stays.
+    /// The page has written what it holds (Its details): Cancel goes back to here, Discard says that
+    /// what was kept stays, and the pockets show the library again.
     private func savedHere() {
-        if touched || pocketsTouched { keptEarlier = true }
-        pocketsAt = model.library.keepPockets(bagId: bagId)
-        pocketsTouched = false
-        pocketsTrail = PocketsTrail()
+        if touched { keptEarlier = true }
+        pocketsFresh += 1
         armTouched()
     }
 
@@ -645,7 +641,7 @@ struct BagPage: View {
 /// the name draws the name and not the whole page). A name taken — Rename, Return, or Done with a
 /// name typed (0.90: a copy is named and closed in one go) — is checked at once (a name refused keeps
 /// the page open and says why) and held on the page's ledger since 0.92: written with everything else
-/// when the page is left by Done or a swipe; Cancel forgets it. What is typed and not taken is on the
+/// when the page is left by Done (a swipe asks first since 0.92); Cancel forgets it. What is typed and not taken is on the
 /// ledger for Duplicate.
 struct BagHeader: View {
     let bag: Item

@@ -1022,17 +1022,24 @@ pick "C" of three pictured layouts, 5 Oct 2026).
   0.93, so a tick or a line added on the other device meanwhile stays: spec 01 §5, "A page's Save"; a thing, a row
   and the template itself field by field since 0.94, so the bag, How many or colour the other device changed meanwhile
   stays). Refused by the store (0.94), Done leaves the page open, holding it all, with the note. **The app put away
-  with the page open (0.94, review item 5):** what the page changed — rows whose own Save was pressed included — is
-  handed over as the app goes to the background (the Mac: as it quits), and the page goes on from there: Done, Cancel
-  and a swipe then deal only with what is changed after (spec 06 §20a). **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
+  or ended with the page open — the Apple way (0.98, his decision of 21 Oct 2026: "Yes, go with the Apple way for
+  Cancel/Done: remove the keep-on-close from the template page, your lists and the bag page"):** the copy lives in
+  memory with the page. Switching to another app and back finds the page still open with everything changed on it —
+  rows whose own Save was pressed included — and Cancel then still throws away everything since the page opened. The
+  app swiped away, ended by the system or the Mac app quit keeps NOTHING of it; only Done keeps (spec 06 §20a). 0.94 to
+  0.97 handed the page over as the app went to the background (the Mac: as it quit) and moved Cancel's starting point
+  there (`PageAway`, `PageDraft.keepAway()`, `keptEarlier` — all gone in 0.98); on his check of 0.97 a NEW NAME typed
+  and not taken was not kept that way, and he asked why a name not confirmed with Done should be kept at all. **"Cancel"** (`template-cancel`, top left, outlined muted; Escape too — while arranging
   Escape ends Arrange first, §6a, and a second Escape is Cancel) throws the copy away: nothing on the page was
   kept. A swipe down on the iPhone (not while arranging): with nothing changed it closes; with something changed it
-  asks "Discard changes?" — Discard = Cancel, Keep editing stays (`asksBeforeDiscarding(page.changed, holds: arranging, keptEarlier: page.keptEarlier)`,
+  asks "Discard changes?" — Discard = Cancel, Keep editing stays (`asksBeforeDiscarding(page.changed, holds: arranging)`;
+  0.94 to 0.97 also `keptEarlier: page.keptEarlier`,
   spec 06 §20a). "Delete the template"
   deletes it from the real library at once (asked first) and closes — what else the page changed goes with it.
   A small core made from the page (§14b) is handed over with the rest of the page as its sheet closes, then the page
   closes as before. A rename typed but not confirmed (Rename / Return) is **discarded** by Done and Cancel alike.
-  The app put away or quit with the page open keeps nothing of it (as a thing's page). When the copy changed the
+  The app swiped away or quit with the page open keeps nothing of it (as a thing's page; since 0.98 the same for
+  everything else on the page, above). When the copy changed the
   "When" steps or conditions, the real library's are installed again as the page goes (`PageDraft.left`).
 - Sheet; container id `template-detail` (`children: .contain`). Mac: min 480 × 600.
 - If the template no longer exists while open (deleted elsewhere), it renders as an empty unnamed template

@@ -3037,92 +3037,170 @@ final class AMSPackingUITests: XCTestCase {
 
     // MARK: - The hardening (0.94, his "fix review items 3, 4, 5 and 7 plus the template-page merge and the empty bag name")
 
-    /// The app goes inactive for a moment — Control Center or Notification Center pulled down and put
-    /// back, a call coming in. A test cannot pull those down, so it tells the app as the system would
-    /// (`PretendPhase`, debug builds only): the phase goes inactive and comes back.
-    private func pretendTheAppWentInactive() {
-        CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
-                                             CFNotificationName("se.ams.packing.uitest.inactive" as CFString), nil, nil, true)
-        sleep(1)
+    // The 0.94 tests of this section that kept a page when the app was put away —
+    // `testABagsPageStillCancelsAfterAGlanceAtControlCentre` and `testATemplatesPageIsKeptWhenTheAppIsPutAway` —
+    // were turned round in 0.98 (the Apple way, below).
+
+    // MARK: - The Apple way for Cancel and Done (0.98, his decision of 21 Oct 2026)
+
+    /// Ends the app as he would: on the iPhone put away, then closed from the app switcher (the app
+    /// goes to the background first, then it is ended). On the Mac ⌘Q does nothing while a page's
+    /// sheet is open (the 0.98 probe on GitHub's Mac: the app stayed, with no question), so there the
+    /// app is ended by force — as Force Quit, a log-out or a crash would.
+    private func endTheApp(_ app: XCUIApplication) {
+        #if os(iOS)
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        #endif
+        app.terminate()
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "the app did not end")
     }
 
-    /// Review item 4: a bag's page wrote everything it held whenever the app was not in front — also
-    /// for a glance at Control Center — so Cancel afterwards had nothing to throw away. Now only the app
-    /// put away (or the Mac app quitting) writes. The Wheeled duffel's max (23) typed as 31, a glance
-    /// away, Cancel: still 23. On the iPhone, put away for real: what was changed is kept, and Cancel
-    /// afterwards throws away only what came after.
-    func testABagsPageStillCancelsAfterAGlanceAtControlCentre() {
-        let app = launch("-uiTestingBags")
+    /// His decision, 21 Oct 2026: "Yes, go with the Apple way for Cancel/Done: remove the keep-on-close
+    /// from the template page, your lists and the bag page" — as the edit sheets of Calendar and
+    /// Contacts. A bag's page keeps nothing but by Done (`-uiTestingKept`: a store file that outlives
+    /// the app). The Wheeled duffel's max (23) typed as 31 and a pocket added, the app put away and back
+    /// (iPhone): the page still open with both; Cancel → 23 and one pocket. 32 typed, the app ended:
+    /// at the next launch 23. 33 typed, Done (⌘S on the Mac), the app ended: 33. Until 0.98 the app put
+    /// away wrote the page (0.94), so Cancel afterwards could not take it back, and the ended app kept it.
+    func testABagsPageKeepsNothingButByDone() {
+        var app = launch("-uiTestingKept", ["-keptStart"])
         openFirstBag(app)
         XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
         XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "23")
+        #if os(iOS)
         replace("31", in: app.textFields["bag-detail-maxkg"])
+        let pocket = app.textFields["bag-pocket-new"]
+        bringIntoView(app, pocket)
+        type("Side", into: pocket)
+        tap(app, id: "bag-pocket-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["bag-pockets-count"]) == "2" }, "the pocket was not added")
         hideKeyboard(app)
-        pretendTheAppWentInactive()
+        XCUIDevice.shared.press(.home)                               // another app for a while…
+        sleep(2)
+        app.activate()                                               // …and back
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 10), "the bag's page is gone after the app came back")
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "31", "the max typed is gone after the app came back")
+        XCTAssertEqual(words(app.staticTexts["bag-pockets-count"]), "2", "the pocket added is gone after the app came back")
         tap(app, id: "bag-cancel")
         XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Cancel did not close the bag's page")
         XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "23" },
-                      "a glance away wrote the max, and Cancel could not take it back: Your bags says '\(value(app.textFields["bag-0-maxkg"]))'")
-        #if os(iOS)
+                      "the app put away kept the max, and Cancel could not take it back: Your bags says '\(value(app.textFields["bag-0-maxkg"]))'")
         tap(app, id: "bag-0-name")
         XCTAssertTrue(appears(app, "bag-detail", timeout: 5))
-        let litres = value(app.textFields["bag-detail-litres"])
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["bag-pockets-count"]) == "1" },
+                      "the app put away kept the pocket, and Cancel could not take it back: \(words(app.staticTexts["bag-pockets-count"])) pockets")
+        #endif
         replace("32", in: app.textFields["bag-detail-maxkg"])
         hideKeyboard(app)
-        XCUIDevice.shared.press(.home)                               // put away: written now
-        sleep(2)
-        app.activate()
-        XCTAssertTrue(appears(app, "bag-detail", timeout: 10), "the bag's page is gone after the app came back")
-        replace("45", in: app.textFields["bag-detail-litres"])
+        endTheApp(app)
+
+        app = launch("-uiTestingKept")
+        openFirstBag(app)
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-name"]) == "Wheeled duffel" })
+        XCTAssertEqual(value(app.textFields["bag-detail-maxkg"]), "23",
+                       "the max typed and never confirmed with Done was kept when the app ended")
+        replace("33", in: app.textFields["bag-detail-maxkg"])
         hideKeyboard(app)
-        tap(app, id: "bag-cancel")
-        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "32" },
-                      "what was changed before the app was put away is gone: '\(value(app.textFields["bag-0-maxkg"]))'")
-        XCTAssertEqual(value(app.textFields["bag-0-litres"]), litres, "Cancel kept the litres typed after the app came back")
-        #endif
+        pressSave(app, "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5), "Done did not close the bag's page")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "33" },
+                      "Done did not keep the max: Your bags says '\(value(app.textFields["bag-0-maxkg"]))'")
+        endTheApp(app)
+
+        app = launch("-uiTestingKept")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        XCTAssertTrue(appears(app, "yourbags-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.textFields["bag-0-maxkg"]) == "33" },
+                      "the max kept by Done is gone at the next launch: '\(value(app.textFields["bag-0-maxkg"]))'")
     }
 
-    #if os(iOS)
-    /// Review item 5: a template's page kept NOTHING when the app was put away (and then closed) with
-    /// it open — not even a row whose own Save was pressed. Now the page's changes are kept the moment
-    /// the app goes to the background: renamed and a row's How many saved, put away, back, Cancel —
-    /// both kept. Something changed after coming back is still thrown away by Cancel.
-    func testATemplatesPageIsKeptWhenTheAppIsPutAway() {
-        let app = launch()
-        tab(app, "templates")
-        XCTAssertTrue(appears(app, "screen-templates"))
-        tap(app, id: "template-row-1")                               // Hiking, 4 things
-        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+    /// The same for a template's page and Your choices (`PageDraft`, the page's copy of the library).
+    /// iPhone: Hiking renamed Hill walk and a row's How many saved as 7, the app put away and back — the
+    /// page still open, named Hill walk; Cancel → Hiking, How many as it was. Both devices: renamed Hill
+    /// trek and moved to OE, the app ended → at the next launch Hiking in GA; moved to OE and Done (⌘S
+    /// on the Mac) → kept; a place added in Your choices, the app ended → not there at the next launch.
+    func testATemplatesPageAndYourChoicesKeepNothingButByDone() {
+        var app = launch("-uiTestingKept", ["-keptStart"])
+        func openHiking() {
+            tab(app, "templates")
+            XCTAssertTrue(appears(app, "screen-templates"))
+            tap(app, id: "template-row-1")                           // Hiking, in GA, 4 things
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        }
+        openHiking()
+        #if os(iOS)
         tap(app, id: "template-item-0")
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
+        let qty = value(app.textFields["row-qty"])
+        XCTAssertNotEqual(qty, "7")
         replace("7", in: app.textFields["row-qty"])
         tapVisible(app, app.buttons["row-save"])
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
         replace("Hill walk", in: app.textFields["template-name"])
         tap(app, id: "template-rename")
         hideKeyboard(app)
-        XCUIDevice.shared.press(.home)                               // put away: the page is kept now
+        XCUIDevice.shared.press(.home)                               // another app for a while…
         sleep(2)
-        app.activate()
+        app.activate()                                               // …and back
         XCTAssertTrue(appears(app, "template-detail", timeout: 10), "the template's page is gone after the app came back")
-        replace("Hill trek", in: app.textFields["template-name"])
-        tap(app, id: "template-rename")
-        hideKeyboard(app)
+        XCTAssertEqual(cellSays(app, "template-name"), "Hill walk", "the name given is gone after the app came back")
         tap(app, id: "template-cancel")
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
         tap(app, id: "template-row-1")
         XCTAssertTrue(appears(app, "template-detail", timeout: 5))
-        XCTAssertEqual(cellSays(app, "template-name"), "Hill walk",
-                       "the name given before the app was put away was not kept (or Cancel kept the one after)")
+        XCTAssertEqual(cellSays(app, "template-name"), "Hiking",
+                       "the app put away kept the name, and Cancel could not take it back")
         tap(app, id: "template-item-0")
         XCTAssertTrue(appears(app, "row-detail", timeout: 5))
-        XCTAssertEqual(value(app.textFields["row-qty"]), "7", "the row saved before the app was put away was not kept")
+        XCTAssertEqual(value(app.textFields["row-qty"]), qty,
+                       "the app put away kept the row's How many, and Cancel could not take it back")
         tap(app, id: "row-cancel")
         XCTAssertTrue(disappears(app, "row-detail", timeout: 5))
-        tap(app, id: "template-cancel")
+        #endif
+        replace("Hill trek", in: app.textFields["template-name"])
+        tap(app, id: "template-rename")
+        hideKeyboard(app)
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events", "the area did not change")
+        endTheApp(app)
+
+        app = launch("-uiTestingKept")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        XCTAssertTrue(app.staticTexts["templates-area-GA"].waitForExistence(timeout: 5),
+                      "Hiking is no longer under GA: the move never confirmed with Done was kept when the app ended")
+        XCTAssertFalse(app.staticTexts["templates-area-OE"].exists, "the move to OE never confirmed with Done was kept when the app ended")
+        openHiking()
+        XCTAssertEqual(cellSays(app, "template-name"), "Hiking", "the name never confirmed with Done was kept when the app ended")
+        XCTAssertEqual(chosen(app, "template-area"), "GA \u{00B7} Goal Activity", "the area never confirmed with Done was kept when the app ended")
+        XCTAssertEqual(choose(app, "template-area", 3), "OE \u{00B7} Other Events")
+        pressSave(app, "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Done did not close the template")
+        XCTAssertTrue(app.staticTexts["templates-area-OE"].waitForExistence(timeout: 5), "Done did not keep the move to OE")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
+        type("Attic shelf", into: app.textFields["list-places-add-name"])
+        tap(app, id: "list-places-add")
+        XCTAssertTrue(app.staticTexts["list-places-name-12"].waitForExistence(timeout: 5), "the place was not added")
+        hideKeyboard(app)
+        endTheApp(app)
+
+        app = launch("-uiTestingKept")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        XCTAssertTrue(app.staticTexts["templates-area-OE"].waitForExistence(timeout: 5), "the move kept by Done is gone at the next launch")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "the place never confirmed with Done was kept when the app ended")
+        tap(app, id: "lists-cancel")
     }
-    #endif
 
     /// The empty bag name (0.93's report): a save that failed on a bag's page closed the page and lost
     /// what it held — the name taken with Rename too. Now the page stays, still holding it, and the
