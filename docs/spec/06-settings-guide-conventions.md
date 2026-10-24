@@ -2013,6 +2013,37 @@ empty field reads as its prompt); `testAFailedSaveOnABagsPageKeepsTheName` (`-sa
 renamed Big duffel, Done fails → the note, the page still open, "Big duffel" in the name field; Done again → saved) —
 RED on 0.93: "a failed save closed the bag's page, and what it held went with it".
 
+**A photo whose file is missing as the store is read — never a dead app (0.100; `Record.read` and `CloudStore.loadAll`
+in `Store/CloudStore.swift`, `AMSCatchException` in `Store/ObjCExceptions.h/.m`).** His Mac, 24 Oct 2026, on 0.99: iCloud
+had just brought a change in (09:06:23) and the app read the store again; one photo's bytes — kept by SwiftData in a
+file of their own (`.externalStorage`) — were not there as they were read, and SwiftData THREW: an Objective-C exception,
+"External data reference can't find underlying file.", which no Swift code can catch. It ran out through the reading,
+which ran inside a Swift `Task`; the Mac swallowed it and the app went on, with Swift's own bookkeeping of what runs on
+the main thread left pointing at nothing — and the next click on a button, six minutes later (09:12:04), shut the app
+(the crash report names no line of the app's: a bad address inside the button's own check that it runs on the main
+thread). On the iPhone the same throw shuts the app at once. The rules since 0.100:
+- A record's contents are read through `AMSCatchException` (the app's one piece of Objective-C, the target's bridging
+  header): such a throw is caught where it is thrown, and that photo is LEFT OUT of this read — not read as a photo
+  without a picture — so nothing the read leads to can write it (no settling of twins, no difference stored): the store
+  keeps it exactly as iCloud left it. The rest of the library is read as always.
+- The store is read again 5 s later, when iCloud has usually finished — at most 3 times in a row (`readsAgainAtMost`);
+  a read with nothing missing starts the count afresh.
+- A change from iCloud is read straight away on the main thread, never in a Swift `Task` (`LibraryModel.init`'s
+  `onRemoteChange`, `MainActor.assumeIsolated`): any other exception a framework throws while the store is read then
+  costs that one read, not the rest of the app's life.
+
+Test: UI `testAPhotoWhoseFileIsMissingNeitherStopsTheSyncNorShutsTheApp` (`-uiTestingPhotoGone`, debug builds: a store
+file with the sample; 6 s after launch "the other device" writes a photo of 1 MB and a thing called Sunglasses through a
+store of its own on the same file, and the photo's file — with its second names in `.LINKS` — is deleted between the
+app's fetch and its reading of the bytes, `CloudStore.afterFetchForTests`): the Sunglasses arrive, a search and a thing's
+page answer after it, the app keeps running. RED on 0.99 — iPhone: "com.schabbauer.AMSPacking crashed", *Terminating app
+due to uncaught exception 'NSInternalInconsistencyException', reason: 'External data reference can't find underlying
+file.'*; Mac (GitHub's): "com.schabbauer.AMSPacking crashed in <external symbol>" at the click after the photo, and
+its crash report is HIS: the button's own main-thread check (`MainActor.assumeIsolated` in `_ButtonGesture` →
+`swift_task_isMainExecutorImpl` → `swift_getObjectType`), beside the system's note that an exception had been swallowed
+a second before. 🪤 The file deleted BEFORE the app's fetch is not enough: the photo is then read without a word
+(no throw, the test green on 0.99) — the throw comes only when the file goes between the fetch and the bytes.
+
 ## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `ScreenHeader.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 
 **Origin.** His word, 5 Oct 2026: "make things smaller so that the app is efficient, fluid, and Apple-standard",
@@ -2296,6 +2327,17 @@ unknown = nil, same = exact, newEntry = nil, tools = nil, ring = nil, choose:)`:
   `newEntry.add`. Open: the lit row (the list's tint at 18 % behind it, scrolled to), ↑ ↓ move it, letters jump,
   Return / Space choose, Esc closes; with `tools`, Tab steps through the lit row's tools (a 2-pt tint ring) and Space /
   Return press them. Every other screen's drop-downs have none of this, exactly as before. Spec 05 has every key.
+  **The light stays inside the list (0.100, crash B).** A list opened by a click lights its ticked row too (`lit =
+  chosenIndex`). Until 0.100 every ↑ ↓ pressed on a row's tools moved the light one place as well, whichever row it was
+  on — so with "Not said" ticked (the first row), ↑ on the second place put the light at −1, and the list scrolled to
+  row −1: "Index out of range", the app shut (two TestFlight crash reports from his Mac, 18 Oct 2026, 0.87; still in
+  0.99). Now the light goes with a row moved only when that row is the lit one, the other way when the moved row takes
+  the lit one's place, and stays put for any other row (`clampedLit` keeps it inside the list); the list scrolls only
+  to a row it has, or to the offer one past the last; ↓ in a list with no row does nothing. Test: UI (Mac)
+  `testAnArrowOnAnotherRowOfAnOpenListDoesNotShutTheApp` (Map's Kept at home set to Not said, opened again, ↑ on the
+  second place: it moves up, the app keeps running) — RED on 0.99 on GitHub's Mac: the app shut at the click ("↑ on
+  the second place did not move it up: ''"; its crash report: Index out of range in `closure #3 in closure #1 in
+  DropDown.list.getter`, DropDown.swift:289 — the same place as his).
 
 What it draws:
 - **The field**: the words of the choice that stands — the matching row's label; with a `blank` row and a blank
