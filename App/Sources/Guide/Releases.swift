@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.100", date: "24 Oct 2026", title: "Two Mac crashes",
+                fixed: ["The app no longer shuts on the next click after iCloud brought in a photo whose picture had not fully arrived yet \u{2014} that photo waits, and the app reads it again a little later.",
+                        "On the Mac, the \u{2191} \u{2193} arrows on a row inside an open drop-down list no longer shut the app."]),
         Release(version: "0.99", date: "21 Oct 2026", title: "\u{2318}Q on the Mac",
                 fixed: ["On the Mac, \u{2318}Q quits again while a template\u{2019}s page, your own lists or a bag\u{2019}s page is open \u{2014} and asks \u{201C}Discard changes?\u{201D} first when the page holds a change you have not confirmed with Done."]),
         Release(version: "0.98", date: "21 Oct 2026", title: "Cancel and Done the Apple way",
