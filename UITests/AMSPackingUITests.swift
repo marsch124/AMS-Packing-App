@@ -2945,6 +2945,30 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "bags91-other-device")
     }
 
+    /// Crash A (his Mac, 24 Oct 2026, 0.99): iCloud brought a change in, and a photo's bytes —
+    /// kept in a file of their own — were not there when the app read the store. The read threw
+    /// where no Swift code can catch it; the app went on with its insides broken, and the next
+    /// click six minutes later shut it. Now a photo whose file is missing is left in the store
+    /// untouched and read again shortly; everything else the other device wrote arrives, and the
+    /// app keeps running (`-uiTestingPhotoGone`: 6 s after launch "the other device" writes a photo
+    /// and a thing called Sunglasses, and the photo's file is gone before the app reads it).
+    func testAPhotoWhoseFileIsMissingNeitherStopsTheSyncNorShutsTheApp() {
+        let app = launch("-uiTestingPhotoGone")
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Sunglasses", into: app.textFields["things-search"])
+        XCTAssertTrue(waitUntil(timeout: 40) { self.words(app.buttons["thing-row-0"]).hasPrefix("Sunglasses") },
+                      "the thing the other device wrote beside the photo never arrived: '\(words(app.buttons["thing-row-0"]))'")
+        hideKeyboard(app)
+        // Clicks after it, as his was: each answered, and the app still running.
+        tab(app, "trips")
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5), "Your things did not open after the photo was missed")
+        XCTAssertEqual(app.state, .runningForeground, "the app shut after a photo's file was missing")
+    }
+
     // MARK: - The outside review of 0.92 (0.93, his "fix 1, 2 and 6")
 
     /// A save that fails no longer shuts the app: every tab was replaced by the error, and the failed
@@ -13777,6 +13801,32 @@ final class AMSPackingUITests: XCTestCase {
         let last = (0..<30).map { app.buttons["thing-category-\($0)"] }.last { $0.exists }
         XCTAssertEqual(last.map { words($0) }, "Camping", "the new kind did not join the list")
         closeDropDown(app, "thing-category")
+    }
+
+    /// Crash B (two TestFlight crash reports from his Mac, 18 Oct 2026, 0.87 — still in 0.99): "Index
+    /// out of range" in a drop-down's list. A list opened by a click lights its ticked row for the
+    /// keys; ↑ on ANOTHER row moved that light one up too — from the first row, to above the top,
+    /// and the list scrolled to a row that does not exist. Now the light stays on its row unless
+    /// that row is the one moved, and the list never looks for a row outside it (Mac: the arrows
+    /// are the Mac's alone).
+    func testAnArrowOnAnotherRowOfAnOpenListDoesNotShutTheApp() {
+        #if os(macOS)
+        let app = launch()
+        openThing(app, "Map")
+        openPlaces(app)
+        tapInList(app, "thing-place-none")                       // Not said: the ticked row is the first
+        XCTAssertTrue(disappears(app, "thing-places", timeout: 5))
+        openPlaces(app)
+        let second = words(app.buttons["thing-place-1"])
+        tapInList(app, "thing-place-1-up")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-place-0"]) == second },
+                      "↑ on the second place did not move it up: '\(words(app.buttons["thing-place-0"]))'")
+        XCTAssertEqual(app.state, .runningForeground, "the app shut after ↑ on a row of an open list")
+        tapInList(app, "thing-place-none")
+        XCTAssertTrue(disappears(app, "thing-places", timeout: 5))
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        #endif
     }
 
     /// Kept at home: a place renamed reaches every thing kept there; one in use is refused;

@@ -156,5 +156,16 @@ final class CloudStore: LibraryStore {
     /// The next save fails (0.93, the outside review of 0.92): `-uiTestingSaveFails` sets it.
     var failNextSave = false
     struct SaveRefusedForTests: Error {}
+
+    /// Under the UI tests (`-uiTestingPhotoGone`): the files a store file keeps photos' bytes in
+    /// (`.externalStorage`, beside the store in `.<name>_SUPPORT/_EXTERNAL_DATA`) deleted — as on his
+    /// Mac on 24 Oct 2026, when a photo's file was not there as the app read it (crash A).
+    static func removeExternalFiles(of store: URL) {
+        let base = store.deletingPathExtension().lastPathComponent
+        let dir = store.deletingLastPathComponent().appendingPathComponent(".\(base)_SUPPORT/_EXTERNAL_DATA")
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? [] {
+            try? FileManager.default.removeItem(at: dir.appendingPathComponent(name))
+        }
+    }
     #endif
 }
