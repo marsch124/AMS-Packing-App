@@ -72,8 +72,12 @@ final class LibraryModel: ObservableObject {
         // notification. Kept simple on purpose: one full read can never miss a record,
         // and it is quick at a few thousand. If the app ever stutters while the other
         // device syncs, look here first (the spec pass, 5 Oct 2026; spec 01 item 15).
+        // Read straight away, never in a Swift Task (24 Oct 2026, crash A): the store calls this on the
+        // main thread, and an Objective-C exception thrown inside a Task — one a framework throws while
+        // the store is read — breaks Swift's own bookkeeping for the rest of the app's life (his Mac,
+        // 0.99: a click six minutes later shut the app). Outside a Task it costs the one read.
         store.onRemoteChange = { [weak self] in
-            Task { @MainActor in self?.reload() }
+            MainActor.assumeIsolated { self?.reload() }
         }
         reload()
     }

@@ -47,6 +47,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.schabbauer.AMSPacking
+        # The app's one piece of Objective-C (24 Oct 2026, crash A): an exception a framework throws,
+        # caught where it is thrown — Swift cannot catch one (Store/ObjCExceptions.h says why).
+        SWIFT_OBJC_BRIDGING_HEADER: App/Sources/Store/ObjCExceptions.h
         # A plain build keeps the library on this device only. iCloud is switched on
         # by building with PACKING_USES_ICLOUD=YES and the iCloud entitlements file
         # (tools/build.sh … icloud, and the TestFlight workflow): an ad-hoc signed

@@ -27,9 +27,19 @@ final class Record {
         updatedAt = r.updatedAt
     }
 
-    var stored: StoredRecord? {
-        guard let t = Table(rawValue: table), let value = try? JSONValue.parse(json) else { return nil }
-        return StoredRecord(table: t, key: key, parent: parent, json: value, blob: blob, updatedAt: updatedAt)
+    var stored: StoredRecord? { read().record }
+
+    /// What this record holds — nil when it cannot be read: a table this build does not know, JSON it
+    /// cannot parse, or (`fileGone`) a photo whose bytes are kept in a file of their own that is not
+    /// there as they are read. 🪤 That last one THROWS an Objective-C exception, which no Swift code
+    /// can catch (24 Oct 2026, crash A: iCloud had just brought a change in on his Mac; the throw ran
+    /// out through the app's reading of the store and left it broken, and the next click shut it). So
+    /// the bytes are read through `AMSCatchException`, and such a photo is left out of this read.
+    func read() -> (record: StoredRecord?, fileGone: Bool) {
+        guard let t = Table(rawValue: table), let value = try? JSONValue.parse(json) else { return (nil, false) }
+        var bytes: Data?
+        if AMSCatchException({ bytes = self.blob }) != nil { return (nil, true) }
+        return (StoredRecord(table: t, key: key, parent: parent, json: value, blob: bytes, updatedAt: updatedAt), false)
     }
 }
 
@@ -104,12 +114,33 @@ final class CloudStore: LibraryStore {
 
     deinit { if let o = observer { NotificationCenter.default.removeObserver(o) } }
 
+    /// A photo whose file is not there as it is read (crash A, `Record.read`) is LEFT OUT, not read as
+    /// a photo without a picture: left out, nothing this read leads to can write it — no settling of
+    /// twins, no difference stored — so the store keeps it exactly as iCloud left it. And the store is
+    /// read again a few seconds later, when iCloud has usually finished, a few times at most.
     func loadAll() throws -> [StoredRecord] {
         let all = try context.fetch(FetchDescriptor<Record>())
         #if DEBUG
         afterFetchForTests?()
         #endif
-        return all.compactMap(\.stored)
+        var out: [StoredRecord] = []
+        var gone = 0
+        for r in all {
+            let (record, fileGone) = r.read()
+            if let record { out.append(record) } else if fileGone { gone += 1 }
+        }
+        readAgainSoon(gone > 0)
+        return out
+    }
+
+    /// Reads again in a row because a photo's file was missing (at most `readsAgainAtMost`).
+    private var readsAgain = 0
+    private static let readsAgainAtMost = 3
+    private func readAgainSoon(_ needed: Bool) {
+        guard needed else { readsAgain = 0; return }
+        guard readsAgain < CloudStore.readsAgainAtMost else { return }
+        readsAgain += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.onRemoteChange?() }
     }
 
     func apply(_ changes: RecordChanges) throws {
@@ -173,9 +204,8 @@ final class CloudStore: LibraryStore {
     /// Under the UI tests (`-uiTestingPhotoGone`): the files a store file keeps photos' bytes in
     /// (`.externalStorage`, beside the store in `.<name>_SUPPORT/_EXTERNAL_DATA`) deleted — as on his
     /// Mac on 24 Oct 2026, when a photo's file was not there as the app read it (crash A).
-    /// 🪤 The store also keeps a second name for each such file while a store has it open (`.LINKS/<one
-    /// folder per store>`, beside the store file), and finds a photo's bytes there when its own file is
-    /// gone — so those go too, or nothing is missing.
+    /// The store's second names for such files (`.LINKS/<a folder per open store>`, beside the store
+    /// file) go too, so the bytes are found nowhere.
     static func removeExternalFiles(of store: URL) {
         let fm = FileManager.default
         let base = store.deletingPathExtension().lastPathComponent

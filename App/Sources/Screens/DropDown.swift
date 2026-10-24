@@ -283,10 +283,14 @@ struct DropDown: View {
             // A long list opens at the choice that stands, so the tick is seen.
             .onAppear { if let at = chosenRowId { proxy.scrollTo(at, anchor: .center) } }
             #if os(macOS)
-            // …and the arrows' row stays in sight as they move.
+            // …and the arrows' row stays in sight as they move. 🪤 Only a row the list HAS (24 Oct 2026,
+            // crash B — 0.87's two crash reports of 18 Oct, still in 0.99: ↑ on another row put the
+            // light at −1, and asking for row −1 shut the app with "Index out of range").
             .onChange(of: lit) { _, n in
                 guard let n else { return }
-                proxy.scrollTo(n < keyRows.count ? keyRows[n].id : "\(ids.row)-offer")
+                let rows = keyRows
+                if rows.indices.contains(n) { proxy.scrollTo(rows[n].id) }
+                else if n == rows.count { proxy.scrollTo("\(ids.row)-offer") }
             }
             #endif
         }
@@ -571,8 +575,15 @@ struct DropDown: View {
         guard tools.canMove(value, by) else { return }
         tools.move(value, by)
         #if os(macOS)
-        // The arrows' row goes with the section it moved.
-        if let n = lit { lit = n + by }
+        // The arrows' light stays on ITS row (24 Oct 2026, crash B): it goes with the row moved when
+        // that row is the lit one, and the other way when the moved row takes the lit one's place;
+        // any other row's arrow leaves it where it is. (Until then every ↑ moved the light up one,
+        // whichever row it was on — from the first row, above the top: "Index out of range".)
+        let rows = keyRows
+        if let n = lit, let at = rows.firstIndex(where: { $0.value == value }) {
+            if n == at { lit = clampedLit(n + by, rows.count) }
+            else if n == at + by { lit = clampedLit(n - by, rows.count) }
+        }
         #endif
     }
 
@@ -651,6 +662,9 @@ struct DropDown: View {
     /// The ticked row's place in `keyRows`.
     private var chosenIndex: Int? { keyRows.firstIndex { same($0.value, selected) } }
 
+    /// A place for the arrows' light inside a list of `count` rows (crash B, 24 Oct 2026).
+    private func clampedLit(_ n: Int, _ count: Int) -> Int { min(max(n, 0), max(count - 1, 0)) }
+
     /// The row for what was typed (capitals ignored): first one whose name STARTS so, then
     /// one with a WORD that starts so ("hand" → "Carry-on / hand luggage"), and only when
     /// none does, one that has it inside a word ("rink" → "Food & drink"). A list that takes a
@@ -708,8 +722,9 @@ struct DropDown: View {
         case .down:
             if !open { openByKeys(); return true }
             let last = keyRows.count - (offer.isEmpty ? 1 : 0)
+            guard last >= 0 else { return true }                 // a list with no row: nowhere to go
             tool = nil; asking = nil
-            lit = min((lit ?? -1) + 1, last)
+            lit = min(max((lit ?? -1) + 1, 0), last)
         case .up:
             guard open else { return true }
             tool = nil; asking = nil
