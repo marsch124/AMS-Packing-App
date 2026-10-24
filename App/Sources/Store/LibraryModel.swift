@@ -410,7 +410,7 @@ extension LibraryModel {
     ///                           the app was ended without Done is looked for at the next launch)
     ///  -uiTestingPhotoGone    → (debug builds) a store FILE holding the sample; 6 s after launch "the other
     ///                           device" writes a photo and a thing called Sunglasses into it, and the
-    ///                           photo's file is gone before the app reads it (24 Oct 2026, crash A)
+    ///                           photo's file goes as the app reads them (24 Oct 2026, crash A)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -459,14 +459,11 @@ extension LibraryModel {
             store.failNextSave = true
             return LibraryModel(store: store, usesICloud: false, sky: sky)
         }
-        // The sample with bags in a store FILE that outlives the app (0.98, the Apple way): a test ends
-        // the app with a page open and changed, launches it again WITHOUT -keptStart, and finds what the
-        // store kept. -keptStart (the first launch) makes the file afresh.
         // A photo whose bytes are in a file of their own that is not there when the app reads the
         // store (24 Oct 2026, crash A — his Mac, 0.99: iCloud had just brought a change in, the photo's
         // file was not there, and reading it threw; the app went on with its insides broken and
-        // fell over at a click six minutes later). Written as the other device writes, with a thing
-        // called Sunglasses beside it: the Sunglasses must still arrive, and the app keep running.
+        // fell over at a click six minutes later). Written as the other device writes, then a thing
+        // called Sunglasses: the Sunglasses must still arrive, and the app keep running.
         if args.contains("-uiTestingPhotoGone") {
             let url = LibraryModel.freshTestFile("gone")
             CloudStore.removeExternalFiles(of: url)
@@ -479,14 +476,22 @@ extension LibraryModel {
                                          json: ["id": .string("photo-gone"), "createdAt": .string("2026-10-24T09:06:23.000Z"),
                                                 "mime": .string("image/jpeg")],
                                          blob: Data(repeating: 0xA5, count: 1_000_000))
-                let theirs = recordChanges(from: sample.records(), to: later.records()).puts + [photo]
+                // Both written through a store of their own on the same file, as iCloud's import writes;
+                // the app's next read finds the photo with its file there, and the file goes between
+                // that and the photo's bytes being read — as on his Mac, where iCloud was still busy.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
-                    store.writeAsTheOtherDevice(theirs)
-                    CloudStore.removeExternalFiles(of: url)
+                    store.afterFetchForTests = { [weak store] in
+                        CloudStore.removeExternalFiles(of: url)
+                        store?.afterFetchForTests = nil
+                    }
+                    CloudStore.writeThroughAnotherStore(recordChanges(from: sample.records(), to: later.records()).puts + [photo], file: url)
                 }
                 return LibraryModel(store: store, usesICloud: false, sky: sky)
             }
         }
+        // The sample with bags in a store FILE that outlives the app (0.98, the Apple way): a test ends
+        // the app with a page open and changed, launches it again WITHOUT -keptStart, and finds what the
+        // store kept. -keptStart (the first launch) makes the file afresh.
         if args.contains("-uiTestingKept") {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("kept-library.store")
             let fresh = args.contains("-keptStart") || !FileManager.default.fileExists(atPath: url.path)

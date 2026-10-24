@@ -2960,12 +2960,14 @@ final class AMSPackingUITests: XCTestCase {
         type("Sunglasses", into: app.textFields["things-search"])
         XCTAssertTrue(waitUntil(timeout: 40) { self.words(app.buttons["thing-row-0"]).hasPrefix("Sunglasses") },
                       "the thing the other device wrote beside the photo never arrived: '\(words(app.buttons["thing-row-0"]))'")
-        hideKeyboard(app)
-        // Clicks after it, as his was: each answered, and the app still running.
-        tab(app, "trips")
-        tab(app, "care")
-        tap(app, id: "care-things")
-        XCTAssertTrue(appears(app, "things-detail", timeout: 5), "Your things did not open after the photo was missed")
+        // Clicks and typing after it, as his click was: answered, and the app still running.
+        replace("Map", in: app.textFields["things-search"])
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).hasPrefix("Map") },
+                      "the search did not answer after the photo was missed: '\(words(app.buttons["thing-row-0"]))'")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "a thing's page did not open after the photo was missed")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         XCTAssertEqual(app.state, .runningForeground, "the app shut after a photo's file was missing")
     }
 
