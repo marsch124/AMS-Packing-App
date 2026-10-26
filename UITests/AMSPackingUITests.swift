@@ -11455,7 +11455,7 @@ final class AMSPackingUITests: XCTestCase {
     /// others under it, and Done (n) folded at the foot. Held (right-clicked on the Mac), a to-do
     /// is marked a priority and goes up — and taken off again. Ticked, a to-do goes into Done,
     /// with Undo under the list; Done opened shows it ticked; unticked there, it is back. To buy:
-    /// what is bought goes into Bought (n), folded the same way.
+    /// what is bought goes into Bought (n), folded the same way, with its Undo.
     func testPriorityToDosStandApartAndDoneOnesTuckAway() {
         let app = launch()
         tab(app, "actions")
@@ -11528,6 +11528,11 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "buy-add")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" })
         hideKeyboard(app)
+        tap(app, id: "buy-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-tick-undo-says"]).contains("Milk") },
+                      "bought, it does not say what was bought: '\(words(app.staticTexts["buy-tick-undo-says"]))'")
+        tap(app, id: "buy-tick-undo")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" }, "Undo did not untick it")
         tap(app, id: "buy-0")
         let bought = app.buttons["buy-done-fold"]
         XCTAssertTrue(bought.waitForExistence(timeout: 5), "bought, there is no Bought fold")

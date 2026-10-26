@@ -2973,7 +2973,8 @@ there on return; ✕ then Undo on each side). Model `ThingsAndCareFixesTests.tes
 above it and `actions-others-title` between it and `action-1`; `action-2` ticked → "2 to do", `actions-done-fold`
 folded, the row gone, `action-tick-undo-says` names it; Undo → "3 to do", no Done; ticked again and Done opened →
 `action-2` selected; unticked there → "3 to do"; held again, Remove priority → no `actions-priority`; To buy:
-Milk bought → `buy-done-fold`, the row gone, opened → `buy-0` selected. Seen red on 0.100: "holding a to-do offers
+Milk bought → `buy-tick-undo-says` names it, Undo → "1 to buy"; bought again → `buy-done-fold`, the row gone,
+opened → `buy-0` selected. Seen red on 0.100: "holding a to-do offers
 no Mark as priority". `testAToDoIsAddedAndTicked` opens Done before it reads the tick. Model `ListFoldsTests`:
 `testTheToDoPageIsPriorityThenTheOthersThenDoneInTheListsOwnOrder`, `testToBuyHasNoPriorityPartOnlyOpenAndBought`,
 `testMarkingAPriorityChangesTheWebAppsOwnFieldAndStampsIt`, `testAPriorityComesBackFromTheStore`,
