@@ -523,7 +523,10 @@ left says nothing; its date = start − lead days (Gregorian, UTC arithmetic); s
 steps of one trip on the same day merge into one reminder whose `says` joins them with " · " in timeline order
 ("Morning list: 1 to pack · At the front door: 1 to pack"); a step says "<label>: <n> to pack", or "to do" for a
 to-do step (Preparations). All reminders are sorted by date (stable) and cut to 48 (an iPhone keeps 64 waiting
-notifications per app).
+notifications per app). (0.101, spec 07 part 21) A step's "to do" counts his things' own reminders not ticked on the
+trip as well as the template reminders — "≥1 week ahead: 3 to pack, 1 to do" — so a day with only a thing's reminder
+left still has its one notification ("Day before …: 1 to do"); the same rules otherwise (09:00, one per trip per day,
+days past dropped, 48 at most).
 
 **Data.** `UserDefaults` key `ams.reminders` (Bool, per device, never synced; cleared at launch under the UI tests).
 The notifications live in the system's notification centre.
@@ -927,7 +930,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
      "Packing Stations" (Body semibold ink), one element `guide-day-title`;
    - "On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go
      through them, each with a short word on its chip — Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green
-     when it is done; the next one to do is lit. On the iPhone the row slides sideways." (Callout ink; until 0.84 "…
+     when it is done. The one you tap is lit, and stays lit until you tap another (each trip remembers its own, on
+     this device); before you tap one, the first still to do is lit. On the iPhone the row slides sideways." (0.101;
+     until then "…; the next one to do is lit. On the iPhone …"; until 0.84 "…
      under the loop: Packing Stations, then six stations in the order you go through them. A station …"). The
      numbered stations below keep their full names (Bags out, Tags, Photos);
    - the six stations, in the row's order, each a row: the station's mark (20 pt, white) in a 34-pt green disc — the
@@ -964,7 +969,8 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
         leave at is right there: 15 minutes before, the iPhone names what is still unticked." Since 0.81 then: "Add a
         reminder, at the foot: anything last-minute, written as a To do on the trip — it shows in Before you go."
    - four dotted lines since 0.81 (three before; as a topic's, Pack green): getting around ("tap a station in the row to open it — Pack goes
-     straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the
+     straight to the list and lights the first thing not packed yet a moment, wherever you are on it" — the words after
+     "list" since 0.101. At the foot of each station, Next offers the next one still to do; in the sheet the
      stations are at the top too. Done closes it."); a trip with no bags yet ("those four stations are faded with a
      dashed edge and say “no bags yet”; opened, they say how to give things a bag … Ready then waits only for the
      packing."); (0.81) a To do written here ("A To do written here (Remind me, Add a reminder) is a line of the trip's

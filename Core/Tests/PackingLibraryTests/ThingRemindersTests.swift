@@ -351,3 +351,92 @@ final class ThingRemindersTests: XCTestCase {
         XCTAssertFalse(try XCTUnwrap(line(skip, s.id, "Spare battery")).skipped)
     }
 }
+
+/// 0.101's two more (his "1 and 2, put them in 0.101", 26 Oct 2026): a thing's reminders in Before you
+/// start's To prepare and in the packing notifications; and the station he taps stays lit.
+final class ThingRemindersAheadTests: XCTestCase {
+    override func setUp() { PackingEnv.freeze(at: "2026-10-01T12:00:00.000Z") }
+    override func tearDown() { PackingEnv.reset() }
+
+    private func trip(_ lib: inout Library, start: String = "2026-10-10") -> TripEvent {
+        var draft = newEvent(name: "Torremolinos", startDate: start, endDate: "2026-10-14")
+        draft.activities = [lib.templates.first { $0.name == "Photo trip" }!.id]
+        return lib.createTrip(draft)
+    }
+
+    func testAThingsRemindersAreToPrepareAtTheirStepWithOneTick() throws {
+        var lib = ThingRemindersTests.library()
+        // A morning one is no preparation (lead days 0); a template reminder of the week stands first.
+        _ = lib.updateThing(id: ThingRemindersTests.id(lib, "Camera")) { cam in
+            Library.setThingReminders(&cam, Library.thingReminders(cam) + [ThingReminder(id: "r-am", text: "Wipe the lens", when: "morning")])
+        }
+        let photo = lib.templates.first { $0.name == "Photo trip" }!.id
+        lib.addReminder(templateId: photo, name: "Book the museum", when: "week")
+        let t = trip(&lib)
+        let rows = lib.toPrepare(tripId: t.id, today: "2026-10-01")
+        XCTAssertEqual(rows.map(\.line.name), ["Book the museum", "Camera: Empty the SD card", "Camera: Charge the spare battery"],
+                       "a thing's reminders stand after their step's own, by the day they fall due")
+        XCTAssertEqual(rows.map(\.due), ["2026-10-03", "2026-10-03", "2026-10-09"])
+        let sd = try XCTUnwrap(rows.first { $0.thing != nil })
+        XCTAssertEqual(sd.thingId, ThingRemindersTests.id(lib, "Camera"), "its arrow opens the camera")
+        XCTAssertNil(sd.templateId)
+        XCTAssertEqual(lib.beforeYouStart(tripId: t.id, today: "2026-10-01").words.contains("3 to prepare"), true,
+                       lib.beforeYouStart(tripId: t.id, today: "2026-10-01").words)
+        // Its tick is the trip's one tick: ticked here, it is gone here and from Before you go.
+        let r = try XCTUnwrap(sd.thing)
+        lib.setThingReminderDone(true, tripId: t.id, lineId: r.lineId, reminderId: r.reminder.id)
+        XCTAssertEqual(lib.toPrepare(tripId: t.id, today: "2026-10-01").map(\.line.name), ["Book the museum", "Camera: Charge the spare battery"])
+        XCTAssertFalse(lib.dueThingReminders(tripId: t.id, today: "2026-10-09").contains { $0.reminder.id == "r-sd" })
+    }
+
+    func testThePackingNotificationsCountAThingsRemindersOnceADay() {
+        var lib = ThingRemindersTests.library()
+        let t = trip(&lib)
+        let steps = lib.packingSteps(tripId: t.id)
+        let week = steps.first { $0.phaseId == "week" }, before = steps.first { $0.phaseId == "daybefore" }
+        XCTAssertEqual(week?.todo, 1, "the SD card is to do a week ahead")
+        XCTAssertEqual(week?.left, 3, "the camera, the cable and the charger are to pack — a reminder is no thing")
+        XCTAssertEqual(before?.todo, 1, "the spare battery's charge is to do the day before")
+        XCTAssertEqual(before?.says, "Day before (stage / move to RV): 1 to pack, 1 to do")
+        // One notification per trip per day, at the step's day, from today on; the says name the step's counts.
+        let plan = lib.reminderPlan(today: "2026-10-01").filter { $0.tripId == t.id }
+        XCTAssertEqual(plan.map(\.date), ["2026-10-03", "2026-10-09"], "one a day")
+        XCTAssertEqual(plan.first?.says, "\u{2265}1 week ahead: 3 to pack, 1 to do")
+        // A thing set aside: none of its reminders. A reminder ticked: no longer counted.
+        let cam = lib.trips[0].entries.first { $0.name == "Camera" }!.id
+        lib.setThingReminderDone(true, tripId: t.id, lineId: cam, reminderId: "r-sd")
+        XCTAssertEqual(lib.reminderPlan(today: "2026-10-01").first { $0.tripId == t.id }?.says, "\u{2265}1 week ahead: 3 to pack")
+        // Only the reminder left on a day: that day still has its one notification.
+        for l in lib.trips[0].entries where l.phase == "week" { _ = lib.setChecked(true, tripId: t.id, entryId: l.id) }
+        XCTAssertEqual(lib.reminderPlan(today: "2026-10-01").first { $0.tripId == t.id }?.date, "2026-10-09",
+                       "the week's step has nothing left")
+        lib.setThingReminderDone(false, tripId: t.id, lineId: cam, reminderId: "r-sd")
+        XCTAssertEqual(lib.reminderPlan(today: "2026-10-01").first { $0.tripId == t.id }?.says, "\u{2265}1 week ahead: 1 to do",
+                       "a step with only a thing's reminder left is still reminded of")
+        // Past days are not planned.
+        XCTAssertFalse(lib.reminderPlan(today: "2026-10-04").contains { $0.tripId == t.id && $0.date == "2026-10-03" })
+    }
+
+    func testTheStationHeTapsStaysLitUntilHeTapsAnother() {
+        let day = PackingDay(bags: [PackingDay.Bag(name: "Carry-on", things: 3)], packed: 0, total: 3)
+        XCTAssertEqual(day.lit(picked: nil), .bagsOut, "none tapped: the first not done")
+        XCTAssertEqual(day.lit(picked: .pack), .pack, "Bags out not done, but he is packing")
+        let done = PackingDay(bags: [PackingDay.Bag(name: "Carry-on", things: 3, out: true)], packed: 3, total: 3)
+        XCTAssertEqual(done.lit(picked: .bagsOut), .bagsOut, "done, it stays his until he taps another")
+        let none = PackingDay(bags: [], packed: 0, total: 3)
+        XCTAssertEqual(none.lit(picked: .weigh), .pack, "a station that cannot be done falls back to the first not done")
+        // Kept per trip, the newest last, and never more than `kept` trips.
+        var raw = ""
+        raw = StationPicks.picking(raw, trip: "t1", .weigh)
+        raw = StationPicks.picking(raw, trip: "t2", .tags)
+        raw = StationPicks.picking(raw, trip: "t1", .pack)
+        XCTAssertEqual(StationPicks.picked(raw, trip: "t1"), .pack)
+        XCTAssertEqual(StationPicks.picked(raw, trip: "t2"), .tags)
+        XCTAssertNil(StationPicks.picked(raw, trip: "t3"))
+        XCTAssertEqual(raw.split(separator: "\n").count, 2, "one line a trip")
+        XCTAssertNil(StationPicks.picked("t1|nonsense", trip: "t1"))
+        for n in 0..<60 { raw = StationPicks.picking(raw, trip: "x\(n)", .ready) }
+        XCTAssertEqual(raw.split(separator: "\n").count, StationPicks.kept)
+        XCTAssertNil(StationPicks.picked(raw, trip: "t2"), "the oldest went")
+    }
+}

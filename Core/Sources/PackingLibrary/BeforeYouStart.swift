@@ -68,6 +68,9 @@ public struct BeforeYouStart: Equatable, Sendable {
         public var templateId: String?
         /// The thing behind a Preparations line (what its arrow opens), when it is still there.
         public var thingId: String?
+        /// A reminder on one of his things (0.101): `line` is its words as a line ("Camera: Empty
+        /// the SD card"); the tick is the trip's one tick for it (`setThingReminderDone`).
+        public var thing: ThingReminderOnTrip? = nil
     }
 
     public var buy: [Buy]
@@ -224,7 +227,9 @@ extension Library {
     /// are a reminder or a line of a `task` step, whose When falls due before the start (lead days 1
     /// or more) — by the day it falls due, then the trip's order — and then every To do written on
     /// the trip, in the order written. Each with the day it falls due ("" without dates), and what
-    /// its arrow opens: a reminder's template, a Preparations line's thing.
+    /// its arrow opens: a reminder's template, a Preparations line's thing. (0.101) A reminder on one
+    /// of his things on the trip comes after its step's own lines, as "Camera: Empty the SD card",
+    /// its arrow opening the thing.
     public func toPrepare(tripId: String, today: String) -> [BeforeYouStart.Prepare] {
         guard let trip = trips.first(where: { $0.id == tripId }) else { return [] }
         func open(_ l: Item) -> Bool { Library.isToDo(l) && !l.checked && !isSetAside(l) }
@@ -240,10 +245,17 @@ extension Library {
         let ahead = PHASES.enumerated().filter { $0.element.leadDays >= 1 }.sorted { a, b in
             a.element.leadDays != b.element.leadDays ? a.element.leadDays > b.element.leadDays : a.offset < b.offset
         }.map(\.element)
+        // His things' own reminders (0.101), after the template's of the same step.
+        let things = thingReminders(tripId: tripId)
+        let thingsOpen = things.isEmpty ? [] : trip.entries.flatMap { things[$0.id] ?? [] }.filter { !$0.done }
         for phase in ahead {
             let due = dated ? Library.ymd(trip.startDate, plusDays: -phase.leadDays) : ""
             out += trip.entries.filter { open($0) && !Library.isTripTodo($0) && $0.phase == phase.id }
                 .map { row($0, due: due, todo: false) }
+            out += thingsOpen.filter { $0.reminder.when == phase.id }.map { r in
+                BeforeYouStart.Prepare(line: newItem(id: r.id, name: r.name, phase: r.reminder.when), due: due, tripTodo: false,
+                                       templateId: nil, thingId: r.thingId, thing: r)
+            }
         }
         return out + trip.entries.filter { open($0) && Library.isTripTodo($0) }.map { row($0, due: "", todo: true) }
     }

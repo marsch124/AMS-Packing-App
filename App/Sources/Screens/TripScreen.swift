@@ -78,8 +78,10 @@ struct TripScreen: View {
         var byItself = false
         var id: String { station.rawValue + (byItself ? "-itself" : "") }
     }
-    /// Bumped to send the trip to the top of its list (the Packing day's Pack).
+    /// Bumped to send the trip to its list (the Packing day's Pack).
     @State private var toList = 0
+    /// Pack's answer (0.101): the line it brought into view, lit a moment (its id; nil = none).
+    @State private var flash: String?
     /// Bumped to bring Before you go's To charge into view (a tapped "Charge tonight", 0.87).
     @State private var toCharge = 0
     struct CheckedThing: Identifiable { let id: String }
@@ -261,7 +263,7 @@ struct TripScreen: View {
             // The Packing day (0.79, his yes of 13 Oct 2026; spec 07 part 17): the Pack step's stations,
             // right under the strip, while the trip is being packed — not on a place's view.
             if step == .pack, placeFilter == nil, let day = model.library.packingDay(tripId: tripId) {
-                PackingDayRow(day: day) { station in
+                PackingDayRow(day: day, tripId: tripId) { station in
                     if station == .pack { toList += 1 } else { daySheet = DayOpen(station: station) }
                 }
                 .padding(.horizontal, 16).padding(.top, -2).padding(.bottom, 8)
@@ -511,6 +513,19 @@ struct TripScreen: View {
                                     ThingRemindersUnder(tripId: tripId, rows: rows, n: n).environmentObject(model)
                                 }
                                 }
+                                // Pack's answer (0.101): this line lit a moment, the trip's green, softly.
+                                .background {
+                                    if flash == line.id {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(AppSection.events.color.opacity(scheme == .dark ? 0.30 : 0.18))
+                                            .padding(.horizontal, -6)
+                                            .accessibilityElement()
+                                            .accessibilityLabel("Next to pack")
+                                            .accessibilityValue("trip-line-\(n)")
+                                            .accessibilityIdentifier("trip-flash")
+                                    }
+                                }
+                                .animation(.easeOut(duration: 0.6), value: flash == line.id)
                                 // The row ITSELF is a new row only when it MOVES — to another section, or up
                                 // or down in its own: a lazy row that moved kept its old face ("Set place"
                                 // still showing under the place just chosen — the same staleness, seen
@@ -559,9 +574,16 @@ struct TripScreen: View {
                 .padding(.bottom, 24)
             }
             .sheet(item: $checking) { c in ThingEditor(itemId: c.id).environmentObject(model) }
-            // The Packing day's Pack: to the top of the list — the Sorting row above its first heading.
+            // The Packing day's Pack (0.101, his ask of 26 Oct 2026 — a tap on Pack "only scrolls to the
+            // list, nothing visible if already there"): the first line not packed yet comes to the
+            // middle and its row is lit a moment, then fades — as iOS Settings lights the row a search
+            // opens. With everything packed (or folded away): the top of the list, as before.
             .onChange(of: toList) { _, _ in
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { proxy.scrollTo(TripScreen.listTop, anchor: .top) }
+                let next = TripScreen.firstToPack(groups(shownLines)) { isFolded($0) }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
+                    if let next { proxy.scrollTo(next.row, anchor: .center) } else { proxy.scrollTo(TripScreen.listTop, anchor: .top) }
+                }
+                if let next { light(next.line) }
             }
             // A tapped "Charge tonight" (0.87): To charge in view — centred, so a part near the top
             // does not move and the card's heading stays above it.
@@ -680,6 +702,25 @@ struct TripScreen: View {
 
     /// Where the Packing day's Pack sends the list (the Sorting row, above the first heading).
     static let listTop = "trip-list-top"
+
+    /// Pack's answer (0.101): the first line not ticked and not set aside, in the order the list shows
+    /// them, in a group that is not folded — its row's key (as the list keys it) and the line.
+    static func firstToPack(_ groups: [EntryGroup], folded: (String) -> Bool) -> (row: String, line: String)? {
+        for group in groups where !folded(group.label) {
+            for (place, line) in group.entries.enumerated() where !line.checked && !isSetAside(line) {
+                return ("\(line.id)|\(group.label)|\(place)", line.id)
+            }
+        }
+        return nil
+    }
+
+    /// Light a line a moment (Pack's answer), then let it fade.
+    private func light(_ id: String) {
+        flash = id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            withAnimation(.easeOut(duration: 0.6)) { if flash == id { flash = nil } }
+        }
+    }
     /// Where a tapped "Charge tonight" brings the screen: Before you go's To charge (0.87).
     static let chargeAnchor = "trip-charge-anchor"
 

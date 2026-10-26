@@ -15446,6 +15446,65 @@ final class AMSPackingUITests: XCTestCase {
     }
 
 
+    /// `-uiTestingThingReminders`, the trip three days ahead and nothing packed: Before you start's
+    /// To prepare holds the camera's two reminders (0.101), each "Camera: …" with its step; ticked
+    /// there, it is gone there and from Before you go's To do — one tick for the trip.
+    func testAThingsRemindersAreToPrepareBeforeYouStart() {
+        let app = launch("-uiTestingThingReminders")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "home-countdown")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let door = app.buttons["trip-beforestart"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "no Before you start on a trip not yet packed")
+        XCTAssertTrue(waitUntil { (door.value as? String ?? "").contains("2 to prepare") },
+                      "Before you start does not count the camera's reminders: '\(door.value as? String ?? "")'")
+        tap(app, id: "trip-beforestart")
+        XCTAssertTrue(appears(app, "beforestart-sheet", timeout: 5))
+        let first = app.buttons["beforestart-prepare-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "nothing to prepare")
+        XCTAssertTrue(first.label.hasPrefix("Camera: Empty the SD card"), "'\(first.label)'")
+        XCTAssertTrue(app.buttons["beforestart-prepare-1"].label.hasPrefix("Camera: Charge the spare battery"),
+                      "'\(app.buttons["beforestart-prepare-1"].label)'")
+        shot(app, "remind-prepare")
+        tap(app, id: "beforestart-prepare-0")
+        XCTAssertTrue(waitUntil { first.label.hasPrefix("Camera: Charge the spare battery") && !app.buttons["beforestart-prepare-1"].exists },
+                      "the tick did not take the SD card off To prepare: '\(first.label)'")
+        tap(app, id: "beforestart-done")
+        XCTAssertTrue(disappears(app, "beforestart-sheet", timeout: 5))
+        XCTAssertFalse(app.buttons["trip-check-remind-0"].exists, "Before you go still asks for the SD card")
+    }
+
+    /// `-uiTestingPackingDay`: with no station tapped, the first not done (Bags) is lit; Weigh tapped
+    /// stays lit after its sheet closes (0.101 — his trip stayed on Bags whatever he did). Pack tapped
+    /// is lit and answers on the list: the first line not packed in view, its row lit a moment, then
+    /// not — and so again when the list is in view already.
+    func testATappedStationStaysLitAndPackShowsTheNextLine() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        let bags = app.buttons["day-station-bags"], weigh = app.buttons["day-station-weigh"], pack = app.buttons["day-station-pack"]
+        XCTAssertTrue(waitUntil { bags.isSelected }, "with none tapped, the first station not done is not lit")
+        station(app, "weigh")
+        XCTAssertTrue(appears(app, "day-view-weigh", timeout: 5), "the sheet is not on Weigh")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { weigh.isSelected }, "the station tapped is not the lit one")
+        XCTAssertFalse(bags.isSelected, "Bags is still lit")
+        shot(app, "stations-weigh-lit")
+        station(app, "pack")
+        XCTAssertTrue(waitUntil { pack.isSelected }, "Pack is not lit after a tap")
+        XCTAssertFalse(weigh.isSelected)
+        XCTAssertTrue(appears(app, "trip-flash", timeout: 3), "Pack showed nothing on the list")
+        let lit = find(app, "trip-flash")?.value as? String ?? ""
+        XCTAssertTrue(lit.hasPrefix("trip-line-"), "the light names no line: '\(lit)'")
+        XCTAssertTrue(app.buttons[lit].isHittable, "the line lit is not in view")
+        XCTAssertFalse(app.buttons[lit].isSelected, "the line lit is packed already")
+        shot(app, "stations-pack-lit")
+        XCTAssertTrue(disappears(app, "trip-flash", timeout: 6), "the light did not fade")
+        station(app, "pack")
+        XCTAssertTrue(appears(app, "trip-flash", timeout: 3), "a second tap on Pack, the list in view, showed nothing")
+    }
+
+
     // MARK: - Before you start (spec 07 part 19, his yes of 14 Oct 2026)
 
     /// `-uiTestingBeforeStart`: the trip ten days ahead, nothing ticked. Home's countdown counts what

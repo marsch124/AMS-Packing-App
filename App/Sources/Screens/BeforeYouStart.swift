@@ -248,7 +248,12 @@ struct BeforeYouStartSheet: View {
         return HStack(spacing: 8) {
             Button {
                 let id = tripId, entry = row.line.id
-                model.change { _ = $0.setChecked(true, tripId: id, entryId: entry) }
+                // A thing's reminder (0.101): the trip's one tick for it, kept on the thing's line.
+                if let r = row.thing {
+                    model.change { _ = $0.setThingReminderDone(true, tripId: id, lineId: r.lineId, reminderId: r.reminder.id) }
+                } else {
+                    model.change { _ = $0.setChecked(true, tripId: id, entryId: entry) }
+                }
             } label: {
                 HStack(spacing: 10) {
                     TickCircle(on: false, tint: tint).frame(width: 22, height: 22)
