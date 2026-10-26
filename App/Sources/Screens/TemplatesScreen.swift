@@ -558,6 +558,17 @@ struct TemplateDetail: View {
     var body: some View {
         DraftedPage(live: model) { page in
             TemplatePage(listId: listId, onSmallCore: onSmallCore, page: page)
+                #if DEBUG
+                // UI tests: the other device renames the template's first section while its page is
+                // open (0.102).
+                .onAppear {
+                    let id = listId
+                    OtherDeviceForTests.opened("template", page.live) { lib in
+                        guard let n = lib.templates.firstIndex(where: { $0.id == id }), !lib.templates[n].sections.isEmpty else { return }
+                        lib.templates[n].sections[0].name = "Torches"
+                    }
+                }
+                #endif
         }
     }
 }
@@ -653,7 +664,7 @@ struct TemplatePage: View {
                     .accessibilityIdentifier("template-cancel")
                 Spacer()
                 // A save the store refused (0.94) leaves the page open, holding it, for Done again.
-                Button("Done") { if page.save() { dismiss() } }
+                Button("Done") { page.done { dismiss() } }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true))
                     .focusEffectDisabled()
                     .font(.system(.body, weight: .semibold))

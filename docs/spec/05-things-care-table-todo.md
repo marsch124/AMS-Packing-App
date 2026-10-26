@@ -1421,7 +1421,12 @@ templates Subheadline, `Metrics.chip` tall.
   01 §5: a thing the page put in, took out or moved goes in; one the other device put in meanwhile stays — until 0.95
   the page's whole list was written and it was gone; taken out: what the page changed, the rest as kept), then
   `setKit`. Test: model `PageChangesTests.testAKitsPageSavesWhatItChangedOntoTheKitAsItIsNow` — seen RED on 0.94:
-  `("["id-6"]") is not equal to ("["id-10", "id-6"]") - a thing put in on the other device was lost`. A field changed on both: the page's (Save is the later word). Tests: model
+  `("["id-6"]") is not equal to ("["id-10", "id-6"]") - a thing put in on the other device was lost`. Since 0.102
+  (warn instead of merge, spec 06 §20c) Save first asks when what the kit holds changed on the other device
+  meanwhile and the merge would not give the page's (`KitDraft.crosses` → `Library.kitPageCrosses`): "Changed on your
+  iPhone meanwhile", "What the Camp pouch holds", Keep both (the merge) or Keep mine (`commit(kitMine:)` →
+  `KitDraft.save(mine:)`: the page's contents and the ones taken out, whole). UI
+  `testAKitChangedOnTheOtherDeviceWhileItsPageIsOpenAsksAtSave`. A field changed on both: the page's (Save is the later word). Tests: model
   `ThingPageSaveTests.testOnlyWhatThePageChangedIsWritten`; UI `testAThingsSaveKeepsTheBagChangedOnTheOtherDevice`
   (iPhone; `-bagOnReturn Map "Checked luggage"` plays the other device as the app comes back to the front: the Map's
   notes typed, the app put away and back, Save → the notes kept AND the Checked luggage) — seen RED on 0.92:

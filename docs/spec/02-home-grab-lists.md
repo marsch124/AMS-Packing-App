@@ -1381,7 +1381,13 @@ line of its own (0.84 showed it flat while the open list was grouped by kind):
      took off or moved goes in; what the other device added meanwhile stays, in its place; a list holding a
      heading twice is the editor's), the marks as a set (live marks, minus those the editor unmarked, plus those it
      marked). Until 0.95 the editor's whole list was written and a thing added on the other device while Edit was
-     open was gone. Test: model `PageChangesTests.testAGrabListsEditKeepsWhatTheOtherDeviceAddedMeanwhile` — seen
+     open was gone. **Since 0.102 (warn instead of merge, his decision of 26 Oct 2026; spec 06 §20c):** when the
+     list or its marks changed here since Edit opened and the merge would not give the editor's list
+     (`Library.grabEditCrosses`), Save first asks — "Changed on your iPhone meanwhile", "Indoor swim’s grab list",
+     Keep both (the merge above) or Keep mine (`saveGrabEdit(id:lines:sometimes:)`, the editor's list and marks whole);
+     the edit stays open until it is answered. A save of the list that the other device's crossing save wrote over is
+     told in a note (spec 01 §5). UI `testAGrabListChangedOnTheOtherDeviceWhileEditingAsksAtSave`,
+     `testAGrabListSaveTheOtherDeviceWroteOverIsTold`. Test: model `PageChangesTests.testAGrabListsEditKeepsWhatTheOtherDeviceAddedMeanwhile` — seen
      RED on 0.94: `("["Flip-flops", "Fins"]") is not equal to ("["Nose clip", "Fins"]") - a thing added on one of
      the devices was lost` and `("["Towel"]") is not equal to ("["Towel", "Goggles"]") - a mark was lost`.
      **When the other device's Save has NOT arrived yet (0.97, his check 7 of 21 Oct 2026 — Mac: Edit open;

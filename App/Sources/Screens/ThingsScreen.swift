@@ -675,6 +675,13 @@ struct ThingEditor: View {
         choiceLists = [:]
         newTemplates = []
         kit = KitDraft(model.library, thingId: id)     // what it holds, or its kit (0.70)
+        #if DEBUG
+        // UI tests: the other device puts one more thing in this kit while its page is open (0.102).
+        OtherDeviceForTests.opened("kit", model) { lib in
+            guard let more = lib.kitCandidates(kitId: id).first else { return }
+            _ = lib.addToKit(kitId: id, thingId: more.id)
+        }
+        #endif
         remember = RememberDraft(model.library, thingId: id)   // its reminders and what goes with it (0.101)
         limits = model.library.items.first { $0.id == id }.map(Library.thingLimits) ?? TripLimits()
         limitAt = [:]
@@ -1208,13 +1215,20 @@ struct ThingEditor: View {
             .accessibilityIdentifier(id)
     }
 
+    /// Save. What the kit holds changed on the other device since the page opened (0.102, warn
+    /// instead of merge): asked first, Keep both or Keep mine (`CrossedAsk`).
     private func save() {
+        if let id = shown, kit.crosses(model.library, thingId: id) {
+            model.askCrossed([.kit(id)]) { keepMine in if commit(kitMine: keepMine) { dismiss() } }
+            return
+        }
         if commit() { dismiss() }
     }
 
     /// Writes the page to the library. False — the page stays, and says why — when the
-    /// weight, the date or the name stops it.
-    @discardableResult private func commit() -> Bool {
+    /// weight, the date or the name stops it. `kitMine` (0.102): Keep mine — what the page says the
+    /// kit holds, whole.
+    @discardableResult private func commit(kitMine: Bool = false) -> Bool {
         #if os(macOS)
         guard readExpiry() else { return false }
         #endif
@@ -1309,7 +1323,7 @@ struct ThingEditor: View {
                 w.note = jsTrim(w.note)
                 was = w
             }
-            kitSays.save(&lib, thingId: itemId)      // what it holds, or taken out of its kit (0.70)
+            kitSays.save(&lib, thingId: itemId, mine: kitMine)   // what it holds, or taken out of its kit (0.70)
             rememberSays.save(&lib, thingId: itemId) // its reminders and what goes with it (0.101)
             // Its own "Only on some trips" (0.73); `updateThing` below brings trips ahead along.
             if opened.map({ only != $0.limits }) ?? true { lib.setThingLimits(id: itemId, only, follow: false) }

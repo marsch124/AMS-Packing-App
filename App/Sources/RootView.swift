@@ -411,11 +411,13 @@ final class SaveNote {
     private var panel: NSPanel?
     #endif
 
-    func show() {
+    /// The note, for a few seconds. Since 0.102 also a save that crossed (`LibraryModel.reload`):
+    /// its own words and identifier, longer, and wrapped on two lines where one is too wide.
+    func show(_ words: String = SaveNote.words, id: String = "save-problem", seconds: Double = 4) {
         close()
         #if os(iOS)
         guard let scene = SaveNote.scene() else { return }
-        let host = UIHostingController(rootView: SaveNoteView { [weak self] in self?.close() })
+        let host = UIHostingController(rootView: SaveNoteView(words: words, id: id) { [weak self] in self?.close() })
         host.view.backgroundColor = .clear
         host.safeAreaRegions = []
         let screen = scene.coordinateSpace.bounds
@@ -430,7 +432,7 @@ final class SaveNote {
         window = w
         #else
         guard let front = NSApp.keyWindow ?? NSApp.mainWindow else { return }
-        let host = NSHostingView(rootView: SaveNoteView { [weak self] in self?.close() })
+        let host = NSHostingView(rootView: SaveNoteView(words: words, id: id) { [weak self] in self?.close() })
         let size = host.fittingSize
         let p = NSPanel(contentRect: NSRect(x: front.frame.midX - size.width / 2, y: front.frame.minY + 24,
                                             width: size.width, height: size.height),
@@ -444,7 +446,7 @@ final class SaveNote {
         #endif
         let work = DispatchWorkItem { [weak self] in self?.close() }
         hide = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: work)
     }
 
     func close() {
@@ -465,19 +467,25 @@ final class SaveNote {
 
 /// The note's look: calm, the app's card and ink, a thin line round it.
 private struct SaveNoteView: View {
+    let words: String
+    let id: String
     let close: () -> Void
+    /// Wider than one short line (a save that crossed, 0.102): wrapped, at most this wide.
+    private var long: Bool { words.count > 40 }
 
     var body: some View {
-        Text(SaveNote.words)
+        Text(words)
             .font(.system(.subheadline, weight: .semibold))
             .foregroundStyle(Theme.ink)
+            .multilineTextAlignment(.center)
             .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Capsule().fill(Theme.card))
-            .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
-            .fixedSize()
+            .frame(width: long ? 330 : nil)
+            .fixedSize(horizontal: !long, vertical: true)
+            .background(RoundedRectangle(cornerRadius: 20).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.line, lineWidth: 1))
             .padding(4)
             .contentShape(Rectangle())
             .onTapGesture(perform: close)
-            .accessibilityIdentifier("save-problem")
+            .accessibilityIdentifier(id)
     }
 }

@@ -228,13 +228,27 @@ final class PageDraft: ObservableObject {
 
     /// Done: what the page changed, in one change of the real library. Nothing changed = nothing
     /// written. false (0.94): the store refused it — the page stays open, holding it, for Done again.
+    /// `mine` (0.102): the blocks whose page version is kept whole (Keep mine); none = the merge.
     @discardableResult
-    func save() -> Bool {
+    func save(mine: Set<Block> = []) -> Bool {
         guard changed else { return true }
         let from = opened, to = copy.library
-        guard live.change({ $0 = $0.applyingPage(from: from, to: to) }) else { return false }
+        guard live.change({ $0 = $0.applyingPage(from: from, to: to, mine: mine) }) else { return false }
         live.library.installLiveChoices()
         return true
+    }
+
+    /// The Done button (0.102, warn instead of merge): a block the page changed that the other device
+    /// changed too since the page opened — a grab list, the template's head, what a kit holds, a list
+    /// of Your choices — is asked about first (`CrossedAsk`): Keep both or Keep mine. Nothing changed
+    /// meanwhile = saved at once, as before. `then` runs once it is kept (the page closes).
+    func done(then: @escaping () -> Void) {
+        guard changed else { then(); return }
+        let crossed = live.library.crossings(opened: opened, page: copy.library)
+        guard !crossed.isEmpty else { if save() { then() }; return }
+        live.askCrossed(crossed) { [self] keepMine in
+            if save(mine: keepMine ? Set(crossed) : []) { then() }
+        }
     }
 
     /// The page has gone — after Done, Cancel or a swipe: the "When" steps and conditions in force

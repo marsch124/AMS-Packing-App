@@ -742,6 +742,15 @@ struct GrabScreen: View {
         saveNeeds = ""
         askingToDelete = false
         editing = true
+        #if DEBUG
+        // UI tests: the other device takes the list's last thing off while Edit is open (0.102).
+        let id = listId
+        OtherDeviceForTests.opened("grab", model) { lib in
+            guard var lines = lib.grabList(id: id)?.lines, let last = lines.lastIndex(where: { !$0.isHeading }) else { return }
+            lines.remove(at: last)
+            _ = lib.saveGrabList(id: id, lines: lines)
+        }
+        #endif
     }
 
     /// The names he takes only sometimes, in their plain form, for the list as it
@@ -841,17 +850,43 @@ struct GrabScreen: View {
         editing = false
     }
 
+    /// Save. The list or its "1 in 10" marks changed on the other device since Edit opened (0.102,
+    /// warn instead of merge — his decision of 26 Oct 2026): asked first, Keep both or Keep mine
+    /// (`CrossedAsk`); nothing changed meanwhile = saved at once, as before.
     private func saveEdits() {
         let lines = draft
         let sometimes = lines.filter { !$0.isHeading }.map(\.name).filter { draftSometimes.contains(normName($0)) }
+        if model.library.grabEditCrosses(id: listId, opened: draftOpened, openedSometimes: marksOpened,
+                                         lines: lines, sometimes: sometimes) {
+            model.askCrossed([.grabList(listId)]) { keepMine in writeEdits(lines, sometimes, keepMine: keepMine) }
+            return
+        }
+        writeEdits(lines, sometimes, keepMine: false)
+    }
+
+    /// The edit written: onto the list as it is now (Keep both, and every Save nothing crossed), or
+    /// the editor's list and marks whole (Keep mine).
+    private func writeEdits(_ lines: [GrabLine], _ sometimes: [String], keepMine: Bool) {
         let markedBefore = model.library.sometimes(listId: listId)
         // One door for every list, his own ones too (they were thrown away here
         // until 4 Oct 2026: the door took the original six only). The things and the
         // marks are saved together or not at all.
         var saved = false
         let opened = draftOpened, marked = marksOpened
-        model.change { saved = $0.saveGrabEdit(id: listId, opened: opened, openedSometimes: marked, lines: lines, sometimes: sometimes) }
+        model.change {
+            saved = keepMine ? $0.saveGrabEdit(id: listId, lines: lines, sometimes: sometimes)
+                : $0.saveGrabEdit(id: listId, opened: opened, openedSometimes: marked, lines: lines, sometimes: sometimes)
+        }
         guard saved else { saveNeeds = "Put at least one thing on the list first."; return }
+        #if DEBUG
+        // UI tests: the other device's save of the list as Edit opened arrives after this one (0.102).
+        let id = listId
+        OtherDeviceForTests.saved("grab", model) { lib in
+            var was = opened
+            if let last = was.lastIndex(where: { !$0.isHeading }) { was.remove(at: last) }
+            _ = lib.saveGrabList(id: id, lines: was)
+        }
+        #endif
         editing = false
         askingToDelete = false
         // Today's ticks stay (5 Oct 2026: every Save started over, even with nothing

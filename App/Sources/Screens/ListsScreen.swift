@@ -85,7 +85,7 @@ struct ListsPage: View {
                     .accessibilityIdentifier("choices-title")
                 Spacer(minLength: 4)
                 // A save the store refused (0.94) leaves the page open, holding it, for Done again.
-                Button("Done") { if page.save() { dismiss() } }
+                Button("Done") { page.done { dismiss() } }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                     .keyboardShortcut("s", modifiers: .command)  // ⌘S = Done (0.92)

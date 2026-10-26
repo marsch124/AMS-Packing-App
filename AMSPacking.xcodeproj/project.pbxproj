@@ -50,6 +50,7 @@
 		6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 403A4735005582B356D67F55 /* HomeScreen.swift */; };
 		6A4E3AE89B7E1FF756858C13 /* PackingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 70431786B7003CDABC1162E4 /* PackingCore */; };
 		6ECECAF4ED81E81C8454B15B /* AreasScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0096D418FB0463E578A19AD2 /* AreasScreen.swift */; };
+		7473F45A89D87DFE74DA4DBD /* CrossedAsk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9275ED8A5762A3BD07EABD8E /* CrossedAsk.swift */; };
 		7489E41014894218A0EC730E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */; };
 		7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */; };
 		7DF2057F25F465D208B3118F /* EditTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5799D84209CA656EEE129EFC /* EditTiming.swift */; };
@@ -194,6 +195,7 @@
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
 		90C73A28812C7D0D542A832F /* PackingDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackingDay.swift; sourceTree = "<group>"; };
+		9275ED8A5762A3BD07EABD8E /* CrossedAsk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossedAsk.swift; sourceTree = "<group>"; };
 		9303A9912D1C193EBFA773D8 /* VoiceStarts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStarts.swift; sourceTree = "<group>"; };
 		94244273DBD58428C6B6C4F1 /* TripMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripMessages.swift; sourceTree = "<group>"; };
 		95CE795CC801DFFE3FD39642 /* BagCabin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagCabin.swift; sourceTree = "<group>"; };
@@ -393,6 +395,7 @@
 				56F5604CA6875D255BD93251 /* CareScreen.swift */,
 				79BB950979BE60A59DD34766 /* ChoiceDropDown.swift */,
 				BA8E667C951BD91655405B94 /* Countdown.swift */,
+				9275ED8A5762A3BD07EABD8E /* CrossedAsk.swift */,
 				200B88877006E1F006B96632 /* DateRangePicker.swift */,
 				1750ABC86D97A97B07370949 /* DropDown.swift */,
 				ECF41033E25321E3361B7F37 /* EditDraft.swift */,
@@ -582,6 +585,7 @@
 				CE9F7F844B02914111C3E8E4 /* ChoiceDropDown.swift in Sources */,
 				B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */,
 				9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */,
+				7473F45A89D87DFE74DA4DBD /* CrossedAsk.swift in Sources */,
 				3258A7D9609579F193DF2505 /* DateRangePicker.swift in Sources */,
 				E23BC02087734333AE740F0A /* DeviceVoice.swift in Sources */,
 				A01FA7467EDE858441462FED /* DoorChecks.swift in Sources */,

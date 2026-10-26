@@ -73,13 +73,22 @@ struct KitDraft: Equatable {
         checkSaid = true
     }
 
+    /// Did what the kit holds change on the other device since the page opened, so that Keep both
+    /// and Keep mine differ (0.102, `kitPageCrosses`)? Asked at Save.
+    func crosses(_ lib: Library, thingId: String) -> Bool {
+        !none && holder == nil
+            && lib.kitPageCrosses(kitId: thingId, opened: opened, openedOut: openedOut, contents: contents, out: out)
+    }
+
     /// Write what changed — called inside the page's own Save. The switch is his word once
-    /// he pressed it or it changed (a new kit's ON); otherwise the kit keeps its own.
-    func save(_ lib: inout Library, thingId: String) {
+    /// he pressed it or it changed (a new kit's ON); otherwise the kit keeps its own. `mine` (0.102,
+    /// Keep mine): the page's contents whole, not merged with the kit as it is now.
+    func save(_ lib: inout Library, thingId: String, mine: Bool = false) {
         guard !none else { return }
         if contents != opened || out != openedOut || check != openedCheck {
             // Onto the kit as it is now (0.95): a thing put in on the other device meanwhile stays.
-            let kept = lib.kitFromPage(kitId: thingId, opened: opened, openedOut: openedOut, contents: contents, out: out)
+            let kept = mine ? (contents: contents, out: out)
+                : lib.kitFromPage(kitId: thingId, opened: opened, openedOut: openedOut, contents: contents, out: out)
             lib.setKit(kitId: thingId, contents: kept.contents, takenOut: kept.out,
                        check: checkSaid || check != openedCheck ? check : nil)
         }
