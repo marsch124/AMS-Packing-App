@@ -106,7 +106,9 @@ Each tab button (`TabButtonLabel`):
   accessibility value (VoiceOver) — in DEBUG builds "badge 3 · 2 to do · 1 to buy" ("no badge · Nothing open"), the
   tests' only way to see the badge — and, on the Mac, its tooltip (`.help`). Why one number and not "3 · 2" on the Mac
   too: Apple's own tab bars never carry two numbers, and two bare numbers on a tab need a key to be read; the split is
-  in the tooltip and on the page. Other tabs: no badge, no value.
+  in the tooltip and on the page. Other tabs: no badge, no value. Each tab is built in `TabBar.tab(_:count:)`, its
+  words worked out step by step: inside the `ForEach` GitHub's Mac could not type-check it ("the compiler is unable to
+  type-check this expression in reasonable time" — the first 0.101 probe; this Mac built it).
 
 The version marker (`app-version`): text `AppInfo.version` = `"<CFBundleShortVersionString> (<CFBundleVersion>)"`,
 e.g. "0.61 (130)". The short version is `MARKETING_VERSION` in `project.yml` ("0.61"); the build number is
