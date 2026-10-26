@@ -2858,7 +2858,8 @@ is `@State`: every time the tab is built again it starts on "To do".
    words and carries the selected trait, the other is ink on the card with a 1 pt line — and the magnifier
    (`search-open`). `testEveryTabsHeaderIsOnOneCentreLine` (0.67) checks the magnifier and "To buy" within
    1.5 pt of the centre line of "To do" (they were already).
-2. On the To do side, a scrolling list (`LazyVStack`, **no spacing** — 4 until 0.67):
+2. On the To do side, a scrolling list (a plain `VStack` since 0.101 — a `LazyVStack` until then, see Traps;
+   **no spacing** — 4 until 0.67):
    - The count (`actions-count`, Callout semibold muted, monospaced; 12 above and 4 below — 14 and none until
      0.67): "Nothing to do." (no to-dos), "All done." (all ticked), else "`N` to do".
    - **A to-do is as tall as its words** (0.67): at least **`Metrics.line` — 30 pt on the iPhone, 22 on the
@@ -2874,9 +2875,32 @@ is `@State`: every time the tab is built again it starts on "To do".
      "Remove"), drawn on the 24-pt grid and shown at `Metrics.glyph` (20 / 16) in a `Metrics.lineButton` ×
      `Metrics.line` area — 40 × 30 on the iPhone, 30 × 22 on the Mac (24 pt in 40 × 40 until 0.67). A 1 pt
      line under each row.
+   - **In three parts since 0.101** (his list of 26 Oct 2026: "completed to-do's should be tucked away in a
+     toggle. Priority to-do's in a separate area"), each a run of that same order (`Library.toDoParts(kind:)`,
+     PackingLibrary/ListFolds.swift: `priority` = the open to-dos with `priority` "high", `others` = the other
+     open ones, `done` = the ticked ones; `all` = the three in a row = `sortedActions`), so a row's `action-N` is
+     still its place in the whole list:
+     1. **Priority** — only while an open to-do is a priority: the heading "Priority" (Subheadline semibold red,
+        header trait, `actions-priority-title`) with its count beside it (Footnote semibold monospaced muted,
+        hidden from VoiceOver), 10 above and 2 below; then its rows in a container `actions-priority`.
+     2. **Others** — the heading "Others" (the same, muted, `actions-others-title`) only when the Priority part
+        shows; then the other open rows. With no priority the open rows stand as one run, as before.
+     3. **Done** — only while something is done: `FoldHeading` (`actions-done-fold`, a button the width of the
+        list): the trip headings' drawn arrow (`M9 6l6 6-6 6`, 2.4 pt, `Metrics.glyph`, ink, in a `Metrics.lineButton`
+        − 6 × `Metrics.line` frame; right when folded, turned down when open), "Done" (Subheadline semibold muted)
+        and the count (Footnote semibold monospaced muted); 6 above. Label "Done, `<n>`", value "folded" / "open",
+        selected trait while open. **Folded** until he taps it — `@State`, so the page opens folded every time;
+        open, the done rows follow it.
+   - **Held** — a long press on the iPhone, a right-click on the Mac, anywhere on the row — a context menu with
+     one entry: "Mark as priority" or, on a priority, "Remove priority" (`action-N-priority`):
+     `Library.setActionPriority(_:id:)` sets the web app's own `priority` field to "high" / "normal" and stamps
+     `updatedAt` (no change → false, nothing stamped). The row moves to its part at once (0.2 s).
 3. After a ✕ (0.62): above the add row, "Removed “`<text>`”" (`action-undo-says`, 15 semibold muted, 1 line)
    and "Undo" (`action-undo`, 15 bold red, red outlined capsule, min height 36) — until it is used, another
-   to-do is removed, or the screen is rebuilt.
+   to-do is removed, or the screen is rebuilt. **After a tick (0.101)** the same bar says "Done “`<text>`”"
+   (`action-tick-undo-says`) with "Undo" (`action-tick-undo`): it unticks the to-do (`setActionDone(false)`), which
+   goes back to its part. One bar at a time — a tick puts away the ✕'s, a ✕ the tick's; a tick taken back (in
+   Done, or elsewhere) takes its bar away (`LineUndoBar(text:says:id:)`, "Removed" by default).
 4. The add row at the BOTTOM: "Add a to-do" (`action-add-text`, 17 medium, min height 44), "!" (`action-add-high`,
    18 heavy, 44 × 44 — red on the card when off, white on red when on; label "High priority", selected trait),
    "Add" (`action-add`, red `FieldButtonLabel`); needs line `action-add-needs`.
@@ -2891,7 +2915,14 @@ is `@State`: every time the tab is built again it starts on "To do".
   when "!" is on, "normal" otherwise; then the field is emptied and "!" turned off.
 - Each side has its own add text (0.62; one shared `text` showed a half-typed to-do on To buy too). Both live
   in `ActionsScreen`, so a half-typed line survives a look at the other side.
-- There is no way here to edit a to-do's text, priority, thing, step or date after it is made.
+- There is no way here to edit a to-do's text, thing, step or date after it is made; its priority, since 0.101,
+  by holding it (above).
+- **Where the priority is kept (0.101).** Nowhere new: `priority` is the web app's own field on the to-do
+  ("high" / "normal", `ACTION_PRIORITIES`), which the add bar's "!" has always set. A to-do is one `actions`
+  record holding its whole JSON, so the priority travels with it — iCloud, a backup and its restore, the web app
+  (which reads the same key) — and the field-wise merge of a page's copy (0.95, `applyingPage`) treats it as one
+  field like `done`: a priority marked on one device and a tick on the other both stay. No new CloudKit field, no
+  new key; the web model and the parity checks are unaffected.
 
 **The model.** `ActionItem` (named so because `Action` is taken):
 
@@ -2937,6 +2968,22 @@ appear here: "Nothing to do.").
 UI (0.62) `testToDoAndToBuyKeepTheirOwnTextAndUndoARemoval` (a half-typed to-do is not on To buy and is still
 there on return; ✕ then Undo on each side). Model `ThingsAndCareFixesTests.testALineRemovedComesBackWithUndoAndItsReminderIsNamed`.
 
+(0.101) UI `testPriorityToDosStandApartAndDoneOnesTuckAway` — three to-dos, no `actions-priority`; held,
+`action-2-priority` makes "Book the ferry" `action-0` inside `actions-priority`, with `actions-priority-title`
+above it and `actions-others-title` between it and `action-1`; `action-2` ticked → "2 to do", `actions-done-fold`
+folded, the row gone, `action-tick-undo-says` names it; Undo → "3 to do", no Done; ticked again and Done opened →
+`action-2` selected; unticked there → "3 to do"; held again, Remove priority → no `actions-priority`; To buy:
+Milk bought → `buy-tick-undo-says` names it, Undo → "1 to buy"; bought again → `buy-done-fold`, the row gone,
+opened → `buy-0` selected. Seen red on 0.100: "holding a to-do offers
+no Mark as priority". `testAToDoIsAddedAndTicked` opens Done before it reads the tick. Model `ListFoldsTests`:
+`testTheToDoPageIsPriorityThenTheOthersThenDoneInTheListsOwnOrder`, `testToBuyHasNoPriorityPartOnlyOpenAndBought`,
+`testMarkingAPriorityChangesTheWebAppsOwnFieldAndStampsIt`, `testAPriorityComesBackFromTheStore`,
+`testAPriorityComesBackFromABackup`, `testAPriorityAndATickFromTheOtherDeviceBothStay`.
+
+**Traps (0.101).** A `LazyVStack` keeps a row it has built under its id: a to-do ticked into Done — another
+`ForEach` of the same stack, the same id — was drawn there as the cached row of the part it left, UNTICKED (the
+tick circle empty, not selected for VoiceOver). Both sides are plain `VStack`s now; the lists are short.
+
 **Not covered by a test.** "!" (high priority) and the second line; the sort beyond what the model test pins.
 
 ---
@@ -2964,6 +3011,12 @@ and taking it up stops it being offered (0.3, 23 Sep 2026; the web app's pre-tri
    reason (`buy-offer-N-why`, Footnote semibold; red for "Needs replacing" and "Expired", muted otherwise); 3 pt
    above and below (5 until 0.67), at least `Metrics.line` tall.
 5. After a ✕ (0.62): "Removed “`<text>`”" (`buy-undo-says`) and "Undo" (`buy-undo`), as on To do.
+   **Bought (0.101, his list of 26 Oct 2026, as To do's Done):** the open lines first, then — only while a line
+   is bought — `FoldHeading` "Bought" with its count (`buy-done-fold`), folded until tapped (`@State`), the bought
+   rows under it when open (their `buy-N` still their place in `buyList()`; `toDoParts(kind: "shopping")` — To buy
+   has no Priority part, a line the web app marked high stays among the open ones in its place). After a tick:
+   "Bought “`<text>`”" (`buy-tick-undo-says`) and "Undo" (`buy-tick-undo`), which unticks it as a tap would (its
+   reminder too). A plain `VStack` since 0.101, as To do (Traps there).
 6. The add row at the BOTTOM: "Add something to buy" (`buy-add-text`), "Add" (`buy-add`, red); needs line
    `buy-add-needs` "Type what to buy first."
 

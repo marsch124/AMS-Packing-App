@@ -1196,6 +1196,21 @@ left, the choice beside it) are kept.
   iPhone too narrow for both (`VoiceSortingRow`, `ViewThatFits`); the field takes what the button leaves. Pressed
   when it cannot start, the reason is said under the row in red (`voice-start-needs`). The Mac's row is the
   drop-down alone, as before. See "Pack by voice" below.
+- **Fold all / Unfold all** (0.101, his list of 26 Oct 2026: "the ability to toggle or collapse all items with one
+  click, not only the individual 'From where', 'Into' etc areas"): 8 to the right of the field — on the iPhone
+  between it and Pack by voice, on the Mac after the drop-down — id **`trip-fold-all`**. A capsule `Metrics.tap`
+  tall in the trip's green (1.4 pt ring): a drawn glyph of two chevrons, 18 pt, 2 pt round strokes — closing on
+  the middle (`M7 4l5 5 5-5 M7 20l5-5 5 5`, Fold all) while any heading of this sorting is open, opening from it
+  (`M7 9l5-5 5 5 M7 15l5 5 5-5`, Unfold all) once all are folded; green on a 10 % green fill, and white on full
+  green while all are folded. On the iPhone the glyph alone, at least `Metrics.tap` + 6 wide — with its words the
+  field shrank to "Fr…" and Pack by voice to "Voice"; with the glyph Pack by voice still shows as "Voice" (it did
+  not fit beside both); on the Mac "Fold all" / "Unfold all" (Subheadline semibold) beside it, 10 inside each side,
+  and a tooltip ("Fold every heading — Option-click a heading's arrow does it too" / "Open every heading").
+  Label "Fold all" / "Unfold all", selected trait while all are folded. A press folds every heading of the trip
+  under this sorting (`TripFolds.settingAll`, the headings that show — `linesGrouped` asked once for the list and
+  the button), or, all folded, opens every one; 0.3 s (0.2 with Reduce Motion). The headings, their counts, rings
+  and round ticks stay. Each heading's own arrow works on as before, and one opened by hand makes the button Fold
+  all again.
 
 **The scroll area** (`KeyboardAwayScroll`, dragging puts the keyboard away):
 0. **Before you start** door (0.82, his yes of 14 Oct 2026; spec 07 part 19) — only while the trip is at Plan or
@@ -1460,6 +1475,20 @@ Folded headings are remembered on the device in AppStorage **`ams.trip.folded`**
 A folded group keeps its heading, count and whole-section tick. Since 0.62 the keys are cleaned up:
 deleting a trip removes its folds (`TripFolds.without`), and every fold made drops the folds of trips this
 device no longer has (deleted on the other one too, `TripFolds.toggled`).
+
+**Fold all (0.101).** The button beside the sorting (above, "Fold all / Unfold all") writes every heading of the
+trip under the current sorting at once — `TripFolds.settingAll(raw, trip:, view:, headings:, folded:, trips:)`:
+the keys of those headings taken out, then (folding) put back once each; other sortings' folds and Before you go's
+are left; trips this device no longer has are swept out as by every fold. `TripFolds.allFolded` (none to fold = no)
+decides which way it goes and how it looks. **On the Mac, Option-click on a heading's arrow** does the same the way
+that heading goes — folds every heading if it was open, opens every one if it was folded (the Finder's outline):
+the arrow's press reads `NSEvent.modifierFlags` (`pressFold`). Tests: UI `testFoldAllFoldsEveryHeadingAndOpensThemAgain`
+(sorted From where — the sample trip has one When heading: four places; no line left after Fold all, both headings
+there, the button selected; the first heading opened by its arrow → lines back, not selected; Fold all folds it
+again; pressed all folded → lines back, not selected; on the Mac Option-click on `trip-group-1-fold` folds all and
+again opens all; pictures `fold-all-folded`, `fold-all-open`; seen red on 0.100: "no Fold all beside the
+sorting"); model `ListFoldsTests.testFoldAllFoldsEveryHeadingOfThatSortingAndUnfoldAllOpensThem`,
+`testFoldAllSweepsOutTheFoldsOfTripsThisDeviceNoLongerHas`, `testNothingToFoldIsNeverAllFolded`.
 
 ### Set place (From where)
 
@@ -2036,6 +2065,20 @@ The tone's colours: red `AppSection.actions.color`, orange `AppSection.care.colo
 left" or "All set". (Until 0.77 Check before you go had "Check before you go" and a capsule `trip-checks-count`;
 To charge had the battery mark, "To charge" and "<charged> of <all>" in its own capsule, `trip-charge-count`.)
 
+**Folded whenever he likes** (0.101, his list of 26 Oct 2026: "On the main screen page, there is a red frame
+called 'Before You Go.' I would like that to be collapsible so I can toggle it into one line"). The chevron below
+is ALWAYS at the header's right now, and a press on it or anywhere on the header line folds the card to that one
+line — "Before you go", the count capsule in the card's tone, the chevron — or opens it. **This device keeps it
+per trip**: in the trip's folds (`ams.trip.folded`, the keys `"<trip>|beforego|folded"` / `"<trip>|beforego|open"`
+— no sorting has the id `beforego`; `TripFolds.beforeYouGoFolded / beforeYouGoToggled / beforeYouGoReset`,
+PackingLibrary/ListFolds.swift), so it goes with the trip's other folds when the trip is deleted, and the UI tests
+start without it. Until he chooses, the 0.77 rule below decides (folded only All set); his choice then wins — a
+card he folded stays folded when something new turns up (its colour and number say so), one he opened stays open
+when All set. A tapped "Charge tonight" (0.87) forgets his choice for that trip before it scrolls, so a folded card
+opens on To charge. The header line is now always `Metrics.tap` tall (the chevron's square), with 6 above it
+folded or open and 14 under the parts (folded 6). Label "Show Before you go" / "Fold Before you go" (until 0.101
+"Show what is charged" / "Fold"), value "folded" / "open". Picture `beforego-folded`, `beforego-open`.
+
 **All set — folded** (decided by the build, 0.77): with nothing left the card shows ONLY its header, green — "Before
 you go [All set]" — so a trip whose things are all charged does not keep a list of struck-through rows at its top
 through the days of the trip. At the header's right, only then, a drawn chevron (22 pt in a `Metrics.tap` square,
@@ -2043,7 +2086,8 @@ muted; right when folded, down when open, as Care's sections), id **`trip-before
 charged" / "Fold", value "folded" / "open". A press on it — or anywhere on the header line — opens the card and
 shows To charge with its ticks (to take one back); a second press folds it again. Open is not kept: the trip opens
 folded each time (`@State`). With something left there is no chevron and the header does nothing; a charge taken
-back while open makes something left again, and the card simply stays open.
+back while open makes something left again, and the card simply stays open. (Until 0.101 — since then the chevron
+is always there and his fold or open is kept, above.)
 
 **The parts**, under the header, each its own container (`.contain`), with a hairline (`Theme.line`, 1 pt, 2 above
 and below) between two parts that both show:
@@ -2149,7 +2193,13 @@ bank in the hold, Hiking's "Check the forecast" due, the toothbrush and the powe
 `trip-beforego-part-flags`, `-todo`, `-charge` top to bottom, no `trip-checks` or `trip-charge` card, the count "4";
 the reminder ticked → To do goes, "3"; both charged → "1", still open, no chevron; the power bank's battery switched
 off from its flag → no flags, "All set", folded (no To charge part), the card still there; `trip-beforego-fold` opens
-it, "1 of 1"; the toothbrush's charge taken back → "1", no chevron. Pictures `beforego-trip`, `beforego-allset`,
+it, "1 of 1"; the toothbrush's charge taken back → "1", the card still open (until 0.101: "no chevron").
+(0.101) UI `testBeforeYouGoFoldsToOneLineAndStaysSo` (the same launch): "4" left and the chevron
+`trip-beforego-fold` there; pressed → the three parts gone, "4" still on the line, the card under 72 pt tall; the
+trip closed and opened again → still folded; the chevron → the three parts back. Pictures `beforego-folded`,
+`beforego-open`. Seen red on 0.100: "with things left, Before you go has no chevron to fold it". Model
+`ListFoldsTests.testBeforeYouGoFoldsByTheRuleUntilHeChoosesAndThenByHisChoice`,
+`testBeforeYouGosFoldNeitherFoldsAHeadingNorIsUndoneByFoldAll`. Pictures `beforego-trip`, `beforego-allset`,
 `beforego-allset-open`, iPhone day and night; on GitHub's Mac (a probe running just this test,
 `testToChargeIsTickedApartFromPacking`, `testATripChecksTheCabinAndTheDatesBeforeYouGo`,
 `testABatteryInACheckedBagIsToldToGoInTheCabin`, `testATripsRemindersShowWhenTheyAreDue`,

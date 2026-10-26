@@ -1041,13 +1041,15 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    from his own pace (the middle time between ticks over his last packings, a pause over 10 minutes a break, 45 s a
    thing until 20 are measured); Before you go
    (0.77: one card, one count of what is left, red / orange / green All set — folded to one line, its arrow opens it;
+   0.101: its arrow folds it to one line whenever he likes, and this device remembers that per trip;
    its parts: the checks — cabin red/orange, a battery in a checked bag red (0.76), expiry six months ahead for
    passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks; To charge from the day before
    the trip, with "1 of 2", a charge tick apart from packing — and (0.87) "Charge tonight" on the iPhone at 20:00 the
    evening before, the names not charged yet, four then how many more, only while something is left, a tap opens
    the trip at To charge); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one, and last Clear every tick (asks first; 0.79 — Tick everything gone); the round button's Undo for 6 seconds above the add bar (0.79); Save as
-   Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Group by ("Sorting" until 0.101; "puts the lines under headings") When /
+   Excel and Share side by side; folding sections (remembered per trip; 0.101: the two-arrow button beside Group by
+   folds every section at once and, all folded, opens them all; on the Mac Option-click on a section's arrow too); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Group by ("Sorting" until 0.101; "puts the lines under headings") When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
    colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); (0.83) + Add a bag at its foot, as in Bags out, "nothing in it yet" and its ✕ for a bag added empty; Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
    under Group by shows every line again; typing a thing adds it
@@ -1114,7 +1116,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    said the app going to the background saved it, and that a glance at Control Center saved nothing); its Cancel line
    (0.98) "… nothing you changed there is kept, the pockets included." (until 0.98 "the pockets go back as they were
    too"). (19 lines.)
-8. **To do** (To-do mark): To do; (0.101, the second line) "The To do tab wears a small red badge: how many to-dos
+8. **To do** (To-do mark): To do (0.101: Priority at the top — "!" when adding, or held / right-clicked Mark as
+   priority; a ticked to-do goes into Done at the foot, folded until tapped, Undo under the list; To buy the same with
+   Bought); (0.101, the second line) "The To do tab wears a small red badge: how many to-dos
    and to-buys are still open, together — no badge when there are none. VoiceOver says the two counts; on the Mac,
    rest the pointer on the tab to see them (3 to do · 2 to buy)."; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
    "To buy · Packing", each once, dated, all day, ticks read back; ticks and removals here follow there, and a reminder deleted there can be sent again

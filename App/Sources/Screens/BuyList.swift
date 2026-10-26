@@ -6,6 +6,9 @@ import PackingLibrary
 /// is worth buying — a consumable, something marked "needs replacing", something
 /// past or near its replace-by date. An offer says WHY, and taking it up stops it
 /// being offered again.
+///
+/// What is bought goes into Bought (n) at the foot, folded until he opens it (0.101, his list of
+/// 26 Oct 2026, as To do's Done) — with Undo under the list after the tick.
 struct BuyList: View {
     @EnvironmentObject var model: LibraryModel
     @Binding var text: String
@@ -13,16 +16,22 @@ struct BuyList: View {
     @State private var needs = ""
     /// The line last removed with ✕, for Undo.
     @State private var removed: ActionItem?
+    /// The line last ticked as bought, for Undo (0.101); one bar at a time, as on To do.
+    @State private var ticked: ActionItem?
+    /// Bought (n) opened (0.101) — folded each time the page opens.
+    @State private var boughtOpen = false
 
     var body: some View {
-        let lines = model.library.buyList()
-        let open = lines.filter { !$0.done }.count
+        let parts = model.library.toDoParts(kind: "shopping")
+        let lines = parts.all
+        let open = parts.open
         let offers = model.library.buySuggestions(today: Today.local)
         VStack(spacing: 0) {
             KeyboardAwayScroll {
                 // No space between lines: each is as tall as its words (`Metrics.line`), as on
-                // To do (44 points top to top until 0.67).
-                LazyVStack(alignment: .leading, spacing: 0) {
+                // To do (44 points top to top until 0.67). A plain stack since 0.101, as on To do: a
+                // bought line moves into Bought, and the lazy stack drew it there unticked.
+                VStack(alignment: .leading, spacing: 0) {
                     Text(lines.isEmpty ? "Nothing to buy." : (open == 0 ? "All bought." : "\(open) to buy"))
                         .font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                         .padding(.top, 12).padding(.bottom, 4)
@@ -30,34 +39,15 @@ struct BuyList: View {
                     // To buy → Apple Reminders (his idea 9), to take to the shop.
                     if !lines.isEmpty { RemindersSend().environmentObject(model).padding(.bottom, 6) }
 
-                    ForEach(Array(lines.enumerated()), id: \.element.id) { n, line in
-                        HStack(spacing: 4) {
-                            Button { tick(line) } label: {
-                                HStack(spacing: 8) {
-                                    TickCircle(on: line.done, tint: AppSection.actions.color)
-                                    Text(line.text)
-                                        .font(.system(.body))
-                                        .foregroundStyle(line.done ? Theme.muted : Theme.ink)
-                                        .strikethrough(line.done, pattern: .solid, color: Theme.muted)
-                                        .accessibilityIdentifier("buy-\(n)-name")
-                                    Spacer(minLength: 8)
-                                }
-                                .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("buy-\(n)")
-                            .accessibilityAddTraits(line.done ? .isSelected : [])
-                            Button { remove(line) } label: {
-                                SVGPath.path("M6 6L18 18M18 6L6 18")
-                                    .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-                                    .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
-                                    .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain).focusEffectDisabled()
-                            .accessibilityIdentifier("buy-\(n)-remove")
-                            .accessibilityLabel("Remove \(line.text)")
+                    ForEach(Array(parts.others.enumerated()), id: \.element.id) { n, line in row(line, n: n) }
+                    // Bought (0.101): tucked away under the open lines, folded until he opens it.
+                    if !parts.done.isEmpty {
+                        FoldHeading(title: "Bought", count: parts.done.count, open: boughtOpen, id: "buy-done-fold") {
+                            withAnimation(.easeInOut(duration: 0.2)) { boughtOpen.toggle() }
                         }
-                        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                        if boughtOpen {
+                            ForEach(Array(parts.done.enumerated()), id: \.element.id) { n, line in row(line, n: open + n) }
+                        }
                     }
 
                     if !offers.isEmpty {
@@ -95,6 +85,10 @@ struct BuyList: View {
                     model.change { _ = $0.putBackLine(removed) }
                     self.removed = nil
                 }
+            } else if let ticked, let now = model.library.actions.first(where: { $0.id == ticked.id }), now.done {
+                LineUndoBar(text: ticked.text, says: "Bought", id: "buy-tick-undo") {
+                    tick(now)
+                }
             }
             HStack(spacing: 8) {
                 TextField("Add something to buy", text: $text)
@@ -114,12 +108,45 @@ struct BuyList: View {
         }
     }
 
+    /// One line: its tick and words, and its ✕.
+    private func row(_ line: ActionItem, n: Int) -> some View {
+                    HStack(spacing: 4) {
+                        Button { tick(line) } label: {
+                            HStack(spacing: 8) {
+                                TickCircle(on: line.done, tint: AppSection.actions.color)
+                                Text(line.text)
+                                    .font(.system(.body))
+                                    .foregroundStyle(line.done ? Theme.muted : Theme.ink)
+                                    .strikethrough(line.done, pattern: .solid, color: Theme.muted)
+                                    .accessibilityIdentifier("buy-\(n)-name")
+                                Spacer(minLength: 8)
+                            }
+                            .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("buy-\(n)")
+                        .accessibilityAddTraits(line.done ? .isSelected : [])
+                        Button { remove(line) } label: {
+                            SVGPath.path("M6 6L18 18M18 6L6 18")
+                                .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+                                .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
+                                .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("buy-\(n)-remove")
+                        .accessibilityLabel("Remove \(line.text)")
+                    }
+                    .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+    }
+
     /// Ticked or unticked here, its reminder follows: unticked here after the shop
     /// ticked it, the next read back ticked it again (the spec pass, 5 Oct 2026).
     private func tick(_ line: ActionItem) {
         let rid = model.library.reminderOf(actionId: line.id)
-        model.change { _ = $0.setActionDone(!line.done, id: line.id) }
+        withAnimation(.easeInOut(duration: 0.2)) { model.change { _ = $0.setActionDone(!line.done, id: line.id) } }
         if let rid { Task { await ShopReminders.shared.setDone(rid, !line.done) } }
+        // Bought: into Bought, with Undo under the list (0.101). A tick taken back says nothing.
+        if !line.done { ticked = line; removed = nil } else if ticked?.id == line.id { ticked = nil }
     }
 
     /// Gone from here = gone from Reminders too (its reminder stayed behind until
@@ -128,6 +155,7 @@ struct BuyList: View {
         var gone: (line: ActionItem, reminderId: String?)?
         model.change { gone = $0.removeLine(id: line.id) }
         removed = gone?.line
+        ticked = nil
         if let rid = gone?.reminderId { Task { await ShopReminders.shared.remove(rid) } }
     }
 
