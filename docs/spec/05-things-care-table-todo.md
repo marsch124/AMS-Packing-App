@@ -2844,7 +2844,7 @@ tick is permanent (it does not reset per trip). The tab has two sides on one scr
 BUY (0.3, 23 Sep 2026). "Actions" became "To do" by his choice (test G.4, 30 Sep 2026, 0.43); the identifiers
 stay `actions`.
 
-**How it is reached and left.** The tab bar (`tab-actions`, label "To do"); the Trips screen's chip "`N` to do"
+**How it is reached and left.** The tab bar (`tab-actions`, label "To do"; since 0.101 it wears a red badge — the open to-dos and to-buys together, the two counts in its VoiceOver value and the Mac's tooltip — spec 02 §1); the Trips screen's chip "`N` to do"
 (`events-todos`, label "`N` to do, open the To do tab") when there are open to-dos. Choosing a to-do in the
 global search does NOT bring him here: it only closes the search (no caller passes `SearchScreen.go`; see Open
 questions). Left by another tab. The side shown ("To do" or "To buy")

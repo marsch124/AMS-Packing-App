@@ -1169,16 +1169,19 @@ list."; (0, g) "Saved: g no longer on the list."; (a, g) "Saved: a new, g no lon
 Start again: "New trip from “<old name>”: N things, nothing ticked. Its dates are under the pen."
 It stays until the sheet is closed.
 
-**Sorting row** (0.64; padding 16 sideways) — since 0.74 in the SCROLL AREA, directly above the first heading of
+**Group by row** — "Sorting" until 0.101 (his words, 26 Oct 2026: "please change the word 'Sorting' into
+'Grouping', I believe that is more correct"; each choice puts the lines under headings, so it is Apple's own
+name for that, **Group by**, as in the Finder and Files; every id stays `trip-view…`, and the code and the older
+history below still say "sorting" for the choice). (0.64; padding 16 sideways) — since 0.74 in the SCROLL AREA, directly above the first heading of
 the list (item 5 below; his ask of 12 Oct 2026: the choices sat far above the list, "disconnected from it", under
-the loop strip with the cards between them and the lines); top padding 10. "Sorting" on the left and, on the SAME
+the loop strip with the cards between them and the lines); top padding 10. "Group by" on the left and, on the SAME
 line to its right, ONE drop-down (`DropDown`, spec 06 §21, with `heading: .beside`) holding the six sortings —
 **When**, **Into**, **From where**, **Category**, **Section**, **Template** (0.74). Five pills did not fit an
 iPhone's line, and he asked for drop-downs everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the
 left, the choice beside it) are kept.
-- "Sorting": Subheadline semibold, muted, one line, never squeezed (`fixedSize`); id `trip-view-label`.
+- "Group by" ("Sorting" until 0.101): Subheadline semibold, muted, one line, never squeezed (`fixedSize`); id `trip-view-label`.
 - The field, 10 to its right, takes the rest of the line: the chosen sorting's words in Body ink and a drawn ▾
-  (`Metrics.tap` tall, card fill, radius 10, a hairline border); id `trip-view`; accessibility label "Sorting",
+  (`Metrics.tap` tall, card fill, radius 10, a hairline border); id `trip-view`; accessibility label "Group by" ("Sorting" until 0.101),
   value = the chosen sorting's words (what tests read). A stored value that is none of the six (it cannot be,
   but a device keeps it) shows and ticks When, which is what `groupBy` does with it.
 - A tap opens the list as a popover beside the field (on the iPhone too; the system puts it above or below,
@@ -1203,7 +1206,7 @@ left, the choice beside it) are kept.
 2. **Weather card** (always) — own section below.
 3. **Bags card** (only when some bag has lines; FOLDED to one line by default since 0.74) — own section below.
 4. **On site door** (only once On site has begun) — see "On site".
-4a. **The Sorting row** (above), then — opened on a place — the place's chip, the debug door-check list (tests
+4a. **The Group by row** (above; "Sorting" until 0.101), then — opened on a place — the place's chip, the debug door-check list (tests
    only), and "Only what is still unticked" with Show all (a tapped door check). Until 0.74 all of these sat above
    the scroll area, under the loop strip.
 5. **The groups** (a lazy stack with **no spacing** — 4 until 0.67), one per non-empty group of
@@ -1527,7 +1530,9 @@ no taller than a line and at least 28 wide; picture `tight-trip`; seen red on 0.
 points, top to top; at most 30.0"), `testATickCountsAndStays`, `testEveryRowShowsTheTickTheTripHolds` (every sorting — Section too since 0.64,
 each chosen from the drop-down — every row shows its tick), `testASectionFoldsAndStaysFolded`,
 `testAPlaceIsSetFromTheTrip` (From where chosen from the drop-down), `testTheTripSaysSortingBesideItsDropDown`
-(0.64; until then `testTheTripSaysSortingBesideItsThreeButtons`: "Sorting" left of the field `trip-view` on the
+(0.64; until then `testTheTripSaysSortingBesideItsThreeButtons`; since 0.101 it reads "Group by" — on the base 0.100 red
+`XCTAssertEqual failed: ("Sorting") is not equal to ("Group by")` — and the field's label "Group by", picture
+`look101-groupby`: "Sorting" (now "Group by") left of the field `trip-view` on the
 same line, neither off the screen; no row out before it is opened; the list reads When/Into/From where/Category/
 Section/Template (0.74) with no seventh, When ticked, every row on the screen; Into re-sorts, From where headings are the sample's
 places), `testATripSortedBySectionReadsUnderItsSections` (0.64, `-uiTestingSections`: 0/9; Section chosen; the
@@ -1586,7 +1591,7 @@ placeholder for a vanished trip; a stored sorting that is none of the five.
 
 ### iPhone vs Mac
 Same view. Mac minimum 520 × 640. The Sorting row is one line on both (since 0.64 there are no fall-backs:
-the field takes what the word leaves). The Sorting list is a popover on both.
+the field takes what the word leaves). The Group by list is a popover on both.
 
 ### Traps and history
 - 🪤 The cards (checks, weather, bags) sit OUTSIDE the lazy stack: a lazy row is thrown away and rebuilt
@@ -2425,7 +2430,7 @@ tests, like `ams.view`). Until 0.74 the card was always open.
   "0.81" item 7), its ids under `bags-addbag` instead of `day-addbag` (`bags-addbag-panel`, `-pick-<k>`, `-name`,
   `-cabin`, `-max`, `-add`, `-cancel`, `-needs`). Added, the bag is on the card and in Bags out, Weigh, Tags and Photos.
   Above it, while a bag added has nothing in it, Bags out's hint (Footnote muted, id `bags-addbag-hint`): "To fill <the
-  first such bag>, pick it as Usually packed in on its things' pages — sorted by Into, the list shows what is in each
+  first such bag>, pick it as Usually packed in on its things' pages — grouped by Into (sorted by Into until 0.101), the list shows what is in each
   bag."
 - **The bag's pen** (0.90 — his words, 19 Oct 2026: "Add the possibility to Edit bag when packing"): at the right end
   of each bag's row, after its ✕ when it has one — the trip's own round pen (`EditBagPen`: `RoundIconLabel` in the
@@ -2602,10 +2607,25 @@ spec 02). The unchosen candidates and the sample sheet are not in the app.
 
 ### The strip (`LoopDoor`)
 A button (ids: `trip-loop` on a trip, `review-loop` on the review — always Review — and `refine-loop`
-on Refine — always Refine; label "The loop", value = the step's name) showing the five names with
-small drawn chevrons between them. The current step: white heavy words on a capsule in its tint, with
-the step's own mark (`StepMark`, 13 pt; until 0.77 the tab's mark); the others: semibold words in the readable tint on a `Theme.card` capsule with a 70 %
-tint outline (min height 28). It slims down until it fits (`ViewThatFits`): every mark, 14 pt, padding
+on Refine — always Refine; value = the step's name; label, since 0.101, what its colours show: "The loop. Done:
+Plan. You are here: Pack. Ahead: On site, Review, Refine." — a part with no step left out, so at Plan "The loop. You
+are here: Plan. Ahead: …", at Refine "The loop. Done: Plan, Pack, On site, Review. You are here: Refine."; until 0.101
+just "The loop") showing the five names with small drawn chevrons between them, each step's own mark
+(`StepMark`, 13 pt; until 0.77 the tab's mark), semibold words, min height 28, each step in its own tint (Plan and
+Refine violet, Pack, On site and Review green).
+
+**0.101 — the Stations' looks** (his words, 26 Oct 2026: "The upper 'pack pill' should have the same colour
+shading as the lower Station: Pack as they are ongoing. The full colour means Done."). ONE rule for the strip and
+the Stations row (spec 07 part 17, `StationChip`), in the model: `Library.LoopStep.stage(at: here)` → `LoopStage`
+`.done` for a step before the one the trip is at, `.here` for that step, `.ahead` after it:
+- **done**: white words (and mark) on a capsule filled with the tint, no outline — the Stations' done chip;
+- **here** (the step being worked on): the words in the readable tint on `Theme.card` under the tint at 14 %, a
+  2-pt tint ring — the Stations' "next to do"; it keeps its mark in every fit;
+- **ahead**: the words in the readable tint on `Theme.card`, a 1.2-pt outline of the tint at 70 %.
+So a trip at Pack: Plan full violet, Pack light green with the ring, On site, Review and Refine outlined; the
+review (at Review): Plan, Pack, On site full; Refine (at Refine): the four before it full. Until 0.101 the step it
+was at was the full one (white heavy words on its tint) and every other step — those before it too — looked
+ahead. It slims down until it fits (`ViewThatFits`): every mark, 14 pt, padding
 8, chevron room 14; then only the current step's mark, 14 pt, padding 7, 10; then 13 pt, padding 5, 8.
 A tap opens **LoopScreen** (sheet: "The loop" 22 heavy, Done filled green id `loop-done`, the picture
 and the words; id `loop-screen`; Mac minimum 520 × 640).
@@ -2653,6 +2673,17 @@ with a route to an X") - the guide's picture: step 1 does not wear the mark he p
 open, at On site with its door once 08:00 has passed, within 60 s; about 40 s. Red with the step read by the
 day alone: "XCTAssertEqual failed: ("On site") is not equal to ("Pack") - at 07:59, leaving at 08:00, the trip
 is at 'On site'"; with the wake taken out: "08:00 passed and the open trip is at 'Pack'").
+(0.101) Model `LoopTests.testTheStripSaysDoneHereAndAheadAsTheStationsDo` — at Pack done/here/ahead×3, at Plan
+nothing done, at Review Refine still ahead, at Refine the four before it done, one step here wherever the trip
+stands; red with only "here" told apart (the strip before 0.101) planted in `stage(at:)`: "XCTAssertEqual failed:
+("[ahead, here, ahead, ahead, ahead]") is not equal to ("[done, here, ahead, ahead, ahead]") - a trip at Pack: Plan
+is done, Pack is the one being worked on, the rest ahead". UI `testTheLoopStripSaysDoneAndHereAsTheStationsDo`
+(`-uiTestingPackingDay`: the strip's label at Pack; Bags out done in the Stations sheet, so the Stations' Pack is
+the next to do under the strip's Pack — picture `look101-loop-pack`; then `-uiTestingOnSite`: "Done: Plan, Pack.
+You are here: On site. …", picture `look101-loop-onsite`); red on the base 0.100: "XCTAssertEqual failed: ("The
+loop") is not equal to ("The loop. Done: Plan. You are here: Pack. Ahead: On site, Review, Refine.") - the strip
+does not show Plan done and Pack being worked on". Green on the iPhone (iPhone 17 Pro, iOS 26.5) by day and night
+and on GitHub's Mac (the probe, day and night).
 
 ---
 

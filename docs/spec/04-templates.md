@@ -624,6 +624,15 @@ in among them (Red, Plum, Violet, Indigo, Navy, Olive, Sand, Brown, Grey: round 
 `TemplateColour.pickerRows` = 2 and `pickerColumns` = (palette + 1) / 2 rounded up = 8: the picker's rows come from
 the model, and the model's test holds the palette to a size that fills both.
 
+**0.101: seventeen colours, two rows of nine.** His words (26 Oct 2026): **"Add Template Icons Colours: Light blue and
+Light yellow."** Two pale ones — `lightblue` "Light blue" `#8cc8ff` after Navy, `lightyellow` "Light yellow" `#ffef8a`
+before Sand — so Automatic and the palette are 18 = two rows of nine (`pickerColumns` 9). Their contrast, checked as he
+asked, day AND night (a cover's fill is the same shade by night, so its icon is too): white on the light blue is 1.8 : 1,
+on the light yellow 1.2 : 1 — unreadable both — so their icon is drawn in **the app's own ink**, `Library.pillDarkInk`
+`#16232a` (`Theme.ink` by day): 9.0 : 1 on the light blue, 13.7 : 1 on the light yellow. Light blue's hue is 209°, clear
+of the teal/cyan band (160°–200°); its nearest colour is Grey at ΔE 35.7, Light yellow's Sand at 31.7. As marks
+(`readableHex`) both read at 4.5 : 1 on the light and the dark card. The fifteen keep their keys, fills and order.
+
 **Storage.** The template's own **`color`** field (§10) — not a new `extra` key and not a new shared-row kind (a new
 kind is blanked by PackingCore, spec 02 🪤). `color` is a field of the web app's model, so it already travels with
 every template: the store's `templates` record and iCloud, the backup file and Restore, a shared link (the web app's
@@ -631,7 +640,7 @@ key `c`, ≤ 9 characters — a template "Add as a new template" from a link arr
 keeps HIS colour, because `replaceTemplate` keeps his template whole, §19) and the web app, whose cover reads the same
 field. The parity check is untouched (no model.js change). Blank = **Automatic**. Stored lower-case.
 
-**The palette** (`TemplateColour.palette`, 15 since 0.91 (11 in 0.90), in the picker's order; key → word, fill, ink):
+**The palette** (`TemplateColour.palette`, 17 since 0.101 (15 in 0.91, 11 in 0.90), in the picker's order; key → word, fill, ink):
 
 | Key | Word | Fill | Ink (the icon on it) | Why |
 |---|---|---|---|---|
@@ -646,7 +655,9 @@ field. The parity check is untouched (no model.js change). Blank = **Automatic**
 | `violet` | Violet | `#7c5cd6` | white | the Templates violet |
 | `indigo` | Indigo | `#4f46e5` | white | the cover pick that replaced teal |
 | `navy` | Navy | `#2a5194` | white | 0.91 — a dark blue, far darker than Blue (2.2 : 1 on the dark card, its icon 7.8 : 1) |
+| `lightblue` | Light blue | `#8cc8ff` | `#16232a` (the app's ink) | 0.101 — his ask; white would be 1.8 : 1, the ink is 9.0 : 1 |
 | `olive` | Olive | `#6e7b1f` | white | 0.91 — the yellow-green no colour had |
+| `lightyellow` | Light yellow | `#ffef8a` | `#16232a` (the app's ink) | 0.101 — his ask; white would be 1.2 : 1, the ink is 13.7 : 1 |
 | `sand` | Sand | `#d9b98c` | `#3d2a10` | 0.91 — a pale warm one (dark words, as on Yellow) |
 | `brown` | Brown | `#8b5e3c` | white | a calm earth tone |
 | `slate` | Grey | `#64748b` | white | the Settings slate |
@@ -810,6 +821,12 @@ sheet → `IconPickerScreen(templateId:)` ("the page keeps the one sheet it has"
   (hue 184)`, `("Optional("#0a7aff")") is not equal to ("Optional("#0a84ff")") - blue changed or went: a stored colour
   would ring nothing`.
 - UI (0.91): `testTheColoursSitInTwoRowsAndANewOneApplies` — see §4.
+- Model (0.101, `TemplateColourTests`): `testLightBlueAndLightYellowJoinWithTheAppsInkOnThem` (both there with their
+  words; white under 3 : 1 on each; their ink `pillDarkInk`, 7 : 1 or better; a cover takes it; Light blue right after
+  Navy, Light yellow right before Sand; two full rows) and `testMoreColoursStillFillTwoRowsAndTheOldOnesStayAsTheyWere`
+  now 17 and 9 — red on the base 0.100's palette: `failed - no Light blue in the palette`, `("15") is not equal to
+  ("17") - Automatic and seventeen (0.101; fifteen in 0.91): two rows of nine`, `("8") is not equal to ("9")`.
+- UI (0.101): `testLightBlueAndLightYellowAreTemplateColours` — see §4.
 
 ---
 
@@ -825,11 +842,16 @@ pick — an icon or (0.90) a colour; each pick saves and closes — or a swipe d
   "Cancel" (outlined `HeaderButtonStyle`, muted tint).
 - Scroll (side 16, bottom 24), spacing 10:
   - (0.90) **"Colour"** (`SectionTitle`, id `template-colour-title`), then `TemplateColourSwatches`: **Automatic** and
-    the palette's 15 (§3a) in exactly **two** plain rows of **`TemplateColour.pickerColumns` = 8** (16 swatches = two
-    full rows; a short row would be filled with empty cells, min 60 high) — his "keep them on two lines" (0.91; until
-    then the eleven in two rows of 6, 6 apart, covers 34, min height 64). The swatches stand **edge to edge** (row
-    spacing 0), rows 6 apart, so each swatch's whole share of the row takes the tap: 370 / 8 = 46 points on a 402-point
-    iPhone (iPhone 17 Pro) — Apple's 44 or more; on the Mac (sheet ≥ 520) about 61. Each swatch: the template's OWN cover
+    the palette's 17 (§3a; 15 until 0.101) in exactly **two** plain rows of **`TemplateColour.pickerColumns` = 9** (18
+    swatches = two full rows; eight to a row until 0.101; a short row would be filled with empty cells, min 60 high) —
+    his "keep them on two lines" (0.91; until then the eleven in two rows of 6, 6 apart, covers 34, min height 64). The
+    swatches stand **edge to edge** (row spacing 0), rows 6 apart, so each swatch's whole share of the row takes the
+    tap. (0.101) On the iPhone the rows reach out over the page's 16-point margins to the screen's edges
+    (`padding(.horizontal, -16)`): 402 / 9 = 44.7 points on a 402-point iPhone (iPhone 17 Pro) — Apple's 44 or more
+    (inside the margins nine would be 41; eight were 370 / 8 = 46); on the Mac (sheet ≥ 520) no reach, about 54.
+    (0.101) The rows' swatches stand from the TOP of their share, so the covers of a row are on one line whatever the
+    words under them; a two-word name ("Light blue", "Light yellow") stands on two lines, one word each; a one-word name
+    stays on one line and shrinks rather than breaks (the first 0.101 build broke "Auto-matic" and "Lav-ender"). Each swatch: the template's OWN cover
     drawn in that colour at **32** (its icon or letter in that colour's ink — a preview of the Templates tab) with 3 pt
     of air, and under it the colour's word (Caption 2, 1 line, shrinks to 70 %, 1 pt of air each side; muted, or bold
     ink when in force — "Automatic" and "Lavender" shrink a little at eight to a row); min height 60, full width share.
@@ -907,7 +929,18 @@ where they stand (a swatch more than 8 points lower starts a new row) they are e
 none runs off the window; on the iPhone each is 44 points wide or more; `template-colour-navy` closes the picker and the
 Hiking card says `#2a5194`; reopened, Navy is ringed (pictures `tmpl91-colours-picker`, `tmpl91-colours-navy`, day and
 night). Seen RED with the rows planted back to six: `XCTAssertEqual failed: ("[6, 6, 4]") is not equal to ("[8, 8]") -
-the colours are not on two lines of eight`.
+the colours are not on two lines of eight`. (0.101) 18 buttons in two rows of 9 — red on the base 0.100: "not Automatic
+and seventeen colours (0.101): 16"; and `testATemplatesColourIsChosenAndAutomaticGivesItsOwnBack` counts 18 — red on the
+base: `("16") is not equal to ("18")`.
+
+UI `testLightBlueAndLightYellowAreTemplateColours` (0.101): Hiking's picker has `template-colour-lightblue` and
+`template-colour-lightyellow`, labelled "Light blue" and "Light yellow", Light blue on Navy's row after it and Light
+yellow on Sand's row before it (by their tops); Light yellow closes the picker and the Hiking card says `#ffef8a`
+(pictures `look101-colours-picker`, `look101-colours-lightyellow`, day and night: the icon dark on both pale ones). Red
+on the base 0.100: "XCTAssertTrue failed - no Light blue on the picker". The first green run caught the picker's own
+fault: with nine to a row "Automatic" and "Lavender" broke over two lines and Automatic's taller share no longer led the
+first row ("Automatic does not lead") — one-word names now stay whole. Green on the iPhone 17 Pro (iOS 26.5) day and
+night and on GitHub's Mac (probe, day and night).
 
 UI `testTheIconSearchFindsAnIconByItsOtherNames` (0.91): Hiking's picker has the field `iconsearch` and 91 tiles (132
 since 0.92);
@@ -2342,7 +2375,7 @@ down — nothing changed here is kept. Container `lists-detail`. Mac: min 520 ×
   `choices-hint-<kind>`), the entries, and an add row.
   | kind | heading | hint (exact) |
   |---|---|---|
-  | `places` | Storage places | "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place under Kept at home; a trip sorted by From where then lists what to fetch room by room." |
+  | `places` | Storage places | "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place under Kept at home; a trip grouped by From where ("sorted" until 0.101) then lists what to fetch room by room." |
   | `owners` | Owners | "Whose a thing is — you, your partner, a child. You pick it under Whose it is on a thing, so on a shared trip everyone sees which things are theirs." |
   | `people` | Packers | "Who packs a thing. You set it in the All your things table (Packed by), so you can see who is in charge of what." |
   | `conditions` | Item conditions | "How worn a thing is: New, Good, Worn, Needs replacing. You set it under Condition on a thing; a thing that needs replacing is suggested on To buy." |

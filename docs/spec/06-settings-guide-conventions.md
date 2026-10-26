@@ -139,7 +139,7 @@ did), and every Add, Remove, Rename and move was written at once through `Librar
       **"Storage places"**, **"Owners"**, **"Packers"**, **"Item conditions"**, **""When" steps"**.
     - The hint (15 medium, `Theme.ink` at 85 % opacity, wraps, id `choices-hint-<kind>`):
       - places: "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place
-        under Kept at home; a trip sorted by From where then lists what to fetch room by room. The square beside a
+        under Kept at home; a trip grouped by From where ("sorted" until 0.101) then lists what to fetch room by room. The square beside a
         place is its code: print its label, and the iPhone's Camera opens the app on that place." (the last
         sentence 0.69)
     - (places only, 0.69) right under the hint: **Labels for P-touch, all places** (`WideButtonLabel`, slate, the
@@ -707,7 +707,27 @@ until then).
   quit Packing and open it again.") and `sync-waited`; "Not in iCloud yet" orange until it has waited too long; a
   receive with no end is never "failed" again. The card also opens from Home — the sync dot at the foot of "This
   Device", its bubble, Details — as Sync details (spec 02 §12b). What follows is the card before 0.92.
-- Header: **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
+- (0.101) **No pill.** His words (26 Oct 2026) on Sync details' "In sync": "should not look as a pill. Please design
+  it." The header's right end is Home's own sync dot — `SyncLight.dot` (8 pt), filled `SyncLight.color` (green In sync,
+  orange Sending…/Receiving…, red Stuck, muted iCloud off / Can’t tell) — its own element `sync-state-dot` (image,
+  label "iCloud sync"; in DEBUG builds its value is the colour's name, "green", the tests' only way to see it) — and
+  6 pt after it the words `state.word` (id `sync-state`, unchanged) in Subheadline semibold, in that colour made
+  readable as words on the card (`SyncLight.words`: `readableHex` of the section colour, darker by day, lighter by
+  night; muted for grey); no capsule, no fill; the row on the first text baseline with "iCloud sync". Until 0.101: the
+  words 13 heavy white on a capsule of the colour.
+- (0.101) **A device checks in by itself.** His Mac's card, 26 Oct 2026: "This Mac checked in 10 Oct 19:11" over "Sent:
+  today 11:52 · received: today 11:51". Nothing was lost or overwritten (every way a check-in is written or settled was
+  read: one meta record per device, written only on a change of its own value, twins settled newest-first): until
+  0.101 a check-in was written ONLY by Sync now, and Sync now had last been pressed on the Mac on 10 Oct, while the
+  iPhone's line moved because it had been pressed there. Now, with iCloud on (`SyncWatch.on`), the library read
+  (`state == .ready`) and never from a page's copy, `SyncWatch.checkInIfDue` writes this device's check-in through
+  `Library.checkInIfDue(device:now:)` once `checkInDue` — never checked in, its last check-in `Library.checkInEvery`
+  (15 minutes) old or older, or more than a minute in the future (a clock that ran ahead). Asked by `RootView` as the
+  app opens and every 60 s while it runs (a `.task` loop), and when it comes back to the front. So "This <device>
+  checked in" and the other device's "The <device> last checked in" say when each device was last there, at most a
+  quarter of an hour behind; Sync now still checks in at once. With iCloud off (and under the UI tests' own library)
+  only Sync now checks in — there is no other device to tell.
+- Header (before 0.101's dot): **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
   (muted fill) when this build keeps its library on the device only (`model.usesICloud == false`, always so under
   tests); **"Can’t tell"** (muted, 0.62) when iCloud is on but the store file could not be read — then no
   Sent/Not-in-iCloud/problem lines show, only `sync-unknown` "This device cannot tell right now how the sync is
@@ -730,7 +750,17 @@ until then).
 - Tests: UI `testSyncNowChecksInFromThisDevice`, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` (0.62),
   `testTheSyncLightOnHomeSaysHowICloudIsGoing` (0.92); model
   `SyncCheckInTests.testACheckInTravelsWithTheLibraryAndKeepsTheDevicesApart`, `SyncCheckTests` (0.62: the reading,
-  the pill, the order, the plain words, `<when>`).
+  the pill, the order, the plain words, `<when>`). (0.101) UI `testTheSyncCardSaysItsStateWithHomesDotNotAPill`
+  (`-syncLight insync|sending|hung`: the words In sync / Sending… / Stuck, the dot green / orange / red, 8 pt, before
+  the words and on their line; pictures `look101-sync-<state>`) — red on the base 0.100: "XCTAssertTrue failed - no dot
+  before the sync card's 'In sync' — still a pill?"; UI `testThisDeviceChecksInByItselfWithICloudOn` (`-syncLight
+  insync`: `sync-self` says "checked in today" with no press, no `sync-said`; picture `look101-sync-checkin`) — red on
+  the base: "XCTAssertTrue failed - with iCloud on, this device did not check in by itself: 'This iPhone has not
+  checked in yet.'"; model `SyncCheckInTests.testADeviceThatSyncsChecksInByItselfEveryQuarterOfAnHour` (his case: the
+  Mac's 10 Oct check-in moves on the 26th, the iPhone's untouched; not again within 15 minutes, due at 15:00; never
+  checked in = due; a check-in from the future = due, half a minute ahead = not; it travels through the records) —
+  red with the base's "never by itself" planted: "XCTAssertTrue failed - a Mac that last checked in on 10 Oct did not
+  check in by itself". All green on the iPhone (iPhone 17 Pro, iOS 26.5) by day and night and on GitHub's Mac (probe).
 
 ---
 
@@ -955,7 +985,7 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
         it. Green when every tick is on." Since 0.86 (spec 07 part 17 "0.86") then: "A bag packed inside another bag on
         this trip — a toiletry bag in the suitcase — never goes through the airport on its own, so it has no card here,
         nor an AirTag tick: one quiet line under the cards names it (“No tags inside another bag: …”). Which bag it is in
-        is what the trip's list says (sorted by Into); take it out — its Usually packed in set to No bag — and its card
+        is what the trip's list says (grouped by Into — "sorted" until 0.101); take it out — its Usually packed in set to No bag — and its card
         is back."
      5. **Photos** — "One photo of all your bags side by side, and each bag's own photo (the same ones as in Bags) —
         for the airline desk if a bag goes missing. With one bag, its own photo is enough. The photo of all of them
@@ -1017,20 +1047,20 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    evening before, the names not charged yet, four then how many more, only while something is left, a tap opens
    the trip at To charge); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one, and last Clear every tick (asks first; 0.79 — Tick everything gone); the round button's Undo for 6 seconds above the add bar (0.79); Save as
-   Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
+   Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Group by ("Sorting" until 0.101; "puts the lines under headings") When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
    colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); (0.83) + Add a bag at its foot, as in Bags out, "nothing in it yet" and its ✕ for a bag added empty; Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
-   under Sorting shows every line again; typing a thing adds it
+   under Group by shows every line again; typing a thing adds it
    to this trip only, Bought on site adds it ticked; Delete trip at the very end asks first (things and
    templates stay); a trip someone sent arrives Quick, and sharing sends just the list (0.62); (0.77) Take a break —
    since 0.84 "the round cup" — at the end of the count's line while packing — how far you have come (41 of 63, your
-   Sorting's groups ✓ or N left, To charge, To do), Continue when? In an hour / This evening 19:00 / Tomorrow 18:00 or
+   list's groups under Group by ✓ or N left, To charge, To do), Continue when? In an hour / This evening 19:00 / Tomorrow 18:00 or
    your time / Just pause, the iPhone's "🎒 Back to packing" (the backpack since 0.84) and since 0.84 "the cup shows
    when, small beside it (19:00; on another day, Fri 18:00)" (the button's "Back at 19:00" until then), Add to
    Calendar "— filled once a time is chosen —" (0.84) (nothing added until you say), one break per trip, gone when
    the last thing is ticked, from the Mac your iPhone reminds you. (25 lines.)
 2. **Pack by voice (iPhone, a test)** (Trips mark, 0.71 — spec 07 part 10): the button at the end of a trip's
-   Sorting row walks what is still to pack, place by place as From where sorts them — the place, then the thing
+   Group by row (Sorting until 0.101) walks what is still to pack, place by place as From where groups them — the place, then the thing
    ("Garage. Goggles.") — and listens for five words; Packed ticks, Skip sets aside (as ⊘), Later moves on
    unticked, Where says the place again, Stop ends; other ways of saying them (packed it, next, not this time,
    that's all); the count at each new place and after every five things ("Garage done, 12 of 40"); English,
@@ -1048,7 +1078,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    top of a trip, there once the trip has started — On site, or after it (a trip with no dates has it all along)";
    then tap unused, type missed, pick its template, Add, Save); the loop strip
    under a trip's name (Plan · Pack · On site · Review · Refine) with the step's own mark — a map, a suitcase with
-   a tick, a pin on a map, a magnifier, a sprout (0.77; the tab's mark until then); nothing is removed — "Didn't
+   a tick, a pin on a map, a magnifier, a sprout (0.77; the tab's mark until then) — and (0.101) "As in the Stations
+   row: a step done is in full colour, the one you are on is lightly shaded with a stronger ring, the steps ahead are
+   outlined." (until 0.101 "the step it is at filled in"); nothing is removed — "Didn't
    use" adds to history, missed things go onto a template. (4 lines.)
 5. **Trips** (Trips mark): Now, Coming up and Done — Now always there; Planned / Packing / Ready; reviewed trips fold
    away; Your year; All your trips with the map; the pin opens Where you have been (pins with counts, line oldest
@@ -1057,7 +1089,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    his — the Activity areas pill, at the foot of the tab after the last area (0.91; under the Refine card until then): + Add (a name only), pen, grip ≡ (Mac arrows), Remove (asks; one holding templates
    stays and says which; Workout, Exercise & Training always stays), nothing until Save, both devices the same (0.89); each has
    an icon (the one its name suggests — a beach template gets the lounger under its parasol — or one of 132 drawn ones under six headings, or Letter; 50 until 0.74, 91 until 0.92, whose 41 close each heading so the ones he knows keep their places; 0.91: Find an icon finds one by its name or other words for it in English, Swedish or German — flyg, cykel, Fahrrad — the ✕ shows all, ⌘F on the Mac); + New asks the activity area; rename, ✕ takes a thing off (asks; the thing
-   stays), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
+   stays), (0.90) a colour of his — Automatic or "one of seventeen, in two rows" (fifteen until 0.101, when "then Red, Plum,
+   Violet, Indigo, Navy, Light blue, Olive, Light yellow, Sand, Brown and Grey — on the pale ones the icon is drawn dark, so
+   it reads" came in), How many and Section per template, a blank How many or Note = "the same as the thing" (0.62); Find a thing on this template ("3 of 40", ✕, adding clears it);
    Choose from your things (in the order ticked) or type a new one (one already there is not added twice — 0.62);
    folding in the picker (Fold all / Unfold all, counts, search opens
    all); Group: sections, When, Into, From where, Kind, A–Z; Activity area is a drop-down above Delete template — Always packed, his areas, No activity area, a new area at
@@ -1080,9 +1114,11 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    said the app going to the background saved it, and that a glance at Control Center saved nothing); its Cancel line
    (0.98) "… nothing you changed there is kept, the pockets included." (until 0.98 "the pockets go back as they were
    too"). (19 lines.)
-8. **To do** (To-do mark): To do; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
+8. **To do** (To-do mark): To do; (0.101, the second line) "The To do tab wears a small red badge: how many to-dos
+   and to-buys are still open, together — no badge when there are none. VoiceOver says the two counts; on the Mac,
+   rest the pointer on the tab to see them (3 to do · 2 to buy)."; To buy with worn-out or run-down suggestions, Undo after a removal (0.62); Send to Reminders into the list
    "To buy · Packing", each once, dated, all day, ticks read back; ticks and removals here follow there, and a reminder deleted there can be sent again
-   (0.62). (3 lines.)
+   (0.62). (4 lines since 0.101.)
 9. **Settings** (Settings mark): Remind me to pack (9 in the morning, per device, next reminder shown; says in red when the iPhone does not allow
    notifications, switch on or off, and where to allow them — 0.62); (0.77) Messages when a trip moves on (iPhone, on
    until switched off: Have a good trip when it sets off, else at 8; Welcome home at 10 the morning after, tap → the
@@ -1091,7 +1127,10 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    off, per device: a thing's name in Spotlight shows where it is — packed in which bag and pocket on a trip under way,
    else where it usually goes and is kept at home — with its photo; a tap opens its page; found by kind, owner,
    templates and brand, never its notes; nothing while the iPhone is locked; off takes them out at once); iCloud sync
-   (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62); Save a backup / restore (a copy is kept
+   (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62; since 0.101 first
+   "at its top right the same dot as on Home, and its words in that colour — green In sync, orange while changes are on
+   their way, red Stuck", and "With iCloud on, each device checks in by itself every quarter of an hour while it is
+   open, so the card says when each was last there; Sync now checks in from here at once"); Save a backup / restore (a copy is kept
    first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, the grip drags (0.70), owners stay A–Z,
    no duplicates, the reason for a refused remove right under it, Owners from his things when he has no list — 0.62);
    (0.69) each storage place's square code and its label for the P-touch, 12 mm tape (iPhone: Share → Save Image, and
@@ -1258,7 +1297,7 @@ The steps (title — summary of its text):
    Only on some trips.
 4. **Create the trip** — Home → Create new trip: name, Dates, templates, Transport, Season, Food, Laundry and its
    nights; then the pen: type the Place — the map pin and the weather follow.
-5. **Pack** — Sorting: When, From where, Into; ⊘ is not this time; watch the bag bars and Before you go;
+5. **Pack** — Group by (Sorting until 0.101): When, From where, Into; ⊘ is not this time; watch the bag bars and Before you go;
    Settings → Remind me to pack.
 6. **Go, use, review** — the On site page while away; grab lists for outings; back home: Review; Refine learns from it.
 

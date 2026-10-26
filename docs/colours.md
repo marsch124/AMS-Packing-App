@@ -109,6 +109,12 @@ colour is at least ΔE 20 (CIE 1976) from every other — Violet and Indigo, 23.
 card, its white icon 7.8 : 1 on it. The eleven keep their keys and fills (a template stores the fill). Pinned by
 `TemplateColourTests.testMoreColoursStillFillTwoRowsAndTheOldOnesStayAsTheyWere`.
 
+**0.101 — seventeen, two rows of nine.** His words (26 Oct 2026): "Add Template Icons Colours: Light blue and Light
+yellow." Light blue `#8cc8ff` (after Navy; hue 209°, clear of teal) and Light yellow `#ffef8a` (before Sand). White on
+them is 1.8 : 1 and 1.2 : 1 — unreadable, by day and by night alike, since a fill is one shade for both — so their icon
+is the app's own ink `#16232a` (`Theme.ink` by day, `Library.pillDarkInk`). Pinned by
+`TemplateColourTests.testLightBlueAndLightYellowJoinWithTheAppsInkOnThem`.
+
 | Word     | Fill      | Icon on it | Ink on fill | Mark on light card | Mark on dark card |
 |----------|-----------|------------|-------------|--------------------|-------------------|
 | Blue     | `#0a84ff` | white      | 3.7 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
@@ -122,7 +128,9 @@ card, its white icon 7.8 : 1 on it. The eleven keep their keys and fills (a temp
 | Violet   | `#7c5cd6` | white      | 4.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Indigo   | `#4f46e5` | white      | 6.3 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Navy     | `#2a5194` | white      | 7.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Light blue | `#8cc8ff` | `#16232a` | 9.0 : 1   | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Olive    | `#6e7b1f` | white      | 4.7 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
+| Light yellow | `#ffef8a` | `#16232a` | 13.7 : 1 | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Sand     | `#d9b98c` | `#3d2a10`  | 7.3 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Brown    | `#8b5e3c` | white      | 5.6 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |
 | Grey     | `#64748b` | white      | 4.8 : 1     | ≥ 4.5 : 1          | ≥ 4.5 : 1         |

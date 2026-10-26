@@ -94,6 +94,19 @@ Each tab button (`TabButtonLabel`):
   otherwise. One line, scaling down to 80 %.
 - Minimum height 54. The whole rectangle is tappable. Plain button style, no focus ring
   (`.focusEffectDisabled()`). Accessibility label = the label; the active tab has the `.isSelected` trait.
+- (0.101) **The To do tab's badge** — his words (26 Oct 2026): "To-do and to-buy counters on the 'To do' navigation
+  pill/button". Apple's way for a tab, on the iPhone AND the Mac (the Mac has the same tab bar under its window, no
+  sidebar, each tab about 100 points wide): ONE number, the open to-dos and the open to-buys together
+  (`Library.toDoTabCount()` — `openToDoCount()` + `openToBuyCount()`, the same counts the To do page shows as "N to do"
+  and "N to buy"; "99+" past 99; nothing open = no badge). `TabBadge`: the number in Caption 2 semibold monospaced
+  white on a capsule of the To do red (`AppSection.actions.color`), at least 18 × 18 with 5 points each side, ringed
+  2 points in `Theme.card` (the bar's own colour, so it stands apart from the full red capsule of the open To do tab),
+  laid over the mark's 46 × 30 capsule at its top right, 9 points out and 6 up; hidden from VoiceOver. The two counts
+  are said in words (`ToDoTabCount.words`, "2 to do · 1 to buy", a side with nothing open left out): the tab's
+  accessibility value (VoiceOver) — in DEBUG builds "badge 3 · 2 to do · 1 to buy" ("no badge · Nothing open"), the
+  tests' only way to see the badge — and, on the Mac, its tooltip (`.help`). Why one number and not "3 · 2" on the Mac
+  too: Apple's own tab bars never carry two numbers, and two bare numbers on a tab need a key to be read; the split is
+  in the tooltip and on the page. Other tabs: no badge, no value.
 
 The version marker (`app-version`): text `AppInfo.version` = `"<CFBundleShortVersionString> (<CFBundleVersion>)"`,
 e.g. "0.61 (130)". The short version is `MARKETING_VERSION` in `project.yml` ("0.61"); the build number is
@@ -192,6 +205,14 @@ marks "On this device".
 
 **Tests.**
 - UI `testStartsOnHomeAndNamesItsVersion`: launches on `screen-home`; `app-version` contains a digit.
+- (0.101) UI `testTheToDoTabCountsWhatIsStillOpen`: the sample library has nothing open — "no badge"; two to-dos and
+  one line to buy made on the To do page — "badge 3 · 2 to do · 1 to buy"; the line bought — "badge 2 · 2 to do"
+  (pictures `look101-todo-badge-open` on To do, `look101-todo-badge` on Home, day and night). Red on the base 0.100:
+  "XCTAssertTrue failed - the To do tab with nothing open says ''". Model
+  `ShoppingListTests.testTheToDoTabCountsWhatIsOpenOnBothSides` (the two sides apart and together, the page's own
+  counts, the words with a side left out, no badge when nothing is open, "99+") — red with the to-buys planted out of
+  the count: `("ToDoTabCount(toDo: 2, toBuy: 0)") is not equal to ("ToDoTabCount(toDo: 2, toBuy: 1)") - the tab does
+  not count what is open`. Green on the iPhone (iPhone 17 Pro, iOS 26.5) day and night and on GitHub's Mac (probe).
 - UI `testEveryTabOpensItsScreen`: every `tab-*` opens `screen-*` and Home is gone behind the others;
   `tab-actions` reads "To do".
 - UI `testWhatsNewStartsWithThisVersion`: the number before the space in `app-version` equals the top
