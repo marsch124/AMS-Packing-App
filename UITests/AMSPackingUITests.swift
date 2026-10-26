@@ -15655,6 +15655,189 @@ final class AMSPackingUITests: XCTestCase {
     }
 
 
+    // MARK: - Reminders on things (0.101, spec 07 part 21 — his yes to the picture, 26 Oct 2026)
+
+    /// A mark inside a trip's line — "2 left" (`-left`), "with Camera" (`-with`): a text of its own
+    /// on the iPhone; the Mac folds it into the line's own words, so there the line is read.
+    private func lineMark(_ app: XCUIApplication, _ n: Int, _ kind: String) -> String {
+        let own = app.staticTexts["trip-line-\(n)-\(kind)"]
+        if own.exists { return words(own) }
+        #if os(macOS)
+        if let line = shownRow(app, "trip-line-\(n)") { return words(line) }
+        #endif
+        return ""
+    }
+
+    /// "2 to remember" (the mark's own label) or, read through the Mac's line, "2 left".
+    private func saysLeft(_ words: String, _ n: Int) -> Bool {
+        words.contains("\(n) to remember") || words.contains("\(n) left")
+    }
+
+    /// `-uiTestingThingReminders`: the Camera's page holds its two reminders (each with its When) and
+    /// the two things that go with it. A reminder added, a companion taken off and another added —
+    /// Cancel keeps none of it; the same again and Save keeps all of it.
+    func testAThingKeepsItsRemindersAndWhatGoesWithItUntilSave() {
+        let app = launch("-uiTestingThingReminders")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openThing(app, "Camera")
+        XCTAssertTrue(appears(app, "thing-remember", timeout: 5), "the thing's page has no Remember with it")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-remind-1"), "the camera's second reminder is not there")
+        XCTAssertTrue(words(app.buttons["thing-remind-0"]).contains("Empty the SD card"), "'\(words(app.buttons["thing-remind-0"]))'")
+        XCTAssertEqual(app.buttons["thing-remind-0"].value as? String, "\u{2265}1 week ahead", "the reminder does not say its When")
+        XCTAssertFalse(app.buttons["thing-remind-2"].exists)
+        XCTAssertEqual(words(app.staticTexts["thing-with-0"]), "USB-C cable")
+        XCTAssertEqual(words(app.staticTexts["thing-with-1"]), "Spare battery")
+        shot(app, "remind-thing-page")
+        func change() {
+            type("Lens cloth in the bag", into: app.textFields["thing-remind-add-name"])
+            tap(app, id: "thing-remind-add")
+            XCTAssertTrue(app.buttons["thing-remind-2"].waitForExistence(timeout: 5), "the reminder was not added")
+            XCTAssertEqual(app.buttons["thing-remind-2"].value as? String, app.buttons["thing-remind-1"].value as? String,
+                           "a new reminder starts at the last one's When")
+            tap(app, id: "thing-with-0-remove")
+            XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-with-0"]) == "Spare battery" }, "the cable was not taken off")
+            tap(app, id: "thing-with-add")
+            type("Map", into: app.textFields["thing-with-search"])
+            tap(app, id: "thing-with-pick-0")
+            XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-with-1"]) == "Map" }, "the map was not added: '\(self.words(app.staticTexts["thing-with-1"]))'")
+        }
+        change()
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-remind-1"))
+        XCTAssertFalse(app.buttons["thing-remind-2"].exists, "Cancel kept the new reminder")
+        XCTAssertEqual(words(app.staticTexts["thing-with-0"]), "USB-C cable", "Cancel kept the cable's removal")
+        change()
+        shot(app, "remind-thing-page-changed")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-remind-2"), "Save did not keep the new reminder")
+        XCTAssertEqual(words(app.staticTexts["thing-with-0"]), "Spare battery", "Save did not keep the cable's removal")
+        XCTAssertEqual(words(app.staticTexts["thing-with-1"]), "Map", "Save did not keep the map")
+    }
+
+    /// `-uiTestingThingReminders`, the trip three days ahead: the camera's "a week ahead" reminder is
+    /// due — Home counts it, Before you go's To do names it "Camera: Empty the SD card"; its line says
+    /// "2 left", the cable and the battery came along "with Camera". Ticked, the camera shows both
+    /// under its line; one ticked there leaves (struck through first), the line says "1 left" and
+    /// the same reminder is gone from Before you go.
+    func testAThingsRemindersShowOnTheTripAndInToDo() {
+        let app = launch("-uiTestingThingReminders")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let card = app.buttons["home-countdown"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "no countdown")
+        XCTAssertTrue(waitUntil { (card.value as? String ?? "").hasPrefix("1 to do") },
+                      "the countdown does not count the camera's reminder: '\(card.value as? String ?? "")'")
+        tap(app, id: "home-countdown")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(appears(app, "trip-beforego-part-todo", timeout: 5), "Before you go has no To do")
+        let due = app.buttons["trip-check-remind-0"]
+        XCTAssertTrue(due.waitForExistence(timeout: 5), "the camera's reminder is not in To do")
+        XCTAssertTrue(due.label.hasPrefix("Camera: Empty the SD card"), "'\(due.label)'")
+        XCTAssertFalse(app.buttons["trip-check-remind-1"].exists, "the day-before reminder is due already")
+        shot(app, "remind-todo")
+        XCTAssertTrue(scrollUntil(app, "trip-line-9", near: "trip-line-0"), "the things that came along are not on the trip")
+        XCTAssertTrue(words(app.buttons["trip-line-7"]).contains("Camera"), "line 7 is not the camera: '\(words(app.buttons["trip-line-7"]))'")
+        XCTAssertTrue(waitUntil { self.saysLeft(self.lineMark(app, 7, "left"), 2) }, "the camera's line does not say 2 left: '\(lineMark(app, 7, "left"))'")
+        XCTAssertTrue(lineMark(app, 8, "with").contains("with Camera"), "the cable does not say it came with the camera: '\(lineMark(app, 8, "with"))'")
+        XCTAssertTrue(lineMark(app, 9, "with").contains("with Camera"), "the battery does not say it came with the camera: '\(lineMark(app, 9, "with"))'")
+        XCTAssertFalse(app.buttons["trip-line-7-remind-0"].exists, "the reminders show under a line not ticked")
+        shot(app, "remind-trip-line")
+        tap(app, id: "trip-line-7")
+        let first = app.buttons["trip-line-7-remind-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "ticking the camera did not show its reminders under it")
+        XCTAssertEqual(first.label, "Before it goes: Empty the SD card")
+        XCTAssertEqual(app.buttons["trip-line-7-remind-1"].label, "Before it goes: Charge the spare battery")
+        shot(app, "remind-trip-line-open")
+        tap(app, id: "trip-line-7-remind-0")
+        XCTAssertTrue(waitUntil(timeout: 8) { !app.buttons["trip-line-7-remind-1"].exists && first.label == "Before it goes: Charge the spare battery" },
+                      "the reminder ticked did not leave: '\(first.label)'")
+        XCTAssertTrue(waitUntil { self.saysLeft(self.lineMark(app, 7, "left"), 1) }, "the line does not say 1 left: '\(lineMark(app, 7, "left"))'")
+        shot(app, "remind-trip-line-ticked")
+        // The same tick: Before you go's To do has nothing left of it.
+        XCTAssertTrue(waitUntil { !app.buttons["trip-check-remind-0"].exists }, "Before you go still asks for the SD card")
+    }
+
+    /// `-uiTestingThingReminders`: "not this time" on the camera sets aside the battery that came
+    /// only with it; taken back, the battery is back too.
+    func testWhatCameWithAThingIsSetAsideWithIt() {
+        let app = launch("-uiTestingThingReminders")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "home-countdown")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(scrollUntil(app, "trip-line-9", near: "trip-line-0"), "the battery is not on the trip")
+        XCTAssertEqual(app.buttons["trip-line-9-aside"].label, "Not this time")
+        tap(app, id: "trip-line-7-aside")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-9-aside"].label == "Take it this time" }, "the battery stayed when the camera was set aside")
+        tap(app, id: "trip-line-7-aside")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-9-aside"].label == "Not this time" }, "the battery did not come back with the camera")
+    }
+
+
+    /// `-uiTestingThingReminders`, the trip three days ahead and nothing packed: Before you start's
+    /// To prepare holds the camera's two reminders (0.101), each "Camera: …" with its step; ticked
+    /// there, it is gone there and from Before you go's To do — one tick for the trip.
+    func testAThingsRemindersAreToPrepareBeforeYouStart() {
+        let app = launch("-uiTestingThingReminders")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "home-countdown")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let door = app.buttons["trip-beforestart"]
+        XCTAssertTrue(door.waitForExistence(timeout: 5), "no Before you start on a trip not yet packed")
+        XCTAssertTrue(waitUntil { (door.value as? String ?? "").contains("2 to prepare") },
+                      "Before you start does not count the camera's reminders: '\(door.value as? String ?? "")'")
+        tap(app, id: "trip-beforestart")
+        XCTAssertTrue(appears(app, "beforestart-sheet", timeout: 5))
+        let first = app.buttons["beforestart-prepare-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "nothing to prepare")
+        XCTAssertTrue(first.label.hasPrefix("Camera: Empty the SD card"), "'\(first.label)'")
+        XCTAssertTrue(app.buttons["beforestart-prepare-1"].label.hasPrefix("Camera: Charge the spare battery"),
+                      "'\(app.buttons["beforestart-prepare-1"].label)'")
+        shot(app, "remind-prepare")
+        tap(app, id: "beforestart-prepare-0")
+        XCTAssertTrue(waitUntil { first.label.hasPrefix("Camera: Charge the spare battery") && !app.buttons["beforestart-prepare-1"].exists },
+                      "the tick did not take the SD card off To prepare: '\(first.label)'")
+        tap(app, id: "beforestart-done")
+        XCTAssertTrue(disappears(app, "beforestart-sheet", timeout: 5))
+        XCTAssertFalse(app.buttons["trip-check-remind-0"].exists, "Before you go still asks for the SD card")
+    }
+
+    /// `-uiTestingPackingDay`: with no station tapped, the first not done (Bags) is lit; Weigh tapped
+    /// stays lit after its sheet closes (0.101 — his trip stayed on Bags whatever he did). Pack tapped
+    /// is lit and answers on the list: the first line not packed in view, its row lit a moment, then
+    /// not — and so again when the list is in view already.
+    func testATappedStationStaysLitAndPackShowsTheNextLine() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        let bags = app.buttons["day-station-bags"], weigh = app.buttons["day-station-weigh"], pack = app.buttons["day-station-pack"]
+        XCTAssertTrue(waitUntil { bags.isSelected }, "with none tapped, the first station not done is not lit")
+        station(app, "weigh")
+        XCTAssertTrue(appears(app, "day-view-weigh", timeout: 5), "the sheet is not on Weigh")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5))
+        XCTAssertTrue(waitUntil { weigh.isSelected }, "the station tapped is not the lit one")
+        XCTAssertFalse(bags.isSelected, "Bags is still lit")
+        shot(app, "stations-weigh-lit")
+        station(app, "pack", opens: false)
+        XCTAssertTrue(waitUntil { pack.isSelected }, "Pack is not lit after a tap")
+        XCTAssertFalse(weigh.isSelected)
+        // The light is `trip-flash-<n>` on the row of `trip-line-<n>` while it shows.
+        func litLine() -> Int? { (0..<24).first { self.find(app, "trip-flash-\($0)") != nil } }
+        var lit: Int?
+        XCTAssertTrue(waitUntil(timeout: 3) { lit = litLine(); return lit != nil }, "Pack showed nothing on the list")
+        shot(app, "stations-pack-lit")
+        // The copy of the line on screen (the Mac's list can keep a stale one out of sight, `shownRow`).
+        let line = shownRow(app, "trip-line-\(lit ?? -1)")
+        XCTAssertNotNil(line, "the line lit is not in view")
+        XCTAssertFalse(line?.isSelected ?? true, "the line lit is packed already")
+        XCTAssertTrue(waitUntil(timeout: 6) { litLine() == nil }, "the light did not fade")
+        station(app, "pack", opens: false)
+        XCTAssertTrue(waitUntil(timeout: 3) { litLine() != nil }, "a second tap on Pack, the list in view, showed nothing")
+    }
+
+
     // MARK: - Before you start (spec 07 part 19, his yes of 14 Oct 2026)
 
     /// `-uiTestingBeforeStart`: the trip ten days ahead, nothing ticked. Home's countdown counts what
@@ -15752,7 +15935,7 @@ final class AMSPackingUITests: XCTestCase {
     /// Tap a station on the trip's row. On the iPhone the row scrolls sideways: swipe it until
     /// the chip is whole in the window (judged by frames — asking a chip off to the side whether
     /// it is hittable is a hard failure). On the Mac it fits.
-    private func station(_ app: XCUIApplication, _ key: String) {
+    private func station(_ app: XCUIApplication, _ key: String, opens: Bool = true) {
         let chip = app.buttons["day-station-\(key)"]
         XCTAssertTrue(chip.waitForExistence(timeout: 5), "no \(key) station on the trip")
         #if os(iOS)
@@ -15765,7 +15948,8 @@ final class AMSPackingUITests: XCTestCase {
         #endif
         _ = waitUntil(timeout: 3) { self.settled(chip) }
         chip.tap()
-        XCTAssertTrue(appears(app, "day-sheet", timeout: 5), "the \(key) station did not open")
+        // Pack opens no sheet: it is the list (`opens: false`).
+        if opens { XCTAssertTrue(appears(app, "day-sheet", timeout: 5), "the \(key) station did not open") }
     }
 
     private func value(_ e: XCUIElement) -> String { e.exists ? (e.value as? String ?? "") : "" }

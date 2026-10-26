@@ -383,6 +383,7 @@ extension LibraryModel {
     ///                           thing — and no page asked for yet (Obsidian, 0.70)
     ///  -uiTestingReviewedUndated → memory, the -uiTestingReviewed sample with its trip's
     ///                           dates taken away (a reviewed trip goes to Done, 0.73)
+    ///  -uiTestingThingReminders → memory, a Camera with two reminders and two things going with it (0.101)
     ///  -uiTestingReminders    → memory, the sample + two reminders on Hiking, its trip
     ///                           three days ahead (reminders on a template, 0.70)
     ///  -uiTestingBeforeStart  → memory, the sample with things to buy, reminders to prepare and a
@@ -430,7 +431,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", BagsScreen.sortKey, "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey] {
+            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", BagsScreen.sortKey, "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey, StationPicks.storageKey] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             // -tableChosenBefore (0.86): columns he chose before the Battery column came —
@@ -550,6 +551,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingBeforeStart") {
             return LibraryModel(store: MemoryStore(SampleLibrary.beforeStart().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingThingReminders") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.thingReminders().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingReminders") {
             return LibraryModel(store: MemoryStore(SampleLibrary.reminders().records()), usesICloud: false, sky: sky)

@@ -938,6 +938,16 @@ test — and VoiceOver — lost it.
 
 ## A thing's page (`ThingEditor`, in ThingsScreen.swift)
 
+**Remember with it and Goes with (0.101, spec 07 part 21 — his yes to the picture of 26 Oct 2026).** Right under Photos
+(on a thing, not a bag or a template's reminder; `ThingRememberPart` in ThingRemember.swift, held in a `RememberDraft`
+like the kit part's `KitDraft`): **Remember with it** — the thing's short reminders, each with a When (lines
+`thing-remind-<n>`, grip ≡ / the Mac's ↑ ↓, a press opens words, When, Done, Remove reminder; the foot Add a reminder,
+Add, When), and **Goes with** — chips of his things (`thing-with-<n>`, ✕ `thing-with-<n>-remove`, Add a thing
+`thing-with-add` → Find a thing and eight of his things). Nothing is written before Save; Save puts both lists onto the
+thing as it is now, list by list (`saveThingRemembers`); Cancel keeps nothing; a change counts for the swipe-down
+question. Not in the Mac's Tab walk. What they do on a trip: spec 07 part 21. The page's order is now Name, Notes,
+Photos, Remember with it, Goes with, Kind of thing, ….
+
 **Purpose and origin.** "One thing: what IT knows … and which lists it is on. A change here reaches every list;
 a list's own exception for the bag stays that list's." Field order and wording follow his asks: Brand, Colour
 and Notes (26 Sep 2026, 0.26); Delete thing (27 Sep, 0.29); headings in colour and larger (0.27/0.28); On a

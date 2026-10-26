@@ -523,7 +523,10 @@ left says nothing; its date = start − lead days (Gregorian, UTC arithmetic); s
 steps of one trip on the same day merge into one reminder whose `says` joins them with " · " in timeline order
 ("Morning list: 1 to pack · At the front door: 1 to pack"); a step says "<label>: <n> to pack", or "to do" for a
 to-do step (Preparations). All reminders are sorted by date (stable) and cut to 48 (an iPhone keeps 64 waiting
-notifications per app).
+notifications per app). (0.101, spec 07 part 21) A step's "to do" counts his things' own reminders not ticked on the
+trip as well as the template reminders — "≥1 week ahead: 3 to pack, 1 to do" — so a day with only a thing's reminder
+left still has its one notification ("Day before …: 1 to do"); the same rules otherwise (09:00, one per trip per day,
+days past dropped, 48 at most).
 
 **Data.** `UserDefaults` key `ams.reminders` (Bool, per device, never synced; cleared at launch under the UI tests).
 The notifications live in the system's notification centre.
@@ -957,7 +960,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
      "Packing Stations" (Body semibold ink), one element `guide-day-title`;
    - "On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go
      through them, each with a short word on its chip — Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green
-     when it is done; the next one to do is lit. On the iPhone the row slides sideways." (Callout ink; until 0.84 "…
+     when it is done. The one you tap is lit, and stays lit until you tap another (each trip remembers its own, on
+     this device); before you tap one, the first still to do is lit. On the iPhone the row slides sideways." (0.101;
+     until then "…; the next one to do is lit. On the iPhone …"; until 0.84 "…
      under the loop: Packing Stations, then six stations in the order you go through them. A station …"). The
      numbered stations below keep their full names (Bags out, Tags, Photos);
    - the six stations, in the row's order, each a row: the station's mark (20 pt, white) in a 34-pt green disc — the
@@ -994,7 +999,8 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
         leave at is right there: 15 minutes before, the iPhone names what is still unticked." Since 0.81 then: "Add a
         reminder, at the foot: anything last-minute, written as a To do on the trip — it shows in Before you go."
    - four dotted lines since 0.81 (three before; as a topic's, Pack green): getting around ("tap a station in the row to open it — Pack goes
-     straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the
+     straight to the list and lights the first thing not packed yet a moment, wherever you are on it" — the words after
+     "list" since 0.101. At the foot of each station, Next offers the next one still to do; in the sheet the
      stations are at the top too. Done closes it."); a trip with no bags yet ("those four stations are faded with a
      dashed edge and say “no bags yet”; opened, they say how to give things a bag … Ready then waits only for the
      packing."); (0.81) a To do written here ("A To do written here (Remind me, Add a reminder) is a line of the trip's
@@ -1043,13 +1049,18 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    (0.77: one card, one count of what is left, red / orange / green All set — folded to one line, its arrow opens it;
    0.101: its arrow folds it to one line whenever he likes, and this device remembers that per trip;
    its parts: the checks — cabin red/orange, a battery in a checked bag red (0.76), expiry six months ahead for
-   passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks; To charge from the day before
+   passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks — and (0.101, spec 07 part 21) a
+   thing's own reminders due, as "Camera: Empty the SD card", the same tick as under its line; To charge from the day before
    the trip, with "1 of 2", a charge tick apart from packing — and (0.87) "Charge tonight" on the iPhone at 20:00 the
    evening before, the names not charged yet, four then how many more, only while something is left, a tap opens
    the trip at To charge); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one, and last Clear every tick (asks first; 0.79 — Tick everything gone); the round button's Undo for 6 seconds above the add bar (0.79); Save as
    Excel and Share side by side; folding sections (remembered per trip; 0.101: the two-arrow button beside Group by
-   folds every section at once and, all folded, opens them all; on the Mac Option-click on a section's arrow too); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Group by ("Sorting" until 0.101; "puts the lines under headings") When /
+   folds every section at once and, all folded, opens them all; on the Mac Option-click on a section's arrow too); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
+   own reminders — "2 left" in orange on its line, under it once ticked "Before it goes: …" each with its own tick, in
+   Before you go's To do at their step as "Camera: …", one tick wherever ticked — and a line "with Camera" that came along
+   with another thing (its own bag and place; goes when the camera goes unless a template, another thing or he himself
+   put it there, a packed one stays; ⊘ on the camera sets it aside too, ↻ brings it back); Group by ("Sorting" until 0.101; "puts the lines under headings") When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
    colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); (0.83) + Add a bag at its foot, as in Bags out, "nothing in it yet" and its ✕ for a bag added empty; Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
    under Group by shows every line again; typing a thing adds it
@@ -1100,7 +1111,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    its foot; a template moved out of WET loses its own Context (0.89; a door beside Delete since 0.62); Delete template asks first; Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (a grab
    list's at its bottom right, round, under Ready to go — 0.84); Refine (violet card) after two or more reviews — Keep / Drop. (17 lines since 0.89, counted from the code.)
 7. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
-   again — 0.62); Just added at the top until you
+   again — 0.62); (0.101, spec 07 part 21) a thing's page order now Name, Notes, Photos, Remember with it, Goes with,
+   Kind of thing…, and a line of its own on the two: reminders with a When (Add, tap to change words or When or remove,
+   the grip ≡ / the Mac's arrows), Goes with's Add a thing and ✕, nothing changed until Save; Just added at the top until you
    leave; ✕ in search; (0.69) the search finds words in a thing's notes and its templates' notes, the matching line
    under the thing; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
    notes under Notes, places to tap under Kept at home, No bag, Care how often and what to do (0.62); Bags with max weight,

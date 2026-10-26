@@ -66,11 +66,15 @@ extension Library {
     /// the same day keep the timeline's order).
     public func packingSteps(tripId: String) -> [PackingStep] {
         guard let trip = trips.first(where: { $0.id == tripId }), isYMD(trip.startDate) else { return [] }
+        // A thing's own reminders (0.101) are to do at their step as a template's are.
+        let things = thingReminders(tripId: tripId)
+        let thingsOpen = things.isEmpty ? [] : trip.entries.flatMap { things[$0.id] ?? [] }.filter { !$0.done }
         var out: [PackingStep] = []
         for phase in PHASES where phase.leadDays >= 0 {
             let open = trip.entries.filter { $0.phase == phase.id && !$0.checked && !isSetAside($0) }
-            let todo = open.filter(Library.isReminder).count
-            let left = open.count - todo
+            let reminders = open.filter(Library.isReminder).count
+            let todo = reminders + thingsOpen.filter { $0.reminder.when == phase.id }.count
+            let left = open.count - reminders
             guard left + todo > 0 else { continue }
             out.append(PackingStep(phaseId: phase.id, label: phase.label, task: phase.task,
                                    date: Library.ymd(trip.startDate, plusDays: -phase.leadDays), left: left, todo: todo))
@@ -88,7 +92,8 @@ extension Library {
         let left = t.entries.filter { !$0.checked && !isSetAside($0) && !Library.isReminder($0) }.count
         return NextTrip(id: t.id, name: t.name, startDate: t.startDate, days: days, left: left,
                         step: packingSteps(tripId: t.id).first,
-                        due: dueReminders(tripId: t.id, today: today).map(\.name),
+                        due: dueReminders(tripId: t.id, today: today).map(\.name)
+                            + dueThingReminders(tripId: t.id, today: today).map(\.name),   // "Camera: Empty the SD card" (0.101)
                         beforeStart: beforeYouStart(tripId: t.id, today: today, time: time).homeWords)
     }
 

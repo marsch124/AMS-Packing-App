@@ -115,10 +115,23 @@ struct StationChips: View {
 /// (and the one after it) in view; on a narrow Mac window the chips wrap onto a second line.
 struct PackingDayRow: View {
     let day: PackingDay
+    /// The trip: the station he tapped on it is the lit one (0.101, `StationPicks`).
+    var tripId = ""
     /// The screen's margin: the sideways scroll reaches past it to the edges.
     var margin: CGFloat = 16
     let tap: (PackingDayStation) -> Void
     @Environment(\.colorScheme) private var scheme
+    /// The station tapped on each trip, on this device (0.101).
+    @AppStorage(StationPicks.storageKey) private var picks = ""
+
+    /// Lit: the station he tapped last on this trip, else the first not done.
+    private var lit: PackingDayStation { day.lit(picked: StationPicks.picked(picks, trip: tripId)) }
+
+    /// A tap: that station is his now — then what it does (the sheet, or the list).
+    private func pick(_ s: PackingDayStation) {
+        if !tripId.isEmpty { picks = StationPicks.picking(picks, trip: tripId, s) }
+        tap(s)
+    }
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -129,7 +142,7 @@ struct PackingDayRow: View {
             // scroll sideways (GitHub's Mac, 0.79: the trip's 520-point window cut Ready off).
             HStack(alignment: .top, spacing: 8) {
                 title
-                StationChips(day: day, highlight: day.current, idPrefix: "day-station", wraps: true, tap: tap)
+                StationChips(day: day, highlight: lit, idPrefix: "day-station", wraps: true, tap: pick)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             #else
@@ -140,8 +153,8 @@ struct PackingDayRow: View {
                 .padding(.horizontal, -margin)
                 // The least scrolling that shows the next station and the one after it: at the start
                 // nothing moves (the title stays in view), towards the end it comes along.
-                .onAppear { proxy.scrollTo(PackingDayRow.inView(day.current)) }
-                .onChange(of: day.current) { _, now in withAnimation { proxy.scrollTo(PackingDayRow.inView(now)) } }
+                .onAppear { proxy.scrollTo(PackingDayRow.inView(lit)) }
+                .onChange(of: lit) { _, now in withAnimation { proxy.scrollTo(PackingDayRow.inView(now)) } }
             }
             #endif
         }
@@ -159,7 +172,7 @@ struct PackingDayRow: View {
     private var line: some View {
         HStack(spacing: 8) {
             title
-            StationChips(day: day, highlight: day.current, idPrefix: "day-station", tap: tap)
+            StationChips(day: day, highlight: lit, idPrefix: "day-station", tap: pick)
         }
     }
 
@@ -202,6 +215,8 @@ struct PackingDaySheet: View {
     @State private var lost: LostBagOpen?
     /// The bag whose own page is open from its pen in a station (0.90, "Edit bag when packing").
     @State private var editing: EditBagOpen?
+    /// The station tapped on each trip, on this device (0.101): where he goes here is his station.
+    @AppStorage(StationPicks.storageKey) private var picks = ""
 
     /// Opened by itself, on Weigh, when the last thing was ticked: the trip keeps that it was
     /// offered once it is really on screen — never again on this trip.
@@ -307,6 +322,7 @@ struct PackingDaySheet: View {
 
     /// Pack is the list: the sheet closes and the trip goes there. The others show here.
     private func go(_ s: PackingDayStation) {
+        picks = StationPicks.picking(picks, trip: tripId, s)
         if s == .pack {
             dismiss()
             toList()
@@ -811,9 +827,9 @@ struct PackingDayGuideCard: View {
     /// The card's heading, first paragraph and closing lines — statics, so How it works' search
     /// (0.90) reads the same words the card shows.
     static let title = "Packing Stations"
-    static let intro = "On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go through them, each with a short word on its chip \u{2014} Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green when it is done; the next one to do is lit. On the iPhone the row slides sideways."
+    static let intro = "On a trip you are packing, a row sits right under the loop: Stations, then six stations in the order you go through them, each with a short word on its chip \u{2014} Bags, Pack, Weigh, Tag, Photo, Ready. A station turns green when it is done. The one you tap is lit, and stays lit until you tap another (each trip remembers its own, on this device); before you tap one, the first still to do is lit. On the iPhone the row slides sideways."
     static let more = [
-        "Getting around: tap a station in the row to open it \u{2014} Pack goes straight to the list. At the foot of each station, Next offers the next one still to do; in the sheet the stations are at the top too. Done closes it.",
+        "Getting around: tap a station in the row to open it \u{2014} Pack goes straight to the list and lights the first thing not packed yet a moment, wherever you are on it. At the foot of each station, Next offers the next one still to do; in the sheet the stations are at the top too. Done closes it.",
         "A trip with no bags yet has nothing to lay out, weigh, tag or photograph: those four stations are faded with a dashed edge and say \u{201C}no bags yet\u{201D}; opened, they say how to give things a bag (Usually packed in, on a thing\u{2019}s page). Ready then waits only for the packing.",
         "A To do written here (Remind me, Add a reminder) is a line of the trip\u{2019}s own, under To do: due at once, so it is in Before you go at the top of the trip straight away \u{2014} tick it there or on the list. Like every reminder it counts on the list: Pack waits for it.",
         "A bag of yours has the round pen at the end of its line in Bags out, Weigh, Tags and Photos (and in the trip\u{2019}s Bags): it opens the bag\u{2019}s page \u{2014} its name, numbers, notes, details \u{2014} and Done brings you back to the same station.",

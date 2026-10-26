@@ -724,6 +724,39 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with reminders on a THING and things that go with it (`-uiTestingThingReminders`,
+    /// 0.101 — spec 07 part 21): a Camera on Hiking ("Empty the SD card" a week ahead, "Charge the
+    /// spare battery" the day before), going with a USB-C cable and a Spare battery, which are on no
+    /// template; the trip three days ahead, built as the app builds one — so the two came along.
+    static func thingReminders() -> Library {
+        var lib = make()
+        guard let hiking = lib.templates.first(where: { $0.name == "Hiking" }) else { return lib }
+        let camera = lib.addToTemplate(templateId: hiking.id, name: "Camera", container: "Carry-on / hand luggage", phase: "week")
+        let cable = lib.addThing(name: "USB-C cable"), battery = lib.addThing(name: "Spare battery")
+        if let b = battery { _ = lib.updateThing(id: b.id) { $0.container = "Toiletry bag"; $0.phase = "daybefore" } }
+        let with = [cable?.id, battery?.id].compactMap { $0 }
+        if let id = camera?.itemId ?? lib.items.first(where: { $0.name == "Camera" })?.id {
+            _ = lib.updateThing(id: id) { cam in
+                Library.setThingReminders(&cam, [ThingReminder(text: "Empty the SD card", when: "week"),
+                                                 ThingReminder(text: "Charge the spare battery", when: "daybefore")])
+                Library.setGoesWith(&cam, with)
+            }
+        }
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        if let old = lib.trips.first {
+            var draft = newEvent(name: old.name, startDate: day(3), endDate: day(5))
+            draft.id = old.id
+            draft.activities = old.activities
+            lib.trips = []
+            lib.createTrip(draft)
+        }
+        return lib
+    }
+
     /// The sample library + "Long trips", a BIG always-packed template (23 things under
     /// Clothes, Toiletries, Tech, Papers and no heading; Socks and Snacks per night), and
     /// a Camp pouch kit holding a Lighter (`-uiTestingBigBase`, 0.71: "Make a small core

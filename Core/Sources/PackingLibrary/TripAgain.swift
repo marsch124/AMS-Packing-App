@@ -39,6 +39,7 @@ extension Library {
             // A To do written on the old trip came along as the reminder it is, due by its When
             // like any other — "at once" was that trip's packing (Packing Stations, 0.81).
             fresh.extra[TRIP_TODO_KEY] = nil
+            fresh.extra[REMINDERS_DONE_KEY] = nil   // the thing reminders ticked for the old trip (0.101)
             fresh.id = PackingEnv.makeId()
             fresh.checked = false
             fresh.skipped = false
