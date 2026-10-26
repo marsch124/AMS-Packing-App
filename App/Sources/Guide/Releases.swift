@@ -18,6 +18,19 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.101", date: "26 Oct 2026", title: "Reminders on things, and your list",
+                new: ["Remember with it, on a thing\u{2019}s page: short reminders with a time \u{2014} on every trip the thing is on, in To prepare, Before you go and under its line once you tick it (\u{201C}Before it goes: Empty the SD card\u{201D}).",
+                      "Goes with, on a thing\u{2019}s page: the cable, charger or spare battery that belong to it come along on every trip as their own lines, marked \u{201C}with Camera\u{201D}.",
+                      "Fold all beside Group by folds every heading of a trip at once, and opens them all again.",
+                      "The To do page in parts: Priority at the top, Done folded at the foot, with Undo after a tick; To buy keeps Bought apart the same way.",
+                      "The To do tab shows how many to-dos and to-buys are still open.",
+                      "Two more template colours: Light blue and Light yellow."],
+                changed: ["The steps row speaks the Stations\u{2019} language: full colour is done, light with a ring is where you are, an outline is still ahead.",
+                          "The station you tap stays lit; Pack lights the next line to pack.",
+                          "\u{201C}Sorting\u{201D} is now \u{201C}Group by\u{201D} \u{2014} it puts the lines under headings.",
+                          "Before you go folds to one line whenever you like.",
+                          "Sync details shows a coloured dot and words instead of a pill."],
+                fixed: ["Each device now checks in with iCloud by itself \u{2014} the Mac no longer says it last checked in weeks ago."]),
         Release(version: "0.100", date: "24 Oct 2026", title: "Two Mac crashes",
                 fixed: ["The app no longer shuts on the next click after iCloud brought in a photo whose picture had not fully arrived yet \u{2014} that photo waits, and the app reads it again a little later.",
                         "On the Mac, the \u{2191} \u{2193} arrows on a row inside an open drop-down list no longer shut the app."]),

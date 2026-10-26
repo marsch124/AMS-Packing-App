@@ -814,11 +814,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (100 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (101 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.101 | 26 Oct 2026 | Reminders on things, and your list | N6 C5 F1 | his list of 26 Oct + reminders on things (his yes to the picture): look101 (loop strip = Stations rule, sync dot, check-in by itself every 15 min, Group by, To do tab badge, Light blue/Light yellow), lists101 (Before you go folds, Fold all + Option-click, To do page Priority/Others/Done + Undo after a tick, To buy Bought), remind101 (Remember with it, Goes with, tapped station stays lit + Pack lights the next line, thing reminders in To prepare and notifications) |
 | 0.100 | 24 Oct 2026 | Two Mac crashes | F2 | his Mac crash of 24 Oct (0.99): an Objective-C exception from SwiftData reading a photo whose external file was missing (iCloud mid-delivery) inside a Task left Swift's executor bookkeeping broken → next click EXC_BAD_ACCESS; Record.read() through AMSCatchException (ObjCExceptions.h/.m, bridging header), photo left out and re-read after 5 s (≤3), iCloud reload no longer in a Task; DropDown keyRows[-1] (18 Oct, 0.87) clamped (clampedLit); tests testAPhotoWhoseFileIsMissingNeitherStopsTheSyncNorShutsTheApp (-uiTestingPhotoGone), testAnArrowOnAnotherRowOfAnOpenListDoesNotShutTheApp, red on 0.99 on GitHub |
 | 0.99 | 21 Oct 2026 | ⌘Q on the Mac | F1 | macOS refuses to quit while a sheet is open, silently: ⌘Q with a template page, Your choices or a bag page open now quits, and asks Discard changes? first when the page holds a change (EditDraft.swift, AMSPackingApp.swift, QuickActions.swift; work/macquit 4b925bc); Mac UI test red on 0.98 |
 | 0.98 | 21 Oct 2026 | Cancel and Done the Apple way | C2 | his decision 21 Oct: template page/Your choices lose 0.94's save on background/quit (PageAway, keepAway removed); bag page holds every change incl. pockets until Done (EditDraft.step; PocketsTrail unused by the app); new tests testABagsPageKeepsNothingButByDone, testATemplatesPageAndYourChoicesKeepNothingButByDone (launch mode -uiTestingKept); 0.94's two keep-on-close tests replaced; the four GitHub-only iPhone tests fixed (work/gh4tests: keyboard put away as before) |
