@@ -261,25 +261,7 @@ private struct TabBar: View {
         let open = model.library.toDoTabCount()
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                ForEach(AppSection.allCases) { s in
-                    let count = s == .actions ? open : nil
-                    Button { section = s } label: { TabButtonLabel(section: s, active: s == section, badge: count?.badge) }
-                        .buttonStyle(.plain)
-                        .focusEffectDisabled()      // no keyboard ring round a tab on the Mac
-                        .accessibilityIdentifier("tab-\(s.rawValue)")
-                        .accessibilityLabel(s.label)
-                        // The two counts behind the badge, in words: VoiceOver says them, and on the Mac
-                        // they are the tab's tooltip (0.101). The tests read the badge's number too.
-                        #if DEBUG
-                        .accessibilityValue(count.map { c in (c.badge.map { "badge \($0) \u{00B7} " } ?? "no badge \u{00B7} ") + c.words } ?? "")
-                        #else
-                        .accessibilityValue(count.flatMap { $0.total > 0 ? $0.words : nil } ?? "")
-                        #endif
-                        #if os(macOS)
-                        .help(count.flatMap { $0.total > 0 ? $0.words : nil } ?? "")
-                        #endif
-                        .accessibilityAddTraits(s == section ? .isSelected : [])
-                }
+                ForEach(AppSection.allCases) { s in tab(s, count: s == .actions ? open : nil) }
             }
             // A quiet build marker in its own thin row, so it can never sit on
             // top of a tab's label.
@@ -297,6 +279,32 @@ private struct TabBar: View {
         .padding(.bottom, 2)
         .background(Theme.card.ignoresSafeArea(edges: .bottom))
         .overlay(alignment: .top) { Theme.line.frame(height: 1) }
+    }
+
+    /// One tab. Its own function (0.101): GitHub's Mac could not type-check the badge's words inside
+    /// the `ForEach` in reasonable time ("the compiler is unable to type-check this expression").
+    private func tab(_ s: AppSection, count: ToDoTabCount?) -> some View {
+        // The two counts behind the badge, in words: VoiceOver says them, and on the Mac they are the
+        // tab's tooltip (0.101). In DEBUG builds the value starts with the badge's number, for the tests.
+        let words: String = count.map { $0.total > 0 ? $0.words : "" } ?? ""
+        var value: String = words
+        #if DEBUG
+        if let c = count {
+            let badge: String = c.badge.map { "badge " + $0 } ?? "no badge"
+            value = badge + " \u{00B7} " + c.words
+        }
+        #endif
+        let selected: AccessibilityTraits = s == section ? .isSelected : []
+        return Button { section = s } label: { TabButtonLabel(section: s, active: s == section, badge: count?.badge) }
+            .buttonStyle(.plain)
+            .focusEffectDisabled()      // no keyboard ring round a tab on the Mac
+            .accessibilityIdentifier("tab-\(s.rawValue)")
+            .accessibilityLabel(s.label)
+            .accessibilityValue(value)
+            #if os(macOS)
+            .help(words)
+            #endif
+            .accessibilityAddTraits(selected)
     }
 }
 
