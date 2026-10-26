@@ -15490,7 +15490,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { weigh.isSelected }, "the station tapped is not the lit one")
         XCTAssertFalse(bags.isSelected, "Bags is still lit")
         shot(app, "stations-weigh-lit")
-        station(app, "pack")
+        station(app, "pack", opens: false)
         XCTAssertTrue(waitUntil { pack.isSelected }, "Pack is not lit after a tap")
         XCTAssertFalse(weigh.isSelected)
         XCTAssertTrue(appears(app, "trip-flash", timeout: 3), "Pack showed nothing on the list")
@@ -15500,7 +15500,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons[lit].isSelected, "the line lit is packed already")
         shot(app, "stations-pack-lit")
         XCTAssertTrue(disappears(app, "trip-flash", timeout: 6), "the light did not fade")
-        station(app, "pack")
+        station(app, "pack", opens: false)
         XCTAssertTrue(appears(app, "trip-flash", timeout: 3), "a second tap on Pack, the list in view, showed nothing")
     }
 
@@ -15602,7 +15602,7 @@ final class AMSPackingUITests: XCTestCase {
     /// Tap a station on the trip's row. On the iPhone the row scrolls sideways: swipe it until
     /// the chip is whole in the window (judged by frames — asking a chip off to the side whether
     /// it is hittable is a hard failure). On the Mac it fits.
-    private func station(_ app: XCUIApplication, _ key: String) {
+    private func station(_ app: XCUIApplication, _ key: String, opens: Bool = true) {
         let chip = app.buttons["day-station-\(key)"]
         XCTAssertTrue(chip.waitForExistence(timeout: 5), "no \(key) station on the trip")
         #if os(iOS)
@@ -15615,7 +15615,8 @@ final class AMSPackingUITests: XCTestCase {
         #endif
         _ = waitUntil(timeout: 3) { self.settled(chip) }
         chip.tap()
-        XCTAssertTrue(appears(app, "day-sheet", timeout: 5), "the \(key) station did not open")
+        // Pack opens no sheet: it is the list (`opens: false`).
+        if opens { XCTAssertTrue(appears(app, "day-sheet", timeout: 5), "the \(key) station did not open") }
     }
 
     private func value(_ e: XCUIElement) -> String { e.exists ? (e.value as? String ?? "") : "" }
